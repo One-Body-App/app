@@ -59,11 +59,11 @@ const HomeStack = () => {
       <Stack.Screen name="setting" component={Setting} />
       <Stack.Screen name="passwordChange" component={PasswordChange} />
       <Stack.Screen name="phoneValidate" component={PhoneValidate} />
-      {/* <Stack.Screen name="PhoneValidateOtp" component={PhoneValidateOtp} /> */}
+
       <Stack.Screen name="confirm" component={ConfirmPassword} />
-      {/* <Stack.Screen name="forget" component={ForgotPassword} /> */}
+
       <Stack.Screen name="newpassword" component={NewPassword} />
-      {/* <Stack.Screen name="landing" component={LandingScreen} /> */}
+
       <Stack.Screen name="loading" component={LoadingPage} />
       <Stack.Screen name="conversation" component={ConversationScreen} />
       <Stack.Screen
@@ -84,3 +84,13 @@ const HomeStack = () => {
 };
 
 export default HomeStack;
+
+// {
+//   /* <Stack.Screen name="forget" component={ForgotPassword} /> */
+// }
+// {
+//   /* <Stack.Screen name="landing" component={LandingScreen} /> */
+// }
+// {
+//   /* <Stack.Screen name="PhoneValidateOtp" component={PhoneValidateOtp} /> */
+// }

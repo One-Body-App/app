@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
   requestModel: {

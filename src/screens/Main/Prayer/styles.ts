@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
   },
   loyalsty: { width: getWidth(100), backgroundColor: 'red' },
   walltext: {
-    fontSize: getFontSize(2.5),
+    // fontSize: getFontSize(2.5),
     fontFamily: 'Rubik-Medium',
     color: 'white',
     alignSelf: 'center',

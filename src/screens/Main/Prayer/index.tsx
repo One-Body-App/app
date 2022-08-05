@@ -1,37 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Text,
-  View,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  Animated,
-  TextInput,
-  ScrollView,
-  Image,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
-import { Avatar, Provider } from 'react-native-paper';
-import DropDown from 'react-native-paper-dropdown';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import React from 'react';
+import { Text, View, TouchableOpacity, Animated } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Entypo from 'react-native-vector-icons/Entypo';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
 
-import Header from '@/components/Header';
-import Button from '@/components/Button';
-import Modal from 'react-native-modal';
 import { styles } from './styles';
 import LinearGradient from 'react-native-linear-gradient';
 import { SceneMap, TabView } from 'react-native-tab-view';
-import PrayerInputType from '@/components/PrayerInputType';
-import { useDispatch, useSelector } from 'react-redux';
 
-import PrayerSocials from '@/components/PrayerSocials';
-import { setPrayers } from '@/redux//actions/GernalActions';
 import WallComponent from '@/components/WallComponent';
 import PrayersComponent from '@/components/PrayersComponent';
 import TestimoniesComponent from '@/components/TestimoniesComponent';

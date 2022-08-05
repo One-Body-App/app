@@ -135,7 +135,7 @@ export default function Drawerr() {
       }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     >
-      <Drawer.Screen
+      {/* <Drawer.Screen
         name="Home"
         options={{
           headerShown: false,
@@ -144,7 +144,7 @@ export default function Drawerr() {
           drawerActiveTintColor: '#032F3C',
         }}
         component={Bottom}
-      />
+      /> */}
       <Drawer.Screen
         name="Pray"
         options={{
@@ -155,7 +155,7 @@ export default function Drawerr() {
         }}
         component={Prayer}
       />
-      <Drawer.Screen
+      {/* <Drawer.Screen
         name="Notifications"
         options={{
           headerShown: false,
@@ -214,7 +214,7 @@ export default function Drawerr() {
           headerTintColor: '#24BFF0',
         }}
         component={Help}
-      />
+      /> */}
     </Drawer.Navigator>
   );
 }
