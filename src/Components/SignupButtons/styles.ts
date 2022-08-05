@@ -1,0 +1,61 @@
+import { StyleSheet } from 'react-native';
+import { getHeight } from '@/utils/ResponsiveFun';
+import { appColor } from '../../constants';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    height: 50,
+    borderRadius: 10,
+    marginVertical: 10,
+    borderColor: appColor.StatusBarColor,
+  },
+  btnIcon: {
+    width: 24,
+    height: 24,
+    marginHorizontal: 10,
+  },
+  btnTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  buttonList: {
+    marginHorizontal: 20,
+    marginTop: '10%',
+    flex: 1,
+  },
+  footer: {
+    position: 'absolute',
+    width: '100%',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: getHeight(10),
+  },
+  helight: {
+    color: '#126B87',
+    fontWeight: 'bold',
+  },
+  center: {
+    marginTop: getHeight(3),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  text: {
+    color: '#81979E',
+    marginTop: 2,
+    fontFamily: 'Rubik-Medium',
+    underline: { textDecorationLine: 'underline' },
+  },
+  simpleText: {
+    color: '#81979E',
+    marginTop: 2,
+    fontFamily: 'Rubik-Medium',
+  },
+});

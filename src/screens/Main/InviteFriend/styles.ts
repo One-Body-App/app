@@ -1,0 +1,53 @@
+import { StyleSheet } from 'react-native';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'white' },
+  innerContainer: {
+    alignItems: 'center',
+    marginTop: getHeight(5.5),
+    flex: 1,
+  },
+
+  text: {
+    width: '80%',
+    textAlign: 'center',
+    color: '#4F6D77',
+    fontWeight: '500',
+    fontFamily: 'Rubik-Regular',
+  },
+  heading: {
+    fontWeight: '500',
+    fontSize: getFontSize(2.7),
+    margin: 10,
+    color: '#032F3C',
+    letterSpacing: 0.25,
+    fontFamily: 'Rubik-Medium',
+  },
+
+  TextInput: {
+    borderWidth: 1,
+    height: getHeight(6),
+    width: getWidth(80),
+    borderRadius: 5,
+  },
+
+  btn: {
+    backgroundColor: '#E6EAEC',
+    width: getWidth(80),
+    margin: 5,
+    height: getHeight(7.5),
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  btnText: {
+    fontSize: getFontSize(2),
+    marginRight: getWidth(5),
+    color: '#032F3C',
+    fontFamily: 'Rubik-Medium',
+    fontWeight: '500',
+    letterSpacing: 1.25,
+  },
+});
