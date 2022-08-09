@@ -1,33 +1,50 @@
 import { NavigationContainer } from '@react-navigation/native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
 import { useSelector } from 'react-redux';
 import { AppProvider } from '../../app-context';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import auth from '@react-native-firebase/auth';
 
 import AuthStack from './AuthStack';
 import HomeStack from './HomeStack';
 
 const Main = () => {
   const loader = useSelector((state) => state.gernal.loader);
-  const token = useSelector((state) => {
-    console.log(state.auth);
-    return state.auth.userToken;
-  });
-  const user = useSelector((state) => state.auth.userData);
-  console.log(token, 'token');
+  // const token = useSelector((state) => {
+  //   console.log(state.auth);
+  //   return state.auth.userToken;
+  // });
+
+  // const user = useSelector((state) => state.auth.userData);
+
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState();
+
+  // Handle user state changes
+  function onAuthStateChanged(user) {
+    setUser(user);
+    if (initializing) setInitializing(false);
+  }
+
+  useEffect(() => {
+    const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
+    return subscriber; // unsubscribe on unmount
+  }, []);
+
+  // console.log(token, 'token');
   return (
     <NavigationContainer>
       <AppProvider>
-        {loader ? (
+        {loader || initializing ? (
           <View style={styles.loaderbackground}>
             <View>
               <ActivityIndicator size={getHeight(5)} color="#126B87" />
             </View>
           </View>
-        ) : token == null ? (
+        ) : !user ? (
           <AuthStack />
         ) : (
           <HomeStack />

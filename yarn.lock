@@ -1900,9 +1900,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/app@npm:^15.2.0":
-  version: 15.2.0
-  resolution: "@react-native-firebase/app@npm:15.2.0"
+"@react-native-firebase/app@npm:^15.3.0":
+  version: 15.3.0
+  resolution: "@react-native-firebase/app@npm:15.3.0"
   dependencies:
     "@expo/config-plugins": ^4.1.5
     opencollective-postinstall: ^2.0.1
@@ -1910,16 +1910,39 @@ __metadata:
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 33d13c5721d56c21d3331e60fb8f72af4b366b5eca5abc7cbd80439bd422ea2e1d75a987d0ff06e24ea46141dbfc892bcb5abbe94874464144511981efba0ca1
+  checksum: 6de60cc8c1b517264c52e4280829770a92c551b3963b2859262f1a659d8f0269a331ca82039b09b73839fc48984ba49b8d224ad9f7983199503d8fe2e4bfc4b1
   languageName: node
   linkType: hard
 
-"@react-native-firebase/messaging@npm:^15.2.0":
-  version: 15.2.0
-  resolution: "@react-native-firebase/messaging@npm:15.2.0"
+"@react-native-firebase/auth@npm:^15.3.0":
+  version: 15.3.0
+  resolution: "@react-native-firebase/auth@npm:15.3.0"
   peerDependencies:
-    "@react-native-firebase/app": 15.2.0
-  checksum: 5f18a6c49f211cbd6ebcb27df5a55a7bf4a1eba2bc9bf4fe48a4c52602a6954f6e4fb18c7d493aecf791c338dee5c195e990b99bbe56f1cf58670ba960d0b447
+    "@react-native-firebase/app": 15.3.0
+  checksum: 40ba9aeab7492638cf0839e4563151aea6dc913162c1e0ec418d582885103a8e949931ebe4a91dbea1789c92baedc43854c8f82607e28755d74e3f0e5860061b
+  languageName: node
+  linkType: hard
+
+"@react-native-firebase/messaging@npm:^15.3.0":
+  version: 15.3.0
+  resolution: "@react-native-firebase/messaging@npm:15.3.0"
+  peerDependencies:
+    "@react-native-firebase/app": 15.3.0
+  checksum: 96d918cb352d5886aff32127ec8aa1c7f76145d85aa6a5c92eca61fc00a8b70b220c239cde4876802ca3ab9403a000c4eb8865ae40cbf7d0377c020511a808d8
+  languageName: node
+  linkType: hard
+
+"@react-native-google-signin/google-signin@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@react-native-google-signin/google-signin@npm:8.0.0"
+  peerDependencies:
+    "@expo/config-plugins": ^4.1.0
+    react: "*"
+    react-native: "*"
+  peerDependenciesMeta:
+    "@expo/config-plugins":
+      optional: true
+  checksum: ba619fbc3f1739e844d0773073ec4e10121c40de578f02ef61826468d6df276619bdc3a5eaa71af4ca8e4a8bd29ba3c69a392ab697b420d097b692ee86260a53
   languageName: node
   linkType: hard
 
@@ -2609,7 +2632,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-native@npm:^0.69.5":
+"@types/react-native-vector-icons@npm:^6.4.11":
+  version: 6.4.11
+  resolution: "@types/react-native-vector-icons@npm:6.4.11"
+  dependencies:
+    "@types/react": "*"
+    "@types/react-native": "*"
+  checksum: f2ed7fbf255b2588785450804521863361225a425662a7e7bccf2ba678bab78bc3c060181662559b1ff24eb55211a8b4cc192c463157763f18f9bc20ea0bc5a1
+  languageName: node
+  linkType: hard
+
+"@types/react-native@npm:*, @types/react-native@npm:^0.69.5":
   version: 0.69.5
   resolution: "@types/react-native@npm:0.69.5"
   dependencies:
@@ -3225,15 +3258,6 @@ __metadata:
   version: 4.4.3
   resolution: "axe-core@npm:4.4.3"
   checksum: c3ea000d9ace3ba0bc747c8feafc24b0de62a0f7d93021d0f77b19c73fca15341843510f6170da563d51535d6cfb7a46c5fc0ea36170549dbb44b170208450a2
-  languageName: node
-  linkType: hard
-
-"axios@npm:^0.24.0":
-  version: 0.24.0
-  resolution: "axios@npm:0.24.0"
-  dependencies:
-    follow-redirects: ^1.14.4
-  checksum: 468cf496c08a6aadfb7e699bebdac02851e3043d4e7d282350804ea8900e30d368daa6e3cd4ab83b8ddb5a3b1e17a5a21ada13fc9cebd27b74828f47a4236316
   languageName: node
   linkType: hard
 
@@ -5565,7 +5589,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.14.4, follow-redirects@npm:^1.14.9":
+"follow-redirects@npm:^1.14.9":
   version: 1.15.1
   resolution: "follow-redirects@npm:1.15.1"
   peerDependenciesMeta:
@@ -8883,8 +8907,10 @@ __metadata:
     "@react-native-async-storage/async-storage": ^1.15.15
     "@react-native-community/clipboard": ^1.5.1
     "@react-native-community/geolocation": ^2.0.2
-    "@react-native-firebase/app": ^15.2.0
-    "@react-native-firebase/messaging": ^15.2.0
+    "@react-native-firebase/app": ^15.3.0
+    "@react-native-firebase/auth": ^15.3.0
+    "@react-native-firebase/messaging": ^15.3.0
+    "@react-native-google-signin/google-signin": ^8.0.0
     "@react-native-picker/picker": ^2.3.1
     "@react-navigation/bottom-tabs": ^6.2.0
     "@react-navigation/drawer": ^6.3.1
@@ -8898,10 +8924,11 @@ __metadata:
     "@types/jest": ^28.1.6
     "@types/react": ^18.0.15
     "@types/react-native": ^0.69.5
+    "@types/react-native-vector-icons": ^6.4.11
     "@types/react-test-renderer": ^18.0.0
     "@typescript-eslint/eslint-plugin": latest
     "@typescript-eslint/parser": latest
-    axios: ^0.24.0
+    axios: ^0.27.2
     babel-jest: ^26.6.3
     babel-plugin-module-resolver: ^4.1.0
     eslint: ^7.32.0 || ^8.2.0
@@ -8925,6 +8952,7 @@ __metadata:
     react-native-date-picker: ^4.2.0
     react-native-device-info: ^8.4.9
     react-native-fast-image: ^8.5.11
+    react-native-fbsdk-next: ^10.0.0
     react-native-floating-action: ^1.22.0
     react-native-gesture-handler: ^2.3.1
     react-native-gifted-chat: ^1.0.0
@@ -8938,7 +8966,7 @@ __metadata:
     react-native-pager-view: ^5.4.11
     react-native-paper: ^4.11.2
     react-native-paper-dropdown: ^1.0.7
-    react-native-permissions: ^3.3.1
+    react-native-permissions: ^3.6.0
     react-native-popup-menu: ^0.15.12
     react-native-qrcode-svg: ^6.1.2
     react-native-reanimated: ~2.2.0
@@ -9671,6 +9699,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-fbsdk-next@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "react-native-fbsdk-next@npm:10.0.0"
+  dependencies:
+    "@expo/config-plugins": ^4.1.5
+    xml2js: ^0.4.23
+  peerDependencies:
+    react-native: ">=0.63.3"
+  checksum: e34a091fd71cce2564982b0e911cd7db49eee1858810bc4246c6b6123a63c0e25a5a303b5669c31446902824f92360afe80e0a996b38dffe062b3888c35dc063
+  languageName: node
+  linkType: hard
+
 "react-native-floating-action@npm:^1.22.0":
   version: 1.22.0
   resolution: "react-native-floating-action@npm:1.22.0"
@@ -9879,7 +9919,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-permissions@npm:^3.3.1":
+"react-native-permissions@npm:^3.6.0":
   version: 3.6.0
   resolution: "react-native-permissions@npm:3.6.0"
   peerDependencies:
@@ -12505,7 +12545,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xml2js@npm:0.4.23":
+"xml2js@npm:0.4.23, xml2js@npm:^0.4.23":
   version: 0.4.23
   resolution: "xml2js@npm:0.4.23"
   dependencies:

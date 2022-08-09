@@ -8,6 +8,12 @@ $RNFirebaseAsStaticFramework = true
 production = ENV["PRODUCTION"] == "1"
 
 target 'onebody' do
+  permissions_path = '../node_modules/react-native-permissions/ios'
+  pod 'Permission-FaceID', :path => "#{permissions_path}/FaceID"
+  pod 'Permission-LocationWhenInUse', :path => "#{permissions_path}/LocationWhenInUse"
+  pod 'Permission-Notifications', :path => "#{permissions_path}/Notifications"
+  pod 'Permission-PhotoLibraryAddOnly', :path => "#{permissions_path}/PhotoLibraryAddOnly"
+
   config = use_native_modules!
 
   # Flags change depending on the env values.
