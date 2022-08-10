@@ -13,7 +13,7 @@ import { TextInput } from 'react-native-paper';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import { styles } from './styles';
 import Header from '@/components/Header';
 import { profileUpdate } from '@/redux//actions/AuthActions';

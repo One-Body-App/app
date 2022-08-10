@@ -9,7 +9,7 @@ import GoBackIcon from '@/components/GoBackIcon';
 import { signUpRequest } from '@/redux//actions/AuthActions';
 import GradientHeader from '@/components/GradientHeader';
 import validator from '@/utils/validation/validator';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import LinearGradient from 'react-native-linear-gradient';
 import { GernalStyle } from '../../../constants/GernalStyle';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,9 +17,10 @@ import { TextInput } from 'react-native-paper';
 import Button from '@/components/Button';
 import { appColor } from '../../../constants';
 import { styles } from './styles';
+import auth from '@react-native-firebase/auth';
 
 const SignupForm = ({ navigation, route }) => {
-  const AccountType = useSelector((state) => state.gernal.AccountType);
+  const AccountType = useSelector((state) => state.general.accountType);
   const dispatch = useDispatch();
 
   const inputRefs = {
@@ -58,7 +59,29 @@ const SignupForm = ({ navigation, route }) => {
           userName: userName,
           role: AccountType,
         };
-        dispatch(signUpRequest({ data, seterror, go }));
+        auth()
+          .createUserWithEmailAndPassword(email, password)
+          .then(async (user) => {
+            await user.user.sendEmailVerification();
+            // user.user.updatePhoneNumber()
+
+            navigation.navigate('PhoneValidateOtp');
+          })
+          .catch((error) => {
+            if (error.code === 'auth/email-already-in-use') {
+              seterror('That email address is already in use!');
+              console.log('That email address is already in use!');
+            }
+
+            if (error.code === 'auth/invalid-email') {
+              seterror('That email address is invalid!');
+              console.log('That email address is invalid!');
+            }
+
+            console.error(error);
+          });
+
+        // dispatch(signUpRequest({ data, seterror, go }));
       } else {
         seterror('Both Password not match!');
       }
@@ -72,9 +95,7 @@ const SignupForm = ({ navigation, route }) => {
       });
     }
   };
-  const go = () => {
-    navigation.navigate('PhoneValidateOtp');
-  };
+
   const changeHandler = (type, value) => setState({ ...state, [type]: value });
 
   return (
@@ -112,6 +133,8 @@ const SignupForm = ({ navigation, route }) => {
             onSubmitEditing={() => inputRefs.email.current.focus()}
             onChangeText={(userName) => changeHandler('userName', userName.trim())}
             blurOnSubmit={false}
+            keyboardType="default"
+            autoCapitalize="none"
           />
           <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(5) }}>
             {state.userNameError}
@@ -128,6 +151,7 @@ const SignupForm = ({ navigation, route }) => {
             activeOutlineColor={appColor.InstructionColor}
             outlineColor={'#888C93'}
             label={'E-mail'}
+            autoCorrect={false}
             onFocus={() => setState({ ...state, emailError: '' })}
             onBlur={() =>
               validateFields(state.email, 'email', (error) =>
@@ -137,6 +161,7 @@ const SignupForm = ({ navigation, route }) => {
             onSubmitEditing={() => inputRefs.password.current.focus()}
             onChangeText={(email) => changeHandler('email', email.trim())}
             blurOnSubmit={false}
+            autoCapitalize="none"
           />
           <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(5) }}>
             {state.emailError}

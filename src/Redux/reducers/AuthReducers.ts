@@ -1,16 +1,28 @@
-import {ACTIONS} from '../action-types';
+import { AnyAction, Reducer } from 'redux';
+import { ACTIONS } from '../action-types';
+import { UserData } from '../types';
 
-const initialState = {
-  userToken: null,
-  userData: null,
-  errorText: null,
-  otpToken: null,
-  loginErrors: null,
-  firsLounch: true,
-  FcmToken: null,
+type AuthReducer = {
+  userToken: string;
+  userData: UserData | null;
+  errorText: string;
+  otpToken: string;
+  loginErrors: string[];
+  firsrLaunch: boolean;
+  FcmToken: string;
 };
 
-const authReducer = (state = initialState, action) => {
+const initialState: AuthReducer = {
+  userToken: '',
+  userData: null,
+  errorText: '',
+  otpToken: '',
+  loginErrors: [],
+  firsrLaunch: true,
+  FcmToken: '',
+};
+
+const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyAction) => {
   switch (action.type) {
     case ACTIONS.FETCH_LOGIN_DATA:
       console.log('done', action.data);
@@ -55,16 +67,16 @@ const authReducer = (state = initialState, action) => {
     case ACTIONS.FIRST_LUNCH:
       return {
         ...state,
-        firsLounch: action.data,
+        firsrLaunch: action.data,
       };
     case ACTIONS.LOGOUT:
       return {
         ...state,
-        userToken: null,
+        userToken: '',
         userData: null,
         errors: null,
-        otpToken: null,
-        loginErrors: null,
+        otpToken: '',
+        loginErrors: [],
       };
 
     default:

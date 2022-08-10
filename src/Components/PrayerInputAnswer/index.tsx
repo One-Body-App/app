@@ -4,16 +4,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
-import { setLoader, setPrayers, setUserPrayers } from '@/redux/actions/GernalActions';
+import { setLoader, setPrayers, setUserPrayers } from '@/redux/actions/GeneralActions';
 import { styles } from './styles';
 import { ApiCall } from '@/services/api';
 import Toast from 'react-native-simple-toast';
-import { getAllPrayer, getMyPrayer, getTestimonies } from '@/redux/actions/PraerAction';
+import { getAllPrayer, getMyPrayer, getTestimonies } from '@/redux/actions/PrayerAction';
 
 const PrayerInputAnswer = ({ color, id, setIsAnswerd, setCurrentIndex }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
-  const userPrayers = useSelector((state) => state.gernal.userPrayers);
+  const userPrayers = useSelector((state) => state.general.userPrayers);
 
   const [prayer, setPrayer] = useState(null);
   const [error, seterror] = React.useState();

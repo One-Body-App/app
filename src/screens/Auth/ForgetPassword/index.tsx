@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GoBackIcon from '@/components/GoBackIcon';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import { GernalStyle } from '../../../constants/GernalStyle';
 import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';

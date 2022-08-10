@@ -8,7 +8,7 @@ import Button from '@/components/Button';
 import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GernalStyle } from '../../../constants/GernalStyle';
 

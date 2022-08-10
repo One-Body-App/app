@@ -7,7 +7,7 @@ import Header from '@/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/src/Services/api';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { setLoader } from '@/redux/actions/GernalActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 import Button from '@/components/Button';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Logo from '@/src/assets/svg/LogoBlue.svg';

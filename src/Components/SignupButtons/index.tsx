@@ -21,7 +21,7 @@ import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentica
 
 const SignupButtons = () => {
   const navigation = useNavigation();
-  const AccountType = useSelector((state) => state.gernal.AccountType);
+  const AccountType = useSelector((state) => state.general.accountType);
 
   const _responseInfoCallback = (error, result) => {
     if (error) {
@@ -76,6 +76,7 @@ const SignupButtons = () => {
     //   }
     // }
   };
+
   return (
     <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
       <View style={styles.buttonList}>
@@ -88,52 +89,7 @@ const SignupButtons = () => {
             AccountType != null ? signIn() : navigation.navigate('AccountType');
           }}
         />
-        {/* <LoginButton
-          style={{
-            ...styles.buttonContainer,
-            borderWidth: 0,
-          }}
-          onLoginFinished={(error, result) => {
-            if (error) {
-              console.log('login has error: ' + result.error);
-            } else if (result.isCancelled) {
-              console.log('login is cancelled.');
-            } else {
-              AccessToken.getCurrentAccessToken().then((data) => {
-                const infoRequest = new GraphRequest(
-                  '/me?fields=name,picture,email,first_name,last_name',
-                  null,
-                  _responseInfoCallback
-                );
-                // Start the graph request.
-                new GraphRequestManager().addRequest(infoRequest).start();
-              });
-              // AccessToken.getCurrentAccessToken().then(data => {
-              //   console.log(data.accessToken.toString());
-              //   initUser(data.accessToken);
-              // });
-            }
-          }}
-          onLogoutFinished={() => console.log('logout.')}
-        /> */}
-        {/* <Button
-          text={'Sign up with Facebook'}
-          leftIcon={
-            <FontAwesome
-              name="facebook-f"
-              style={{marginRight: getWidth(3)}}
-              size={getFontSize(4)}
-              color={'blue'}
-            />
-          }
-          btnStyle={styles.buttonContainer}
-          btnTextStyle={styles.btnTitle}
-          onPress={() => {
-            AccountType != null
-              ? navigation.navigate('SignupForm')
-              : navigation.navigate('AccountType');
-          }}
-        /> */}
+
         {Platform.OS == 'ios' ? (
           <Button
             text={'Sign up with Apple'}
@@ -175,6 +131,14 @@ const SignupButtons = () => {
               <Text style={styles.text}>Privacy Policy</Text>
             </TouchableOpacity>
           </View>
+
+          <Text style={styles.alreadyAccountContainer}>Already Have an account?</Text>
+          <TouchableOpacity
+            style={{ marginLeft: 5, marginTop: 5, marginBottom: 20 }}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={{ ...styles.helight, textDecorationLine: 'underline' }}>Login</Text>
+          </TouchableOpacity>
         </View>
       </View>
       <Image

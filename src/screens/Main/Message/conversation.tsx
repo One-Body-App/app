@@ -21,13 +21,13 @@ import Header from '@/components/Header';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
-import { getChats, setAllSms } from '@/redux//actions/GernalActions';
+import { getChats, setAllSms } from '@/redux//actions/GeneralActions';
 
 const ConversationScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
   const user = useSelector((state) => state.auth.userData);
-  const messages = useSelector((state) => state.gernal.allSms);
+  const messages = useSelector((state) => state.general.allSms);
 
   const { reciver, reciverId } = route.params;
   console.log('reciver profile image  ', reciver?.role);

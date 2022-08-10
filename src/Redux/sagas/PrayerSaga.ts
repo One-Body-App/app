@@ -2,7 +2,7 @@ import { ApiCall } from '@/services/api';
 import { ACTIONS } from '../action-types';
 import Toast from 'react-native-simple-toast';
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
-import { setLoader, setPrayers, setPrayersLive, setUserPrayers } from '../actions/GernalActions';
+import { setLoader, setPrayers, setPrayersLive, setUserPrayers } from '../actions/GeneralActions';
 
 import {
   setAllCurrentPage,
@@ -14,7 +14,7 @@ import {
   setTestimoniesCurrentPage,
   setTestimoniesTotalPage,
   setTotalPage,
-} from '../actions/PraerAction';
+} from '../actions/PrayerAction';
 
 function* GetMyPrayerRequest(params) {
   try {

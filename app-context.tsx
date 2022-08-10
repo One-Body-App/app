@@ -9,7 +9,7 @@ import React, {
   Dispatch,
 } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getChats, setAllSms } from '@/redux/actions/GernalActions';
+import { getChats, setAllSms } from '@/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { appListner } from '@/services/Notification/notificationServices';
 

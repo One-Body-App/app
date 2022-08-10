@@ -17,7 +17,7 @@ import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProfile } from '@/redux//actions/AuthActions';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';

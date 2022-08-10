@@ -10,7 +10,7 @@ import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { profileUpdate } from '@/redux/actions/AuthActions';
 import ImagePickerModal from '@/components/ImagePickerModal';
-import { setLoader } from '@/redux/actions/GernalActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 import FastImage from 'react-native-fast-image';
 import { GernalStyle } from '../../../constants/GernalStyle';
 import Twitter from '@/assets/svg/Twitter.svg';

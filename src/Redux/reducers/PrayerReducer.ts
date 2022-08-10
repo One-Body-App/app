@@ -1,21 +1,37 @@
-import {ACTIONS} from '../action-types';
+import { AnyAction, Reducer } from 'redux';
+import { ACTIONS } from '../action-types';
 
-const initialState = {
+type PrayerReducer = {
+  MyPrayerCurrentPage: number;
+  MyPrayerTotalPage: number;
+  ALLPrayerCurrentPage: number;
+  ALLPrayerTotalPage: number;
+  TestimoniesPrayerCurrentPage: number;
+  TestimoniesPrayerTotalPage: number;
+  userPrayers: [];
+  prayers: [];
+  Testimonies: [];
+  ALLPrayerLiveCurrentPage: number;
+  ALLPrayerLiveTotalPage: number;
+  prayersLive: [];
+};
+
+const initialState: PrayerReducer = {
   MyPrayerCurrentPage: 1,
   MyPrayerTotalPage: 1,
   ALLPrayerCurrentPage: 1,
   ALLPrayerTotalPage: 1,
-  TestomniesPrayerCurrentPage: 1,
-  TestomniesPrayerTotalPage: 1,
+  TestimoniesPrayerCurrentPage: 1,
+  TestimoniesPrayerTotalPage: 1,
   userPrayers: [],
   prayers: [],
-  Testomnies: [],
+  Testimonies: [],
   ALLPrayerLiveCurrentPage: 1,
   ALLPrayerLiveTotalPage: 1,
   prayersLive: [],
 };
 
-const PrayerReducer = (state = initialState, action) => {
+const prayerReducer: Reducer<PrayerReducer> = (state = initialState, action: AnyAction) => {
   switch (action.type) {
     case ACTIONS.MY_PRAYER_CurrentPage:
       return {
@@ -67,21 +83,21 @@ const PrayerReducer = (state = initialState, action) => {
         prayersLive: action.data,
       };
 
-    case ACTIONS.TESTOMNIES_CurrentPage:
+    case ACTIONS.TESTIMONIES_CurrentPage:
       return {
         ...state,
-        TestomniesPrayerCurrentPage: action.data,
+        TestimoniesPrayerCurrentPage: action.data,
       };
 
-    case ACTIONS.TESTOMNIES_TotalPaga:
+    case ACTIONS.TESTIMONIES_TotalPaga:
       return {
         ...state,
-        TestomniesPrayerTotalPage: action.data,
+        TestimoniesPrayerTotalPage: action.data,
       };
-    case ACTIONS.SET_TESTOMNIES:
+    case ACTIONS.SET_TESTIMONIES:
       return {
         ...state,
-        Testomnies: action.data,
+        Testimonies: action.data,
       };
 
     default:
@@ -89,4 +105,4 @@ const PrayerReducer = (state = initialState, action) => {
   }
 };
 
-export default PrayerReducer;
+export default prayerReducer;

@@ -23,7 +23,7 @@ import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { validateFields } from '@/utils/validation/validate-fields';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 import Toast from 'react-native-simple-toast';
 import GeneralStatusBar from '@/components/GeneralStatusBar';

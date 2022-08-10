@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getProfile } from '@/redux//actions/AuthActions';
 import Toast from 'react-native-simple-toast';
 import { getWidth } from '@/utils/ResponsiveFun';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GernalStyle } from '../../../constants/GernalStyle';
 

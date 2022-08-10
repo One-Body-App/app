@@ -28,7 +28,7 @@ import ZendeskChat from 'react-native-zendesk-chat';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 
-import { setFaqs, setLoader } from '@/redux//actions/GernalActions';
+import { setFaqs, setLoader } from '@/redux//actions/GeneralActions';
 
 const Help = ({ navigation }) => {
   const [sections, setSections] = useState([]);

@@ -6,7 +6,7 @@ import { TextInput } from 'react-native-paper';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { validateFields } from '@/utils/validation/validate-fields';
 import { loginRequest, loginSocialRequest } from '@/redux/actions/AuthActions';
-import { setLoader } from '@/redux/actions/GernalActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 import { GernalStyle } from '../../constants/GernalStyle';
 import { useNavigation } from '@react-navigation/native';

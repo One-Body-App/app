@@ -10,7 +10,7 @@ import {
   setProfile,
   profileUpdate,
 } from '../actions/AuthActions';
-import { setAccountType, setLoader } from '../actions/GernalActions';
+import { setAccountType, setLoader } from '../actions/GeneralActions';
 import { Alert } from 'react-native';
 
 function* loginRequest(params) {

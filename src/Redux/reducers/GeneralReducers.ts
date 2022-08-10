@@ -1,20 +1,30 @@
-import {ACTIONS} from '../action-types';
+import { AnyAction, Reducer } from 'redux';
+import { ACTIONS } from '../action-types';
 
-const initialState = {
-  come_back: null,
-  AccountType: null,
+type GeneralReducers = {
+  comeBack: null;
+  accountType: string | null;
+  loader: boolean;
+  allSms: [];
+  chats: [];
+  faqs: [];
+};
+
+const initialState: GeneralReducers = {
+  comeBack: null,
+  accountType: null,
   loader: false,
   allSms: [],
   chats: [],
   faqs: [],
 };
 
-const GernelReducers = (state = initialState, action) => {
+const generalReducers: Reducer<GeneralReducers> = (state = initialState, action: AnyAction) => {
   switch (action.type) {
     case ACTIONS.COMEBACK:
       return {
         ...state,
-        come_back: action.data,
+        comeBack: action.data,
       };
 
     case ACTIONS.SET_LOADER:
@@ -26,7 +36,7 @@ const GernelReducers = (state = initialState, action) => {
     case ACTIONS.SET_ACCOUNTTYPE:
       return {
         ...state,
-        AccountType: action.data,
+        accountType: action.data,
       };
     case ACTIONS.SET_ALLSMS:
       return {
@@ -49,4 +59,4 @@ const GernelReducers = (state = initialState, action) => {
   }
 };
 
-export default GernelReducers;
+export default generalReducers;

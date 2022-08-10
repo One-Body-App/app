@@ -17,7 +17,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import Geolocation from '@react-native-community/geolocation';
 import { useDispatch } from 'react-redux';
-import { setLoader } from '@/redux/actions/GernalActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const access_token =

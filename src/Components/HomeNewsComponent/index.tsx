@@ -22,7 +22,7 @@ import FastImage from 'react-native-fast-image';
 import { ApiCall } from '@/services/api';
 import { SetAllNews, SetLocalNews } from '@/redux/actions/SocialActions';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoader } from '@/redux/actions/GernalActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 
 const HomeNewsComponent = () => {
   const token = useSelector((state) => state.auth.userToken);

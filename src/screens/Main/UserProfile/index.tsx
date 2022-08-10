@@ -16,7 +16,7 @@ import BlogFlatlist from '@/components/BlogFlatlist';
 import InstagramFlatlist from '@/components/InstagramFlatlist';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ImageModal from 'react-native-image-modal';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 
 const UserProfile = ({ navigation, route }) => {

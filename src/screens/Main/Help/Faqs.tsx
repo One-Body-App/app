@@ -30,7 +30,7 @@ import { useSelector } from 'react-redux';
 import RenderHtml from 'react-native-render-html';
 
 const Faqs = ({ navigation }) => {
-  const faqs = useSelector((state) => state.gernal.faqs);
+  const faqs = useSelector((state) => state.general.faqs);
   const [selectedIndex, setSelectedIndex] = useState(null);
 
   return (

@@ -58,4 +58,9 @@ export const styles = StyleSheet.create({
     marginTop: 2,
     fontFamily: 'Rubik-Medium',
   },
+  alreadyAccountContainer: {
+    alignSelf: 'center',
+    marginTop: 30,
+    flexDirection: 'row',
+  },
 });

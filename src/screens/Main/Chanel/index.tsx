@@ -11,7 +11,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Button from '@/components/Button';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import { getuserGet, setUserIntrest, setUserSubscribe } from '@/redux//actions/UserAction';
 import AddIntrestsModel from '@/components/AddIntrestsModel';
 import SubscribeFlatlist from '@/components/SubscribeFlatlist';
@@ -21,7 +21,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import ImageModal from 'react-native-image-modal';
 
 const Chanel = ({ navigation }) => {
-  const loader = useSelector((state) => state.gernal.loader);
+  const loader = useSelector((state) => state.general.loader);
   const intrest = useSelector((state) => state.user.userInrest);
   const user = useSelector((state) => state.auth.userData);
 

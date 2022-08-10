@@ -5,7 +5,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { setAccountType } from '@/redux//actions/GernalActions';
+import { setAccountType } from '@/redux//actions/GeneralActions';
 import GradientHeader from '@/components/GradientHeader';
 import Organization from '@/assets/svg/Organization.svg';
 import Button from '@/components/Button';
@@ -15,7 +15,7 @@ import GoBackIcon from '@/components/GoBackIcon';
 
 const AccountType = ({ navigation }) => {
   const dispatch = useDispatch();
-  const selected = useSelector((state) => state.gernal.AccountType);
+  const selected = useSelector((state) => state.general.accountType);
 
   return (
     <View style={styles.container}>
@@ -32,6 +32,7 @@ const AccountType = ({ navigation }) => {
           <Button
             text={'Individual'}
             btnStyle={selected == 'individual' ? styles.btnSelected : styles.btn}
+            RightIcon={null}
             leftIcon={
               <FontAwesome
                 name="user"
@@ -50,6 +51,7 @@ const AccountType = ({ navigation }) => {
           />
           <Button
             text={'Organization'}
+            RightIcon={null}
             btnStyle={selected == 'organization' ? styles.btnSelected : styles.btn}
             leftIcon={<Organization style={{ margin: 2 }} />}
             btnTextStyle={styles.btnText}

@@ -19,7 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Header from '@/components/Header';
-import { getChats, setAllSms } from '@/redux//actions/GernalActions';
+import { getChats, setAllSms } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import EmptySms from '@/assets/svg/icon_messages.svg';
 
@@ -41,7 +41,7 @@ const Message = (props) => {
   const dispatch = useDispatch();
   // const [chats, setChat] = useState([]);
   const token = useSelector((state) => state.auth.userToken);
-  const chats = useSelector((state) => state.gernal.chats);
+  const chats = useSelector((state) => state.general.chats);
   const [refreshing, setRefreshing] = useState(false);
 
   const getAllSms = async (reciverId) => {

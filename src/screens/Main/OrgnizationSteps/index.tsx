@@ -25,7 +25,7 @@ import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import MapBox from '@/components/MapBox';
 import { orgprofileUpdate, logout } from '@/redux/actions/AuthActions';
-import { setLoader } from '@/redux/actions/GernalActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 import Modal from 'react-native-modal';
 import validator from '@/utils/validation/validator';
 import { validateFields } from '@/utils/validation/validate-fields';
@@ -37,6 +37,7 @@ import Group134 from '@/assets/svg/Group134.svg';
 import GradinteButton from '@/components/GradinteButton';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { requestUserPermission } from '@/services/Notification/notificationServices';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 const OrgnizationSteps = ({ navigation }) => {
   const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
@@ -216,7 +217,10 @@ const OrgnizationSteps = ({ navigation }) => {
             }}
           />
           <TouchableOpacity
-            onPress={() => dispatch(logout())}
+            onPress={() => {
+              auth().signOut();
+              dispatch(logout());
+            }}
             style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
           >
             <Text style={styles.logouttext}>Log out</Text>

@@ -26,12 +26,12 @@ import HomeSocialComponent from '@/components/HomeSocialComponent';
 import HomeBlogComponent from '@/components/HomeBlogComponent';
 
 import Button from '@/components/Button';
-import { setLoader, setPrayersLive } from '@/redux//actions/GernalActions';
+import { setLoader, setPrayersLive } from '@/redux//actions/GeneralActions';
 import PrayerModel from '@/components/PrayerModel';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import LogoHeader from '@/assets/svg/logo2.svg';
 import { useDispatch, useSelector } from 'react-redux';
-import { getAllPrayerLive } from '@/redux//actions/PraerAction';
+import { getAllPrayerLive } from '@/redux//actions/PrayerAction';
 
 import { ApiCall } from '@/services/api';
 

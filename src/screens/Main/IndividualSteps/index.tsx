@@ -25,7 +25,7 @@ import EvilIcons from 'react-native-vector-icons/EvilIcons';
 // import MonthPicker from 'react-native-month-year-picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { profileUpdate, logout } from '@/redux/actions/AuthActions';
-import { setLoader } from '@/redux/actions/GernalActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 import LinearGradient from 'react-native-linear-gradient';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import moment from 'moment';

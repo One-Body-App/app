@@ -14,7 +14,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { ApiCall } from '@/services/api';
 import validator from '@/utils/validation/validator';
 import { useDispatch } from 'react-redux';
-import { setLoader } from '@/redux/actions/GernalActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 import Toast from 'react-native-simple-toast';
 
 const NewPassword = ({ navigation, route }) => {

@@ -2,7 +2,7 @@ import { ApiCall } from '@/services/api';
 import { ACTIONS } from '../action-types';
 import Toast from 'react-native-simple-toast';
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
-import { setChats, setLoader } from '../actions/GernalActions';
+import { setChats, setLoader } from '../actions/GeneralActions';
 import { setUserAll, setUserIntrest, setUserSubscribe } from '../actions/UserAction';
 
 function* UserGetRequest(params) {

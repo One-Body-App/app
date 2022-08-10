@@ -6,25 +6,20 @@ import { ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { AppProvider } from '../../app-context';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
-import auth from '@react-native-firebase/auth';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 import AuthStack from './AuthStack';
 import HomeStack from './HomeStack';
+import { RootState } from '../Redux/reducers/rootReducer';
 
 const Main = () => {
-  const loader = useSelector((state) => state.gernal.loader);
-  // const token = useSelector((state) => {
-  //   console.log(state.auth);
-  //   return state.auth.userToken;
-  // });
+  const loader = useSelector((state: RootState) => state.general.loader);
+  const userData = useSelector((state: RootState) => state.auth.userData);
 
-  // const user = useSelector((state) => state.auth.userData);
+  const [initializing, setInitializing] = useState<boolean>(true);
+  const [user, setUser] = useState<FirebaseAuthTypes.User | null>();
 
-  const [initializing, setInitializing] = useState(true);
-  const [user, setUser] = useState();
-
-  // Handle user state changes
-  function onAuthStateChanged(user) {
+  function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
     setUser(user);
     if (initializing) setInitializing(false);
   }
@@ -34,7 +29,7 @@ const Main = () => {
     return subscriber; // unsubscribe on unmount
   }, []);
 
-  // console.log(token, 'token');
+  console.log(user, 'user');
   return (
     <NavigationContainer>
       <AppProvider>
@@ -47,7 +42,7 @@ const Main = () => {
         ) : !user ? (
           <AuthStack />
         ) : (
-          <HomeStack />
+          <HomeStack userData={userData} user={user} />
         )}
       </AppProvider>
     </NavigationContainer>

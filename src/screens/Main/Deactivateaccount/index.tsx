@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import Button from '@/components/Button';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GernalStyle } from '../../../constants/GernalStyle';

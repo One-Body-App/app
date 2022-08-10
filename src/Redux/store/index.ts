@@ -9,23 +9,17 @@ import { configureStore } from '@reduxjs/toolkit';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  blacklist: ['gernal', 'prayer'],
+  blacklist: ['general', 'prayer'],
 };
 // creates the store
 /* ------------- Redux Configuration ------------- */
 const middleware = [];
-const enhancers = [];
 
 /* ------------- Saga Middleware ------------- */
 const sagaMiddleware = createSagaMiddleware();
 middleware.push(sagaMiddleware);
 
-/* ------------- Assemble Middleware ------------- */
-enhancers.push(applyMiddleware(...middleware));
-
 const persistedReducer = persistReducer(persistConfig, rootReducer);
-// const composeEnhancers =
-//   (typeof window !== 'undefined' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) || compose;
 
 export const store = configureStore({
   reducer: persistedReducer,

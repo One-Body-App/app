@@ -25,7 +25,7 @@ import Button from '@/components/Button';
 import { styles } from './styles';
 import { async } from 'validate.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoader } from '@/redux//actions/GernalActions';
+import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';

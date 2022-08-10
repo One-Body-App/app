@@ -1,6 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { useSelector } from 'react-redux';
 import ConfirmPassword from '../screens/Auth/ConfirmPassword';
 import NewPassword from '../screens/Auth/NewPassword';
 import InfluencerStepOne from '../screens/BecomeInfluencer/InfluencerStepOne';
@@ -14,12 +13,10 @@ import IndividualSteps from '../screens/Main/IndividualSteps';
 import OrgnizationSteps from '../screens/Main/OrgnizationSteps';
 import PasswordChange from '../screens/Main/PasswordChange';
 import PhoneValidate from '../screens/Main/PhoneValidate';
-import PhoneValidateOtp from '../screens/Main/PhoneValidateOtp';
 import Prayer from '../screens/Main/Prayer';
 import Deactivateaccountconfirm from '../screens/Main/Deactiveaccountconfirm';
 import Deactivateaccountotp from '../screens/Main/Deactivateaccountotp';
 import Setting from '../screens/Main/Setting';
-import LandingScreen from '../screens/questionnaireScreens/home';
 import Drawerr from './Drawerr';
 import Notificationandemail from '../screens/Main/Notificationandemail';
 import ConversationScreen from '../screens/Main/Message/conversation';
@@ -29,17 +26,23 @@ import AddPhoneNumber from '../screens/Main/AddPhoneNumber';
 import UserProfile from '../screens/Main/UserProfile';
 import BlogView from '../screens/Main/BlogView';
 import Faqs from '../screens/Main/Help/Faqs';
+import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { UserData } from '../Redux/types';
 
 const Stack = createNativeStackNavigator();
-const HomeStack = () => {
-  const user = useSelector((state) => state.auth.userData);
-  console.log('userrrrr', user);
+const HomeStack = ({
+  user,
+  userData,
+}: {
+  user: FirebaseAuthTypes.User;
+  userData: UserData | null;
+}) => {
   return (
     <Stack.Navigator
       initialRouteName={
-        user?.isProfileCompleted
+        userData?.isProfileCompleted
           ? 'loading'
-          : user?.role == 'individual'
+          : userData?.role == 'individual'
           ? 'IndividualSteps'
           : 'OrgnizationSteps'
       }
@@ -84,13 +87,3 @@ const HomeStack = () => {
 };
 
 export default HomeStack;
-
-// {
-//   /* <Stack.Screen name="forget" component={ForgotPassword} /> */
-// }
-// {
-//   /* <Stack.Screen name="landing" component={LandingScreen} /> */
-// }
-// {
-//   /* <Stack.Screen name="PhoneValidateOtp" component={PhoneValidateOtp} /> */
-// }

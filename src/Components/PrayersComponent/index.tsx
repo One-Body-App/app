@@ -14,7 +14,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { setPrayers, setUserPrayers } from '@/redux/actions/GernalActions';
+import { setPrayers, setUserPrayers } from '@/redux/actions/GeneralActions';
 import Pray from '@/assets/svg/Pray.svg';
 import moment from 'moment';
 import { ApiCall } from '@/services/api';
@@ -24,7 +24,7 @@ import PrayerInputTypeEdit from '../PrayerInputTypeEdit';
 import PrayerInputAnswer from '../PrayerInputAnswer';
 import Button from '../Button';
 import FastImage from 'react-native-fast-image';
-import { getAllPrayer, getMyPrayer } from '@/redux/actions/PraerAction';
+import { getAllPrayer, getMyPrayer } from '@/redux/actions/PrayerAction';
 import { useNavigation } from '@react-navigation/native';
 
 const PrayersComponent = () => {

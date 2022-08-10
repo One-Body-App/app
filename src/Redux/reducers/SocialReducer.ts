@@ -1,6 +1,16 @@
-import {ACTIONS} from '../action-types';
+import { AnyAction, Reducer } from 'redux';
+import { ACTIONS } from '../action-types';
 
-const initialState = {
+type SocialReducer = {
+  SocialPost: any[];
+  AllBlog: any[];
+  TodayNews: any[];
+  AllNews: any[];
+  LocalNews: any[];
+  RecentBlog: any[];
+};
+
+const initialState: SocialReducer = {
   SocialPost: [],
   AllBlog: [],
   TodayNews: [],
@@ -9,7 +19,7 @@ const initialState = {
   RecentBlog: [],
 };
 
-const SocialReducer = (state = initialState, action) => {
+const socialReducer: Reducer<SocialReducer> = (state = initialState, action: AnyAction) => {
   switch (action.type) {
     case ACTIONS.SET_SOCIAL:
       return {
@@ -47,4 +57,4 @@ const SocialReducer = (state = initialState, action) => {
   }
 };
 
-export default SocialReducer;
+export default socialReducer;

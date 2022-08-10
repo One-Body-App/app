@@ -4,18 +4,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
-import { setLoader, setPrayers } from '@/redux/actions/GernalActions';
+import { setLoader, setPrayers } from '@/redux/actions/GeneralActions';
 import { styles } from './styles';
 import { ApiCall } from '@/services/api';
 import Toast from 'react-native-simple-toast';
-import { getAllPrayer, getMyPrayer, getTestimonies } from '@/redux/actions/PraerAction';
+import { getAllPrayer, getMyPrayer, getTestimonies } from '@/redux/actions/PrayerAction';
 import Send from '@/assets/svg/Send.svg';
 
 const PrayerInputHome = ({ color }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
   const user = useSelector((state) => state.auth.userData);
-  const prayers = useSelector((state) => state.gernal.prayers);
+  const prayers = useSelector((state) => state.general.prayers);
   const [prayerTypeShow, setPrayerTypeShow] = useState(false);
   const [payerType, setPrayerType] = useState(null);
   const [prayer, setPrayer] = useState('');

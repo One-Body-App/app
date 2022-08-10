@@ -1,14 +1,19 @@
-import {ACTIONS} from '../action-types';
+import { AnyAction, Reducer } from 'redux';
+import { ACTIONS } from '../action-types';
 
-const initialState = {
-  
-  userInrest: [],
-  userSubscribes: [],
-  allUser:[],
- 
+type UserReducers = {
+  userInrest: [];
+  userSubscribes: [];
+  allUser: [];
 };
 
-const UserReducers = (state = initialState, action) => {
+const initialState: UserReducers = {
+  userInrest: [],
+  userSubscribes: [],
+  allUser: [],
+};
+
+const userReducers: Reducer<UserReducers> = (state = initialState, action: AnyAction) => {
   switch (action.type) {
     case ACTIONS.SET_User_INTREST:
       return {
@@ -22,15 +27,15 @@ const UserReducers = (state = initialState, action) => {
         userSubscribes: action.data,
       };
 
-      case ACTIONS.Set_ALLUSER:
-        return {
-          ...state,
-          allUser: action.data,
-        };
-   
+    case ACTIONS.Set_ALLUSER:
+      return {
+        ...state,
+        allUser: action.data,
+      };
+
     default:
       return state;
   }
 };
 
-export default UserReducers;
+export default userReducers;
