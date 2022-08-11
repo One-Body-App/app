@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 
 const Deactivateaccount = ({ navigation }) => {
   const [reason, setReason] = useState(null);
@@ -145,11 +145,11 @@ const Deactivateaccount = ({ navigation }) => {
           <Button
             text={'DEACTIVATE ACCOUNT'}
             btnStyle={{
-              ...GernalStyle.btn,
+              ...GeneralStyle.btn,
               width: getWidth(85),
               backgroundColor: 'red',
             }}
-            btnTextStyle={GernalStyle.btnText}
+            btnTextStyle={GeneralStyle.btnText}
             onPress={() => sendOtp()}
           />
           <Button

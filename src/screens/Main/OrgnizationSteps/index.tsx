@@ -32,7 +32,7 @@ import { validateFields } from '@/utils/validation/validate-fields';
 import LinearGradient from 'react-native-linear-gradient';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import { GernalStyle } from '@/constants/GernalStyle';
+import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
 import GradinteButton from '@/components/GradinteButton';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -206,12 +206,12 @@ const OrgnizationSteps = ({ navigation }) => {
           <GradinteButton
             text={'LET’S GET STARTED'}
             btnStyle={{
-              ...GernalStyle.btn,
+              ...GeneralStyle.btn,
               marginTop: getHeight(4),
               height: getHeight(7.5),
               width: getWidth(78),
             }}
-            btnTextStyle={GernalStyle.btnText}
+            btnTextStyle={GeneralStyle.btnText}
             onPress={() => {
               gonext();
             }}
@@ -296,7 +296,7 @@ const OrgnizationSteps = ({ navigation }) => {
           <Text style={styles.text}>Where is your Organization located?</Text>
           <View>
             <TextInput
-              style={{ ...GernalStyle.input, width: getWidth(80) }}
+              style={{ ...GeneralStyle.input, width: getWidth(80) }}
               theme={{ roundness: 10 }}
               ref={inputRefs.companyName}
               value={state.companyName}
@@ -314,12 +314,12 @@ const OrgnizationSteps = ({ navigation }) => {
               onChangeText={(companyName) => changeHandler('companyName', companyName.trim())}
               blurOnSubmit={false}
             />
-            <Text style={{ ...GernalStyle.InputError, marginLeft: 10 }}>
+            <Text style={{ ...GeneralStyle.InputError, marginLeft: 10 }}>
               {state.companyNameError}
             </Text>
 
             <TextInput
-              style={{ ...GernalStyle.input, width: getWidth(80) }}
+              style={{ ...GeneralStyle.input, width: getWidth(80) }}
               theme={{ roundness: 10 }}
               ref={inputRefs.location_label}
               returnKeyType={'done'}
@@ -333,7 +333,7 @@ const OrgnizationSteps = ({ navigation }) => {
               placeholderTextColor={'black'}
               onSubmitEditing={() => gonext()}
             />
-            <Text style={{ ...GernalStyle.InputError, marginLeft: 10 }}>
+            <Text style={{ ...GeneralStyle.InputError, marginLeft: 10 }}>
               {state.location_labelError}
             </Text>
 
@@ -376,7 +376,7 @@ const OrgnizationSteps = ({ navigation }) => {
 
             <View>
               <TextInput
-                style={{ ...GernalStyle.input, width: getWidth(80) }}
+                style={{ ...GeneralStyle.input, width: getWidth(80) }}
                 theme={{ roundness: 10 }}
                 ref={inputRefs.orgfullName}
                 value={state.orgfullName}
@@ -394,12 +394,12 @@ const OrgnizationSteps = ({ navigation }) => {
                 onChangeText={(orgfullName) => changeHandler('orgfullName', orgfullName)}
                 blurOnSubmit={false}
               />
-              <Text style={{ ...GernalStyle.InputError, marginLeft: 25 }}>
+              <Text style={{ ...GeneralStyle.InputError, marginLeft: 25 }}>
                 {state.orgfullNameError}
               </Text>
 
               <TextInput
-                style={{ ...GernalStyle.input, width: getWidth(80) }}
+                style={{ ...GeneralStyle.input, width: getWidth(80) }}
                 theme={{ roundness: 10 }}
                 mode="outlined"
                 ref={inputRefs.orgEmail}
@@ -417,12 +417,12 @@ const OrgnizationSteps = ({ navigation }) => {
                 onChangeText={(orgEmail) => changeHandler('orgEmail', orgEmail.trim())}
                 blurOnSubmit={false}
               />
-              <Text style={{ ...GernalStyle.InputError, marginLeft: 25 }}>
+              <Text style={{ ...GeneralStyle.InputError, marginLeft: 25 }}>
                 {state.orgEmailError}
               </Text>
 
               <TextInput
-                style={{ ...GernalStyle.input, width: getWidth(80) }}
+                style={{ ...GeneralStyle.input, width: getWidth(80) }}
                 theme={{ roundness: 10 }}
                 ref={inputRefs.orgPhoneNo}
                 value={state.orgPhoneNo}
@@ -441,7 +441,7 @@ const OrgnizationSteps = ({ navigation }) => {
                 onChangeText={(orgPhoneNo) => changeHandler('orgPhoneNo', orgPhoneNo)}
                 blurOnSubmit={false}
               />
-              <Text style={{ ...GernalStyle.InputError, marginLeft: 25 }}>
+              <Text style={{ ...GeneralStyle.InputError, marginLeft: 25 }}>
                 {state.orgPhoneNoError}
               </Text>
             </View>
@@ -486,7 +486,7 @@ const OrgnizationSteps = ({ navigation }) => {
           </Text>
 
           <TextInput
-            style={{ ...GernalStyle.input, width: getWidth(80) }}
+            style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
             left={
               <TextInput.Icon
@@ -565,7 +565,7 @@ const OrgnizationSteps = ({ navigation }) => {
           </Text>
 
           <TextInput
-            style={{ ...GernalStyle.input, width: getWidth(80) }}
+            style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
             left={
               <TextInput.Icon

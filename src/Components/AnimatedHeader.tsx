@@ -19,7 +19,7 @@ import { getuserAll, getuserGet, setUserIntrest } from '@/redux/actions/UserActi
 import { ApiCall } from '@/services/api';
 import AddIntrestsModel from './AddIntrestsModel';
 import Button from './Button';
-import { GernalStyle } from '@/constants/GernalStyle';
+import { GeneralStyle } from '@/constants/GeneralStyle';
 import { useNavigation } from '@react-navigation/native';
 
 const AnimatedHeader = ({
@@ -106,7 +106,7 @@ const AnimatedHeader = ({
         <Animated.View style={{ ...styles.secview, opacity: opacity3 }}>
           <View style={styles.inputview}>
             <TextInput
-              style={{ ...GernalStyle.input }}
+              style={{ ...GeneralStyle.input }}
               mode="outlined"
               left={
                 <TextInput.Icon

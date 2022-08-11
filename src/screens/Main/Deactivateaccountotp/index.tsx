@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 
 const Deactivateaccountotp = ({ navigation, route }) => {
   const { reason } = route.params;
@@ -91,8 +91,8 @@ const Deactivateaccountotp = ({ navigation, route }) => {
         ) : null}
         <Button
           text={'CONFIRM CODE'}
-          btnStyle={GernalStyle.btn}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={GeneralStyle.btn}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => checkOtp(code)}
         />
         <Text

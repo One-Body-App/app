@@ -11,7 +11,7 @@ import GradientHeader from '@/components/GradientHeader';
 import validator from '@/utils/validation/validator';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import LinearGradient from 'react-native-linear-gradient';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { useDispatch, useSelector } from 'react-redux';
 import { TextInput } from 'react-native-paper';
 import Button from '@/components/Button';
@@ -115,7 +115,7 @@ const SignupForm = ({ navigation, route }) => {
       <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
         <View style={styles.align}>
           <TextInput
-            style={GernalStyle.input}
+            style={GeneralStyle.input}
             theme={{ roundness: 10 }}
             ref={inputRefs.userName}
             value={state.userName}
@@ -136,12 +136,12 @@ const SignupForm = ({ navigation, route }) => {
             keyboardType="default"
             autoCapitalize="none"
           />
-          <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(5) }}>
+          <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
             {state.userNameError}
           </Text>
 
           <TextInput
-            style={GernalStyle.input}
+            style={GeneralStyle.input}
             theme={{ roundness: 10 }}
             ref={inputRefs.email}
             value={state.email}
@@ -163,7 +163,7 @@ const SignupForm = ({ navigation, route }) => {
             blurOnSubmit={false}
             autoCapitalize="none"
           />
-          <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(5) }}>
+          <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
             {state.emailError}
           </Text>
 
@@ -194,7 +194,7 @@ const SignupForm = ({ navigation, route }) => {
                 )}
               />
             }
-            style={GernalStyle.input}
+            style={GeneralStyle.input}
             onFocus={() => setState({ ...state, passwordError: '' })}
             onBlur={() =>
               validateFields(state.password, 'password', (error) =>
@@ -205,7 +205,7 @@ const SignupForm = ({ navigation, route }) => {
             onChangeText={(password) => changeHandler('password', password)}
             blurOnSubmit={false}
           />
-          <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(5) }}>
+          <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
             {state.passwordError}
           </Text>
 
@@ -236,7 +236,7 @@ const SignupForm = ({ navigation, route }) => {
                 )}
               />
             }
-            style={GernalStyle.input}
+            style={GeneralStyle.input}
             onFocus={() => setState({ ...state, cPasswordError: '' })}
             onBlur={() =>
               validateFields(state.cPassword, 'cPassword', (error) =>
@@ -247,15 +247,15 @@ const SignupForm = ({ navigation, route }) => {
             onChangeText={(cPassword) => changeHandler('cPassword', cPassword)}
             blurOnSubmit={false}
           />
-          <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(5) }}>
+          <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
             {state.cPasswordError}
           </Text>
 
           <Button
             text={'SIGN UP'}
             onPress={() => signUpUser()}
-            btnTextStyle={GernalStyle.btnText}
-            btnStyle={GernalStyle.btn}
+            btnTextStyle={GeneralStyle.btnText}
+            btnStyle={GeneralStyle.btn}
           />
           {error != null ? (
             <View style={styles.singerrorview1}>

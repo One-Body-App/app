@@ -30,7 +30,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import moment from 'moment';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import { GernalStyle } from '@/constants/GernalStyle';
+import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
 import GradinteButton from '@/components/GradinteButton';
 import { requestUserPermission } from '@/services/Notification/notificationServices';
@@ -201,12 +201,12 @@ const IndividualSteps = ({ navigation }) => {
           <GradinteButton
             text={'LET’S GET STARTED'}
             btnStyle={{
-              ...GernalStyle.btn,
+              ...GeneralStyle.btn,
               marginTop: getHeight(4),
               height: getHeight(7),
               width: getWidth(80),
             }}
-            btnTextStyle={GernalStyle.btnText}
+            btnTextStyle={GeneralStyle.btnText}
             onPress={() => {
               gonext();
             }}
@@ -379,7 +379,7 @@ const IndividualSteps = ({ navigation }) => {
               mode="outlined"
               label="Date"
               value={moment(date).format('YYYY-MM')}
-              style={{ ...GernalStyle.input, width: getWidth(80) }}
+              style={{ ...GeneralStyle.input, width: getWidth(80) }}
               activeOutlineColor={'#5B7279'}
               theme={{ roundness: 10 }}
               showSoftInputOnFocus={false}
@@ -416,7 +416,7 @@ const IndividualSteps = ({ navigation }) => {
           <Text style={{ ...styles.heading, width: '100%' }}>Where are you located?</Text>
 
           <TextInput
-            style={{ ...GernalStyle.input, width: getWidth(80) }}
+            style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
             value={location_label}
             theme={{ roundness: 10 }}
@@ -465,7 +465,7 @@ const IndividualSteps = ({ navigation }) => {
           </Text>
 
           <TextInput
-            style={{ ...GernalStyle.input, width: getWidth(80) }}
+            style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
             left={
               <TextInput.Icon
@@ -544,7 +544,7 @@ const IndividualSteps = ({ navigation }) => {
           </Text>
 
           <TextInput
-            style={{ ...GernalStyle.input, width: getWidth(80) }}
+            style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
             left={
               <TextInput.Icon

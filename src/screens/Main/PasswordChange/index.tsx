@@ -27,7 +27,7 @@ import { setLoader } from '@/redux//actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 import Toast from 'react-native-simple-toast';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 
 const PasswordChange = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -132,7 +132,7 @@ const PasswordChange = ({ navigation }) => {
             />
           }
           // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-          style={GernalStyle.input}
+          style={GeneralStyle.input}
           onFocus={() => setState({ ...state, passwordError: '' })}
           onBlur={() =>
             validateFields(state.password, 'password', (error) =>
@@ -143,7 +143,7 @@ const PasswordChange = ({ navigation }) => {
           onChangeText={(password) => changeHandler('password', password.trim())}
           blurOnSubmit={false}
         />
-        <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(9) }}>
+        <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(9) }}>
           {state.passwordError}
         </Text>
 
@@ -174,7 +174,7 @@ const PasswordChange = ({ navigation }) => {
             />
           }
           // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-          style={GernalStyle.input}
+          style={GeneralStyle.input}
           onFocus={() => setState({ ...state, passwordErrorN: '' })}
           onBlur={() =>
             validateFields(state.passwordN, 'passwordN', (error) =>
@@ -185,7 +185,7 @@ const PasswordChange = ({ navigation }) => {
           onChangeText={(passwordN) => changeHandler('passwordN', passwordN.trim())}
           blurOnSubmit={false}
         />
-        <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(9) }}>
+        <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(9) }}>
           {state.passwordErrorN}
         </Text>
 
@@ -212,7 +212,7 @@ const PasswordChange = ({ navigation }) => {
             />
           }
           // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-          style={GernalStyle.input}
+          style={GeneralStyle.input}
           onFocus={() => setState({ ...state, passwordErrorC: '' })}
           onBlur={() =>
             validateFields(state.passwordC, 'passwordC', (error) =>
@@ -223,7 +223,7 @@ const PasswordChange = ({ navigation }) => {
           onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
           blurOnSubmit={false}
         />
-        <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(9) }}>
+        <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(9) }}>
           {state.passwordErrorC}
         </Text>
 
@@ -235,8 +235,8 @@ const PasswordChange = ({ navigation }) => {
 
         <Button
           text={'SAVE'}
-          btnStyle={{ ...GernalStyle.btn, marginTop: getHeight(4) }}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={{ ...GeneralStyle.btn, marginTop: getHeight(4) }}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             PasswordUpdate();
           }}

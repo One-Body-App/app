@@ -22,7 +22,7 @@ import parse from 'rss-to-json';
 import { getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';
 import SubscribeFlatlist from '../SubscribeFlatlist';
 import Button from '../Button';
-import { GernalStyle } from '../../constants/GernalStyle';
+import { GeneralStyle } from '../../constants/GeneralStyle';
 import { color } from 'react-native-reanimated';
 import SocialFlatlist from '../SocialFlatlist';
 import { useNavigation } from '@react-navigation/native';
@@ -130,7 +130,7 @@ const HomeAllComponent = () => {
             </TouchableOpacity> */}
             <Button
               btnStyle={{
-                ...GernalStyle.btn,
+                ...GeneralStyle.btn,
                 backgroundColor: '#f6f6f6',
                 flexDirection: 'row',
               }}
@@ -139,11 +139,11 @@ const HomeAllComponent = () => {
               btnTextStyle={{ color: '#032F3C' }}
               onPress={() => console.log('press')}
             />
-            <TouchableOpacity style={{ ...GernalStyle.btn, backgroundColor: '#f6f6f6' }}>
+            <TouchableOpacity style={{ ...GeneralStyle.btn, backgroundColor: '#f6f6f6' }}>
               <Text style={{ color: '#032F3C' }}>Unsubscribe</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ ...GernalStyle.btn, backgroundColor: '#e6eaec' }}>
-              <Text style={{ ...GernalStyle.btnText, color: '#032f3c' }}>CLOSE</Text>
+            <TouchableOpacity style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}>
+              <Text style={{ ...GeneralStyle.btnText, color: '#032f3c' }}>CLOSE</Text>
             </TouchableOpacity>
           </View>
         </View>

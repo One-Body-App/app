@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GoBackIcon from '@/components/GoBackIcon';
 import { setLoader } from '@/redux//actions/GeneralActions';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { ApiCall } from '@/services/api';
@@ -66,7 +66,7 @@ const ForgotPassword = ({ navigation }) => {
         </View>
 
         <TextInput
-          style={{ ...GernalStyle.input, marginTop: getHeight(3) }}
+          style={{ ...GeneralStyle.input, marginTop: getHeight(3) }}
           theme={{ roundness: 10 }}
           value={email}
           error={emailError}
@@ -85,8 +85,8 @@ const ForgotPassword = ({ navigation }) => {
         ) : null}
         <Button
           text={'SEND CODE'}
-          btnStyle={{ ...GernalStyle.btn, marginTop: getHeight(5) }}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={{ ...GeneralStyle.btn, marginTop: getHeight(5) }}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => forget()}
         />
         <GoBackIcon color={'#4F6D77'} />

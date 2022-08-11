@@ -1,4 +1,4 @@
-import {fork, all} from 'redux-saga/effects';
+import { fork, all } from 'redux-saga/effects';
 import {
   GetUserProfileSaga,
   loginSaga,
@@ -8,6 +8,7 @@ import {
   UpdateOrgProfileSaga,
   UpdatePasswordSaga,
   UpdateProfileSaga,
+  GetProfileSaga,
 } from './AuthSaga';
 import {
   GetAllPrayerLiveSaga,
@@ -15,7 +16,7 @@ import {
   GetMyPrayerSaga,
   GetTestomniesPrayerSaga,
 } from './PrayerSaga';
-import {GetAllUserSaga, GetChatSaga, UserGetSaga} from './UserSaga';
+import { GetAllUserSaga, GetChatSaga, UserGetSaga } from './UserSaga';
 
 export function* rootSaga() {
   yield all([
@@ -34,5 +35,6 @@ export function* rootSaga() {
     GetTestomniesPrayerSaga(),
     GetAllPrayerLiveSaga(),
     GetChatSaga(),
+    GetProfileSaga(),
   ]);
 }

@@ -124,5 +124,5 @@ function* GetTestomniesPrayerRequest(params) {
   }
 }
 export function* GetTestomniesPrayerSaga() {
-  yield takeLatest(ACTIONS.GET_TESTOMNIES, GetTestomniesPrayerRequest);
+  yield takeLatest(ACTIONS.GET_TESTIMONIES, GetTestomniesPrayerRequest);
 }

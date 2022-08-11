@@ -23,7 +23,7 @@ import { styles } from './styles';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
@@ -250,8 +250,8 @@ const InfluencerStepTwo = ({ navigation }) => {
             </View>
             <Button
               text={'DONE'}
-              btnStyle={{ ...GernalStyle.btn, width: getWidth(80) }}
-              btnTextStyle={GernalStyle.btnText}
+              btnStyle={{ ...GeneralStyle.btn, width: getWidth(80) }}
+              btnTextStyle={GeneralStyle.btnText}
               onPress={() => {
                 setModalVisible(false);
                 const {
@@ -328,7 +328,7 @@ const InfluencerStepTwo = ({ navigation }) => {
             </Text>
 
             <TextInput
-              style={GernalStyle.input}
+              style={GeneralStyle.input}
               ref={inputRefs.twitterUsername}
               value={state.twitterUsername}
               returnKeyType={'next'}
@@ -349,9 +349,9 @@ const InfluencerStepTwo = ({ navigation }) => {
               }
               blurOnSubmit={false}
             />
-            <Text style={GernalStyle.InputError}>{state.twitterUsernameError}</Text>
+            <Text style={GeneralStyle.InputError}>{state.twitterUsernameError}</Text>
             <TextInput
-              style={GernalStyle.input}
+              style={GeneralStyle.input}
               ref={inputRefs.twitterHandler}
               value={state.twitterHandler}
               returnKeyType={'next'}
@@ -372,10 +372,10 @@ const InfluencerStepTwo = ({ navigation }) => {
               }
               blurOnSubmit={false}
             />
-            <Text style={GernalStyle.InputError}>{state.twitterHandlerError}</Text>
+            <Text style={GeneralStyle.InputError}>{state.twitterHandlerError}</Text>
 
             <TextInput
-              style={GernalStyle.input}
+              style={GeneralStyle.input}
               ref={inputRefs.twitterTitle}
               value={state.twitterTitle}
               returnKeyType={'next'}
@@ -394,7 +394,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               onChangeText={(twitterTitle) => changeHandler('twitterTitle', twitterTitle.trim())}
               blurOnSubmit={false}
             />
-            <Text style={GernalStyle.InputError}>{state.twitterTitleError}</Text>
+            <Text style={GeneralStyle.InputError}>{state.twitterTitleError}</Text>
             <Text style={styles.twetertext}>Add twitter handle</Text>
 
             <Text
@@ -410,7 +410,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               <Ionicons name="logo-instagram" size={15} color={'#032F3C'} /> Instagram handle
             </Text>
             <TextInput
-              style={GernalStyle.input}
+              style={GeneralStyle.input}
               ref={inputRefs.instagramUsername}
               value={state.instagramUsername}
               returnKeyType={'next'}
@@ -431,9 +431,9 @@ const InfluencerStepTwo = ({ navigation }) => {
               }
               blurOnSubmit={false}
             />
-            <Text style={GernalStyle.InputError}>{state.instagramUsernameError}</Text>
+            <Text style={GeneralStyle.InputError}>{state.instagramUsernameError}</Text>
             <TextInput
-              style={GernalStyle.input}
+              style={GeneralStyle.input}
               ref={inputRefs.instagramHandler}
               value={state.instagramHandler}
               returnKeyType={'next'}
@@ -454,10 +454,10 @@ const InfluencerStepTwo = ({ navigation }) => {
               }
               blurOnSubmit={false}
             />
-            <Text style={GernalStyle.InputError}>{state.instagramHandlerError}</Text>
+            <Text style={GeneralStyle.InputError}>{state.instagramHandlerError}</Text>
 
             <TextInput
-              style={GernalStyle.input}
+              style={GeneralStyle.input}
               ref={inputRefs.instagramTitle}
               value={state.instagramTitle}
               returnKeyType={'next'}
@@ -478,12 +478,12 @@ const InfluencerStepTwo = ({ navigation }) => {
               }
               blurOnSubmit={false}
             />
-            <Text style={GernalStyle.InputError}>{state.instagramTitleError}</Text>
+            <Text style={GeneralStyle.InputError}>{state.instagramTitleError}</Text>
             <Text style={styles.twetertext}>Add instagram handle</Text>
             <Text style={{ color: '#4F6D77', fontSize: 17, fontWeight: '500' }}>Comments</Text>
 
             <TextInput
-              style={{ ...GernalStyle.input, height: getHeight(12) }}
+              style={{ ...GeneralStyle.input, height: getHeight(12) }}
               ref={inputRefs.comments}
               multiline={true}
               numberOfLines={5}
@@ -504,7 +504,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               onChangeText={(comments) => changeHandler('comments', comments.trim())}
               blurOnSubmit={false}
             />
-            <Text style={GernalStyle.InputError}>{state.commentsError}</Text>
+            <Text style={GeneralStyle.InputError}>{state.commentsError}</Text>
           </View>
           <View style={{ height: getHeight(10) }} />
         </KeyboardAwareScrollView>

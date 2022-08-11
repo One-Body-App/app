@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 import { appColor, COLORS, THEME } from '../../constants';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import { GernalStyle } from '../../constants/GernalStyle';
+import { GeneralStyle } from '../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -119,7 +119,7 @@ const NewPassword = ({ navigation, route }) => {
               />
             }
             // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-            style={GernalStyle.input}
+            style={GeneralStyle.input}
             placeholder="New Password"
             onFocus={() => setState({ ...state, passwordErrorN: '' })}
             onBlur={() =>
@@ -131,7 +131,7 @@ const NewPassword = ({ navigation, route }) => {
             onChangeText={(passwordN) => changeHandler('passwordN', passwordN.trim())}
             blurOnSubmit={false}
           />
-          <Text style={{ ...GernalStyle.InputError, marginLeft: 0 }}>{state.passwordErrorN}</Text>
+          <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>{state.passwordErrorN}</Text>
 
           <TextInput
             theme={{ roundness: 10 }}
@@ -156,7 +156,7 @@ const NewPassword = ({ navigation, route }) => {
               />
             }
             // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-            style={GernalStyle.input}
+            style={GeneralStyle.input}
             placeholder="Confirm Password"
             onFocus={() => setState({ ...state, passwordErrorC: '' })}
             onBlur={() =>
@@ -168,12 +168,12 @@ const NewPassword = ({ navigation, route }) => {
             onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
             blurOnSubmit={false}
           />
-          <Text style={{ ...GernalStyle.InputError, marginLeft: 0 }}>{state.passwordErrorC}</Text>
+          <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>{state.passwordErrorC}</Text>
         </View>
         <Button
           text={'CHANGE PASSWORD'}
-          btnStyle={GernalStyle.btn}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={GeneralStyle.btn}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             PasswordUpdate();
           }}

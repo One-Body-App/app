@@ -12,7 +12,7 @@ import { profileUpdate } from '@/redux/actions/AuthActions';
 import ImagePickerModal from '@/components/ImagePickerModal';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import FastImage from 'react-native-fast-image';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Blog from '@/assets/svg/Blog.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
@@ -322,12 +322,12 @@ const EditProfile = ({ navigation }) => {
                     dispatch(profileUpdate({ data, token, role: 'individual', go }));
                   }}
                   btnStyle={{
-                    ...GernalStyle.btn,
+                    ...GeneralStyle.btn,
                     height: getHeight(7),
                     width: getWidth(80),
                     backgroundColor: '#0C5C75',
                   }}
-                  btnTextStyle={GernalStyle.btnText}
+                  btnTextStyle={GeneralStyle.btnText}
                 />
               ) : (
                 <GradinteButton
@@ -343,23 +343,23 @@ const EditProfile = ({ navigation }) => {
                     dispatch(profileUpdate({ data, token, role: 'organization', go }));
                   }}
                   btnStyle={{
-                    ...GernalStyle.btn,
+                    ...GeneralStyle.btn,
                     height: getHeight(7),
                     width: getWidth(80),
                     backgroundColor: '#0C5C75',
                   }}
-                  btnTextStyle={GernalStyle.btnText}
+                  btnTextStyle={GeneralStyle.btnText}
                 />
               )}
               <Button
                 text={'Cancel'}
                 btnStyle={{
-                  ...GernalStyle.btn,
+                  ...GeneralStyle.btn,
                   backgroundColor: 'white',
                   marginTop: getHeight(2),
                 }}
                 onPress={() => navigation.goBack()}
-                btnTextStyle={{ ...GernalStyle.btnText, color: '#707470' }}
+                btnTextStyle={{ ...GeneralStyle.btnText, color: '#707470' }}
               />
             </View>
           </View>

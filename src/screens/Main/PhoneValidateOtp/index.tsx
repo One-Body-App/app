@@ -21,7 +21,7 @@ import { setLoader } from '@/redux//actions/GeneralActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const PhoneValidateOtp = ({ navigation }) => {
@@ -88,8 +88,8 @@ const PhoneValidateOtp = ({ navigation }) => {
         />
         <Button
           text={'SEND CODE'}
-          btnStyle={GernalStyle.btn}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={GeneralStyle.btn}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             checkOtp(code);
           }}

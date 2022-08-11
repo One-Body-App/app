@@ -6,6 +6,7 @@ export const ACTIONS = {
   SIGN_UP: 'SIGN_UP',
   FcmToken: 'FcmToken',
   FETCH_SIGN_UP: 'FETCH_SIGN_UP',
+  FETCH_PROFILE: 'FETCH_PROFILE',
   Profile_Update: 'Profile_Update',
   ORGProfile_Update: 'ORGProfile_Update',
   USER_PROFILE: 'USER_PROFILE',

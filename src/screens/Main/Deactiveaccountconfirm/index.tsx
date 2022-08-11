@@ -10,7 +10,7 @@ import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { logout } from '@/redux//actions/AuthActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 
 const Deactivateaccountconfirm = ({ navigation, route }) => {
   const { reason } = route.params;
@@ -63,8 +63,8 @@ const Deactivateaccountconfirm = ({ navigation, route }) => {
         <View style={{ marginTop: getHeight(7) }}>
           <Button
             text={'DEACTIVATE ACCOUNT'}
-            btnStyle={{ ...GernalStyle.btn, backgroundColor: 'red' }}
-            btnTextStyle={GernalStyle.btnText}
+            btnStyle={{ ...GeneralStyle.btn, backgroundColor: 'red' }}
+            btnTextStyle={GeneralStyle.btnText}
             onPress={() => accountDeactivate()}
           />
           <Text

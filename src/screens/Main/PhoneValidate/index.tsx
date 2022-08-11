@@ -12,7 +12,7 @@ import Toast from 'react-native-simple-toast';
 import { getWidth } from '@/utils/ResponsiveFun';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 
 const PhoneValidate = ({ navigation }) => {
   const user = useSelector((state) => state.auth.userData);
@@ -83,8 +83,8 @@ const PhoneValidate = ({ navigation }) => {
         />
         <Button
           text={'CONFIRM CODE'}
-          btnStyle={GernalStyle.btn}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={GeneralStyle.btn}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             checkOtp(code);
           }}

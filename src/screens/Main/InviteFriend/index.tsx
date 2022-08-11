@@ -23,7 +23,7 @@ import Button from '@/components/Button';
 import { styles } from './styles';
 import Share from 'react-native-share';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 
 const InviteFriend = ({ navigation }) => {
   const shareUrl = async () => {
@@ -92,11 +92,11 @@ const InviteFriend = ({ navigation }) => {
           text={'SHARE THE LINK'}
           // RightIcon={<Ionicons name={'share-outline'} size={getFontSize(3)} />}
           btnStyle={{
-            ...GernalStyle.btn,
+            ...GeneralStyle.btn,
             backgroundColor: '#E6EAEC',
             marginTop: 25,
           }}
-          btnTextStyle={{ ...GernalStyle.btnText, color: '#032F3C' }}
+          btnTextStyle={{ ...GeneralStyle.btnText, color: '#032F3C' }}
           onPress={() => shareUrl()}
         />
       </View>

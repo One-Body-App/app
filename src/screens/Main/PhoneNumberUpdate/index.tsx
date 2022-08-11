@@ -2,7 +2,7 @@ import { Text, View, TouchableOpacity } from 'react-native';
 import React, { useRef, useState } from 'react';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Button from '@/components/Button';
@@ -92,7 +92,7 @@ const PhoneNumberUpdate = ({ navigation, route }) => {
                 )}
               />
             }
-            style={GernalStyle.input}
+            style={GeneralStyle.input}
             onFocus={() => setState({ ...state, phoneNumberError: '' })}
             onBlur={() =>
               validateFields(state.phoneNumber, 'phoneNumber', (error) =>
@@ -103,12 +103,14 @@ const PhoneNumberUpdate = ({ navigation, route }) => {
             onChangeText={(phoneNumber) => changeHandler('phoneNumber', phoneNumber.trim())}
             blurOnSubmit={false}
           />
-          <Text style={{ ...GernalStyle.InputError, marginLeft: 0 }}>{state.phoneNumberError}</Text>
+          <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>
+            {state.phoneNumberError}
+          </Text>
         </View>
         <Button
           text={'UPDATE'}
-          btnStyle={GernalStyle.btn}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={GeneralStyle.btn}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             UpdateProfile();
           }}

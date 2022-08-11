@@ -8,7 +8,7 @@ import { validateFields } from '@/utils/validation/validate-fields';
 import { loginRequest, loginSocialRequest } from '@/redux/actions/AuthActions';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
-import { GernalStyle } from '../../constants/GernalStyle';
+import { GeneralStyle } from '../../constants/GeneralStyle';
 import { useNavigation } from '@react-navigation/native';
 import Facebook from '@/assets/svg/Facebook.svg';
 import Google from '@/assets/svg/Google.svg';
@@ -63,8 +63,9 @@ const LoginComponent = () => {
 
     if (!emailError && !passwordError) {
       dispatch(setLoader(true));
-      const data = { username: email, password: password };
-      dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
+
+      auth().signInWithEmailAndPassword(email, password);
+      // dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
     } else {
       setState({ ...state, emailError, passwordError });
     }
@@ -224,7 +225,7 @@ const LoginComponent = () => {
     >
       <View>
         <TextInput
-          style={GernalStyle.input}
+          style={GeneralStyle.input}
           theme={{ roundness: 10 }}
           ref={inputRefs.email}
           value={state.email}
@@ -234,6 +235,8 @@ const LoginComponent = () => {
           outlineColor={appColor.InputOutlineColor}
           activeOutlineColor={appColor.InstructionColor}
           label={'E-mail'}
+          autoComplete="email"
+          autoCapitalize="none"
           onFocus={() => setState({ ...state, emailError: '' })}
           onBlur={() =>
             validateFields(state.email, 'email', (error) =>
@@ -244,7 +247,7 @@ const LoginComponent = () => {
           onChangeText={(email) => changeHandler('email', email.trim())}
           blurOnSubmit={false}
         />
-        <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(10) }}>
+        <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(10) }}>
           {state.emailError}
         </Text>
 
@@ -271,7 +274,7 @@ const LoginComponent = () => {
               )}
             />
           }
-          style={GernalStyle.input}
+          style={GeneralStyle.input}
           onFocus={() => setState({ ...state, passwordError: '' })}
           onBlur={() =>
             validateFields(state.password, 'password', (error) =>
@@ -282,7 +285,7 @@ const LoginComponent = () => {
           onChangeText={(password) => changeHandler('password', password.trim())}
           blurOnSubmit={false}
         />
-        <Text style={{ ...GernalStyle.InputError, marginLeft: getWidth(10) }}>
+        <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(10) }}>
           {state.passwordError}
         </Text>
       </View>
@@ -291,8 +294,8 @@ const LoginComponent = () => {
       </TouchableOpacity>
       <Button
         text={'LOG IN'}
-        btnStyle={{ ...GernalStyle.btn, marginTop: getHeight(2) }}
-        btnTextStyle={GernalStyle.btnText}
+        btnStyle={{ ...GeneralStyle.btn, marginTop: getHeight(2) }}
+        btnTextStyle={GeneralStyle.btnText}
         onPress={() => signInUser()}
       />
       {error != null ? (

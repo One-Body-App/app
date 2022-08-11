@@ -10,7 +10,7 @@ import Button from '@/components/Button';
 import { styles } from './styles';
 import FastImage from 'react-native-fast-image';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import TwitterFlatlist from '@/components/TwitterFlatlist';
 import BlogFlatlist from '@/components/BlogFlatlist';
 import InstagramFlatlist from '@/components/InstagramFlatlist';
@@ -215,7 +215,7 @@ const UserProfile = ({ navigation, route }) => {
               borderWidth: 0,
             }}
             btnTextStyle={{
-              ...GernalStyle.btnText,
+              ...GeneralStyle.btnText,
               color: '#595959',
               letterSpacing: 0,
             }}
@@ -225,7 +225,7 @@ const UserProfile = ({ navigation, route }) => {
             onPress={() => OpenConversation(user?._id)}
             btnStyle={styles.btn}
             btnTextStyle={{
-              ...GernalStyle.btnText,
+              ...GeneralStyle.btnText,
               color: '#032f3c',
               letterSpacing: 0,
             }}

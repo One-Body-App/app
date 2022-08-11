@@ -40,11 +40,11 @@ const HomeStack = ({
   return (
     <Stack.Navigator
       initialRouteName={
-        userData?.isProfileCompleted
+        user && userData?.isProfileCompleted
           ? 'loading'
-          : userData?.role == 'individual'
-          ? 'IndividualSteps'
-          : 'OrgnizationSteps'
+          : userData?.role == 'organization'
+          ? 'OrgnizationSteps'
+          : 'IndividualSteps'
       }
       screenOptions={{ headerShown: false }}
     >

@@ -1,27 +1,25 @@
-import {ACTIONS} from '../action-types';
+import { ACTIONS } from '../action-types';
 
-
-export const getuserAll = data => ({
+export const getuserAll = (data) => ({
   type: ACTIONS.Get_ALLUSER,
   data,
 });
 
-export const setUserAll = data => ({
+export const setUserAll = (data) => ({
   type: ACTIONS.Set_ALLUSER,
   data,
 });
-export const getuserGet = data => ({
+export const getuserGet = (data) => ({
   type: ACTIONS.GET_User_GET,
   data,
 });
 
-export const setUserIntrest = data => ({
+export const setUserIntrest = (data) => ({
   type: ACTIONS.SET_User_INTREST,
   data,
 });
-  
-  export const setUserSubscribe = data => ({
-    type: ACTIONS.SET_User_SUBSCRIBE,
-    data,
-  });
 
+export const setUserSubscribe = (data) => ({
+  type: ACTIONS.SET_User_SUBSCRIBE,
+  data,
+});

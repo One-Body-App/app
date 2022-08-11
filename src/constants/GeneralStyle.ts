@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const GernalStyle = StyleSheet.create({
+export const GeneralStyle = StyleSheet.create({
   continer: {
     flex: 1,
     backgroundColor: 'white',

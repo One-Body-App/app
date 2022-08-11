@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { AppProvider } from '../../app-context';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -11,17 +11,34 @@ import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import AuthStack from './AuthStack';
 import HomeStack from './HomeStack';
 import { RootState } from '../Redux/reducers/rootReducer';
+import { getuserGet } from '../Redux/actions/UserAction';
+// import { getuserGet } from '../Redux/actions/AuthActions';
 
 const Main = () => {
   const loader = useSelector((state: RootState) => state.general.loader);
   const userData = useSelector((state: RootState) => state.auth.userData);
+  const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>();
 
-  function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
-    setUser(user);
-    if (initializing) setInitializing(false);
+  async function onAuthStateChanged(fireabaseUser: FirebaseAuthTypes.User | null) {
+    if (fireabaseUser) {
+      setUser(fireabaseUser);
+      // if (initializing) setInitializing(false);
+      const token = await fireabaseUser?.getIdToken();
+      console.log(token);
+      dispatch(
+        getuserGet({
+          data: { token },
+          go: () => {
+            if (initializing) setInitializing(false);
+          },
+        })
+      );
+    } else {
+      if (initializing) setInitializing(false);
+    }
   }
 
   useEffect(() => {

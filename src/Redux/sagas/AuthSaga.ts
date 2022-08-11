@@ -150,7 +150,38 @@ function* updateOrgProfileRequest(params) {
       verb: 'patch',
     });
     if (res?.status == '200') {
-      yield put(getProfile({ token: params.data.token, role: res.data.role }));
+      yield put(getProfile({ token: params.data.token }));
+      params?.data?.go();
+      yield put(setLoader(false));
+    } else {
+      yield put(setLoader(false));
+      Alert.alert('Error', 'An error accoured during profile Update', [
+        { text: 'Close', onPress: () => console.log('Close Pressed') },
+      ]);
+    }
+  } catch (e) {
+    yield put(setLoader(false));
+    Alert.alert('Error', 'An error accoured during profile Update', [
+      { text: 'Close', onPress: () => console.log('Close Pressed') },
+    ]);
+    console.log('saga sign up err --- ', e);
+    // yield put(setLoader(false));
+  }
+}
+
+export function* GetProfileSaga() {
+  yield takeLatest(ACTIONS.FETCH_PROFILE, getProfileRequest);
+}
+function* getProfileRequest(params) {
+  try {
+    const res = yield ApiCall({
+      params: params.data.data,
+      route: 'individual/profile',
+      token: params.data.token,
+      verb: 'get',
+    });
+    if (res?.status == '200') {
+      yield put(getProfile({ token: params.data.token }));
       params?.data?.go();
       yield put(setLoader(false));
     } else {

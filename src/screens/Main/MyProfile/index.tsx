@@ -10,7 +10,7 @@ import Button from '@/components/Button';
 import { styles } from './styles';
 import FastImage from 'react-native-fast-image';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import TwitterFlatlist from '@/components/TwitterFlatlist';
 import BlogFlatlist from '@/components/BlogFlatlist';
 import InstagramFlatlist from '@/components/InstagramFlatlist';
@@ -200,7 +200,7 @@ const MyProfile = (props) => {
                 setBadegs();
                 setRequestModel(false);
               }}
-              style={{ ...GernalStyle.btn, backgroundColor: '#e6eaec' }}
+              style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}
             >
               <Text
                 style={{
@@ -308,7 +308,7 @@ const MyProfile = (props) => {
             onPress={() => props.navigation.navigate('editProfile')}
             btnStyle={styles.btn}
             btnTextStyle={{
-              ...GernalStyle.btnText,
+              ...GeneralStyle.btnText,
               color: '#032f3c',
               letterSpacing: 0,
             }}

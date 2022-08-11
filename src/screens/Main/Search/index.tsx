@@ -7,7 +7,7 @@ import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { TabView, SceneMap } from 'react-native-tab-view';
 
 import SearchContainComponent from '@/components/SearchContainComponent';
@@ -71,7 +71,7 @@ const Search = ({ navigation }) => {
         style={{ alignSelf: 'flex-end', margin: getHeight(1), marginBottom: 0 }}
       />
       <TextInput
-        style={{ ...GernalStyle.input, width: getWidth(80) }}
+        style={{ ...GeneralStyle.input, width: getWidth(80) }}
         mode="outlined"
         left={
           <TextInput.Icon

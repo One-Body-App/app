@@ -60,6 +60,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       };
     }
     case ACTIONS.UPDATE_USER:
+    case ACTIONS.FETCH_PROFILE:
       return {
         ...state,
         userData: action.data,

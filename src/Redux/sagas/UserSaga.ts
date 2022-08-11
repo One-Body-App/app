@@ -6,13 +6,15 @@ import { setChats, setLoader } from '../actions/GeneralActions';
 import { setUserAll, setUserIntrest, setUserSubscribe } from '../actions/UserAction';
 
 function* UserGetRequest(params) {
+  console.log('asdfasdf');
+  console.log(params);
   try {
     const res = yield ApiCall({
       token: params.data.token,
-      route: `${params.data.role}/my-data?get=${params.data.get}`,
+      route: 'individual/my-profile',
       verb: 'get',
     });
-
+    console.log(res);
     if (res?.status == '200') {
       if (params.data.get == 'interests') {
         console.log('response', res?.response);

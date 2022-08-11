@@ -4,7 +4,7 @@ import { appColor, COLORS, THEME } from '../../constants';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import { GernalStyle } from '../../../constants/GernalStyle';
+import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import AntDesign from 'react-native-vector-icons/AntDesign';
@@ -117,7 +117,7 @@ const AddPhoneNumber = ({ navigation, route }) => {
             //     )}
             //   />
             // }
-            style={GernalStyle.input}
+            style={GeneralStyle.input}
             onFocus={() => setState({ ...state, phoneNumberError: '' })}
             onBlur={() =>
               validateFields(state.phoneNumber, 'phoneNumber', (error) =>
@@ -128,12 +128,14 @@ const AddPhoneNumber = ({ navigation, route }) => {
             onChangeText={(phoneNumber) => changeHandler('phoneNumber', phoneNumber.trim())}
             blurOnSubmit={false}
           />
-          <Text style={{ ...GernalStyle.InputError, marginLeft: 0 }}>{state.phoneNumberError}</Text>
+          <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>
+            {state.phoneNumberError}
+          </Text>
         </View>
         <Button
           text={'ADD'}
-          btnStyle={GernalStyle.btn}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={GeneralStyle.btn}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             UpdateProfile();
           }}

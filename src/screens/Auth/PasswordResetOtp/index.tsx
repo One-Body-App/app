@@ -11,7 +11,7 @@ import { setLoader } from '@/redux/actions/GeneralActions';
 import Button from '@/components/Button';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Logo from '@/src/assets/svg/LogoBlue.svg';
-import { GernalStyle } from '@/src/constants/GernalStyle';
+import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import GoBackIcon from '@/components/GoBackIcon';
@@ -71,8 +71,8 @@ const PasswordResetOtp = ({ navigation, route }) => {
         />
         <Button
           text={'SEND CODE'}
-          btnStyle={GernalStyle.btn}
-          btnTextStyle={GernalStyle.btnText}
+          btnStyle={GeneralStyle.btn}
+          btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             checkOtp(code);
           }}
