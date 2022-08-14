@@ -57,7 +57,7 @@ const AddIntrestsModel = (props) => {
         params: { interests: selectedIntrest },
       });
       if (res?.status == '200') {
-        dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
+        // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
         setShow(false);
         setSelectedIntrest([]);
         dispatch(getuserAll({ token: token }));

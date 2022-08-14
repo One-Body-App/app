@@ -49,7 +49,7 @@ const Explore = (props) => {
         verb: 'patch',
       });
       if (res?.status == '200') {
-        dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
+        // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
         dispatch(getuserAll({ token: token }));
       } else {
         const result = subscribe.filter((item) => item != id);

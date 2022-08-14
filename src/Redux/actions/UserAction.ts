@@ -23,3 +23,8 @@ export const setUserSubscribe = (data) => ({
   type: ACTIONS.SET_User_SUBSCRIBE,
   data,
 });
+
+export const setUserData = (data) => ({
+  type: ACTIONS.FETCH_PROFILE,
+  data,
+});

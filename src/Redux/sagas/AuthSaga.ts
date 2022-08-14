@@ -113,13 +113,13 @@ function* updateProfileRequest(params) {
   try {
     const res = yield ApiCall({
       params: params.data.data,
-      route: `${params.data.role}/update-profile`,
+      route: `individual/update-profile`,
       token: params.data.token,
       verb: 'patch',
     });
     console.log(res);
     if (res?.status == '200') {
-      yield put(getProfile({ token: params.data.token, role: res?.response?.data.role }));
+      yield put(getProfile({ token: params.data.token, role: 'individual' }));
 
       yield put(setLoader(false));
       params.data.go();
@@ -169,19 +169,19 @@ function* updateOrgProfileRequest(params) {
   }
 }
 
-export function* GetProfileSaga() {
-  yield takeLatest(ACTIONS.FETCH_PROFILE, getProfileRequest);
-}
+// export function* GetProfileSaga() {
+//   yield takeLatest(ACTIONS.FETCH_PROFILE, getProfileRequest);
+// }
 function* getProfileRequest(params) {
   try {
     const res = yield ApiCall({
       params: params.data.data,
-      route: 'individual/profile',
+      route: 'individual/my-profile',
       token: params.data.token,
       verb: 'get',
     });
     if (res?.status == '200') {
-      yield put(getProfile({ token: params.data.token }));
+      // yield put(getProfile({ token: params.data.token }));
       params?.data?.go();
       yield put(setLoader(false));
     } else {
@@ -191,6 +191,7 @@ function* getProfileRequest(params) {
       ]);
     }
   } catch (e) {
+    console.log(e);
     yield put(setLoader(false));
     Alert.alert('Error', 'An error accoured during profile Update', [
       { text: 'Close', onPress: () => console.log('Close Pressed') },

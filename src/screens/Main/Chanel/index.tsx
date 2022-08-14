@@ -42,7 +42,7 @@ const Chanel = ({ navigation }) => {
         verb: 'patch',
       });
       if (res?.status == '200') {
-        dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
+        // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
 
         console.log('res == 200 ... ', res);
       } else {
@@ -63,7 +63,7 @@ const Chanel = ({ navigation }) => {
         verb: 'patch',
       });
       if (res?.status == '200') {
-        dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
+        // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
         console.log('res == 200 ... ', res?.response);
       } else {
         console.log('res != 200 ... ', res?.response);
@@ -75,9 +75,9 @@ const Chanel = ({ navigation }) => {
 
   useEffect(() => {
     dispatch(setLoader(true));
-    dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
+    // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
     setTimeout(function () {
-      dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
+      // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
     }, 2000);
   }, []);
 

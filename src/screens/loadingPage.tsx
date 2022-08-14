@@ -13,13 +13,16 @@ const LoadingPage = ({ navigation }) => {
 
   const getTwiters = async (id) => {
     try {
+      id = '1481475468125745154';
       const res = await ApiCall({
         route: `https://api.twitter.com/2/users/${id}/tweets?tweet.fields=attachments,created_at&media.fields=preview_image_url`,
         token:
-          'AAAAAAAAAAAAAAAAAAAAAFP6dQEAAAAAkF1k78i42go%2BLLsmlJcE58hCcCw%3DCHdg4ofpqUzHzmx7tdNw2Op8UMCApSSZ5rOceOobMF1kIuXvcT',
+          'AAAAAAAAAAAAAAAAAAAAAFP6dQEAAAAAfEHDxiZeF%2Bpzfx00JP17XxmnY54%3DfKX6bIRiLBQLIenY311VU3Mv4pZunJzSNKOoXt3Kt136Zy9NZv',
         verb: 'get',
-        baseurl: false,
+
+        external: true,
       });
+      console.log(res);
       if (res?.status == '200') {
         dispatch(SetSocial(res?.data));
       } else {
@@ -45,15 +48,21 @@ const LoadingPage = ({ navigation }) => {
         verb: 'get',
         token: token,
       });
+      console.log(res);
       if (res?.status == '200') {
-        dispatch(SetTodayNews(res?.data[0]));
-        user?.phoneNumber
-          ? navigation.navigate('Bootombar', { tabs: 'Home' })
-          : navigation.navigate('AddPhoneNumber');
+        if (res?.data && res?.data.length > 0) {
+          dispatch(SetTodayNews(res?.data[0]));
+        }
+
+        navigation.navigate('Bootombar', { tabs: 'Home' });
+        // user?.phoneNumber
+        //   ? navigation.navigate('Bootombar', { tabs: 'Home' })
+        //   : navigation.navigate('AddPhoneNumber');
       } else {
         console.log('error', res?.data);
       }
     } catch (e) {
+      console.log(e);
       console.log('saga error -- ', e.toString());
       user?.phoneNumber
         ? navigation.navigate('Bootombar', { tabs: 'Home' })

@@ -8,7 +8,7 @@ import {
   UpdateOrgProfileSaga,
   UpdatePasswordSaga,
   UpdateProfileSaga,
-  GetProfileSaga,
+  // GetProfileSaga,
 } from './AuthSaga';
 import {
   GetAllPrayerLiveSaga,
@@ -35,6 +35,6 @@ export function* rootSaga() {
     GetTestomniesPrayerSaga(),
     GetAllPrayerLiveSaga(),
     GetChatSaga(),
-    GetProfileSaga(),
+    // GetProfileSaga(),
   ]);
 }

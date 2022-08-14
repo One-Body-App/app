@@ -36,7 +36,7 @@ const PhoneValidateOtp = ({ navigation }) => {
     dispatch(setLoader(true));
     // dispatch(setLoader(false));
 
-    dispatch(getProfile({ token, role: user?.role }));
+    // dispatch(getProfile({ token, role: user?.role }));
     try {
       const res = await ApiCall({
         route: 'auth/verify-otp',
@@ -45,7 +45,7 @@ const PhoneValidateOtp = ({ navigation }) => {
       });
       if (res.status == '200') {
         dispatch(setLoader(false));
-        dispatch(getProfile({ token, role: user?.role }));
+        // dispatch(getProfile({ token, role: user?.role }));
       } else {
         seterror(res.data?.message);
         dispatch(setLoader(false));

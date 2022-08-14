@@ -34,7 +34,7 @@ const PhoneValidate = ({ navigation }) => {
       if (res.status == '200') {
         dispatch(setLoader(false));
         Toast.show('Phone number Verified Sucessfuly');
-        dispatch(getProfile({ token, role: user?.role }));
+        // dispatch(getProfile({ token, role: user?.role }));
         navigation.navigate('Bootombar');
       } else {
         seterror(res.data?.message);

@@ -3,10 +3,10 @@ import { ACTIONS } from '../action-types';
 import Toast from 'react-native-simple-toast';
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
 import { setChats, setLoader } from '../actions/GeneralActions';
-import { setUserAll, setUserIntrest, setUserSubscribe } from '../actions/UserAction';
+import { setUserAll, setUserData, setUserIntrest, setUserSubscribe } from '../actions/UserAction';
 
 function* UserGetRequest(params) {
-  console.log('asdfasdf');
+  console.log('asdfasdf12345678');
   console.log(params);
   try {
     const res = yield ApiCall({
@@ -24,12 +24,13 @@ function* UserGetRequest(params) {
         console.log('else part in working now', res?.response);
         yield put(setLoader(false));
 
-        yield put(setUserSubscribe(res?.response?.following));
+        yield put(setUserData(res?.response));
       }
     } else {
       console.log('error', res?.response);
       yield put(setLoader(false));
     }
+    if (params.data.go) params.data.go();
   } catch (e) {
     console.log('saga get Intrest and Subscribe err --- ', e);
   }

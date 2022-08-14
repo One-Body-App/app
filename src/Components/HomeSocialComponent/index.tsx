@@ -45,7 +45,8 @@ const HomeSocialComponent = () => {
         token:
           'AAAAAAAAAAAAAAAAAAAAAFP6dQEAAAAAkF1k78i42go%2BLLsmlJcE58hCcCw%3DCHdg4ofpqUzHzmx7tdNw2Op8UMCApSSZ5rOceOobMF1kIuXvcT',
         verb: 'get',
-        baseurl: false,
+
+        external: true,
       });
       if (res?.status == '200') {
         // console.log('res', res.data);

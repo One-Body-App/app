@@ -72,7 +72,7 @@ const AnimatedHeader = ({
         verb: 'patch',
       });
       if (res?.status == '200') {
-        dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
+        // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
         dispatch(getuserAll({ token: token }));
       } else {
         console.log('error', res?.response);
@@ -98,7 +98,7 @@ const AnimatedHeader = ({
     return arr;
   };
   useEffect(() => {
-    dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
+    // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
   }, []);
   return (
     <View style={{ backgroundColor: 'white' }}>

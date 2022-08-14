@@ -8,7 +8,7 @@ function* GetTwiterPostRequest(params) {
       token:
         'AAAAAAAAAAAAAAAAAAAAAFP6dQEAAAAA%2FAl8wnO4Ys2AQnuT8HPMMXazjhQ%3Dk6hiJp9aj5Rd9f7Jzb9QMjp740dbMecAGaC8NcchpaRfvHlYPn',
       verb: 'get',
-      baseurl: false,
+      external: true,
     });
     if (res?.status == '200') {
       const array = [...params?.data?.previous, ...res.data];

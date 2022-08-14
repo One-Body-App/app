@@ -12,41 +12,39 @@ import AuthStack from './AuthStack';
 import HomeStack from './HomeStack';
 import { RootState } from '../Redux/reducers/rootReducer';
 import { getuserGet } from '../Redux/actions/UserAction';
+import { setLoginData } from '../Redux/actions/AuthActions';
 // import { getuserGet } from '../Redux/actions/AuthActions';
+
+let initializing = true;
 
 const Main = () => {
   const loader = useSelector((state: RootState) => state.general.loader);
   const userData = useSelector((state: RootState) => state.auth.userData);
   const dispatch = useDispatch();
 
-  const [initializing, setInitializing] = useState<boolean>(true);
+  // const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>();
 
-  async function onAuthStateChanged(fireabaseUser: FirebaseAuthTypes.User | null) {
-    if (fireabaseUser) {
-      setUser(fireabaseUser);
-      // if (initializing) setInitializing(false);
-      const token = await fireabaseUser?.getIdToken();
-      console.log(token);
+  const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
+    const token = await firebaseUser?.getIdToken();
+    if (!user && firebaseUser && initializing && token) {
+      if (initializing) initializing = false;
+      setUser(firebaseUser);
+
+      dispatch(setLoginData({ token, user: firebaseUser.toJSON() }));
       dispatch(
         getuserGet({
-          data: { token },
-          go: () => {
-            if (initializing) setInitializing(false);
-          },
+          token,
         })
       );
-    } else {
-      if (initializing) setInitializing(false);
     }
-  }
+  };
 
   useEffect(() => {
     const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
     return subscriber; // unsubscribe on unmount
   }, []);
 
-  console.log(user, 'user');
   return (
     <NavigationContainer>
       <AppProvider>

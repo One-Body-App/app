@@ -36,8 +36,10 @@ import GradinteButton from '@/components/GradinteButton';
 import { requestUserPermission } from '@/services/Notification/notificationServices';
 
 const IndividualSteps = ({ navigation }) => {
+  console.log('er56789oiugfghjkl');
   const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
-  let flatListRef = null;
+
+  const flatListRef = useRef(null);
   const user = useSelector((state) => {
     console.log(state);
     return state.auth.userData;
@@ -85,13 +87,14 @@ const IndividualSteps = ({ navigation }) => {
     navigation.navigate('loading');
   };
   const getIntrest = async () => {
+    console.log(token, 'tokentokentoken');
     try {
       const res = await ApiCall({
         route: 'interests',
         verb: 'get',
         token: token,
       });
-
+      console.log(res, 'resres');
       if (res?.status == '200') {
         setIntrest(res?.response);
       } else {
@@ -102,7 +105,7 @@ const IndividualSteps = ({ navigation }) => {
     }
   };
   const addIntrest = async () => {
-    dispatch(setLoader(true));
+    // dispatch(setLoader(true));
     try {
       const res = await ApiCall({
         route: 'individual/add-interests',
@@ -110,9 +113,10 @@ const IndividualSteps = ({ navigation }) => {
         params: { interests: selectedIntrest },
         verb: 'patch',
       });
+
       if (res?.status == '200') {
         getOrg();
-        dispatch(setLoader(false));
+        // dispatch(setLoader(false));
 
         next();
       } else {
@@ -707,7 +711,9 @@ const IndividualSteps = ({ navigation }) => {
     });
   };
   const next = () => {
-    flatListRef.scrollToIndex({ index: curentIndex + 1 });
+    console.log(flatListRef, curentIndex + 1, 'asdfsdfasdfasdf');
+    flatListRef?.current?.scrollToIndex({ index: curentIndex + 1 });
+    console.log(curentIndex + 1, 'curentIndex + 1');
     setCurrentIndex(curentIndex + 1);
   };
   const gonext = () => {
@@ -762,7 +768,7 @@ const IndividualSteps = ({ navigation }) => {
         data={data}
         horizontal={true}
         scrollEnabled={false}
-        ref={(ref) => (flatListRef = ref)}
+        ref={flatListRef}
         keyExtractor={(item, index) => {
           item.id;
         }}
@@ -786,7 +792,7 @@ const IndividualSteps = ({ navigation }) => {
             ) : (
               <TouchableOpacity
                 onPress={() => {
-                  flatListRef.scrollToIndex({ index: curentIndex - 1 });
+                  flatListRef.current?.scrollToIndex({ index: curentIndex - 1 });
                   setCurrentIndex(curentIndex - 1);
                 }}
                 style={{

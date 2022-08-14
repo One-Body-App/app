@@ -37,6 +37,8 @@ const HomeStack = ({
   user: FirebaseAuthTypes.User;
   userData: UserData | null;
 }) => {
+  console.log(userData, user, 'userasdfasdf');
+
   return (
     <Stack.Navigator
       initialRouteName={

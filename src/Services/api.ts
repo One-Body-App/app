@@ -7,19 +7,21 @@ export const ApiCall = async ({
   verb,
   token,
   baseurl,
+  external,
 }: {
   params?: Record<string, string>;
   route: string;
   verb: string;
   token?: string;
   baseurl?: string;
+  external?: boolean;
 }) => {
   try {
     let url = null;
     if (baseurl) {
       url = `${baseurl}/${route}`;
     } else {
-      url = `${BASE_URL}/${route}`;
+      url = `${!external ? `${BASE_URL}/` : ''}${route}`;
     }
     console.log('url', url, token);
 
