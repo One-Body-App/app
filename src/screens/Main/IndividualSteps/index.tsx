@@ -34,9 +34,9 @@ import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
 import GradinteButton from '@/components/GradinteButton';
 import { requestUserPermission } from '@/services/Notification/notificationServices';
+import auth from '@react-native-firebase/auth';
 
 const IndividualSteps = ({ navigation }) => {
-  console.log('er56789oiugfghjkl');
   const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
 
   const flatListRef = useRef(null);
@@ -62,10 +62,19 @@ const IndividualSteps = ({ navigation }) => {
   const [date, setDate] = useState(new Date());
   const [open, setOpen] = useState(false);
   const [org, setorg] = useState([]);
+  const [churchTypes, setChurchTypes] = useState([]);
+
   useEffect(() => {
     getIntrest();
+    getChurchType();
     getOrg();
   }, []);
+
+  const logoutAction = async () => {
+    await auth().signOut();
+    dispatch(logout(null));
+  };
+
   const getOrg = async () => {
     try {
       const res = await ApiCall({
@@ -83,6 +92,25 @@ const IndividualSteps = ({ navigation }) => {
       console.log('saga error -- ', e.toString());
     }
   };
+
+  const getChurchType = async () => {
+    try {
+      const res = await ApiCall({
+        route: '/global/church-type',
+        verb: 'get',
+        token: token,
+      });
+
+      if (res?.status == '200') {
+        setChurchTypes(res.response?.data);
+      } else {
+        console.log('error', res?.data);
+      }
+    } catch (e) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
   const go = () => {
     navigation.navigate('loading');
   };
@@ -216,10 +244,10 @@ const IndividualSteps = ({ navigation }) => {
             }}
           />
           <TouchableOpacity
-            onPress={() => dispatch(logout())}
-            style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
+            onPress={() => logoutAction()}
+            style={{ ...styles.lists, marginVertical: 10, borderBottomWidth: 0 }}
           >
-            <Text style={styles.logouttext}>Log out</Text>
+            <Text style={styles.logouttext}>Cancel</Text>
           </TouchableOpacity>
         </LinearGradient>
       ),
@@ -491,8 +519,9 @@ const IndividualSteps = ({ navigation }) => {
           />
 
           <View style={{ ...styles.flatlistview, marginTop: 25 }}>
-            {intrest.map((item) => (
+            {intrest.map((item, index) => (
               <TouchableOpacity
+                key={index}
                 onPress={() =>
                   selectedIntrest.includes(item?._id)
                     ? setSelectedIntrest(
@@ -776,7 +805,7 @@ const IndividualSteps = ({ navigation }) => {
         renderItem={({ item }) => <View style={styles.componentview}>{item?.component}</View>}
       />
       {curentIndex == 0 ? null : (
-        <View style={styles.foter}>
+        <View style={styles.footer}>
           <ImageBackground
             resizeMode="stretch"
             style={{

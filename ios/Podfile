@@ -39,4 +39,14 @@ target 'onebody' do
     react_native_post_install(installer)
     __apply_Xcode_12_5_M1_post_install_workaround(installer)
   end
+
+  pre_install do |installer|
+   installer.pod_targets.each do |pod|
+     if pod.name.eql?('RNPermissions') || pod.name.start_with?('Permission-')
+       def pod.build_type;
+         Pod::BuildType.static_library # I assume you use CocoaPods >= 1.9
+       end
+     end
+   end
+ end
 end

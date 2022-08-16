@@ -2632,6 +2632,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-native-animated-progress@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@types/react-native-animated-progress@npm:1.0.0"
+  dependencies:
+    "@types/react": "*"
+  checksum: 8516a394fc47b0d664ff22415e92a249467cdcac371271fdc494ce4b9fbeaff3096f844d107582ea5dc18210b49d2b3a599e5b64d2127d1ee66f5a764b0ea2ff
+  languageName: node
+  linkType: hard
+
 "@types/react-native-vector-icons@npm:^6.4.11":
   version: 6.4.11
   resolution: "@types/react-native-vector-icons@npm:6.4.11"
@@ -8924,6 +8933,7 @@ __metadata:
     "@types/jest": ^28.1.6
     "@types/react": ^18.0.15
     "@types/react-native": ^0.69.5
+    "@types/react-native-animated-progress": ^1.0.0
     "@types/react-native-vector-icons": ^6.4.11
     "@types/react-test-renderer": ^18.0.0
     "@typescript-eslint/eslint-plugin": latest

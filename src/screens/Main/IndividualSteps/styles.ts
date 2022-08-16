@@ -1,7 +1,38 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TextStyle, ViewStyle } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+interface Styles {
+  container: ViewStyle;
+  flatlistview: ViewStyle;
+  componentview: ViewStyle;
+  innerContainer: ViewStyle;
+  largeview: ViewStyle;
+  text: TextStyle;
+  textname: TextStyle;
+  box2: ViewStyle;
+  logo: ViewStyle;
+  footerText: TextStyle;
+  progressBar: ViewStyle;
+  progressBarStatus: ViewStyle;
+  heading: ViewStyle;
+  heading2: ViewStyle;
+  img: ViewStyle;
+  box: ViewStyle;
+  footer: ViewStyle;
+  btn: ViewStyle;
+  textInput: TextStyle;
+  btn2: ViewStyle;
+  content2: ViewStyle;
+  headLine: ViewStyle;
+  bottomView: ViewStyle;
+  listItem2: ViewStyle;
+  btn3: ViewStyle;
+  btnText: ViewStyle;
+  btnText2: ViewStyle;
+  btnText3: ViewStyle;
+  listItem: ViewStyle;
+}
+export const styles = StyleSheet.create<Styles>({
   container: {
     flex: 1,
     backgroundColor: ' #E5E5E5;',
@@ -32,8 +63,8 @@ export const styles = StyleSheet.create({
     width: '80%',
     textAlign: 'center',
     color: '#888C93',
-    width: getWidth(60),
-    textAlign: 'center',
+    // width: getWidth(60),
+    // textAlign: 'center',
     fontFamily: 'Rubik-Regular',
   },
   textname: {
@@ -109,7 +140,7 @@ export const styles = StyleSheet.create({
     height: getHeight(20),
     alignItems: 'center',
   },
-  foter: {
+  footer: {
     height: getHeight(10),
     left: 0,
     right: 0,

@@ -84,7 +84,7 @@ const AnimatedHeader = ({
   const IntrestArray = (array) => {
     const arr = [];
     const a = chunk(array, Math.round(intrest.length / 2));
-    console.log('a', a);
+
     if (a.length > 0 && a.length > 1) {
       for (let i = 0; i < a[0].length; i++) {
         let item1 = a[0][i];

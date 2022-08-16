@@ -15,28 +15,30 @@ import { getuserGet } from '../Redux/actions/UserAction';
 import { setLoginData } from '../Redux/actions/AuthActions';
 // import { getuserGet } from '../Redux/actions/AuthActions';
 
-let initializing = true;
+// let initializing = true;
 
 const Main = () => {
   const loader = useSelector((state: RootState) => state.general.loader);
   const userData = useSelector((state: RootState) => state.auth.userData);
   const dispatch = useDispatch();
 
-  // const [initializing, setInitializing] = useState<boolean>(true);
+  const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>();
 
   const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
+    setInitializing(false);
     const token = await firebaseUser?.getIdToken();
-    if (!user && firebaseUser && initializing && token) {
-      if (initializing) initializing = false;
-      setUser(firebaseUser);
 
+    if (firebaseUser && !initializing && token) {
+      setUser(firebaseUser);
       dispatch(setLoginData({ token, user: firebaseUser.toJSON() }));
       dispatch(
         getuserGet({
           token,
         })
       );
+    } else if (!firebaseUser && !initializing && !token) {
+      setUser(null);
     }
   };
 
