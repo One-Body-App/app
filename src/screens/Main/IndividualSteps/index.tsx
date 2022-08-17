@@ -35,38 +35,39 @@ import Group134 from '@/assets/svg/Group134.svg';
 import GradinteButton from '@/components/GradinteButton';
 import { requestUserPermission } from '@/services/Notification/notificationServices';
 import auth from '@react-native-firebase/auth';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+
+type ChurchType = {
+  churchType: string;
+  _id: string;
+};
 
 const IndividualSteps = ({ navigation }) => {
-  const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
-
-  const flatListRef = useRef(null);
-  const user = useSelector((state) => {
-    console.log(state);
-    return state.auth.userData;
-  });
+  const flatListRef = useRef<FlatList>(null);
+  const user = useSelector((state: RootState) => state.auth.userData);
 
   const dispatch = useDispatch();
-  const [churchAtend, setChurchAtend] = useState(null);
+  const [churchAttend, setChurchAttend] = useState<string | null>(null);
   const [CheckIn, setCheckIn] = useState(false);
-  const [location_label, setLocation_label] = useState(null);
-  const [longitued, setLongitued] = useState(null);
-  const [latitude, setLatitued] = useState(null);
+  const [location_label, setLocation_label] = useState<string | null>(null);
+  const [longitued, setLongitude] = useState(null);
+  const [latitude, setLatitude] = useState(null);
   const [visible, setVisible] = useState(false);
   const [Organization, setOrganization] = useState([]);
   const [curentIndex, setCurrentIndex] = useState(0);
   const [notificationSwitchOn, setNotificationSwitch] = React.useState(false);
-  const token = useSelector((state) => state.auth.userToken);
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const [intrest, setIntrest] = useState([]);
   const [selectedIntrest, setSelectedIntrest] = useState([]);
-  const [churType, setChurchType] = useState(null);
+  const [churchType, setChurchType] = useState<string | null>(null);
   const [date, setDate] = useState(new Date());
   const [open, setOpen] = useState(false);
   const [org, setorg] = useState([]);
-  const [churchTypes, setChurchTypes] = useState([]);
+  const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
 
   useEffect(() => {
     getIntrest();
-    getChurchType();
+    getChurchTypes();
     getOrg();
   }, []);
 
@@ -82,7 +83,7 @@ const IndividualSteps = ({ navigation }) => {
         verb: 'get',
         token: token,
       });
-
+      console.log(res.response);
       if (res?.status == '200') {
         setorg(res.response?.data);
       } else {
@@ -93,16 +94,16 @@ const IndividualSteps = ({ navigation }) => {
     }
   };
 
-  const getChurchType = async () => {
+  const getChurchTypes = async () => {
     try {
       const res = await ApiCall({
-        route: '/global/church-type',
+        route: 'global/church-type',
         verb: 'get',
         token: token,
       });
-
+      console.log(res.response);
       if (res?.status == '200') {
-        setChurchTypes(res.response?.data);
+        setChurchTypes(res?.response);
       } else {
         console.log('error', res?.data);
       }
@@ -132,8 +133,9 @@ const IndividualSteps = ({ navigation }) => {
       console.log('saga error -- ', e.toString());
     }
   };
-  const addIntrest = async () => {
+  const addInterests = async () => {
     // dispatch(setLoader(true));
+    console.log(selectedIntrest);
     try {
       const res = await ApiCall({
         route: 'individual/add-interests',
@@ -156,6 +158,32 @@ const IndividualSteps = ({ navigation }) => {
       console.log('saga error -- ', e.toString());
     }
   };
+
+  const addFollowing = async () => {
+    // dispatch(setLoader(true));
+    console.log(Organization, 'OrganizationOrganization');
+    try {
+      const res = await ApiCall({
+        route: 'individual/add-following',
+        token: token,
+        params: { following: Organization },
+        verb: 'patch',
+      });
+
+      if (res?.status == '200') {
+        // getOrg();
+        // dispatch(setLoader(false));
+
+        next();
+      } else {
+        dispatch(setLoader(false));
+        console.log('error', res);
+      }
+    } catch (e) {
+      showToast('An error acoured pls try again!');
+      console.log('saga error -- ', e.toString());
+    }
+  };
   const getlocationPermison = async () => {
     try {
       const granted = await PermissionsAndroid.request(
@@ -163,6 +191,7 @@ const IndividualSteps = ({ navigation }) => {
         {
           title: 'Location Access Required',
           message: 'This App needs to Access your location',
+          buttonPositive: '',
         }
       );
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
@@ -276,14 +305,16 @@ const IndividualSteps = ({ navigation }) => {
               onSelect={type => setChurchType(type)}
             /> */}
             <Button
-              text={churType == null || churType == 'Non-Denomination' ? 'Select One' : churType}
+              text={
+                churchType == null || churchType == 'Non-Denomination' ? 'Select One' : churchType
+              }
               btnStyle={styles.btn3}
               leftIcon={<View />}
               RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(3)} />}
               btnTextStyle={styles.btnText3}
               onPress={() => setVisible(true)}
             />
-            {churType == 'Non-Denomination' ? (
+            {churchType == 'Non-Denomination' ? (
               <Button
                 text={'Non-Denomination'}
                 btnStyle={styles.btn2}
@@ -318,64 +349,64 @@ const IndividualSteps = ({ navigation }) => {
           <Text style={styles.heading}>How often do you attend church?</Text>
 
           <View>
-            {churchAtend == 'Weekly' ? (
+            {churchAttend == 'Weekly' ? (
               <Button
                 text={'Weekly'}
                 btnStyle={styles.btn2}
                 btnTextStyle={styles.btnText2}
-                onPress={() => setChurchAtend(null)}
+                onPress={() => setChurchAttend(null)}
               />
             ) : (
               <Button
                 text={'Weekly'}
                 btnStyle={styles.btn}
                 btnTextStyle={styles.btnText}
-                onPress={() => setChurchAtend('Weekly')}
+                onPress={() => setChurchAttend('Weekly')}
               />
             )}
-            {churchAtend == 'Bi-Weekly' ? (
+            {churchAttend == 'Bi-Weekly' ? (
               <Button
                 text={'Bi-Weekly'}
                 btnStyle={styles.btn2}
                 btnTextStyle={styles.btnText2}
-                onPress={() => setChurchAtend(null)}
+                onPress={() => setChurchAttend(null)}
               />
             ) : (
               <Button
                 text={'Bi-Weekly'}
                 btnStyle={styles.btn}
                 btnTextStyle={styles.btnText}
-                onPress={() => setChurchAtend('Bi-Weekly')}
+                onPress={() => setChurchAttend('Bi-Weekly')}
               />
             )}
-            {churchAtend == 'Once a month' ? (
+            {churchAttend == 'Once a month' ? (
               <Button
                 text={'Once a month'}
                 btnStyle={styles.btn2}
                 btnTextStyle={styles.btnText2}
-                onPress={() => setChurchAtend(null)}
+                onPress={() => setChurchAttend(null)}
               />
             ) : (
               <Button
                 text={'Once a month'}
                 btnStyle={styles.btn}
                 btnTextStyle={styles.btnText}
-                onPress={() => setChurchAtend('Once a month')}
+                onPress={() => setChurchAttend('Once a month')}
               />
             )}
-            {churchAtend == 'I only watch at home' ? (
+            {churchAttend == 'I only watch at home' ? (
               <Button
                 text={'I only watch at home'}
                 btnStyle={styles.btn2}
                 btnTextStyle={styles.btnText2}
-                onPress={() => setChurchAtend(null)}
+                onPress={() => setChurchAttend(null)}
               />
             ) : (
               <Button
                 text={'I only watch at home'}
                 btnStyle={styles.btn}
                 btnTextStyle={styles.btnText}
-                onPress={() => setChurchAtend('I only watch at home')}
+                onPress={() => setChurchAttend('I only watch at home')}
               />
             )}
           </View>
@@ -410,7 +441,6 @@ const IndividualSteps = ({ navigation }) => {
             <TextInput
               mode="outlined"
               label="Date"
-              value={moment(date).format('YYYY-MM')}
               style={{ ...GeneralStyle.input, width: getWidth(80) }}
               activeOutlineColor={'#5B7279'}
               theme={{ roundness: 10 }}
@@ -430,6 +460,7 @@ const IndividualSteps = ({ navigation }) => {
 
             <DatePicker
               modal
+              maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
               mode="date"
               open={open}
               date={date}
@@ -450,11 +481,10 @@ const IndividualSteps = ({ navigation }) => {
           <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
-            value={location_label}
+            value={location_label ?? ''}
             theme={{ roundness: 10 }}
             activeOutlineColor={'#5B7279'}
             showSoftInputOnFocus={false}
-            onFocus={() => setCheckIn(true)}
             onPressIn={() => setCheckIn(true)}
             label={'City, State'}
             placeholderTextColor={'black'}
@@ -462,8 +492,8 @@ const IndividualSteps = ({ navigation }) => {
           {CheckIn == true ? (
             <MapBox
               location_label={location_label}
-              setLongitued={setLongitued}
-              setLatitued={setLatitued}
+              setLongitude={setLongitude}
+              setLatitude={setLatitude}
               CheckIn={CheckIn}
               setCheckIn={setCheckIn}
               setLocation_label={setLocation_label}
@@ -572,8 +602,8 @@ const IndividualSteps = ({ navigation }) => {
               width: getWidth(80),
             }}
           >
-            Select a minimum of 3 topics{' '}
-            <Text style={{ fontWeight: '400' }}>to personalize your News/Blog stream.</Text>
+            Select Influencers & Organizations{' '}
+            <Text style={{ fontWeight: '400' }}>to personalize your Social stream.</Text>
           </Text>
 
           <TextInput
@@ -604,26 +634,28 @@ const IndividualSteps = ({ navigation }) => {
               style={{ marginBottom: getHeight(7) }}
               ListFooterComponent={<View style={{ height: getHeight(2) }} />}
               ItemSeparatorComponent={() => <View style={{ height: getHeight(1) }} />}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(item, index) => item._id}
               showsVerticalScrollIndicator={false}
               numColumns={3}
               renderItem={({ item, index }) => (
                 <TouchableOpacity
                   activeOpacity={0.6}
-                  onPress={() =>
-                    Organization.includes(index)
-                      ? setOrganization(
-                          Organization.filter(function (item) {
-                            return item !== index;
-                          })
-                        )
-                      : (setOrganization([...Organization, index]), handelSubscribe(item?._id))
-                  }
+                  onPress={() => {
+                    if (Organization.includes(item._id)) {
+                      setOrganization(
+                        Organization.filter((organizationId) => {
+                          return organizationId !== item._id;
+                        })
+                      );
+                    } else {
+                      setOrganization([...Organization, item._id]);
+                    }
+                  }}
                   style={styles.box}
                 >
                   <Image
                     style={
-                      Organization.includes(index)
+                      Organization.includes(item._id)
                         ? {
                             ...styles.img,
                             borderWidth: 2.5,
@@ -729,7 +761,7 @@ const IndividualSteps = ({ navigation }) => {
       ),
     },
   ];
-  const showToast = (sms) => {
+  const showToast = (sms: string) => {
     Toast.show({
       type: 'error',
       text1: 'Error',
@@ -740,9 +772,8 @@ const IndividualSteps = ({ navigation }) => {
     });
   };
   const next = () => {
-    console.log(flatListRef, curentIndex + 1, 'asdfsdfasdfasdf');
     flatListRef?.current?.scrollToIndex({ index: curentIndex + 1 });
-    console.log(curentIndex + 1, 'curentIndex + 1');
+
     setCurrentIndex(curentIndex + 1);
   };
   const gonext = () => {
@@ -752,14 +783,14 @@ const IndividualSteps = ({ navigation }) => {
 
         break;
       case 1:
-        if (churType != null) {
+        if (churchType != null) {
           next();
         } else {
           showToast('Church Type required!');
         }
         break;
       case 2:
-        if (churchAtend != null) {
+        if (churchAttend != null) {
           next();
         } else {
           showToast('Church Atend days required!');
@@ -773,11 +804,11 @@ const IndividualSteps = ({ navigation }) => {
         }
         break;
       case 4:
-        addIntrest();
+        addInterests();
 
         break;
       case 5:
-        next();
+        addFollowing();
         break;
       case 6:
         getlocationPermison();
@@ -799,7 +830,7 @@ const IndividualSteps = ({ navigation }) => {
         scrollEnabled={false}
         ref={flatListRef}
         keyExtractor={(item, index) => {
-          item.id;
+          return item.id;
         }}
         pagingEnabled
         renderItem={({ item }) => <View style={styles.componentview}>{item?.component}</View>}
@@ -836,19 +867,19 @@ const IndividualSteps = ({ navigation }) => {
             )}
             <View style={styles.progressBar}>
               <ProgressBar
-                progress={(curentIndex + 1) * 15}
+                progress={curentIndex * 15}
                 height={7}
                 backgroundColor="#12D2D9"
                 trackColor="#032F3c"
               />
             </View>
 
-            {curentIndex == 6 ? (
+            {curentIndex == 7 ? (
               <TouchableOpacity
                 onPress={() => {
                   const data = {
-                    churchType: churType,
-                    oftenChurch: churchAtend,
+                    churchType: churchType,
+                    oftenChurch: churchAttend,
                     dateOfBirth: date,
                     location: {
                       longitude: longitued,
@@ -886,14 +917,16 @@ const IndividualSteps = ({ navigation }) => {
         onSwipeComplete={() => setVisible(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
-        onRequestClose={() => hideVisible(false)}
       >
         <View style={styles.content2}>
           <View style={styles.headLine} />
           <View style={{ flex: 1 }}>
             <FlatList
-              data={countries}
-              keyExtractor={(item, index) => index.toString()}
+              data={churchTypes}
+              keyExtractor={(item) => {
+                console.log(item);
+                return item._id;
+              }}
               ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
               ItemSeparatorComponent={() => <Divider />}
               showsVerticalScrollIndicator={false}
@@ -901,7 +934,7 @@ const IndividualSteps = ({ navigation }) => {
                 <TouchableOpacity
                   onPress={() => {
                     // setWhatIDo(item);
-                    setChurchType(item);
+                    setChurchType(item.churchType);
                     setVisible(false);
                   }}
                   style={styles.listItem2}
@@ -914,7 +947,7 @@ const IndividualSteps = ({ navigation }) => {
                     }}
                     numberOfLines={1}
                   >
-                    {item}
+                    {item.churchType}
                   </Text>
                 </TouchableOpacity>
               )}

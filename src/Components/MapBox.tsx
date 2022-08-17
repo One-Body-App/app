@@ -14,7 +14,7 @@ import {
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/AntDesign';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Button from '../Button';
+
 import Geolocation from '@react-native-community/geolocation';
 import { useDispatch } from 'react-redux';
 import { setLoader } from '@/redux/actions/GeneralActions';
@@ -26,11 +26,11 @@ const access_token =
 const MapBox = (props) => {
   const [show, setshown] = useState(false);
   const [suggetions, setSuggetions] = useState();
-  const { setLocation_label, location_label, setCheckIn, CheckIn, setLongitued, setLatitued } =
+  const { setLocation_label, location_label, setCheckIn, CheckIn, setLongitude, setLatitude } =
     props;
   const dispatch = useDispatch();
 
-  const getSuggestion = async (val) => {
+  const getSuggestion = async (val: string) => {
     setLocation_label(val);
     fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}`
@@ -58,6 +58,7 @@ const MapBox = (props) => {
           {
             title: 'Location Access Required',
             message: 'This App needs to Access your location',
+            buttonPositive: '',
           }
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
@@ -73,15 +74,15 @@ const MapBox = (props) => {
       }
     }
   };
-  const getcurrentLocation = (longitude, latitude) => {
+  const getcurrentLocation = (longitude: number, latitude: number) => {
     fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=poi&access_token=${access_token}`
     )
       .then((response) => response.json())
       .then((data) => {
         setLocation_label(data?.features[0]?.place_name);
-        setLatitued(latitude);
-        setLongitued(longitude);
+        setLatitude(latitude);
+        setLongitude(longitude);
         dispatch(setLoader(false));
         setCheckIn(false);
       });
@@ -95,7 +96,6 @@ const MapBox = (props) => {
       onSwipeComplete={() => setCheckIn(false)}
       swipeDirection={['down']}
       style={styles.bottomView}
-      onRequestClose={() => setCheckIn(false)}
     >
       <View style={styles.content2}>
         <View style={styles.headLine} />
@@ -114,7 +114,6 @@ const MapBox = (props) => {
                 <MaterialIcons
                   name={'my-location'}
                   onPress={() => {
-                    dispatch(setLoader(true));
                     getlocationPermison();
                   }}
                   color="#126B87"
@@ -133,8 +132,8 @@ const MapBox = (props) => {
                 return (
                   <TouchableOpacity
                     onPress={() => {
-                      setLongitued(item?.center[0]);
-                      setLatitued(item?.center[1]);
+                      setLongitude(item?.center[0]);
+                      setLatitude(item?.center[1]);
                       setshown(false);
                       setLocation_label(item.place_name);
                       setCheckIn(false);

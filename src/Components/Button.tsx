@@ -1,5 +1,12 @@
-import React from 'react';
-import {Text, TouchableOpacity} from 'react-native';
+import React, { ReactNode } from 'react';
+import {
+  GestureResponderEvent,
+  StyleProp,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native';
 
 const Button = ({
   text,
@@ -8,12 +15,20 @@ const Button = ({
   btnTextStyle,
   btnStyle,
   onPress,
+}: {
+  text: string;
+  leftIcon?: ReactNode;
+  RightIcon?: ReactNode;
+  btnTextStyle: StyleProp<TextStyle>;
+  btnStyle: StyleProp<ViewStyle>;
+  onPress: (event: GestureResponderEvent) => void;
 }) => {
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => (onPress ? onPress() : console.log('null'))}
-      style={btnStyle}>
+      onPress={(event) => (onPress ? onPress(event) : console.log('null'))}
+      style={btnStyle}
+    >
       {leftIcon}
       <Text style={[btnTextStyle]}>{text}</Text>
       {RightIcon}

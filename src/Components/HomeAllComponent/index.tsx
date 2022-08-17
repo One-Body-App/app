@@ -36,7 +36,7 @@ const HomeAllComponent = () => {
   const todayNews = useSelector((state) => state.social.TodayNews);
   const recentBlog = useSelector((state) => state.social.RecentBlog);
   const dispatch = useDispatch();
-  const [show, setShow] = useState();
+  const [show, setShow] = useState<boolean>();
   const navigation = useNavigation();
   const toggleModal = () => {
     setShow(!show);
@@ -71,7 +71,6 @@ const HomeAllComponent = () => {
         onSwipeComplete={() => setShow(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
-        onRequestClose={() => setShow(false)}
       >
         <View style={styles.content2}>
           <View style={styles.headLine} />
