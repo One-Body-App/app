@@ -17,9 +17,10 @@ import { Divider, Switch, TextInput } from 'react-native-paper';
 import ProgressBar from 'react-native-animated-progress';
 import Toast from 'react-native-toast-message';
 import DatePicker from 'react-native-date-picker';
-import MapBox from '@/components/MapBox';
+import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
 import { ApiCall } from '@/services/api';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
+import { format, parse } from 'date-fns';
 
 // import * as permissions from 'react-native-permissions';
 // import MonthPicker from 'react-native-month-year-picker';
@@ -32,37 +33,74 @@ import moment from 'moment';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
-import GradinteButton from '@/components/GradinteButton';
+import GradientButton from '@/components/GradientButton';
 import { requestUserPermission } from '@/services/Notification/notificationServices';
 import auth from '@react-native-firebase/auth';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 type ChurchType = {
   churchType: string;
   _id: string;
 };
+type Interest = {
+  name: string;
+  deleteFlag: boolean;
+  _id: string;
+};
 
-const IndividualSteps = ({ navigation }) => {
+type User = {
+  OTP: { status: boolean };
+  badges: string[];
+  createdAt: string;
+  deactivated: { isDeactivated: boolean };
+  email: string;
+  interests: string[];
+  isInfluencer: boolean;
+  isProfileCompleted: boolean;
+  name: string;
+  profileImage: string;
+  role: string;
+  updatedAt: string;
+  userName: string;
+  website: string;
+  whatIDo: whatIDo;
+  _id: string;
+};
+
+type whatIDo = {
+  _id: string;
+  deleteFlag: boolean;
+  whatIDo: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Props = NativeStackScreenProps<any, 'IndividualSteps'>;
+
+const IndividualSteps = ({ navigation }: Props) => {
   const flatListRef = useRef<FlatList>(null);
   const user = useSelector((state: RootState) => state.auth.userData);
 
   const dispatch = useDispatch();
   const [churchAttend, setChurchAttend] = useState<string | null>(null);
-  const [CheckIn, setCheckIn] = useState(false);
-  const [location_label, setLocation_label] = useState<string | null>(null);
-  const [longitued, setLongitude] = useState(null);
-  const [latitude, setLatitude] = useState(null);
+  const [CheckIn, setCheckIn] = useState<boolean>(false);
+  const [location, setLocation] = useState<MapSuggestion | null>(null);
+  const [countrySelector, setCountrySelector] = useState<boolean>(false);
+  const [location_country, setLocation_country] = useState<MapSuggestion | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(null);
   const [visible, setVisible] = useState(false);
-  const [Organization, setOrganization] = useState([]);
+  const [Organization, setOrganization] = useState<string[]>([]);
   const [curentIndex, setCurrentIndex] = useState(0);
   const [notificationSwitchOn, setNotificationSwitch] = React.useState(false);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [intrest, setIntrest] = useState([]);
-  const [selectedIntrest, setSelectedIntrest] = useState([]);
+  const [intrest, setIntrest] = useState<Interest[]>([]);
+  const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
   const [churchType, setChurchType] = useState<string | null>(null);
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState<string>();
   const [open, setOpen] = useState(false);
-  const [org, setorg] = useState([]);
+  const [org, setorg] = useState<User[]>([]);
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
 
   useEffect(() => {
@@ -83,13 +121,13 @@ const IndividualSteps = ({ navigation }) => {
         verb: 'get',
         token: token,
       });
-      console.log(res.response);
-      if (res?.status == '200') {
+      console.log(res.response, 'res.responseres.responseres.response');
+      if (res?.status == 200) {
         setorg(res.response?.data);
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -102,12 +140,12 @@ const IndividualSteps = ({ navigation }) => {
         token: token,
       });
       console.log(res.response);
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         setChurchTypes(res?.response);
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -124,27 +162,27 @@ const IndividualSteps = ({ navigation }) => {
         token: token,
       });
       console.log(res, 'resres');
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         setIntrest(res?.response);
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
   const addInterests = async () => {
     // dispatch(setLoader(true));
-    console.log(selectedIntrest);
+
     try {
       const res = await ApiCall({
         route: 'individual/add-interests',
         token: token,
-        params: { interests: selectedIntrest },
+        params: { interests: selectedInterest },
         verb: 'patch',
       });
 
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         getOrg();
         // dispatch(setLoader(false));
 
@@ -153,15 +191,13 @@ const IndividualSteps = ({ navigation }) => {
         dispatch(setLoader(false));
         console.log('error', res);
       }
-    } catch (e) {
+    } catch (e: any) {
       showToast('An error acoured pls try again!');
       console.log('saga error -- ', e.toString());
     }
   };
 
   const addFollowing = async () => {
-    // dispatch(setLoader(true));
-    console.log(Organization, 'OrganizationOrganization');
     try {
       const res = await ApiCall({
         route: 'individual/add-following',
@@ -170,7 +206,7 @@ const IndividualSteps = ({ navigation }) => {
         verb: 'patch',
       });
 
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         // getOrg();
         // dispatch(setLoader(false));
 
@@ -179,7 +215,7 @@ const IndividualSteps = ({ navigation }) => {
         dispatch(setLoader(false));
         console.log('error', res);
       }
-    } catch (e) {
+    } catch (e: any) {
       showToast('An error acoured pls try again!');
       console.log('saga error -- ', e.toString());
     }
@@ -207,31 +243,32 @@ const IndividualSteps = ({ navigation }) => {
       console.warn(err);
     }
   };
-  const handelSubscribe = async (id) => {
-    try {
-      const res = await ApiCall({
-        route: `individual/subscribe/${id}`,
-        token: token,
-        verb: 'patch',
-      });
-      if (res.status == '200') {
-        console.log('res==200', res);
-      } else {
-        console.log('res==400', res);
-      }
-    } catch (e) {
-      console.log('saga sign up err --- ', e);
-    }
-  };
-  const onValueChange = useCallback(
-    (event, newDate) => {
-      const selectedDate = newDate || date;
+  console.log(location_country);
+  // const handelSubscribe = async (id : string) => {
+  //   try {
+  //     const res = await ApiCall({
+  //       route: `individual/subscribe/${id}`,
+  //       token: token,
+  //       verb: 'patch',
+  //     });
+  //     if (res.status == 200) {
+  //       console.log('res==200', res);
+  //     } else {
+  //       console.log('res==400', res);
+  //     }
+  //   } catch (e) {
+  //     console.log('saga sign up err --- ', e);
+  //   }
+  // };
+  // const onValueChange = useCallback(
+  //   (event, newDate) => {
+  //     const selectedDate = newDate || date;
 
-      setOpen(false);
-      setDate(selectedDate);
-    },
-    [date, open]
-  );
+  //     setOpen(false);
+  //     setDate(selectedDate);
+  //   },
+  //   [date, open]
+  // );
   const data = [
     {
       id: 1,
@@ -259,7 +296,7 @@ const IndividualSteps = ({ navigation }) => {
             This should only take about 2-3 minutes to complete.
           </Text>
           <Group134 style={{ margin: getHeight(5) }} />
-          <GradinteButton
+          <GradientButton
             text={'LET’S GET STARTED'}
             btnStyle={{
               ...GeneralStyle.btn,
@@ -274,7 +311,7 @@ const IndividualSteps = ({ navigation }) => {
           />
           <TouchableOpacity
             onPress={() => logoutAction()}
-            style={{ ...styles.lists, marginVertical: 10, borderBottomWidth: 0 }}
+            style={{ marginVertical: 10, borderBottomWidth: 0 }}
           >
             <Text style={styles.logouttext}>Cancel</Text>
           </TouchableOpacity>
@@ -423,7 +460,6 @@ const IndividualSteps = ({ navigation }) => {
             hidden={false}
             translucent={true}
           />
-
           {/* {open && (
             <MonthPicker
               onChange={onValueChange}
@@ -432,12 +468,11 @@ const IndividualSteps = ({ navigation }) => {
             />
           )} */}
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
-
           <Text style={styles.text}>Step 3 of 7</Text>
           <Text style={{ ...styles.heading, width: getWidth(80) }}>
             What is your date of birth?
           </Text>
-          <View style={styles.dateContainer}>
+          <View>
             <TextInput
               mode="outlined"
               label="Date"
@@ -446,8 +481,9 @@ const IndividualSteps = ({ navigation }) => {
               theme={{ roundness: 10 }}
               showSoftInputOnFocus={false}
               onFocus={() => setOpen(true)}
-              // onChangeText={() => setDate}
+              onChangeText={(value) => setDate(value)}
               onPressIn={() => setOpen(true)}
+              value={date}
               right={
                 <TextInput.Icon
                   name="calendar"
@@ -463,25 +499,44 @@ const IndividualSteps = ({ navigation }) => {
               maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
               mode="date"
               open={open}
-              date={date}
-              androidVariant={'iosClone'}
+              date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
               onConfirm={(date) => {
                 setOpen(false);
-                setDate(date);
-                console.log(date);
+                setDate(format(date, 'MM/dd/yyyy'));
               }}
               onCancel={() => {
                 setOpen(false);
               }}
             />
           </View>
-
           <Text style={{ ...styles.heading, width: '100%' }}>Where are you located?</Text>
-
           <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
-            value={location_label ?? ''}
+            value={location_country?.place_name ?? ''}
+            theme={{ roundness: 10 }}
+            activeOutlineColor={'#5B7279'}
+            showSoftInputOnFocus={false}
+            onPressIn={() => setCountrySelector(true)}
+            label={'Country'}
+            placeholderTextColor={'black'}
+          />
+
+          <MapBox
+            location={location_country}
+            setLongitude={setLongitude}
+            setLatitude={setLatitude}
+            CheckIn={countrySelector}
+            setCheckIn={setCountrySelector}
+            setLocation={setLocation_country}
+            types={[MapBoxTypes.country]}
+          />
+          <TextInput
+            style={{ ...GeneralStyle.input, width: getWidth(80), marginTop: 20 }}
+            mode="outlined"
+            value={
+              location?.place_name.replace(`, ${location_country?.place_name ?? ''}`, '') ?? ''
+            }
             theme={{ roundness: 10 }}
             activeOutlineColor={'#5B7279'}
             showSoftInputOnFocus={false}
@@ -489,16 +544,22 @@ const IndividualSteps = ({ navigation }) => {
             label={'City, State'}
             placeholderTextColor={'black'}
           />
-          {CheckIn == true ? (
-            <MapBox
-              location_label={location_label}
-              setLongitude={setLongitude}
-              setLatitude={setLatitude}
-              CheckIn={CheckIn}
-              setCheckIn={setCheckIn}
-              setLocation_label={setLocation_label}
-            />
-          ) : null}
+
+          <MapBox
+            location={location}
+            setLongitude={setLongitude}
+            setLatitude={setLatitude}
+            CheckIn={CheckIn}
+            setCheckIn={setCheckIn}
+            setLocation={setLocation}
+            countries={location_country ? [location_country.properties.short_code] : []}
+            types={[
+              MapBoxTypes.region,
+              MapBoxTypes.district,
+              MapBoxTypes.place,
+              MapBoxTypes.postcode,
+            ]}
+          />
         </LinearGradient>
       ),
     },
@@ -553,16 +614,16 @@ const IndividualSteps = ({ navigation }) => {
               <TouchableOpacity
                 key={index}
                 onPress={() =>
-                  selectedIntrest.includes(item?._id)
-                    ? setSelectedIntrest(
-                        selectedIntrest.filter(function (item2) {
+                  selectedInterest.includes(item?._id)
+                    ? setSelectedInterest(
+                        selectedInterest.filter(function (item2) {
                           return item2 !== item?._id;
                         })
                       )
-                    : setSelectedIntrest([...selectedIntrest, item?._id])
+                    : setSelectedInterest([...selectedInterest, item?._id])
                 }
                 style={
-                  selectedIntrest.includes(item?._id)
+                  selectedInterest.includes(item?._id)
                     ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
                     : styles.listItem
                 }
@@ -570,7 +631,7 @@ const IndividualSteps = ({ navigation }) => {
                 <Text
                   numberOfLines={1}
                   style={
-                    selectedIntrest.includes(item?._id)
+                    selectedInterest.includes(item?._id)
                       ? { color: 'white', maxWidth: getWidth(17) }
                       : { color: '#757575', maxWidth: getWidth(17) }
                   }
@@ -797,18 +858,26 @@ const IndividualSteps = ({ navigation }) => {
         }
         break;
       case 3:
-        if (location_label != null && date != null) {
+        if (location != null && date != null) {
           next();
         } else {
           showToast('Location and Birth date required!');
         }
         break;
       case 4:
-        addInterests();
+        if (selectedInterest.length > 2) {
+          addInterests();
+        } else {
+          showToast('Select at least 3 topics to continue');
+        }
 
         break;
       case 5:
-        addFollowing();
+        if (Organization.length > 2) {
+          addFollowing();
+        } else {
+          showToast('Select at least 3 influencers/organizations to continue');
+        }
         break;
       case 6:
         getlocationPermison();
@@ -823,7 +892,6 @@ const IndividualSteps = ({ navigation }) => {
   };
   return (
     <View style={styles.container}>
-      <Toast />
       <FlatList
         data={data}
         horizontal={true}
@@ -882,9 +950,9 @@ const IndividualSteps = ({ navigation }) => {
                     oftenChurch: churchAttend,
                     dateOfBirth: date,
                     location: {
-                      longitude: longitued,
+                      longitude: longitude,
                       latitude: latitude,
-                      address: location_label,
+                      address: location?.place_name,
                     },
                   };
                   dispatch(profileUpdate({ data, token, go, role: user?.role }));

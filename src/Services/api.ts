@@ -1,5 +1,5 @@
 import { BASE_URL } from './constants';
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 export const ApiCall = async ({
   params,
@@ -9,13 +9,13 @@ export const ApiCall = async ({
   baseurl,
   external,
 }: {
-  params?: Record<string, string>;
+  params?: Record<string, any>;
   route: string;
   verb: string;
   token?: string;
   baseurl?: string;
   external?: boolean;
-}) => {
+}): Promise<{ status: number; response: any }> => {
   try {
     let url = null;
     if (baseurl) {
@@ -25,7 +25,7 @@ export const ApiCall = async ({
     }
     console.log('url', url, token);
 
-    let response = null;
+    let response: AxiosResponse<any, any> | null = null;
     switch (verb) {
       case 'get':
         response = await axios.get(
@@ -55,14 +55,10 @@ export const ApiCall = async ({
         break;
 
       default:
-        return { code: '400', response: 'methord not found' };
+        return { status: 400, response: 'method not found' };
     }
 
-    if (response) {
-      return await { status: 200, response: response.data };
-    } else {
-      return response;
-    }
+    return { status: 200, response: response?.data };
   } catch (e: any) {
     // handle error
     return { status: 400, response: e.response.data };

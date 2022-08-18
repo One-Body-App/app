@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import Button from './Button';
 import { getuserAll, getuserGet } from '../Redux/actions/UserAction';
-import GradinteButton from './GradinteButton';
+import GradientButton from './GradientButton';
 
 const AddIntrestsModel = (props) => {
   const { setShow, show } = props;
@@ -120,7 +120,7 @@ const AddIntrestsModel = (props) => {
               ))}
             </View>
           </ScrollView>
-          <GradinteButton
+          <GradientButton
             text={'ADD INTERESTS'}
             btnStyle={styles.btn2}
             btnTextStyle={styles.btnText2}

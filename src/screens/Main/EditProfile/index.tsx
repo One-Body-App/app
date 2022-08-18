@@ -18,7 +18,7 @@ import Blog from '@/assets/svg/Blog.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 import { ApiCall } from '@/services/api';
 import ImagePicker from 'react-native-image-crop-picker';
-import GradinteButton from '@/components/GradinteButton';
+import GradientButton from '@/components/GradientButton';
 
 const EditProfile = ({ navigation }) => {
   const user = useSelector((state) => state.auth.userData);
@@ -309,7 +309,7 @@ const EditProfile = ({ navigation }) => {
             ) : null}
             <View>
               {user?.role == 'individual' ? (
-                <GradinteButton
+                <GradientButton
                   text={'DONE'}
                   onPress={() => {
                     const data = new FormData();
@@ -330,7 +330,7 @@ const EditProfile = ({ navigation }) => {
                   btnTextStyle={GeneralStyle.btnText}
                 />
               ) : (
-                <GradinteButton
+                <GradientButton
                   text={'DONE'}
                   onPress={() => {
                     const data = new FormData();

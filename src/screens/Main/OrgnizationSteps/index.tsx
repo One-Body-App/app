@@ -34,7 +34,7 @@ import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
-import GradinteButton from '@/components/GradinteButton';
+import GradientButton from '@/components/GradientButton';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { requestUserPermission } from '@/services/Notification/notificationServices';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -203,7 +203,7 @@ const OrgnizationSteps = ({ navigation }) => {
             This should only take about 2-3 minutes to complete.
           </Text>
           <Group134 style={{ margin: getHeight(5) }} />
-          <GradinteButton
+          <GradientButton
             text={'LET’S GET STARTED'}
             btnStyle={{
               ...GeneralStyle.btn,

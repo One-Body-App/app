@@ -15,6 +15,7 @@ import { getuserGet } from '../Redux/actions/UserAction';
 import { setLoginData } from '../Redux/actions/AuthActions';
 import { isEqual } from 'lodash';
 import { setLoader } from '../Redux/actions/GeneralActions';
+import Toast from 'react-native-toast-message';
 // import { getuserGet } from '../Redux/actions/AuthActions';
 
 // let initializing = true;
@@ -48,7 +49,6 @@ const Main = () => {
   }, []);
 
   useEffect(() => {
-    console.log(user, token);
     if (user) {
       dispatch(setLoginData({ token, user: user.toJSON() }));
     }
@@ -64,21 +64,24 @@ const Main = () => {
   }, [token, user]);
 
   return (
-    <NavigationContainer>
-      <AppProvider>
-        {loader || initializing ? (
-          <View style={styles.loaderbackground}>
-            <View>
-              <ActivityIndicator size={getHeight(5)} color="#126B87" />
+    <>
+      <NavigationContainer>
+        <AppProvider>
+          {loader || initializing ? (
+            <View style={styles.loaderbackground}>
+              <View>
+                <ActivityIndicator size={getHeight(5)} color="#126B87" />
+              </View>
             </View>
-          </View>
-        ) : !user ? (
-          <AuthStack />
-        ) : (
-          <HomeStack userData={userData} user={user} />
-        )}
-      </AppProvider>
-    </NavigationContainer>
+          ) : !user ? (
+            <AuthStack />
+          ) : (
+            <HomeStack userData={userData} user={user} />
+          )}
+        </AppProvider>
+        <Toast topOffset={100} bottomOffset={100} position="bottom" />
+      </NavigationContainer>
+    </>
   );
 };
 const styles = StyleSheet.create({

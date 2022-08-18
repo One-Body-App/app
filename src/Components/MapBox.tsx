@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, SetStateAction, Dispatch } from 'react';
 import {
   FlatList,
   SafeAreaView,
@@ -23,26 +23,70 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 const access_token =
   'pk.eyJ1IjoiaW5hYW0xIiwiYSI6ImNramtmNmljYzJhMWMycnFwM28zOHE4ZzIifQ.pBIP97q3Us332iKImTP9aQ';
 
-const MapBox = (props) => {
+export enum MapBoxTypes {
+  country = 'country',
+  region = 'region',
+  postcode = 'postcode',
+  district = 'district',
+  place = 'place',
+  locality = 'locality',
+  neighborhood = 'neighborhood',
+  address = 'address',
+  poi = 'poi',
+}
+
+type MapBoxProps = {
+  location: MapSuggestion | null;
+  setLongitude: Dispatch<SetStateAction<number | null>>;
+  setLatitude: Dispatch<SetStateAction<number | null>>;
+  CheckIn: boolean;
+  setCheckIn: Dispatch<SetStateAction<boolean>>;
+  setLocation: Dispatch<SetStateAction<MapSuggestion | null>>;
+  types?: MapBoxTypes[];
+  countries?: string[];
+};
+
+export type MapSuggestion = {
+  bbox: number[];
+  center: number[];
+  geometry: { type: string; coordinates: number[] };
+  id: string;
+  place_name: string;
+  place_type: string[];
+  properties: { wikidata: string; short_code: string };
+  relevance: 1;
+  text: string;
+  type: string;
+};
+
+let timer: NodeJS.Timeout | null = null;
+
+const MapBox = (props: MapBoxProps) => {
   const [show, setshown] = useState(false);
-  const [suggetions, setSuggetions] = useState();
-  const { setLocation_label, location_label, setCheckIn, CheckIn, setLongitude, setLatitude } =
-    props;
+
+  const [suggetions, setSuggetions] = useState<MapSuggestion[]>();
+  const { setLocation, location, setCheckIn, CheckIn, setLongitude, setLatitude } = props;
   const dispatch = useDispatch();
 
   const getSuggestion = async (val: string) => {
-    setLocation_label(val);
-    fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}`
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        data?.features == undefined ? setshown(false) : setshown(true);
-        setSuggetions(data?.features);
-      });
+    if (timer) clearTimeout(timer);
+
+    timer = setTimeout(() => {
+      fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}&types=${props.types?.join(
+          ','
+        )}&country=${props.countries ? props.countries?.join(',') : ''}`
+      )
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+          data?.features == undefined ? setshown(false) : setshown(true);
+          setSuggetions(data?.features);
+        });
+    }, 400);
   };
   const onclose = () => {
-    setLocation_label('');
+    setLocation(null);
 
     // setCheckIn(false);
   };
@@ -66,8 +110,6 @@ const MapBox = (props) => {
           Geolocation.getCurrentPosition((info) => {
             getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
           });
-        } else {
-          setLocationStatus('Permission Denied');
         }
       } catch (err) {
         console.warn(err);
@@ -80,7 +122,7 @@ const MapBox = (props) => {
     )
       .then((response) => response.json())
       .then((data) => {
-        setLocation_label(data?.features[0]?.place_name);
+        setLocation(data?.features[0]?.place_name);
         setLatitude(latitude);
         setLongitude(longitude);
         dispatch(setLoader(false));
@@ -102,13 +144,13 @@ const MapBox = (props) => {
         <View style={styles.container}>
           <View style={styles.inputView}>
             <TextInput
-              value={location_label}
+              value={location?.place_name}
               style={styles.input}
               placeholder="Where are you?"
               onChangeText={(val) => getSuggestion(val)}
             />
             <TouchableOpacity onPress={() => onclose()} style={styles.iconTouch}>
-              {location_label != '' && location_label != null ? (
+              {location != null ? (
                 <Icon name="closecircleo" size={23} color="red" />
               ) : (
                 <MaterialIcons
@@ -135,7 +177,7 @@ const MapBox = (props) => {
                       setLongitude(item?.center[0]);
                       setLatitude(item?.center[1]);
                       setshown(false);
-                      setLocation_label(item.place_name);
+                      setLocation(item);
                       setCheckIn(false);
                     }}
                   >

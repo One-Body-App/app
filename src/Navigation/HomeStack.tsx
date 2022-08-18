@@ -28,6 +28,7 @@ import BlogView from '../screens/Main/BlogView';
 import Faqs from '../screens/Main/Help/Faqs';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { UserData } from '../Redux/types';
+import Toast from 'react-native-toast-message';
 
 const Stack = createNativeStackNavigator();
 const HomeStack = ({
@@ -37,8 +38,6 @@ const HomeStack = ({
   user: FirebaseAuthTypes.User;
   userData: UserData | null;
 }) => {
-  console.log(userData, user, 'userasdfasdf');
-
   return (
     <Stack.Navigator
       initialRouteName={

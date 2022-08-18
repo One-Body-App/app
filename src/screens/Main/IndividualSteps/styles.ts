@@ -1,4 +1,4 @@
-import { StyleSheet, TextStyle, ViewStyle } from 'react-native';
+import { ImageStyle, StyleSheet, TextStyle, ViewStyle } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 interface Styles {
@@ -16,7 +16,7 @@ interface Styles {
   progressBarStatus: ViewStyle;
   heading: ViewStyle;
   heading2: ViewStyle;
-  img: ViewStyle;
+  img: ImageStyle;
   box: ViewStyle;
   footer: ViewStyle;
   btn: ViewStyle;
@@ -31,6 +31,7 @@ interface Styles {
   btnText2: ViewStyle;
   btnText3: ViewStyle;
   listItem: ViewStyle;
+  logouttext: ViewStyle;
 }
 export const styles = StyleSheet.create<Styles>({
   container: {
@@ -221,5 +222,10 @@ export const styles = StyleSheet.create<Styles>({
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: 'gray',
+  },
+  logouttext: {
+    fontSize: getFontSize(2.5),
+    fontWeight: 'bold',
+    color: '#032F3C',
   },
 });
