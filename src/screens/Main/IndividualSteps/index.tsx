@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Text,
   View,
@@ -7,6 +7,8 @@ import {
   ImageBackground,
   TouchableOpacity,
   PermissionsAndroid,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -29,7 +31,6 @@ import { profileUpdate, logout } from '@/redux/actions/AuthActions';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import LinearGradient from 'react-native-linear-gradient';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import moment from 'moment';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
@@ -38,9 +39,11 @@ import { requestUserPermission } from '@/services/Notification/notificationServi
 import auth from '@react-native-firebase/auth';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Geolocation from 'react-native-geolocation-service';
 
 type ChurchType = {
   churchType: string;
+  children: ChurchType[];
   _id: string;
 };
 type Interest = {
@@ -89,41 +92,49 @@ const IndividualSteps = ({ navigation }: Props) => {
   const [countrySelector, setCountrySelector] = useState<boolean>(false);
   const [location_country, setLocation_country] = useState<MapSuggestion | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationData, setLocationData] = useState<{ latitude: number; longitude: number }>();
   const [latitude, setLatitude] = useState<number | null>(null);
-  const [visible, setVisible] = useState(false);
+  const [churchTypeModalVisible, setChurchTypeModalVisible] = useState(false);
+  const [churchSubTypeModalVisible, setChurchSubTypeModalVisible] = useState(false);
   const [Organization, setOrganization] = useState<string[]>([]);
   const [curentIndex, setCurrentIndex] = useState(0);
   const [notificationSwitchOn, setNotificationSwitch] = React.useState(false);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [intrest, setIntrest] = useState<Interest[]>([]);
+  const [interest, setInterest] = useState<Interest[]>([]);
+  const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
   const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
-  const [churchType, setChurchType] = useState<string | null>(null);
+  const [churchType, setChurchType] = useState<ChurchType | null>(null);
+  const [churchSubType, setSubChurchType] = useState<ChurchType | null>(null);
   const [date, setDate] = useState<string>();
   const [open, setOpen] = useState(false);
-  const [org, setorg] = useState<User[]>([]);
+  const [influencer, setInfluencer] = useState<User[]>([]);
+  const [searchInfluencer, setSearchInfluencer] = useState<User[]>([]);
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
 
   useEffect(() => {
-    getIntrest();
-    getChurchTypes();
-    getOrg();
-  }, []);
+    if (token) {
+      getInterest();
+      getChurchTypes();
+      getInfluencers();
+    }
+  }, [token]);
 
   const logoutAction = async () => {
     await auth().signOut();
     dispatch(logout(null));
   };
 
-  const getOrg = async () => {
+  const getInfluencers = async () => {
     try {
       const res = await ApiCall({
         route: 'user/get-users-to-subscribe',
         verb: 'get',
         token: token,
       });
-      console.log(res.response, 'res.responseres.responseres.response');
+
       if (res?.status == 200) {
-        setorg(res.response?.data);
+        setInfluencer(res.response?.data);
+        setSearchInfluencer(res.response?.data);
       } else {
         console.log('error', res?.response);
       }
@@ -139,7 +150,7 @@ const IndividualSteps = ({ navigation }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res.response);
+
       if (res?.status == 200) {
         setChurchTypes(res?.response);
       } else {
@@ -153,17 +164,17 @@ const IndividualSteps = ({ navigation }: Props) => {
   const go = () => {
     navigation.navigate('loading');
   };
-  const getIntrest = async () => {
-    console.log(token, 'tokentokentoken');
+  const getInterest = async () => {
     try {
       const res = await ApiCall({
         route: 'interests',
         verb: 'get',
         token: token,
       });
-      console.log(res, 'resres');
+
       if (res?.status == 200) {
-        setIntrest(res?.response);
+        setInterest(res?.response);
+        setSearchInterest(res?.response);
       } else {
         console.log('error', res?.response);
       }
@@ -183,7 +194,7 @@ const IndividualSteps = ({ navigation }: Props) => {
       });
 
       if (res?.status == 200) {
-        getOrg();
+        getInfluencers();
         // dispatch(setLoader(false));
 
         next();
@@ -207,7 +218,7 @@ const IndividualSteps = ({ navigation }: Props) => {
       });
 
       if (res?.status == 200) {
-        // getOrg();
+        // getInfluencers();
         // dispatch(setLoader(false));
 
         next();
@@ -222,28 +233,35 @@ const IndividualSteps = ({ navigation }: Props) => {
   };
   const getlocationPermison = async () => {
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Location Access Required',
-          message: 'This App needs to Access your location',
-          buttonPositive: '',
-        }
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        //To Check, If Permission is granted
-        console.log('Permission acess');
-
-        //  getOneTimeLocation();
-        //  subscribeLocationLocation();
+      if (Platform.OS === 'ios') {
+        Geolocation.getCurrentPosition((info) => {
+          getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+        });
       } else {
-        console.log('Permission Denied');
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Access Required',
+            message: 'This App needs to Access your location',
+            buttonPositive: '',
+          }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          //To Check, If Permission is granted
+          Geolocation.getCurrentPosition((info) => {
+            getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+          });
+        }
       }
     } catch (err) {
       console.warn(err);
     }
   };
-  console.log(location_country);
+
+  const getcurrentLocation = (longitude: number, latitude: number) => {
+    setLocationData({ longitude, latitude });
+  };
+
   // const handelSubscribe = async (id : string) => {
   //   try {
   //     const res = await ApiCall({
@@ -341,17 +359,31 @@ const IndividualSteps = ({ navigation }: Props) => {
               buttonStyle={{...styles.btn, backgroundColor: '#E7F0F3'}}
               onSelect={type => setChurchType(type)}
             /> */}
+
             <Button
               text={
-                churchType == null || churchType == 'Non-Denomination' ? 'Select One' : churchType
+                churchType == null || churchType.churchType == 'Non-Denomination'
+                  ? 'Select One'
+                  : churchType.churchType
               }
               btnStyle={styles.btn3}
               leftIcon={<View />}
               RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(3)} />}
               btnTextStyle={styles.btnText3}
-              onPress={() => setVisible(true)}
+              onPress={() => setChurchTypeModalVisible(true)}
             />
-            {churchType == 'Non-Denomination' ? (
+
+            {churchType && churchType?.children?.length > 0 ? (
+              <Button
+                text={churchSubType == null ? 'Select One' : churchSubType.churchType}
+                btnStyle={styles.btn3}
+                leftIcon={<View />}
+                RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(3)} />}
+                btnTextStyle={styles.btnText3}
+                onPress={() => setChurchSubTypeModalVisible(true)}
+              />
+            ) : null}
+            {churchType?.churchType == 'Non-Denomination' ? (
               <Button
                 text={'Non-Denomination'}
                 btnStyle={styles.btn2}
@@ -363,7 +395,9 @@ const IndividualSteps = ({ navigation }: Props) => {
                 text={'Non-Denomination'}
                 btnStyle={styles.btn}
                 btnTextStyle={styles.btnText}
-                onPress={() => setChurchType('Non-Denomination')}
+                onPress={() =>
+                  setChurchType({ churchType: 'Non-Denomination', children: [], _id: '' })
+                }
               />
             )}
           </View>
@@ -530,7 +564,9 @@ const IndividualSteps = ({ navigation }: Props) => {
             setCheckIn={setCountrySelector}
             setLocation={setLocation_country}
             types={[MapBoxTypes.country]}
+            hideSearchMyLocation={true}
           />
+
           <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80), marginTop: 20 }}
             mode="outlined"
@@ -540,9 +576,12 @@ const IndividualSteps = ({ navigation }: Props) => {
             theme={{ roundness: 10 }}
             activeOutlineColor={'#5B7279'}
             showSoftInputOnFocus={false}
-            onPressIn={() => setCheckIn(true)}
+            onPressIn={() => {
+              if (location_country) setCheckIn(true);
+            }}
             label={'City, State'}
             placeholderTextColor={'black'}
+            disabled={!location_country}
           />
 
           <MapBox
@@ -553,6 +592,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             setCheckIn={setCheckIn}
             setLocation={setLocation}
             countries={location_country ? [location_country.properties.short_code] : []}
+            hideSearchMyLocation={true}
             types={[
               MapBoxTypes.region,
               MapBoxTypes.district,
@@ -590,6 +630,16 @@ const IndividualSteps = ({ navigation }: Props) => {
           <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
+            clearButtonMode="always"
+            onChangeText={(text) => {
+              const newSearchInterest = [];
+              for (let i = 0; i < interest.length; i++) {
+                if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                  newSearchInterest.push(interest[i]);
+                }
+                setSearchInterest(newSearchInterest);
+              }
+            }}
             left={
               <TextInput.Icon
                 name={() => (
@@ -609,8 +659,9 @@ const IndividualSteps = ({ navigation }: Props) => {
             placeholderTextColor={'black'}
           />
 
-          <View style={{ ...styles.flatlistview, marginTop: 25 }}>
-            {intrest.map((item, index) => (
+          <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
+            {searchInterest.length < 1 ? <Text>No Search Results</Text> : null}
+            {searchInterest.map((item, index) => (
               <TouchableOpacity
                 key={index}
                 onPress={() =>
@@ -631,16 +682,14 @@ const IndividualSteps = ({ navigation }: Props) => {
                 <Text
                   numberOfLines={1}
                   style={
-                    selectedInterest.includes(item?._id)
-                      ? { color: 'white', maxWidth: getWidth(17) }
-                      : { color: '#757575', maxWidth: getWidth(17) }
+                    selectedInterest.includes(item?._id) ? { color: 'white' } : { color: '#757575' }
                   }
                 >
                   {item?.name}
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         </LinearGradient>
       ),
     },
@@ -670,6 +719,16 @@ const IndividualSteps = ({ navigation }: Props) => {
           <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
+            clearButtonMode="always"
+            onChangeText={(text) => {
+              const newSearchInfluencer = [];
+              for (let i = 0; i < influencer.length; i++) {
+                if (influencer[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                  newSearchInfluencer.push(influencer[i]);
+                }
+                setSearchInfluencer(newSearchInfluencer);
+              }
+            }}
             left={
               <TextInput.Icon
                 name={() => (
@@ -685,18 +744,19 @@ const IndividualSteps = ({ navigation }: Props) => {
             theme={{ roundness: 40 }}
             activeOutlineColor={'#5B7279'}
             outlineColor="#9EA1A2"
-            label={'Search by Name & Organization'}
+            label={'Search by Name'}
             placeholderTextColor={'black'}
           />
 
           <View style={{ ...styles.largeview, marginTop: 25 }}>
             <FlatList
-              data={org}
+              data={searchInfluencer}
               style={{ marginBottom: getHeight(7) }}
               ListFooterComponent={<View style={{ height: getHeight(2) }} />}
               ItemSeparatorComponent={() => <View style={{ height: getHeight(1) }} />}
               keyExtractor={(item, index) => item._id}
               showsVerticalScrollIndicator={false}
+              ListEmptyComponent={<Text>No Search Results</Text>}
               numColumns={3}
               renderItem={({ item, index }) => (
                 <TouchableOpacity
@@ -797,7 +857,10 @@ const IndividualSteps = ({ navigation }: Props) => {
     {
       id: 8,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
+        <LinearGradient
+          colors={['#fff', '#fff', '#E0EEF3']}
+          style={{ ...styles.innerContainer, paddingHorizontal: 15 }}
+        >
           <GeneralStatusBar
             backgroundColor="white"
             barStyle="dark-content"
@@ -818,10 +881,31 @@ const IndividualSteps = ({ navigation }: Props) => {
             Allow OneBody to use your location for the best possible experience while your Body
             finds peace. Amen!
           </Text>
+
+          {!locationData?.longitude || !locationData?.latitude ? (
+            <Button
+              text="Authorize"
+              btnStyle={styles.btn3}
+              btnTextStyle={styles.btnText3}
+              onPress={() => Geolocation.requestAuthorization('whenInUse')}
+            />
+          ) : (
+            <Text
+              style={{
+                marginTop: 40,
+                fontSize: getFontSize(2.5),
+                color: '#4F6D77',
+                textAlign: 'center',
+              }}
+            >
+              Good Job! Location services are authorized
+            </Text>
+          )}
         </LinearGradient>
       ),
     },
   ];
+
   const showToast = (sms: string) => {
     Toast.show({
       type: 'error',
@@ -946,7 +1030,8 @@ const IndividualSteps = ({ navigation }: Props) => {
               <TouchableOpacity
                 onPress={() => {
                   const data = {
-                    churchType: churchType,
+                    churchType: churchType?.churchType,
+                    churchSubType: churchSubType?.churchType,
                     oftenChurch: churchAttend,
                     dateOfBirth: date,
                     location: {
@@ -980,9 +1065,9 @@ const IndividualSteps = ({ navigation }: Props) => {
       )}
       <Modal
         backdropOpacity={0.3}
-        isVisible={visible}
-        onBackdropPress={() => setVisible(false)}
-        onSwipeComplete={() => setVisible(false)}
+        isVisible={churchTypeModalVisible}
+        onBackdropPress={() => setChurchTypeModalVisible(false)}
+        onSwipeComplete={() => setChurchTypeModalVisible(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
       >
@@ -992,33 +1077,82 @@ const IndividualSteps = ({ navigation }: Props) => {
             <FlatList
               data={churchTypes}
               keyExtractor={(item) => {
-                console.log(item);
                 return item._id;
               }}
               ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
               ItemSeparatorComponent={() => <Divider />}
               showsVerticalScrollIndicator={false}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    // setWhatIDo(item);
-                    setChurchType(item.churchType);
-                    setVisible(false);
-                  }}
-                  style={styles.listItem2}
-                >
-                  <Text
-                    style={{
-                      color: '#81979E',
-                      fontSize: getFontSize(2.2),
-                      fontFamily: 'Rubik-Regular',
+              renderItem={({ item, index }) => {
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      // setWhatIDo(item);
+                      setChurchType(item);
+
+                      setChurchTypeModalVisible(false);
                     }}
-                    numberOfLines={1}
+                    style={styles.listItem2}
                   >
-                    {item.churchType}
-                  </Text>
-                </TouchableOpacity>
-              )}
+                    <Text
+                      style={{
+                        color: '#81979E',
+                        fontSize: getFontSize(2.2),
+                        fontFamily: 'Rubik-Regular',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item.churchType}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        backdropOpacity={0.3}
+        isVisible={churchSubTypeModalVisible}
+        onBackdropPress={() => setChurchSubTypeModalVisible(false)}
+        onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
+        swipeDirection={['down']}
+        style={styles.bottomView}
+      >
+        <View style={styles.content2}>
+          <View style={styles.headLine} />
+          <View style={{ flex: 1 }}>
+            <FlatList
+              data={churchType?.children}
+              keyExtractor={(item) => {
+                return item._id;
+              }}
+              ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
+              ItemSeparatorComponent={() => <Divider />}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item, index }) => {
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      // setWhatIDo(item);
+                      setSubChurchType(item);
+                      setChurchSubTypeModalVisible(false);
+                    }}
+                    style={styles.listItem2}
+                  >
+                    <Text
+                      style={{
+                        color: '#81979E',
+                        fontSize: getFontSize(2.2),
+                        fontFamily: 'Rubik-Regular',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item.churchType}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
             />
           </View>
         </View>
@@ -1026,4 +1160,5 @@ const IndividualSteps = ({ navigation }: Props) => {
     </View>
   );
 };
+
 export default IndividualSteps;

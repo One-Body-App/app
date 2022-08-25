@@ -44,6 +44,7 @@
 		7283441A28A21AE00048A31B /* FontAwesome5_Brands.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7283440A28A21AE00048A31B /* FontAwesome5_Brands.ttf */; };
 		7283441B28A21AE00048A31B /* AntDesign.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7283440B28A21AE00048A31B /* AntDesign.ttf */; };
 		7283441C28A21AE00048A31B /* Zocial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7283440C28A21AE00048A31B /* Zocial.ttf */; };
+		7283441F28AF46100048A31B /* DONOTDELETE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7283441E28AF46100048A31B /* DONOTDELETE.swift */; };
 		72F05C49289CEB68004C3A5F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
@@ -102,6 +103,8 @@
 		7283440A28A21AE00048A31B /* FontAwesome5_Brands.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = FontAwesome5_Brands.ttf; path = "../../node_modules/react-native-vector-icons/Fonts/FontAwesome5_Brands.ttf"; sourceTree = "<group>"; };
 		7283440B28A21AE00048A31B /* AntDesign.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = AntDesign.ttf; path = "../../node_modules/react-native-vector-icons/Fonts/AntDesign.ttf"; sourceTree = "<group>"; };
 		7283440C28A21AE00048A31B /* Zocial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = Zocial.ttf; path = "../../node_modules/react-native-vector-icons/Fonts/Zocial.ttf"; sourceTree = "<group>"; };
+		7283441D28AF460F0048A31B /* onebody-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "onebody-Bridging-Header.h"; sourceTree = "<group>"; };
+		7283441E28AF46100048A31B /* DONOTDELETE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DONOTDELETE.swift; sourceTree = "<group>"; };
 		72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-onebody-onebodyTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody-onebodyTests.release.xcconfig"; path = "Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests.release.xcconfig"; sourceTree = "<group>"; };
 		9764BF2053B461BFDF79785F /* Pods_onebody_onebodyTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_onebody_onebodyTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -218,6 +221,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				7283441E28AF46100048A31B /* DONOTDELETE.swift */,
 				7278A14A289CB24F003FC089 /* GoogleService-Info.plist */,
 				13B07FAE1A68108700A75B9A /* onebody */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
@@ -225,6 +229,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				7283441D28AF460F0048A31B /* onebody-Bridging-Header.h */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -309,7 +314,7 @@
 						TestTargetID = 13B07F861A680F5B00A75B9A;
 					};
 					13B07F861A680F5B00A75B9A = {
-						LastSwiftMigration = 1120;
+						LastSwiftMigration = 1340;
 					};
 				};
 			};
@@ -525,6 +530,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
+				7283441F28AF46100048A31B /* DONOTDELETE.swift in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -544,6 +550,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 5B7EB9410499542E8C5724F5 /* Pods-onebody-onebodyTests.debug.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -571,6 +578,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 89C6BE57DB24E9ADA2F236DE /* Pods-onebody-onebodyTests.release.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COPY_PHASE_STRIP = NO;
 				INFOPLIST_FILE = onebodyTests/Info.plist;
@@ -613,6 +621,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.onebodyapp;
 				PRODUCT_NAME = onebody;
+				SWIFT_OBJC_BRIDGING_HEADER = "onebody-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -628,6 +637,7 @@
 				CODE_SIGN_ENTITLEMENTS = onebody/onebody.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9N63S64RJ2;
+				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = onebody/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -640,6 +650,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.onebodyapp;
 				PRODUCT_NAME = onebody;
+				SWIFT_OBJC_BRIDGING_HEADER = "onebody-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -648,6 +659,7 @@
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
@@ -676,6 +688,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
+				ENABLE_BITCODE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";
@@ -720,6 +733,7 @@
 		83CBBA211A601CBA00E9B192 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
@@ -748,6 +762,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
+				ENABLE_BITCODE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";

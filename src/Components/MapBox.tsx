@@ -44,6 +44,7 @@ type MapBoxProps = {
   setLocation: Dispatch<SetStateAction<MapSuggestion | null>>;
   types?: MapBoxTypes[];
   countries?: string[];
+  hideSearchMyLocation?: boolean;
 };
 
 export type MapSuggestion = {
@@ -62,28 +63,31 @@ export type MapSuggestion = {
 let timer: NodeJS.Timeout | null = null;
 
 const MapBox = (props: MapBoxProps) => {
-  const [show, setshown] = useState(false);
-
-  const [suggetions, setSuggetions] = useState<MapSuggestion[]>();
   const { setLocation, location, setCheckIn, CheckIn, setLongitude, setLatitude } = props;
+
+  const [show, setshown] = useState<boolean>(false);
+  const [suggetions, setSuggetions] = useState<MapSuggestion[]>();
+  const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
+
   const dispatch = useDispatch();
 
   const getSuggestion = async (val: string) => {
     if (timer) clearTimeout(timer);
-
-    timer = setTimeout(() => {
-      fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}&types=${props.types?.join(
-          ','
-        )}&country=${props.countries ? props.countries?.join(',') : ''}`
-      )
-        .then((response) => response.json())
-        .then((data) => {
-          console.log(data);
-          data?.features == undefined ? setshown(false) : setshown(true);
-          setSuggetions(data?.features);
-        });
-    }, 400);
+    setsearchLocation(val);
+    if (val) {
+      timer = setTimeout(() => {
+        fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}&types=${props.types?.join(
+            ','
+          )}&country=${props.countries ? props.countries?.join(',') : ''}`
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            data?.features == undefined ? setshown(false) : setshown(true);
+            setSuggetions(data?.features);
+          });
+      }, 400);
+    }
   };
   const onclose = () => {
     setLocation(null);
@@ -123,6 +127,7 @@ const MapBox = (props: MapBoxProps) => {
       .then((response) => response.json())
       .then((data) => {
         setLocation(data?.features[0]?.place_name);
+        setsearchLocation(data?.features[0]?.place_name);
         setLatitude(latitude);
         setLongitude(longitude);
         dispatch(setLoader(false));
@@ -138,31 +143,36 @@ const MapBox = (props: MapBoxProps) => {
       onSwipeComplete={() => setCheckIn(false)}
       swipeDirection={['down']}
       style={styles.bottomView}
+      avoidKeyboard={true}
     >
       <View style={styles.content2}>
         <View style={styles.headLine} />
         <View style={styles.container}>
           <View style={styles.inputView}>
             <TextInput
-              value={location?.place_name}
+              value={searchLocation}
               style={styles.input}
               placeholder="Where are you?"
               onChangeText={(val) => getSuggestion(val)}
+              autoFocus={true}
+              clearButtonMode="always"
             />
-            <TouchableOpacity onPress={() => onclose()} style={styles.iconTouch}>
-              {location != null ? (
-                <Icon name="closecircleo" size={23} color="red" />
-              ) : (
-                <MaterialIcons
-                  name={'my-location'}
-                  onPress={() => {
-                    getlocationPermison();
-                  }}
-                  color="#126B87"
-                  size={getFontSize(3.5)}
-                />
-              )}
-            </TouchableOpacity>
+            {!props.hideSearchMyLocation ? (
+              <TouchableOpacity onPress={() => onclose()} style={styles.iconTouch}>
+                {location != null ? (
+                  <Icon name="closecircleo" size={23} color="red" />
+                ) : (
+                  <MaterialIcons
+                    name={'my-location'}
+                    onPress={() => {
+                      getlocationPermison();
+                    }}
+                    color="#126B87"
+                    size={getFontSize(3.5)}
+                  />
+                )}
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           {show == true ? (
@@ -178,6 +188,7 @@ const MapBox = (props: MapBoxProps) => {
                       setLatitude(item?.center[1]);
                       setshown(false);
                       setLocation(item);
+                      setsearchLocation(item.place_name);
                       setCheckIn(false);
                     }}
                   >
@@ -210,6 +221,7 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     paddingLeft: 15,
+    paddingRight: 50,
     width: getWidth(80),
   },
   inputView: {

@@ -15,19 +15,22 @@ const Button = ({
   btnTextStyle,
   btnStyle,
   onPress,
+  disabled,
 }: {
   text: string;
   leftIcon?: ReactNode;
   RightIcon?: ReactNode;
-  btnTextStyle: StyleProp<TextStyle>;
-  btnStyle: StyleProp<ViewStyle>;
+  btnTextStyle?: StyleProp<TextStyle>;
+  btnStyle?: StyleProp<ViewStyle>;
   onPress: (event: GestureResponderEvent) => void;
+  disabled?: boolean;
 }) => {
   return (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={(event) => (onPress ? onPress(event) : console.log('null'))}
       style={btnStyle}
+      disabled={disabled}
     >
       {leftIcon}
       <Text style={[btnTextStyle]}>{text}</Text>

@@ -45,6 +45,7 @@ export const styles = StyleSheet.create<Styles>({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
+    marginHorizontal: 10,
   },
   componentview: {
     width: getWidth(100),

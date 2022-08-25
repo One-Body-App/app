@@ -1,51 +1,46 @@
-import React, { createRef, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
+import React, { createRef, useCallback, useEffect, useRef, useState } from 'react';
+import { Text, View, TouchableOpacity, Platform, ScrollView, Alert, Linking } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TextInput } from 'react-native-paper';
+import CheckBox from '@react-native-community/checkbox';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { validateFields } from '@/utils/validation/validate-fields';
-import { loginRequest, loginSocialRequest } from '@/redux/actions/AuthActions';
-import { setLoader } from '@/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 import { useNavigation } from '@react-navigation/native';
-import Facebook from '@/assets/svg/Facebook.svg';
+
 import Google from '@/assets/svg/Google.svg';
 import Apple from '@/assets/svg/Apple.svg';
 import Button from '../Button';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { styles } from './styles';
 import { appColor } from '../../constants';
-import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
-import auth from '@react-native-firebase/auth';
-// import {
-//   LoginButton,
-//   AccessToken,
-//   LoginManager,
-//   GraphRequest,
-//   GraphRequestManager,
-// } from 'react-native-fbsdk';
-// import { GoogleSignin, statusCodes } from '@react-native-community/google-signin';
-import {
-  GoogleSignin,
-  GoogleSigninButton,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import Modal from 'react-native-modal';
 
 import {
   getFcmToken,
   requestUserPermission,
 } from '../../Services/Notification/notificationServices';
-import { LoginButton, LoginManager, AccessToken } from 'react-native-fbsdk-next';
+import { LoginButton, LoginManager, AccessToken, LoginResult } from 'react-native-fbsdk-next';
+import { getuserGet } from '@/src/Redux/actions/UserAction';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import GradientButton from '../GradientButton';
+import { loginSocialRequest } from '@/src/Redux/actions/AuthActions';
+import { ApiCall } from '@/src/Services/api';
+import InAppBrowser from 'react-native-inappbrowser-reborn';
 
 const LoginComponent = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
+  const userData = useSelector((state: RootState) => state.auth.userData);
 
   const inputRefs = {
-    email: useRef(null),
-    password: useRef(null),
+    email: useRef<any>(),
+    password: useRef<any>(),
   };
   const [state, setState] = useState({
     email: '',
@@ -53,45 +48,65 @@ const LoginComponent = () => {
     password: '',
     passwordError: '',
   });
-  const [error, seterror] = React.useState();
+  const [error, seterror] = useState<string>();
   const [hidePass, setHidePass] = useState(true);
+  const [token, setToken] = useState('');
+  const [showConfirmEmail, setShowConfirmEmail] = useState<boolean>(false);
+  const [isNewUser, setIsNewUser] = useState<boolean>(false);
+  const [acceptTermsConditions, setAcceptTermsConditions] = useState<boolean>(false);
+  const [acceptPrivacyPolicy, setAcceptPrivacyPolicy] = useState<boolean>(false);
+
+  // useEffect(() => {
+  //   if (!userData && token) {
+  //     navigation.navigate('Signup');
+  //   }
+  // }, [userData]);
+
+  useEffect(() => {
+    if (isNewUser) setShowConfirmEmail(true);
+  }, [isNewUser]);
 
   const signInUser = async () => {
-    const { email, password } = state;
-    const emailError = await validator('email', email);
-    const passwordError = await validator('password', password);
+    try {
+      const { email, password } = state;
+      const emailError = await validator('email', email);
+      const passwordError = await validator('password', password);
 
-    if (!emailError && !passwordError) {
-      dispatch(setLoader(true));
-
-      auth().signInWithEmailAndPassword(email, password);
-      // dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
-    } else {
-      setState({ ...state, emailError, passwordError });
+      if (!emailError && !passwordError) {
+        seterror('');
+        // dispatch(setLoader(true));
+        await auth().signInWithEmailAndPassword(email, password);
+        // dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
+      } else {
+        setState({ ...state, emailError, passwordError });
+      }
+    } catch (error: any) {
+      seterror('User/password combination not found');
+      // dispatch(setLoader(false));
     }
   };
-  const changeHandler = (type, value) => setState({ ...state, [type]: value });
-  const gotoOtp = () => {
-    navigation.navigate('PhoneValidateOtp');
+  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
+  const gotoSignup = () => {
+    navigation.navigate('Signup');
   };
-  const sendFcm = (token) => {
+  const sendFcm = (token: string) => {
     requestUserPermission(token);
   };
 
-  const _responseInfoCallback = (error, result) => {
-    if (error) {
-      console.log('error', error);
-    } else {
-      dispatch(setLoader(true));
-      const data = {
-        email: result?.email,
-        name: result?.name,
-        socialId: result?.id,
-      };
-      dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
-      console.log('result', result);
-    }
-  };
+  // const _responseInfoCallback = (error, result) => {
+  //   if (error) {
+  //     console.log('error', error);
+  //   } else {
+  //     dispatch(setLoader(true));
+  //     const data = {
+  //       email: result?.email,
+  //       name: result?.name,
+  //       socialId: result?.id,
+  //     };
+  //     dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
+  //     console.log('result', result);
+  //   }
+  // };
   async function onAppleButtonPress() {
     // performs login request
     // const appleAuthRequestResponse = await appleAuth.performRequest({
@@ -195,10 +210,7 @@ const LoginComponent = () => {
     }
   };
 
-  async function onFacebookButtonPress() {
-    // Attempt login with permissions
-    const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
-
+  const facebookLogin = async (result: LoginResult, error: Record<string, unknown>) => {
     if (result.isCancelled) {
       throw 'User cancelled the login process';
     }
@@ -213,11 +225,89 @@ const LoginComponent = () => {
     // Create a Firebase credential with the AccessToken
     const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
 
-    // Sign-in the user with the credential
-    return auth().signInWithCredential(facebookCredential);
-  }
+    processLogin(facebookCredential);
+  };
 
-  const fbButton = createRef();
+  const processLogin = async (credential: FirebaseAuthTypes.AuthCredential) => {
+    const userCredentials = await auth().signInWithCredential(credential);
+    const token = await userCredentials.user.getIdToken();
+    setToken(token);
+    console.log(userCredentials, 'userCredentialsuserCredentialsuserCredentials');
+    if (userCredentials.additionalUserInfo?.isNewUser) {
+      setIsNewUser(true);
+      // dispatch(loginSocialRequest({ data, seterror, gotoOtp, sendFcm }));
+    } else {
+      const userProfileResult = await ApiCall({
+        token: token,
+        route: 'individual/my-profile',
+        verb: 'get',
+      });
+
+      if (userProfileResult.status == 200) {
+        if (userProfileResult.response == '') {
+          setIsNewUser(true);
+        } else {
+          if (!userCredentials.user.email || !userCredentials.user.emailVerified) {
+            //   dispatch(
+            //     getuserGet({
+            //       token,
+            //     })
+            //   );
+            // } else {
+            if (!userCredentials.user.email && userCredentials.additionalUserInfo?.profile?.email) {
+              await userCredentials.user.updateEmail(
+                userCredentials.additionalUserInfo?.profile?.email
+              );
+            }
+            setShowConfirmEmail(true);
+          }
+        }
+      } else {
+        setToken('');
+        auth().signOut();
+      }
+    }
+  };
+
+  const OpenURLButton = async (url: string) => {
+    try {
+      if (await InAppBrowser.isAvailable()) {
+        const result = await InAppBrowser.open(url, {
+          // iOS Properties
+          // dismissButtonStyle: 'cancel',
+          // preferredBarTintColor: '#453AA4',
+          // preferredControlTintColor: 'white',
+          readerMode: false,
+          animated: true,
+          modalPresentationStyle: 'fullScreen',
+          modalTransitionStyle: 'coverVertical',
+          modalEnabled: true,
+          enableBarCollapsing: false,
+          // Android Properties
+          showTitle: true,
+          // toolbarColor: '#6200EE',
+          // secondaryToolbarColor: 'black',
+          // navigationBarColor: 'black',
+          // navigationBarDividerColor: 'white',
+          enableUrlBarHiding: true,
+          enableDefaultShare: true,
+          forceCloseOnRedirection: false,
+          animations: {
+            startEnter: 'slide_in_right',
+            startExit: 'slide_out_left',
+            endEnter: 'slide_in_left',
+            endExit: 'slide_out_right',
+          },
+        });
+        // await this.sleep(800);
+        // Alert.alert(JSON.stringify(result));
+      } else Linking.openURL(url);
+    } catch (error: any) {
+      Alert.alert(error.message);
+    }
+  };
+
+  const fbButton = createRef<LoginButton>();
   return (
     <KeyboardAwareScrollView
       contentContainerStyle={styles.contanier}
@@ -239,11 +329,11 @@ const LoginComponent = () => {
           autoCapitalize="none"
           onFocus={() => setState({ ...state, emailError: '' })}
           onBlur={() =>
-            validateFields(state.email, 'email', (error) =>
+            validateFields(state.email, 'email', (error: string) =>
               setState({ ...state, emailError: error })
             )
           }
-          onSubmitEditing={() => inputRefs.password.current.focus()}
+          onSubmitEditing={() => inputRefs.password?.current.focus()}
           onChangeText={(email) => changeHandler('email', email.trim())}
           blurOnSubmit={false}
         />
@@ -277,7 +367,7 @@ const LoginComponent = () => {
           style={GeneralStyle.input}
           onFocus={() => setState({ ...state, passwordError: '' })}
           onBlur={() =>
-            validateFields(state.password, 'password', (error) =>
+            validateFields(state.password, 'password', (error: string) =>
               setState({ ...state, passwordError: error })
             )
           }
@@ -289,7 +379,10 @@ const LoginComponent = () => {
           {state.passwordError}
         </Text>
       </View>
-      <TouchableOpacity onPress={() => navigation.navigate('forget')} style={styles.forgotPassword}>
+      <TouchableOpacity
+        onPress={() => navigation.navigate({ key: 'forget' })}
+        style={styles.forgotPassword}
+      >
         <Text style={styles.forgetStyle}>Forgot Password?</Text>
       </TouchableOpacity>
       <Button
@@ -315,113 +408,163 @@ const LoginComponent = () => {
         </TouchableOpacity>
 
         <LoginButton
+          permissions={['public_profile', 'email']}
           style={{
             ...styles.socialContainer,
             height: getHeight(5),
             width: getWidth(25),
           }}
           ref={fbButton}
-          onLoginFinished={async (error, result) => {
-            // if (error) {
-            //   console.log('login has error: ' + error);
-            // } else if (result.isCancelled) {
-            //   console.log('login is cancelled.');
-            // } else {
-            //   console.log('login is done.');
-
-            //   AccessToken.getCurrentAccessToken().then(data => {
-            //     const infoRequest = new GraphRequest(
-            //       '/me?fields=name,picture,email,first_name,last_name',
-            //       null,
-            //       _responseInfoCallback,
-            //     );
-            //     // Start the graph request.
-            //     new GraphRequestManager().addRequest(infoRequest).start();
-            //   });
-            //   // AccessToken.getCurrentAccessToken().then(data => {
-            //   //   console.log(data.accessToken.toString());
-            //   //   initUser(data.accessToken);
-            //   // });
-            // }
-
-            if (result.isCancelled) {
-              throw 'User cancelled the login process';
-            }
-
-            // Once signed in, get the users AccesToken
-            const data = await AccessToken.getCurrentAccessToken();
-
-            if (!data) {
-              throw 'Something went wrong obtaining access token';
-            }
-
-            // Create a Firebase credential with the AccessToken
-            const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-
-            // Sign-in the user with the credential
-            return auth().signInWithCredential(facebookCredential);
-          }}
-          onLogoutFinished={() => console.log('logout.')}
+          onLoginFinished={async (error, result) => facebookLogin(result, error)}
         />
 
-        {/* <Button
-          text="Facebook Sign-In"
-          onPress={() =>
-            onFacebookButtonPress().then(() => console.log('Signed in with Facebook!'))
-          }
-        /> */}
-
-        {/* <LoginButton
-          style={{
-            ...styles.socialContainer,
-            height: getHeight(5),
-            width: getWidth(25),
-          }}
-          ref={fbButton}
-          onLoginFinished={(error, result) => {
-            if (error) {
-              console.log('login has error: ' + error);
-            } else if (result.isCancelled) {
-              console.log('login is cancelled.');
-            } else {
-              console.log('login is done.');
-
-              AccessToken.getCurrentAccessToken().then((data) => {
-                const infoRequest = new GraphRequest(
-                  '/me?fields=name,picture,email,first_name,last_name',
-                  null,
-                  _responseInfoCallback
-                );
-                // Start the graph request.
-                new GraphRequestManager().addRequest(infoRequest).start();
-              });
-              // AccessToken.getCurrentAccessToken().then(data => {
-              //   console.log(data.accessToken.toString());
-              //   initUser(data.accessToken);
-              // });
-            }
-          }}
-          onLogoutFinished={() => console.log('logout.')}
-        /> */}
-        {/* <TouchableOpacity onPress={() => fbButton.current.handleOnPress()}>
-          <Facebook
-            style={{
-              width: getWidth(90),
-              height: getHeight(5),
-              backgroundColor: 'white',
-              alignSelf: 'center',
-            }}
-          />
-        </TouchableOpacity> */}
-
-        {Platform.OS == 'android' ? (
-          <Apple style={styles.socialContainer} />
-        ) : (
+        {Platform.OS == 'ios' ? (
           <TouchableOpacity onPress={() => onAppleButtonPress()}>
             <Apple style={styles.socialContainer} />
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
+
+      <Modal
+        backdropOpacity={0.3}
+        isVisible={showConfirmEmail}
+        onBackdropPress={() => setShowConfirmEmail(false)}
+        onSwipeComplete={() => setShowConfirmEmail(false)}
+        swipeDirection={['down']}
+        style={styles.bottomView}
+      >
+        <View style={styles.content2}>
+          <View style={{ ...styles.contanier, paddingHorizontal: 15 }}>
+            <View>
+              <Button
+                text="Cancel"
+                onPress={async () => {
+                  const FBToken = await AccessToken.getCurrentAccessToken();
+                  if (FBToken) {
+                    LoginManager.logOut();
+                    await auth().signOut();
+                  }
+                  setShowConfirmEmail(false);
+                  setIsNewUser(false);
+                }}
+              />
+            </View>
+
+            <ScrollView>
+              {isNewUser ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'stretch',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <View
+                    style={{
+                      marginTop: getHeight(3),
+                      flexDirection: 'row',
+
+                      alignItems: 'stretch',
+                      flexWrap: 'wrap',
+                      marginHorizontal: 4,
+                    }}
+                  >
+                    <CheckBox
+                      value={acceptTermsConditions}
+                      onValueChange={() => {
+                        setAcceptTermsConditions(!acceptTermsConditions);
+                      }}
+                    />
+                    <Button
+                      text="I have read and I accept the"
+                      btnStyle={{ marginLeft: 10, marginRight: 2 }}
+                      btnTextStyle={styles.paragraph}
+                      onPress={() => setAcceptTermsConditions(!acceptTermsConditions)}
+                    />
+
+                    <Button
+                      text="Terms and Conditions."
+                      btnStyle={{ marginLeft: 2 }}
+                      btnTextStyle={styles.textButton}
+                      onPress={() => OpenURLButton('https://google.com')}
+                    />
+                  </View>
+
+                  <View
+                    style={{
+                      marginTop: getHeight(3),
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginHorizontal: 4,
+                    }}
+                  >
+                    <CheckBox
+                      value={acceptPrivacyPolicy}
+                      onValueChange={() => {
+                        setAcceptPrivacyPolicy(!acceptPrivacyPolicy);
+                      }}
+                    />
+                    <Button
+                      text="I have read and I accept the"
+                      btnStyle={{ marginLeft: 10, marginRight: 2 }}
+                      btnTextStyle={styles.paragraph}
+                      onPress={() => setAcceptPrivacyPolicy(!acceptPrivacyPolicy)}
+                    />
+
+                    <Button
+                      text="Privacy Policy."
+                      btnStyle={{ marginLeft: 2 }}
+                      btnTextStyle={styles.textButton}
+                      onPress={() => OpenURLButton('https://google.com')}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'stretch',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Text>Please Confirm email</Text>
+                </View>
+              )}
+            </ScrollView>
+
+            {isNewUser ? (
+              <GradientButton
+                text={'CONTINUE'}
+                disabled={!acceptPrivacyPolicy || !acceptTermsConditions}
+                btnStyle={styles.btn2}
+                btnTextStyle={styles.btnText2}
+                onPress={async () => {
+                  const user = auth().currentUser;
+                  const token = await user?.getIdToken();
+
+                  const data = {
+                    email: user?.email,
+                    name: user?.displayName,
+                    socialData: {
+                      id: user?.providerData[0].uid,
+                      providerId: user?.providerData[0].providerId,
+                    },
+                    userId: user?.uid,
+                  };
+                  dispatch(loginSocialRequest({ token, data, seterror, gotoSignup, sendFcm }));
+                }}
+              />
+            ) : (
+              <GradientButton
+                text={'SEND EMAIL CONFIRMATION'}
+                btnStyle={styles.btn2}
+                btnTextStyle={styles.btnText2}
+                onPress={() => {}}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </KeyboardAwareScrollView>
   );
 };

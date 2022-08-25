@@ -27,13 +27,18 @@ const Main = () => {
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [showUserValidation, setShowUserValidation] = useState<boolean>(false);
   const [token, setToken] = useState<string>('');
 
   const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
     const firebaseToken = await firebaseUser?.getIdToken();
 
     if (!isEqual(firebaseUser, user)) {
-      setUser(firebaseUser);
+      if (firebaseUser?.email && firebaseUser?.emailVerified) {
+        setUser(firebaseUser);
+      } else {
+        setShowUserValidation(true);
+      }
     }
 
     if (!isEqual(firebaseToken, token)) {
@@ -60,8 +65,13 @@ const Main = () => {
         })
       );
     }
-    setInitializing(false);
-  }, [token, user]);
+
+    if (initializing != true) {
+      dispatch(setLoader(false));
+    }
+
+    if (initializing) setInitializing(false);
+  }, [token, user, initializing]);
 
   return (
     <>
@@ -73,7 +83,7 @@ const Main = () => {
                 <ActivityIndicator size={getHeight(5)} color="#126B87" />
               </View>
             </View>
-          ) : !user ? (
+          ) : !user || !token ? (
             <AuthStack />
           ) : (
             <HomeStack userData={userData} user={user} />

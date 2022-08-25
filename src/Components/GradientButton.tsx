@@ -16,6 +16,7 @@ const GradientButton = ({
   btnTextStyle,
   btnStyle,
   onPress,
+  disabled,
 }: {
   text: string;
   leftIcon?: ReactNode;
@@ -23,12 +24,18 @@ const GradientButton = ({
   btnTextStyle: StyleProp<TextStyle>;
   btnStyle: StyleProp<ViewStyle>;
   onPress: (event: GestureResponderEvent) => void;
+  disabled?: boolean;
 }) => {
+  let gradientcolors = ['#126b87', '#032f3c'];
+  if (disabled) {
+    gradientcolors = ['#4f6d77', '#4f6d77'];
+  }
   return (
-    <LinearGradient colors={['#126b87', '#032f3c']} style={btnStyle}>
+    <LinearGradient colors={gradientcolors} style={btnStyle}>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={(event) => (onPress ? onPress(event) : console.log('null'))}
+        disabled={disabled}
         style={{
           justifyContent: 'center',
           alignItems: 'center',

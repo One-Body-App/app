@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ConfirmPassword from '../screens/Auth/ConfirmPassword';
 
 import NewPassword from '../screens/Auth/NewPassword';
 import PhoneValidateOtp from '../screens/Main/PhoneValidateOtp';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import PasswordResetOtp from '../screens/Auth/PasswordResetOtp';
 
 import PrivacyPolicy from '../screens/Main/PrivacyPolicy';
@@ -13,12 +13,14 @@ import Signup from '../screens/Auth/Signup';
 import AccountType from '../screens/Auth/AccountType';
 import SignupForm from '../screens/Auth/SignupForm';
 import ForgotPassword from '../screens/Auth/ForgetPassword';
+import ConfirmEmail from '../screens/Auth/Signup/ConfirmEmail';
+import { useNavigation } from '@react-navigation/native';
 
 const Stack = createNativeStackNavigator();
 
 const AuthStack = () => {
   return (
-    <Stack.Navigator screenOptions={{headerShown: false}}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="SignUp" component={Signup} />
       <Stack.Screen name="AccountType" component={AccountType} />

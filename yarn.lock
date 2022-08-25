@@ -1682,6 +1682,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-community/checkbox@npm:^0.5.12":
+  version: 0.5.12
+  resolution: "@react-native-community/checkbox@npm:0.5.12"
+  peerDependencies:
+    react: "*"
+    react-native: ">= 0.62"
+    react-native-windows: ">=0.62"
+  peerDependenciesMeta:
+    react-native-windows:
+      optional: true
+  checksum: 9c07132873697732d32eb6729648a0c920dba8118d660eb22a6fcc4f5c4cc1f3c7aed2a022136a8053dcbc05cc8f546927a5086554ed08f72e806708b617ab33
+  languageName: node
+  linkType: hard
+
 "@react-native-community/cli-clean@npm:^8.0.4":
   version: 8.0.4
   resolution: "@react-native-community/cli-clean@npm:8.0.4"
@@ -8935,6 +8949,7 @@ __metadata:
     "@babel/runtime": ^7.12.5
     "@invertase/react-native-apple-authentication": ^2.2.0
     "@react-native-async-storage/async-storage": ^1.15.15
+    "@react-native-community/checkbox": ^0.5.12
     "@react-native-community/clipboard": ^1.5.1
     "@react-native-community/geolocation": ^2.0.2
     "@react-native-firebase/app": ^15.3.0
@@ -8990,11 +9005,13 @@ __metadata:
     react-native-fast-image: ^8.5.11
     react-native-fbsdk-next: ^10.0.0
     react-native-floating-action: ^1.22.0
+    react-native-geolocation-service: ^5.3.0
     react-native-gesture-handler: ^2.3.1
     react-native-gifted-chat: ^1.0.0
     react-native-image-crop-picker: ^0.37.3
     react-native-image-modal: ^2.0.4
     react-native-image-picker: ^4.7.3
+    react-native-inappbrowser-reborn: ^3.7.0
     react-native-keyboard-aware-scroll-view: ^0.9.5
     react-native-linear-gradient: ^2.5.6
     react-native-material-menu: ^2.0.0
@@ -9054,7 +9071,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"opencollective-postinstall@npm:^2.0.1":
+"opencollective-postinstall@npm:^2.0.1, opencollective-postinstall@npm:^2.0.3":
   version: 2.0.3
   resolution: "opencollective-postinstall@npm:2.0.3"
   bin:
@@ -9768,6 +9785,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-geolocation-service@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "react-native-geolocation-service@npm:5.3.0"
+  checksum: 7b07b0c551c4a7c8ebc2163f945350c0b37de561de59385b62527a7c2c93b372ef83f78e0b84c9571b208851d376efe8ee2689991ad901e0e67d112112123b6f
+  languageName: node
+  linkType: hard
+
 "react-native-gesture-handler@npm:^2.3.1":
   version: 2.5.0
   resolution: "react-native-gesture-handler@npm:2.5.0"
@@ -9847,6 +9871,18 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 594de841729816fe23d8110a9e88adb21788dde40a0d2036a6a29eb78a54a5e0f854e150b85a776a2397389d3fc8fb714eed7f5b7cc4f029f66b8d02cf3bb79e
+  languageName: node
+  linkType: hard
+
+"react-native-inappbrowser-reborn@npm:^3.7.0":
+  version: 3.7.0
+  resolution: "react-native-inappbrowser-reborn@npm:3.7.0"
+  dependencies:
+    invariant: ^2.2.4
+    opencollective-postinstall: ^2.0.3
+  peerDependencies:
+    react-native: ">=0.56"
+  checksum: b2177addf05cc02a20c5b9b8397c410ccf2fffba6baf1a49fbeb199ceaf4b9d4e959549915c5221f4345f35ec96620ecf25f650a5e268793103d95ffa7e44127
   languageName: node
   linkType: hard
 

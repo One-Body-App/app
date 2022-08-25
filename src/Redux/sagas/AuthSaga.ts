@@ -49,26 +49,24 @@ export function* loginSaga() {
 }
 
 function* loginSocialRequest(params) {
+  console.log(params.data);
   try {
     const res = yield ApiCall({
       params: params.data.data,
       route: 'auth/social-login',
       verb: 'post',
+      token: params.data.token,
     });
 
     if (res?.status == '200') {
       console.log('res', res?.response);
       yield put(setLoader(false));
-      if (res?.response?.user?.email) {
-        params.data.gotoOtp();
+      if (res?.response?.email) {
+        params.data.gotoSignup();
       }
-      params.data.sendFcm(res?.response?.token);
-      yield put(setLoginData(res?.response));
+      params.data.sendFcm(params.data.token);
       yield put(
-        getProfile({
-          token: res?.response?.token,
-          role: res?.response?.user.role,
-        })
+        setLoginData(setLoginData({ token: params.data.token, user: res?.response?.user.toJSON() }))
       );
     } else {
       params.data.seterror(res?.response?.message);
@@ -85,12 +83,14 @@ export function* loginSocialSaga() {
 
 function* signUpRequest(params) {
   try {
+    console.log(params, 'asdf');
     const res = yield ApiCall({
       params: params.data.data,
       route: 'auth/register',
       verb: 'post',
+      token: params.token,
     });
-    console.log(res);
+
     if (res?.status == '200') {
       yield put(setSignUpData(res?.response));
       params.data.go();

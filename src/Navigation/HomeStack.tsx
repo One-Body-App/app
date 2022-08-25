@@ -34,9 +34,11 @@ const Stack = createNativeStackNavigator();
 const HomeStack = ({
   user,
   userData,
+  token,
 }: {
-  user: FirebaseAuthTypes.User;
+  user?: FirebaseAuthTypes.User;
   userData: UserData | null;
+  token?: string;
 }) => {
   return (
     <Stack.Navigator

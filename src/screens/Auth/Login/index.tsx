@@ -6,8 +6,12 @@ import GeneralStatusBar from '@/components/GeneralStatusBar';
 import GradientHeader from '@/components/GradientHeader';
 import { appColor } from '../../../constants';
 import { styles } from './styles';
+import { StackScreenProps } from '@react-navigation/stack';
+import { ParamListBase } from '@react-navigation/native';
 
-const Login = ({ navigation }) => {
+type Props = StackScreenProps<ParamListBase, 'Login'>;
+
+const Login = ({ navigation }: Props) => {
   return (
     <View style={styles.container}>
       <GeneralStatusBar
