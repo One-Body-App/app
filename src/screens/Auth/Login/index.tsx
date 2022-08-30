@@ -8,6 +8,7 @@ import { appColor } from '../../../constants';
 import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
 import { ParamListBase } from '@react-navigation/native';
+import GoBackIcon from '@/src/Components/GoBackIcon';
 
 type Props = StackScreenProps<ParamListBase, 'Login'>;
 
@@ -20,23 +21,10 @@ const Login = ({ navigation }: Props) => {
         hidden={false}
         translucent={true}
       />
-      <GradientHeader />
-      <LinearGradient colors={[appColor.PrimaryColor, appColor.PrimaryColor]} style={styles.tabBar}>
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => {
-            navigation.navigate('AccountType');
-          }}
-        >
-          <Animated.Text style={styles.TabTex}>Sign up</Animated.Text>
-          <View style={styles.animatedview2} />
-        </TouchableOpacity>
-        <View style={styles.tabItem}>
-          <Animated.Text style={styles.selectedTabText}>Log in</Animated.Text>
-          <View style={styles.animatedview} />
-        </View>
-      </LinearGradient>
+      <GradientHeader title="Log In" />
+
       <LoginComponent />
+      <GoBackIcon color={'white'} />
     </View>
   );
 };

@@ -29,7 +29,6 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         userToken: action.data?.token,
-        userData: action.data?.user,
       };
 
     case ACTIONS.FETCH_SIGN_UP:

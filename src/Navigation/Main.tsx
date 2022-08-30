@@ -1,6 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,11 +11,12 @@ import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import AuthStack from './AuthStack';
 import HomeStack from './HomeStack';
 import { RootState } from '../Redux/reducers/rootReducer';
-import { getuserGet } from '../Redux/actions/UserAction';
-import { setLoginData } from '../Redux/actions/AuthActions';
+import { getUserData, getuserGet, setUserData } from '../Redux/actions/UserAction';
+import { getProfile, setLoginData } from '../Redux/actions/AuthActions';
 import { isEqual } from 'lodash';
 import { setLoader } from '../Redux/actions/GeneralActions';
 import Toast from 'react-native-toast-message';
+import { ScrollView } from 'react-native';
 // import { getuserGet } from '../Redux/actions/AuthActions';
 
 // let initializing = true;
@@ -26,7 +27,7 @@ const Main = () => {
   const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [user, setUser] = useState<FirebaseAuthTypes.User | undefined>(undefined);
   const [showUserValidation, setShowUserValidation] = useState<boolean>(false);
   const [token, setToken] = useState<string>('');
 
@@ -55,12 +56,12 @@ const Main = () => {
 
   useEffect(() => {
     if (user) {
-      dispatch(setLoginData({ token, user: user.toJSON() }));
+      dispatch(setLoginData({ token }));
     }
 
     if (token) {
       dispatch(
-        getuserGet({
+        getUserData({
           token,
         })
       );
@@ -72,26 +73,28 @@ const Main = () => {
 
     if (initializing) setInitializing(false);
   }, [token, user, initializing]);
-
+  console.log(userData);
   return (
-    <>
-      <NavigationContainer>
-        <AppProvider>
-          {loader || initializing ? (
-            <View style={styles.loaderbackground}>
-              <View>
-                <ActivityIndicator size={getHeight(5)} color="#126B87" />
-              </View>
+    <NavigationContainer>
+      <AppProvider>
+        {loader || initializing ? (
+          <View style={styles.loaderbackground}>
+            <View>
+              <ActivityIndicator size={getHeight(5)} color="#126B87" />
             </View>
-          ) : !user || !token ? (
-            <AuthStack />
-          ) : (
-            <HomeStack userData={userData} user={user} />
-          )}
-        </AppProvider>
-        <Toast topOffset={100} bottomOffset={100} position="bottom" />
-      </NavigationContainer>
-    </>
+          </View>
+        ) : user &&
+          token &&
+          userData &&
+          (userData?.role == 'individual' || userData?.role == 'organization') ? (
+          <HomeStack userData={userData} user={user} />
+        ) : (
+          <AuthStack />
+        )}
+      </AppProvider>
+
+      <Toast topOffset={100} bottomOffset={100} position="bottom" />
+    </NavigationContainer>
   );
 };
 const styles = StyleSheet.create({

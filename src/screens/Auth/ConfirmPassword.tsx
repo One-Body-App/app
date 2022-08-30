@@ -1,12 +1,4 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  TouchableOpacity,
-  Clipboard,
-  ImageBackground,
-} from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ImageBackground } from 'react-native';
 import React, { useState } from 'react';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 import { COLORS, THEME } from '../../constants';

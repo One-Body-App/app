@@ -2662,6 +2662,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-native-dotenv@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "@types/react-native-dotenv@npm:0.2.0"
+  checksum: 23d59b8ebd35e8fe693531f9c630f7518cb149c06694c8c35fc3b628ac8e8e26cc602cec9372447873fbbb13bf0c40bbd951ba5306c1b83b169cc3a927cb935f
+  languageName: node
+  linkType: hard
+
 "@types/react-native-vector-icons@npm:^6.4.11":
   version: 6.4.11
   resolution: "@types/react-native-vector-icons@npm:6.4.11"
@@ -3507,6 +3514,13 @@ __metadata:
   version: 1.0.2
   resolution: "balanced-match@npm:1.0.2"
   checksum: 9706c088a283058a8a99e0bf91b0a2f75497f185980d9ffa8b304de1d9e58ebda7c72c07ebf01dadedaac5b2907b2c6f566f660d62bd336c3468e960403b9d65
+  languageName: node
+  linkType: hard
+
+"base-64@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "base-64@npm:0.1.0"
+  checksum: 5a42938f82372ab5392cbacc85a5a78115cbbd9dbef9f7540fa47d78763a3a8bd7d598475f0d92341f66285afd377509851a9bb5c67bbecb89686e9255d5b3eb
   languageName: node
   linkType: hard
 
@@ -4716,6 +4730,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dotenv@npm:^16.0.0":
+  version: 16.0.1
+  resolution: "dotenv@npm:16.0.1"
+  checksum: f459ffce07b977b7f15d8cc4ee69cdff77d4dd8c5dc8c85d2d485ee84655352c2415f9dd09d42b5b5985ced3be186130871b34e2f3e2569ebc72fbc2e8096792
+  languageName: node
+  linkType: hard
+
 "ee-first@npm:1.1.1":
   version: 1.1.1
   resolution: "ee-first@npm:1.1.1"
@@ -5739,6 +5760,13 @@ __metadata:
   version: 1.0.0
   resolution: "fs.realpath@npm:1.0.0"
   checksum: 99ddea01a7e75aa276c250a04eedeffe5662bce66c65c07164ad6264f9de18fb21be9433ead460e54cff20e31721c811f4fb5d70591799df5f85dce6d6746fd0
+  languageName: node
+  linkType: hard
+
+"fs@npm:^0.0.1-security":
+  version: 0.0.1-security
+  resolution: "fs@npm:0.0.1-security"
+  checksum: 53c6230e1faae9fa32c1df82c16a84b51b1243d20f3da2b64bd110bb472b73b9185169b703e008356e3cdc92d155088b617d9d39a63b5227a30b3621baad7f5d
   languageName: node
   linkType: hard
 
@@ -8971,6 +8999,7 @@ __metadata:
     "@types/react": ^18.0.15
     "@types/react-native": ^0.69.5
     "@types/react-native-animated-progress": ^1.0.0
+    "@types/react-native-dotenv": ^0.2.0
     "@types/react-native-vector-icons": ^6.4.11
     "@types/react-test-renderer": ^18.0.0
     "@typescript-eslint/eslint-plugin": latest
@@ -8989,6 +9018,7 @@ __metadata:
     eslint-plugin-react-hooks: ^4.3.0
     eslint-plugin-react-native: ^4.0.0
     events: ^3.3.0
+    fs: ^0.0.1-security
     jest: ^26.6.3
     lodash: ^4.17.21
     metro-react-native-babel-preset: ^0.70.3
@@ -9002,9 +9032,11 @@ __metadata:
     react-native-autoscroll-flatlist: ^1.11.1
     react-native-date-picker: ^4.2.0
     react-native-device-info: ^8.4.9
+    react-native-dotenv: ^3.3.1
     react-native-fast-image: ^8.5.11
     react-native-fbsdk-next: ^10.0.0
     react-native-floating-action: ^1.22.0
+    react-native-fs: ^2.20.0
     react-native-geolocation-service: ^5.3.0
     react-native-gesture-handler: ^2.3.1
     react-native-gifted-chat: ^1.0.0
@@ -9752,6 +9784,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-dotenv@npm:^3.3.1":
+  version: 3.4.0
+  resolution: "react-native-dotenv@npm:3.4.0"
+  dependencies:
+    dotenv: ^16.0.0
+  checksum: 3bc8ef4fc2acc930b754ff6b7ae5f5abdf38864e717bced7459902c6b3f8262db234001530ee296f40112a5db467635ba249ae64b954ec29ab84dc80c2c47312
+  languageName: node
+  linkType: hard
+
 "react-native-fast-image@npm:^8.5.11":
   version: 8.5.11
   resolution: "react-native-fast-image@npm:8.5.11"
@@ -9782,6 +9823,22 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 26acb4fcd23dca2cbf8fe323d6ded94ae96eb2562a5a36cc6182a6a6497b6a6af91fd9ed76885ee48dc4354b650b561ee5a99e8076b949ad0247d6bca3f869d4
+  languageName: node
+  linkType: hard
+
+"react-native-fs@npm:^2.20.0":
+  version: 2.20.0
+  resolution: "react-native-fs@npm:2.20.0"
+  dependencies:
+    base-64: ^0.1.0
+    utf8: ^3.0.0
+  peerDependencies:
+    react-native: "*"
+    react-native-windows: "*"
+  peerDependenciesMeta:
+    react-native-windows:
+      optional: true
+  checksum: 0be9bb9a5c13b501d0a3006efc3aa5c0b5b211456ee04718297f4e522532f3527f1daa220bd67d3b82d819ed8fdab8f64b7d6e0d7b768c1fd1d8ec9122d94316
   languageName: node
   linkType: hard
 
@@ -12257,6 +12314,13 @@ __metadata:
   version: 3.1.1
   resolution: "use@npm:3.1.1"
   checksum: 08a130289f5238fcbf8f59a18951286a6e660d17acccc9d58d9b69dfa0ee19aa038e8f95721b00b432c36d1629a9e32a464bf2e7e0ae6a244c42ddb30bdd8b33
+  languageName: node
+  linkType: hard
+
+"utf8@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "utf8@npm:3.0.0"
+  checksum: cb89a69ad9ab393e3eae9b25305b3ff08bebca9adc839191a34f90777eb2942f86a96369d2839925fea58f8f722f7e27031d697f10f5f39690f8c5047303e62d
   languageName: node
   linkType: hard
 

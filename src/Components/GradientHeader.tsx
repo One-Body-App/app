@@ -4,7 +4,11 @@ import LinearGradient from 'react-native-linear-gradient';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Logo from '@/assets/svg/Logo.svg';
 
-const GradientHeader = () => {
+type Props = {
+  title?: string;
+};
+
+const GradientHeader = ({ title }: Props) => {
   return (
     <View
       style={{
@@ -56,7 +60,7 @@ const GradientHeader = () => {
             fontWeight: 'bold',
           }}
         >
-          Welcome
+          {title ?? 'Welcome'}
         </Text>
       </LinearGradient>
     </View>

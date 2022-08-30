@@ -40,6 +40,7 @@ import auth from '@react-native-firebase/auth';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Geolocation from 'react-native-geolocation-service';
+import { LoginManager } from 'react-native-fbsdk-next';
 
 type ChurchType = {
   churchType: string;
@@ -121,7 +122,8 @@ const IndividualSteps = ({ navigation }: Props) => {
 
   const logoutAction = async () => {
     await auth().signOut();
-    dispatch(logout(null));
+    LoginManager.logOut();
+    dispatch(logout());
   };
 
   const getInfluencers = async () => {
@@ -234,9 +236,13 @@ const IndividualSteps = ({ navigation }: Props) => {
   const getlocationPermison = async () => {
     try {
       if (Platform.OS === 'ios') {
-        Geolocation.getCurrentPosition((info) => {
-          getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-        });
+        const permissions = await Geolocation.requestAuthorization('whenInUse');
+
+        if (permissions == 'granted') {
+          Geolocation.getCurrentPosition((info) => {
+            getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+          });
+        }
       } else {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -383,23 +389,6 @@ const IndividualSteps = ({ navigation }: Props) => {
                 onPress={() => setChurchSubTypeModalVisible(true)}
               />
             ) : null}
-            {churchType?.churchType == 'Non-Denomination' ? (
-              <Button
-                text={'Non-Denomination'}
-                btnStyle={styles.btn2}
-                btnTextStyle={styles.btnText2}
-                onPress={() => setChurchType(null)}
-              />
-            ) : (
-              <Button
-                text={'Non-Denomination'}
-                btnStyle={styles.btn}
-                btnTextStyle={styles.btnText}
-                onPress={() =>
-                  setChurchType({ churchType: 'Non-Denomination', children: [], _id: '' })
-                }
-              />
-            )}
           </View>
         </LinearGradient>
       ),
@@ -564,7 +553,6 @@ const IndividualSteps = ({ navigation }: Props) => {
             setCheckIn={setCountrySelector}
             setLocation={setLocation_country}
             types={[MapBoxTypes.country]}
-            hideSearchMyLocation={true}
           />
 
           <TextInput
@@ -887,7 +875,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               text="Authorize"
               btnStyle={styles.btn3}
               btnTextStyle={styles.btnText3}
-              onPress={() => Geolocation.requestAuthorization('whenInUse')}
+              onPress={() => getlocationPermison()}
             />
           ) : (
             <Text
@@ -957,14 +945,13 @@ const IndividualSteps = ({ navigation }: Props) => {
 
         break;
       case 5:
-        if (Organization.length > 2) {
+        if (Organization.length > 0) {
           addFollowing();
         } else {
-          showToast('Select at least 3 influencers/organizations to continue');
+          showToast('Select at least 1 influencer/organization to continue');
         }
         break;
       case 6:
-        getlocationPermison();
         next();
         break;
       case 7:

@@ -11,6 +11,7 @@ import { ApiCall } from '@/services/api';
 import { logout } from '@/redux//actions/AuthActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
+import { LoginManager } from 'react-native-fbsdk-next';
 
 const Deactivateaccountconfirm = ({ navigation, route }) => {
   const { reason } = route.params;
@@ -29,6 +30,7 @@ const Deactivateaccountconfirm = ({ navigation, route }) => {
       if (res?.status == '200') {
         Alert.alert('Deactivate Account', res.data?.message);
         dispatch(setLoader(false));
+        LoginManager.logOut();
         dispatch(logout());
       } else {
         dispatch(setLoader(false));

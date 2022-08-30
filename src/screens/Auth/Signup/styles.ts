@@ -1,11 +1,15 @@
 import { StyleSheet } from 'react-native';
-import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { appColor } from '../../../constants';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: ' #E5E5E5;',
+  },
+
+  containerScroll: {
+    backgroundColor: ' #FFF',
   },
 
   tabBar: {
@@ -45,4 +49,94 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2.3),
   },
   TabTex: { color: appColor.SecoundryColor, fontSize: getFontSize(2.3) },
+  innerContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: getHeight(9),
+  },
+  alreadyLogin: { flexDirection: 'row', marginTop: getHeight(5) },
+  footer: {
+    position: 'absolute',
+    width: '100%',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: getHeight(10),
+  },
+  header: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 40,
+  },
+  helight: {
+    color: '#126B87',
+    fontWeight: 'bold',
+  },
+  text: {
+    marginTop: getHeight(7),
+    width: getWidth(80),
+    textAlign: 'center',
+    fontFamily: 'Rubik-Regular',
+  },
+
+  heading: {
+    fontSize: getFontSize(2.7),
+    marginTop: getHeight(2),
+    fontFamily: 'Rubik-Medium',
+    textAlign: 'center',
+
+    color: 'black',
+    width: getWidth(70),
+  },
+  alreadyAccountContainer: {
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontFamily: 'Rubik-Regular',
+    color: '#032F3C',
+  },
+  btn: {
+    backgroundColor: '#F6F6F6',
+    width: getWidth(40),
+
+    marginTop: getHeight(2),
+    height: getHeight(10),
+
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  btnSelected: {
+    backgroundColor: '#F6F6F6',
+    width: getWidth(40),
+    marginTop: getHeight(2),
+    height: getHeight(10),
+    borderWidth: 1,
+    borderColor: '#126B87',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  btn2: {
+    backgroundColor: 'white',
+    borderColor: '#F6F6F6',
+    borderWidth: 1,
+    width: getWidth(80),
+    margin: 5,
+    height: getHeight(6),
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 5,
+  },
+  btnText: {
+    color: 'black',
+    fontSize: getFontSize(2.7),
+
+    fontFamily: 'Rubik-Medium',
+  },
 });

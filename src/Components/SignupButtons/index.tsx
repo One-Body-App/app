@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Text, View, Image, TouchableOpacity, Platform } from 'react-native';
+import { Text, View, Image, TouchableOpacity, Platform, Linking, Alert } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -8,8 +8,11 @@ import { useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import G from '@/assets/svg/G.svg';
+import Facebook from '@/assets/svg/Facebook.svg';
+import Twitter from '@/assets/svg/Twitter.svg';
 import { styles } from './styles';
 import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
+import InAppBrowser from 'react-native-inappbrowser-reborn';
 // import {
 //   LoginButton,
 //   AccessToken,
@@ -18,6 +21,44 @@ import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentica
 //   GraphRequestManager,
 // } from 'react-native-fbsdk';
 // import { GoogleSignin, statusCodes } from '@react-native-community/google-signin';
+
+const OpenURLButton = async (url: string) => {
+  try {
+    if (await InAppBrowser.isAvailable()) {
+      const result = await InAppBrowser.open(url, {
+        // iOS Properties
+        // dismissButtonStyle: 'cancel',
+        // preferredBarTintColor: '#453AA4',
+        // preferredControlTintColor: 'white',
+        readerMode: false,
+        animated: true,
+        modalPresentationStyle: 'fullScreen',
+        modalTransitionStyle: 'coverVertical',
+        modalEnabled: true,
+        enableBarCollapsing: false,
+        // Android Properties
+        showTitle: true,
+        // toolbarColor: '#6200EE',
+        // secondaryToolbarColor: 'black',
+        // navigationBarColor: 'black',
+        // navigationBarDividerColor: 'white',
+        enableUrlBarHiding: true,
+        enableDefaultShare: true,
+        forceCloseOnRedirection: false,
+        animations: {
+          startEnter: 'slide_in_right',
+          startExit: 'slide_out_left',
+          endEnter: 'slide_in_left',
+          endExit: 'slide_out_right',
+        },
+      });
+      // await this.sleep(800);
+      // Alert.alert(JSON.stringify(result));
+    } else Linking.openURL(url);
+  } catch (error: any) {
+    Alert.alert(error.message);
+  }
+};
 
 const SignupButtons = () => {
   const navigation = useNavigation();
@@ -77,57 +118,75 @@ const SignupButtons = () => {
     // }
   };
 
+  const disabled = !!!AccountType;
+
   return (
     <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
       <View style={styles.buttonList}>
         <Button
+          disabled={disabled}
           text={'Sign up with Google'}
           leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
           btnStyle={styles.buttonContainer}
           btnTextStyle={styles.btnTitle}
           onPress={() => {
-            AccountType != null ? signIn() : navigation.navigate('AccountType');
+            AccountType != null ? signIn() : null;
           }}
+          disabledBtnStyle={styles.disabledButtonContainer}
+          disabledBtnTextStyle={styles.disabledBtnTextStyle}
         />
-
-        {Platform.OS == 'ios' ? (
-          <Button
-            text={'Sign up with Apple'}
-            leftIcon={
-              <FontAwesome
-                name="apple"
-                style={{ marginRight: getWidth(3) }}
-                size={getFontSize(4)}
-              />
-            }
-            btnStyle={styles.buttonContainer}
-            btnTextStyle={styles.btnTitle}
-            onPress={() => {
-              AccountType != null ? onAppleButtonPress() : navigation.navigate('AccountType');
-            }}
-          />
-        ) : null}
         <Button
-          text={'Sign up with Email'}
-          leftIcon={
-            <Ionicons name="mail" style={{ marginRight: getWidth(3) }} size={getFontSize(4)} />
-          }
-          onPress={() => {
-            AccountType != null
-              ? navigation.navigate('SignupForm')
-              : navigation.navigate('AccountType');
-          }}
+          disabled={disabled}
+          text={'Sign up with Facebook'}
+          leftIcon={<Facebook style={{ marginRight: 7 }} height={getHeight(5)} />}
           btnStyle={styles.buttonContainer}
           btnTextStyle={styles.btnTitle}
+          onPress={() => {
+            AccountType != null ? signIn() : null;
+          }}
+          disabledBtnStyle={styles.disabledButtonContainer}
+          disabledBtnTextStyle={styles.disabledBtnTextStyle}
         />
-        <View style={styles.center}>
+
+        <Button
+          disabled={disabled}
+          text={'Sign up with Twitter'}
+          leftIcon={<Twitter style={{ marginRight: 7 }} height={getHeight(5)} />}
+          btnStyle={styles.buttonContainer}
+          btnTextStyle={styles.btnTitle}
+          onPress={() => {
+            AccountType != null ? signIn() : null;
+          }}
+          disabledBtnStyle={styles.disabledButtonContainer}
+          disabledBtnTextStyle={styles.disabledBtnTextStyle}
+        />
+
+        <Button
+          disabled={disabled}
+          text={'Sign up with Email'}
+          leftIcon={
+            <Ionicons
+              name="mail"
+              style={{ marginRight: getWidth(3), color: disabled ? '#B3C1C5' : '' }}
+              size={getFontSize(4)}
+            />
+          }
+          onPress={() => {
+            AccountType != null ? navigation.navigate('SignupForm') : null;
+          }}
+          btnStyle={styles.buttonContainer}
+          disabledBtnStyle={styles.disabledButtonContainer}
+          btnTextStyle={styles.btnTitle}
+          disabledBtnTextStyle={styles.disabledBtnTextStyle}
+        />
+        <View style={{ ...styles.center, paddingBottom: 80 }}>
           <Text style={{ color: '#032F3C' }}>By signing up, you agree to our</Text>
           <View style={{ flexDirection: 'row' }}>
-            <TouchableOpacity onPress={() => navigation.navigate('EndUserAgrement')}>
+            <TouchableOpacity onPress={() => OpenURLButton('https://google.com')}>
               <Text style={styles.text}>User Agreements</Text>
             </TouchableOpacity>
             <Text style={styles.simpleText}> & </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('PrivacyPolicy')}>
+            <TouchableOpacity onPress={() => OpenURLButton('https://google.com')}>
               <Text style={styles.text}>Privacy Policy</Text>
             </TouchableOpacity>
           </View>
@@ -140,22 +199,6 @@ const SignupButtons = () => {
             <Text style={{ ...styles.helight, textDecorationLine: 'underline' }}>Login</Text>
           </TouchableOpacity>
         </View>
-      </View>
-      <Image
-        style={styles.footer}
-        resizeMode="stretch"
-        source={require('@/assets/images/waveBG.png')}
-      />
-      <View
-        style={{
-          ...styles.footer,
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: getHeight(9),
-        }}
-      >
-        <Text style={styles.helight}>Unify the Body</Text>
-        <Text style={{ color: 'gray', marginTop: 2 }}>1 Cor. 12:12</Text>
       </View>
     </LinearGradient>
   );

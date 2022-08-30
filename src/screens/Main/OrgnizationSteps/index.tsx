@@ -37,7 +37,8 @@ import Group134 from '@/assets/svg/Group134.svg';
 import GradientButton from '@/components/GradientButton';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { requestUserPermission } from '@/services/Notification/notificationServices';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import auth from '@react-native-firebase/auth';
+import { LoginManager } from 'react-native-fbsdk-next';
 
 const OrgnizationSteps = ({ navigation }) => {
   const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
@@ -219,6 +220,7 @@ const OrgnizationSteps = ({ navigation }) => {
           <TouchableOpacity
             onPress={() => {
               auth().signOut();
+              LoginManager.logOut();
               dispatch(logout());
             }}
             style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
@@ -683,7 +685,7 @@ const OrgnizationSteps = ({ navigation }) => {
               color="#126B87"
               onValueChange={() => {
                 setNotificationSwitch(!notificationSwitchOn);
-                requestUserPermission(token);
+                requestUserPermission(token, !notificationSwitchOn);
               }}
             />
           </View>

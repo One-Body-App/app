@@ -34,4 +34,22 @@ export const styles = StyleSheet.create({
     bottom: 0,
     height: getHeight(10),
   },
+  paragraph: {
+    color: '#4F6D77',
+    fontWeight: '400',
+    fontFamily: 'Rubik-Regular',
+    fontSize: 15.5,
+    lineHeight: 20,
+    marginTop: getHeight(0.5),
+  },
+  textButton: {
+    color: '#304248',
+    fontWeight: '400',
+    fontStyle: 'italic',
+    fontFamily: 'Rubik-Bold',
+    fontSize: 15.5,
+    lineHeight: 20,
+    marginTop: getHeight(0.5),
+    textDecorationLine: 'underline',
+  },
 });

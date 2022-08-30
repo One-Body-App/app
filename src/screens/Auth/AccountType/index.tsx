@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Text, View, Image, TouchableOpacity } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import LinearGradient from 'react-native-linear-gradient';
@@ -12,10 +12,64 @@ import Button from '@/components/Button';
 import { styles } from './styles';
 import { appColor } from '../../../constants';
 import GoBackIcon from '@/components/GoBackIcon';
+import { StackScreenProps } from '@react-navigation/stack';
+// import { ParamListBase } from '@react-navigation/native';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import auth from '@react-native-firebase/auth';
+import { logout, setProfile } from '@/src/Redux/actions/AuthActions';
+import { ApiCall } from '@/src/Services/api';
+import { getuserGet } from '@/src/Redux/actions/UserAction';
+import { LoginManager } from 'react-native-fbsdk-next';
+import { ParamListBase } from '@react-navigation/native';
 
-const AccountType = ({ navigation }) => {
+type Props = StackScreenProps<ParamListBase, 'Login'>;
+
+const AccountType = ({ route, navigation }: Props) => {
   const dispatch = useDispatch();
-  const selected = useSelector((state) => state.general.accountType);
+  const selected = useSelector((state: RootState) => state.general.accountType);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+
+  useEffect(() => {
+    navigation?.addListener('beforeRemove', async (e) => {
+      try {
+        e.preventDefault();
+        LoginManager.logOut();
+        await auth().signOut();
+        dispatch(logout());
+        navigation.dispatch(e.data.action);
+      } catch {
+        navigation.dispatch(e.data.action);
+      }
+    });
+
+    return navigation?.removeListener('beforeRemove', () => {});
+  }, [navigation]);
+
+  const setRole = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'user/set-role',
+        token: token,
+        params: { role: selected },
+        verb: 'patch',
+      });
+      console.log(res);
+      if (res?.status == 200) {
+        dispatch(setProfile(res.response));
+        console.log('role res == 200 ... ', res);
+      } else {
+        console.log('error', res);
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  useEffect(() => {
+    if (selected) {
+      setRole();
+    }
+  }, [selected]);
 
   return (
     <View style={styles.container}>
@@ -44,9 +98,6 @@ const AccountType = ({ navigation }) => {
             btnTextStyle={styles.btnText}
             onPress={() => {
               dispatch(setAccountType('individual'));
-              setTimeout(function () {
-                navigation.navigate('SignUp');
-              }, 1000);
             }}
           />
           <Button
@@ -57,17 +108,8 @@ const AccountType = ({ navigation }) => {
             btnTextStyle={styles.btnText}
             onPress={() => {
               dispatch(setAccountType('organization'));
-              setTimeout(function () {
-                navigation.navigate('SignUp');
-              }, 1000);
             }}
           />
-        </View>
-        <View style={styles.alreadyLogin}>
-          <Text style={styles.alreadyAccountContainer}>Already Have an account?</Text>
-          <TouchableOpacity style={{ marginLeft: 5 }} onPress={() => navigation.navigate('Login')}>
-            <Text style={{ ...styles.helight, textDecorationLine: 'underline' }}>Login</Text>
-          </TouchableOpacity>
         </View>
       </LinearGradient>
       <Image

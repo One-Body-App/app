@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { getHeight } from '@/utils/ResponsiveFun';
-import { appColor } from '../../constants';
+import { appColor, COLORS } from '../../constants';
 
 export const styles = StyleSheet.create({
   container: {
@@ -14,7 +14,16 @@ export const styles = StyleSheet.create({
     height: 50,
     borderRadius: 10,
     marginVertical: 10,
-    borderColor: appColor.StatusBarColor,
+  },
+  disabledButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    height: 50,
+    borderRadius: 10,
+    marginVertical: 10,
+    borderColor: '#F6F6F6',
   },
   btnIcon: {
     width: 24,
@@ -24,6 +33,12 @@ export const styles = StyleSheet.create({
   btnTitle: {
     fontSize: 18,
     fontWeight: '500',
+  },
+  disabledBtnTextStyle: {
+    fontSize: 18,
+    fontWeight: '500',
+    borderColor: '#F6F6F6',
+    color: '#B3C1C5',
   },
   buttonList: {
     marginHorizontal: 20,

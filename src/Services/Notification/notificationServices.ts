@@ -1,20 +1,21 @@
 import messaging from '@react-native-firebase/messaging';
 import { ApiCall } from '@/services/api';
 
-export const requestUserPermission = async (token) => {
+export const requestUserPermission = async (token: string, notificationStatus: boolean) => {
   const authStatus = await messaging().requestPermission();
   const enabled =
     authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-  if (enabled) {
+  if (enabled && notificationStatus) {
     console.log('Authorization status:', authStatus);
     getFcmToken(token);
   }
 };
-export const getFcmToken = async (token) => {
+export const getFcmToken = async (token: string) => {
   try {
     // if (fcmToken == null) {
+    await messaging().registerDeviceForRemoteMessages();
     const fcmtoken = await messaging().getToken();
     sendFcm(token, fcmtoken);
     console.log('fcmToken is genrated', fcmtoken);

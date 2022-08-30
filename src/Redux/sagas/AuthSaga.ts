@@ -59,15 +59,12 @@ function* loginSocialRequest(params) {
     });
 
     if (res?.status == '200') {
-      console.log('res', res?.response);
       yield put(setLoader(false));
       if (res?.response?.email) {
         params.data.gotoSignup();
       }
-      params.data.sendFcm(params.data.token);
-      yield put(
-        setLoginData(setLoginData({ token: params.data.token, user: res?.response?.user.toJSON() }))
-      );
+      params.data.sendFcm(params.data.data.token);
+      yield put(setLoginData({ token: params.data.data.token }));
     } else {
       params.data.seterror(res?.response?.message);
       yield put(setLoader(false));
@@ -169,20 +166,21 @@ function* updateOrgProfileRequest(params) {
   }
 }
 
-// export function* GetProfileSaga() {
-//   yield takeLatest(ACTIONS.FETCH_PROFILE, getProfileRequest);
-// }
+export function* GetProfileSaga() {
+  yield takeLatest(ACTIONS.GET_FETCH_PROFILE, getProfileRequest);
+}
 function* getProfileRequest(params) {
+  console.log('sjhbdkllgkfhjmjkugkyfjh');
   try {
     const res = yield ApiCall({
-      params: params.data.data,
-      route: 'individual/my-profile',
+      route: 'auth/my-profile',
       token: params.data.token,
       verb: 'get',
     });
+    console.log(res, 'resresresresres');
     if (res?.status == '200') {
-      // yield put(getProfile({ token: params.data.token }));
-      params?.data?.go();
+      yield put(setProfile({ token: params.data.token, ...res.response }));
+      // params?.data?.go();
       yield put(setLoader(false));
     } else {
       yield put(setLoader(false));

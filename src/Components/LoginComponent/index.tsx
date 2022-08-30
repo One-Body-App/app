@@ -20,18 +20,19 @@ import { appleAuth } from '@invertase/react-native-apple-authentication';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import Modal from 'react-native-modal';
+import { LoginButton, LoginManager, AccessToken, LoginResult } from 'react-native-fbsdk-next';
+import InAppBrowser from 'react-native-inappbrowser-reborn';
 
 import {
   getFcmToken,
   requestUserPermission,
 } from '../../Services/Notification/notificationServices';
-import { LoginButton, LoginManager, AccessToken, LoginResult } from 'react-native-fbsdk-next';
-import { getuserGet } from '@/src/Redux/actions/UserAction';
+
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import GradientButton from '../GradientButton';
 import { loginSocialRequest } from '@/src/Redux/actions/AuthActions';
 import { ApiCall } from '@/src/Services/api';
-import InAppBrowser from 'react-native-inappbrowser-reborn';
+import { setAccountType } from '@/src/Redux/actions/GeneralActions';
 
 const LoginComponent = () => {
   const dispatch = useDispatch();
@@ -52,19 +53,25 @@ const LoginComponent = () => {
   const [hidePass, setHidePass] = useState(true);
   const [token, setToken] = useState('');
   const [showConfirmEmail, setShowConfirmEmail] = useState<boolean>(false);
-  const [isNewUser, setIsNewUser] = useState<boolean>(false);
-  const [acceptTermsConditions, setAcceptTermsConditions] = useState<boolean>(false);
-  const [acceptPrivacyPolicy, setAcceptPrivacyPolicy] = useState<boolean>(false);
-
-  // useEffect(() => {
-  //   if (!userData && token) {
-  //     navigation.navigate('Signup');
-  //   }
-  // }, [userData]);
+  const [loggingIn, setLoginingIn] = useState<boolean>(false);
+  const [newUserCredentials, setNewUserCredentials] =
+    useState<FirebaseAuthTypes.UserCredential | null>(null);
+  const [showSendEmailConfirmation, setShowSendEmailConfirmation] = useState<boolean>(true);
 
   useEffect(() => {
-    if (isNewUser) setShowConfirmEmail(true);
-  }, [isNewUser]);
+    if (newUserCredentials) {
+      console.log(token);
+      const data = {
+        email: newUserCredentials?.user.email,
+        name: newUserCredentials?.user.displayName,
+        socialData: newUserCredentials?.additionalUserInfo,
+        userId: newUserCredentials.user.uid,
+        token,
+      };
+
+      dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));
+    }
+  }, [newUserCredentials]);
 
   const signInUser = async () => {
     try {
@@ -87,7 +94,10 @@ const LoginComponent = () => {
   };
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   const gotoSignup = () => {
-    navigation.navigate('Signup');
+    setShowConfirmEmail(false);
+    setNewUserCredentials(null);
+    setLoginingIn(false);
+    navigation.navigate('AccountType');
   };
   const sendFcm = (token: string) => {
     requestUserPermission(token);
@@ -132,7 +142,7 @@ const LoginComponent = () => {
       requestedOperation: appleAuth.Operation.LOGIN,
       requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
     });
-
+    console.log(appleAuthRequestResponse);
     // Ensure Apple returned a user identityToken
     if (!appleAuthRequestResponse.identityToken) {
       throw new Error('Apple Sign-In failed - no identify token returned');
@@ -143,7 +153,8 @@ const LoginComponent = () => {
     const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
 
     // Sign the user in with the credential
-    return auth().signInWithCredential(appleCredential);
+    // return auth().signInWithCredential(appleCredential);
+    processLogin(appleCredential);
   }
 
   useEffect(() => {
@@ -183,9 +194,9 @@ const LoginComponent = () => {
 
       // Create a Google credential with the token
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-
+      processLogin(googleCredential);
       // Sign-in the user with the credential
-      return auth().signInWithCredential(googleCredential);
+      // return auth().signInWithCredential(googleCredential);
     } catch (error: any) {
       console.log('Message', error.message);
 
@@ -232,10 +243,11 @@ const LoginComponent = () => {
     const userCredentials = await auth().signInWithCredential(credential);
     const token = await userCredentials.user.getIdToken();
     setToken(token);
-    console.log(userCredentials, 'userCredentialsuserCredentialsuserCredentials');
+    setLoginingIn(true);
+    dispatch(setAccountType(''));
+
     if (userCredentials.additionalUserInfo?.isNewUser) {
-      setIsNewUser(true);
-      // dispatch(loginSocialRequest({ data, seterror, gotoOtp, sendFcm }));
+      setNewUserCredentials(userCredentials);
     } else {
       const userProfileResult = await ApiCall({
         token: token,
@@ -245,7 +257,7 @@ const LoginComponent = () => {
 
       if (userProfileResult.status == 200) {
         if (userProfileResult.response == '') {
-          setIsNewUser(true);
+          setNewUserCredentials(userCredentials);
         } else {
           if (!userCredentials.user.email || !userCredentials.user.emailVerified) {
             //   dispatch(
@@ -263,47 +275,10 @@ const LoginComponent = () => {
           }
         }
       } else {
-        setToken('');
-        auth().signOut();
+        // setToken('');
+        // auth().signOut();
+        setNewUserCredentials(userCredentials);
       }
-    }
-  };
-
-  const OpenURLButton = async (url: string) => {
-    try {
-      if (await InAppBrowser.isAvailable()) {
-        const result = await InAppBrowser.open(url, {
-          // iOS Properties
-          // dismissButtonStyle: 'cancel',
-          // preferredBarTintColor: '#453AA4',
-          // preferredControlTintColor: 'white',
-          readerMode: false,
-          animated: true,
-          modalPresentationStyle: 'fullScreen',
-          modalTransitionStyle: 'coverVertical',
-          modalEnabled: true,
-          enableBarCollapsing: false,
-          // Android Properties
-          showTitle: true,
-          // toolbarColor: '#6200EE',
-          // secondaryToolbarColor: 'black',
-          // navigationBarColor: 'black',
-          // navigationBarDividerColor: 'white',
-          enableUrlBarHiding: true,
-          enableDefaultShare: true,
-          forceCloseOnRedirection: false,
-          animations: {
-            startEnter: 'slide_in_right',
-            startExit: 'slide_out_left',
-            endEnter: 'slide_in_left',
-            endExit: 'slide_out_right',
-          },
-        });
-        // await this.sleep(800);
-        // Alert.alert(JSON.stringify(result));
-      } else Linking.openURL(url);
-    } catch (error: any) {
-      Alert.alert(error.message);
     }
   };
 
@@ -379,10 +354,7 @@ const LoginComponent = () => {
           {state.passwordError}
         </Text>
       </View>
-      <TouchableOpacity
-        onPress={() => navigation.navigate({ key: 'forget' })}
-        style={styles.forgotPassword}
-      >
+      <TouchableOpacity onPress={() => navigation.navigate('forget')} style={styles.forgotPassword}>
         <Text style={styles.forgetStyle}>Forgot Password?</Text>
       </TouchableOpacity>
       <Button
@@ -445,122 +417,35 @@ const LoginComponent = () => {
                     await auth().signOut();
                   }
                   setShowConfirmEmail(false);
-                  setIsNewUser(false);
+                  setNewUserCredentials(null);
                 }}
               />
             </View>
 
             <ScrollView>
-              {isNewUser ? (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'stretch',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <View
-                    style={{
-                      marginTop: getHeight(3),
-                      flexDirection: 'row',
-
-                      alignItems: 'stretch',
-                      flexWrap: 'wrap',
-                      marginHorizontal: 4,
-                    }}
-                  >
-                    <CheckBox
-                      value={acceptTermsConditions}
-                      onValueChange={() => {
-                        setAcceptTermsConditions(!acceptTermsConditions);
-                      }}
-                    />
-                    <Button
-                      text="I have read and I accept the"
-                      btnStyle={{ marginLeft: 10, marginRight: 2 }}
-                      btnTextStyle={styles.paragraph}
-                      onPress={() => setAcceptTermsConditions(!acceptTermsConditions)}
-                    />
-
-                    <Button
-                      text="Terms and Conditions."
-                      btnStyle={{ marginLeft: 2 }}
-                      btnTextStyle={styles.textButton}
-                      onPress={() => OpenURLButton('https://google.com')}
-                    />
-                  </View>
-
-                  <View
-                    style={{
-                      marginTop: getHeight(3),
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      marginHorizontal: 4,
-                    }}
-                  >
-                    <CheckBox
-                      value={acceptPrivacyPolicy}
-                      onValueChange={() => {
-                        setAcceptPrivacyPolicy(!acceptPrivacyPolicy);
-                      }}
-                    />
-                    <Button
-                      text="I have read and I accept the"
-                      btnStyle={{ marginLeft: 10, marginRight: 2 }}
-                      btnTextStyle={styles.paragraph}
-                      onPress={() => setAcceptPrivacyPolicy(!acceptPrivacyPolicy)}
-                    />
-
-                    <Button
-                      text="Privacy Policy."
-                      btnStyle={{ marginLeft: 2 }}
-                      btnTextStyle={styles.textButton}
-                      onPress={() => OpenURLButton('https://google.com')}
-                    />
-                  </View>
-                </View>
-              ) : (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'stretch',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Text>Please Confirm email</Text>
-                </View>
-              )}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'stretch',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Text>Please Confirm email</Text>
+              </View>
             </ScrollView>
 
-            {isNewUser ? (
-              <GradientButton
-                text={'CONTINUE'}
-                disabled={!acceptPrivacyPolicy || !acceptTermsConditions}
-                btnStyle={styles.btn2}
-                btnTextStyle={styles.btnText2}
-                onPress={async () => {
-                  const user = auth().currentUser;
-                  const token = await user?.getIdToken();
-
-                  const data = {
-                    email: user?.email,
-                    name: user?.displayName,
-                    socialData: {
-                      id: user?.providerData[0].uid,
-                      providerId: user?.providerData[0].providerId,
-                    },
-                    userId: user?.uid,
-                  };
-                  dispatch(loginSocialRequest({ token, data, seterror, gotoSignup, sendFcm }));
-                }}
-              />
-            ) : (
+            {showSendEmailConfirmation ? (
               <GradientButton
                 text={'SEND EMAIL CONFIRMATION'}
                 btnStyle={styles.btn2}
                 btnTextStyle={styles.btnText2}
-                onPress={() => {}}
+                onPress={() => {
+                  setShowSendEmailConfirmation(false);
+                  auth().currentUser?.sendEmailVerification();
+                }}
               />
+            ) : (
+              <Text>Confirmation email sent</Text>
             )}
           </View>
         </View>

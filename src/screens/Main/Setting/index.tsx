@@ -24,6 +24,8 @@ import { logout } from '@/redux//actions/AuthActions';
 import { useDispatch, useSelector } from 'react-redux';
 import { color } from 'react-native-reanimated';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
+import { LoginManager } from 'react-native-fbsdk-next';
+import auth from '@react-native-firebase/auth';
 
 const Setting = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -142,7 +144,11 @@ const Setting = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       <TouchableOpacity
-        onPress={() => dispatch(logout())}
+        onPress={() => {
+          LoginManager.logOut();
+          auth().signOut();
+          dispatch(logout());
+        }}
         style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
       >
         <Text style={styles.logouttext}>Log out</Text>
