@@ -32,12 +32,10 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       };
 
     case ACTIONS.FETCH_SIGN_UP:
-      console.log('action', action.data?.user);
       return {
         ...state,
         //otpToken:action.data.token,
-        userToken: action.data?.token,
-        userData: action.data?.user,
+        userData: action.data,
       };
 
     case ACTIONS.FETCH_OTP:

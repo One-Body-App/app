@@ -134,11 +134,12 @@ const SignupButtons = () => {
           }}
           disabledBtnStyle={styles.disabledButtonContainer}
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
+          wrapperBtnStyle={{ width: 225 }}
         />
         <Button
           disabled={disabled}
           text={'Sign up with Facebook'}
-          leftIcon={<Facebook style={{ marginRight: 7 }} height={getHeight(5)} />}
+          leftIcon={<Facebook style={{ marginLeft: 5, marginRight: 10 }} fill="#1877f2" />}
           btnStyle={styles.buttonContainer}
           btnTextStyle={styles.btnTitle}
           onPress={() => {
@@ -146,12 +147,17 @@ const SignupButtons = () => {
           }}
           disabledBtnStyle={styles.disabledButtonContainer}
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
+          wrapperBtnStyle={{
+            width: 225,
+
+            paddingVertical: 10,
+          }}
         />
 
         <Button
           disabled={disabled}
           text={'Sign up with Twitter'}
-          leftIcon={<Twitter style={{ marginRight: 7 }} height={getHeight(5)} />}
+          leftIcon={<Twitter style={{ marginRight: 7 }} height={getHeight(5)} fill="#00acee" />}
           btnStyle={styles.buttonContainer}
           btnTextStyle={styles.btnTitle}
           onPress={() => {
@@ -159,6 +165,7 @@ const SignupButtons = () => {
           }}
           disabledBtnStyle={styles.disabledButtonContainer}
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
+          wrapperBtnStyle={{ width: 225 }}
         />
 
         <Button
@@ -178,6 +185,7 @@ const SignupButtons = () => {
           disabledBtnStyle={styles.disabledButtonContainer}
           btnTextStyle={styles.btnTitle}
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
+          wrapperBtnStyle={{ width: 225 }}
         />
         <View style={{ ...styles.center, paddingBottom: 80 }}>
           <Text style={{ color: '#032F3C' }}>By signing up, you agree to our</Text>

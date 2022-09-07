@@ -28,18 +28,15 @@ const Main = () => {
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | undefined>(undefined);
-  const [showUserValidation, setShowUserValidation] = useState<boolean>(false);
   const [token, setToken] = useState<string>('');
 
   const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
     const firebaseToken = await firebaseUser?.getIdToken();
 
     if (!isEqual(firebaseUser, user)) {
-      if (firebaseUser?.email && firebaseUser?.emailVerified) {
-        setUser(firebaseUser);
-      } else {
-        setShowUserValidation(true);
-      }
+      // if (firebaseUser?.email && firebaseUser?.emailVerified) {
+      setUser(firebaseUser);
+      // }
     }
 
     if (!isEqual(firebaseToken, token)) {
@@ -77,7 +74,7 @@ const Main = () => {
   return (
     <NavigationContainer>
       <AppProvider>
-        {loader || initializing ? (
+        {initializing ? (
           <View style={styles.loaderbackground}>
             <View>
               <ActivityIndicator size={getHeight(5)} color="#126B87" />

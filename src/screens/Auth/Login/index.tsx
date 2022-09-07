@@ -10,9 +10,15 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { ParamListBase } from '@react-navigation/native';
 import GoBackIcon from '@/src/Components/GoBackIcon';
 
-type Props = StackScreenProps<ParamListBase, 'Login'>;
+type params = {
+  Login: {
+    showConfirmationEmailMessage?: boolean;
+  };
+};
 
-const Login = ({ navigation }: Props) => {
+type Props = StackScreenProps<params, 'Login'>;
+
+const Login = ({ route }: Props) => {
   return (
     <View style={styles.container}>
       <GeneralStatusBar
@@ -23,7 +29,10 @@ const Login = ({ navigation }: Props) => {
       />
       <GradientHeader title="Log In" />
 
-      <LoginComponent />
+      <LoginComponent
+        showConfirmationEmailMessage={route.params?.showConfirmationEmailMessage ?? false}
+      />
+
       <GoBackIcon color={'white'} />
     </View>
   );

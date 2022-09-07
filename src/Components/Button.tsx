@@ -5,6 +5,7 @@ import {
   Text,
   TextStyle,
   TouchableOpacity,
+  View,
   ViewStyle,
 } from 'react-native';
 
@@ -18,6 +19,7 @@ const Button = ({
   disabled,
   disabledBtnStyle,
   disabledBtnTextStyle,
+  wrapperBtnStyle,
 }: {
   text: string;
   leftIcon?: ReactNode;
@@ -25,6 +27,7 @@ const Button = ({
   btnTextStyle?: StyleProp<TextStyle>;
   btnStyle?: StyleProp<ViewStyle>;
   disabledBtnStyle?: StyleProp<ViewStyle>;
+  wrapperBtnStyle?: StyleProp<ViewStyle>;
   disabledBtnTextStyle?: StyleProp<ViewStyle>;
   onPress: (event: GestureResponderEvent) => void;
   disabled?: boolean;
@@ -36,9 +39,16 @@ const Button = ({
       style={disabled ? disabledBtnStyle : btnStyle}
       disabled={disabled}
     >
-      {leftIcon}
-      <Text style={disabled ? [disabledBtnTextStyle] : [btnTextStyle]}>{text}</Text>
-      {RightIcon}
+      <View
+        style={[
+          { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+          wrapperBtnStyle,
+        ]}
+      >
+        {leftIcon}
+        <Text style={disabled ? [disabledBtnTextStyle] : [btnTextStyle]}>{text}</Text>
+        {RightIcon}
+      </View>
     </TouchableOpacity>
   );
 };

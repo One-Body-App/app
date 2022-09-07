@@ -121,6 +121,7 @@ const MapBox = (props: MapBoxProps) => {
     }
   };
   const getcurrentLocation = (longitude: number, latitude: number) => {
+    console.log(longitude, latitude);
     fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=poi&access_token=${access_token}`
     )
@@ -128,9 +129,9 @@ const MapBox = (props: MapBoxProps) => {
       .then((data) => {
         setLocation(data?.features[0]?.place_name);
         setsearchLocation(data?.features[0]?.place_name);
-        setLatitude(latitude);
-        setLongitude(longitude);
-        dispatch(setLoader(false));
+        // setLatitude(latitude);
+        // setLongitude(longitude);
+        // dispatch(setLoader(false));
         setCheckIn(false);
       });
   };

@@ -3,6 +3,7 @@
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTRootView.h>
+#import <TwitterKit/TWTRKit.h>
 
 #import <React/RCTAppSetupUtils.h>
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
@@ -137,7 +138,7 @@ static NSString *const kRNConcurrentRoot = @"concurrentRoot";
 }
 
 - (BOOL)application:(UIApplication *)application openURL:(nonnull NSURL *)url options:(nonnull NSDictionary<NSString *,id> *)options {
-  return [[FBSDKApplicationDelegate sharedInstance] application:application openURL:url options:options] || [RNGoogleSignin application:application openURL:url options:options];
+  return [[FBSDKApplicationDelegate sharedInstance] application:application openURL:url options:options] || [RNGoogleSignin application:application openURL:url options:options] || [[Twitter sharedInstance] application:app openURL:url options:options];
 }
 
 #endif

@@ -87,7 +87,7 @@ function* signUpRequest(params) {
       verb: 'post',
       token: params.token,
     });
-
+    console.log(res);
     if (res?.status == '200') {
       yield put(setSignUpData(res?.response));
       params.data.go();
@@ -146,6 +146,7 @@ function* updateOrgProfileRequest(params) {
       token: params.data.token,
       verb: 'patch',
     });
+
     if (res?.status == '200') {
       yield put(getProfile({ token: params.data.token }));
       params?.data?.go();

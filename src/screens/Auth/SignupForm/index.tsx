@@ -6,7 +6,7 @@ import { validateFields } from '@/utils/validation/validate-fields';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GoBackIcon from '@/components/GoBackIcon';
-import { signUpRequest } from '@/redux//actions/AuthActions';
+import { setLoginData, signUpRequest } from '@/redux//actions/AuthActions';
 import GradientHeader from '@/components/GradientHeader';
 import validator from '@/utils/validation/validator';
 import { setLoader } from '@/redux//actions/GeneralActions';
@@ -20,8 +20,12 @@ import { styles } from './styles';
 import auth from '@react-native-firebase/auth';
 import CheckBox from '@react-native-community/checkbox';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
+import { StackScreenProps } from '@react-navigation/stack';
+import { ParamListBase } from '@react-navigation/native';
 
-const SignupForm = ({ navigation, route }) => {
+type Props = StackScreenProps<ParamListBase, 'SignupForm'>;
+
+const SignupForm = ({ navigation }: Props) => {
   const AccountType = useSelector((state) => state.general.accountType);
   const dispatch = useDispatch();
 
@@ -29,7 +33,7 @@ const SignupForm = ({ navigation, route }) => {
     email: useRef(null),
     password: useRef(null),
     cPassword: useRef(null),
-    userName: useRef(null),
+    name: useRef(null),
   };
   const [state, setState] = useState({
     email: '',
@@ -38,39 +42,51 @@ const SignupForm = ({ navigation, route }) => {
     passwordError: '',
     cPassword: '',
     cPasswordError: '',
-    userName: '',
-    userNameError: '',
+    name: '',
+    nameError: '',
   });
   const [error, seterror] = React.useState();
   const [hidePass, setHidePass] = useState(true);
   const [chidePass, setcHidePass] = useState(true);
-  const [acceptTermsConditions, setAcceptTermsConditions] = useState<boolean>(false);
-  const [acceptPrivacyPolicy, setAcceptPrivacyPolicy] = useState<boolean>(false);
 
   const signUpUser = async () => {
-    const { email, password, userName, cPassword } = state;
+    const { email, password, name, cPassword } = state;
     const emailError = await validator('email', email);
-    const userNameError = await validator('userName', userName);
+    const nameError = await validator('name', name);
     const passwordError = await validator('password', password);
     const cPasswordError = await validator('cPassword', cPassword);
 
-    if (!emailError && !passwordError && !userNameError && !cPasswordError) {
+    if (!emailError && !passwordError && !nameError && !cPasswordError) {
       if (password == cPassword) {
-        dispatch(setLoader(true));
         const data = {
           email: email,
-          password: password,
-          userName: userName,
+          name: name,
           role: AccountType,
+          userId: '',
         };
         auth()
           .createUserWithEmailAndPassword(email, password)
           .then(async (user) => {
-            await user.user.sendEmailVerification();
-            const token = await user.user.getIdToken();
+            // await user.user.sendEmailVerification();
+            // const token = await user.user.getIdToken();
             // user.user.updatePhoneNumber()
+            data.userId = user.user.uid;
 
-            navigation.navigate('Login', { showConfirmationEmailMessage: true });
+            dispatch(setLoginData({ token: await user.user.getIdToken() }));
+            dispatch(
+              signUpRequest({
+                data,
+                seterror,
+                go: () =>
+                  navigation.reset({
+                    index: 0,
+                    routes: [
+                      { name: 'SignUp' },
+                      { name: 'Login', params: { showConfirmationEmailMessage: true } },
+                    ],
+                  }),
+              })
+            );
           })
           .catch((error) => {
             if (error.code === 'auth/email-already-in-use') {
@@ -86,7 +102,7 @@ const SignupForm = ({ navigation, route }) => {
             console.error(error);
           });
 
-        // dispatch(signUpRequest({ data, seterror, go }));
+        //
       } else {
         seterror('Both Password not match!');
       }
@@ -96,7 +112,7 @@ const SignupForm = ({ navigation, route }) => {
         emailError,
         passwordError,
         cPasswordError,
-        userNameError,
+        nameError,
       });
     }
   };
@@ -151,36 +167,36 @@ const SignupForm = ({ navigation, route }) => {
       />
 
       <GradientHeader />
-      <KeyboardAwareScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
-          <View style={styles.align}>
+      <KeyboardAwareScrollView showsVerticalScrollIndicator={false}>
+        <LinearGradient
+          colors={['#fff', '#fff', '#E0EEF3']}
+          style={{ flex: 1, paddingBottom: 110 }}
+        >
+          <View style={{ paddingHorizontal: 25, paddingVertical: 15, flex: 1 }}>
             <TextInput
               style={GeneralStyle.input}
               theme={{ roundness: 10 }}
-              ref={inputRefs.userName}
-              value={state.userName}
+              ref={inputRefs.name}
+              value={state.name}
               returnKeyType={'next'}
               mode="outlined"
               activeOutlineColor={appColor.InstructionColor}
               outlineColor={'#888C93'}
-              label={'Username'}
-              onFocus={() => setState({ ...state, userNameError: '' })}
+              label={'Your Name'}
+              onFocus={() => setState({ ...state, nameError: '' })}
               onBlur={() =>
-                validateFields(state.userName, 'userName', (error) =>
-                  setState({ ...state, userNameError: error })
+                validateFields(state.name, 'name', (error) =>
+                  setState({ ...state, nameError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.email.current.focus()}
-              onChangeText={(userName) => changeHandler('userName', userName.trim())}
+              onSubmitEditing={() => inputRefs.name.current.focus()}
+              onChangeText={(name) => changeHandler('name', name)}
               blurOnSubmit={false}
               keyboardType="default"
-              autoCapitalize="none"
+              autoCapitalize="words"
             />
             <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
-              {state.userNameError}
+              {state.nameError}
             </Text>
 
             <TextInput
@@ -193,7 +209,7 @@ const SignupForm = ({ navigation, route }) => {
               mode="outlined"
               activeOutlineColor={appColor.InstructionColor}
               outlineColor={'#888C93'}
-              label={'E-mail'}
+              label={'Your e-mail'}
               autoCorrect={false}
               onFocus={() => setState({ ...state, emailError: '' })}
               onBlur={() =>
@@ -294,71 +310,16 @@ const SignupForm = ({ navigation, route }) => {
               {state.cPasswordError}
             </Text>
 
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'stretch',
-                flexWrap: 'wrap',
-              }}
-            >
-              <View
-                style={{
-                  marginTop: getHeight(3),
-                  flexDirection: 'row',
-
-                  alignItems: 'stretch',
-                  flexWrap: 'wrap',
-                  marginHorizontal: 4,
-                }}
-              >
-                <CheckBox
-                  value={acceptTermsConditions}
-                  onValueChange={() => {
-                    setAcceptTermsConditions(!acceptTermsConditions);
-                  }}
-                />
-                <Button
-                  text="I have read and I accept the"
-                  btnStyle={{ marginLeft: 10, marginRight: 2 }}
-                  btnTextStyle={styles.paragraph}
-                  onPress={() => setAcceptTermsConditions(!acceptTermsConditions)}
-                />
-
-                <Button
-                  text="Terms and Conditions."
-                  btnStyle={{ marginLeft: 2 }}
-                  btnTextStyle={styles.textButton}
-                  onPress={() => OpenURLButton('https://google.com')}
-                />
-              </View>
-
-              <View
-                style={{
-                  marginTop: getHeight(3),
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  marginHorizontal: 4,
-                }}
-              >
-                <CheckBox
-                  value={acceptPrivacyPolicy}
-                  onValueChange={() => {
-                    setAcceptPrivacyPolicy(!acceptPrivacyPolicy);
-                  }}
-                />
-                <Button
-                  text="I have read and I accept the"
-                  btnStyle={{ marginLeft: 10, marginRight: 2 }}
-                  btnTextStyle={styles.paragraph}
-                  onPress={() => setAcceptPrivacyPolicy(!acceptPrivacyPolicy)}
-                />
-
-                <Button
-                  text="Privacy Policy."
-                  btnStyle={{ marginLeft: 2 }}
-                  btnTextStyle={styles.textButton}
-                  onPress={() => OpenURLButton('https://google.com')}
-                />
+            <View style={{ ...styles.center, paddingBottom: 20 }}>
+              <Text style={{ color: '#032F3C' }}>By signing up, you agree to our</Text>
+              <View style={{ flexDirection: 'row' }}>
+                <TouchableOpacity onPress={() => OpenURLButton('https://google.com')}>
+                  <Text style={styles.text}>User Agreements</Text>
+                </TouchableOpacity>
+                <Text style={styles.simpleText}> & </Text>
+                <TouchableOpacity onPress={() => OpenURLButton('https://google.com')}>
+                  <Text style={styles.text}>Privacy Policy</Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -374,35 +335,29 @@ const SignupForm = ({ navigation, route }) => {
               </View>
             ) : null}
           </View>
-          <View style={styles.center}>
-            <Text style={styles.alreadyAccountContainer}>Already Have an account?</Text>
-            <TouchableOpacity
-              style={{ marginLeft: 5, marginTop: 20 }}
-              onPress={() => navigation.navigate('Login')}
-            >
-              <Text style={{ ...styles.helight, textDecorationLine: 'underline' }}>Login</Text>
-            </TouchableOpacity>
-          </View>
         </LinearGradient>
 
-        {/* <Image
-        style={styles.footer}
-        resizeMode="stretch"
-        source={require('@/assets/images/waveBG.png')}
-      /> */}
-        {/* <View
-        style={{
-          ...styles.footer,
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: getHeight(9),
-        }}
-      >
-        <Text style={styles.helight}>Unify the Body</Text>
-        <Text style={{ color: 'gray', marginTop: 2 }}>1 Cor. 12:12</Text>
-      </View> */}
-        <GoBackIcon color={'white'} />
+        <View>
+          <Image
+            style={styles.footer}
+            resizeMode="stretch"
+            source={require('@/assets/images/waveBG.png')}
+          />
+          <View
+            style={{
+              ...styles.footer,
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: getHeight(9),
+            }}
+          >
+            <Text style={styles.helight}>Unify the Body</Text>
+            <Text style={{ color: 'gray', marginTop: 2 }}>1 Cor. 12:12</Text>
+          </View>
+        </View>
       </KeyboardAwareScrollView>
+
+      <GoBackIcon color={'white'} />
     </View>
   );
 };

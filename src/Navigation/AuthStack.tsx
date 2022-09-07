@@ -13,8 +13,6 @@ import Signup from '../screens/Auth/Signup';
 import AccountType from '../screens/Auth/AccountType';
 import SignupForm from '../screens/Auth/SignupForm';
 import ForgotPassword from '../screens/Auth/ForgetPassword';
-import ConfirmEmail from '../screens/Auth/Signup/ConfirmEmail';
-import { useNavigation } from '@react-navigation/native';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,3 +36,6 @@ const AuthStack = () => {
 };
 
 export default AuthStack;
+function getcurrentLocation(longitude: number, latitude: number) {
+  throw new Error('Function not implemented.');
+}

@@ -10,8 +10,8 @@ import validator from '@/utils/validation/validator';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 import { useNavigation } from '@react-navigation/native';
 
-import Google from '@/assets/svg/Google.svg';
-import Apple from '@/assets/svg/Apple.svg';
+import Google from '@/assets/svg/G.svg';
+import Twitter from '@/assets/svg/Twitter.svg';
 import Button from '../Button';
 import { useDispatch, useSelector } from 'react-redux';
 import { styles } from './styles';
@@ -22,6 +22,8 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import Modal from 'react-native-modal';
 import { LoginButton, LoginManager, AccessToken, LoginResult } from 'react-native-fbsdk-next';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
+import { NativeModules } from 'react-native';
+const { RNTwitterSignIn } = NativeModules;
 
 import {
   getFcmToken,
@@ -30,11 +32,19 @@ import {
 
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import GradientButton from '../GradientButton';
-import { loginSocialRequest } from '@/src/Redux/actions/AuthActions';
+import { loginSocialRequest, logout } from '@/src/Redux/actions/AuthActions';
 import { ApiCall } from '@/src/Services/api';
 import { setAccountType } from '@/src/Redux/actions/GeneralActions';
 
-const LoginComponent = () => {
+RNTwitterSignIn.init('TWITTER_CONSUMER_KEY', 'TWITTER_CONSUMER_SECRET').then(() =>
+  console.log('Twitter SDK initialized')
+);
+
+type Props = {
+  showConfirmationEmailMessage: boolean;
+};
+
+const LoginComponent = ({ showConfirmationEmailMessage }: Props) => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const userData = useSelector((state: RootState) => state.auth.userData);
@@ -60,7 +70,6 @@ const LoginComponent = () => {
 
   useEffect(() => {
     if (newUserCredentials) {
-      console.log(token);
       const data = {
         email: newUserCredentials?.user.email,
         name: newUserCredentials?.user.displayName,
@@ -82,7 +91,8 @@ const LoginComponent = () => {
       if (!emailError && !passwordError) {
         seterror('');
         // dispatch(setLoader(true));
-        await auth().signInWithEmailAndPassword(email, password);
+        const emailCredential = await auth().signInWithEmailAndPassword(email, password);
+        processLogin(emailCredential);
         // dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
       } else {
         setState({ ...state, emailError, passwordError });
@@ -101,6 +111,41 @@ const LoginComponent = () => {
   };
   const sendFcm = (token: string) => {
     requestUserPermission(token);
+  };
+
+  const onTwitterButtonPress = async () => {
+    // Perform the login request
+    const { authToken, authTokenSecret } = await RNTwitterSignIn.logIn();
+
+    // Create a Twitter credential with the tokens
+    const twitterCredential = auth.TwitterAuthProvider.credential(authToken, authTokenSecret);
+    const userCredenttials = await auth().signInWithCredential(twitterCredential);
+    // Sign-in the user with the credential
+    return processLogin(userCredenttials);
+  };
+
+  const onFacebookButtonPress = async () => {
+    // Attempt login with permissions
+    const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+
+    if (result.isCancelled) {
+      throw 'User cancelled the login process';
+    }
+
+    // Once signed in, get the users AccesToken
+    const data = await AccessToken.getCurrentAccessToken();
+
+    if (!data) {
+      throw 'Something went wrong obtaining access token';
+    }
+
+    // Create a Firebase credential with the AccessToken
+    const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+
+    // Sign-in the user with the credential
+    const userCredentials = await auth().signInWithCredential(facebookCredential);
+
+    processLogin(userCredentials);
   };
 
   // const _responseInfoCallback = (error, result) => {
@@ -151,10 +196,11 @@ const LoginComponent = () => {
     // Create a Firebase credential from the response
     const { identityToken, nonce } = appleAuthRequestResponse;
     const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+    const userCredential = await auth().signInWithCredential(appleCredential);
 
+    processLogin(userCredential);
     // Sign the user in with the credential
     // return auth().signInWithCredential(appleCredential);
-    processLogin(appleCredential);
   }
 
   useEffect(() => {
@@ -194,7 +240,9 @@ const LoginComponent = () => {
 
       // Create a Google credential with the token
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      processLogin(googleCredential);
+      const userCredential = await auth().signInWithCredential(googleCredential);
+
+      processLogin(userCredential);
       // Sign-in the user with the credential
       // return auth().signInWithCredential(googleCredential);
     } catch (error: any) {
@@ -235,12 +283,12 @@ const LoginComponent = () => {
 
     // Create a Firebase credential with the AccessToken
     const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+    const userCredentials = await auth().signInWithCredential(facebookCredential);
 
-    processLogin(facebookCredential);
+    processLogin(userCredentials);
   };
 
-  const processLogin = async (credential: FirebaseAuthTypes.AuthCredential) => {
-    const userCredentials = await auth().signInWithCredential(credential);
+  const processLogin = async (userCredentials: FirebaseAuthTypes.UserCredential) => {
     const token = await userCredentials.user.getIdToken();
     setToken(token);
     setLoginingIn(true);
@@ -251,10 +299,10 @@ const LoginComponent = () => {
     } else {
       const userProfileResult = await ApiCall({
         token: token,
-        route: 'individual/my-profile',
+        route: 'auth/my-profile',
         verb: 'get',
       });
-
+      console.log(userProfileResult);
       if (userProfileResult.status == 200) {
         if (userProfileResult.response == '') {
           setNewUserCredentials(userCredentials);
@@ -271,7 +319,7 @@ const LoginComponent = () => {
                 userCredentials.additionalUserInfo?.profile?.email
               );
             }
-            setShowConfirmEmail(true);
+            // setShowConfirmEmail(true);
           }
         }
       } else {
@@ -283,6 +331,22 @@ const LoginComponent = () => {
   };
 
   const fbButton = createRef<LoginButton>();
+  console.log(userData, 'userData');
+  if (showConfirmationEmailMessage && userData) {
+    return (
+      <View style={{ marginHorizontal: 25, marginVertical: 10 }}>
+        <Text style={{ textAlign: 'center' }}>Please Check your email for a confirmation</Text>
+        <Button
+          text="Cancel"
+          onPress={async () => {
+            LoginManager.logOut();
+            await auth().signOut();
+            dispatch(logout());
+          }}
+        />
+      </View>
+    );
+  }
   return (
     <KeyboardAwareScrollView
       contentContainerStyle={styles.contanier}
@@ -374,9 +438,9 @@ const LoginComponent = () => {
         <View style={styles.line} />
       </View>
 
-      <View style={styles.SocialView}>
-        <TouchableOpacity onPress={() => signIn()}>
-          <Google style={styles.socialContainer} />
+      <View style={{ ...styles.SocialView, marginTop: 20 }}>
+        <TouchableOpacity onPress={() => signIn()} style={styles.socialContainer}>
+          <Google style={{ alignSelf: 'center' }} />
         </TouchableOpacity>
 
         <LoginButton
@@ -390,11 +454,11 @@ const LoginComponent = () => {
           onLoginFinished={async (error, result) => facebookLogin(result, error)}
         />
 
-        {Platform.OS == 'ios' ? (
-          <TouchableOpacity onPress={() => onAppleButtonPress()}>
-            <Apple style={styles.socialContainer} />
-          </TouchableOpacity>
-        ) : null}
+        <TouchableOpacity onPress={() => onTwitterButtonPress()}>
+          <View style={{ ...styles.socialContainer, marginRight: 0 }}>
+            <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
+          </View>
+        </TouchableOpacity>
       </View>
 
       <Modal

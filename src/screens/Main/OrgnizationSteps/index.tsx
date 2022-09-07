@@ -9,8 +9,8 @@ import {
   TouchableOpacity,
   SafeAreaView,
   PermissionsAndroid,
+  Platform,
 } from 'react-native';
-import SelectDropdown from 'react-native-select-dropdown';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -23,7 +23,7 @@ import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import ProgressBar from 'react-native-animated-progress';
 import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
-import MapBox from '@/components/MapBox';
+import MapBox, { MapSuggestion } from '@/components/MapBox';
 import { orgprofileUpdate, logout } from '@/redux/actions/AuthActions';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import Modal from 'react-native-modal';
@@ -39,24 +39,73 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { requestUserPermission } from '@/services/Notification/notificationServices';
 import auth from '@react-native-firebase/auth';
 import { LoginManager } from 'react-native-fbsdk-next';
+import Geolocation from 'react-native-geolocation-service';
 
-const OrgnizationSteps = ({ navigation }) => {
+import messaging from '@react-native-firebase/messaging';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+
+type Props = NativeStackScreenProps<any, 'OrgnizationSteps'>;
+
+const OrgnizationSteps = ({ navigation }: Props) => {
   const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
-  const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userData);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const user = useSelector((state: RootState) => state.auth.userData);
   const dispatch = useDispatch();
-  let flatListRef = null;
+  const flatListRef = useRef<FlatList>(null);
   const [Organization, setOrganization] = useState([]);
   const [visible, setVisible] = useState(false);
   const [intrest, setIntrest] = useState([]);
-  const [selectedIntrest, setSelectedIntrest] = useState([]);
+  const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
   const [curentIndex, setCurrentIndex] = useState(0);
   const [notificationSwitchOn, setNotificationSwitch] = React.useState(false);
   const [ORGType, setORGType] = useState(null);
   const [CheckIn, setCheckIn] = useState(false);
-  const [location_label, setLocation_label] = useState(null);
-  const [longitued, setLongitued] = useState(null);
-  const [latitude, setLatitued] = useState(null);
+  const [location_label, setLocation_label] = useState<MapSuggestion | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(null);
+
+  const requestNotificationPermission = async () => {
+    await messaging().requestPermission();
+  };
+
+  const requestlocationPermison = async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        const permissions = await Geolocation.requestAuthorization('whenInUse');
+
+        if (permissions == 'granted') {
+          Geolocation.getCurrentPosition((info) => {
+            setLongitude(info.coords?.longitude);
+            setLatitude(info.coords?.latitude);
+          });
+        }
+      } else {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Access Required',
+            message: 'This App needs to Access your location',
+            buttonPositive: '',
+          }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          //To Check, If Permission is granted
+          Geolocation.getCurrentPosition((info) => {
+            setLongitude(info.coords?.longitude);
+            setLatitude(info.coords?.latitude);
+          });
+        }
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
+  useEffect(() => {
+    requestNotificationPermission();
+    requestlocationPermison();
+  }, []);
 
   const inputRefs = {
     companyName: useRef(null),
@@ -76,7 +125,7 @@ const OrgnizationSteps = ({ navigation }) => {
     orgPhoneNoError: '',
     location_labelError: '',
   });
-  const changeHandler = (type, value) => setState({ ...state, [type]: value });
+  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   const go = () => {
     navigation.navigate('loading');
   };
@@ -93,23 +142,24 @@ const OrgnizationSteps = ({ navigation }) => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
-        setorg(res?.data);
+      console.log(res?.response.data, 'res?.data');
+      if (res?.status == 200) {
+        setorg(res?.response?.data);
       } else {
-        console.log('error', res?.data);
+        console.log('error', res);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
-  const handelSubscribe = async (id) => {
+  const handelSubscribe = async (id: number) => {
     try {
       const res = await ApiCall({
         route: `individual/subscribe/${id}`,
         token: token,
         verb: 'patch',
       });
-      if (res.status == '200') {
+      if (res.status == 200) {
         console.log('res==200', res);
       } else {
         console.log('error', res);
@@ -125,58 +175,83 @@ const OrgnizationSteps = ({ navigation }) => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+
+      if (res?.status == 200) {
         setIntrest(res?.response);
       } else {
         console.log('error', res?.data);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
-  const addIntrest = async () => {
+  const addInterests = async () => {
     dispatch(setLoader(true));
     try {
       const res = await ApiCall({
-        route: 'individual/add-interests',
+        route: 'organization/add-interests',
         token: token,
-        params: { interests: selectedIntrest },
+        params: { interests: selectedInterest },
         verb: 'patch',
       });
-      if (res.status == '200') {
+      if (res.status == 200) {
         getOrg();
         dispatch(setLoader(false));
         next();
       } else {
         console.log('error', res);
       }
-    } catch (e) {
+    } catch (e: any) {
       showToast('An error acoured pls try again!');
       console.log('saga error -- ', e.toString());
     }
   };
-  const getlocationPermison = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Location Access Required',
-          message: 'This App needs to Access your location',
-        }
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        //To Check, If Permission is granted
-        console.log('Permission acess');
 
-        //  getOneTimeLocation();
-        //  subscribeLocationLocation();
+  const addFollowing = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'organization/add-following',
+        token: token,
+        params: { following: Organization },
+        verb: 'patch',
+      });
+
+      if (res?.status == 200) {
+        // getInfluencers();
+        // dispatch(setLoader(false));
+
+        next();
       } else {
-        console.log('Permission Denied');
+        dispatch(setLoader(false));
+        console.log('error', res);
       }
-    } catch (err) {
-      console.warn(err);
+    } catch (e: any) {
+      showToast('An error acoured pls try again!');
+      console.log('saga error -- ', e.toString());
     }
   };
+  // const getlocationPermison = async () => {
+  //   try {
+  //     const granted = await PermissionsAndroid.request(
+  //       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+  //       {
+  //         title: 'Location Access Required',
+  //         message: 'This App needs to Access your location',
+  //       }
+  //     );
+  //     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+  //       //To Check, If Permission is granted
+  //       console.log('Permission acess');
+
+  //       //  getOneTimeLocation();
+  //       //  subscribeLocationLocation();
+  //     } else {
+  //       console.log('Permission Denied');
+  //     }
+  //   } catch (err) {
+  //     console.warn(err);
+  //   }
+  // };
   const data = [
     {
       id: 1,
@@ -329,7 +404,6 @@ const OrgnizationSteps = ({ navigation }) => {
               value={location_label}
               activeOutlineColor={'#5B7279'}
               showSoftInputOnFocus={false}
-              onFocus={() => setCheckIn(true)}
               onPressIn={() => setCheckIn(true)}
               label={'Company Address'}
               placeholderTextColor={'black'}
@@ -341,12 +415,12 @@ const OrgnizationSteps = ({ navigation }) => {
 
             {CheckIn == true ? (
               <MapBox
-                location_label={location_label}
-                setLongitued={setLongitued}
-                setLatitued={setLatitued}
+                location={location_label}
+                setLongitude={setLongitude}
+                setLatitude={setLatitude}
                 CheckIn={CheckIn}
                 setCheckIn={setCheckIn}
-                setLocation_label={setLocation_label}
+                setLocation={setLocation_label}
               />
             ) : null}
           </View>
@@ -513,16 +587,16 @@ const OrgnizationSteps = ({ navigation }) => {
             {intrest.map((item) => (
               <TouchableOpacity
                 onPress={() =>
-                  selectedIntrest.includes(item?._id)
-                    ? setSelectedIntrest(
-                        selectedIntrest.filter(function (item2) {
+                  selectedInterest.includes(item?._id)
+                    ? setSelectedInterest(
+                        selectedInterest.filter(function (item2) {
                           return item2 !== item?._id;
                         })
                       )
-                    : setSelectedIntrest([...selectedIntrest, item?._id])
+                    : setSelectedInterest([...selectedInterest, item?._id])
                 }
                 style={
-                  selectedIntrest.includes(item?._id)
+                  selectedInterest.includes(item?._id)
                     ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
                     : styles.listItem
                 }
@@ -530,7 +604,7 @@ const OrgnizationSteps = ({ navigation }) => {
                 <Text
                   numberOfLines={1}
                   style={
-                    selectedIntrest.includes(item?._id)
+                    selectedInterest.includes(item?._id)
                       ? { color: 'white', maxWidth: getWidth(17) }
                       : { color: '#757575', maxWidth: getWidth(17) }
                   }
@@ -732,7 +806,7 @@ const OrgnizationSteps = ({ navigation }) => {
     });
   };
   const next = () => {
-    flatListRef.scrollToIndex({ index: curentIndex + 1 });
+    flatListRef.current?.scrollToIndex({ index: curentIndex + 1 });
     setCurrentIndex(curentIndex + 1);
   };
 
@@ -778,19 +852,28 @@ const OrgnizationSteps = ({ navigation }) => {
 
         break;
       case 4:
-        addIntrest();
+        if (selectedInterest.length > 2) {
+          addInterests();
+        } else {
+          showToast('Select at least 3 topics to continue');
+        }
 
         break;
       case 5:
-        next();
+        if (Organization.length > 0) {
+          addFollowing();
+        } else {
+          showToast('Select at least 1 influencer/organization to continue');
+        }
+
         break;
-      case 6:
-        getlocationPermison();
-        next();
-        break;
-      case 7:
-        next();
-        break;
+      // case 6:
+      //   // getlocationPermison();
+      //   next();
+      //   break;
+      // case 7:
+      //   next();
+      //   break;
       default:
         console.log('Its defult');
     }
@@ -802,7 +885,7 @@ const OrgnizationSteps = ({ navigation }) => {
         data={data}
         horizontal={true}
         scrollEnabled={false}
-        ref={(ref) => (flatListRef = ref)}
+        ref={flatListRef}
         keyExtractor={(item, index) => {
           item.id;
         }}
@@ -821,7 +904,7 @@ const OrgnizationSteps = ({ navigation }) => {
             ) : (
               <TouchableOpacity
                 onPress={() => {
-                  flatListRef.scrollToIndex({ index: curentIndex - 1 });
+                  flatListRef.current?.scrollToIndex({ index: curentIndex - 1 });
                   setCurrentIndex(curentIndex - 1);
                 }}
                 style={{
@@ -843,7 +926,7 @@ const OrgnizationSteps = ({ navigation }) => {
               />
             </View>
 
-            {curentIndex == 6 ? (
+            {curentIndex == 5 ? (
               <TouchableOpacity
                 onPress={() => {
                   console.log('user', user);
@@ -855,7 +938,7 @@ const OrgnizationSteps = ({ navigation }) => {
                     fullName: orgfullName,
                     companyPhoneNumber: orgPhoneNo,
                     location: {
-                      longitude: longitued,
+                      longitude: longitude,
                       latitude: latitude,
                       address: location_label,
                     },
@@ -890,7 +973,6 @@ const OrgnizationSteps = ({ navigation }) => {
         onSwipeComplete={() => setVisible(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
-        onRequestClose={() => hideVisible(false)}
       >
         <View style={styles.content2}>
           <View style={styles.headLine} />

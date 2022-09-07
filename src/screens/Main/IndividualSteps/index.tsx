@@ -41,6 +41,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Geolocation from 'react-native-geolocation-service';
 import { LoginManager } from 'react-native-fbsdk-next';
+import messaging from '@react-native-firebase/messaging';
 
 type ChurchType = {
   churchType: string;
@@ -111,6 +112,46 @@ const IndividualSteps = ({ navigation }: Props) => {
   const [influencer, setInfluencer] = useState<User[]>([]);
   const [searchInfluencer, setSearchInfluencer] = useState<User[]>([]);
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
+
+  const requestNotificationPermission = async () => {
+    await messaging().requestPermission();
+  };
+
+  const requestlocationPermison = async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        const permissions = await Geolocation.requestAuthorization('whenInUse');
+
+        if (permissions == 'granted') {
+          Geolocation.getCurrentPosition((info) => {
+            getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+          });
+        }
+      } else {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Access Required',
+            message: 'This App needs to Access your location',
+            buttonPositive: '',
+          }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          //To Check, If Permission is granted
+          Geolocation.getCurrentPosition((info) => {
+            getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+          });
+        }
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
+  useEffect(() => {
+    requestNotificationPermission();
+    requestlocationPermison();
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -231,36 +272,6 @@ const IndividualSteps = ({ navigation }: Props) => {
     } catch (e: any) {
       showToast('An error acoured pls try again!');
       console.log('saga error -- ', e.toString());
-    }
-  };
-  const getlocationPermison = async () => {
-    try {
-      if (Platform.OS === 'ios') {
-        const permissions = await Geolocation.requestAuthorization('whenInUse');
-
-        if (permissions == 'granted') {
-          Geolocation.getCurrentPosition((info) => {
-            getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-          });
-        }
-      } else {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Access Required',
-            message: 'This App needs to Access your location',
-            buttonPositive: '',
-          }
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          //To Check, If Permission is granted
-          Geolocation.getCurrentPosition((info) => {
-            getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-          });
-        }
-      }
-    } catch (err) {
-      console.warn(err);
     }
   };
 
@@ -793,105 +804,105 @@ const IndividualSteps = ({ navigation }: Props) => {
         </LinearGradient>
       ),
     },
-    {
-      id: 7,
-      component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-          <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
+    // {
+    //   id: 7,
+    //   component: (
+    //     <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
+    //       <GeneralStatusBar
+    //         backgroundColor="white"
+    //         barStyle="dark-content"
+    //         hidden={false}
+    //         translucent={true}
+    //       />
+    //       <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
 
-          <Text style={{ ...styles.heading, margin: 5 }}>Allow notifications</Text>
-          <Text
-            style={{
-              ...styles.text,
-              width: getWidth(80),
-              fontSize: getFontSize(2.1),
-              color: '#4F6D77',
-            }}
-          >
-            Reminders help you break your tenced routine and get your body back where it really
-            needs to be. Amen!
-          </Text>
-          <View style={styles.box2}>
-            <Text
-              style={{
-                ...styles.heading2,
-                fontSize: getFontSize(2.5),
-                fontWeight: '400',
-                left: 5,
-              }}
-            >
-              Notifications
-            </Text>
+    //       <Text style={{ ...styles.heading, margin: 5 }}>Allow notifications</Text>
+    //       <Text
+    //         style={{
+    //           ...styles.text,
+    //           width: getWidth(80),
+    //           fontSize: getFontSize(2.1),
+    //           color: '#4F6D77',
+    //         }}
+    //       >
+    //         Reminders help you break your tenced routine and get your body back where it really
+    //         needs to be. Amen!
+    //       </Text>
+    //       <View style={styles.box2}>
+    //         <Text
+    //           style={{
+    //             ...styles.heading2,
+    //             fontSize: getFontSize(2.5),
+    //             fontWeight: '400',
+    //             left: 5,
+    //           }}
+    //         >
+    //           Notifications
+    //         </Text>
 
-            <Switch
-              value={notificationSwitchOn}
-              color="#126B87"
-              onValueChange={() => {
-                setNotificationSwitch(!notificationSwitchOn);
-                requestUserPermission(token);
-              }}
-            />
-          </View>
-          <Divider style={{ height: 1, width: '100%' }} />
-        </LinearGradient>
-      ),
-    },
-    {
-      id: 8,
-      component: (
-        <LinearGradient
-          colors={['#fff', '#fff', '#E0EEF3']}
-          style={{ ...styles.innerContainer, paddingHorizontal: 15 }}
-        >
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-          <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
+    //         <Switch
+    //           value={notificationSwitchOn}
+    //           color="#126B87"
+    //           onValueChange={() => {
+    //             setNotificationSwitch(!notificationSwitchOn);
+    //             requestUserPermission(token);
+    //           }}
+    //         />
+    //       </View>
+    //       <Divider style={{ height: 1, width: '100%' }} />
+    //     </LinearGradient>
+    //   ),
+    // },
+    // {
+    //   id: 8,
+    //   component: (
+    //     <LinearGradient
+    //       colors={['#fff', '#fff', '#E0EEF3']}
+    //       style={{ ...styles.innerContainer, paddingHorizontal: 15 }}
+    //     >
+    //       <GeneralStatusBar
+    //         backgroundColor="white"
+    //         barStyle="dark-content"
+    //         hidden={false}
+    //         translucent={true}
+    //       />
+    //       <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
 
-          <Text style={{ ...styles.heading, margin: 5 }}>Use location</Text>
-          <Text
-            style={{
-              ...styles.text,
-              width: getWidth(80),
-              fontSize: getFontSize(2.1),
-              color: '#4F6D77',
-            }}
-          >
-            Allow OneBody to use your location for the best possible experience while your Body
-            finds peace. Amen!
-          </Text>
+    //       <Text style={{ ...styles.heading, margin: 5 }}>Use location</Text>
+    //       <Text
+    //         style={{
+    //           ...styles.text,
+    //           width: getWidth(80),
+    //           fontSize: getFontSize(2.1),
+    //           color: '#4F6D77',
+    //         }}
+    //       >
+    //         Allow OneBody to use your location for the best possible experience while your Body
+    //         finds peace. Amen!
+    //       </Text>
 
-          {!locationData?.longitude || !locationData?.latitude ? (
-            <Button
-              text="Authorize"
-              btnStyle={styles.btn3}
-              btnTextStyle={styles.btnText3}
-              onPress={() => getlocationPermison()}
-            />
-          ) : (
-            <Text
-              style={{
-                marginTop: 40,
-                fontSize: getFontSize(2.5),
-                color: '#4F6D77',
-                textAlign: 'center',
-              }}
-            >
-              Good Job! Location services are authorized
-            </Text>
-          )}
-        </LinearGradient>
-      ),
-    },
+    //       {!locationData?.longitude || !locationData?.latitude ? (
+    //         <Button
+    //           text="Authorize"
+    //           btnStyle={styles.btn3}
+    //           btnTextStyle={styles.btnText3}
+    //           onPress={() => getlocationPermison()}
+    //         />
+    //       ) : (
+    //         <Text
+    //           style={{
+    //             marginTop: 40,
+    //             fontSize: getFontSize(2.5),
+    //             color: '#4F6D77',
+    //             textAlign: 'center',
+    //           }}
+    //         >
+    //           Good Job! Location services are authorized
+    //         </Text>
+    //       )}
+    //     </LinearGradient>
+    //   ),
+    // },
   ];
 
   const showToast = (sms: string) => {
@@ -951,12 +962,12 @@ const IndividualSteps = ({ navigation }: Props) => {
           showToast('Select at least 1 influencer/organization to continue');
         }
         break;
-      case 6:
-        next();
-        break;
-      case 7:
-        next();
-        break;
+      // case 6:
+      //   next();
+      //   break;
+      // case 7:
+      //   next();
+      //   break;
       default:
         console.log('Its defult');
     }
@@ -1013,7 +1024,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               />
             </View>
 
-            {curentIndex == 7 ? (
+            {curentIndex == 5 ? (
               <TouchableOpacity
                 onPress={() => {
                   const data = {

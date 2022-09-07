@@ -6,6 +6,9 @@ import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 
 const GoBackIcon = ({ color }) => {
   const navigation = useNavigation();
+  if (!navigation.canGoBack) {
+    return null;
+  }
   return (
     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
       <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={color} />

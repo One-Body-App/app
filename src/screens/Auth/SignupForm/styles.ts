@@ -4,8 +4,9 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFF',
   },
-  align: { marginTop: '10%', marginHorizontal: '5%' },
+  align: { marginHorizontal: 20, marginTop: '10%' },
   singerrorview1: { padding: 5, flexDirection: 'row' },
   singerrortext: {
     color: 'red',
@@ -13,7 +14,11 @@ export const styles = StyleSheet.create({
     width: getWidth(78),
     fontSize: getFontSize(2),
   },
-  center: { flexDirection: 'row', alignSelf: 'center' },
+  center: {
+    marginTop: getHeight(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   alreadyAccountContainer: {
     alignSelf: 'center',
     justifyContent: 'center',
@@ -51,5 +56,16 @@ export const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: getHeight(0.5),
     textDecorationLine: 'underline',
+  },
+  simpleText: {
+    color: '#81979E',
+    marginTop: 2,
+    fontFamily: 'Rubik-Medium',
+  },
+  text: {
+    color: '#81979E',
+    marginTop: 2,
+    fontFamily: 'Rubik-Medium',
+    underline: { textDecorationLine: 'underline' },
   },
 });
