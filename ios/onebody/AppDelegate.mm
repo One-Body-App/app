@@ -3,7 +3,10 @@
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTRootView.h>
-#import <TwitterKit/TWTRKit.h>
+
+#import <React/RCTLinkingManager.h>
+#import <RNGoogleSignin/RNGoogleSignin.h>
+
 
 #import <React/RCTAppSetupUtils.h>
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
@@ -14,9 +17,11 @@
 #import <React/RCTSurfacePresenter.h>
 #import <React/RCTSurfacePresenterBridgeAdapter.h>
 #import <ReactCommon/RCTTurboModuleManager.h>
-
 #import <react/config/ReactNativeConfig.h>
-#import <RNGoogleSignin/RNGoogleSignin.h>
+
+
+
+//#import "RCTLinkingManager.h"
 
 static NSString *const kRNConcurrentRoot = @"concurrentRoot";
 
@@ -137,10 +142,24 @@ static NSString *const kRNConcurrentRoot = @"concurrentRoot";
   return RCTAppSetupDefaultModuleFromClass(moduleClass);
 }
 
-- (BOOL)application:(UIApplication *)application openURL:(nonnull NSURL *)url options:(nonnull NSDictionary<NSString *,id> *)options {
-  return [[FBSDKApplicationDelegate sharedInstance] application:application openURL:url options:options] || [RNGoogleSignin application:application openURL:url options:options] || [[Twitter sharedInstance] application:app openURL:url options:options];
-}
+
 
 #endif
+
+- (BOOL)application:(UIApplication *)application openURL:(nonnull NSURL *)url options:(nonnull NSDictionary<NSString *,id> *)options {
+  
+  // fix Firebase Dynamic Links
+//    [[FIRDynamicLinks dynamicLinks] dynamicLinkFromCustomSchemeURL:url];
+
+  return  [[FBSDKApplicationDelegate sharedInstance] application:application openURL:url options:options] || [RNGoogleSignin application:application openURL:url options:options] || [RCTLinkingManager application:application openURL:url options:options];
+}
+
+- (BOOL)application:(UIApplication *)application continueUserActivity:(nonnull NSUserActivity *)userActivity
+ restorationHandler:(nonnull void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler
+{
+ return [RCTLinkingManager application:application
+                  continueUserActivity:userActivity
+                    restorationHandler:restorationHandler];
+}
 
 @end

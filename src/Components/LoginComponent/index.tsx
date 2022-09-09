@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import Google from '@/assets/svg/G.svg';
 import Twitter from '@/assets/svg/Twitter.svg';
+import Facebook from '@/assets/svg/Facebook.svg';
 import Button from '../Button';
 import { useDispatch, useSelector } from 'react-redux';
 import { styles } from './styles';
@@ -21,30 +22,32 @@ import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import Modal from 'react-native-modal';
 import { LoginButton, LoginManager, AccessToken, LoginResult } from 'react-native-fbsdk-next';
-import InAppBrowser from 'react-native-inappbrowser-reborn';
+import { JSHash, JSHmac, CONSTANTS } from 'react-native-hash';
+
 import { NativeModules } from 'react-native';
-const { RNTwitterSignIn } = NativeModules;
 
 import {
   getFcmToken,
   requestUserPermission,
 } from '../../Services/Notification/notificationServices';
 
+import { obtainOauthRequestToken } from '../../Services/twitter';
+
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import GradientButton from '../GradientButton';
 import { loginSocialRequest, logout } from '@/src/Redux/actions/AuthActions';
 import { ApiCall } from '@/src/Services/api';
 import { setAccountType } from '@/src/Redux/actions/GeneralActions';
-
-RNTwitterSignIn.init('TWITTER_CONSUMER_KEY', 'TWITTER_CONSUMER_SECRET').then(() =>
-  console.log('Twitter SDK initialized')
-);
+import axios from 'axios';
+import { Buffer } from 'buffer';
 
 type Props = {
   showConfirmationEmailMessage: boolean;
+  oauthToken?: string;
+  oauthVerifier?: string;
 };
 
-const LoginComponent = ({ showConfirmationEmailMessage }: Props) => {
+const LoginComponent = ({ showConfirmationEmailMessage, oauthToken, oauthVerifier }: Props) => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const userData = useSelector((state: RootState) => state.auth.userData);
@@ -82,6 +85,46 @@ const LoginComponent = ({ showConfirmationEmailMessage }: Props) => {
     }
   }, [newUserCredentials]);
 
+  useEffect(() => {
+    if (oauthToken && oauthVerifier) {
+      const getTwitterAuthToken = async () => {
+        try {
+          const options = {
+            method: 'POST',
+            url: 'https://api.twitter.com/oauth/access_token',
+            params: {
+              oauth_token: oauthToken,
+              oauth_verifier: oauthVerifier,
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          };
+          const result = await axios.request(options);
+
+          if (result.data) {
+            const tokenData = result.data.split('&')?.map((item: string) => {
+              return item.split('=')[1];
+            });
+
+            const twitterCredential = auth.TwitterAuthProvider.credential(
+              tokenData[0],
+              tokenData[1]
+            );
+
+            const userCredentials = await auth().signInWithCredential(twitterCredential);
+            // // Sign-in the user with the credential
+            console.log(twitterCredential, userCredentials);
+            processLogin(userCredentials);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      };
+      getTwitterAuthToken();
+    }
+  }, [oauthToken]);
+
   const signInUser = async () => {
     try {
       const { email, password } = state;
@@ -113,39 +156,118 @@ const LoginComponent = ({ showConfirmationEmailMessage }: Props) => {
     requestUserPermission(token);
   };
 
-  const onTwitterButtonPress = async () => {
-    // Perform the login request
-    const { authToken, authTokenSecret } = await RNTwitterSignIn.logIn();
+  const makeSignature = async (
+    params: any,
+    method: string,
+    apiUrl: string,
+    consumerSecret: string
+  ) => {
+    const paramsBaseString = Object.keys(params)
+      .sort()
+      .reduce((prev: string, el: any) => {
+        return (prev += `&${el}=${params[el]}`);
+      }, '')
+      .substr(1);
 
-    // Create a Twitter credential with the tokens
-    const twitterCredential = auth.TwitterAuthProvider.credential(authToken, authTokenSecret);
-    const userCredenttials = await auth().signInWithCredential(twitterCredential);
-    // Sign-in the user with the credential
-    return processLogin(userCredenttials);
+    const signatureBaseString = `${method.toUpperCase()}&${encodeURIComponent(
+      apiUrl
+    )}&${encodeURIComponent(paramsBaseString)}`;
+    console.log(signatureBaseString);
+    const signingKey = `${encodeURIComponent(consumerSecret)}&`;
+
+    const oauth_signature = Buffer.from(
+      await JSHmac(signatureBaseString, signingKey, CONSTANTS.HmacAlgorithms.HmacSHA1)
+    ).toString('base64');
+
+    const paramsWithSignature = {
+      ...params,
+      oauth_signature: encodeURIComponent(oauth_signature),
+    };
+
+    return paramsWithSignature;
   };
 
-  const onFacebookButtonPress = async () => {
-    // Attempt login with permissions
-    const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+  const onTwitterButtonPress = async () => {
+    try {
+      const options = {
+        method: 'GET',
+        url: 'http://localhost:3000/api/auth/twitter-token',
+        headers: {
+          'Content-Type': 'application/json',
+          // Authorization: `OAuth oauth_consumer_key="${consumerKey}", oauth_nonce="xrMvZG0cHEQ1GdtrDYXzaeGxpC0nO0le", oauth_signature="kXAGbbCCNDpj0gLyKG%2Bla%2BPXCIw%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="1662609940", oauth_version="1.0"`,
+          // Authorization: `OAuth oauth_consumer_key="${consumerKey}", oauth_nonce="${nonce}", oauth_signature="${oauthData.oauth_signature}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthData.oauth_timestamp}", oauth_version="1.0"`,
+        },
+      };
+      const result = await axios.request(options);
+      const token = result.data?.oAuthToken;
+      console.log(token);
 
-    if (result.isCancelled) {
-      throw 'User cancelled the login process';
+      if (token) {
+        Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${token}`);
+      }
+
+      // let timestamp = (Date.now() / 1000).toFixed();
+      // let nonce = Buffer.from(consumerKey + ':' + timestamp).toString('base64');
+
+      // const params = {
+      //   oauth_consumer_key: consumerKey,
+      //   oauth_version: '1.0',
+      //   oauth_signature_method: 'HMAC-SHA1',
+      //   // oauth_callback: callbackUrl,
+      //   oauth_timestamp: timestamp,
+      //   oauth_nonce: Math.random()
+      //     .toString(36)
+      //     .replace(/[^a-z]/, '')
+      //     .substr(2),
+      // };
+
+      // const oauthData = await makeSignature(
+      //   params,
+      //   'POST',
+      //   'https://api.twitter.com/oauth/request_token',
+      //   consumerSecret
+      // );
+
+      // console.log(
+      //   oauthData,
+      //   `OAuth oauth_consumer_key="${consumerKey}", oauth_nonce="${oauthData.oauth_nonce}", oauth_signature="${oauthData.oauth_signature}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthData.oauth_timestamp}", oauth_version="1.0"`
+      // );
+
+      // const options = {
+      //   method: 'POST',
+      //   url: 'https://api.twitter.com/oauth/request_token',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     // Authorization: `OAuth oauth_consumer_key="${consumerKey}", oauth_nonce="xrMvZG0cHEQ1GdtrDYXzaeGxpC0nO0le", oauth_signature="kXAGbbCCNDpj0gLyKG%2Bla%2BPXCIw%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="1662609940", oauth_version="1.0"`,
+      //     Authorization: `OAuth oauth_consumer_key="${consumerKey}", oauth_nonce="${nonce}", oauth_signature="${oauthData.oauth_signature}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthData.oauth_timestamp}", oauth_version="1.0"`,
+      //   },
+      // };
+      // const result = await axios.request(options);
+      // console.log(result.data);
+      // const result = await axios.post(
+      //   'https://api.twitter.com/oauth/request_token?oauth_callback=https%3A%2F%2Fone-body-app-75cd2.firebaseapp.com%2F__%2Fauth%2Fhandler',
+      //   {
+      //     headers: {
+      //       'content-type': 'application/json',
+      //       Authorization: `OAuth oauth_consumer_key="${consumerKey}", oauth_nonce="${nonce}", oauth_signature="oauth_signature", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${timestamp}", oauth_version="1.0"`,
+      //     },
+      //   }
+      // );
+      //     curl --request POST \
+      // --url 'https://api.twitter.com/oauth/request_token?oauth_callback=https%3A%2F%2Fone-body-app-75cd2.firebaseapp.com%2F__%2Fauth%2Fhandler' \
+      // --header 'Authorization: OAuth oauth_consumer_key="G2v2Qbeqsz3vWrUA5rPwCfe6O", oauth_nonce="RzJ2MlFiZXFzejN2V3JVQTVyUHdDZmU2TzoxNjYyNjA1NDEw", oauth_signature="oauth_signature", oauth_signature_method="HMAC-SHA1", oauth_timestamp="1662605410", oauth_version="1.0"'
+    } catch (e) {
+      console.log(e);
     }
 
-    // Once signed in, get the users AccesToken
-    const data = await AccessToken.getCurrentAccessToken();
-
-    if (!data) {
-      throw 'Something went wrong obtaining access token';
-    }
-
-    // Create a Firebase credential with the AccessToken
-    const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-
-    // Sign-in the user with the credential
-    const userCredentials = await auth().signInWithCredential(facebookCredential);
-
-    processLogin(userCredentials);
+    // Perform the login request
+    // const { authToken, authTokenSecret } = await RNTwitterSignIn.logIn();
+    // console.log(authToken);
+    // // Create a Twitter credential with the tokens
+    // const twitterCredential = auth.TwitterAuthProvider.credential(authToken, authTokenSecret);
+    // const userCredenttials = await auth().signInWithCredential(twitterCredential);
+    // // Sign-in the user with the credential
+    // return processLogin(userCredenttials);
   };
 
   // const _responseInfoCallback = (error, result) => {
@@ -162,46 +284,46 @@ const LoginComponent = ({ showConfirmationEmailMessage }: Props) => {
   //     console.log('result', result);
   //   }
   // };
-  async function onAppleButtonPress() {
-    // performs login request
-    // const appleAuthRequestResponse = await appleAuth.performRequest({
-    //   requestedOperation: appleAuth.Operation.LOGIN,
-    //   requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-    // });
+  // async function onAppleButtonPress() {
+  //   // performs login request
+  //   // const appleAuthRequestResponse = await appleAuth.performRequest({
+  //   //   requestedOperation: appleAuth.Operation.LOGIN,
+  //   //   requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+  //   // });
 
-    // // get current authentication state for user
-    // // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
-    // const credentialState = await appleAuth.getCredentialStateForUser(
-    //   appleAuthRequestResponse.user
-    // );
+  //   // // get current authentication state for user
+  //   // // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
+  //   // const credentialState = await appleAuth.getCredentialStateForUser(
+  //   //   appleAuthRequestResponse.user
+  //   // );
 
-    // // use credentialState response to ensure the user is authenticated
-    // if (credentialState === appleAuth.State.AUTHORIZED) {
-    //   console.warn('apple response', appleAuthRequestResponse);
+  //   // // use credentialState response to ensure the user is authenticated
+  //   // if (credentialState === appleAuth.State.AUTHORIZED) {
+  //   //   console.warn('apple response', appleAuthRequestResponse);
 
-    //   // user is authenticated
-    // }
+  //   //   // user is authenticated
+  //   // }
 
-    // Start the sign-in request
-    const appleAuthRequestResponse = await appleAuth.performRequest({
-      requestedOperation: appleAuth.Operation.LOGIN,
-      requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-    });
-    console.log(appleAuthRequestResponse);
-    // Ensure Apple returned a user identityToken
-    if (!appleAuthRequestResponse.identityToken) {
-      throw new Error('Apple Sign-In failed - no identify token returned');
-    }
+  //   // Start the sign-in request
+  //   const appleAuthRequestResponse = await appleAuth.performRequest({
+  //     requestedOperation: appleAuth.Operation.LOGIN,
+  //     requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+  //   });
+  //   console.log(appleAuthRequestResponse);
+  //   // Ensure Apple returned a user identityToken
+  //   if (!appleAuthRequestResponse.identityToken) {
+  //     throw new Error('Apple Sign-In failed - no identify token returned');
+  //   }
 
-    // Create a Firebase credential from the response
-    const { identityToken, nonce } = appleAuthRequestResponse;
-    const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
-    const userCredential = await auth().signInWithCredential(appleCredential);
+  //   // Create a Firebase credential from the response
+  //   const { identityToken, nonce } = appleAuthRequestResponse;
+  //   const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+  //   const userCredential = await auth().signInWithCredential(appleCredential);
 
-    processLogin(userCredential);
-    // Sign the user in with the credential
-    // return auth().signInWithCredential(appleCredential);
-  }
+  //   processLogin(userCredential);
+  //   // Sign the user in with the credential
+  //   // return auth().signInWithCredential(appleCredential);
+  // }
 
   useEffect(() => {
     // GoogleSignin.configure({
@@ -269,7 +391,9 @@ const LoginComponent = ({ showConfirmationEmailMessage }: Props) => {
     }
   };
 
-  const facebookLogin = async (result: LoginResult, error: Record<string, unknown>) => {
+  const facebookLogin = async () => {
+    const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+
     if (result.isCancelled) {
       throw 'User cancelled the login process';
     }
@@ -443,7 +567,11 @@ const LoginComponent = ({ showConfirmationEmailMessage }: Props) => {
           <Google style={{ alignSelf: 'center' }} />
         </TouchableOpacity>
 
-        <LoginButton
+        <TouchableOpacity onPress={() => facebookLogin()} style={styles.socialContainer}>
+          <Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />
+        </TouchableOpacity>
+
+        {/* <LoginButton
           permissions={['public_profile', 'email']}
           style={{
             ...styles.socialContainer,
@@ -452,7 +580,7 @@ const LoginComponent = ({ showConfirmationEmailMessage }: Props) => {
           }}
           ref={fbButton}
           onLoginFinished={async (error, result) => facebookLogin(result, error)}
-        />
+        /> */}
 
         <TouchableOpacity onPress={() => onTwitterButtonPress()}>
           <View style={{ ...styles.socialContainer, marginRight: 0 }}>

@@ -102,25 +102,23 @@ export const styles = StyleSheet.create({
   },
   btn: {
     backgroundColor: '#F6F6F6',
-    width: getWidth(40),
+    width: getWidth(42),
 
-    marginTop: getHeight(2),
-    height: getHeight(10),
+    height: getHeight(6),
 
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 10,
   },
   btnSelected: {
-    backgroundColor: '#F6F6F6',
-    width: getWidth(40),
-    marginTop: getHeight(2),
-    height: getHeight(10),
+    backgroundColor: '#FFF',
+    width: getWidth(42),
+    height: getHeight(6),
     borderWidth: 1,
     borderColor: '#126B87',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 10,
   },
   btn2: {
     backgroundColor: 'white',
@@ -134,8 +132,7 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   btnText: {
-    color: 'black',
-    fontSize: getFontSize(2.7),
+    fontSize: getFontSize(1.8),
 
     fontFamily: 'Rubik-Medium',
   },

@@ -11,8 +11,15 @@ import G from '@/assets/svg/G.svg';
 import Facebook from '@/assets/svg/Facebook.svg';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { styles } from './styles';
-import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
+import { NativeModules } from 'react-native';
+const { RNTwitterSignIn } = NativeModules;
+
+RNTwitterSignIn.init(
+  'G2v2Qbeqsz3vWrUA5rPwCfe6O',
+  'XbqUBAPHgrLWoiJUHjOM10CCSHga9lHH5nhwJnKeUvlnOgazF6'
+).then(() => console.log('Twitter SDK initialized'));
 // import {
 //   LoginButton,
 //   AccessToken,
@@ -154,7 +161,7 @@ const SignupButtons = () => {
           }}
         />
 
-        <Button
+        {/* <Button
           disabled={disabled}
           text={'Sign up with Twitter'}
           leftIcon={<Twitter style={{ marginRight: 7 }} height={getHeight(5)} fill="#00acee" />}
@@ -166,7 +173,7 @@ const SignupButtons = () => {
           disabledBtnStyle={styles.disabledButtonContainer}
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
           wrapperBtnStyle={{ width: 225 }}
-        />
+        /> */}
 
         <Button
           disabled={disabled}

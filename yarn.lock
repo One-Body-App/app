@@ -1173,10 +1173,40 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@expo/config-plugins@npm:^5.0.1":
+  version: 5.0.1
+  resolution: "@expo/config-plugins@npm:5.0.1"
+  dependencies:
+    "@expo/config-types": ^46.0.0
+    "@expo/json-file": 8.2.36
+    "@expo/plist": 0.0.18
+    "@expo/sdk-runtime-versions": ^1.0.0
+    "@react-native/normalize-color": ^2.0.0
+    chalk: ^4.1.2
+    debug: ^4.3.1
+    find-up: ~5.0.0
+    getenv: ^1.0.0
+    glob: 7.1.6
+    resolve-from: ^5.0.0
+    semver: ^7.3.5
+    slash: ^3.0.0
+    xcode: ^3.0.1
+    xml2js: 0.4.23
+  checksum: bd7139ba8728e7117aaa1ae056190ed69bfde707286d13ef2fe26201381753e6d2066a223eb69547825ab1469c253a75f2e73fad82021b2a7589bb98fd8bf8bb
+  languageName: node
+  linkType: hard
+
 "@expo/config-types@npm:^45.0.0":
   version: 45.0.0
   resolution: "@expo/config-types@npm:45.0.0"
   checksum: 9b4866540654da61af0985ebfc975b3cb690625acf7742443a7e56263bf134b261e22719720982223407f8957d08a3646178c79f482861218882f0956d804021
+  languageName: node
+  linkType: hard
+
+"@expo/config-types@npm:^46.0.0":
+  version: 46.0.2
+  resolution: "@expo/config-types@npm:46.0.2"
+  checksum: ea7b3c64e875dfe65209e5f099b3ef4ddc464f308aff50ba08c26c1dfc3d3c177203190b29b5d7dd334932d74f765690c44829d637d7a71a72078214c69a07ab
   languageName: node
   linkType: hard
 
@@ -1218,6 +1248,63 @@ __metadata:
   version: 1.0.0
   resolution: "@expo/sdk-runtime-versions@npm:1.0.0"
   checksum: 0942d5a356f590e8dc795761456cc48b3e2d6a38ad2a02d6774efcdc5a70424e05623b4e3e5d2fec0cdc30f40dde05c14391c781607eed3971bf8676518bfd9d
+  languageName: node
+  linkType: hard
+
+"@fortawesome/fontawesome-common-types@npm:6.2.0":
+  version: 6.2.0
+  resolution: "@fortawesome/fontawesome-common-types@npm:6.2.0"
+  checksum: 1d0a3340dc2d2798609195cf77f1b0db98f0d87144044eb7cd3d78745baac8509705c6ebc7cce3d9bb36c7d7358ca064f77f39d86478ab1e7aa7aadc344cfd91
+  languageName: node
+  linkType: hard
+
+"@fortawesome/fontawesome-svg-core@npm:^6.2.0":
+  version: 6.2.0
+  resolution: "@fortawesome/fontawesome-svg-core@npm:6.2.0"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": 6.2.0
+  checksum: 3bae680cba4098bc3a6aee04e655e0c6b6bab2d78e6709dc0a44d106f57a09bc2fd979310108777a373df301273a2a276739056f8984cd8bc5a50d37338c5380
+  languageName: node
+  linkType: hard
+
+"@fortawesome/free-brands-svg-icons@npm:^6.2.0":
+  version: 6.2.0
+  resolution: "@fortawesome/free-brands-svg-icons@npm:6.2.0"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": 6.2.0
+  checksum: 402b4e102bec60b234169c878b08ab1280feededf91d54c9c080bfcae2a2b0c52e05ab3fb9192293ed5d488501335e656c726e7ba3926876277bdf8e31d34026
+  languageName: node
+  linkType: hard
+
+"@fortawesome/free-regular-svg-icons@npm:^6.2.0":
+  version: 6.2.0
+  resolution: "@fortawesome/free-regular-svg-icons@npm:6.2.0"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": 6.2.0
+  checksum: 1b68a25590b273653c7adfa18bd6ef0ee533710687a46ef21c7b5395deae280a2faaff0b024717d9e54fdaedb8165769f281342704821777f86316223d5264ba
+  languageName: node
+  linkType: hard
+
+"@fortawesome/free-solid-svg-icons@npm:^6.2.0":
+  version: 6.2.0
+  resolution: "@fortawesome/free-solid-svg-icons@npm:6.2.0"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": 6.2.0
+  checksum: b5edf24be491e8493028b7fd2158fb73f3a76491087970609c0ef6a4449fd4744312fe768bfcffc90a5ef86b9980f9ab8ebb36927ba8d9854c2fa638ceadb0ac
+  languageName: node
+  linkType: hard
+
+"@fortawesome/react-native-fontawesome@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "@fortawesome/react-native-fontawesome@npm:0.3.0"
+  dependencies:
+    humps: ^2.0.1
+    prop-types: ^15.7.2
+  peerDependencies:
+    "@fortawesome/fontawesome-svg-core": ~1 || ~6
+    react-native: ">= 0.67"
+    react-native-svg: ">= 11.x"
+  checksum: 16414021674a6cbcc0f6fcec2e67485b9d06da8e5a4be1b349a315e8868e9d3892934eb46e037232a44dc9213bf914453294e88c1b3e3fde068d7c9cf2427774
   languageName: node
   linkType: hard
 
@@ -1914,35 +2001,53 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/app@npm:^15.3.0":
-  version: 15.3.0
-  resolution: "@react-native-firebase/app@npm:15.3.0"
+"@react-native-firebase/analytics@npm:^15.4.0":
+  version: 15.4.0
+  resolution: "@react-native-firebase/analytics@npm:15.4.0"
+  peerDependencies:
+    "@react-native-firebase/app": 15.4.0
+  checksum: 70223e80cca7941164834f3e43b9e266d943d19367825d23f3b9182d843662f33c66e69f7909e4a11e77ef5d2693036e6e2e48f1e572dcad19e89b7df385535e
+  languageName: node
+  linkType: hard
+
+"@react-native-firebase/app@npm:^15.4.0":
+  version: 15.4.0
+  resolution: "@react-native-firebase/app@npm:15.4.0"
   dependencies:
-    "@expo/config-plugins": ^4.1.5
+    "@expo/config-plugins": ^5.0.1
     opencollective-postinstall: ^2.0.1
     superstruct: ^0.6.2
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 6de60cc8c1b517264c52e4280829770a92c551b3963b2859262f1a659d8f0269a331ca82039b09b73839fc48984ba49b8d224ad9f7983199503d8fe2e4bfc4b1
+  checksum: b85bea7d586fac17e16270beacadb59d5b2b38b06e7cfa9aab1ff4231f3c0f7662ae75e5db6203ad902adbdfaf2b34eceeff6e20edb34021c3e38e4fa596c6ed
   languageName: node
   linkType: hard
 
-"@react-native-firebase/auth@npm:^15.3.0":
-  version: 15.3.0
-  resolution: "@react-native-firebase/auth@npm:15.3.0"
+"@react-native-firebase/auth@npm:^15.4.0":
+  version: 15.4.0
+  resolution: "@react-native-firebase/auth@npm:15.4.0"
   peerDependencies:
-    "@react-native-firebase/app": 15.3.0
-  checksum: 40ba9aeab7492638cf0839e4563151aea6dc913162c1e0ec418d582885103a8e949931ebe4a91dbea1789c92baedc43854c8f82607e28755d74e3f0e5860061b
+    "@react-native-firebase/app": 15.4.0
+  checksum: fd84e43aca0068e28b52dd4506187d50a68983d2b97dcf5209face0e0cf5623f5f2016b90d56d213fe8d006ae930527a069a1e684787f8ed73750ef3ebab7deb
   languageName: node
   linkType: hard
 
-"@react-native-firebase/messaging@npm:^15.3.0":
-  version: 15.3.0
-  resolution: "@react-native-firebase/messaging@npm:15.3.0"
+"@react-native-firebase/dynamic-links@npm:^15.4.0":
+  version: 15.4.0
+  resolution: "@react-native-firebase/dynamic-links@npm:15.4.0"
   peerDependencies:
-    "@react-native-firebase/app": 15.3.0
-  checksum: 96d918cb352d5886aff32127ec8aa1c7f76145d85aa6a5c92eca61fc00a8b70b220c239cde4876802ca3ab9403a000c4eb8865ae40cbf7d0377c020511a808d8
+    "@react-native-firebase/app": 15.4.0
+  checksum: 10f55c43c660653ecf4233167d3a41c9bb84582dbef1ddd6c8b9c7c80f3b405368f57f7e4a004f1e69815e066e6f45264859c2a80c8c283be9c97a0e1cb65950
+  languageName: node
+  linkType: hard
+
+"@react-native-firebase/messaging@npm:^15.4.0":
+  version: 15.4.0
+  resolution: "@react-native-firebase/messaging@npm:15.4.0"
+  peerDependencies:
+    "@react-native-firebase/app": 15.4.0
+  checksum: ee4677e04c30034dc47f22565067a6e1f5f055cf6f673ac47f59e8542533afa10ff6c7940983e617d0a15d000c36d6984864a01a11e17f585a5d35daa9cc13e0
   languageName: node
   linkType: hard
 
@@ -2620,6 +2725,13 @@ __metadata:
   version: 18.6.4
   resolution: "@types/node@npm:18.6.4"
   checksum: fc453dd2b541f5812ba1a8f957f577727cf2d8aee886f1d5c03eb153b2b3373d2e0953c5bd2b7a5b184073bc317f54ec91f1ec4830a58eda4a833e90654021de
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^18.7.16":
+  version: 18.7.16
+  resolution: "@types/node@npm:18.7.16"
+  checksum: 01a3d35c764a3f0e7370b56e1ad4203731131883c65784e020009014171b3f53c4649cde6c7aa4f1026b907ee87ef6ae6ece2bc518151dc7b81100fe8b1db3ad
   languageName: node
   linkType: hard
 
@@ -3672,6 +3784,16 @@ __metadata:
     base64-js: ^1.3.1
     ieee754: ^1.1.13
   checksum: e2cf8429e1c4c7b8cbd30834ac09bd61da46ce35f5c22a78e6c2f04497d6d25541b16881e30a019c6fd3154150650ccee27a308eff3e26229d788bbdeb08ab84
+  languageName: node
+  linkType: hard
+
+"buffer@npm:^6.0.3":
+  version: 6.0.3
+  resolution: "buffer@npm:6.0.3"
+  dependencies:
+    base64-js: ^1.3.1
+    ieee754: ^1.2.1
+  checksum: 5ad23293d9a731e4318e420025800b42bf0d264004c0286c8cc010af7a270c7a0f6522e84f54b9ad65cbd6db20b8badbfd8d2ebf4f80fa03dab093b89e68c3f9
   languageName: node
   linkType: hard
 
@@ -6260,6 +6382,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"humps@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "humps@npm:2.0.1"
+  checksum: 7d5a674cfca2f34c04562f6fd0d129b4c43a5caf85fcc1c9eacf5d0729554c9375db362c4232519b37369c94dd2560d85f96ad4091a8fbf4af4e625ab5214a30
+  languageName: node
+  linkType: hard
+
 "iconv-lite@npm:0.4.24":
   version: 0.4.24
   resolution: "iconv-lite@npm:0.4.24"
@@ -6278,7 +6407,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ieee754@npm:^1.1.13":
+"ieee754@npm:^1.1.13, ieee754@npm:^1.2.1":
   version: 1.2.1
   resolution: "ieee754@npm:1.2.1"
   checksum: 5144c0c9815e54ada181d80a0b810221a253562422e7c6c3a60b1901154184f49326ec239d618c416c1c5945a2e197107aee8d986a3dd836b53dffefd99b5e7e
@@ -8961,14 +9090,21 @@ __metadata:
   dependencies:
     "@babel/core": ^7.12.9
     "@babel/runtime": ^7.12.5
+    "@fortawesome/fontawesome-svg-core": ^6.2.0
+    "@fortawesome/free-brands-svg-icons": ^6.2.0
+    "@fortawesome/free-regular-svg-icons": ^6.2.0
+    "@fortawesome/free-solid-svg-icons": ^6.2.0
+    "@fortawesome/react-native-fontawesome": ^0.3.0
     "@invertase/react-native-apple-authentication": ^2.2.0
     "@react-native-async-storage/async-storage": ^1.15.15
     "@react-native-community/checkbox": ^0.5.12
     "@react-native-community/clipboard": ^1.5.1
     "@react-native-community/geolocation": ^2.0.2
-    "@react-native-firebase/app": ^15.3.0
-    "@react-native-firebase/auth": ^15.3.0
-    "@react-native-firebase/messaging": ^15.3.0
+    "@react-native-firebase/analytics": ^15.4.0
+    "@react-native-firebase/app": ^15.4.0
+    "@react-native-firebase/auth": ^15.4.0
+    "@react-native-firebase/dynamic-links": ^15.4.0
+    "@react-native-firebase/messaging": ^15.4.0
     "@react-native-google-signin/google-signin": ^8.0.0
     "@react-native-picker/picker": ^2.3.1
     "@react-native-twitter-signin/twitter-signin": ^1.2.0
@@ -8983,6 +9119,7 @@ __metadata:
     "@twotalltotems/react-native-otp-input": ^1.3.11
     "@types/jest": ^28.1.6
     "@types/lodash": ^4.14.183
+    "@types/node": ^18.7.16
     "@types/react": ^18.0.15
     "@types/react-native": ^0.69.5
     "@types/react-native-animated-progress": ^1.0.0
@@ -8994,6 +9131,7 @@ __metadata:
     axios: ^0.27.2
     babel-jest: ^26.6.3
     babel-plugin-module-resolver: ^4.1.0
+    buffer: ^6.0.3
     date-fns: ^2.29.1
     eslint: ^7.32.0 || ^8.2.0
     eslint-config-airbnb: latest
@@ -9024,6 +9162,7 @@ __metadata:
     react-native-geolocation-service: ^5.3.0
     react-native-gesture-handler: ^2.3.1
     react-native-gifted-chat: ^1.0.0
+    react-native-hash: ^3.0.1
     react-native-image-crop-picker: ^0.37.3
     react-native-image-modal: ^2.0.4
     react-native-image-picker: ^4.7.3
@@ -9047,12 +9186,13 @@ __metadata:
     react-native-share: ^7.3.7
     react-native-simple-toast: ^1.1.3
     react-native-splash-screen: ^3.3.0
-    react-native-svg: ^12.3.0
+    react-native-svg: ^13.1.0
     react-native-svg-transformer: ^1.0.0
     react-native-swipe-list-view: ^3.2.9
     react-native-swipeable: ^0.6.0
     react-native-tab-view: ^3.1.1
     react-native-toast-message: ^2.1.5
+    react-native-toast-notifications: ^3.3.1
     react-native-vector-icons: ^9.1.0
     react-native-webview: ^11.22.2
     react-native-zendesk-chat: ^0.4.1
@@ -9869,6 +10009,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-hash@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "react-native-hash@npm:3.0.1"
+  peerDependencies:
+    react: ^18
+    react-native: ^0.7
+  checksum: 1dc07e7aea16f091b60c07d2cf648b3b862e7477fcffb93a8849c25d053ab8fee5d08fbc41a248083dcfd5fb3f615b88a1999a47db940bba82b8609844410999
+  languageName: node
+  linkType: hard
+
 "react-native-image-crop-picker@npm:^0.37.3":
   version: 0.37.3
   resolution: "react-native-image-crop-picker@npm:0.37.3"
@@ -10183,16 +10333,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-svg@npm:^12.3.0":
-  version: 12.4.3
-  resolution: "react-native-svg@npm:12.4.3"
+"react-native-svg@npm:^13.1.0":
+  version: 13.1.0
+  resolution: "react-native-svg@npm:13.1.0"
   dependencies:
     css-select: ^5.1.0
     css-tree: ^1.1.3
   peerDependencies:
     react: "*"
-    react-native: ">=0.50.0"
-  checksum: 2dd74bf377ebac3e08dadc6016f7b827d59e1066a62d00d476ae40665988149f08cf7b6e673ea433bd7677f1bc1a454bd33f6bf8e2bc2758aeec830fc1dadc03
+    react-native: "*"
+  checksum: 0979b702887d7a20fb6c7bc7cc7afad54f324603c9fdc212a9029a9bcf621e887afa5e780a0442d5abd85396f9615988143b99f50929503b2ad26d82360aefa2
   languageName: node
   linkType: hard
 
@@ -10237,6 +10387,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 01005d77357f8bfd2f255f7ba18906e7475381013556eff4c9fed04a64448eae240fa32d5bfdd1dee73de36bfbca0b510185cc75785f83bef49c55786eae5e29
+  languageName: node
+  linkType: hard
+
+"react-native-toast-notifications@npm:^3.3.1":
+  version: 3.3.1
+  resolution: "react-native-toast-notifications@npm:3.3.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: c3c6eddfff818e067fb6eeb46711afb53af83bbf6e9c4089cea578c6103a3fbbaa54d0e0c24d6c4d972d30f8fa32360187bad2ee7bdd5e425e0cf883dfdae48e
   languageName: node
   linkType: hard
 

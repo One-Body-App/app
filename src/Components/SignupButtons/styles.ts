@@ -24,6 +24,7 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     marginVertical: 10,
     borderColor: '#F6F6F6',
+    backgroundColor: '#F6F6F6',
   },
   btnIcon: {
     width: 24,
@@ -42,7 +43,7 @@ export const styles = StyleSheet.create({
   },
   buttonList: {
     marginHorizontal: 20,
-    marginTop: '10%',
+    marginTop: 16,
     flex: 1,
   },
   footer: {
@@ -58,7 +59,7 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   center: {
-    marginTop: getHeight(3),
+    marginTop: getHeight(1),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -75,7 +76,7 @@ export const styles = StyleSheet.create({
   },
   alreadyAccountContainer: {
     alignSelf: 'center',
-    marginTop: 30,
+    marginTop: 16,
     flexDirection: 'row',
   },
 });
