@@ -1,128 +1,114 @@
-import React, { useEffect } from 'react';
-import { Text, View, Image, TouchableOpacity, Platform, Linking, Alert } from 'react-native';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import React, { useEffect, useState } from 'react';
+import { Text, View, TouchableOpacity, Linking } from 'react-native';
+
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+
+import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import G from '@/assets/svg/G.svg';
 import Facebook from '@/assets/svg/Facebook.svg';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { styles } from './styles';
-import { appleAuth } from '@invertase/react-native-apple-authentication';
-import InAppBrowser from 'react-native-inappbrowser-reborn';
-import { NativeModules } from 'react-native';
-const { RNTwitterSignIn } = NativeModules;
 
-RNTwitterSignIn.init(
-  'G2v2Qbeqsz3vWrUA5rPwCfe6O',
-  'XbqUBAPHgrLWoiJUHjOM10CCSHga9lHH5nhwJnKeUvlnOgazF6'
-).then(() => console.log('Twitter SDK initialized'));
-// import {
-//   LoginButton,
-//   AccessToken,
-//   LoginManager,
-//   GraphRequest,
-//   GraphRequestManager,
-// } from 'react-native-fbsdk';
-// import { GoogleSignin, statusCodes } from '@react-native-community/google-signin';
+import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
+import { setAccountType } from '@/src/Redux/actions/GeneralActions';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/Services/constants';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
 
-const OpenURLButton = async (url: string) => {
-  try {
-    if (await InAppBrowser.isAvailable()) {
-      const result = await InAppBrowser.open(url, {
-        // iOS Properties
-        // dismissButtonStyle: 'cancel',
-        // preferredBarTintColor: '#453AA4',
-        // preferredControlTintColor: 'white',
-        readerMode: false,
-        animated: true,
-        modalPresentationStyle: 'fullScreen',
-        modalTransitionStyle: 'coverVertical',
-        modalEnabled: true,
-        enableBarCollapsing: false,
-        // Android Properties
-        showTitle: true,
-        // toolbarColor: '#6200EE',
-        // secondaryToolbarColor: 'black',
-        // navigationBarColor: 'black',
-        // navigationBarDividerColor: 'white',
-        enableUrlBarHiding: true,
-        enableDefaultShare: true,
-        forceCloseOnRedirection: false,
-        animations: {
-          startEnter: 'slide_in_right',
-          startExit: 'slide_out_left',
-          endEnter: 'slide_in_left',
-          endExit: 'slide_out_right',
-        },
-      });
-      // await this.sleep(800);
-      // Alert.alert(JSON.stringify(result));
-    } else Linking.openURL(url);
-  } catch (error: any) {
-    Alert.alert(error.message);
-  }
-};
+type Props = StackScreenProps<RootStackParamList, 'SignUp'>;
 
-const SignupButtons = () => {
-  const navigation = useNavigation();
-  const AccountType = useSelector((state) => state.general.accountType);
+const SignupButtons = ({ navigation }: Props) => {
+  const [error, seterror] = useState<string>();
 
-  const _responseInfoCallback = (error, result) => {
-    if (error) {
-      console.log('error', error);
-    } else {
-      console.log('result', result);
+  const [state, setState] = useState({
+    email: '',
+    emailError: '',
+    password: '',
+    passwordError: '',
+  });
+
+  const [token, setToken] = useState('');
+
+  const dispatch = useDispatch();
+
+  const [newUserCredentials, setNewUserCredentials] =
+    useState<FirebaseAuthTypes.UserCredential | null>(null);
+
+  const AccountType = useSelector((state: RootState) => state.general.accountType);
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '420515523880-2h4eoqmpti4up6ee2j6evrupaqj5rgb7.apps.googleusercontent.com',
+      offlineAccess: true,
+      forceCodeForRefreshToken: true,
+    });
+  }, []);
+
+  const onTwitterButtonPress = async () => {
+    try {
+      seterror('');
+      setState({ ...state, emailError: '', passwordError: '' });
+
+      const urlToken = await getTwitterLoginToken(true);
+
+      if (urlToken) {
+        Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+      }
+    } catch (e) {
+      console.log(e);
     }
   };
-  async function onAppleButtonPress() {
-    // performs login request
-    const appleAuthRequestResponse = await appleAuth.performRequest({
-      requestedOperation: appleAuth.Operation.LOGIN,
-      requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-    });
 
-    // get current authentication state for user
-    // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
-    const credentialState = await appleAuth.getCredentialStateForUser(
-      appleAuthRequestResponse.user
-    );
+  const googleSignIn = async () => {
+    try {
+      seterror('');
+      setState({ ...state, emailError: '', passwordError: '' });
 
-    // use credentialState response to ensure the user is authenticated
-    if (credentialState === appleAuth.State.AUTHORIZED) {
-      console.warn('apple response', appleAuthRequestResponse);
-      // user is authenticated
+      // Get the users ID token
+      const { idToken } = await GoogleSignin.signIn();
+
+      // Create a Google credential with the token
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const userCredentials = await auth().signInWithCredential(googleCredential);
+
+      processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+    } catch (error: any) {
+      seterror(error.message);
     }
-  }
+  };
 
-  // useEffect(() => {
-  //   GoogleSignin.configure({
-  //     webClientId: '512417049240-6vh8920rfurcnk167qu150469elt1g5g.apps.googleusercontent.com',
-  //     offlineAccess: true, // if you want to access Google API on behalf of the user FROM YOUR SERVER
-  //     forceCodeForRefreshToken: true, // [Android] related to `serverAuthCode`, read the docs link below *.
-  //     iosClientId: '512417049240-3iiavsfsmg3nknovem6rvakj6e7ceiga.apps.googleusercontent.com', // [iOS] optional, if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
-  //   });
-  // }, []);
-  const signIn = async () => {
-    // try {
-    //   await GoogleSignin.hasPlayServices();
-    //   const userInfo = await GoogleSignin.signIn();
-    //   console.log('google user info', userInfo);
-    // } catch (error) {
-    //   console.log('Message', error.message);
-    //   if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-    //     console.log('User Cancelled the Login Flow');
-    //   } else if (error.code === statusCodes.IN_PROGRESS) {
-    //     console.log('Signing In');
-    //   } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-    //     console.log('Play Services Not Available or Outdated');
-    //   } else {
-    //     console.log('Some Other Error Happened');
-    //   }
-    // }
+  const facebookLogin = async () => {
+    try {
+      seterror('');
+      setState({ ...state, emailError: '', passwordError: '' });
+      const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+
+      if (result.isCancelled) {
+        throw 'User cancelled the login process';
+      }
+
+      // Once signed in, get the users AccesToken
+      const data = await AccessToken.getCurrentAccessToken();
+
+      if (!data) {
+        throw 'Something went wrong obtaining access token';
+      }
+
+      // Create a Firebase credential with the AccessToken
+      const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+      const userCredentials = await auth().signInWithCredential(facebookCredential);
+
+      processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+    } catch (error: any) {
+      seterror(error.message);
+    }
   };
 
   const disabled = !!!AccountType;
@@ -137,7 +123,7 @@ const SignupButtons = () => {
           btnStyle={styles.buttonContainer}
           btnTextStyle={styles.btnTitle}
           onPress={() => {
-            AccountType != null ? signIn() : null;
+            AccountType != null ? googleSignIn() : null;
           }}
           disabledBtnStyle={styles.disabledButtonContainer}
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
@@ -150,7 +136,7 @@ const SignupButtons = () => {
           btnStyle={styles.buttonContainer}
           btnTextStyle={styles.btnTitle}
           onPress={() => {
-            AccountType != null ? signIn() : null;
+            AccountType != null ? facebookLogin() : null;
           }}
           disabledBtnStyle={styles.disabledButtonContainer}
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
@@ -161,19 +147,19 @@ const SignupButtons = () => {
           }}
         />
 
-        {/* <Button
+        <Button
           disabled={disabled}
           text={'Sign up with Twitter'}
           leftIcon={<Twitter style={{ marginRight: 7 }} height={getHeight(5)} fill="#00acee" />}
           btnStyle={styles.buttonContainer}
           btnTextStyle={styles.btnTitle}
           onPress={() => {
-            AccountType != null ? signIn() : null;
+            AccountType != null ? onTwitterButtonPress() : null;
           }}
           disabledBtnStyle={styles.disabledButtonContainer}
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
           wrapperBtnStyle={{ width: 225 }}
-        /> */}
+        />
 
         <Button
           disabled={disabled}
@@ -197,11 +183,11 @@ const SignupButtons = () => {
         <View style={{ ...styles.center, paddingBottom: 80 }}>
           <Text style={{ color: '#032F3C' }}>By signing up, you agree to our</Text>
           <View style={{ flexDirection: 'row' }}>
-            <TouchableOpacity onPress={() => OpenURLButton('https://google.com')}>
+            <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
               <Text style={styles.text}>User Agreements</Text>
             </TouchableOpacity>
             <Text style={styles.simpleText}> & </Text>
-            <TouchableOpacity onPress={() => OpenURLButton('https://google.com')}>
+            <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
               <Text style={styles.text}>Privacy Policy</Text>
             </TouchableOpacity>
           </View>
@@ -209,7 +195,7 @@ const SignupButtons = () => {
           <Text style={styles.alreadyAccountContainer}>Already Have an account?</Text>
           <TouchableOpacity
             style={{ marginLeft: 5, marginTop: 5, marginBottom: 20 }}
-            onPress={() => navigation.navigate('Login')}
+            onPress={() => navigation.navigate('Login', {})}
           >
             <Text style={{ ...styles.helight, textDecorationLine: 'underline' }}>Login</Text>
           </TouchableOpacity>

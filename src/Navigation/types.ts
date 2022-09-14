@@ -5,4 +5,12 @@ export type RootStackParamList = {
     oauth_verifier?: string;
     showConfirmationEmailMessage?: boolean;
   };
+  Bootombar: undefined;
+  InfluencerStepOne: undefined;
+  InfluencerStepTwo: undefined;
+  InfluencerStepThree: undefined;
+  AccountType: undefined;
+  forget: undefined;
+  SignUp: undefined;
+  SignupForm: undefined;
 };

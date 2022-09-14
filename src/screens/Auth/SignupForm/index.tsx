@@ -22,6 +22,7 @@ import CheckBox from '@react-native-community/checkbox';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { StackScreenProps } from '@react-navigation/stack';
 import { ParamListBase } from '@react-navigation/native';
+import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/Services/constants';
 
 type Props = StackScreenProps<ParamListBase, 'SignupForm'>;
 
@@ -114,44 +115,6 @@ const SignupForm = ({ navigation }: Props) => {
         cPasswordError,
         nameError,
       });
-    }
-  };
-
-  const OpenURLButton = async (url: string) => {
-    try {
-      if (await InAppBrowser.isAvailable()) {
-        const result = await InAppBrowser.open(url, {
-          // iOS Properties
-          // dismissButtonStyle: 'cancel',
-          // preferredBarTintColor: '#453AA4',
-          // preferredControlTintColor: 'white',
-          readerMode: false,
-          animated: true,
-          modalPresentationStyle: 'fullScreen',
-          modalTransitionStyle: 'coverVertical',
-          modalEnabled: true,
-          enableBarCollapsing: false,
-          // Android Properties
-          showTitle: true,
-          // toolbarColor: '#6200EE',
-          // secondaryToolbarColor: 'black',
-          // navigationBarColor: 'black',
-          // navigationBarDividerColor: 'white',
-          enableUrlBarHiding: true,
-          enableDefaultShare: true,
-          forceCloseOnRedirection: false,
-          animations: {
-            startEnter: 'slide_in_right',
-            startExit: 'slide_out_left',
-            endEnter: 'slide_in_left',
-            endExit: 'slide_out_right',
-          },
-        });
-        // await this.sleep(800);
-        // Alert.alert(JSON.stringify(result));
-      } else Linking.openURL(url);
-    } catch (error: any) {
-      Alert.alert(error.message);
     }
   };
 
@@ -313,11 +276,11 @@ const SignupForm = ({ navigation }: Props) => {
             <View style={{ ...styles.center, paddingBottom: 20 }}>
               <Text style={{ color: '#032F3C' }}>By signing up, you agree to our</Text>
               <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity onPress={() => OpenURLButton('https://google.com')}>
+                <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
                   <Text style={styles.text}>User Agreements</Text>
                 </TouchableOpacity>
                 <Text style={styles.simpleText}> & </Text>
-                <TouchableOpacity onPress={() => OpenURLButton('https://google.com')}>
+                <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
                   <Text style={styles.text}>Privacy Policy</Text>
                 </TouchableOpacity>
               </View>

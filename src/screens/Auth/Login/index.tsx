@@ -1,19 +1,18 @@
 import React from 'react';
-import { View, TouchableOpacity, Animated } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { View } from 'react-native';
+
 import LoginComponent from '@/components/LoginComponent';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import GradientHeader from '@/components/GradientHeader';
 import { appColor } from '../../../constants';
 import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ParamListBase } from '@react-navigation/native';
 import GoBackIcon from '@/src/Components/GoBackIcon';
 import { RootStackParamList } from '@/src/Navigation/types';
 
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
-const Login = ({ route }: Props) => {
+const Login = ({ route, navigation }: Props) => {
   console.log(route.params);
   return (
     <View style={styles.container}>
@@ -29,6 +28,8 @@ const Login = ({ route }: Props) => {
         showConfirmationEmailMessage={route.params?.showConfirmationEmailMessage ?? false}
         oauthToken={route.params?.oauth_token}
         oauthVerifier={route.params?.oauth_verifier}
+        navigation={navigation}
+        route={route}
       />
 
       <GoBackIcon color={'white'} />

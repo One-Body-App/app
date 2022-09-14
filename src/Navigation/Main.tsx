@@ -55,9 +55,8 @@ import Search from '../screens/Main/Search';
 import Setting from '../screens/Main/Setting';
 import UserProfile from '../screens/Main/UserProfile';
 import Drawerr from './Drawerr';
-// import { getuserGet } from '../Redux/actions/AuthActions';
+import { RootStackParamList } from './types';
 
-// let initializing = true;
 const Stack = createNativeStackNavigator();
 const Main = () => {
   const toast = useToast();
@@ -71,7 +70,7 @@ const Main = () => {
 
   useEffect(() => {
     toast.hideAll();
-    console.log(loader);
+
     if (loader) {
       toast.show(<ActivityIndicator />, {
         placement: 'top',
@@ -122,12 +121,15 @@ const Main = () => {
     if (initializing) setInitializing(false);
   }, [token, user, initializing]);
 
-  const linking: LinkingOptions<any> = {
+  const linking: LinkingOptions<RootStackParamList> = {
     prefixes: ['https://app.onebodyapp.com'],
     config: {
       screens: {
         Login: {
-          path: '/twitter',
+          path: '/twitter/login',
+        },
+        SignUp: {
+          path: '/twitter/signup',
         },
       },
       /* configuration for matching screens with paths */
@@ -136,7 +138,7 @@ const Main = () => {
 
   const authContext = React.useMemo(
     () => ({
-      signIn: async (data) => {
+      signIn: async (data: any) => {
         // In a production app, we need to send some data (usually username, password) to server and get a token
         // We will also need to handle errors if sign in failed
         // After getting token, we need to persist the token using `SecureStore` or any other encrypted storage
@@ -145,7 +147,7 @@ const Main = () => {
         dispatch({ type: 'SIGN_IN', token: 'dummy-auth-token' });
       },
       signOut: () => dispatch({ type: 'SIGN_OUT' }),
-      signUp: async (data) => {
+      signUp: async (data: any) => {
         // In a production app, we need to send user data to server and get a token
         // We will also need to handle errors if sign up failed
         // After getting token, we need to persist the token using `SecureStore` or any other encrypted storage

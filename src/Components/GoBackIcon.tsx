@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 
-const GoBackIcon = ({ color }) => {
+const GoBackIcon = ({ color }: { color: string }) => {
   const navigation = useNavigation();
   if (!navigation.canGoBack) {
     return null;

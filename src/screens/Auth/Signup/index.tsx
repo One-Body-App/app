@@ -18,8 +18,12 @@ import { setAccountType } from '@/src/Redux/actions/GeneralActions';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faUsers } from '@fortawesome/free-solid-svg-icons/faUsers';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
 
-const Signup = () => {
+type Props = StackScreenProps<RootStackParamList, 'SignUp'>;
+
+const Signup = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
   const selected = useSelector((state: RootState) => state.general.accountType);
 
@@ -114,7 +118,7 @@ const Signup = () => {
             />
           </View>
         </View>
-        <SignupButtons />
+        <SignupButtons navigation={navigation} route={route} />
         <View>
           <Image
             style={styles.footer}
