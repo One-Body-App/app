@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  StyleSheet,
   Text,
   View,
   FlatList,
   Image,
   ImageBackground,
   TouchableOpacity,
-  SafeAreaView,
   PermissionsAndroid,
   Platform,
 } from 'react-native';
@@ -17,6 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Button from '@/components/Button';
 import { styles } from './styles';
 import Toast from 'react-native-toast-message';
+import { TextInput as NativeTextInput } from 'react-native';
 import { Divider, Switch, TextInput } from 'react-native-paper';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 
@@ -59,7 +58,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
   const [curentIndex, setCurrentIndex] = useState(0);
   const [notificationSwitchOn, setNotificationSwitch] = React.useState(false);
-  const [ORGType, setORGType] = useState(null);
+  const [ORGType, setORGType] = useState<string | null>(null);
   const [CheckIn, setCheckIn] = useState(false);
   const [location_label, setLocation_label] = useState<MapSuggestion | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
@@ -108,11 +107,11 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   }, []);
 
   const inputRefs = {
-    companyName: useRef(null),
-    orgfullName: useRef(null),
-    orgEmail: useRef(null),
-    orgPhoneNo: useRef(null),
-    location_label: useRef(null),
+    companyName: useRef<NativeTextInput>(null),
+    orgfullName: useRef<NativeTextInput>(null),
+    orgEmail: useRef<NativeTextInput>(null),
+    orgPhoneNo: useRef<NativeTextInput>(null),
+    location_label: useRef<NativeTextInput>(null),
   };
   const [state, setState] = useState({
     companyName: '',
@@ -387,7 +386,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                   setState({ ...state, companyNameError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.location_label.current.focus()}
+              onSubmitEditing={() => inputRefs.location_label.current?.focus()}
               onChangeText={(companyName) => changeHandler('companyName', companyName.trim())}
               blurOnSubmit={false}
             />
@@ -401,7 +400,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               ref={inputRefs.location_label}
               returnKeyType={'done'}
               mode="outlined"
-              value={location_label}
+              value={location_label?.text}
               activeOutlineColor={'#5B7279'}
               showSoftInputOnFocus={false}
               onPressIn={() => setCheckIn(true)}
@@ -466,7 +465,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                     setState({ ...state, orgfullNameError: error })
                   )
                 }
-                onSubmitEditing={() => inputRefs.orgEmail.current.focus()}
+                onSubmitEditing={() => inputRefs.orgEmail.current?.focus()}
                 onChangeText={(orgfullName) => changeHandler('orgfullName', orgfullName)}
                 blurOnSubmit={false}
               />
@@ -489,7 +488,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                     setState({ ...state, orgEmailError: error })
                   )
                 }
-                onSubmitEditing={() => inputRefs.orgPhoneNo.current.focus()}
+                onSubmitEditing={() => inputRefs.orgPhoneNo.current?.focus()}
                 onChangeText={(orgEmail) => changeHandler('orgEmail', orgEmail.trim())}
                 blurOnSubmit={false}
               />

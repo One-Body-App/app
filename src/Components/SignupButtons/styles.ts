@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { getHeight } from '@/utils/ResponsiveFun';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { appColor, COLORS } from '../../constants';
 
 export const styles = StyleSheet.create({
@@ -78,5 +78,10 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 16,
     flexDirection: 'row',
+  },
+  Errorview: { padding: 5, flexDirection: 'row', marginLeft: getWidth(10) },
+  errortext: {
+    color: 'red',
+    fontSize: getFontSize(2),
   },
 });

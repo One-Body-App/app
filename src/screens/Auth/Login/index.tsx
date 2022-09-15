@@ -26,10 +26,9 @@ const Login = ({ route, navigation }: Props) => {
 
       <LoginComponent
         showConfirmationEmailMessage={route.params?.showConfirmationEmailMessage ?? false}
-        oauthToken={route.params?.oauth_token}
-        oauthVerifier={route.params?.oauth_verifier}
         navigation={navigation}
         route={route}
+        {...route.params}
       />
 
       <GoBackIcon color={'white'} />

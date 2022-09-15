@@ -11,6 +11,10 @@ export type RootStackParamList = {
   InfluencerStepThree: undefined;
   AccountType: undefined;
   forget: undefined;
-  SignUp: undefined;
+  SignUp: {
+    oauth_token?: string;
+    oauth_verifier?: string;
+    showConfirmationEmailMessage?: boolean;
+  };
   SignupForm: undefined;
 };

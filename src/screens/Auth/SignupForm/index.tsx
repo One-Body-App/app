@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { Text, View, Image, TouchableOpacity, Linking, Alert } from 'react-native';
+import { Text, View, Image, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { TextInput as NativeTextInput } from 'react-native';
+
 import { validateFields } from '@/utils/validation/validate-fields';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -18,23 +20,22 @@ import Button from '@/components/Button';
 import { appColor } from '../../../constants';
 import { styles } from './styles';
 import auth from '@react-native-firebase/auth';
-import CheckBox from '@react-native-community/checkbox';
-import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ParamListBase } from '@react-navigation/native';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/Services/constants';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootStackParamList } from '@/src/Navigation/types';
 
-type Props = StackScreenProps<ParamListBase, 'SignupForm'>;
+type Props = StackScreenProps<RootStackParamList, 'SignupForm'>;
 
 const SignupForm = ({ navigation }: Props) => {
-  const AccountType = useSelector((state) => state.general.accountType);
+  const AccountType = useSelector((state: RootState) => state.general.accountType);
   const dispatch = useDispatch();
 
   const inputRefs = {
-    email: useRef(null),
-    password: useRef(null),
-    cPassword: useRef(null),
-    name: useRef(null),
+    email: useRef<NativeTextInput>(null),
+    password: useRef<NativeTextInput>(null),
+    cPassword: useRef<NativeTextInput>(null),
+    name: useRef<NativeTextInput>(null),
   };
   const [state, setState] = useState({
     email: '',
@@ -46,7 +47,7 @@ const SignupForm = ({ navigation }: Props) => {
     name: '',
     nameError: '',
   });
-  const [error, seterror] = React.useState();
+  const [error, seterror] = React.useState<string>();
   const [hidePass, setHidePass] = useState(true);
   const [chidePass, setcHidePass] = useState(true);
 
@@ -73,7 +74,7 @@ const SignupForm = ({ navigation }: Props) => {
             // user.user.updatePhoneNumber()
             data.userId = user.user.uid;
 
-            dispatch(setLoginData({ token: await user.user.getIdToken() }));
+            // dispatch(setLoginData({ token: await user.user.getIdToken() }));
             dispatch(
               signUpRequest({
                 data,
@@ -118,7 +119,7 @@ const SignupForm = ({ navigation }: Props) => {
     }
   };
 
-  const changeHandler = (type, value) => setState({ ...state, [type]: value });
+  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
 
   return (
     <View style={styles.container}>
@@ -152,7 +153,7 @@ const SignupForm = ({ navigation }: Props) => {
                   setState({ ...state, nameError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.name.current.focus()}
+              onSubmitEditing={() => inputRefs.name.current?.focus()}
               onChangeText={(name) => changeHandler('name', name)}
               blurOnSubmit={false}
               keyboardType="default"
@@ -180,7 +181,7 @@ const SignupForm = ({ navigation }: Props) => {
                   setState({ ...state, emailError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.password.current.focus()}
+              onSubmitEditing={() => inputRefs.password.current?.focus()}
               onChangeText={(email) => changeHandler('email', email.trim())}
               blurOnSubmit={false}
               autoCapitalize="none"
@@ -223,7 +224,7 @@ const SignupForm = ({ navigation }: Props) => {
                   setState({ ...state, passwordError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.cPassword.current.focus()}
+              onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
               onChangeText={(password) => changeHandler('password', password)}
               blurOnSubmit={false}
             />

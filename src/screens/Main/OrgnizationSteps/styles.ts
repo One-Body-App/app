@@ -7,6 +7,23 @@ export const styles = StyleSheet.create({
     backgroundColor: ' #E5E5E5;',
     alignItems: 'center',
   },
+  lists: {
+    height: getHeight(10),
+    borderBottomWidth: 0.3,
+    // borderBottomColor: 'gray',
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+    paddingLeft: getWidth(10),
+    paddingRight: getWidth(10),
+    // marginTop: 10,
+    alignItems: 'center',
+  },
+  logouttext: {
+    fontSize: getFontSize(2.5),
+    fontWeight: 'bold',
+    color: '#032F3C',
+  },
   flatlistview: {
     flex: 1,
     alignSelf: 'center',

@@ -35,6 +35,12 @@ interface Props extends StackScreenProps<RootStackParamList, 'Login'> {
   showConfirmationEmailMessage: boolean;
   oauthToken?: string;
   oauthVerifier?: string;
+
+  action?: string;
+  apiKey?: string;
+  lang?: string;
+  mode?: string;
+  oobCode?: string;
 }
 
 const LoginComponent: FC<Props> = ({
@@ -42,6 +48,9 @@ const LoginComponent: FC<Props> = ({
   oauthToken,
   oauthVerifier,
   navigation,
+  oobCode,
+  mode,
+  action,
 }) => {
   const dispatch = useDispatch();
 
@@ -58,6 +67,7 @@ const LoginComponent: FC<Props> = ({
     passwordError: '',
   });
   const [error, seterror] = useState<string>();
+  const [success, setSuccess] = useState<string>('');
   const [hidePass, setHidePass] = useState(true);
   const [token, setToken] = useState('');
   const [showConfirmEmail, setShowConfirmEmail] = useState<boolean>(false);
@@ -74,6 +84,27 @@ const LoginComponent: FC<Props> = ({
       forceCodeForRefreshToken: true,
     });
   }, []);
+
+  useEffect(() => {
+    if (mode == 'verifyEmail' && action == 'action' && oobCode) {
+      const action = async () => {
+        try {
+          const result = await auth().checkActionCode(oobCode);
+          console.log(result);
+
+          if (result.operation == 'VERIFY_EMAIL') {
+            await auth().applyActionCode(oobCode);
+
+            setSuccess('Email verification successful. Please login');
+          }
+        } catch (e: any) {
+          console.log(e);
+          seterror('Invalid Verification code, please try again.');
+        }
+      };
+      action();
+    }
+  }, [mode]);
 
   useEffect(() => {
     if (newUserCredentials) {
@@ -222,7 +253,6 @@ const LoginComponent: FC<Props> = ({
 
       processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
     } catch (error: any) {
-      console.log(error);
       seterror(error.message);
     }
   };
@@ -248,6 +278,11 @@ const LoginComponent: FC<Props> = ({
       showsVerticalScrollIndicator={false}
     >
       <View>
+        {success != null ? (
+          <View style={styles.Errorview}>
+            <Text style={styles.successtext}>{success}</Text>
+          </View>
+        ) : null}
         <TextInput
           style={GeneralStyle.input}
           theme={{ roundness: 10 }}

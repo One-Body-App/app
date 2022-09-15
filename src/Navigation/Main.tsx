@@ -84,9 +84,9 @@ const Main = () => {
     const firebaseToken = await firebaseUser?.getIdToken();
 
     if (!isEqual(firebaseUser, user)) {
-      // if (firebaseUser?.email && firebaseUser?.emailVerified) {
-      setUser(firebaseUser);
-      // }
+      if (firebaseUser?.email && firebaseUser?.emailVerified) {
+        setUser(firebaseUser);
+      }
     }
     console.log(firebaseToken);
     if (!isEqual(firebaseToken, token)) {
@@ -126,10 +126,10 @@ const Main = () => {
     config: {
       screens: {
         Login: {
-          path: '/twitter/login',
+          path: '/auth/:action',
         },
         SignUp: {
-          path: '/twitter/signup',
+          path: '/signup/:action',
         },
       },
       /* configuration for matching screens with paths */
@@ -158,7 +158,7 @@ const Main = () => {
     }),
     []
   );
-
+  console.log(user, token, userData);
   return (
     <AuthContext.Provider value={authContext}>
       <NavigationContainer linking={linking}>

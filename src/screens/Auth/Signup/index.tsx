@@ -1,16 +1,13 @@
-import React from 'react';
-import { View, TouchableOpacity, Animated, ScrollView, Text, Image } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import { SceneMap, TabView } from 'react-native-tab-view';
+import React, { useEffect, useState } from 'react';
+import { View, ScrollView, Text, Image } from 'react-native';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import GoBackIcon from '@/components/GoBackIcon';
-import LoginComponent from '@/components/LoginComponent';
 import GradientHeader from '@/components/GradientHeader';
 import SignupButtons from '@/components/SignupButtons';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { appColor } from '../../../constants';
 import { styles } from './styles';
 import Button from '@/components/Button';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
@@ -20,12 +17,64 @@ import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faUsers } from '@fortawesome/free-solid-svg-icons/faUsers';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
+import axios from 'axios';
+import { processLogin } from '@/src/Services/login';
 
 type Props = StackScreenProps<RootStackParamList, 'SignUp'>;
 
 const Signup = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
   const selected = useSelector((state: RootState) => state.general.accountType);
+  const [error, seterror] = useState<string>();
+
+  const [token, setToken] = useState('');
+  const [newUserCredentials, setNewUserCredentials] =
+    useState<FirebaseAuthTypes.UserCredential | null>(null);
+
+  useEffect(() => {
+    if (route.params?.oauth_token && route.params?.oauth_verifier) {
+      const getTwitterAuthToken = async () => {
+        try {
+          const options = {
+            method: 'POST',
+            url: 'https://api.twitter.com/oauth/access_token',
+            params: {
+              oauth_token: route.params?.oauth_token,
+              oauth_verifier: route.params?.oauth_verifier,
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          };
+          const result = await axios.request(options);
+
+          if (result.data) {
+            const tokenData = result.data.split('&')?.map((item: string) => {
+              return item.split('=')[1];
+            });
+
+            const twitterCredential = auth.TwitterAuthProvider.credential(
+              tokenData[0],
+              tokenData[1]
+            );
+
+            const userCredentials = await auth().signInWithCredential(twitterCredential);
+
+            processLogin(
+              userCredentials,
+              setToken,
+              dispatch,
+              setAccountType,
+              setNewUserCredentials
+            );
+          }
+        } catch (error: any) {
+          seterror(error.nativeErrorMessage);
+        }
+      };
+      getTwitterAuthToken();
+    }
+  }, [route.params]);
 
   return (
     <View style={styles.container}>
@@ -83,12 +132,6 @@ const Signup = ({ navigation, route }: Props) => {
               }}
               onPress={() => {
                 dispatch(setAccountType('individual'));
-
-                // if (!fromAccountCreation) {
-                //   setTimeout(function () {
-                //     navigation.navigate('SignUp');
-                //   }, 1000);
-                // }
               }}
             />
             <Button
@@ -109,16 +152,12 @@ const Signup = ({ navigation, route }: Props) => {
               }}
               onPress={() => {
                 dispatch(setAccountType('organization'));
-                // if (!fromAccountCreation) {
-                //   setTimeout(function () {
-                //     navigation.navigate('SignUp');
-                //   }, 1000);
-                // }
               }}
             />
           </View>
         </View>
-        <SignupButtons navigation={navigation} route={route} />
+        <SignupButtons navigation={navigation} route={route} errorFromLogin={error} />
+
         <View>
           <Image
             style={styles.footer}

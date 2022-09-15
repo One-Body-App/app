@@ -136,4 +136,9 @@ export const styles = StyleSheet.create({
 
     fontFamily: 'Rubik-Medium',
   },
+  Errorview: { padding: 5, flexDirection: 'row', marginLeft: getWidth(10) },
+  errortext: {
+    color: 'red',
+    fontSize: getFontSize(2),
+  },
 });

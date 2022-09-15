@@ -60,6 +60,10 @@ export const styles = StyleSheet.create({
     color: 'red',
     fontSize: getFontSize(2),
   },
+  successtext: {
+    color: 'green',
+    fontSize: getFontSize(2),
+  },
   orView: {
     flexDirection: 'row',
     justifyContent: 'center',

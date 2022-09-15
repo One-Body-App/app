@@ -22,10 +22,12 @@ import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/S
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 
-type Props = StackScreenProps<RootStackParamList, 'SignUp'>;
+interface Props extends StackScreenProps<RootStackParamList, 'SignUp'> {
+  errorFromLogin?: string;
+}
 
-const SignupButtons = ({ navigation }: Props) => {
-  const [error, seterror] = useState<string>();
+const SignupButtons = ({ navigation, errorFromLogin }: Props) => {
+  const [error, seterror] = useState<string>(errorFromLogin ?? '');
 
   const [state, setState] = useState({
     email: '',
@@ -42,6 +44,10 @@ const SignupButtons = ({ navigation }: Props) => {
     useState<FirebaseAuthTypes.UserCredential | null>(null);
 
   const AccountType = useSelector((state: RootState) => state.general.accountType);
+
+  useEffect(() => {
+    seterror(errorFromLogin ?? '');
+  }, [errorFromLogin]);
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -180,6 +186,11 @@ const SignupButtons = ({ navigation }: Props) => {
           disabledBtnTextStyle={styles.disabledBtnTextStyle}
           wrapperBtnStyle={{ width: 225 }}
         />
+        {error != null ? (
+          <View style={styles.Errorview}>
+            <Text style={styles.errortext}>{error}</Text>
+          </View>
+        ) : null}
         <View style={{ ...styles.center, paddingBottom: 80 }}>
           <Text style={{ color: '#032F3C' }}>By signing up, you agree to our</Text>
           <View style={{ flexDirection: 'row' }}>
