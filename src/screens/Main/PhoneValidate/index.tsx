@@ -15,7 +15,7 @@ import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 
 const PhoneValidate = ({ navigation }) => {
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const token = useSelector((state) => state.auth.userToken);
   const [error, seterror] = React.useState();
   const [code, setCode] = useState(1234);

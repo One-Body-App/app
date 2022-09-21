@@ -5,7 +5,7 @@ import { SetSocial, SetTodayNews } from '@/redux/actions/SocialActions';
 import { ApiCall } from '@/services/api';
 
 const LoadingPage = ({ navigation }) => {
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const token = useSelector((state) => state.auth.userToken);
   const dispatch = useDispatch();
 

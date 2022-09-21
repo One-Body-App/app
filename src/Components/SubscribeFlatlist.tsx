@@ -17,7 +17,7 @@ const SubscribeFlatlist = () => {
   const navigation = useNavigation();
   const token = useSelector((state) => state.auth.userToken);
   const allusers = useSelector((state) => state.user.allUser);
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
 
   const [subscribe, setSubscibe] = useState([]);
   // const [allusers, setAllUsers] = useState([]);

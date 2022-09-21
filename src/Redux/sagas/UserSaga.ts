@@ -3,7 +3,12 @@ import { ACTIONS } from '../action-types';
 import Toast from 'react-native-simple-toast';
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
 import { setChats, setLoader } from '../actions/GeneralActions';
-import { setUserAll, setUserData, setUserIntrest, setUserSubscribe } from '../actions/UserAction';
+import {
+  setUserAll,
+  setUserProfile,
+  setUserIntrest,
+  setUserSubscribe,
+} from '../actions/UserAction';
 
 function* UserGetRequest(params) {
   console.log('asdfasdf12345678');
@@ -24,7 +29,7 @@ function* UserGetRequest(params) {
         console.log('else part in working now', res?.response);
         yield put(setLoader(false));
 
-        yield put(setUserData(res?.response));
+        yield put(setUserProfile(res?.response));
       }
     } else {
       console.log('error', res?.response);

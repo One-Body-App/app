@@ -26,7 +26,7 @@ import { getChats, setAllSms } from '@/redux//actions/GeneralActions';
 const ConversationScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const messages = useSelector((state) => state.general.allSms);
 
   const { reciver, reciverId } = route.params;

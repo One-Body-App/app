@@ -1,41 +1,32 @@
-import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Linking,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { Avatar, Provider, TextInput } from 'react-native-paper';
-import DropDown from 'react-native-paper-dropdown';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import React from 'react';
+import { Text, View, Linking, TouchableOpacity, Alert, Platform, ScrollView } from 'react-native';
+import { getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { styles } from './styles';
 import Header from '@/components/Header';
 import { logout } from '@/redux//actions/AuthActions';
 import { useDispatch, useSelector } from 'react-redux';
-import { color } from 'react-native-reanimated';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { LoginManager } from 'react-native-fbsdk-next';
 import auth from '@react-native-firebase/auth';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
 
-const Setting = ({ navigation }) => {
+type Props = StackScreenProps<RootStackParamList, 'Settings'>;
+
+const Settings = ({ navigation }: Props) => {
+  const GOOGLE_PACKAGE_NAME = '';
+  const APPLE_STORE_ID = '';
+
   const dispatch = useDispatch();
-  const GOOGLE_PACKAGE_NAME = 'agrawal.trial.yourfeedback';
-  const APPLE_STORE_ID = 'id284882215';
-  const user = useSelector((state) => state.auth.userData);
+
+  const user = useSelector((state: RootState) => state.auth.userProfile);
   const startRatingCounter = () => {
     Alert.alert(
       'Rate us',
-      'Would you like to share your review with us? This will help and motivate us a lot.',
+      'Would you like to share your review with us?',
 
       [
         { text: 'Sure', onPress: () => openStore() },
@@ -53,11 +44,13 @@ const Setting = ({ navigation }) => {
     //This is the main trick
     if (Platform.OS != 'ios') {
       Linking.openURL(`market://details?id=${GOOGLE_PACKAGE_NAME}`).catch((err) =>
-        alert('Please check for Google Play Store')
+        // alert('Please check for Google Play Store')
+        Alert.alert('Please check for Google Play Store')
       );
     } else {
       Linking.openURL(`itms://itunes.apple.com/in/app/apple-store/${APPLE_STORE_ID}`).catch((err) =>
-        alert('Please check for the App Store' + err)
+        // alert('Please check for the App Store' + err)
+        Alert.alert('Please check for the App Store')
       );
     }
   };
@@ -80,30 +73,35 @@ const Setting = ({ navigation }) => {
         }
         RightView={<View style={{ width: getWidth(5) }} />}
       />
-      <View style={styles.innerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('passwordChange')} style={styles.list}>
+      <ScrollView style={styles.innerContainer}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange' })}
+          style={styles.list}
+        >
+          <View>
+            <Text style={styles.heading}>Email</Text>
+            <Text style={{ color: '#70747D' }}>Update email address</Text>
+          </View>
+          <AntDesign name="right" size={20} color={'#70747D'} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ConfirmLogin', { toScreen: 'PasswordChange' })}
+          style={styles.list}
+        >
           <View>
             <Text style={styles.heading}>Password</Text>
             <Text style={{ color: '#70747D' }}>Change Password</Text>
           </View>
           <AntDesign name="right" size={20} color={'#70747D'} />
         </TouchableOpacity>
+
         <TouchableOpacity
-          onPress={() => navigation.navigate('PhoneNumberUpdate')}
+          onPress={() => navigation.navigate('NotificationsAndEmail')}
           style={styles.list}
         >
           <View>
-            <Text style={styles.heading}>Phone number</Text>
-            <Text style={{ color: '#70747D' }}>*********3456</Text>
-          </View>
-          <AntDesign name="right" size={20} color={'#70747D'} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Notificationandemail')}
-          style={styles.list}
-        >
-          <View>
-            <Text style={styles.heading}>Notification & Email Setting</Text>
+            <Text style={styles.heading}>Notifications Settings</Text>
           </View>
           <AntDesign name="right" size={20} color={'#70747D'} />
         </TouchableOpacity>
@@ -122,38 +120,31 @@ const Setting = ({ navigation }) => {
             <AntDesign name="right" size={20} color={'#70747D'} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={() => startRatingCounter()} style={styles.list}>
-          <Text style={styles.heading}>Feedback</Text>
 
-          <AntDesign name="right" color={'#70747D'} size={20} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Deactivateaccount')}
-          style={styles.list}
-        >
+        <TouchableOpacity onPress={() => navigation.navigate('RemoveAccount')} style={styles.list}>
           <Text
             style={{
               ...styles.heading,
               color: 'red',
             }}
           >
-            Deactivate account
+            Remove account
           </Text>
 
           <AntDesign name="right" color={'red'} size={20} />
         </TouchableOpacity>
-      </View>
-      <TouchableOpacity
-        onPress={() => {
-          LoginManager.logOut();
-          auth().signOut();
-          dispatch(logout());
-        }}
-        style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
-      >
-        <Text style={styles.logouttext}>Log out</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            LoginManager.logOut();
+            auth().signOut();
+            dispatch(logout());
+          }}
+          style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
+        >
+          <Text style={styles.logouttext}>Log out</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 };
-export default Setting;
+export default Settings;

@@ -5,26 +5,17 @@ import { Provider, useDispatch } from 'react-redux';
 import Main from '@/navigation/Main';
 import { PersistGate } from 'redux-persist/integration/react';
 import SplashScreen from 'react-native-splash-screen';
-import { MenuProvider } from 'react-native-popup-menu';
-// import GeneralStatusBar from './src/Components/GeneralStatusBar';
 import ZendeskChat from 'react-native-zendesk-chat';
-import dynamicLinks, { FirebaseDynamicLinksTypes } from '@react-native-firebase/dynamic-links';
-import { Linking, Platform } from 'react-native';
-import { AuthContext } from '@/services/authContext';
-// dynamicLinks().performDiagnostics();
+import dynamicLinks from '@react-native-firebase/dynamic-links';
+import { Linking } from 'react-native';
 import { ToastProvider } from 'react-native-toast-notifications';
 
 const App = () => {
   const handleDynamicLink = (link: string) => {
     console.log(link);
-    // Handle dynamic link inside your own application
-    // if (link.url === 'https://invertase.io/offer') {
-    //   // ...navigate to your offers screen
-    // }
   };
 
   useEffect(() => {
-    console.log('asf');
     ZendeskChat.init(
       'ny6aLGLinweALR8qvzeoql7EAo1YpFW8',
       '6im7AfpfISANDuQOXekDDaEEMBMrhDxPgZPTkfHJ'

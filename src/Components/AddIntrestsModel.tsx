@@ -23,7 +23,7 @@ const AddIntrestsModel = (props) => {
   const { setShow, show } = props;
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
 
   const [intrest, setIntrest] = useState([]);
   const [selectedIntrest, setSelectedIntrest] = useState([]);

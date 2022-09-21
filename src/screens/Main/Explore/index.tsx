@@ -30,7 +30,7 @@ const Explore = (props) => {
   const navigation = useNavigation();
   const offset = useRef(new Animated.Value(0)).current;
   const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const allusers = useSelector((state) => state.user.allUser);
   console.log('all user', allusers);
 

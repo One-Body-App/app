@@ -17,7 +17,7 @@ import { profileUpdate } from '@/redux//actions/AuthActions';
 
 const PhoneNumberUpdate = ({ navigation, route }) => {
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const token = useSelector((state) => state.auth.userToken);
 
   const inputRefs = {

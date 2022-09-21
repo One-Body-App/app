@@ -15,7 +15,7 @@ import { GeneralStyle } from '../../../constants/GeneralStyle';
 const Deactivateaccountotp = ({ navigation, route }) => {
   const { reason } = route.params;
 
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const token = useSelector((state) => state.auth.userToken);
   const [error, seterror] = React.useState();
   const [code, setCode] = React.useState();

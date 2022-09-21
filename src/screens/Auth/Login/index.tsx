@@ -13,7 +13,6 @@ import { RootStackParamList } from '@/src/Navigation/types';
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 const Login = ({ route, navigation }: Props) => {
-  console.log(route.params);
   return (
     <View style={styles.container}>
       <GeneralStatusBar

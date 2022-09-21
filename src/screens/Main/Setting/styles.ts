@@ -5,7 +5,7 @@ export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'white' },
   innerContainer: {
     flex: 1,
-    marginTop: getHeight(4.7),
+    marginTop: getHeight(1.5),
   },
   heading: {
     fontSize: getFontSize(2.5),
@@ -21,10 +21,10 @@ export const styles = StyleSheet.create({
 
   text: { width: '80%', textAlign: 'center' },
   list: {
-    height: getHeight(10),
+    height: getHeight(14),
     // borderBottomWidth: 0.3,
     borderBottomWidth: 0.3,
-    borderBottomColor: '#ECF0F1',
+    borderBottomColor: '#BDC0C1',
     flexDirection: 'row',
     backgroundColor: '#fff',
     justifyContent: 'space-between',

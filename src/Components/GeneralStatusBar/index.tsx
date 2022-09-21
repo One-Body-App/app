@@ -1,13 +1,24 @@
 import React from 'react';
-import {View, StatusBar, Platform} from 'react-native';
+import { View, StatusBar, StatusBarStyle } from 'react-native';
 import styles from './styles';
-const GeneralStatusBar = ({backgroundColor, ...props}) => (
-  <View
-    style={[
-      Platform.OS === 'ios' ? styles.statusBar : styles.statusBar,
-      {backgroundColor},
-    ]}>
-    <StatusBar translucent backgroundColor={backgroundColor} {...props} />
+const GeneralStatusBar = ({
+  backgroundColor,
+  translucent,
+  barStyle,
+  hidden,
+}: {
+  backgroundColor: string;
+  translucent: boolean;
+  barStyle: StatusBarStyle | undefined;
+  hidden: boolean;
+}) => (
+  <View style={[styles.statusBar, { backgroundColor }]}>
+    <StatusBar
+      translucent={translucent}
+      backgroundColor={backgroundColor}
+      barStyle={barStyle}
+      hidden={hidden}
+    />
   </View>
 );
 export default GeneralStatusBar;

@@ -23,7 +23,7 @@ import ImageModal from 'react-native-image-modal';
 const Chanel = ({ navigation }) => {
   const loader = useSelector((state) => state.general.loader);
   const intrest = useSelector((state) => state.user.userInrest);
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
 
   const subscribes = useSelector((state) => state.user.userSubscribes);
   const [show, setShow] = useState(false);

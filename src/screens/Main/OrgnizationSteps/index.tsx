@@ -49,7 +49,7 @@ type Props = NativeStackScreenProps<any, 'OrgnizationSteps'>;
 const OrgnizationSteps = ({ navigation }: Props) => {
   const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const user = useSelector((state: RootState) => state.auth.userData);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
   const dispatch = useDispatch();
   const flatListRef = useRef<FlatList>(null);
   const [Organization, setOrganization] = useState([]);
@@ -126,7 +126,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   });
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   const go = () => {
-    navigation.navigate('loading');
+    // navigation.navigate('loading');
   };
 
   const [org, setorg] = useState([]);
@@ -291,15 +291,16 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               gonext();
             }}
           />
+
           <TouchableOpacity
             onPress={() => {
               auth().signOut();
               LoginManager.logOut();
               dispatch(logout());
             }}
-            style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
+            style={{ marginVertical: 10, borderBottomWidth: 0 }}
           >
-            <Text style={styles.logouttext}>Log out</Text>
+            <Text style={styles.logouttext}>Cancel</Text>
           </TouchableOpacity>
         </LinearGradient>
       ),
@@ -387,7 +388,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 )
               }
               onSubmitEditing={() => inputRefs.location_label.current?.focus()}
-              onChangeText={(companyName) => changeHandler('companyName', companyName.trim())}
+              onChangeText={(companyName) => changeHandler('companyName', companyName)}
               blurOnSubmit={false}
             />
             <Text style={{ ...GeneralStyle.InputError, marginLeft: 10 }}>
@@ -400,7 +401,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               ref={inputRefs.location_label}
               returnKeyType={'done'}
               mode="outlined"
-              value={location_label?.text}
+              value={location_label?.place_name}
               activeOutlineColor={'#5B7279'}
               showSoftInputOnFocus={false}
               onPressIn={() => setCheckIn(true)}
@@ -794,7 +795,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       ),
     },
   ];
-  const showToast = (sms) => {
+  const showToast = (sms: string) => {
     Toast.show({
       type: 'error',
       text1: 'Error',
@@ -928,7 +929,6 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             {curentIndex == 5 ? (
               <TouchableOpacity
                 onPress={() => {
-                  console.log('user', user);
                   const { orgfullName, orgEmail, orgPhoneNo, companyName } = state;
                   const data = {
                     typeOfOrganization: ORGType,

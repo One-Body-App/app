@@ -17,4 +17,19 @@ export type RootStackParamList = {
     showConfirmationEmailMessage?: boolean;
   };
   SignupForm: undefined;
+  OrgnizationSteps: undefined;
+  IndividualSteps: undefined;
+  Settings: undefined;
+  PasswordChange: {
+    setError: (errorText: string) => void;
+  };
+  NotificationsAndEmail: undefined;
+  RemoveAccount: undefined;
+  ConfirmLogin: {
+    toScreen: string;
+    error?: string;
+  };
+  EmailChange: {
+    setError: (errorText: string) => void;
+  };
 };

@@ -77,9 +77,9 @@ const MapBox = (props: MapBoxProps) => {
     if (val) {
       timer = setTimeout(() => {
         fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}&types=${props.types?.join(
-            ','
-          )}&country=${props.countries ? props.countries?.join(',') : ''}`
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}${
+            props.types ? `&types=${props.types?.join(',')}` : ''
+          }${props.countries ? `&country=${props.countries?.join(',')}` : ''}`
         )
           .then((response) => response.json())
           .then((data) => {
@@ -127,11 +127,12 @@ const MapBox = (props: MapBoxProps) => {
     )
       .then((response) => response.json())
       .then((data) => {
-        setLocation(data?.features[0]?.place_name);
+        setLocation(data?.features[0]);
         setsearchLocation(data?.features[0]?.place_name);
-        // setLatitude(latitude);
-        // setLongitude(longitude);
+        setLatitude(latitude);
+        setLongitude(longitude);
         // dispatch(setLoader(false));
+
         setCheckIn(false);
       });
   };

@@ -22,7 +22,7 @@ import ZendeskChat from 'react-native-zendesk-chat';
 
 const Drawer = createDrawerNavigator();
 function NavHeader(props) {
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
 
   return (
     <View

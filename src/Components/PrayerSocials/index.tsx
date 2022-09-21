@@ -19,7 +19,7 @@ import { ApiCall } from '@/services/api';
 const PrayerSocials = ({ item, color }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const prayers = useSelector((state) => state.prayer.prayers);
 
   const handelLike = async (id, type) => {

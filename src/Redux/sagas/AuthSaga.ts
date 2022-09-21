@@ -148,7 +148,7 @@ function* updateOrgProfileRequest(params) {
     });
 
     if (res?.status == '200') {
-      yield put(getProfile({ token: params.data.token }));
+      yield put(getProfile({ token: params.data.token, role: 'organization' }));
       params?.data?.go();
       yield put(setLoader(false));
     } else {
@@ -185,17 +185,10 @@ function* getProfileRequest(params) {
       yield put(setLoader(false));
     } else {
       yield put(setLoader(false));
-      Alert.alert('Error', 'An error accoured during profile Update', [
-        { text: 'Close', onPress: () => console.log('Close Pressed') },
-      ]);
     }
   } catch (e) {
     console.log(e);
     yield put(setLoader(false));
-    Alert.alert('Error', 'An error accoured during profile Update', [
-      { text: 'Close', onPress: () => console.log('Close Pressed') },
-    ]);
-    console.log('saga sign up err --- ', e);
     // yield put(setLoader(false));
   }
 }

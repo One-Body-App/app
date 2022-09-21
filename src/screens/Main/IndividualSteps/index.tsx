@@ -42,6 +42,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Geolocation from 'react-native-geolocation-service';
 import { LoginManager } from 'react-native-fbsdk-next';
 import messaging from '@react-native-firebase/messaging';
+import { useToast } from 'react-native-toast-notifications';
 
 type ChurchType = {
   churchType: string;
@@ -85,11 +86,10 @@ type Props = NativeStackScreenProps<any, 'IndividualSteps'>;
 
 const IndividualSteps = ({ navigation }: Props) => {
   const flatListRef = useRef<FlatList>(null);
-  const user = useSelector((state: RootState) => state.auth.userData);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
 
   const dispatch = useDispatch();
   const [churchAttend, setChurchAttend] = useState<string | null>(null);
-  const [CheckIn, setCheckIn] = useState<boolean>(false);
   const [location, setLocation] = useState<MapSuggestion | null>(null);
   const [countrySelector, setCountrySelector] = useState<boolean>(false);
   const [location_country, setLocation_country] = useState<MapSuggestion | null>(null);
@@ -112,6 +112,7 @@ const IndividualSteps = ({ navigation }: Props) => {
   const [influencer, setInfluencer] = useState<User[]>([]);
   const [searchInfluencer, setSearchInfluencer] = useState<User[]>([]);
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
+  const toast = useToast();
 
   const requestNotificationPermission = async () => {
     await messaging().requestPermission();
@@ -547,26 +548,25 @@ const IndividualSteps = ({ navigation }: Props) => {
           <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
-            value={location_country?.place_name ?? ''}
+            value={location?.place_name ?? ''}
             theme={{ roundness: 10 }}
             activeOutlineColor={'#5B7279'}
             showSoftInputOnFocus={false}
             onPressIn={() => setCountrySelector(true)}
-            label={'Country'}
+            label={'Location'}
             placeholderTextColor={'black'}
           />
 
           <MapBox
-            location={location_country}
+            location={location}
             setLongitude={setLongitude}
             setLatitude={setLatitude}
             CheckIn={countrySelector}
             setCheckIn={setCountrySelector}
-            setLocation={setLocation_country}
-            types={[MapBoxTypes.country]}
+            setLocation={setLocation}
           />
 
-          <TextInput
+          {/* <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80), marginTop: 20 }}
             mode="outlined"
             value={
@@ -598,7 +598,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               MapBoxTypes.place,
               MapBoxTypes.postcode,
             ]}
-          />
+          /> */}
         </LinearGradient>
       ),
     },
@@ -804,115 +804,11 @@ const IndividualSteps = ({ navigation }: Props) => {
         </LinearGradient>
       ),
     },
-    // {
-    //   id: 7,
-    //   component: (
-    //     <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-    //       <GeneralStatusBar
-    //         backgroundColor="white"
-    //         barStyle="dark-content"
-    //         hidden={false}
-    //         translucent={true}
-    //       />
-    //       <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
-
-    //       <Text style={{ ...styles.heading, margin: 5 }}>Allow notifications</Text>
-    //       <Text
-    //         style={{
-    //           ...styles.text,
-    //           width: getWidth(80),
-    //           fontSize: getFontSize(2.1),
-    //           color: '#4F6D77',
-    //         }}
-    //       >
-    //         Reminders help you break your tenced routine and get your body back where it really
-    //         needs to be. Amen!
-    //       </Text>
-    //       <View style={styles.box2}>
-    //         <Text
-    //           style={{
-    //             ...styles.heading2,
-    //             fontSize: getFontSize(2.5),
-    //             fontWeight: '400',
-    //             left: 5,
-    //           }}
-    //         >
-    //           Notifications
-    //         </Text>
-
-    //         <Switch
-    //           value={notificationSwitchOn}
-    //           color="#126B87"
-    //           onValueChange={() => {
-    //             setNotificationSwitch(!notificationSwitchOn);
-    //             requestUserPermission(token);
-    //           }}
-    //         />
-    //       </View>
-    //       <Divider style={{ height: 1, width: '100%' }} />
-    //     </LinearGradient>
-    //   ),
-    // },
-    // {
-    //   id: 8,
-    //   component: (
-    //     <LinearGradient
-    //       colors={['#fff', '#fff', '#E0EEF3']}
-    //       style={{ ...styles.innerContainer, paddingHorizontal: 15 }}
-    //     >
-    //       <GeneralStatusBar
-    //         backgroundColor="white"
-    //         barStyle="dark-content"
-    //         hidden={false}
-    //         translucent={true}
-    //       />
-    //       <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
-
-    //       <Text style={{ ...styles.heading, margin: 5 }}>Use location</Text>
-    //       <Text
-    //         style={{
-    //           ...styles.text,
-    //           width: getWidth(80),
-    //           fontSize: getFontSize(2.1),
-    //           color: '#4F6D77',
-    //         }}
-    //       >
-    //         Allow OneBody to use your location for the best possible experience while your Body
-    //         finds peace. Amen!
-    //       </Text>
-
-    //       {!locationData?.longitude || !locationData?.latitude ? (
-    //         <Button
-    //           text="Authorize"
-    //           btnStyle={styles.btn3}
-    //           btnTextStyle={styles.btnText3}
-    //           onPress={() => getlocationPermison()}
-    //         />
-    //       ) : (
-    //         <Text
-    //           style={{
-    //             marginTop: 40,
-    //             fontSize: getFontSize(2.5),
-    //             color: '#4F6D77',
-    //             textAlign: 'center',
-    //           }}
-    //         >
-    //           Good Job! Location services are authorized
-    //         </Text>
-    //       )}
-    //     </LinearGradient>
-    //   ),
-    // },
   ];
 
   const showToast = (sms: string) => {
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      // position: 'bottom',
-      // bottomOffset: getHeight(10),
-      topOffset: getHeight(1),
-      text2: sms,
+    toast.show(sms, {
+      type: 'danger',
     });
   };
   const next = () => {
@@ -944,7 +840,7 @@ const IndividualSteps = ({ navigation }: Props) => {
         if (location != null && date != null) {
           next();
         } else {
-          showToast('Location and Birth date required!');
+          showToast(!date ? 'Date of birth is required' : 'Location is required');
         }
         break;
       case 4:

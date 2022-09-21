@@ -28,7 +28,7 @@ const Button = ({
   btnStyle?: StyleProp<ViewStyle>;
   disabledBtnStyle?: StyleProp<ViewStyle>;
   wrapperBtnStyle?: StyleProp<ViewStyle>;
-  disabledBtnTextStyle?: StyleProp<ViewStyle>;
+  disabledBtnTextStyle?: StyleProp<TextStyle>;
   onPress: (event: GestureResponderEvent) => void;
   disabled?: boolean;
 }) => {

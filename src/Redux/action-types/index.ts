@@ -11,6 +11,7 @@ export const ACTIONS = {
   Profile_Update: 'Profile_Update',
   ORGProfile_Update: 'ORGProfile_Update',
   USER_PROFILE: 'USER_PROFILE',
+  USER_DATA: 'USER_DATA',
   SET_USER_PROFILE: 'SET_USER_PROFILE',
   ERRORS: 'ERRORS',
   OTP: 'OTP',

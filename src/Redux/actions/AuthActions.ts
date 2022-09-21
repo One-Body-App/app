@@ -37,6 +37,15 @@ export const getProfile = (data) => ({
   data,
 });
 export const setProfile = (data) => ({
+  type: ACTIONS.UPDATE_PROFILE,
+  data,
+});
+
+export const getUserData = (data) => ({
+  type: ACTIONS.USER_DATA,
+  data,
+});
+export const setUserData = (data) => ({
   type: ACTIONS.UPDATE_USER,
   data,
 });

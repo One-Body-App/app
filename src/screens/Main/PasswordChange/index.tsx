@@ -1,21 +1,9 @@
 import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
-import { Avatar, Provider, TextInput } from 'react-native-paper';
-import DropDown from 'react-native-paper-dropdown';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { Text, View, TouchableOpacity, TextInput as TextInputNative } from 'react-native';
+import { TextInput } from 'react-native-paper';
+
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -25,19 +13,25 @@ import { ApiCall } from '@/services/api';
 import { validateFields } from '@/utils/validation/validate-fields';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import validator from '@/utils/validation/validator';
-import Toast from 'react-native-simple-toast';
+import { useToast } from 'react-native-toast-notifications';
+
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
-const PasswordChange = ({ navigation }) => {
+type Props = StackScreenProps<RootStackParamList, 'PasswordChange'>;
+
+const PasswordChange = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
   const inputRefs = {
-    password: useRef(null),
-    passwordN: useRef(null),
-    passwordC: useRef(null),
+    passwordN: useRef<TextInputNative>(null),
+    passwordC: useRef<TextInputNative>(null),
   };
   const [state, setState] = useState({
-    password: '',
     passwordError: '',
     passwordN: '',
     passwordErrorN: '',
@@ -46,46 +40,35 @@ const PasswordChange = ({ navigation }) => {
   });
 
   const [error, seterror] = React.useState();
-  const [hidePass, setHidePass] = useState(true);
   const [hidePassN, setHidePassN] = useState(true);
   const [hidePassC, setHidePassC] = useState(true);
-  const token = useSelector((state) => state.auth.userToken);
+  const toast = useToast();
 
   const PasswordUpdate = async () => {
-    const { passwordC, passwordN, password } = state;
-    const passwordError = await validator('password', password);
-    const passwordErrorC = await validator('passwordC', passwordC);
-    const passwordErrorN = await validator('passwordN', passwordN);
-
-    if (!passwordErrorC && !passwordError && !passwordErrorN) {
-      dispatch(setLoader(true));
-      const data = { oldPassword: password, newPassword: passwordN };
-      update(data);
-    } else {
-      setState({ ...state, passwordErrorN, passwordErrorC, passwordError });
-    }
-  };
-  const update = async (param) => {
     try {
-      const res = await ApiCall({
-        route: 'user/change-password',
-        token: token,
-        params: param,
-        verb: 'patch',
-      });
-      if (res?.status == '200') {
-        navigation.goBack();
-        Toast.show('Password Update Sucessfuly');
-        dispatch(setLoader(false));
+      const { passwordC, passwordN } = state;
+      const passwordErrorC = await validator('passwordC', passwordC);
+      const passwordErrorN = await validator('passwordN', passwordN);
+
+      if (!passwordErrorC && !passwordErrorN) {
+        dispatch(setLoader(true));
+        await auth().currentUser?.updatePassword(passwordN);
+        navigation.pop(2);
+        toast.show('Password updated successfully', {
+          type: 'success',
+          placement: 'top',
+        });
       } else {
-        seterror(res?.data?.message);
-        dispatch(setLoader(false));
+        setState({ ...state, passwordErrorN, passwordErrorC });
       }
-    } catch (e) {
-      console.log('saga error -- ', e.toString());
+    } catch (e: any) {
+      route.params.setError(e.message.replace('[auth/requires-recent-login] ', ''));
+
+      navigation.goBack();
     }
   };
-  const changeHandler = (type, value) => setState({ ...state, [type]: value });
+
+  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <GeneralStatusBar
@@ -104,49 +87,7 @@ const PasswordChange = ({ navigation }) => {
         }
         RightView={<View style={{ width: getWidth(5) }} />}
       />
-      <View style={styles.innerContainer}>
-        <TextInput
-          theme={{ roundness: 10 }}
-          activeOutlineColor={'#5B7279'}
-          ref={inputRefs.password}
-          value={state.password}
-          returnKeyType={'next'}
-          label={'Password'}
-          mode="outlined"
-          secureTextEntry={hidePass ? true : false}
-          right={
-            <TextInput.Icon
-              name={() => (
-                <MaterialCommunityIcons
-                  name={hidePass ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color={'#5B7279'}
-                  style={{
-                    alignSelf: 'center',
-
-                    marginTop: getHeight(1),
-                  }}
-                  onPress={() => setHidePass(!hidePass)}
-                />
-              )}
-            />
-          }
-          // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-          style={GeneralStyle.input}
-          onFocus={() => setState({ ...state, passwordError: '' })}
-          onBlur={() =>
-            validateFields(state.password, 'password', (error) =>
-              setState({ ...state, passwordError: error })
-            )
-          }
-          onSubmitEditing={() => inputRefs.passwordN.current.focus()}
-          onChangeText={(password) => changeHandler('password', password.trim())}
-          blurOnSubmit={false}
-        />
-        <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(9) }}>
-          {state.passwordError}
-        </Text>
-
+      <KeyboardAwareScrollView style={styles.innerContainer}>
         <TextInput
           theme={{ roundness: 10 }}
           activeOutlineColor={'#5B7279'}
@@ -181,7 +122,7 @@ const PasswordChange = ({ navigation }) => {
               setState({ ...state, passwordErrorN: error })
             )
           }
-          onSubmitEditing={() => inputRefs.passwordC.current.focus()}
+          onSubmitEditing={() => inputRefs.passwordC.current?.focus()}
           onChangeText={(passwordN) => changeHandler('passwordN', passwordN.trim())}
           blurOnSubmit={false}
         />
@@ -235,13 +176,20 @@ const PasswordChange = ({ navigation }) => {
 
         <Button
           text={'SAVE'}
+          disabled={!state.passwordC || !state.passwordN}
           btnStyle={{ ...GeneralStyle.btn, marginTop: getHeight(4) }}
+          disabledBtnStyle={{
+            ...GeneralStyle.btn,
+            marginTop: getHeight(4),
+            backgroundColor: '#E6EAEC',
+          }}
+          disabledBtnTextStyle={GeneralStyle.btnText}
           btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             PasswordUpdate();
           }}
         />
-      </View>
+      </KeyboardAwareScrollView>
     </View>
   );
 };

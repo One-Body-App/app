@@ -13,7 +13,7 @@ import { getAllPrayer, getMyPrayer, getTestimonies } from '@/redux/actions/Praye
 const PrayerInputType = ({ color }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const prayers = useSelector((state) => state.general.prayers);
   const [prayerTypeShow, setPrayerTypeShow] = useState(false);
   const [payerType, setPrayerType] = useState(null);

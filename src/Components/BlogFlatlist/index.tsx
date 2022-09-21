@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 
 const BlogFlatlist = () => {
   // const offset = useRef(new Animated.Value(0)).current;
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
 
   const Data = [
     { id: 1, image: 'dfafds', Text: 'fsda' },

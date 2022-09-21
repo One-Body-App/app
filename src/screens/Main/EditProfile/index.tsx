@@ -21,7 +21,7 @@ import ImagePicker from 'react-native-image-crop-picker';
 import GradientButton from '@/components/GradientButton';
 
 const EditProfile = ({ navigation }) => {
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const token = useSelector((state) => state.auth.userToken);
   const [gender, setGender] = useState(user?.gender);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);

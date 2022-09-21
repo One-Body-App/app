@@ -2,9 +2,9 @@ import { AnyAction, Reducer } from 'redux';
 import { ACTIONS } from '../action-types';
 
 type UserReducers = {
-  userInrest: [];
-  userSubscribes: [];
-  allUser: [];
+  userInrest: string[];
+  userSubscribes: string[];
+  allUser: string[];
 };
 
 const initialState: UserReducers = {

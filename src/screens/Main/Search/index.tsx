@@ -14,7 +14,7 @@ import SearchContainComponent from '@/components/SearchContainComponent';
 
 const Search = ({ navigation }) => {
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
 
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState([

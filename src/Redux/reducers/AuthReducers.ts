@@ -1,10 +1,12 @@
+import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AnyAction, Reducer } from 'redux';
 import { ACTIONS } from '../action-types';
-import { UserData } from '../types';
+import { UserProfile } from '../types';
 
 type AuthReducer = {
   userToken: string;
-  userData: UserData | null;
+  userProfile: UserProfile | null;
+  userData: FirebaseAuthTypes.User | null;
   errorText: string;
   otpToken: string;
   loginErrors: string[];
@@ -14,6 +16,7 @@ type AuthReducer = {
 
 const initialState: AuthReducer = {
   userToken: '',
+  userProfile: null,
   userData: null,
   errorText: '',
   otpToken: '',
@@ -35,7 +38,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         //otpToken:action.data.token,
-        userData: action.data,
+        userProfile: action.data,
       };
 
     case ACTIONS.FETCH_OTP:
@@ -56,8 +59,14 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         loginErrors: action.loginErrors,
       };
     }
-    case ACTIONS.UPDATE_USER:
+    case ACTIONS.UPDATE_PROFILE:
     case ACTIONS.FETCH_PROFILE:
+      return {
+        ...state,
+        userProfile: action.data,
+      };
+
+    case ACTIONS.UPDATE_USER:
       return {
         ...state,
         userData: action.data,
@@ -71,7 +80,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         userToken: '',
-        userData: null,
+        userProfile: null,
         errors: null,
         otpToken: '',
         loginErrors: [],

@@ -21,7 +21,7 @@ import { getProfile } from '@/redux//actions/AuthActions';
 import ImageModal from 'react-native-image-modal';
 
 const MyProfile = (props) => {
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const token = useSelector((state) => state.auth.userToken);
   const dispatch = useDispatch();
   const [badgesList, setBadgesList] = useState([]);

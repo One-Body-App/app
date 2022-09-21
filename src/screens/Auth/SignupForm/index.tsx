@@ -73,6 +73,7 @@ const SignupForm = ({ navigation }: Props) => {
             // const token = await user.user.getIdToken();
             // user.user.updatePhoneNumber()
             data.userId = user.user.uid;
+            console.log(user, 'useruseruseruseruseruseruser');
 
             // dispatch(setLoginData({ token: await user.user.getIdToken() }));
             dispatch(
@@ -81,7 +82,7 @@ const SignupForm = ({ navigation }: Props) => {
                 seterror,
                 go: () =>
                   navigation.reset({
-                    index: 0,
+                    index: 1,
                     routes: [
                       { name: 'SignUp' },
                       { name: 'Login', params: { showConfirmationEmailMessage: true } },

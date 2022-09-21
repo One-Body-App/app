@@ -27,25 +27,25 @@ import UserProfile from '../screens/Main/UserProfile';
 import BlogView from '../screens/Main/BlogView';
 import Faqs from '../screens/Main/Help/Faqs';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { UserData } from '../Redux/types';
+import { UserProfile } from '../Redux/types';
 import Toast from 'react-native-toast-message';
 
 const Stack = createNativeStackNavigator();
 const HomeStack = ({
   user,
-  userData,
+  userProfile,
   token,
 }: {
   user?: FirebaseAuthTypes.User;
-  userData: UserData | null;
+  userProfile: UserProfile | null;
   token?: string;
 }) => {
   return (
     <Stack.Navigator
       initialRouteName={
-        user && userData?.isProfileCompleted
+        user && userProfile?.isProfileCompleted
           ? 'loading'
-          : userData?.role == 'organization'
+          : userProfile?.role == 'organization'
           ? 'OrgnizationSteps'
           : 'IndividualSteps'
       }

@@ -25,7 +25,7 @@ import GeneralStatusBar from '@/components/GeneralStatusBar';
 
 const Notificationandemail = ({ navigation }) => {
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.userData);
+  const user = useSelector((state) => state.auth.userProfile);
   const [notificationSwitchOn, setNotificationSwitch] = React.useState(false);
   const [notificationSwitchOn2, setNotificationSwitch2] = React.useState(false);
   const [notificationSwitchOn3, setNotificationSwitch3] = React.useState(false);

@@ -24,12 +24,12 @@ export const setUserSubscribe = (data) => ({
   data,
 });
 
-export const getUserData = (data) => ({
+export const getUserProfile = (data) => ({
   type: ACTIONS.GET_FETCH_PROFILE,
   data,
 });
 
-export const setUserData = (data) => ({
+export const setUserProfile = (data) => ({
   type: ACTIONS.FETCH_PROFILE,
   data,
 });
