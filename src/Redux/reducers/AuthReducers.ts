@@ -84,6 +84,17 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         errors: null,
         otpToken: '',
         loginErrors: [],
+        userData: null,
+      };
+
+    case ACTIONS.SET_USER_NOTIFICATIONS:
+      return {
+        ...state,
+
+        userProfile: {
+          ...state.userProfile,
+          ...action.data.notifications,
+        },
       };
 
     default:

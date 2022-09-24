@@ -12,7 +12,6 @@ export const styles = StyleSheet.create({
     width: '80%',
 
     textAlign: 'center',
-    textAlign: 'center',
     fontWeight: '500',
     color: '#5B7279',
     lineHeight: 22,
@@ -38,14 +37,15 @@ export const styles = StyleSheet.create({
 
   btn: {
     backgroundColor: 'red',
-    width: getWidth(75),
+    // width: getWidth(80),
     margin: 8,
     height: getHeight(5.5),
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
+    paddingHorizontal: 10,
   },
-  btnText: { color: 'white', fontSize: getFontSize(2.5) },
+  btnText: { color: 'white', fontSize: getFontSize(2.5), textAlign: 'center' },
   btntxt: {
     color: 'white',
     fontSize: getFontSize(2),

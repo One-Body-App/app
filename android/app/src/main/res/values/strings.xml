@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">onebody</string>
+    <string name="app_name">One Body</string>
+    <string name="facebook_app_id">1977514759116109</string>
+    <string name="facebook_client_token">871a04e1e70813d7517dff1a75dc8a14</string>
 </resources>

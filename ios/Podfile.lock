@@ -421,9 +421,6 @@ PODS:
     - Toast (~> 4.0.0)
   - react-native-splash-screen (3.3.0):
     - React-Core
-  - react-native-twitter-signin (1.2.0):
-    - React
-    - TwitterKit5
   - react-native-webview (11.23.0):
     - React-Core
   - React-perflogger (0.69.3)
@@ -547,7 +544,7 @@ PODS:
     - React-Core
   - RNPermissions (3.6.0):
     - React-Core
-  - RNReanimated (2.2.4):
+  - RNReanimated (2.10.0):
     - DoubleConversion
     - FBLazyVector
     - FBReactNativeSpec
@@ -555,7 +552,6 @@ PODS:
     - RCT-Folly
     - RCTRequired
     - RCTTypeSafety
-    - React
     - React-callinvoker
     - React-Core
     - React-Core/DevSupport
@@ -573,7 +569,6 @@ PODS:
     - React-RCTNetwork
     - React-RCTSettings
     - React-RCTText
-    - React-RCTVibration
     - ReactCommon/turbomodule/core
     - Yoga
   - RNScreens (3.15.0):
@@ -594,9 +589,6 @@ PODS:
     - SDWebImage/Core (~> 5.10)
   - Toast (4.0.0)
   - TOCropViewController (2.6.1)
-  - TwitterCore (3.2.0)
-  - TwitterKit5 (5.2.0):
-    - TwitterCore (>= 3.1.0)
   - Yoga (1.14.0)
   - ZendeskChatProvidersSDK (2.12.0)
   - ZendeskChatSDK (2.12.0):
@@ -647,7 +639,6 @@ DEPENDENCIES:
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-simple-toast (from `../node_modules/react-native-simple-toast`)
   - react-native-splash-screen (from `../node_modules/react-native-splash-screen`)
-  - "react-native-twitter-signin (from `../node_modules/@react-native-twitter-signin/twitter-signin`)"
   - react-native-webview (from `../node_modules/react-native-webview`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
   - React-RCTActionSheet (from `../node_modules/react-native/Libraries/ActionSheetIOS`)
@@ -718,8 +709,6 @@ SPEC REPOS:
     - SDWebImageWebPCoder
     - Toast
     - TOCropViewController
-    - TwitterCore
-    - TwitterKit5
     - ZendeskChatProvidersSDK
     - ZendeskChatSDK
     - ZendeskCommonUISDK
@@ -798,8 +787,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-simple-toast"
   react-native-splash-screen:
     :path: "../node_modules/react-native-splash-screen"
-  react-native-twitter-signin:
-    :path: "../node_modules/@react-native-twitter-signin/twitter-signin"
   react-native-webview:
     :path: "../node_modules/react-native-webview"
   React-perflogger:
@@ -936,7 +923,6 @@ SPEC CHECKSUMS:
   react-native-safe-area-context: 9e40fb181dac02619414ba1294d6c2a807056ab9
   react-native-simple-toast: 8ee5d23f0b92b935ab7434cdb65159ce12dfb4b7
   react-native-splash-screen: 4312f786b13a81b5169ef346d76d33bc0c6dc457
-  react-native-twitter-signin: 423e8d20eb26fddc14852d3f1435a8b39358f49d
   react-native-webview: e771bc375f789ebfa02a26939a57dbc6fa897336
   React-perflogger: 39d2ba8cbcac54d1bb1d9a980dab348e96aef467
   React-RCTActionSheet: b1ad907a2c8f8e4d037148ca507b7f2d6ab1c66d
@@ -967,7 +953,7 @@ SPEC CHECKSUMS:
   RNImageCropPicker: 44e2807bc410741f35d4c45b6586aedfe3da39d2
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
   RNPermissions: de7b7c3fe1680d974ac7a85e3e97aa539c0e68ea
-  RNReanimated: e2414d403cc8da634e44103c1ec7a13e87bd6333
+  RNReanimated: 7faa787e8d4493fbc95fab2ad331fa7625828cfa
   RNScreens: 4a1af06327774490d97342c00aee0c2bafb497b7
   RNShare: ab582e93876d9df333a531390c658c31b50a767d
   RNSVG: 1153e8eeb34c788841016c517dba9f57f20b762f
@@ -976,8 +962,6 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: 908b83b6adda48effe7667cd2b7f78c897e5111d
   Toast: 91b396c56ee72a5790816f40d3a94dd357abc196
   TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
-  TwitterCore: 8cbc9ad34d91c63a0035ea05bfbfc0d7ca72a28c
-  TwitterKit5: 64095dfefcf39be2355711ef27112d55e340d90e
   Yoga: 44c64131616253fa83366295acdbce3d14926041
   ZendeskChatProvidersSDK: b3f5a914ed9d518770c994f0f04683952087b00a
   ZendeskChatSDK: 12fbe34d67b73895882786736329236e7e092b67

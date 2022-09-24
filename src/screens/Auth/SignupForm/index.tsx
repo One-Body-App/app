@@ -81,13 +81,16 @@ const SignupForm = ({ navigation }: Props) => {
                 data,
                 seterror,
                 go: () =>
-                  navigation.reset({
-                    index: 1,
-                    routes: [
-                      { name: 'SignUp' },
-                      { name: 'Login', params: { showConfirmationEmailMessage: true } },
-                    ],
-                  }),
+                  // navigation.pop()
+                  navigation.replace('Login', { showConfirmationEmailMessage: true }),
+
+                // navigation.reset({
+                //   index: 1,
+                //   routes: [
+                //     { name: 'SignUp' },
+                //     { name: 'Login', params: { showConfirmationEmailMessage: true } },
+                //   ],
+                // }),
               })
             );
           })

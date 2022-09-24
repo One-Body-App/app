@@ -7,6 +7,14 @@ export const enValidation = {
       message: '^Please enter a valid email address',
     },
   },
+  emailConfirmation: {
+    presence: {
+      message: '^Please enter a valid confirmation email address',
+    },
+    email: {
+      message: '^Please enter a valid confirmation email address',
+    },
+  },
   phoneNumber: {
     presence: {
       message: '^Phone number field can not be empty',

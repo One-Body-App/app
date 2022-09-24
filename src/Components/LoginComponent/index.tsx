@@ -30,7 +30,8 @@ import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 
 import { RootStackParamList } from '@/src/Navigation/types';
 import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
-import { BASE_URL } from '@/src/Services/constants';
+import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID } from '@/src/Services/constants';
+import { useToast } from 'react-native-toast-notifications';
 
 interface Props extends StackScreenProps<RootStackParamList, any> {
   showConfirmationEmailMessage: boolean;
@@ -45,6 +46,7 @@ interface Props extends StackScreenProps<RootStackParamList, any> {
   mode?: string;
   oobCode?: string;
   currentUserEmail?: string;
+  onlyPassword?: boolean;
 }
 
 const LoginComponent: FC<Props> = ({
@@ -58,6 +60,7 @@ const LoginComponent: FC<Props> = ({
   emailLoginOnly,
   toScreen,
   currentUserEmail,
+  onlyPassword,
 }) => {
   const dispatch = useDispatch();
 
@@ -74,6 +77,8 @@ const LoginComponent: FC<Props> = ({
     passwordError: '',
   });
 
+  const toast = useToast();
+
   const [error, seterror] = useState<string>();
   const [success, setSuccess] = useState<string>('');
   const [hidePass, setHidePass] = useState(true);
@@ -88,7 +93,7 @@ const LoginComponent: FC<Props> = ({
 
   useEffect(() => {
     GoogleSignin.configure({
-      webClientId: '420515523880-2h4eoqmpti4up6ee2j6evrupaqj5rgb7.apps.googleusercontent.com',
+      webClientId: GOOGLE_LOGIN_CLIENT_ID,
       offlineAccess: true,
       forceCodeForRefreshToken: true,
     });
@@ -109,6 +114,25 @@ const LoginComponent: FC<Props> = ({
         } catch (e: any) {
           console.log(e);
           seterror('Invalid Verification code, please try again.');
+        }
+      };
+      action();
+    }
+
+    if (mode == 'verifyAndChangeEmail' && action == 'action' && oobCode) {
+      const action = async () => {
+        try {
+          const result = await auth().checkActionCode(oobCode);
+          await auth().applyActionCode(oobCode);
+
+          setSuccess('Email changed successful. Please login again');
+          setState({ ...state, email: result.data.email ?? '' });
+        } catch (e: any) {
+          navigation.goBack();
+          toast.show('Invalid Verification code, please try again.', {
+            placement: 'top',
+            type: 'danger',
+          });
         }
       };
       action();
@@ -167,7 +191,11 @@ const LoginComponent: FC<Props> = ({
             );
           }
         } catch (error: any) {
-          seterror(error.nativeErrorMessage);
+          if (error.nativeErrorMessage.contains('auth/user-not-found')) {
+            seterror('User/password combination not found');
+          } else {
+            seterror(error.nativeErrorMessage);
+          }
         }
       };
       getTwitterAuthToken();
@@ -181,14 +209,24 @@ const LoginComponent: FC<Props> = ({
       const passwordError = await validator('password', password);
       seterror('');
 
+      if (!!emailLoginOnly && !!onlyPassword && email != currentUserEmail) {
+        throw { message: "Please login with the current user's email" };
+      }
+
       if (!emailError && !passwordError) {
         dispatch(setLoader(true));
 
         const emailCredential = await auth().signInWithEmailAndPassword(email, password);
 
-        if (emailLoginOnly && toScreen) {
+        if (emailLoginOnly) {
           setState({ ...state, password: '' });
-          navigation.push(toScreen as keyof RootStackParamList, { setError: seterror });
+          console.log(toScreen);
+          if (toScreen) {
+            navigation.goBack();
+            navigation.push(toScreen as keyof RootStackParamList, { setError: seterror });
+          } else {
+            navigation.goBack();
+          }
         } else {
           if (emailCredential.user.emailVerified) {
             await processLogin(
@@ -209,7 +247,15 @@ const LoginComponent: FC<Props> = ({
         setState({ ...state, emailError, passwordError });
       }
     } catch (error: any) {
-      seterror('User/password combination not found');
+      let message = 'User/password combination not found';
+      if (
+        error.message &&
+        !error.message.includes('auth/user-not-found') &&
+        !error.message.includes('auth/wrong-password')
+      ) {
+        message = error.message;
+      }
+      seterror(message);
       dispatch(setLoader(false));
     }
   };
@@ -353,7 +399,6 @@ const LoginComponent: FC<Props> = ({
         <TextInput
           style={GeneralStyle.input}
           theme={{ roundness: 10 }}
-          disabled={!!emailLoginOnly}
           ref={inputRefs.email}
           value={state.email}
           returnKeyType={'next'}

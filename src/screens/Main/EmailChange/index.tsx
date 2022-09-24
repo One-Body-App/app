@@ -21,7 +21,6 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 type Props = StackScreenProps<RootStackParamList, 'EmailChange'>;
 
@@ -29,7 +28,7 @@ const EmailChange = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
 
   const userProfile = useSelector((state: RootState) => state.auth.userProfile);
-  console.log(userProfile);
+
   const inputRefs = {
     passwordN: useRef<TextInputNative>(null),
     passwordC: useRef<TextInputNative>(null),
@@ -51,40 +50,40 @@ const EmailChange = ({ navigation, route }: Props) => {
         emailConfirmation
       );
 
-      if (!emailErrorValidation && !emailErrorConfirmationValidation) {
+      if (
+        !emailErrorValidation &&
+        !emailErrorConfirmationValidation &&
+        email == emailConfirmation
+      ) {
         dispatch(setLoader(true));
-        await auth().currentUser?.updateEmail(email);
 
         const res = await ApiCall({
-          route: `${userProfile?.role}/update-profile`,
+          route: `auth/sendVerificationToChangeEmail`,
           token: userProfile?.token,
-          verb: 'patch',
+          verb: 'post',
           params: {
-            email,
+            newEmail: email,
           },
         });
-        console.log(res);
+
         if (res?.status == 200) {
           navigation.pop(2);
-          toast.show('Email updated successfully', {
+          toast.show('Email updated successfully. Please check your email for confirmation.', {
             type: 'success',
             placement: 'top',
           });
-          await ApiCall({
-            route: `auth/sendVerificationEmail`,
-            token: userProfile?.token,
-            verb: 'post',
-          });
-          // await auth().currentUser?.sendEmailVerification();
         } else {
-          setEmailError(res?.response.error);
+          setEmailConfirmationError(res.response.message);
         }
       } else {
-        setEmailError(emailErrorValidation);
-        setEmailConfirmationError(emailErrorConfirmationValidation);
+        if (emailErrorValidation) setEmailError(emailErrorValidation);
+
+        if (emailErrorConfirmationValidation)
+          setEmailConfirmationError(emailErrorConfirmationValidation);
+        else if (email != emailConfirmation)
+          setEmailConfirmationError("Email and confirmation don't match");
       }
     } catch (e: any) {
-      console.log(e);
       route.params.setError(e.message.replace('[auth/requires-recent-login] ', ''));
 
       navigation.goBack();
@@ -115,11 +114,14 @@ const EmailChange = ({ navigation, route }: Props) => {
           activeOutlineColor={'#5B7279'}
           ref={inputRefs.passwordN}
           value={email}
-          returnKeyType={'next'}
           label={'New email'}
           mode="outlined"
+          autoComplete="email"
+          autoCapitalize="none"
           // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
           style={GeneralStyle.input}
+          returnKeyType={'next'}
+          keyboardType="email-address"
           onSubmitEditing={() => inputRefs.passwordC.current?.focus()}
           onChangeText={(email) => setEmail(email)}
           blurOnSubmit={false}
@@ -134,6 +136,9 @@ const EmailChange = ({ navigation, route }: Props) => {
           returnKeyType={'done'}
           label={'Confirm new email'}
           mode="outlined"
+          autoComplete="email"
+          autoCapitalize="none"
+          keyboardType="email-address"
           // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
           style={GeneralStyle.input}
           onSubmitEditing={() => emailUpdate()}

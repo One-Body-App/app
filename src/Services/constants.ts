@@ -4,6 +4,7 @@ import {
   DEV_BASE_URL,
   PRIVACY_POLICY_URL as _PRIVACY_POLICY_URL,
   TERMS_CONDITIONS_URL as _TERMS_CONDITIONS_URL,
+  GOOGLE_LOGIN_CLIENT_ID as _GOOGLE_LOGIN_CLIENT_ID,
 } from 'react-native-dotenv';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 
@@ -12,6 +13,8 @@ export const BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
 export const PRIVACY_POLICY_URL = _PRIVACY_POLICY_URL;
 
 export const TERMS_CONDITIONS_URL = _TERMS_CONDITIONS_URL;
+
+export const GOOGLE_LOGIN_CLIENT_ID = _GOOGLE_LOGIN_CLIENT_ID;
 
 export const OpenURLButton = async (url: string) => {
   try {

@@ -75,7 +75,9 @@ const Settings = ({ navigation }: Props) => {
       />
       <ScrollView style={styles.innerContainer}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange' })}
+          onPress={() =>
+            navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
+          }
           style={styles.list}
         >
           <View>
@@ -86,7 +88,9 @@ const Settings = ({ navigation }: Props) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('ConfirmLogin', { toScreen: 'PasswordChange' })}
+          onPress={() =>
+            navigation.navigate('ConfirmLogin', { toScreen: 'PasswordChange', onlyPassword: true })
+          }
           style={styles.list}
         >
           <View>
@@ -97,7 +101,7 @@ const Settings = ({ navigation }: Props) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('NotificationsAndEmail')}
+          onPress={() => navigation.navigate('NotificationSettings')}
           style={styles.list}
         >
           <View>

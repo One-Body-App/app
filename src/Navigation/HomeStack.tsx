@@ -18,12 +18,12 @@ import Deactivateaccountconfirm from '../screens/Main/Deactiveaccountconfirm';
 import Deactivateaccountotp from '../screens/Main/Deactivateaccountotp';
 import Setting from '../screens/Main/Setting';
 import Drawerr from './Drawerr';
-import Notificationandemail from '../screens/Main/Notificationandemail';
+import Notificationandemail from '../screens/Main/notificationSettings';
 import ConversationScreen from '../screens/Main/Message/conversation';
 import PhoneNumberUpdate from '../screens/Main/PhoneNumberUpdate';
 import Search from '../screens/Main/Search';
 import AddPhoneNumber from '../screens/Main/AddPhoneNumber';
-import UserProfile from '../screens/Main/UserProfile';
+import UserProfileView from '../screens/Main/UserProfile';
 import BlogView from '../screens/Main/BlogView';
 import Faqs from '../screens/Main/Help/Faqs';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -81,7 +81,7 @@ const HomeStack = ({
       <Stack.Screen name="Deactivateaccountconfirm" component={Deactivateaccountconfirm} />
       <Stack.Screen name="PhoneNumberUpdate" component={PhoneNumberUpdate} />
       <Stack.Screen name="AddPhoneNumber" component={AddPhoneNumber} />
-      <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen name="UserProfile" component={UserProfileView} />
 
       <Stack.Screen name="Search" component={Search} options={{ presentation: 'modal' }} />
       <Stack.Screen name="BlogView" component={BlogView} options={{ presentation: 'modal' }} />

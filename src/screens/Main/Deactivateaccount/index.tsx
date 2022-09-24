@@ -45,7 +45,7 @@ const Deactivateaccount = ({ navigation }) => {
       />
 
       <Header
-        title={'Deactivate account'}
+        title={'Remove account'}
         leftView={
           <Ionicons onPress={() => navigation.goBack()} name="chevron-back-outline" size={20} />
         }
@@ -54,7 +54,7 @@ const Deactivateaccount = ({ navigation }) => {
       <View style={styles.innerContainer}>
         <Text style={styles.heading}>You will be missed</Text>
         <Text style={styles.text}>
-          We are sorry to see you go. Deactivating your account will erase all of the data we have
+          We are sorry to see you go. Removing your account will erase all of the data we have
           stored about you and there is
           <Text style={{ color: '#E90202' }}> no recovery.</Text> Please spare a moment to let us
           know why you are leaving,
@@ -143,7 +143,7 @@ const Deactivateaccount = ({ navigation }) => {
         </View>
         <View>
           <Button
-            text={'DEACTIVATE ACCOUNT'}
+            text={'REMOVE ACCOUNT'}
             btnStyle={{
               ...GeneralStyle.btn,
               width: getWidth(85),

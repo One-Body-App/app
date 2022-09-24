@@ -28,7 +28,7 @@ const Deactivateaccountconfirm = ({ navigation, route }) => {
       });
 
       if (res?.status == '200') {
-        Alert.alert('Deactivate Account', res.data?.message);
+        Alert.alert('Remove Account', res.data?.message);
         dispatch(setLoader(false));
         LoginManager.logOut();
         dispatch(logout());
@@ -49,7 +49,7 @@ const Deactivateaccountconfirm = ({ navigation, route }) => {
         translucent={true}
       />
       <Header
-        title={'Deactivate account'}
+        title={'Remove account'}
         leftView={
           <Ionicons onPress={() => navigation.goBack()} name="chevron-back-outline" size={20} />
         }
@@ -64,7 +64,7 @@ const Deactivateaccountconfirm = ({ navigation, route }) => {
         </Text>
         <View style={{ marginTop: getHeight(7) }}>
           <Button
-            text={'DEACTIVATE ACCOUNT'}
+            text={'REMOVE ACCOUNT'}
             btnStyle={{ ...GeneralStyle.btn, backgroundColor: 'red' }}
             btnTextStyle={GeneralStyle.btnText}
             onPress={() => accountDeactivate()}

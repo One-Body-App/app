@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View } from 'react-native';
 
 import LoginComponent from '@/components/LoginComponent';
@@ -16,6 +16,9 @@ type Props = StackScreenProps<RootStackParamList, 'ConfirmLogin'>;
 
 const ConfirmLogin = ({ route, navigation }: Props) => {
   const userProfile = useSelector((state: RootState) => state.auth.userData);
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: false });
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -36,7 +39,7 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
         {...route.params}
       />
 
-      <GoBackIcon color={'white'} />
+      {!route.params.mode ? <GoBackIcon color={'white'} /> : null}
     </View>
   );
 };

@@ -33,3 +33,8 @@ export const setUserProfile = (data) => ({
   type: ACTIONS.FETCH_PROFILE,
   data,
 });
+
+export const setUserDataNotifications = (data) => ({
+  type: ACTIONS.SET_USER_NOTIFICATIONS,
+  data,
+});

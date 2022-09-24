@@ -33,7 +33,7 @@ export const GeneralStyle = StyleSheet.create({
   InputError: {
     color: 'red',
     marginLeft: 10,
-    marginTop: 3,
-    marginBottom: 5,
+    marginTop: 8,
+    marginBottom: 3,
   },
 });

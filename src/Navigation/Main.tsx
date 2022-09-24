@@ -37,7 +37,7 @@ import Help from '../screens/Main/Help';
 import Faqs from '../screens/Main/Help/Faqs';
 import IndividualSteps from '../screens/Main/IndividualSteps';
 import ConversationScreen from '../screens/Main/Message/conversation';
-import Notificationandemail from '../screens/Main/Notificationandemail';
+import NotificationSettings from '../screens/Main/notificationSettings/index';
 import OrgnizationSteps from '../screens/Main/OrgnizationSteps';
 import PasswordChange from '../screens/Main/PasswordChange';
 import PhoneNumberUpdate from '../screens/Main/PhoneNumberUpdate';
@@ -85,7 +85,7 @@ const Main = () => {
         dispatch(setUserData(firebaseUser));
       }
     }
-    console.log(firebaseUser, user);
+    console.log(firebaseToken, token);
     if (!isEqual(firebaseToken, token)) {
       setToken(firebaseToken ?? '');
     }
@@ -93,6 +93,7 @@ const Main = () => {
 
   useEffect(() => {
     const subscriber = auth().onIdTokenChanged(onAuthStateChanged);
+
     dispatch(setLoader(true));
 
     return subscriber; // unsubscribe on unmount
@@ -122,7 +123,7 @@ const Main = () => {
     prefixes: ['https://app.onebodyapp.com'],
     config: {
       screens: {
-        Login: {
+        ConfirmLogin: {
           path: '/auth/:action',
         },
         SignUp: {
@@ -131,7 +132,7 @@ const Main = () => {
       },
     },
   };
-
+  console.log(user, 'useruseruseruseruser');
   return (
     <NavigationContainer linking={linking}>
       <AppProvider>
@@ -157,15 +158,14 @@ const Main = () => {
                   <Stack.Screen name="PasswordChange" component={PasswordChange} />
                   <Stack.Screen name="EmailChange" component={EmailChange} />
 
-                  <Stack.Screen name="ConfirmLogin" component={ConfirmLogin} />
                   <Stack.Screen name="phoneValidate" component={PhoneValidate} />
                   <Stack.Screen name="confirm" component={ConfirmPassword} />
                   <Stack.Screen name="newpassword" component={NewPassword} />
                   <Stack.Screen name="conversation" component={ConversationScreen} />
                   <Stack.Screen
                     options={{ headerShown: false }}
-                    name="NotificationsAndEmail"
-                    component={Notificationandemail}
+                    name="NotificationSettings"
+                    component={NotificationSettings}
                   />
                   <Stack.Screen
                     name="Deactivateaccountconfirm"
@@ -182,6 +182,11 @@ const Main = () => {
                   <Stack.Screen
                     name="BlogView"
                     component={BlogView}
+                    options={{ presentation: 'modal' }}
+                  />
+                  <Stack.Screen
+                    name="ConfirmLogin"
+                    component={ConfirmLogin}
                     options={{ presentation: 'modal' }}
                   />
                 </>
@@ -209,6 +214,11 @@ const Main = () => {
               <Stack.Screen name="confirm" component={ConfirmPassword} />
               <Stack.Screen name="newpassword" component={NewPassword} />
               <Stack.Screen name="PasswordResetOtp" component={PasswordResetOtp} />
+              <Stack.Screen
+                name="ConfirmLogin"
+                component={ConfirmLogin}
+                options={{ presentation: 'modal' }}
+              />
             </>
           )}
         </Stack.Navigator>

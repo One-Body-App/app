@@ -23,13 +23,16 @@ export type RootStackParamList = {
   PasswordChange: {
     setError: (errorText: string) => void;
   };
-  NotificationsAndEmail: undefined;
+
   RemoveAccount: undefined;
   ConfirmLogin: {
     toScreen: string;
     error?: string;
+    onlyPassword?: boolean;
+    mode?: string;
   };
   EmailChange: {
     setError: (errorText: string) => void;
   };
+  NotificationSettings: undefined;
 };

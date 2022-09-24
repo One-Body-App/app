@@ -1,6 +1,21 @@
 apply plugin: "com.android.application"
+apply plugin: 'com.google.gms.google-services'
 
 import com.android.build.OutputFile
+
+import groovy.json.JsonSlurper
+
+
+def getNpmVersion() {
+    def inputFile = new File("../package.json")
+    def packageJson = new JsonSlurper().parseText(inputFile.text)
+    return packageJson["version"]
+}
+/* calculated from git commits to give sequential integers */
+def getGitVersion() {
+    def process = "git rev-list main --first-parent --count".execute()
+    return process.text.toInteger()
+}
 
 /**
  * The react.gradle file registers a task for each build variant (e.g. bundleDebugJsAndAssets
@@ -128,6 +143,9 @@ def reactNativeArchitectures() {
     return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
 }
 
+//def userVer = getNpmVersion()
+//def googleVer = getGitVersion()
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -137,8 +155,8 @@ android {
         applicationId "com.onebody"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode getGitVersion()
+        versionName getNpmVersion()
         buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
 
         if (isNewArchitectureEnabled()) {
@@ -260,6 +278,8 @@ dependencies {
 
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"  // From node_modules
+    implementation 'com.facebook.android:facebook-android-sdk:latest.release'
+
 
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
 
@@ -275,6 +295,9 @@ dependencies {
     debugImplementation("com.facebook.flipper:flipper-fresco-plugin:${FLIPPER_VERSION}") {
         exclude group:'com.facebook.flipper'
     }
+    implementation 'com.google.android:flexbox:2.0.1'
+    api group: 'com.zendesk', name: 'chat', version: '2.2.0'
+    api group: 'com.zendesk', name: 'messaging', version: '4.3.1'
 
     if (enableHermes) {
         //noinspection GradleDynamicVersion
@@ -318,3 +341,6 @@ def isNewArchitectureEnabled() {
     // - Set an environment variable `ORG_GRADLE_PROJECT_newArchEnabled=true`
     return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
 }
+
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+apply plugin: 'com.google.gms.google-services'

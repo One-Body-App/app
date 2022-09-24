@@ -8,10 +8,10 @@ import {
   setUserProfile,
   setUserIntrest,
   setUserSubscribe,
+  setUserDataNotifications,
 } from '../actions/UserAction';
 
 function* UserGetRequest(params) {
-  console.log('asdfasdf12345678');
   console.log(params);
   try {
     const res = yield ApiCall({

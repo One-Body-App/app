@@ -5,12 +5,18 @@ type UserReducers = {
   userInrest: string[];
   userSubscribes: string[];
   allUser: string[];
+  pushNotificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  subscribeToNewsletter: boolean;
 };
 
 const initialState: UserReducers = {
   userInrest: [],
   userSubscribes: [],
   allUser: [],
+  pushNotificationsEnabled: false,
+  emailNotificationsEnabled: false,
+  subscribeToNewsletter: false,
 };
 
 const userReducers: Reducer<UserReducers> = (state = initialState, action: AnyAction) => {

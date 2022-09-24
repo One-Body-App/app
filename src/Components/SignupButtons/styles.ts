@@ -1,6 +1,5 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { appColor, COLORS } from '../../constants';
 
 export const styles = StyleSheet.create({
   container: {
@@ -78,6 +77,7 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 16,
     flexDirection: 'row',
+    color: '#032F3C',
   },
   Errorview: { padding: 5, flexDirection: 'row', marginLeft: getWidth(10) },
   errortext: {

@@ -18,7 +18,12 @@ import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { setAccountType } from '@/src/Redux/actions/GeneralActions';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/Services/constants';
+import {
+  GOOGLE_LOGIN_CLIENT_ID,
+  OpenURLButton,
+  PRIVACY_POLICY_URL,
+  TERMS_CONDITIONS_URL,
+} from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 
@@ -51,7 +56,7 @@ const SignupButtons = ({ navigation, errorFromLogin }: Props) => {
 
   useEffect(() => {
     GoogleSignin.configure({
-      webClientId: '420515523880-2h4eoqmpti4up6ee2j6evrupaqj5rgb7.apps.googleusercontent.com',
+      webClientId: GOOGLE_LOGIN_CLIENT_ID,
       offlineAccess: true,
       forceCodeForRefreshToken: true,
     });

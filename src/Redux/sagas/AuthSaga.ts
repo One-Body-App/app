@@ -171,14 +171,13 @@ export function* GetProfileSaga() {
   yield takeLatest(ACTIONS.GET_FETCH_PROFILE, getProfileRequest);
 }
 function* getProfileRequest(params) {
-  console.log('sjhbdkllgkfhjmjkugkyfjh');
   try {
     const res = yield ApiCall({
       route: 'auth/my-profile',
       token: params.data.token,
       verb: 'get',
     });
-    console.log(res, 'resresresresres');
+
     if (res?.status == '200') {
       yield put(setProfile({ token: params.data.token, ...res.response }));
       // params?.data?.go();
@@ -219,81 +218,4 @@ function* getUserProfileRequest(params) {
 }
 export function* GetUserProfileSaga() {
   yield takeLatest(ACTIONS.USER_PROFILE, getUserProfileRequest);
-}
-
-function* OtpRequest(params) {
-  console.log('fds');
-  try {
-    const res = yield ApiCall({
-      params: params.data.data,
-      route: 'otp/verify',
-      verb: 'post',
-    });
-
-    if (res.status == '200') {
-      yield put(setOtpData(res?.response));
-      yield put(setLoader(false));
-      params.data.gonext();
-    } else {
-      params.data.seterror(res.response);
-      yield put(setLoader(false));
-    }
-  } catch (e) {
-    console.log('saga sign up err --- ', e);
-  }
-}
-export function* OtpSaga() {
-  yield takeLatest(ACTIONS.OTP, OtpRequest);
-}
-
-function* ChangePasswordRequest(params) {
-  console.log('in dsaga', params.data);
-  try {
-    const res = yield ApiCall({
-      params: params.data.data,
-      token: params.data.token,
-      route: 'profile/password/update',
-      verb: 'post',
-    });
-
-    if (res.status == 200) {
-      yield put(setLoader(false));
-      params.data.gonext();
-      Toast.show(res?.response?.message);
-    } else {
-      yield put(setLoader(false));
-      params.data.seterror(res?.response?.errors);
-    }
-  } catch (e) {
-    console.log('saga change pasword err --- ', e);
-  }
-}
-export function* ChangePasswordSaga() {
-  yield takeLatest(ACTIONS.CHANGE_PASSWORD, ChangePasswordRequest);
-}
-
-function* UpdatePasswordRequest(params) {
-  try {
-    const res = yield ApiCall({
-      params: params.data.data,
-      token: params.data.token,
-      route: 'password/reset',
-      verb: 'post',
-    });
-
-    if (res.status == '200') {
-      yield put(setLoader(false));
-
-      Toast.show(res?.response?.message);
-    } else {
-      yield put(setLoader(false));
-      params.data.seterror(res?.response?.errors[0]);
-      Toast.show(res?.response?.errors[0]);
-    }
-  } catch (e) {
-    console.log('saga change pasword err --- ', e);
-  }
-}
-export function* UpdatePasswordSaga() {
-  yield takeLatest(ACTIONS.UPDATE_PASSWORD, UpdatePasswordRequest);
 }

@@ -14,4 +14,8 @@ export type UserProfile = {
   updatedAt: string;
   userId: string;
   isInfluencer: boolean;
+
+  pushNotificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  subscribeToNewsletter: boolean;
 };
