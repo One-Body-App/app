@@ -119,7 +119,6 @@ function* updateProfileRequest(params) {
       yield put(getProfile({ token: params.data.token, role: 'individual' }));
 
       yield put(setLoader(false));
-      params.data.go();
     } else {
       yield put(setLoader(false));
       Alert.alert('Error', 'An error accoured during profile Update', [

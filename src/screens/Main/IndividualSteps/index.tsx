@@ -43,6 +43,7 @@ import Geolocation from 'react-native-geolocation-service';
 import { LoginManager } from 'react-native-fbsdk-next';
 import messaging from '@react-native-firebase/messaging';
 import { useToast } from 'react-native-toast-notifications';
+import { RootStackParamList } from '@/src/Navigation/types';
 
 type ChurchType = {
   churchType: string;
@@ -82,7 +83,7 @@ type whatIDo = {
   updatedAt: string;
 };
 
-type Props = NativeStackScreenProps<any, 'IndividualSteps'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
 
 const IndividualSteps = ({ navigation }: Props) => {
   const flatListRef = useRef<FlatList>(null);
@@ -205,9 +206,6 @@ const IndividualSteps = ({ navigation }: Props) => {
     }
   };
 
-  const go = () => {
-    navigation.navigate('loading');
-  };
   const getInterest = async () => {
     try {
       const res = await ApiCall({
@@ -934,7 +932,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                       address: location?.place_name,
                     },
                   };
-                  dispatch(profileUpdate({ data, token, go, role: user?.role }));
+                  dispatch(profileUpdate({ data, token, role: user?.role }));
                 }}
               >
                 <Text style={styles.footerText}>Done</Text>

@@ -29,8 +29,8 @@ import InfluencerStepTwo from '../screens/BecomeInfluencer/InfluencerStepTwo';
 import LoadingPage from '../screens/loadingPage';
 import AddPhoneNumber from '../screens/Main/AddPhoneNumber';
 import BlogView from '../screens/Main/BlogView';
-import Deactivateaccount from '../screens/Main/Deactivateaccount';
-import Deactivateaccountconfirm from '../screens/Main/Deactiveaccountconfirm';
+import RemoveAccount from '../screens/Main/RemoveAccount';
+import RemoveAccountConfirmation from '../screens/Main/RemoveAccountConfirmation';
 import EditProfile from '../screens/Main/EditProfile';
 import EndUserAgrement from '../screens/Main/EndUserAgrement';
 import Help from '../screens/Main/Help';
@@ -68,7 +68,7 @@ const Main = () => {
     toast.hideAll();
 
     if (loader) {
-      toast.show(<ActivityIndicator />, {
+      toast.show(<ActivityIndicator color="#12D2D9" />, {
         placement: 'top',
       });
     } else {
@@ -80,12 +80,17 @@ const Main = () => {
     const firebaseToken = await firebaseUser?.getIdToken();
 
     if (!isEqual(firebaseUser, user)) {
-      if (firebaseUser?.email && firebaseUser?.emailVerified) {
-        setUser(firebaseUser);
-        dispatch(setUserData(firebaseUser));
-      }
+      // if (firebaseUser?.email && firebaseUser?.emailVerified) {
+      setUser(firebaseUser);
+      dispatch(
+        setUserData({
+          ...firebaseUser,
+          tokenResult: await firebaseUser?.getIdTokenResult(),
+        })
+      );
+      // }
     }
-    console.log(firebaseToken, token);
+
     if (!isEqual(firebaseToken, token)) {
       setToken(firebaseToken ?? '');
     }
@@ -132,7 +137,7 @@ const Main = () => {
       },
     },
   };
-  console.log(user, 'useruseruseruseruser');
+  console.log(userProfile);
   return (
     <NavigationContainer linking={linking}>
       <AppProvider>
@@ -152,7 +157,7 @@ const Main = () => {
                   <Stack.Screen name="Prayer" component={Prayer} />
                   <Stack.Screen name="Help" component={Help} />
                   <Stack.Screen name="Faqs" component={Faqs} />
-                  <Stack.Screen name="RemoveAccount" component={Deactivateaccount} />
+                  <Stack.Screen name="RemoveAccount" component={RemoveAccount} />
                   <Stack.Screen name="editProfile" component={EditProfile} />
                   <Stack.Screen name="Settings" component={Setting} />
                   <Stack.Screen name="PasswordChange" component={PasswordChange} />
@@ -168,8 +173,8 @@ const Main = () => {
                     component={NotificationSettings}
                   />
                   <Stack.Screen
-                    name="Deactivateaccountconfirm"
-                    component={Deactivateaccountconfirm}
+                    name="RemoveAccountConfirmation"
+                    component={RemoveAccountConfirmation}
                   />
                   <Stack.Screen name="PhoneNumberUpdate" component={PhoneNumberUpdate} />
                   <Stack.Screen name="AddPhoneNumber" component={AddPhoneNumber} />

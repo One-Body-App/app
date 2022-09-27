@@ -5,36 +5,19 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import { styles } from './styles';
-import { useDispatch, useSelector } from 'react-redux';
-import { setLoader } from '@/redux//actions/GeneralActions';
-import { ApiCall } from '@/services/api';
+import { useSelector } from 'react-redux';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/src/Navigation/types';
 
-const Deactivateaccount = ({ navigation }) => {
-  const [reason, setReason] = useState(null);
-  const token = useSelector((state) => state.auth.userToken);
-  const dispatch = useDispatch();
+type Props = NativeStackScreenProps<RootStackParamList, 'RemoveAccount'>;
 
-  const sendOtp = async () => {
-    dispatch(setLoader(true));
-    try {
-      const res = await ApiCall({
-        route: 'user/send-otp',
-        token: token,
-        params: { mode: 'deactivate' },
-        verb: 'patch',
-      });
-      if (res.status == '200') {
-        dispatch(setLoader(false));
-        navigation.navigate('Deactivateaccountotp', { reason: reason });
-      } else {
-        dispatch(setLoader(false));
-      }
-    } catch (e) {
-      console.log('saga error -- ', e.toString());
-    }
-  };
+const RemoveAccount = ({ navigation }: Props) => {
+  const [reason, setReason] = useState<string>('');
+  const token = useSelector((state: RootState) => state.auth.userToken);
+
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <GeneralStatusBar
@@ -57,15 +40,15 @@ const Deactivateaccount = ({ navigation }) => {
           We are sorry to see you go. Removing your account will erase all of the data we have
           stored about you and there is
           <Text style={{ color: '#E90202' }}> no recovery.</Text> Please spare a moment to let us
-          know why you are leaving,
+          know why you are leaving?
         </Text>
         <View style={{ margin: getHeight(5) }}>
           <Button
-            text={'I could not find what I was in search of.'}
-            onPress={() => setReason('I could not find what I was in search of.')}
+            text={'Could not find content relevant to my faith'}
+            onPress={() => setReason('Could not find content relevant to my faith')}
             btnStyle={[
               styles.btn,
-              reason == 'I could not find what I was in search of.'
+              reason == 'Could not find content relevant to my faith'
                 ? { backgroundColor: '#032F3C' }
                 : {
                     backgroundColor: 'white',
@@ -75,7 +58,7 @@ const Deactivateaccount = ({ navigation }) => {
             ]}
             btnTextStyle={[
               styles.btnText,
-              reason == 'I could not find what I was in search of.'
+              reason == 'Could not find content relevant to my faith'
                 ? { color: 'white', fontSize: getFontSize(2) }
                 : { color: '#757575', fontSize: getFontSize(2) },
             ]}
@@ -101,7 +84,7 @@ const Deactivateaccount = ({ navigation }) => {
             ]}
           />
           <Button
-            text={'I have found too many bugs in app'}
+            text={'I have found too many bugs in the app'}
             onPress={() => setReason('I have found too many bugs in app')}
             btnStyle={[
               styles.btn,
@@ -121,7 +104,7 @@ const Deactivateaccount = ({ navigation }) => {
             ]}
           />
           <Button
-            text={'App consume a lot of battery'}
+            text={'App consumes a lot of battery'}
             onPress={() => setReason('App consume a lot of battery')}
             btnStyle={[
               styles.btn,
@@ -149,8 +132,24 @@ const Deactivateaccount = ({ navigation }) => {
               width: getWidth(85),
               backgroundColor: 'red',
             }}
+            disabled={!reason}
             btnTextStyle={GeneralStyle.btnText}
-            onPress={() => sendOtp()}
+            disabledBtnStyle={{
+              ...GeneralStyle.btn,
+              width: getWidth(85),
+              backgroundColor: '#F6F6F6',
+            }}
+            disabledBtnTextStyle={{ ...GeneralStyle.btnText, color: '#81979E' }}
+            onPress={() => {
+              navigation.navigate('ConfirmLogin', {
+                toScreen: 'RemoveAccountConfirmation',
+
+                onlyPassword: true,
+                toScreenRouteParams: {
+                  reason,
+                },
+              });
+            }}
           />
           <Button
             text={'Cancel'}
@@ -163,4 +162,4 @@ const Deactivateaccount = ({ navigation }) => {
     </View>
   );
 };
-export default Deactivateaccount;
+export default RemoveAccount;

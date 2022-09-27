@@ -15,7 +15,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 type Props = StackScreenProps<RootStackParamList, 'ConfirmLogin'>;
 
 const ConfirmLogin = ({ route, navigation }: Props) => {
-  const userProfile = useSelector((state: RootState) => state.auth.userData);
+  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: false });
   }, []);

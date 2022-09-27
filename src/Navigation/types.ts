@@ -25,11 +25,13 @@ export type RootStackParamList = {
   };
 
   RemoveAccount: undefined;
+  DeactivateAccountConfirm: { reason: string };
   ConfirmLogin: {
     toScreen: string;
     error?: string;
     onlyPassword?: boolean;
     mode?: string;
+    toScreenRouteParams?: Record<string, string>;
   };
   EmailChange: {
     setError: (errorText: string) => void;

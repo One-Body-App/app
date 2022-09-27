@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
     width: '80%',
 
     textAlign: 'center',
-    textAlign: 'center',
+
     fontWeight: '500',
     color: '#5B7279',
     lineHeight: 22,
@@ -44,9 +44,9 @@ export const styles = StyleSheet.create({
 
   btn: {
     backgroundColor: 'red',
-    width: getWidth(80),
+
     // margin: 5,
-    marginTop: getHeight(-25),
+    marginTop: getHeight(4),
     height: getHeight(6),
     justifyContent: 'center',
     alignItems: 'center',

@@ -47,6 +47,7 @@ interface Props extends StackScreenProps<RootStackParamList, any> {
   oobCode?: string;
   currentUserEmail?: string;
   onlyPassword?: boolean;
+  toScreenRouteParams?: Record<string, string>;
 }
 
 const LoginComponent: FC<Props> = ({
@@ -61,6 +62,7 @@ const LoginComponent: FC<Props> = ({
   toScreen,
   currentUserEmail,
   onlyPassword,
+  toScreenRouteParams,
 }) => {
   const dispatch = useDispatch();
 
@@ -220,14 +222,23 @@ const LoginComponent: FC<Props> = ({
 
         if (emailLoginOnly) {
           setState({ ...state, password: '' });
-          console.log(toScreen);
+
           if (toScreen) {
             navigation.goBack();
-            navigation.push(toScreen as keyof RootStackParamList, { setError: seterror });
+            navigation.push(toScreen as keyof RootStackParamList, {
+              setError: seterror,
+              ...toScreenRouteParams,
+            });
           } else {
             navigation.goBack();
           }
         } else {
+          console.log(
+            emailCredential,
+            emailCredential.user,
+            emailCredential.user.emailVerified,
+            'emailCredential.user.emailVerified'
+          );
           if (emailCredential.user.emailVerified) {
             await processLogin(
               emailCredential,
@@ -378,7 +389,10 @@ const LoginComponent: FC<Props> = ({
           onPress={async () => {
             LoginManager.logOut();
             await auth().signOut();
+            await auth().currentUser?.reload();
             dispatch(logout());
+
+            navigation.goBack();
           }}
         />
       </View>
@@ -530,6 +544,7 @@ const LoginComponent: FC<Props> = ({
                     if (FBToken) {
                       LoginManager.logOut();
                       await auth().signOut();
+                      await auth().currentUser?.reload();
                     }
                     setShowConfirmEmail(false);
                     setNewUserCredentials(null);

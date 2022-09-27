@@ -6,7 +6,7 @@ import InfluencerStepOne from '../screens/BecomeInfluencer/InfluencerStepOne';
 import InfluencerStepThree from '../screens/BecomeInfluencer/InfluencerStepThree';
 import InfluencerStepTwo from '../screens/BecomeInfluencer/InfluencerStepTwo';
 import LoadingPage from '../screens/loadingPage';
-import Deactivateaccount from '../screens/Main/Deactivateaccount';
+import Deactivateaccount from '../screens/Main/RemoveAccount';
 import EditProfile from '../screens/Main/EditProfile';
 import Help from '../screens/Main/Help';
 import IndividualSteps from '../screens/Main/IndividualSteps';
@@ -14,8 +14,7 @@ import OrgnizationSteps from '../screens/Main/OrgnizationSteps';
 import PasswordChange from '../screens/Main/PasswordChange';
 import PhoneValidate from '../screens/Main/PhoneValidate';
 import Prayer from '../screens/Main/Prayer';
-import Deactivateaccountconfirm from '../screens/Main/Deactiveaccountconfirm';
-import Deactivateaccountotp from '../screens/Main/Deactivateaccountotp';
+import Deactivateaccountconfirm from '../screens/Main/RemoveAccountConfirmation';
 import Setting from '../screens/Main/Setting';
 import Drawerr from './Drawerr';
 import Notificationandemail from '../screens/Main/notificationSettings';
@@ -77,7 +76,7 @@ const HomeStack = ({
         name="Notificationandemail"
         component={Notificationandemail}
       />
-      <Stack.Screen name="Deactivateaccountotp" component={Deactivateaccountotp} />
+
       <Stack.Screen name="Deactivateaccountconfirm" component={Deactivateaccountconfirm} />
       <Stack.Screen name="PhoneNumberUpdate" component={PhoneNumberUpdate} />
       <Stack.Screen name="AddPhoneNumber" component={AddPhoneNumber} />

@@ -3,10 +3,14 @@ import { AnyAction, Reducer } from 'redux';
 import { ACTIONS } from '../action-types';
 import { UserProfile } from '../types';
 
+interface UserData extends FirebaseAuthTypes.User {
+  tokenResult: FirebaseAuthTypes.IdTokenResult;
+}
+
 type AuthReducer = {
   userToken: string;
   userProfile: UserProfile | null;
-  userData: FirebaseAuthTypes.User | null;
+  userData: UserData | null;
   errorText: string;
   otpToken: string;
   loginErrors: string[];

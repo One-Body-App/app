@@ -12,39 +12,54 @@ import { logout } from '@/redux//actions/AuthActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { LoginManager } from 'react-native-fbsdk-next';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/src/Navigation/types';
+import auth from '@react-native-firebase/auth';
+import { useToast } from 'react-native-toast-notifications';
 
-const Deactivateaccountconfirm = ({ navigation, route }) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'DeactivateAccountConfirm'>;
+
+const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
   const { reason } = route.params;
-  const token = useSelector((state) => state.auth.userToken);
+  console.log(route.params);
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
+  const toast = useToast();
   const accountDeactivate = async () => {
     dispatch(setLoader(true));
     try {
       const res = await ApiCall({
-        params: { reason: reason },
+        params: { reason },
         token: token,
-        route: 'user/deactivate-account',
+        route: 'user/remove-account',
         verb: 'patch',
       });
 
-      if (res?.status == '200') {
-        Alert.alert('Remove Account', res.data?.message);
+      if (res?.status == 200) {
+        toast.show('Account Removed Successfully', {
+          placement: 'top',
+          type: 'success',
+        });
+
         dispatch(setLoader(false));
         LoginManager.logOut();
         dispatch(logout());
+
+        auth().currentUser?.delete();
+        auth().signOut();
       } else {
         dispatch(setLoader(false));
-        console.log('error:', res);
       }
     } catch (e) {
       console.log('saga change pasword err --- ', e);
     }
   };
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       <GeneralStatusBar
         backgroundColor="white"
-        barStyle="light-content"
+        barStyle="dark-content"
         hidden={false}
         translucent={true}
       />
@@ -58,9 +73,8 @@ const Deactivateaccountconfirm = ({ navigation, route }) => {
       <View style={styles.innerContainer}>
         <Text style={styles.heading}>You will be missed</Text>
         <Text style={styles.text}>
-          We are sorry to see you go. Deactivating your account will erase all of the data we have
-          stored about you and there is <Text style={{ color: '#E90202' }}>no recovery.</Text>{' '}
-          Please spare a moment to let us know why you are leaving,
+          We are sorry to see you go. Removing your account will erase all of the data we have
+          stored about you and there is <Text style={{ color: '#E90202' }}>no recovery.</Text>
         </Text>
         <View style={{ marginTop: getHeight(7) }}>
           <Button
@@ -69,21 +83,15 @@ const Deactivateaccountconfirm = ({ navigation, route }) => {
             btnTextStyle={GeneralStyle.btnText}
             onPress={() => accountDeactivate()}
           />
-          <Text
-            style={{
-              color: '#126B87',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontSize: 14,
-              alignSelf: 'center',
-              paddingTop: 20,
-            }}
-          >
-            Cancel
-          </Text>
+          <Button
+            text={'Cancel'}
+            onPress={() => navigation.goBack()}
+            btnStyle={{ ...styles.btn, backgroundColor: 'white' }}
+            btnTextStyle={{ ...styles.btnText, color: '#126B87', fontSize: 14 }}
+          />
         </View>
       </View>
     </View>
   );
 };
-export default Deactivateaccountconfirm;
+export default DeactivateAccountConfirm;

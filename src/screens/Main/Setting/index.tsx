@@ -22,7 +22,8 @@ const Settings = ({ navigation }: Props) => {
 
   const dispatch = useDispatch();
 
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const userData = useSelector((state: RootState) => state.auth.userData);
   const startRatingCounter = () => {
     Alert.alert(
       'Rate us',
@@ -74,31 +75,38 @@ const Settings = ({ navigation }: Props) => {
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <ScrollView style={styles.innerContainer}>
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-          }
-          style={styles.list}
-        >
-          <View>
-            <Text style={styles.heading}>Email</Text>
-            <Text style={{ color: '#70747D' }}>Update email address</Text>
-          </View>
-          <AntDesign name="right" size={20} color={'#70747D'} />
-        </TouchableOpacity>
+        {userData?.tokenResult.signInProvider == 'password' ? (
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
+            }
+            style={styles.list}
+          >
+            <View>
+              <Text style={styles.heading}>Email</Text>
+              <Text style={{ color: '#70747D' }}>Update email address</Text>
+            </View>
+            <AntDesign name="right" size={20} color={'#70747D'} />
+          </TouchableOpacity>
+        ) : null}
 
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('ConfirmLogin', { toScreen: 'PasswordChange', onlyPassword: true })
-          }
-          style={styles.list}
-        >
-          <View>
-            <Text style={styles.heading}>Password</Text>
-            <Text style={{ color: '#70747D' }}>Change Password</Text>
-          </View>
-          <AntDesign name="right" size={20} color={'#70747D'} />
-        </TouchableOpacity>
+        {userData?.tokenResult.signInProvider == 'password' ? (
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('ConfirmLogin', {
+                toScreen: 'PasswordChange',
+                onlyPassword: true,
+              })
+            }
+            style={styles.list}
+          >
+            <View>
+              <Text style={styles.heading}>Password</Text>
+              <Text style={{ color: '#70747D' }}>Change Password</Text>
+            </View>
+            <AntDesign name="right" size={20} color={'#70747D'} />
+          </TouchableOpacity>
+        ) : null}
 
         <TouchableOpacity
           onPress={() => navigation.navigate('NotificationSettings')}
@@ -110,10 +118,10 @@ const Settings = ({ navigation }: Props) => {
           <AntDesign name="right" size={20} color={'#70747D'} />
         </TouchableOpacity>
 
-        {user?.isInfluencer == true ? null : (
+        {userProfile?.isInfluencer == true ? null : (
           <TouchableOpacity
             onPress={() => {
-              user?.isInfluencer == true
+              userProfile?.isInfluencer == true
                 ? Alert.alert('You Already a Influencer')
                 : navigation.navigate('InfluencerStepOne');
             }}
@@ -138,10 +146,11 @@ const Settings = ({ navigation }: Props) => {
           <AntDesign name="right" color={'red'} size={20} />
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => {
+          onPress={async () => {
             LoginManager.logOut();
-            auth().signOut();
             dispatch(logout());
+
+            await auth().signOut();
           }}
           style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
         >
