@@ -134,10 +134,13 @@ const Main = () => {
         SignUp: {
           path: '/signup/:action',
         },
+        Login: {
+          path: '/login/:action',
+        },
       },
     },
   };
-  console.log(userProfile);
+
   return (
     <NavigationContainer linking={linking}>
       <AppProvider>

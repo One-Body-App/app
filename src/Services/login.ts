@@ -13,17 +13,17 @@ export const processLogin = async (
   const token = await userCredentials.user.getIdToken();
   setToken(token);
 
-  dispatch(setAccountType(''));
+  let userProfileResult;
 
   if (userCredentials.additionalUserInfo?.isNewUser) {
     setNewUserCredentials(userCredentials);
   } else {
-    const userProfileResult = await ApiCall({
+    userProfileResult = await ApiCall({
       token: token,
       route: 'auth/my-profile',
       verb: 'get',
     });
-
+    console.log(userProfileResult, 'userProfileResult');
     if (userProfileResult.status == 200) {
       if (userProfileResult.response == '') {
         setNewUserCredentials(userCredentials);

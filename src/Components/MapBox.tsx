@@ -69,15 +69,13 @@ const MapBox = (props: MapBoxProps) => {
   const [suggetions, setSuggetions] = useState<MapSuggestion[]>();
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
 
-  const dispatch = useDispatch();
-
   const getSuggestion = async (val: string) => {
     if (timer) clearTimeout(timer);
     setsearchLocation(val);
     if (val) {
       timer = setTimeout(() => {
         fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}${
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?types=place&access_token=${access_token}${
             props.types ? `&types=${props.types?.join(',')}` : ''
           }${props.countries ? `&country=${props.countries?.join(',')}` : ''}`
         )
@@ -121,9 +119,8 @@ const MapBox = (props: MapBoxProps) => {
     }
   };
   const getcurrentLocation = (longitude: number, latitude: number) => {
-    console.log(longitude, latitude);
     fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=poi&access_token=${access_token}`
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=place&access_token=${access_token}`
     )
       .then((response) => response.json())
       .then((data) => {
@@ -223,7 +220,7 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     paddingLeft: 15,
-    paddingRight: 50,
+
     width: getWidth(80),
   },
   inputView: {

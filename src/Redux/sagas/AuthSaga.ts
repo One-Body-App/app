@@ -57,11 +57,13 @@ function* loginSocialRequest(params) {
       verb: 'post',
       token: params.data.token,
     });
-
+    console.log(res, 'res');
     if (res?.status == '200') {
-      yield put(setLoader(false));
-      if (res?.response?.email) {
+      if (res?.response?.email && params.data.gotoSignup) {
+        yield put(setProfile(res?.response));
         params.data.gotoSignup();
+      } else {
+        yield put(setLoader(false));
       }
       params.data.sendFcm(params.data.data.token);
       yield put(setLoginData({ token: params.data.data.token }));

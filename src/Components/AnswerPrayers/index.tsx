@@ -50,7 +50,6 @@ const AnswerPrayers = ({ color }) => {
         );
         //  Toast.show('Answer submit Sucessfuly')
       } else {
-        console.log('error', res?.response);
         dispatch(setLoader(false));
       }
     } catch (e) {

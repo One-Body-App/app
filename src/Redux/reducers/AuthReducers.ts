@@ -32,7 +32,6 @@ const initialState: AuthReducer = {
 const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyAction) => {
   switch (action.type) {
     case ACTIONS.FETCH_LOGIN_DATA:
-      console.log('done', action.data);
       return {
         ...state,
         userToken: action.data?.token,

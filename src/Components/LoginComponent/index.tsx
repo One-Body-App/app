@@ -33,11 +33,11 @@ import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
 import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID } from '@/src/Services/constants';
 import { useToast } from 'react-native-toast-notifications';
 
-interface Props extends StackScreenProps<RootStackParamList, any> {
+interface Props extends StackScreenProps<RootStackParamList, 'Login'> {
   showConfirmationEmailMessage: boolean;
   emailLoginOnly?: boolean;
-  oauthToken?: string;
-  oauthVerifier?: string;
+  oauth_token?: string;
+  oauth_verifier?: string;
   toScreen?: string;
 
   action?: string;
@@ -48,12 +48,13 @@ interface Props extends StackScreenProps<RootStackParamList, any> {
   currentUserEmail?: string;
   onlyPassword?: boolean;
   toScreenRouteParams?: Record<string, string>;
+  errorFromLogin?: string;
 }
 
 const LoginComponent: FC<Props> = ({
   showConfirmationEmailMessage,
-  oauthToken,
-  oauthVerifier,
+  oauth_token,
+  oauth_verifier,
   navigation,
   oobCode,
   mode,
@@ -93,6 +94,8 @@ const LoginComponent: FC<Props> = ({
 
   const [showSendEmailConfirmation, setShowSendEmailConfirmation] = useState<boolean>(true);
 
+  const accounType = useSelector((state: RootState) => state.general.accountType);
+
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
@@ -106,7 +109,6 @@ const LoginComponent: FC<Props> = ({
       const action = async () => {
         try {
           const result = await auth().checkActionCode(oobCode);
-          console.log(result);
 
           if (result.operation == 'VERIFY_EMAIL') {
             await auth().applyActionCode(oobCode);
@@ -142,29 +144,40 @@ const LoginComponent: FC<Props> = ({
   }, [mode]);
 
   useEffect(() => {
-    if (newUserCredentials) {
-      const data = {
-        email: newUserCredentials?.user.email,
-        name: newUserCredentials?.user.displayName,
-        socialData: newUserCredentials?.additionalUserInfo,
-        userId: newUserCredentials.user.uid,
-        token,
-      };
+    const checkNewUserCredentials = async () => {
+      if (newUserCredentials && accounType) {
+        const data = {
+          email: newUserCredentials?.user.email,
+          name: newUserCredentials?.user.displayName,
+          socialData: newUserCredentials?.additionalUserInfo,
+          userId: newUserCredentials.user.uid,
+          token,
+          role: accounType,
+        };
 
-      dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));
-    }
+        dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));
+      } else if (newUserCredentials) {
+        seterror('User not found, please register to continue');
+        newUserCredentials.user.delete();
+        LoginManager.logOut();
+        await auth().signOut();
+        await auth().currentUser?.reload();
+        dispatch(logout());
+      }
+    };
+    checkNewUserCredentials();
   }, [newUserCredentials]);
 
   useEffect(() => {
-    if (oauthToken && oauthVerifier) {
+    if (oauth_token && oauth_verifier) {
       const getTwitterAuthToken = async () => {
         try {
           const options = {
             method: 'POST',
             url: 'https://api.twitter.com/oauth/access_token',
             params: {
-              oauth_token: oauthToken,
-              oauth_verifier: oauthVerifier,
+              oauth_token: oauth_token,
+              oauth_verifier: oauth_verifier,
             },
             headers: {
               'Content-Type': 'application/json',
@@ -193,7 +206,7 @@ const LoginComponent: FC<Props> = ({
             );
           }
         } catch (error: any) {
-          if (error.nativeErrorMessage.contains('auth/user-not-found')) {
+          if (error.nativeErrorMessage.includes('auth/user-not-found')) {
             seterror('User/password combination not found');
           } else {
             seterror(error.nativeErrorMessage);
@@ -202,7 +215,7 @@ const LoginComponent: FC<Props> = ({
       };
       getTwitterAuthToken();
     }
-  }, [oauthToken]);
+  }, [oauth_token]);
 
   const signInUser = async () => {
     try {
@@ -233,12 +246,6 @@ const LoginComponent: FC<Props> = ({
             navigation.goBack();
           }
         } else {
-          console.log(
-            emailCredential,
-            emailCredential.user,
-            emailCredential.user.emailVerified,
-            'emailCredential.user.emailVerified'
-          );
           if (emailCredential.user.emailVerified) {
             await processLogin(
               emailCredential,
@@ -271,11 +278,13 @@ const LoginComponent: FC<Props> = ({
     }
   };
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
-  const gotoSignup = () => {
+  const gotoSignup = async () => {
     setShowConfirmEmail(false);
     setNewUserCredentials(null);
+    dispatch(setAccountType(''));
 
-    navigation.navigate('AccountType');
+    await auth().currentUser?.reload();
+    await auth().currentUser?.getIdToken(true);
   };
   const sendFcm = (token: string) => {
     requestUserPermission(token, true);
@@ -318,7 +327,9 @@ const LoginComponent: FC<Props> = ({
       );
       dispatch(setLoader(false));
     } catch (error: any) {
-      seterror(error.message);
+      if (!error.message.includes('Code=-5')) {
+        seterror(error.message.replace(`[${error.code}]`, ''));
+      }
     }
   };
 
@@ -354,7 +365,7 @@ const LoginComponent: FC<Props> = ({
       );
       dispatch(setLoader(false));
     } catch (error: any) {
-      seterror(error.message);
+      seterror(error.message.replace(`[${error.code}]`, ''));
     }
   };
 
@@ -375,7 +386,6 @@ const LoginComponent: FC<Props> = ({
                 },
               };
               const result = await axios.request(options);
-              console.log(result);
             } catch (e) {
               console.log(e);
             }

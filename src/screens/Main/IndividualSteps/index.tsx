@@ -101,7 +101,6 @@ const IndividualSteps = ({ navigation }: Props) => {
   const [churchSubTypeModalVisible, setChurchSubTypeModalVisible] = useState(false);
   const [Organization, setOrganization] = useState<string[]>([]);
   const [curentIndex, setCurrentIndex] = useState(0);
-  const [notificationSwitchOn, setNotificationSwitch] = React.useState(false);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [interest, setInterest] = useState<Interest[]>([]);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
@@ -394,7 +393,6 @@ const IndividualSteps = ({ navigation }: Props) => {
                 text={churchSubType == null ? 'Select One' : churchSubType.churchType}
                 btnStyle={styles.btn3}
                 leftIcon={<View />}
-                RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(3)} />}
                 btnTextStyle={styles.btnText3}
                 onPress={() => setChurchSubTypeModalVisible(true)}
               />
@@ -980,6 +978,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                     onPress={() => {
                       // setWhatIDo(item);
                       setChurchType(item);
+                      setSubChurchType(null);
 
                       setChurchTypeModalVisible(false);
                     }}

@@ -16,7 +16,7 @@ import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
-import { setAccountType } from '@/src/Redux/actions/GeneralActions';
+import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import {
   GOOGLE_LOGIN_CLIENT_ID,
@@ -29,9 +29,11 @@ import { RootStackParamList } from '@/src/Navigation/types';
 
 interface Props extends StackScreenProps<RootStackParamList, 'SignUp'> {
   errorFromLogin?: string;
+
+  socialLogin: Function;
 }
 
-const SignupButtons = ({ navigation, errorFromLogin }: Props) => {
+const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
   const [error, seterror] = useState<string>(errorFromLogin ?? '');
 
   const [state, setState] = useState({
@@ -44,6 +46,7 @@ const SignupButtons = ({ navigation, errorFromLogin }: Props) => {
   const [token, setToken] = useState('');
 
   const dispatch = useDispatch();
+  const accounType = useSelector((state: RootState) => state.general.accountType);
 
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
@@ -62,8 +65,13 @@ const SignupButtons = ({ navigation, errorFromLogin }: Props) => {
     });
   }, []);
 
+  useEffect(() => {
+    socialLogin(newUserCredentials);
+  }, [newUserCredentials]);
+
   const onTwitterButtonPress = async () => {
     try {
+      dispatch(setLoader(true));
       seterror('');
       setState({ ...state, emailError: '', passwordError: '' });
 
@@ -79,6 +87,7 @@ const SignupButtons = ({ navigation, errorFromLogin }: Props) => {
 
   const googleSignIn = async () => {
     try {
+      dispatch(setLoader(true));
       seterror('');
       setState({ ...state, emailError: '', passwordError: '' });
 
@@ -87,16 +96,20 @@ const SignupButtons = ({ navigation, errorFromLogin }: Props) => {
 
       // Create a Google credential with the token
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+
       const userCredentials = await auth().signInWithCredential(googleCredential);
 
       processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
     } catch (error: any) {
-      seterror(error.message);
+      if (!error.message.includes('Code=-5')) {
+        seterror(error.message.replace(`[${error.code}]`, ''));
+      }
     }
   };
 
   const facebookLogin = async () => {
     try {
+      dispatch(setLoader(true));
       seterror('');
       setState({ ...state, emailError: '', passwordError: '' });
       const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
@@ -118,7 +131,7 @@ const SignupButtons = ({ navigation, errorFromLogin }: Props) => {
 
       processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
     } catch (error: any) {
-      seterror(error.message);
+      seterror(error.message.replace(`[${error.code}]`, ''));
     }
   };
 

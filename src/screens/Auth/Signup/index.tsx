@@ -11,7 +11,7 @@ import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { setAccountType } from '@/src/Redux/actions/GeneralActions';
+import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faUsers } from '@fortawesome/free-solid-svg-icons/faUsers';
@@ -19,6 +19,8 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import axios from 'axios';
 import { processLogin } from '@/src/Services/login';
+import { loginSocialRequest } from '@/src/Redux/actions/AuthActions';
+import { requestUserPermission } from '@/src/Services/Notification/notificationServices';
 
 type Props = StackScreenProps<RootStackParamList, 'SignUp'>;
 
@@ -26,10 +28,43 @@ const Signup = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
   const selected = useSelector((state: RootState) => state.general.accountType);
   const [error, seterror] = useState<string>();
-
+  const accounType = useSelector((state: RootState) => state.general.accountType);
   const [token, setToken] = useState('');
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
+
+  const gotoSignup = async () => {
+    setNewUserCredentials(null);
+    dispatch(setAccountType(''));
+    dispatch(setLoader(false));
+
+    await auth().currentUser?.reload();
+    await auth().currentUser?.getIdToken(true);
+  };
+
+  const sendFcm = (token: string) => {
+    requestUserPermission(token, true);
+  };
+
+  const socialLogin = (newUserCredentials: FirebaseAuthTypes.UserCredential | null) => {
+    if (newUserCredentials) {
+      const data = {
+        email: newUserCredentials?.user.email,
+        name: newUserCredentials?.user.displayName,
+        socialData: newUserCredentials?.additionalUserInfo,
+        userId: newUserCredentials.user.uid,
+
+        role: accounType,
+        token,
+      };
+
+      dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));
+    }
+  };
+
+  useEffect(() => {
+    socialLogin(newUserCredentials);
+  }, [newUserCredentials]);
 
   useEffect(() => {
     if (route.params?.oauth_token && route.params?.oauth_verifier) {
@@ -60,7 +95,7 @@ const Signup = ({ navigation, route }: Props) => {
 
             const userCredentials = await auth().signInWithCredential(twitterCredential);
 
-            processLogin(
+            await processLogin(
               userCredentials,
               setToken,
               dispatch,
@@ -156,7 +191,12 @@ const Signup = ({ navigation, route }: Props) => {
             />
           </View>
         </View>
-        <SignupButtons navigation={navigation} route={route} errorFromLogin={error} />
+        <SignupButtons
+          socialLogin={socialLogin}
+          navigation={navigation}
+          route={route}
+          errorFromLogin={error}
+        />
 
         <View>
           <Image
