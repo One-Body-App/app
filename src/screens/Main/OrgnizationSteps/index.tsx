@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   PermissionsAndroid,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
@@ -35,7 +36,6 @@ import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
 import GradientButton from '@/components/GradientButton';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { requestUserPermission } from '@/services/Notification/notificationServices';
 import auth from '@react-native-firebase/auth';
 import { LoginManager } from 'react-native-fbsdk-next';
 import Geolocation from 'react-native-geolocation-service';
@@ -43,30 +43,86 @@ import Geolocation from 'react-native-geolocation-service';
 import messaging from '@react-native-firebase/messaging';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { Interest, OrganizationType, User } from '@/utils/types';
+import { useToast } from 'react-native-toast-notifications';
 
 type Props = NativeStackScreenProps<any, 'OrgnizationSteps'>;
 
 const OrgnizationSteps = ({ navigation }: Props) => {
-  const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.userProfile);
   const dispatch = useDispatch();
   const flatListRef = useRef<FlatList>(null);
-  const [Organization, setOrganization] = useState([]);
-  const [visible, setVisible] = useState(false);
-  const [intrest, setIntrest] = useState([]);
+
+  const [Organization, setOrganization] = useState<string[]>([]);
+  const [visible, setVisible] = useState<boolean>(false);
+  const [interest, setInterest] = useState<Interest[]>([]);
+  const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
+
   const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
-  const [curentIndex, setCurrentIndex] = useState(0);
-  const [notificationSwitchOn, setNotificationSwitch] = React.useState(false);
-  const [ORGType, setORGType] = useState<string | null>(null);
-  const [CheckIn, setCheckIn] = useState(false);
+  const [curentIndex, setCurrentIndex] = useState<number>(0);
+
+  const [CheckIn, setCheckIn] = useState<boolean>(false);
+
   const [location_label, setLocation_label] = useState<MapSuggestion | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
+  const [organizationTypes, setOrganizationTypes] = useState<OrganizationType[]>([]);
+  const [organizationType, setOrganizationType] = useState<OrganizationType | null>();
+  const [organizationTypeError, setOrganizationTypeError] = useState<string>('');
+  const toast = useToast();
+  const [showErrors, setShowErrors] = useState<boolean>(false);
+
+  const [state, setState] = useState({
+    companyName: '',
+    orgfullName: '',
+    orgEmail: '',
+    orgPhoneNo: '',
+  });
+
+  const [stateError, setStateError] = useState({
+    companyNameError: '',
+    orgfullNameError: '',
+    orgEmailError: '',
+    orgPhoneNoError: '',
+    location_labelError: '',
+  });
 
   const requestNotificationPermission = async () => {
     await messaging().requestPermission();
   };
+
+  useEffect(() => {
+    if (!organizationType) {
+      setOrganizationTypeError('Organization Type is required.');
+    } else {
+      setOrganizationTypeError('');
+    }
+  }, [organizationType]);
+
+  useEffect(() => {
+    validateFields(state.orgfullName, 'orgfullName', (error) =>
+      setStateError({ ...stateError, orgfullNameError: error })
+    );
+
+    validateFields(state.orgEmail, 'orgEmail', (error) =>
+      setStateError({ ...stateError, orgEmailError: error })
+    );
+
+    validateFields(state.orgPhoneNo, 'orgPhoneNo', (error) =>
+      setStateError({ ...stateError, orgPhoneNoError: error })
+    );
+
+    validateFields(state.companyName, 'companyName', (error) => {
+      setStateError({ ...stateError, companyNameError: error });
+    });
+  }, [state]);
+
+  useEffect(() => {
+    validateFields(location_label?.place_name ?? '', 'location_label', (error) =>
+      setStateError({ ...stateError, location_labelError: error })
+    );
+  }, [location_label]);
 
   const requestlocationPermison = async () => {
     try {
@@ -113,27 +169,39 @@ const OrgnizationSteps = ({ navigation }: Props) => {
     orgPhoneNo: useRef<NativeTextInput>(null),
     location_label: useRef<NativeTextInput>(null),
   };
-  const [state, setState] = useState({
-    companyName: '',
-    companyNameError: '',
-    orgfullName: '',
-    orgfullNameError: '',
-    orgEmail: '',
-    orgEmailError: '',
-    orgPhoneNo: '',
-    orgPhoneNoError: '',
-    location_labelError: '',
-  });
+
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   const go = () => {
     // navigation.navigate('loading');
   };
 
-  const [org, setorg] = useState([]);
+  const [influencer, setInfluencer] = useState<User[]>([]);
+  const [searchInfluencer, setSearchInfluencer] = useState<User[]>([]);
+
   useEffect(() => {
     getIntrest();
     getOrg();
-  }, []);
+    getOrganizationTypes();
+  }, [token]);
+
+  const getOrganizationTypes = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'global/organization-type',
+        verb: 'get',
+        token: token,
+      });
+
+      if (res?.status == 200) {
+        setOrganizationTypes(res?.response);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
   const getOrg = async () => {
     try {
       const res = await ApiCall({
@@ -141,9 +209,11 @@ const OrgnizationSteps = ({ navigation }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res?.response.data, 'res?.data');
+
       if (res?.status == 200) {
-        setorg(res?.response?.data);
+        // setorg(res?.response?.data);
+        setInfluencer(res.response?.data);
+        setSearchInfluencer(res.response?.data);
       } else {
         console.log('error', res);
       }
@@ -151,22 +221,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       console.log('saga error -- ', e.toString());
     }
   };
-  const handelSubscribe = async (id: number) => {
-    try {
-      const res = await ApiCall({
-        route: `individual/subscribe/${id}`,
-        token: token,
-        verb: 'patch',
-      });
-      if (res.status == 200) {
-        console.log('res==200', res);
-      } else {
-        console.log('error', res);
-      }
-    } catch (e) {
-      console.log('saga sign up err --- ', e);
-    }
-  };
+
   const getIntrest = async () => {
     try {
       const res = await ApiCall({
@@ -176,9 +231,10 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       });
 
       if (res?.status == 200) {
-        setIntrest(res?.response);
+        setInterest(res?.response);
+        setSearchInterest(res?.response);
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response);
       }
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
@@ -251,6 +307,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   //     console.warn(err);
   //   }
   // };
+
   const data = [
     {
       id: 1,
@@ -329,28 +386,17 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               onSelect={type => setORGType(type)}
             /> */}
             <Button
-              text={ORGType == null || ORGType == 'Church' ? 'Select One' : ORGType}
+              text={organizationType == null ? 'Select One' : organizationType.organizationType}
               btnStyle={styles.btn3}
               leftIcon={<View />}
-              RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(3)} />}
+              RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
               onPress={() => setVisible(true)}
             />
-            {ORGType == 'Church' ? (
-              <Button
-                text={'Church'}
-                btnStyle={styles.btn2}
-                btnTextStyle={styles.btnText2}
-                onPress={() => setORGType(null)}
-              />
-            ) : (
-              <Button
-                text={'Church'}
-                btnStyle={styles.btn}
-                btnTextStyle={styles.btnText}
-                onPress={() => setORGType('Church')}
-              />
-            )}
+
+            <Text style={{ ...GeneralStyle.InputError, marginLeft: 10 }}>
+              {showErrors ? organizationTypeError : null}
+            </Text>
           </View>
         </LinearGradient>
       ),
@@ -381,18 +427,24 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               mode="outlined"
               activeOutlineColor={'#5B7279'}
               label={'Company Name'}
-              onFocus={() => setState({ ...state, companyNameError: '' })}
-              onBlur={() =>
-                validateFields(state.companyName, 'companyName', (error) =>
-                  setState({ ...state, companyNameError: error })
-                )
-              }
+              onFocus={() => setStateError({ ...stateError, companyNameError: '' })}
+              // onBlur={() =>
+              //   validateFields(state.companyName, 'companyName', (error) =>
+              //     setState({ ...state, companyNameError: error })
+              //   )
+              // }
               onSubmitEditing={() => inputRefs.location_label.current?.focus()}
               onChangeText={(companyName) => changeHandler('companyName', companyName)}
               blurOnSubmit={false}
             />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: 10 }}>
-              {state.companyNameError}
+
+            <Text
+              style={{
+                ...GeneralStyle.InputError,
+              }}
+              numberOfLines={2}
+            >
+              {showErrors ? stateError.companyNameError : null}
             </Text>
 
             <TextInput
@@ -409,8 +461,9 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               placeholderTextColor={'black'}
               onSubmitEditing={() => gonext()}
             />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: 10 }}>
-              {state.location_labelError}
+
+            <Text style={{ ...GeneralStyle.InputError }} numberOfLines={2}>
+              {showErrors ? stateError.location_labelError : null}
             </Text>
 
             {CheckIn == true ? (
@@ -460,18 +513,18 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 mode="outlined"
                 activeOutlineColor={'#5B7279'}
                 label={'Full Name'}
-                onFocus={() => setState({ ...state, orgfullNameError: '' })}
-                onBlur={() =>
-                  validateFields(state.orgfullName, 'orgfullName', (error) =>
-                    setState({ ...state, orgfullNameError: error })
-                  )
-                }
+                onFocus={() => setStateError({ ...stateError, orgfullNameError: '' })}
+                // onBlur={() => {
+                //   validateFields(state.orgfullName, 'orgfullName', (error) =>
+                //     setState({ ...state, orgfullNameError: error })
+                //   );
+                // }}
                 onSubmitEditing={() => inputRefs.orgEmail.current?.focus()}
                 onChangeText={(orgfullName) => changeHandler('orgfullName', orgfullName)}
                 blurOnSubmit={false}
               />
-              <Text style={{ ...GeneralStyle.InputError, marginLeft: 25 }}>
-                {state.orgfullNameError}
+              <Text style={{ ...GeneralStyle.InputError }} numberOfLines={2}>
+                {showErrors ? stateError.orgfullNameError : null}
               </Text>
 
               <TextInput
@@ -483,18 +536,18 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 returnKeyType={'next'}
                 activeOutlineColor={'#5B7279'}
                 label={'Email'}
-                onFocus={() => setState({ ...state, orgEmailError: '' })}
-                onBlur={() =>
-                  validateFields(state.orgEmail, 'orgEmail', (error) =>
-                    setState({ ...state, orgEmailError: error })
-                  )
-                }
+                onFocus={() => setStateError({ ...stateError, orgEmailError: '' })}
+                // onBlur={() =>
+                //   validateFields(state.orgEmail, 'orgEmail', (error) =>
+                //     setState({ ...state, orgEmailError: error })
+                //   )
+                // }
                 onSubmitEditing={() => inputRefs.orgPhoneNo.current?.focus()}
                 onChangeText={(orgEmail) => changeHandler('orgEmail', orgEmail.trim())}
                 blurOnSubmit={false}
               />
-              <Text style={{ ...GeneralStyle.InputError, marginLeft: 25 }}>
-                {state.orgEmailError}
+              <Text style={{ ...GeneralStyle.InputError }} numberOfLines={2}>
+                {showErrors ? stateError.orgEmailError : null}
               </Text>
 
               <TextInput
@@ -507,18 +560,18 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 keyboardType="number-pad"
                 activeOutlineColor={'#5B7279'}
                 label={'Phone number'}
-                onFocus={() => setState({ ...state, orgPhoneNoError: '' })}
-                onBlur={() =>
-                  validateFields(state.orgPhoneNo, 'orgPhoneNo', (error) =>
-                    setState({ ...state, orgPhoneNoError: error })
-                  )
-                }
+                onFocus={() => setStateError({ ...stateError, orgPhoneNoError: '' })}
+                // onBlur={() =>
+                //   validateFields(state.orgPhoneNo, 'orgPhoneNo', (error) =>
+                //     setState({ ...state, orgPhoneNoError: error })
+                //   )
+                // }
                 onSubmitEditing={() => gonext()}
                 onChangeText={(orgPhoneNo) => changeHandler('orgPhoneNo', orgPhoneNo)}
                 blurOnSubmit={false}
               />
-              <Text style={{ ...GeneralStyle.InputError, marginLeft: 25 }}>
-                {state.orgPhoneNoError}
+              <Text style={{ ...GeneralStyle.InputError }} numberOfLines={2}>
+                {showErrors ? stateError.orgPhoneNoError : null}
               </Text>
             </View>
             <Text
@@ -581,10 +634,20 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             outlineColor="#9EA1A2"
             label={'Search by Interests'}
             placeholderTextColor={'black'}
+            onChangeText={(text) => {
+              const newSearchInterest = [];
+              for (let i = 0; i < interest.length; i++) {
+                if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                  newSearchInterest.push(interest[i]);
+                }
+                setSearchInterest(newSearchInterest);
+              }
+            }}
           />
 
           <View style={{ ...styles.flatlistview, marginTop: 25 }}>
-            {intrest.map((item) => (
+            {searchInterest.length < 1 ? <Text>No Search Results</Text> : null}
+            {searchInterest.map((item, index) => (
               <TouchableOpacity
                 onPress={() =>
                   selectedInterest.includes(item?._id)
@@ -636,13 +699,23 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               width: getWidth(80),
             }}
           >
-            Select a minimum of 3 topics{' '}
-            <Text style={{ fontWeight: '400' }}>to personalize your News/Blog stream.</Text>
+            Select Influencers & Organizations{' '}
+            <Text style={{ fontWeight: '400' }}>to personalize your Social stream.</Text>
           </Text>
 
           <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
+            clearButtonMode="always"
+            onChangeText={(text) => {
+              const newSearchInfluencer = [];
+              for (let i = 0; i < influencer.length; i++) {
+                if (influencer[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                  newSearchInfluencer.push(influencer[i]);
+                }
+                setSearchInfluencer(newSearchInfluencer);
+              }
+            }}
             left={
               <TextInput.Icon
                 name={() => (
@@ -658,35 +731,32 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             theme={{ roundness: 40 }}
             activeOutlineColor={'#5B7279'}
             outlineColor="#9EA1A2"
-            label={'Search by Name & Organization'}
+            label={'Search by Name'}
             placeholderTextColor={'black'}
           />
 
           <View style={{ ...styles.largeview, marginTop: 25 }}>
-            <FlatList
-              data={org}
-              style={{ marginBottom: getHeight(7) }}
-              ListFooterComponent={<View style={{ height: getHeight(2) }} />}
-              keyExtractor={(item, index) => index.toString()}
-              showsVerticalScrollIndicator={false}
-              numColumns={3}
-              renderItem={({ item, index }) => (
+            <ScrollView>
+              {searchInfluencer.length < 1 ? <Text>No Search Results</Text> : null}
+              {searchInfluencer.map((item, index) => (
                 <TouchableOpacity
                   activeOpacity={0.6}
-                  onPress={() =>
-                    Organization.includes(index)
-                      ? setOrganization(
-                          Organization.filter(function (item) {
-                            return item !== index;
-                          })
-                        )
-                      : (setOrganization([...Organization, index]), handelSubscribe(item?._id))
-                  }
+                  onPress={() => {
+                    if (Organization.includes(item._id)) {
+                      setOrganization(
+                        Organization.filter((organizationId) => {
+                          return organizationId !== item._id;
+                        })
+                      );
+                    } else {
+                      setOrganization([...Organization, item._id]);
+                    }
+                  }}
                   style={styles.box}
                 >
                   <Image
                     style={
-                      Organization.includes(index)
+                      Organization.includes(item._id)
                         ? {
                             ...styles.img,
                             borderWidth: 2.5,
@@ -697,115 +767,32 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                     source={{ uri: item?.profileImage }}
                   />
                   <View>
-                    <Text numberOfLines={2} style={{ ...styles.textname, textAlign: 'center' }}>
-                      {item?.name}
-                    </Text>
+                    <Text style={{ ...styles.textname, textAlign: 'center' }}>{item?.name}</Text>
                     <Text
                       numberOfLines={1}
                       style={{
-                        color: '#032f3c',
+                        color: '#757575',
                         alignSelf: 'center',
-                        marginTop: 5,
-                        fontSize: 12,
                       }}
                     >
                       {item?.whatIDo?.whatIDo}
                     </Text>
                   </View>
                 </TouchableOpacity>
-              )}
-            />
+              ))}
+            </ScrollView>
           </View>
-        </LinearGradient>
-      ),
-    },
-    {
-      id: 7,
-      component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-          <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
-
-          <Text style={{ ...styles.heading, margin: 5 }}>Allow notifications</Text>
-          <Text
-            style={{
-              ...styles.text,
-              width: getWidth(80),
-              fontSize: getFontSize(2.1),
-              color: '#4F6D77',
-            }}
-          >
-            Reminders help you break your tenced routine and get your body back where it really
-            needs to be. Amen!
-          </Text>
-          <View style={styles.box2}>
-            <Text
-              style={{
-                ...styles.heading2,
-                fontSize: getFontSize(2.5),
-                fontWeight: '400',
-                left: 5,
-              }}
-            >
-              Notifications
-            </Text>
-            <Switch
-              value={notificationSwitchOn}
-              color="#126B87"
-              onValueChange={() => {
-                setNotificationSwitch(!notificationSwitchOn);
-                requestUserPermission(token, !notificationSwitchOn);
-              }}
-            />
-          </View>
-          <Divider style={{ height: 1, width: '100%' }} />
-        </LinearGradient>
-      ),
-    },
-    {
-      id: 8,
-      component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-          <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
-
-          <Text style={{ ...styles.heading, margin: 5 }}>Use location</Text>
-          <Text
-            style={{
-              ...styles.text,
-              width: getWidth(80),
-              fontSize: getFontSize(2.1),
-              color: '#4F6D77',
-            }}
-          >
-            Allow OneBody to use your location for the best possible experience while your Body
-            finds peace. Amen!
-          </Text>
         </LinearGradient>
       ),
     },
   ];
   const showToast = (sms: string) => {
-    Toast.show({
-      type: 'error',
-      text1: 'Error',
-      // position: 'bottom',
-      // bottomOffset: getHeight(10),
-      topOffset: getHeight(1),
-      text2: sms,
+    toast.show(sms, {
+      type: 'danger',
     });
   };
   const next = () => {
+    setShowErrors(false);
     flatListRef.current?.scrollToIndex({ index: curentIndex + 1 });
     setCurrentIndex(curentIndex + 1);
   };
@@ -817,37 +804,53 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
         break;
       case 1:
-        if (ORGType != null) {
+        if (organizationType != null) {
           next();
         } else {
-          showToast('Organization Type required!');
+          setShowErrors(true);
         }
         break;
       case 2:
-        const { companyName } = state;
-        const companyNameError = await validator('companyName', companyName);
-        const location_labelError = await validator('location_label', location_label);
-        if (!companyNameError && !location_labelError) {
+        const companyNameError = await validator('companyName', state.orgfullName);
+
+        if (
+          !stateError.companyNameError &&
+          !stateError.location_labelError &&
+          state.companyName &&
+          location_label
+        ) {
           next();
         } else {
-          setState({ ...state, companyNameError, location_labelError });
+          setStateError({
+            ...stateError,
+            companyNameError,
+          });
+          setShowErrors(true);
         }
 
         break;
       case 3:
-        const { orgfullName, orgEmail, orgPhoneNo } = state;
-        const orgfullNameError = await validator('orgfullName', orgfullName);
-        const orgEmailError = await validator('orgEmail', orgEmail);
-        const orgPhoneNoError = await validator('orgPhoneNo', orgPhoneNo);
-        if (!orgfullNameError && !orgEmailError && !orgPhoneNoError) {
+        const orgfullNameError = await validator('orgfullName', state.orgfullName);
+        const orgPhoneNoError = await validator('orgPhoneNo', state.orgfullName);
+        const orgEmailError = await validator('orgEmail', state.orgfullName);
+
+        if (
+          !stateError.orgfullNameError &&
+          !stateError.orgEmailError &&
+          !stateError.orgPhoneNoError &&
+          state.orgfullName &&
+          state.orgEmail &&
+          state.orgPhoneNo
+        ) {
           next();
         } else {
-          setState({
-            ...state,
+          setStateError({
+            ...stateError,
             orgfullNameError,
-            orgEmailError,
             orgPhoneNoError,
+            orgEmailError,
           });
+          setShowErrors(true);
         }
 
         break;
@@ -887,7 +890,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
         scrollEnabled={false}
         ref={flatListRef}
         keyExtractor={(item, index) => {
-          item.id;
+          return item.id;
         }}
         pagingEnabled
         renderItem={({ item }) => <View style={styles.componentview}>{item?.component}</View>}
@@ -931,7 +934,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 onPress={() => {
                   const { orgfullName, orgEmail, orgPhoneNo, companyName } = state;
                   const data = {
-                    typeOfOrganization: ORGType,
+                    typeOfOrganization: organizationType,
                     companyEmail: orgEmail,
                     companyName: companyName,
                     fullName: orgfullName,
@@ -970,23 +973,22 @@ const OrgnizationSteps = ({ navigation }: Props) => {
         isVisible={visible}
         onBackdropPress={() => setVisible(false)}
         onSwipeComplete={() => setVisible(false)}
-        swipeDirection={['down']}
         style={styles.bottomView}
+        propagateSwipe={true}
+        swipeDirection="down"
       >
         <View style={styles.content2}>
           <View style={styles.headLine} />
-          <View style={{ flex: 1 }}>
-            <FlatList
-              data={countries}
-              keyExtractor={(item, index) => index.toString()}
-              ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
-              ItemSeparatorComponent={() => <Divider />}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item, index }) => (
+
+          <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+            {organizationTypes.map((item) => {
+              return (
                 <TouchableOpacity
+                  key={item._id}
                   onPress={() => {
                     // setWhatIDo(item);
-                    setORGType(item);
+                    setOrganizationType(item);
+
                     setVisible(false);
                   }}
                   style={styles.listItem2}
@@ -999,12 +1001,12 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                     }}
                     numberOfLines={1}
                   >
-                    {item}
+                    {item.organizationType}
                   </Text>
                 </TouchableOpacity>
-              )}
-            />
-          </View>
+              );
+            })}
+          </ScrollView>
         </View>
       </Modal>
     </View>

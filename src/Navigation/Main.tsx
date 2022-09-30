@@ -1,6 +1,11 @@
-import { LinkingOptions, NavigationContainer } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  LinkingOptions,
+  NavigationContainer,
+} from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, useColorScheme } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -141,8 +146,10 @@ const Main = () => {
     },
   };
 
+  const scheme = useColorScheme();
+  console.log(scheme === 'dark' ? DarkTheme : DefaultTheme);
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer linking={linking} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AppProvider>
         <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="SignUp">
           {user &&

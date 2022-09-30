@@ -7,6 +7,11 @@ export const styles = StyleSheet.create({
     backgroundColor: ' #E5E5E5;',
     alignItems: 'center',
   },
+  largeview: {
+    flex: 1,
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
   lists: {
     height: getHeight(10),
     borderBottomWidth: 0.3,
@@ -71,7 +76,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
   },
-  btnText3: { color: '#4F6D77', fontSize: getFontSize(2.5) },
+  btnText3: { color: '#4F6D77', fontSize: getFontSize(2.1) },
   logo: {
     margin: getHeight(5),
     alignSelf: 'center',

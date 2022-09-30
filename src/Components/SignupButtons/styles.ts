@@ -22,8 +22,6 @@ export const styles = StyleSheet.create({
     height: 50,
     borderRadius: 10,
     marginVertical: 10,
-    borderColor: '#F6F6F6',
-    backgroundColor: '#F6F6F6',
   },
   btnIcon: {
     width: 24,

@@ -209,10 +209,11 @@ export const styles = StyleSheet.create<Styles>({
     justifyContent: 'space-around',
     alignItems: 'center',
     borderRadius: 10,
+    textAlign: 'center',
   },
   btnText: { color: '#757575', fontSize: getFontSize(2.5) },
   btnText2: { color: 'white', fontSize: getFontSize(2.5) },
-  btnText3: { color: '#4F6D77', fontSize: getFontSize(2.5) },
+  btnText3: { color: '#4F6D77', fontSize: getFontSize(2.1), textAlign: 'center' },
   listItem: {
     paddingHorizontal: 10,
     paddingVertical: 10,

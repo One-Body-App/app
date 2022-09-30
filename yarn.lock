@@ -1356,13 +1356,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@invertase/react-native-apple-authentication@npm:^2.2.0":
-  version: 2.2.2
-  resolution: "@invertase/react-native-apple-authentication@npm:2.2.2"
-  checksum: d51c121eba66721e914c16bfa352929b03bf8f6a38aae4b06157ee3399d0ecdc42bd53d5e655ae39b460ec7c759f87753d2c917bccedb3118e2c1bd75d6f874c
-  languageName: node
-  linkType: hard
-
 "@istanbuljs/load-nyc-config@npm:^1.0.0":
   version: 1.1.0
   resolution: "@istanbuljs/load-nyc-config@npm:1.1.0"
@@ -2001,18 +1994,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/analytics@npm:^15.4.0":
-  version: 15.4.0
-  resolution: "@react-native-firebase/analytics@npm:15.4.0"
+"@react-native-firebase/analytics@npm:^15.6.0":
+  version: 15.6.0
+  resolution: "@react-native-firebase/analytics@npm:15.6.0"
   peerDependencies:
-    "@react-native-firebase/app": 15.4.0
-  checksum: 70223e80cca7941164834f3e43b9e266d943d19367825d23f3b9182d843662f33c66e69f7909e4a11e77ef5d2693036e6e2e48f1e572dcad19e89b7df385535e
+    "@react-native-firebase/app": 15.6.0
+  checksum: b53eac869426f5e057bf6b6b6b73772929697de46b7bf39f0bf9a387080daa1f1e8202f14854060896615f463c13aea13fe0dbb663ae89030b5ef2ab361b37aa
   languageName: node
   linkType: hard
 
-"@react-native-firebase/app@npm:^15.4.0":
-  version: 15.4.0
-  resolution: "@react-native-firebase/app@npm:15.4.0"
+"@react-native-firebase/app@npm:^15.6.0":
+  version: 15.6.0
+  resolution: "@react-native-firebase/app@npm:15.6.0"
   dependencies:
     "@expo/config-plugins": ^5.0.1
     opencollective-postinstall: ^2.0.1
@@ -2020,34 +2013,34 @@ __metadata:
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: b85bea7d586fac17e16270beacadb59d5b2b38b06e7cfa9aab1ff4231f3c0f7662ae75e5db6203ad902adbdfaf2b34eceeff6e20edb34021c3e38e4fa596c6ed
+  checksum: cc512ae80c90b49014f3d40b6ee8d8d61feee2e035b5da9b393927142d99543f97ab37985f53ad463b68f22de240766859fc9c03d2b2dfe9163678d3a4da3a06
   languageName: node
   linkType: hard
 
-"@react-native-firebase/auth@npm:^15.4.0":
-  version: 15.4.0
-  resolution: "@react-native-firebase/auth@npm:15.4.0"
+"@react-native-firebase/auth@npm:^15.6.0":
+  version: 15.6.0
+  resolution: "@react-native-firebase/auth@npm:15.6.0"
   peerDependencies:
-    "@react-native-firebase/app": 15.4.0
-  checksum: fd84e43aca0068e28b52dd4506187d50a68983d2b97dcf5209face0e0cf5623f5f2016b90d56d213fe8d006ae930527a069a1e684787f8ed73750ef3ebab7deb
+    "@react-native-firebase/app": 15.6.0
+  checksum: 7f012cfbe00ff45996a0ef071c4475432a713cc6de1192eb821ecff3912a1962e50d800a1a349e2e796cddae274ee8a7754f00c53fe75b1295a7fc0b8f6b0d5e
   languageName: node
   linkType: hard
 
-"@react-native-firebase/dynamic-links@npm:^15.4.0":
-  version: 15.4.0
-  resolution: "@react-native-firebase/dynamic-links@npm:15.4.0"
+"@react-native-firebase/dynamic-links@npm:^15.6.0":
+  version: 15.6.0
+  resolution: "@react-native-firebase/dynamic-links@npm:15.6.0"
   peerDependencies:
-    "@react-native-firebase/app": 15.4.0
-  checksum: 10f55c43c660653ecf4233167d3a41c9bb84582dbef1ddd6c8b9c7c80f3b405368f57f7e4a004f1e69815e066e6f45264859c2a80c8c283be9c97a0e1cb65950
+    "@react-native-firebase/app": 15.6.0
+  checksum: f69902a37885fe51d89cb62308e084a16a4f520caf18cffb29d5226336ca8214ac6708cf55f574a95f16b14b40dd1ee035769fb41c434be9a1cff3f8d8d0377e
   languageName: node
   linkType: hard
 
-"@react-native-firebase/messaging@npm:^15.4.0":
-  version: 15.4.0
-  resolution: "@react-native-firebase/messaging@npm:15.4.0"
+"@react-native-firebase/messaging@npm:^15.6.0":
+  version: 15.6.0
+  resolution: "@react-native-firebase/messaging@npm:15.6.0"
   peerDependencies:
-    "@react-native-firebase/app": 15.4.0
-  checksum: ee4677e04c30034dc47f22565067a6e1f5f055cf6f673ac47f59e8542533afa10ff6c7940983e617d0a15d000c36d6984864a01a11e17f585a5d35daa9cc13e0
+    "@react-native-firebase/app": 15.6.0
+  checksum: 24c47218a1dbbc5819a2064e73e067a18630d58bceaadfb0862ef7ad45c78705d4baf7aacb6b9e1c13a4ed1a85eb5a6a6941e19587b584d6d7936d9ccff7101b
   languageName: node
   linkType: hard
 
@@ -9071,16 +9064,15 @@ __metadata:
     "@fortawesome/free-regular-svg-icons": ^6.2.0
     "@fortawesome/free-solid-svg-icons": ^6.2.0
     "@fortawesome/react-native-fontawesome": ^0.3.0
-    "@invertase/react-native-apple-authentication": ^2.2.0
     "@react-native-async-storage/async-storage": ^1.15.15
     "@react-native-community/checkbox": ^0.5.12
     "@react-native-community/clipboard": ^1.5.1
     "@react-native-community/geolocation": ^2.0.2
-    "@react-native-firebase/analytics": ^15.4.0
-    "@react-native-firebase/app": ^15.4.0
-    "@react-native-firebase/auth": ^15.4.0
-    "@react-native-firebase/dynamic-links": ^15.4.0
-    "@react-native-firebase/messaging": ^15.4.0
+    "@react-native-firebase/analytics": ^15.6.0
+    "@react-native-firebase/app": ^15.6.0
+    "@react-native-firebase/auth": ^15.6.0
+    "@react-native-firebase/dynamic-links": ^15.6.0
+    "@react-native-firebase/messaging": ^15.6.0
     "@react-native-google-signin/google-signin": ^8.0.0
     "@react-native-picker/picker": ^2.3.1
     "@react-navigation/bottom-tabs": ^6.2.0

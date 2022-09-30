@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Text, Image } from 'react-native';
+import { View, ScrollView, Text, Image, useColorScheme } from 'react-native';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import GradientHeader from '@/components/GradientHeader';
 import SignupButtons from '@/components/SignupButtons';
@@ -21,6 +21,7 @@ import axios from 'axios';
 import { processLogin } from '@/src/Services/login';
 import { loginSocialRequest } from '@/src/Redux/actions/AuthActions';
 import { requestUserPermission } from '@/src/Services/Notification/notificationServices';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<RootStackParamList, 'SignUp'>;
 
@@ -110,6 +111,27 @@ const Signup = ({ navigation, route }: Props) => {
       getTwitterAuthToken();
     }
   }, [route.params]);
+  const { colors } = useTheme();
+  const scheme = useColorScheme();
+
+  const getButtonTextStyle = (selected: boolean) => {
+    if (selected) {
+      return {
+        ...styles.btnText,
+        color: scheme == 'dark' ? '#81979E' : '#032F3C',
+      };
+    }
+
+    return { ...styles.btnText, color: scheme == 'dark' ? '#032F3C' : '#B3C1C5' };
+  };
+
+  const getButtonContainer = (selected: boolean) => {
+    if (selected) {
+      return { ...styles.btnSelected, borderColor: colors.border };
+    } else {
+      return { ...styles.btn, borderColor: colors.border };
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -120,10 +142,7 @@ const Signup = ({ navigation, route }: Props) => {
         translucent={true}
       />
       <GradientHeader title="Sign up" />
-      <ScrollView
-        contentContainerStyle={styles.containerScroll}
-        style={{ backgroundColor: '#FFF' }}
-      >
+      <ScrollView contentContainerStyle={styles.containerScroll}>
         <View style={{ paddingHorizontal: 25, flex: 1 }}>
           <Text
             style={{
@@ -151,20 +170,25 @@ const Signup = ({ navigation, route }: Props) => {
           >
             <Button
               text={'Individual'}
-              btnStyle={selected == 'individual' ? styles.btnSelected : styles.btn}
+              btnStyle={getButtonContainer(selected == 'individual')}
               RightIcon={null}
               leftIcon={
                 <FontAwesomeIcon
                   icon={faUser}
                   style={{ margin: 5 }}
                   size={getFontSize(1.8)}
-                  color={selected == 'individual' ? '#032F3C' : '#B3C1C5'}
+                  color={
+                    selected == 'individual'
+                      ? scheme == 'dark'
+                        ? '#81979E'
+                        : '#032F3C'
+                      : scheme == 'dark'
+                      ? '#032F3C'
+                      : '#B3C1C5'
+                  }
                 />
               }
-              btnTextStyle={{
-                ...styles.btnText,
-                color: selected == 'individual' ? '#032F3C' : '#81979E',
-              }}
+              btnTextStyle={getButtonTextStyle(selected == 'individual')}
               onPress={() => {
                 dispatch(setAccountType('individual'));
               }}
@@ -172,19 +196,24 @@ const Signup = ({ navigation, route }: Props) => {
             <Button
               text={'Organization'}
               RightIcon={null}
-              btnStyle={selected == 'organization' ? styles.btnSelected : styles.btn}
+              btnStyle={getButtonContainer(selected == 'organization')}
               leftIcon={
                 <FontAwesomeIcon
                   icon={faUsers}
                   style={{ margin: 5 }}
                   size={getFontSize(3)}
-                  color={selected == 'organization' ? '#032F3C' : '#B3C1C5'}
+                  color={
+                    selected == 'organization'
+                      ? scheme == 'dark'
+                        ? '#81979E'
+                        : '#032F3C'
+                      : scheme == 'dark'
+                      ? '#032F3C'
+                      : '#B3C1C5'
+                  }
                 />
               }
-              btnTextStyle={{
-                ...styles.btnText,
-                color: selected == 'organization' ? '#032F3C' : '#81979E',
-              }}
+              btnTextStyle={getButtonTextStyle(selected == 'organization')}
               onPress={() => {
                 dispatch(setAccountType('organization'));
               }}

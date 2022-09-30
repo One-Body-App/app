@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, Linking } from 'react-native';
+import { Text, View, TouchableOpacity, Linking, useColorScheme } from 'react-native';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -26,6 +26,7 @@ import {
 } from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
+import { useTheme } from '@react-navigation/native';
 
 interface Props extends StackScreenProps<RootStackParamList, 'SignUp'> {
   errorFromLogin?: string;
@@ -137,33 +138,71 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
 
   const disabled = !!!AccountType;
 
+  const scheme = useColorScheme();
+  const { colors } = useTheme();
+
+  const getButtonTextStyle = () => {
+    return { ...styles.btnTitle, color: scheme == 'dark' ? '#81979E' : '#032F3C' };
+  };
+
+  const getButtonContainer = () => {
+    return { ...styles.buttonContainer, borderColor: colors.border };
+  };
+
+  const getDisabledButtonTextStyle = () => {
+    //  selected == 'organization'
+    //    ? scheme == 'dark'
+    //      ? '#81979E'
+    //      : '#032F3C'
+    //    : scheme == 'dark'
+    //    ? '#032F3C'
+    //      : '#B3C1C5';
+
+    return {
+      ...styles.disabledBtnTextStyle,
+      color: scheme == 'dark' ? '#032F3C' : '#B3C1C5',
+      borderColor: colors.border,
+    };
+  };
+
+  const getDisabledButtonStyle = () => {
+    return { ...styles.disabledButtonContainer, borderColor: colors.border };
+  };
+
   return (
-    <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
+    <LinearGradient
+      colors={
+        scheme == 'dark'
+          ? [colors.background, colors.background, '#434748']
+          : [colors.background, colors.background, '#E0EEF3']
+      }
+      style={styles.container}
+    >
       <View style={styles.buttonList}>
         <Button
           disabled={disabled}
           text={'Sign up with Google'}
           leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
-          btnStyle={styles.buttonContainer}
-          btnTextStyle={styles.btnTitle}
+          btnStyle={getButtonContainer()}
+          btnTextStyle={getButtonTextStyle()}
           onPress={() => {
             AccountType != null ? googleSignIn() : null;
           }}
-          disabledBtnStyle={styles.disabledButtonContainer}
-          disabledBtnTextStyle={styles.disabledBtnTextStyle}
+          disabledBtnStyle={getDisabledButtonStyle()}
+          disabledBtnTextStyle={getDisabledButtonTextStyle()}
           wrapperBtnStyle={{ width: 225 }}
         />
         <Button
           disabled={disabled}
           text={'Sign up with Facebook'}
           leftIcon={<Facebook style={{ marginLeft: 5, marginRight: 10 }} fill="#1877f2" />}
-          btnStyle={styles.buttonContainer}
-          btnTextStyle={styles.btnTitle}
+          btnStyle={getButtonContainer()}
+          btnTextStyle={getButtonTextStyle()}
           onPress={() => {
             AccountType != null ? facebookLogin() : null;
           }}
-          disabledBtnStyle={styles.disabledButtonContainer}
-          disabledBtnTextStyle={styles.disabledBtnTextStyle}
+          disabledBtnStyle={getDisabledButtonStyle()}
+          disabledBtnTextStyle={getDisabledButtonTextStyle()}
           wrapperBtnStyle={{
             width: 225,
 
@@ -175,13 +214,13 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           disabled={disabled}
           text={'Sign up with Twitter'}
           leftIcon={<Twitter style={{ marginRight: 7 }} height={getHeight(5)} fill="#00acee" />}
-          btnStyle={styles.buttonContainer}
-          btnTextStyle={styles.btnTitle}
+          btnStyle={getButtonContainer()}
+          btnTextStyle={getButtonTextStyle()}
           onPress={() => {
             AccountType != null ? onTwitterButtonPress() : null;
           }}
-          disabledBtnStyle={styles.disabledButtonContainer}
-          disabledBtnTextStyle={styles.disabledBtnTextStyle}
+          disabledBtnStyle={getDisabledButtonStyle()}
+          disabledBtnTextStyle={getDisabledButtonTextStyle()}
           wrapperBtnStyle={{ width: 225 }}
         />
 
@@ -198,10 +237,10 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           onPress={() => {
             AccountType != null ? navigation.navigate('SignupForm') : null;
           }}
-          btnStyle={styles.buttonContainer}
-          disabledBtnStyle={styles.disabledButtonContainer}
-          btnTextStyle={styles.btnTitle}
-          disabledBtnTextStyle={styles.disabledBtnTextStyle}
+          btnStyle={getButtonContainer()}
+          disabledBtnStyle={getDisabledButtonStyle()}
+          btnTextStyle={getButtonTextStyle()}
+          disabledBtnTextStyle={getDisabledButtonTextStyle()}
           wrapperBtnStyle={{ width: 225 }}
         />
         {error != null ? (

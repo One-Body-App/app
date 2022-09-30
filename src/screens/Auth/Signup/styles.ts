@@ -5,12 +5,9 @@ import { appColor } from '../../../constants';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ' #E5E5E5;',
   },
 
-  containerScroll: {
-    backgroundColor: ' #FFF',
-  },
+  containerScroll: {},
 
   tabBar: {
     flexDirection: 'row',
@@ -101,7 +98,6 @@ export const styles = StyleSheet.create({
     color: '#032F3C',
   },
   btn: {
-    backgroundColor: '#FFF',
     borderColor: '#B3C1C5',
     borderWidth: 1,
     width: getWidth(42),
@@ -113,11 +109,10 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
   },
   btnSelected: {
-    backgroundColor: '#F6F6F6',
     width: getWidth(42),
     height: getHeight(6),
     borderWidth: 1,
-    borderColor: '#126B87',
+
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,

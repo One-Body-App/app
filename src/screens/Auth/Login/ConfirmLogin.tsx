@@ -39,7 +39,7 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
         {...route.params}
       />
 
-      {!route.params.mode ? <GoBackIcon color={'white'} /> : null}
+      <GoBackIcon color={'white'} />
     </View>
   );
 };

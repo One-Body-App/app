@@ -35,7 +35,6 @@ import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
 import GradientButton from '@/components/GradientButton';
-import { requestUserPermission } from '@/services/Notification/notificationServices';
 import auth from '@react-native-firebase/auth';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -44,44 +43,7 @@ import { LoginManager } from 'react-native-fbsdk-next';
 import messaging from '@react-native-firebase/messaging';
 import { useToast } from 'react-native-toast-notifications';
 import { RootStackParamList } from '@/src/Navigation/types';
-
-type ChurchType = {
-  churchType: string;
-  children: ChurchType[];
-  _id: string;
-};
-type Interest = {
-  name: string;
-  deleteFlag: boolean;
-  _id: string;
-};
-
-type User = {
-  OTP: { status: boolean };
-  badges: string[];
-  createdAt: string;
-  deactivated: { isDeactivated: boolean };
-  email: string;
-  interests: string[];
-  isInfluencer: boolean;
-  isProfileCompleted: boolean;
-  name: string;
-  profileImage: string;
-  role: string;
-  updatedAt: string;
-  userName: string;
-  website: string;
-  whatIDo: whatIDo;
-  _id: string;
-};
-
-type whatIDo = {
-  _id: string;
-  deleteFlag: boolean;
-  whatIDo: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import { ChurchType, Interest, User, whatIDo } from '@/utils/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
 
@@ -383,7 +345,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               }
               btnStyle={styles.btn3}
               leftIcon={<View />}
-              RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(3)} />}
+              RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
               onPress={() => setChurchTypeModalVisible(true)}
             />
@@ -744,16 +706,9 @@ const IndividualSteps = ({ navigation }: Props) => {
           />
 
           <View style={{ ...styles.largeview, marginTop: 25 }}>
-            <FlatList
-              data={searchInfluencer}
-              style={{ marginBottom: getHeight(7) }}
-              ListFooterComponent={<View style={{ height: getHeight(2) }} />}
-              ItemSeparatorComponent={() => <View style={{ height: getHeight(1) }} />}
-              keyExtractor={(item, index) => item._id}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={<Text>No Search Results</Text>}
-              numColumns={3}
-              renderItem={({ item, index }) => (
+            <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
+              {searchInfluencer.length < 1 ? <Text>No Search Results</Text> : null}
+              {searchInfluencer.map((item, index) => (
                 <TouchableOpacity
                   activeOpacity={0.6}
                   onPress={() => {
@@ -794,8 +749,8 @@ const IndividualSteps = ({ navigation }: Props) => {
                     </Text>
                   </View>
                 </TouchableOpacity>
-              )}
-            />
+              ))}
+            </ScrollView>
           </View>
         </LinearGradient>
       ),
@@ -960,45 +915,38 @@ const IndividualSteps = ({ navigation }: Props) => {
         onSwipeComplete={() => setChurchTypeModalVisible(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
+        propagateSwipe={true}
       >
         <View style={styles.content2}>
           <View style={styles.headLine} />
-          <View style={{ flex: 1 }}>
-            <FlatList
-              data={churchTypes}
-              keyExtractor={(item) => {
-                return item._id;
-              }}
-              ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
-              ItemSeparatorComponent={() => <Divider />}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item, index }) => {
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      // setWhatIDo(item);
-                      setChurchType(item);
-                      setSubChurchType(null);
 
-                      setChurchTypeModalVisible(false);
+          <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+            {churchTypes.map((item) => {
+              return (
+                <TouchableOpacity
+                  onPress={() => {
+                    // setWhatIDo(item);
+                    setChurchType(item);
+                    setSubChurchType(null);
+
+                    setChurchTypeModalVisible(false);
+                  }}
+                  style={styles.listItem2}
+                >
+                  <Text
+                    style={{
+                      color: '#81979E',
+                      fontSize: getFontSize(2.2),
+                      fontFamily: 'Rubik-Regular',
                     }}
-                    style={styles.listItem2}
+                    numberOfLines={1}
                   >
-                    <Text
-                      style={{
-                        color: '#81979E',
-                        fontSize: getFontSize(2.2),
-                        fontFamily: 'Rubik-Regular',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.churchType}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
+                    {item.churchType}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       </Modal>
 
@@ -1009,43 +957,36 @@ const IndividualSteps = ({ navigation }: Props) => {
         onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
+        propagateSwipe={true}
       >
         <View style={styles.content2}>
           <View style={styles.headLine} />
-          <View style={{ flex: 1 }}>
-            <FlatList
-              data={churchType?.children}
-              keyExtractor={(item) => {
-                return item._id;
-              }}
-              ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
-              ItemSeparatorComponent={() => <Divider />}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item, index }) => {
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      // setWhatIDo(item);
-                      setSubChurchType(item);
-                      setChurchSubTypeModalVisible(false);
+
+          <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+            {churchType?.children.map((item) => {
+              return (
+                <TouchableOpacity
+                  onPress={() => {
+                    // setWhatIDo(item);
+                    setSubChurchType(item);
+                    setChurchSubTypeModalVisible(false);
+                  }}
+                  style={styles.listItem2}
+                >
+                  <Text
+                    style={{
+                      color: '#81979E',
+                      fontSize: getFontSize(2.2),
+                      fontFamily: 'Rubik-Regular',
                     }}
-                    style={styles.listItem2}
+                    numberOfLines={1}
                   >
-                    <Text
-                      style={{
-                        color: '#81979E',
-                        fontSize: getFontSize(2.2),
-                        fontFamily: 'Rubik-Regular',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.churchType}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
+                    {item.churchType}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       </Modal>
     </View>

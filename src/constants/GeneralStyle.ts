@@ -32,8 +32,9 @@ export const GeneralStyle = StyleSheet.create({
   },
   InputError: {
     color: 'red',
-    marginLeft: 10,
     marginTop: 8,
     marginBottom: 3,
+    marginHorizontal: 15,
+    alignSelf: 'stretch',
   },
 });

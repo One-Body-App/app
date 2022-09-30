@@ -33,7 +33,7 @@ import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
 import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID } from '@/src/Services/constants';
 import { useToast } from 'react-native-toast-notifications';
 
-interface Props extends StackScreenProps<RootStackParamList, 'Login'> {
+interface Props extends StackScreenProps<RootStackParamList, any> {
   showConfirmationEmailMessage: boolean;
   emailLoginOnly?: boolean;
   oauth_token?: string;

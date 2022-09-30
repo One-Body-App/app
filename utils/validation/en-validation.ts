@@ -26,10 +26,10 @@ export const enValidation = {
   },
   orgEmail: {
     presence: {
-      message: '^Please enter an email address',
+      message: '^Please enter a contact email address',
     },
     email: {
-      message: '^Please enter a valid email address',
+      message: '^Please enter a valid contact email address',
     },
   },
   password: {
@@ -88,20 +88,20 @@ export const enValidation = {
   },
   orgfullName: {
     presence: {
-      message: '^Please enter a Orgnization name',
+      message: '^Please enter a contact name',
     },
     length: {
       minimum: 4,
-      message: '^Your Orgnization name must be at least 4 characters',
+      message: '^Contact Name must be at least 4 characters',
     },
   },
   orgPhoneNo: {
     presence: {
-      message: '^Please enter a Orgnization PhoneNo',
+      message: '^Please enter a contact phone number',
     },
     length: {
       minimum: 8,
-      message: '^Your PhoneNO must be at least 8 characters',
+      message: '^Contact Phone must be at least 8 characters',
     },
   },
   location_label: {
