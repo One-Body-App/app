@@ -118,11 +118,11 @@ const Signup = ({ navigation, route }: Props) => {
     if (selected) {
       return {
         ...styles.btnText,
-        color: scheme == 'dark' ? '#81979E' : '#032F3C',
+        color: scheme == 'dark' ? colors.text : '#032F3C',
       };
     }
 
-    return { ...styles.btnText, color: scheme == 'dark' ? '#032F3C' : '#B3C1C5' };
+    return { ...styles.btnText, color: scheme == 'dark' ? '#838383' : '#B3C1C5' };
   };
 
   const getButtonContainer = (selected: boolean) => {
@@ -149,7 +149,7 @@ const Signup = ({ navigation, route }: Props) => {
               marginTop: 24,
               marginBottom: 16,
               textAlign: 'center',
-              color: '#4F6D77',
+              color: scheme == 'dark' ? colors.text : '#4F6D77',
               fontWeight: '500',
               fontFamily: 'Rubik-Regular',
               fontSize: 16,
@@ -180,10 +180,10 @@ const Signup = ({ navigation, route }: Props) => {
                   color={
                     selected == 'individual'
                       ? scheme == 'dark'
-                        ? '#81979E'
+                        ? colors.text
                         : '#032F3C'
                       : scheme == 'dark'
-                      ? '#032F3C'
+                      ? '#838383'
                       : '#B3C1C5'
                   }
                 />
@@ -205,10 +205,10 @@ const Signup = ({ navigation, route }: Props) => {
                   color={
                     selected == 'organization'
                       ? scheme == 'dark'
-                        ? '#81979E'
+                        ? colors.text
                         : '#032F3C'
                       : scheme == 'dark'
-                      ? '#032F3C'
+                      ? '#838383'
                       : '#B3C1C5'
                   }
                 />

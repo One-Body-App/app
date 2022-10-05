@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingTop: getHeight(5),
     width: getWidth(100),
-    backgroundColor: 'white',
+
     alignSelf: 'center',
   },
   paragraph: {

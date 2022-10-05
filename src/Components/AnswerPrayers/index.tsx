@@ -63,7 +63,7 @@ const AnswerPrayers = ({ color }) => {
         <TextInput
           placeholderTextColor={color}
           value={prayer}
-          placeholder=" Share what God is doing in your life"
+          placeholder=" Share a prayer request, exhortation, or testimony"
           onChangeText={(e) => {
             setPrayer(e), seterror(null);
           }}

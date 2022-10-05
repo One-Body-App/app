@@ -61,13 +61,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    color: '#81979E',
     marginTop: 2,
     fontFamily: 'Rubik-Medium',
     underline: { textDecorationLine: 'underline' },
   },
   simpleText: {
-    color: '#81979E',
     marginTop: 2,
     fontFamily: 'Rubik-Medium',
   },
@@ -75,7 +73,6 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 16,
     flexDirection: 'row',
-    color: '#032F3C',
   },
   Errorview: { padding: 5, flexDirection: 'row', marginLeft: getWidth(10) },
   errortext: {

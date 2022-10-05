@@ -110,7 +110,7 @@ const SignupForm = ({ navigation }: Props) => {
 
         //
       } else {
-        seterror('Both Password not match!');
+        seterror('Both passwords MUST match!');
       }
     } else {
       setState({

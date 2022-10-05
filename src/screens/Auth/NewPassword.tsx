@@ -64,7 +64,7 @@ const NewPassword = ({ navigation, route }) => {
           console.log('saga error -- ', e.toString());
         }
       } else {
-        seterror('Both password not match');
+        seterror('Both passwords MUST match!');
       }
     } else {
       setState({ ...state, passwordErrorN, passwordErrorC });

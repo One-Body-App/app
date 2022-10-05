@@ -142,7 +142,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
   const { colors } = useTheme();
 
   const getButtonTextStyle = () => {
-    return { ...styles.btnTitle, color: scheme == 'dark' ? '#81979E' : '#032F3C' };
+    return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : '#032F3C' };
   };
 
   const getButtonContainer = () => {
@@ -160,7 +160,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
 
     return {
       ...styles.disabledBtnTextStyle,
-      color: scheme == 'dark' ? '#032F3C' : '#B3C1C5',
+      color: scheme == 'dark' ? '#3a3a3a' : '#B3C1C5',
       borderColor: colors.border,
     };
   };
@@ -249,18 +249,36 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           </View>
         ) : null}
         <View style={{ ...styles.center, paddingBottom: 80 }}>
-          <Text style={{ color: '#032F3C' }}>By signing up, you agree to our</Text>
+          <Text style={{ color: scheme == 'dark' ? colors.text : '#032F3C' }}>
+            By signing up, you agree to our
+          </Text>
           <View style={{ flexDirection: 'row' }}>
             <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
-              <Text style={styles.text}>User Agreements</Text>
+              <Text style={{ ...styles.text, color: scheme == 'dark' ? colors.text : '#81979E' }}>
+                User Agreements
+              </Text>
             </TouchableOpacity>
-            <Text style={styles.simpleText}> & </Text>
+            <Text
+              style={{ ...styles.simpleText, color: scheme == 'dark' ? colors.text : '#81979E' }}
+            >
+              {' '}
+              &{' '}
+            </Text>
             <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
-              <Text style={styles.text}>Privacy Policy</Text>
+              <Text style={{ ...styles.text, color: scheme == 'dark' ? colors.text : '#81979E' }}>
+                Privacy Policy
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.alreadyAccountContainer}>Already Have an account?</Text>
+          <Text
+            style={{
+              ...styles.alreadyAccountContainer,
+              color: scheme == 'dark' ? colors.text : '#032F3C',
+            }}
+          >
+            Already Have an account?
+          </Text>
           <TouchableOpacity
             style={{ marginLeft: 5, marginTop: 5, marginBottom: 20 }}
             onPress={() => navigation.navigate('Login', {})}

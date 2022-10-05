@@ -130,7 +130,7 @@ const Main = () => {
   }, [token, user, initializing]);
 
   const linking: LinkingOptions<RootStackParamList> = {
-    prefixes: ['https://app.onebodyapp.com'],
+    prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
     config: {
       screens: {
         ConfirmLogin: {

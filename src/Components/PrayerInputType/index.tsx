@@ -158,7 +158,7 @@ const PrayerInputType = ({ color }) => {
         <TextInput
           placeholderTextColor={color}
           value={prayer}
-          placeholder="  Share what God is doing in your life"
+          placeholder="  Share a prayer request, exhortation, or testimony"
           // onPressIn={() => setPrayerTypeShow(true)}
           onFocus={() => setPrayerTypeShow(true)}
           onChangeText={(e) => {
