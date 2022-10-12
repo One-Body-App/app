@@ -1,3 +1,4 @@
+import { RootStackParamList } from '@/src/Navigation/types';
 import { AnyAction, Reducer } from 'redux';
 import { ACTIONS } from '../action-types';
 
@@ -8,6 +9,8 @@ type GeneralReducers = {
   allSms: [];
   chats: [];
   faqs: [];
+  loginVerficationBackPage?: keyof RootStackParamList;
+  loginVerficationBackPageParams?: Record<string, any>;
 };
 
 const initialState: GeneralReducers = {
@@ -17,6 +20,8 @@ const initialState: GeneralReducers = {
   allSms: [],
   chats: [],
   faqs: [],
+  loginVerficationBackPage: undefined,
+  loginVerficationBackPageParams: undefined,
 };
 
 const generalReducers: Reducer<GeneralReducers> = (state = initialState, action: AnyAction) => {
@@ -52,6 +57,13 @@ const generalReducers: Reducer<GeneralReducers> = (state = initialState, action:
       return {
         ...state,
         faqs: action.data,
+      };
+
+    case ACTIONS.SET_LOGIN_VERIFICATION_BACK_PAGE:
+      return {
+        ...state,
+        loginVerficationBackPage: action.data.screen,
+        loginVerficationBackPageParams: action.data.params,
       };
 
     default:

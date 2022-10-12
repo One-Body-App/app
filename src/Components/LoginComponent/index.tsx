@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
-import { Text, View, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Linking, useColorScheme } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TextInput } from 'react-native-paper';
@@ -32,14 +32,16 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
 import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID } from '@/src/Services/constants';
 import { useToast } from 'react-native-toast-notifications';
+import G from '@/assets/svg/G.svg';
+import { useTheme } from '@react-navigation/native';
 
 interface Props extends StackScreenProps<RootStackParamList, any> {
   showConfirmationEmailMessage: boolean;
-  emailLoginOnly?: boolean;
+  verifyAccount?: boolean;
   oauth_token?: string;
   oauth_verifier?: string;
-  toScreen?: string;
 
+  provider?: string;
   action?: string;
   apiKey?: string;
   lang?: string;
@@ -49,6 +51,8 @@ interface Props extends StackScreenProps<RootStackParamList, any> {
   onlyPassword?: boolean;
   toScreenRouteParams?: Record<string, string>;
   errorFromLogin?: string;
+
+  enabledLoginProviders?: string[];
 }
 
 const LoginComponent: FC<Props> = ({
@@ -59,15 +63,21 @@ const LoginComponent: FC<Props> = ({
   oobCode,
   mode,
   action,
-  emailLoginOnly,
-  toScreen,
+  provider,
+  verifyAccount,
+
   currentUserEmail,
   onlyPassword,
   toScreenRouteParams,
+  enabledLoginProviders,
 }) => {
   const dispatch = useDispatch();
-
+  console.log(enabledLoginProviders, 'enabledLoginProviders');
   const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const toScreen = useSelector((state: RootState) => state.general.loginVerficationBackPage);
+  const toScreenParams = useSelector(
+    (state: RootState) => state.general.loginVerficationBackPageParams
+  );
 
   const inputRefs = {
     email: useRef<any>(),
@@ -143,6 +153,12 @@ const LoginComponent: FC<Props> = ({
     }
   }, [mode]);
 
+  // useEffect(() => {
+  //   if (action == 'confirmation' && provider == 'twitter') {
+
+  //   }
+  // }, [action]);
+
   useEffect(() => {
     const checkNewUserCredentials = async () => {
       if (newUserCredentials && accounType) {
@@ -197,13 +213,38 @@ const LoginComponent: FC<Props> = ({
 
             const userCredentials = await auth().signInWithCredential(twitterCredential);
 
-            processLogin(
-              userCredentials,
-              setToken,
-              dispatch,
-              setAccountType,
-              setNewUserCredentials
-            );
+            if (
+              !!verifyAccount &&
+              !!onlyPassword &&
+              userCredentials.user.email != currentUserEmail
+            ) {
+              navigation.goBack();
+              toast.show(`Please login with the current user's email`, {
+                type: 'error',
+                placement: 'top',
+              });
+            } else {
+              if (verifyAccount) {
+                if (toScreen) {
+                  navigation.goBack();
+                  console.log(toScreen);
+                  navigation.push(toScreen as keyof RootStackParamList, {
+                    setError: seterror,
+                    ...toScreenParams,
+                  });
+                } else {
+                  navigation.goBack();
+                }
+              } else {
+                processLogin(
+                  userCredentials,
+                  setToken,
+                  dispatch,
+                  setAccountType,
+                  setNewUserCredentials
+                );
+              }
+            }
           }
         } catch (error: any) {
           if (error.nativeErrorMessage.includes('auth/user-not-found')) {
@@ -224,7 +265,7 @@ const LoginComponent: FC<Props> = ({
       const passwordError = await validator('password', password);
       seterror('');
 
-      if (!!emailLoginOnly && !!onlyPassword && email != currentUserEmail) {
+      if (!!verifyAccount && !!onlyPassword && email != currentUserEmail) {
         throw { message: "Please login with the current user's email" };
       }
 
@@ -233,7 +274,7 @@ const LoginComponent: FC<Props> = ({
 
         const emailCredential = await auth().signInWithEmailAndPassword(email, password);
 
-        if (emailLoginOnly) {
+        if (verifyAccount) {
           setState({ ...state, password: '' });
 
           if (toScreen) {
@@ -295,7 +336,7 @@ const LoginComponent: FC<Props> = ({
       seterror('');
       setState({ ...state, emailError: '', passwordError: '' });
 
-      const urlToken = await getTwitterLoginToken(false);
+      const urlToken = await getTwitterLoginToken(false, verifyAccount);
 
       if (urlToken) {
         Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
@@ -318,13 +359,34 @@ const LoginComponent: FC<Props> = ({
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
       const userCredentials = await auth().signInWithCredential(googleCredential);
 
-      await processLogin(
-        userCredentials,
-        setToken,
-        dispatch,
-        setAccountType,
-        setNewUserCredentials
-      );
+      if (!!verifyAccount && !!onlyPassword && userCredentials.user.email != currentUserEmail) {
+        navigation.goBack();
+        toast.show(`Please login with the current user's email`, {
+          type: 'error',
+          placement: 'top',
+        });
+      } else {
+        if (verifyAccount) {
+          if (toScreen) {
+            navigation.goBack();
+            console.log(toScreen);
+            navigation.push(toScreen as keyof RootStackParamList, {
+              setError: seterror,
+              ...toScreenParams,
+            });
+          } else {
+            navigation.goBack();
+          }
+        } else {
+          await processLogin(
+            userCredentials,
+            setToken,
+            dispatch,
+            setAccountType,
+            setNewUserCredentials
+          );
+        }
+      }
       dispatch(setLoader(false));
     } catch (error: any) {
       if (!error.message.includes('Code=-5')) {
@@ -354,15 +416,38 @@ const LoginComponent: FC<Props> = ({
 
       // Create a Firebase credential with the AccessToken
       const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+
       const userCredentials = await auth().signInWithCredential(facebookCredential);
 
-      await processLogin(
-        userCredentials,
-        setToken,
-        dispatch,
-        setAccountType,
-        setNewUserCredentials
-      );
+      if (!!verifyAccount && !!onlyPassword && userCredentials.user.email != currentUserEmail) {
+        navigation.goBack();
+        toast.show(`Please login with the current user's email`, {
+          type: 'error',
+          placement: 'top',
+        });
+      } else {
+        if (verifyAccount) {
+          if (toScreen) {
+            navigation.goBack();
+            console.log(toScreen);
+            navigation.push(toScreen as keyof RootStackParamList, {
+              setError: seterror,
+              ...toScreenParams,
+            });
+          } else {
+            navigation.goBack();
+          }
+        } else {
+          await processLogin(
+            userCredentials,
+            setToken,
+            dispatch,
+            setAccountType,
+            setNewUserCredentials
+          );
+        }
+      }
+
       dispatch(setLoader(false));
     } catch (error: any) {
       seterror(error.message.replace(`[${error.code}]`, ''));
@@ -408,81 +493,108 @@ const LoginComponent: FC<Props> = ({
       </View>
     );
   }
+  console.log(enabledLoginProviders);
+  const scheme = useColorScheme();
+  const { colors } = useTheme();
+
+  const getButtonTextStyle = () => {
+    return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : '#032F3C' };
+  };
+
+  const getButtonContainer = () => {
+    return { ...styles.buttonContainer, borderColor: colors.border };
+  };
+
+  const getDisabledButtonTextStyle = () => {
+    return {
+      ...styles.disabledBtnTextStyle,
+      color: scheme == 'dark' ? '#3a3a3a' : '#B3C1C5',
+      borderColor: colors.border,
+    };
+  };
+
+  const getDisabledButtonStyle = () => {
+    return { ...styles.disabledButtonContainer, borderColor: colors.border };
+  };
+
   return (
     <KeyboardAwareScrollView
       contentContainerStyle={styles.contanier}
       showsVerticalScrollIndicator={false}
     >
-      <View>
-        {success != null ? (
-          <View style={styles.Errorview}>
-            <Text style={styles.successtext}>{success}</Text>
-          </View>
-        ) : null}
+      {enabledLoginProviders && enabledLoginProviders?.indexOf('password') > -1 ? (
+        <View>
+          {success ? (
+            <View style={styles.Errorview}>
+              <Text style={styles.successtext}>{success}</Text>
+            </View>
+          ) : null}
 
-        <TextInput
-          style={GeneralStyle.input}
-          theme={{ roundness: 10 }}
-          ref={inputRefs.email}
-          value={state.email}
-          returnKeyType={'next'}
-          keyboardType="email-address"
-          mode="outlined"
-          outlineColor={appColor.InputOutlineColor}
-          activeOutlineColor={appColor.InstructionColor}
-          label={'E-mail'}
-          autoComplete="email"
-          autoCapitalize="none"
-          onFocus={() => setState({ ...state, emailError: '' })}
-          onBlur={() =>
-            validateFields(state.email, 'email', (error: string) =>
-              setState({ ...state, emailError: error })
-            )
-          }
-          onSubmitEditing={() => inputRefs.password?.current.focus()}
-          onChangeText={(email) => changeHandler('email', email.trim())}
-          blurOnSubmit={false}
-        />
-        <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(10) }}>
-          {state.emailError}
-        </Text>
-
-        <TextInput
-          theme={{ roundness: 10 }}
-          activeOutlineColor={appColor.InstructionColor}
-          outlineColor={appColor.InputOutlineColor}
-          ref={inputRefs.password}
-          value={state.password}
-          returnKeyType={'send'}
-          label={'Password'}
-          mode="outlined"
-          secureTextEntry={hidePass ? true : false}
-          right={
-            <TextInput.Icon
-              name={() => (
-                <MaterialCommunityIcons
-                  name={hidePass ? 'eye-off-outline' : 'eye-outline'}
-                  size={getFontSize(3)}
-                  color={'#5B7279'}
-                  style={styles.icon}
-                  onPress={() => setHidePass(!hidePass)}
-                />
-              )}
-            />
-          }
-          style={GeneralStyle.input}
-          onFocus={() => setState({ ...state, passwordError: '' })}
-          onSubmitEditing={() => signInUser()}
-          onChangeText={(password) => changeHandler('password', password.trim())}
-          blurOnSubmit={false}
-        />
-        {state.passwordError ? (
+          <TextInput
+            style={GeneralStyle.input}
+            theme={{ roundness: 10 }}
+            ref={inputRefs.email}
+            value={state.email}
+            returnKeyType={'next'}
+            keyboardType="email-address"
+            mode="outlined"
+            outlineColor={appColor.InputOutlineColor}
+            activeOutlineColor={appColor.InstructionColor}
+            label={'E-mail'}
+            autoComplete="email"
+            autoCapitalize="none"
+            onFocus={() => setState({ ...state, emailError: '' })}
+            onBlur={() =>
+              validateFields(state.email, 'email', (error: string) =>
+                setState({ ...state, emailError: error })
+              )
+            }
+            onSubmitEditing={() => inputRefs.password?.current.focus()}
+            onChangeText={(email) => changeHandler('email', email.trim())}
+            blurOnSubmit={false}
+          />
           <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(10) }}>
-            {state.passwordError}
+            {state.emailError}
           </Text>
-        ) : null}
-      </View>
-      {!emailLoginOnly ? (
+
+          <TextInput
+            theme={{ roundness: 10 }}
+            activeOutlineColor={appColor.InstructionColor}
+            outlineColor={appColor.InputOutlineColor}
+            ref={inputRefs.password}
+            value={state.password}
+            returnKeyType={'send'}
+            label={'Password'}
+            mode="outlined"
+            secureTextEntry={hidePass ? true : false}
+            right={
+              <TextInput.Icon
+                name={() => (
+                  <MaterialCommunityIcons
+                    name={hidePass ? 'eye-off-outline' : 'eye-outline'}
+                    size={getFontSize(3)}
+                    color={'#5B7279'}
+                    style={styles.icon}
+                    onPress={() => setHidePass(!hidePass)}
+                  />
+                )}
+              />
+            }
+            style={GeneralStyle.input}
+            onFocus={() => setState({ ...state, passwordError: '' })}
+            onSubmitEditing={() => signInUser()}
+            onChangeText={(password) => changeHandler('password', password.trim())}
+            blurOnSubmit={false}
+          />
+          {state.passwordError ? (
+            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(10) }}>
+              {state.passwordError}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {!verifyAccount && enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
         <TouchableOpacity
           onPress={() => navigation.navigate('forget')}
           style={styles.forgotPassword}
@@ -491,26 +603,33 @@ const LoginComponent: FC<Props> = ({
         </TouchableOpacity>
       ) : null}
 
-      <Button
-        text={'LOG IN'}
-        disabled={!state.password || !state.email}
-        btnStyle={{ ...GeneralStyle.btn, marginTop: getHeight(2) }}
-        disabledBtnStyle={{
-          ...GeneralStyle.btn,
-          marginTop: getHeight(2),
-          backgroundColor: '#E6EAEC',
-        }}
-        btnTextStyle={GeneralStyle.btnText}
-        disabledBtnTextStyle={GeneralStyle.btnText}
-        onPress={() => signInUser()}
-      />
+      {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
+        <Button
+          text={'LOG IN'}
+          disabled={!state.password || !state.email}
+          btnStyle={{ ...GeneralStyle.btn, marginTop: getHeight(2) }}
+          disabledBtnStyle={{
+            ...GeneralStyle.btn,
+            marginTop: getHeight(2),
+            backgroundColor: '#E6EAEC',
+          }}
+          btnTextStyle={GeneralStyle.btnText}
+          disabledBtnTextStyle={GeneralStyle.btnText}
+          onPress={() => signInUser()}
+        />
+      ) : null}
+
       {error ? (
-        <View style={styles.Errorview}>
+        <View style={{ ...styles.Errorview, marginTop: 20 }}>
           <Text style={styles.errortext}>{error}</Text>
         </View>
       ) : null}
 
-      {!emailLoginOnly ? (
+      {enabledLoginProviders &&
+      enabledLoginProviders?.includes('password') &&
+      ((enabledLoginProviders && enabledLoginProviders?.includes('google.com')) ||
+        (enabledLoginProviders && enabledLoginProviders?.includes('facebook.com')) ||
+        (enabledLoginProviders && enabledLoginProviders?.includes('twitter.com'))) ? (
         <View style={styles.orView}>
           <View style={styles.line} />
           <Text style={styles.text}>or</Text>
@@ -518,24 +637,90 @@ const LoginComponent: FC<Props> = ({
         </View>
       ) : null}
 
-      {!emailLoginOnly ? (
-        <View style={{ ...styles.SocialView, marginTop: 20 }}>
+      <View style={{ ...styles.SocialView, marginTop: 20 }}>
+        {enabledLoginProviders &&
+        enabledLoginProviders?.includes('google.com') &&
+        enabledLoginProviders?.includes('password') ? (
           <TouchableOpacity onPress={() => googleSignIn()} style={styles.socialContainer}>
             <Google style={{ alignSelf: 'center' }} />
           </TouchableOpacity>
+        ) : (
+          <>
+            {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
+              <Button
+                text={'Log in with Google'}
+                leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
+                btnStyle={getButtonContainer()}
+                btnTextStyle={getButtonTextStyle()}
+                onPress={() => googleSignIn()}
+                disabledBtnStyle={getDisabledButtonStyle()}
+                disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                wrapperBtnStyle={{ width: '100%' }}
+              />
+            ) : null}
+          </>
+        )}
 
+        {enabledLoginProviders &&
+        enabledLoginProviders?.includes('facebook.com') &&
+        enabledLoginProviders?.includes('password') ? (
           <TouchableOpacity onPress={() => facebookLogin()} style={styles.socialContainer}>
             <Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />
           </TouchableOpacity>
+        ) : (
+          <>
+            {enabledLoginProviders && enabledLoginProviders?.includes('facebook.com') ? (
+              <Button
+                text={'Login with Facebook'}
+                leftIcon={<Facebook style={{ marginLeft: 5, marginRight: 10 }} fill="#1877f2" />}
+                btnStyle={getButtonContainer()}
+                btnTextStyle={getButtonTextStyle()}
+                onPress={() => {
+                  facebookLogin();
+                }}
+                disabledBtnStyle={getDisabledButtonStyle()}
+                disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                wrapperBtnStyle={{
+                  width: '100%',
 
+                  paddingVertical: 10,
+                }}
+              />
+            ) : null}
+          </>
+        )}
+
+        {enabledLoginProviders &&
+        enabledLoginProviders?.includes('twitter.com') &&
+        enabledLoginProviders?.includes('password') ? (
           <TouchableOpacity onPress={() => onTwitterButtonPress()}>
             <View style={{ ...styles.socialContainer, marginRight: 0 }}>
               <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
             </View>
           </TouchableOpacity>
-        </View>
-      ) : null}
-      {!emailLoginOnly ? (
+        ) : (
+          <>
+            {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
+              <Button
+                text={'Login with Twitter'}
+                leftIcon={
+                  <Twitter style={{ marginRight: 7 }} height={getHeight(5)} fill="#00acee" />
+                }
+                btnStyle={getButtonContainer()}
+                btnTextStyle={getButtonTextStyle()}
+                onPress={() => {
+                  onTwitterButtonPress();
+                }}
+                disabledBtnStyle={getDisabledButtonStyle()}
+                disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                wrapperBtnStyle={{ width: '100%' }}
+              />
+            ) : null}
+          </>
+        )}
+      </View>
+
+      {!verifyAccount ? (
         <Modal
           backdropOpacity={0.3}
           isVisible={showConfirmEmail}

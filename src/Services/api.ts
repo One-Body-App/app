@@ -23,7 +23,7 @@ export const ApiCall = async ({
     } else {
       url = `${!external ? `${BASE_URL}/` : ''}${route}`;
     }
-
+    console.log(url);
     let response: AxiosResponse<any, any> | null = null;
     switch (verb) {
       case 'get':
@@ -57,8 +57,10 @@ export const ApiCall = async ({
         return { status: 400, response: 'method not found' };
     }
 
+    console.log(response);
     return { status: 200, response: response?.data };
   } catch (e: any) {
+    console.log(e);
     // handle error
     return { status: 400, response: e.response.data };
   }

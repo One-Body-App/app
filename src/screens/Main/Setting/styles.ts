@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
+  container: { flex: 1 },
   innerContainer: {
     flex: 1,
     marginTop: getHeight(1.5),

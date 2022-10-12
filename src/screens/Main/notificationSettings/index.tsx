@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Switch } from 'react-native-paper';
-
+import { Switch, useTheme } from 'react-native-paper';
+import auth from '@react-native-firebase/auth';
 import { getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
@@ -14,6 +14,7 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { ApiCall } from '@/src/Services/api';
 import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
+import { setProfile } from '@/src/Redux/actions/AuthActions';
 
 type Props = StackScreenProps<RootStackParamList, 'NotificationSettings'>;
 
@@ -24,46 +25,75 @@ const NotificationSettings = ({ navigation }: Props) => {
   const toast = useToast();
 
   const [isLoaded, setIsLoaded] = React.useState<boolean>(false);
-  const [pushNotificationSwitchOn, setPushNotificationSwitch] = React.useState(
-    user?.pushNotificationsEnabled ?? false
-  );
-  const [emailNotificationSwitchOn, setEmaiNotificationSwitch] = React.useState(
-    user?.emailNotificationsEnabled ?? false
-  );
-  const [newsletterNotificationSwitchOn, setNewsletterNotificationSwitch] = React.useState(
-    user?.subscribeToNewsletter ?? false
-  );
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [notificationSwitch, setNotificationSwitch] = React.useState({
+    pushNotificationsEnabled: false,
+    emailNotificationsEnabled: false,
+    subscribeToNewsletter: false,
+  });
+  const { colors } = useTheme();
+
+  const getUserProfile = async () => {
+    const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
+      id: 'loadig',
+      placement: 'top',
+      style: {
+        backgroundColor: colors.backdrop,
+      },
+    });
+    try {
+      const res = await ApiCall({
+        route: 'auth/my-profile',
+        token: token,
+        verb: 'get',
+      });
+
+      if (res?.status == 200) {
+        dispatch(setProfile({ token, ...res.response }));
+        setNotificationSwitch({
+          pushNotificationsEnabled: res.response?.pushNotificationsEnabled ?? false,
+          emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
+          subscribeToNewsletter: res.response?.subscribeToNewsletter ?? false,
+        });
+
+        setIsLoaded(true);
+      } else {
+        toast.hide(toastId);
+      }
+    } catch (e) {
+      toast.hide(toastId);
+
+      console.log(e);
+    }
+  };
 
   useEffect(() => {
-    console.log(
-      pushNotificationSwitchOn,
-      emailNotificationSwitchOn,
-      newsletterNotificationSwitchOn,
-      isLoaded
-    );
-    if (isLoaded) {
+    getUserProfile();
+  }, []);
+
+  useEffect(() => {
+    console.log(isLoading);
+    if (isLoaded && !isLoading) {
       updateNotifications();
-    } else {
-      setIsLoaded(true);
     }
-  }, [
-    pushNotificationSwitchOn,
-    emailNotificationSwitchOn,
-    newsletterNotificationSwitchOn,
-    // isLoaded,
-  ]);
+  }, [notificationSwitch]);
 
   const updateNotifications = async () => {
+    toast.hide('loading');
+    const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
+      id: 'loadingB',
+      style: {
+        backgroundColor: colors.backdrop,
+      },
+    });
+    setIsLoading(true);
     try {
-      toast.show(<ActivityIndicator />, {
-        placement: 'top',
-      });
       const notifications = {
-        pushNotificationsEnabled: pushNotificationSwitchOn,
-        subscribeToNewsletter: newsletterNotificationSwitchOn,
-        emailNotificationsEnabled: emailNotificationSwitchOn,
+        pushNotificationsEnabled: notificationSwitch.pushNotificationsEnabled,
+        subscribeToNewsletter: notificationSwitch.subscribeToNewsletter,
+        emailNotificationsEnabled: notificationSwitch.emailNotificationsEnabled,
       };
-      console.log(notifications);
+
       const res = await ApiCall({
         params: notifications,
         route: `user/set-notifications`,
@@ -73,17 +103,17 @@ const NotificationSettings = ({ navigation }: Props) => {
 
       if (res?.status == 200) {
         dispatch(setUserDataNotifications({ notifications }));
-        toast.hideAll();
+
         toast.show('Notifications Settings Updated Successfully', {
           type: 'success',
           placement: 'top',
         });
-      } else {
-        toast.hideAll();
       }
+      toast.hide(toastId);
+      setIsLoading(false);
     } catch (e) {
-      toast.hideAll();
-
+      toast.hide(toastId);
+      setIsLoading(false);
       console.log(e);
     }
   };
@@ -101,7 +131,7 @@ const NotificationSettings = ({ navigation }: Props) => {
         title={'Notification settings'}
         leftView={
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={20} />
+            <Ionicons name="chevron-back" color={colors.primary} size={20} />
           </TouchableOpacity>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
@@ -111,7 +141,8 @@ const NotificationSettings = ({ navigation }: Props) => {
           <Text style={styles.heading}>Push Notifications</Text>
 
           <Switch
-            value={pushNotificationSwitchOn}
+            disabled={isLoading}
+            value={notificationSwitch.pushNotificationsEnabled}
             color="#126B87"
             onValueChange={() => {
               // updateUserDataNotifications({
@@ -121,7 +152,11 @@ const NotificationSettings = ({ navigation }: Props) => {
 
               //   token,
               // })
-              setPushNotificationSwitch(!pushNotificationSwitchOn);
+              // setPushNotificationSwitch(!pushNotificationSwitchOn);
+              setNotificationSwitch({
+                ...notificationSwitch,
+                pushNotificationsEnabled: !notificationSwitch.pushNotificationsEnabled,
+              });
             }}
           />
         </View>
@@ -129,7 +164,8 @@ const NotificationSettings = ({ navigation }: Props) => {
           <Text style={styles.heading}>Email Notifications</Text>
 
           <Switch
-            value={emailNotificationSwitchOn}
+            disabled={isLoading}
+            value={notificationSwitch.emailNotificationsEnabled}
             color="#126B87"
             onValueChange={() => {
               // updateUserDataNotifications({
@@ -140,7 +176,11 @@ const NotificationSettings = ({ navigation }: Props) => {
               //   token,
               // })
 
-              setEmaiNotificationSwitch(!emailNotificationSwitchOn);
+              // setEmaiNotificationSwitch(!emailNotificationSwitchOn);
+              setNotificationSwitch({
+                ...notificationSwitch,
+                emailNotificationsEnabled: !notificationSwitch.emailNotificationsEnabled,
+              });
             }}
           />
         </View>
@@ -153,7 +193,8 @@ const NotificationSettings = ({ navigation }: Props) => {
           </View>
 
           <Switch
-            value={newsletterNotificationSwitchOn}
+            disabled={isLoading}
+            value={notificationSwitch.subscribeToNewsletter}
             color="#126B87"
             onValueChange={() => {
               // updateUserDataNotifications({
@@ -164,7 +205,11 @@ const NotificationSettings = ({ navigation }: Props) => {
               //   token,
               // })
 
-              setNewsletterNotificationSwitch(!newsletterNotificationSwitchOn);
+              // setNewsletterNotificationSwitch(!newsletterNotificationSwitchOn);
+              setNotificationSwitch({
+                ...notificationSwitch,
+                subscribeToNewsletter: !notificationSwitch.subscribeToNewsletter,
+              });
             }}
           />
         </View>

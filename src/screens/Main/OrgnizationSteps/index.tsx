@@ -23,7 +23,7 @@ import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import ProgressBar from 'react-native-animated-progress';
 import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
-import MapBox, { MapSuggestion } from '@/components/MapBox';
+import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
 import { orgprofileUpdate, logout } from '@/redux/actions/AuthActions';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import Modal from 'react-native-modal';
@@ -335,19 +335,21 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             This should only take about 2-3 minutes to complete.
           </Text>
           <Group134 style={{ margin: getHeight(5) }} />
-          <GradientButton
-            text={'LET’S GET STARTED'}
-            btnStyle={{
-              ...GeneralStyle.btn,
-              marginTop: getHeight(4),
-              height: getHeight(7.5),
-              width: getWidth(78),
-            }}
-            btnTextStyle={GeneralStyle.btnText}
-            onPress={() => {
-              gonext();
-            }}
-          />
+          <View style={{ flexDirection: 'row' }}>
+            <GradientButton
+              text={'LET’S GET STARTED'}
+              btnStyle={{
+                ...GeneralStyle.btn,
+                marginTop: getHeight(4),
+                height: getHeight(7.5),
+                width: getWidth(78),
+              }}
+              btnTextStyle={GeneralStyle.btnText}
+              onPress={() => {
+                gonext();
+              }}
+            />
+          </View>
 
           <TouchableOpacity
             onPress={() => {
@@ -468,6 +470,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
             {CheckIn == true ? (
               <MapBox
+                types={[MapBoxTypes.address]}
                 location={location_label}
                 setLongitude={setLongitude}
                 setLatitude={setLatitude}
@@ -663,6 +666,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                     ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
                     : styles.listItem
                 }
+                key={index}
               >
                 <Text
                   numberOfLines={1}
@@ -753,6 +757,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                     }
                   }}
                   style={styles.box}
+                  key={index}
                 >
                   <Image
                     style={
@@ -882,8 +887,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
     }
   };
   return (
-    <View style={styles.container}>
-      <Toast />
+    <View>
       <FlatList
         data={data}
         horizontal={true}
@@ -893,7 +897,11 @@ const OrgnizationSteps = ({ navigation }: Props) => {
           return item.id;
         }}
         pagingEnabled
-        renderItem={({ item }) => <View style={styles.componentview}>{item?.component}</View>}
+        renderItem={({ item }) => (
+          <View style={styles.componentview} key={item.id}>
+            {item?.component}
+          </View>
+        )}
       />
       {curentIndex == 0 ? null : (
         <View style={styles.foter}>
@@ -981,7 +989,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
           <View style={styles.headLine} />
 
           <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-            {organizationTypes.map((item) => {
+            {organizationTypes.map((item, index) => {
               return (
                 <TouchableOpacity
                   key={item._id}

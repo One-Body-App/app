@@ -10,6 +10,35 @@ export const styles = StyleSheet.create({
 
     alignSelf: 'center',
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    height: 50,
+    borderRadius: 10,
+
+    marginHorizontal: 20,
+  },
+  disabledButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    height: 50,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  disabledBtnTextStyle: {
+    fontSize: 18,
+    fontWeight: '500',
+    borderColor: '#F6F6F6',
+    color: '#B3C1C5',
+  },
+  btnTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
   paragraph: {
     color: '#4F6D77',
     fontWeight: '400',
@@ -55,9 +84,10 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: getHeight(1),
   },
-  Errorview: { padding: 5, flexDirection: 'row', marginLeft: getWidth(10) },
+  Errorview: { padding: 5, marginHorizontal: 25, flexDirection: 'row' },
   errortext: {
     color: 'red',
+
     fontSize: getFontSize(2),
   },
   successtext: {

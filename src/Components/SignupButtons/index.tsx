@@ -102,6 +102,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
 
       processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
     } catch (error: any) {
+      console.log(error);
       if (!error.message.includes('Code=-5')) {
         seterror(error.message.replace(`[${error.code}]`, ''));
       }
@@ -150,14 +151,6 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
   };
 
   const getDisabledButtonTextStyle = () => {
-    //  selected == 'organization'
-    //    ? scheme == 'dark'
-    //      ? '#81979E'
-    //      : '#032F3C'
-    //    : scheme == 'dark'
-    //    ? '#032F3C'
-    //      : '#B3C1C5';
-
     return {
       ...styles.disabledBtnTextStyle,
       color: scheme == 'dark' ? '#3a3a3a' : '#B3C1C5',
@@ -190,7 +183,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           }}
           disabledBtnStyle={getDisabledButtonStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperBtnStyle={{ width: 225 }}
+          wrapperBtnStyle={{ width: '100%' }}
         />
         <Button
           disabled={disabled}
@@ -204,7 +197,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           disabledBtnStyle={getDisabledButtonStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
           wrapperBtnStyle={{
-            width: 225,
+            width: '100%',
 
             paddingVertical: 10,
           }}
@@ -221,7 +214,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           }}
           disabledBtnStyle={getDisabledButtonStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperBtnStyle={{ width: 225 }}
+          wrapperBtnStyle={{ width: '100%' }}
         />
 
         <Button
@@ -241,7 +234,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           disabledBtnStyle={getDisabledButtonStyle()}
           btnTextStyle={getButtonTextStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperBtnStyle={{ width: 225 }}
+          wrapperBtnStyle={{ width: '100%' }}
         />
         {error != null ? (
           <View style={styles.Errorview}>

@@ -36,14 +36,13 @@ export const styles = StyleSheet.create({
   },
 
   btn: {
-    backgroundColor: 'red',
-    // width: getWidth(80),
-    margin: 8,
+    width: '100%',
     height: getHeight(5.5),
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
     paddingHorizontal: 10,
+    marginVertical: 8,
   },
   btnText: { color: 'white', fontSize: getFontSize(2.5), textAlign: 'center' },
   btntxt: {

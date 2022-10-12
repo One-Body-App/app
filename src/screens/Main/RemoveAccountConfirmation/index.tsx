@@ -17,15 +17,18 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import auth from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
+import { useTheme } from 'react-native-paper';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DeactivateAccountConfirm'>;
 
 const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
   const { reason } = route.params;
-  console.log(route.params);
+
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
   const dispatch = useDispatch();
   const toast = useToast();
+  const { colors } = useTheme();
   const accountDeactivate = async () => {
     dispatch(setLoader(true));
     try {
@@ -55,6 +58,7 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
       console.log('saga change pasword err --- ', e);
     }
   };
+  console.log(userProfile);
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <GeneralStatusBar
@@ -76,17 +80,23 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
           We are sorry to see you go. Removing your account will erase all of the data we have
           stored about you and there is <Text style={{ color: '#E90202' }}>no recovery.</Text>
         </Text>
-        <View style={{ marginTop: getHeight(7) }}>
+        <View style={{ marginTop: getHeight(7), width: '100%' }}>
           <Button
             text={'REMOVE ACCOUNT'}
-            btnStyle={{ ...GeneralStyle.btn, backgroundColor: 'red' }}
+            btnStyle={{
+              ...GeneralStyle.btn,
+
+              backgroundColor: 'red',
+            }}
             btnTextStyle={GeneralStyle.btnText}
+            disabledBtnTextStyle={{ ...GeneralStyle.btnText, color: '#81979E' }}
             onPress={() => accountDeactivate()}
           />
+
           <Button
             text={'Cancel'}
             onPress={() => navigation.goBack()}
-            btnStyle={{ ...styles.btn, backgroundColor: 'white' }}
+            btnStyle={{ ...GeneralStyle.btn, backgroundColor: colors.background, marginTop: 20 }}
             btnTextStyle={{ ...styles.btnText, color: '#126B87', fontSize: 14 }}
           />
         </View>

@@ -33,23 +33,25 @@ const Button = ({
   disabled?: boolean;
 }) => {
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={(event) => (onPress ? onPress(event) : console.log('null'))}
-      style={disabled ? disabledBtnStyle : btnStyle}
-      disabled={disabled}
-    >
-      <View
-        style={[
-          { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-          wrapperBtnStyle,
-        ]}
+    <View style={{ flexDirection: 'row' }}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={(event) => (onPress ? onPress(event) : null)}
+        style={disabled ? disabledBtnStyle : btnStyle}
+        disabled={disabled}
       >
-        {leftIcon}
-        <Text style={disabled ? [disabledBtnTextStyle] : [btnTextStyle]}>{text}</Text>
-        {RightIcon}
-      </View>
-    </TouchableOpacity>
+        <View
+          style={[
+            { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+            wrapperBtnStyle,
+          ]}
+        >
+          {leftIcon}
+          <Text style={disabled ? [disabledBtnTextStyle] : [btnTextStyle]}>{text}</Text>
+          {RightIcon}
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 };
 export default Button;

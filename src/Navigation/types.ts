@@ -27,7 +27,7 @@ export type RootStackParamList = {
   RemoveAccount: undefined;
   DeactivateAccountConfirm: { reason: string };
   ConfirmLogin: {
-    toScreen: string;
+    toScreen: keyof RootStackParamList;
     error?: string;
     onlyPassword?: boolean;
     mode?: string;

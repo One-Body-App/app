@@ -9,18 +9,11 @@ import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
 import GoBackIcon from '@/src/Components/GoBackIcon';
 import { RootStackParamList } from '@/src/Navigation/types';
-import axios from 'axios';
-import { processLogin } from '@/src/Services/login';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
-import { requestUserPermission } from '@/src/Services/Notification/notificationServices';
 
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 const Login = ({ route, navigation }: Props) => {
-  console.log(route.params);
+  const loginProviders = ['password', 'google.com', 'facebook.com', 'twitter.com'];
   return (
     <View style={styles.container}>
       <GeneralStatusBar
@@ -35,6 +28,7 @@ const Login = ({ route, navigation }: Props) => {
         showConfirmationEmailMessage={route.params?.showConfirmationEmailMessage ?? false}
         navigation={navigation}
         route={route}
+        enabledLoginProviders={loginProviders}
         {...route.params}
       />
 

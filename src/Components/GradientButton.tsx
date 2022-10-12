@@ -5,6 +5,7 @@ import {
   Text,
   TextStyle,
   TouchableOpacity,
+  View,
   ViewStyle,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -31,23 +32,25 @@ const GradientButton = ({
     gradientcolors = ['#4f6d77', '#4f6d77'];
   }
   return (
-    <LinearGradient colors={gradientcolors} style={btnStyle}>
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={(event) => (onPress ? onPress(event) : console.log('null'))}
-        disabled={disabled}
-        style={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          flex: 1,
-          width: '100%',
-        }}
-      >
-        {leftIcon}
-        <Text style={[btnTextStyle]}>{text}</Text>
-        {RightIcon}
-      </TouchableOpacity>
-    </LinearGradient>
+    <View style={{ flexDirection: 'row' }}>
+      <LinearGradient colors={gradientcolors} style={btnStyle}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={(event) => (onPress ? onPress(event) : console.log('null'))}
+          disabled={disabled}
+          style={{
+            justifyContent: 'center',
+            alignItems: 'center',
+            flex: 1,
+            width: '100%',
+          }}
+        >
+          {leftIcon}
+          <Text style={[btnTextStyle]}>{text}</Text>
+          {RightIcon}
+        </TouchableOpacity>
+      </LinearGradient>
+    </View>
   );
 };
 export default GradientButton;

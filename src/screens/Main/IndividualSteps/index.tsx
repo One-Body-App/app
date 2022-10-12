@@ -9,6 +9,9 @@ import {
   PermissionsAndroid,
   ScrollView,
   Platform,
+  useColorScheme,
+  StatusBar,
+  SafeAreaView,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -30,7 +33,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { profileUpdate, logout } from '@/redux/actions/AuthActions';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import LinearGradient from 'react-native-linear-gradient';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
@@ -44,6 +47,7 @@ import messaging from '@react-native-firebase/messaging';
 import { useToast } from 'react-native-toast-notifications';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { ChurchType, Interest, User, whatIDo } from '@/utils/types';
+import { useTheme } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
 
@@ -75,6 +79,8 @@ const IndividualSteps = ({ navigation }: Props) => {
   const [searchInfluencer, setSearchInfluencer] = useState<User[]>([]);
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
   const toast = useToast();
+  const scheme = useColorScheme();
+  const { colors } = useTheme();
 
   const requestNotificationPermission = async () => {
     await messaging().requestPermission();
@@ -264,18 +270,12 @@ const IndividualSteps = ({ navigation }: Props) => {
   //   },
   //   [date, open]
   // );
+  console.log(scheme, 'schemescheme');
   const data = [
     {
       id: 1,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-
+        <View style={styles.innerContainer}>
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
 
           <Text
@@ -283,6 +283,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               ...styles.heading,
               width: getWidth(80),
               margin: getHeight(0.5),
+              color: scheme == 'dark' ? '#fff' : '#032F3C',
             }}
           >
             Let’s Get To Know You.
@@ -291,42 +292,42 @@ const IndividualSteps = ({ navigation }: Props) => {
             This should only take about 2-3 minutes to complete.
           </Text>
           <Group134 style={{ margin: getHeight(5) }} />
-          <GradientButton
-            text={'LET’S GET STARTED'}
-            btnStyle={{
-              ...GeneralStyle.btn,
-              marginTop: getHeight(4),
-              height: getHeight(7),
-              width: getWidth(80),
-            }}
-            btnTextStyle={GeneralStyle.btnText}
-            onPress={() => {
-              gonext();
-            }}
-          />
+          <View style={{ flexDirection: 'row' }}>
+            <GradientButton
+              text={'LET’S GET STARTED'}
+              btnStyle={{
+                ...GeneralStyle.btn,
+                marginTop: getHeight(4),
+                height: getHeight(7),
+                width: getWidth(80),
+              }}
+              btnTextStyle={GeneralStyle.btnText}
+              onPress={() => {
+                gonext();
+              }}
+            />
+          </View>
+
           <TouchableOpacity
             onPress={() => logoutAction()}
             style={{ marginVertical: 10, borderBottomWidth: 0 }}
           >
-            <Text style={styles.logouttext}>Cancel</Text>
+            <Text style={{ ...styles.logouttext, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+              Cancel
+            </Text>
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 2,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-
+        <View style={styles.innerContainer} key={2}>
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
           <Text style={styles.text}>Step 1 of 7</Text>
-          <Text style={styles.heading}>What type of church do you attend?</Text>
+          <Text style={{ ...styles.heading, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+            What type of church do you attend?
+          </Text>
 
           <View>
             {/* <SelectDropdown
@@ -343,7 +344,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                   ? 'Select One'
                   : churchType.churchType
               }
-              btnStyle={styles.btn3}
+              btnStyle={{ ...styles.btn3, backgroundColor: scheme == 'dark' ? '#fff' : '#E7F0F3' }}
               leftIcon={<View />}
               RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
@@ -360,23 +361,19 @@ const IndividualSteps = ({ navigation }: Props) => {
               />
             ) : null}
           </View>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 3,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
+        <View style={styles.innerContainer} key={4}>
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
 
           <Text style={styles.text}>Step 2 of 7</Text>
-          <Text style={styles.heading}>How often do you attend church?</Text>
+          <Text style={{ ...styles.heading, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+            How often do you attend church?
+          </Text>
 
           <View>
             {churchAttend == 'Weekly' ? (
@@ -440,19 +437,13 @@ const IndividualSteps = ({ navigation }: Props) => {
               />
             )}
           </View>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 4,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
+        <View style={styles.innerContainer} key={4}>
           {/* {open && (
             <MonthPicker
               onChange={onValueChange}
@@ -462,7 +453,13 @@ const IndividualSteps = ({ navigation }: Props) => {
           )} */}
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
           <Text style={styles.text}>Step 3 of 7</Text>
-          <Text style={{ ...styles.heading, width: getWidth(80) }}>
+          <Text
+            style={{
+              ...styles.heading,
+              color: scheme == 'dark' ? '#fff' : '#032F3C',
+              width: getWidth(80),
+            }}
+          >
             What is your date of birth?
           </Text>
           <View>
@@ -491,6 +488,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               modal
               maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
               mode="date"
+              androidVariant="nativeAndroid"
               open={open}
               date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
               onConfirm={(date) => {
@@ -502,7 +500,15 @@ const IndividualSteps = ({ navigation }: Props) => {
               }}
             />
           </View>
-          <Text style={{ ...styles.heading, width: '100%' }}>Where are you located?</Text>
+          <Text
+            style={{
+              ...styles.heading,
+              color: scheme == 'dark' ? '#fff' : '#032F3C',
+              width: '100%',
+            }}
+          >
+            What City are you in?
+          </Text>
           <TextInput
             style={{ ...GeneralStyle.input, width: getWidth(80) }}
             mode="outlined"
@@ -511,7 +517,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             activeOutlineColor={'#5B7279'}
             showSoftInputOnFocus={false}
             onPressIn={() => setCountrySelector(true)}
-            label={'Location'}
+            label={'City/State'}
             placeholderTextColor={'black'}
           />
 
@@ -557,20 +563,13 @@ const IndividualSteps = ({ navigation }: Props) => {
               MapBoxTypes.postcode,
             ]}
           /> */}
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 5,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-
+        <View style={styles.innerContainer} key={5}>
           <Text
             style={{
               ...styles.heading,
@@ -647,19 +646,13 @@ const IndividualSteps = ({ navigation }: Props) => {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 6,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
+        <View style={styles.innerContainer} key={6}>
           <Text
             style={{
               ...styles.heading,
@@ -723,6 +716,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                     }
                   }}
                   style={styles.box}
+                  key={index}
                 >
                   <Image
                     style={
@@ -752,7 +746,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               ))}
             </ScrollView>
           </View>
-        </LinearGradient>
+        </View>
       ),
     },
   ];
@@ -820,176 +814,200 @@ const IndividualSteps = ({ navigation }: Props) => {
     }
   };
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={data}
-        horizontal={true}
-        scrollEnabled={false}
-        ref={flatListRef}
-        keyExtractor={(item, index) => {
-          return item.id;
-        }}
-        pagingEnabled
-        renderItem={({ item }) => <View style={styles.componentview}>{item?.component}</View>}
-      />
-      {curentIndex == 0 ? null : (
-        <View style={styles.footer}>
-          <ImageBackground
-            resizeMode="stretch"
-            style={{
-              flex: 1,
-              justifyContent: 'space-around',
-              alignItems: 'center',
-              flexDirection: 'row',
-            }}
-            source={require('@/assets/images/waveBG.png')}
-          >
-            {curentIndex == 0 ? (
-              <View style={{ width: getWidth(10) }} />
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  flatListRef.current?.scrollToIndex({ index: curentIndex - 1 });
-                  setCurrentIndex(curentIndex - 1);
-                }}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Ionicons name="chevron-back" size={getFontSize(3)} />
-                <Text style={styles.footerText}>Back</Text>
-              </TouchableOpacity>
-            )}
-            <View style={styles.progressBar}>
-              <ProgressBar
-                progress={curentIndex * 15}
-                height={7}
-                backgroundColor="#12D2D9"
-                trackColor="#032F3c"
-              />
-            </View>
-
-            {curentIndex == 5 ? (
-              <TouchableOpacity
-                onPress={() => {
-                  const data = {
-                    churchType: churchType?.churchType,
-                    churchSubType: churchSubType?.churchType,
-                    oftenChurch: churchAttend,
-                    dateOfBirth: date,
-                    location: {
-                      longitude: longitude,
-                      latitude: latitude,
-                      address: location?.place_name,
-                    },
-                  };
-                  dispatch(profileUpdate({ data, token, role: user?.role }));
-                }}
-              >
-                <Text style={styles.footerText}>Done</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  gonext();
-                }}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={styles.footerText}>Next</Text>
-                <Ionicons name="chevron-forward" size={getFontSize(3)} />
-              </TouchableOpacity>
-            )}
-          </ImageBackground>
-        </View>
-      )}
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={churchTypeModalVisible}
-        onBackdropPress={() => setChurchTypeModalVisible(false)}
-        onSwipeComplete={() => setChurchTypeModalVisible(false)}
-        swipeDirection={['down']}
-        style={styles.bottomView}
-        propagateSwipe={true}
+    <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={
+          scheme == 'dark'
+            ? [colors.background, colors.background, '#434748']
+            : [colors.background, colors.background, '#E0EEF3']
+        }
+        style={styles.innerContainer}
+        key={1}
       >
-        <View style={styles.content2}>
-          <View style={styles.headLine} />
-
-          <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-            {churchTypes.map((item) => {
-              return (
+        <StatusBar
+          translucent={true}
+          backgroundColor={colors.background}
+          barStyle={scheme == 'dark' ? 'light-content' : 'dark-content'}
+          hidden={false}
+        />
+        <FlatList
+          data={data}
+          horizontal={true}
+          scrollEnabled={false}
+          ref={flatListRef}
+          keyExtractor={(item, index) => {
+            return item.id;
+          }}
+          pagingEnabled
+          renderItem={({ item }) => {
+            return (
+              <View key={item.id} style={styles.componentview}>
+                {item?.component}
+              </View>
+            );
+          }}
+        />
+        {curentIndex == 0 ? null : (
+          <View style={styles.footer}>
+            <ImageBackground
+              resizeMode="stretch"
+              style={{
+                flex: 1,
+                justifyContent: 'space-around',
+                alignItems: 'center',
+                flexDirection: 'row',
+              }}
+              source={require('@/assets/images/waveBG.png')}
+            >
+              {curentIndex == 0 ? (
+                <View style={{ width: getWidth(10) }} />
+              ) : (
                 <TouchableOpacity
                   onPress={() => {
-                    // setWhatIDo(item);
-                    setChurchType(item);
-                    setSubChurchType(null);
-
-                    setChurchTypeModalVisible(false);
+                    flatListRef.current?.scrollToIndex({ index: curentIndex - 1 });
+                    setCurrentIndex(curentIndex - 1);
                   }}
-                  style={styles.listItem2}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
                 >
-                  <Text
-                    style={{
-                      color: '#81979E',
-                      fontSize: getFontSize(2.2),
-                      fontFamily: 'Rubik-Regular',
-                    }}
-                    numberOfLines={1}
-                  >
-                    {item.churchType}
-                  </Text>
+                  <Ionicons name="chevron-back" size={getFontSize(3)} />
+                  <Text style={styles.footerText}>Back</Text>
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
+              )}
+              <View style={styles.progressBar}>
+                <ProgressBar
+                  progress={curentIndex * 15}
+                  height={7}
+                  backgroundColor="#12D2D9"
+                  trackColor="#032F3c"
+                />
+              </View>
 
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={churchSubTypeModalVisible}
-        onBackdropPress={() => setChurchSubTypeModalVisible(false)}
-        onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
-        swipeDirection={['down']}
-        style={styles.bottomView}
-        propagateSwipe={true}
-      >
-        <View style={styles.content2}>
-          <View style={styles.headLine} />
-
-          <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-            {churchType?.children.map((item) => {
-              return (
+              {curentIndex == 5 ? (
                 <TouchableOpacity
                   onPress={() => {
-                    // setWhatIDo(item);
-                    setSubChurchType(item);
-                    setChurchSubTypeModalVisible(false);
+                    const data = {
+                      churchType: churchType?.churchType,
+                      churchSubType: churchSubType?.churchType,
+                      oftenChurch: churchAttend,
+                      dateOfBirth: date,
+                      location: {
+                        longitude: longitude,
+                        latitude: latitude,
+                        address: location?.place_name,
+                      },
+                    };
+                    dispatch(profileUpdate({ data, token, role: user?.role }));
                   }}
-                  style={styles.listItem2}
                 >
-                  <Text
-                    style={{
-                      color: '#81979E',
-                      fontSize: getFontSize(2.2),
-                      fontFamily: 'Rubik-Regular',
-                    }}
-                    numberOfLines={1}
-                  >
-                    {item.churchType}
-                  </Text>
+                  <Text style={styles.footerText}>Done</Text>
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
-    </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    gonext();
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={styles.footerText}>Next</Text>
+                  <Ionicons name="chevron-forward" size={getFontSize(3)} />
+                </TouchableOpacity>
+              )}
+            </ImageBackground>
+          </View>
+        )}
+        <Modal
+          backdropOpacity={0.3}
+          isVisible={churchTypeModalVisible}
+          onBackdropPress={() => setChurchTypeModalVisible(false)}
+          onSwipeComplete={() => setChurchTypeModalVisible(false)}
+          swipeDirection={['down']}
+          style={styles.bottomView}
+          propagateSwipe={true}
+        >
+          <View style={{ ...styles.content2, backgroundColor: colors.background }}>
+            <View style={styles.headLine} />
+
+            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+              {churchTypes.map((item, index) => {
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      // setWhatIDo(item);
+                      setChurchType(item);
+                      setSubChurchType(null);
+
+                      setChurchTypeModalVisible(false);
+                    }}
+                    style={styles.listItem2}
+                    key={index}
+                  >
+                    <Text
+                      style={{
+                        color: '#81979E',
+                        fontSize: getFontSize(2.2),
+                        fontFamily: 'Rubik-Regular',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item.churchType}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </Modal>
+
+        <Modal
+          backdropOpacity={0.3}
+          isVisible={churchSubTypeModalVisible}
+          onBackdropPress={() => setChurchSubTypeModalVisible(false)}
+          onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
+          swipeDirection={['down']}
+          style={styles.bottomView}
+          propagateSwipe={true}
+        >
+          <View style={styles.content2}>
+            <View style={styles.headLine} />
+
+            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+              {churchType?.children.map((item, index) => {
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      // setWhatIDo(item);
+                      setSubChurchType(item);
+                      setChurchSubTypeModalVisible(false);
+                    }}
+                    style={styles.listItem2}
+                    key={index}
+                  >
+                    <Text
+                      style={{
+                        color: '#81979E',
+                        fontSize: getFontSize(2.2),
+                        fontFamily: 'Rubik-Regular',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item.churchType}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </Modal>
+      </LinearGradient>
+    </SafeAreaView>
   );
 };
 

@@ -19,6 +19,7 @@ import Geolocation from '@react-native-community/geolocation';
 import { useDispatch } from 'react-redux';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from '@react-navigation/native';
 
 const access_token =
   'pk.eyJ1IjoiaW5hYW0xIiwiYSI6ImNramtmNmljYzJhMWMycnFwM28zOHE4ZzIifQ.pBIP97q3Us332iKImTP9aQ';
@@ -64,6 +65,7 @@ let timer: NodeJS.Timeout | null = null;
 
 const MapBox = (props: MapBoxProps) => {
   const { setLocation, location, setCheckIn, CheckIn, setLongitude, setLatitude } = props;
+  const { colors } = useTheme();
 
   const [show, setshown] = useState<boolean>(false);
   const [suggetions, setSuggetions] = useState<MapSuggestion[]>();
@@ -75,8 +77,8 @@ const MapBox = (props: MapBoxProps) => {
     if (val) {
       timer = setTimeout(() => {
         fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?types=place&access_token=${access_token}${
-            props.types ? `&types=${props.types?.join(',')}` : ''
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}${
+            props.types ? `&types=${props.types?.join(',')}` : '&types=place'
           }${props.countries ? `&country=${props.countries?.join(',')}` : ''}`
         )
           .then((response) => response.json())
@@ -120,7 +122,9 @@ const MapBox = (props: MapBoxProps) => {
   };
   const getcurrentLocation = (longitude: number, latitude: number) => {
     fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=place&access_token=${access_token}`
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${access_token}${
+        props.types ? `&types=${props.types?.join(',')}` : 'types=place'
+      }${props.countries ? `&country=${props.countries?.join(',')}` : ''}`
     )
       .then((response) => response.json())
       .then((data) => {
@@ -133,7 +137,7 @@ const MapBox = (props: MapBoxProps) => {
         setCheckIn(false);
       });
   };
-
+  console.log(colors.background);
   return (
     <Modal
       backdropOpacity={0.3}
@@ -144,7 +148,7 @@ const MapBox = (props: MapBoxProps) => {
       style={styles.bottomView}
       avoidKeyboard={true}
     >
-      <View style={styles.content2}>
+      <View style={{ ...styles.content2, backgroundColor: colors.background }}>
         <View style={styles.headLine} />
         <View style={styles.container}>
           <View style={styles.inputView}>
@@ -208,15 +212,13 @@ const MapBox = (props: MapBoxProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-
-    backgroundColor: 'white',
   },
   imageThumbnail: {
     justifyContent: 'center',
     alignItems: 'center',
     height: 100,
   },
-  placeItemView: { padding: 10, backgroundColor: 'white' },
+  placeItemView: { padding: 10 },
   input: {
     height: 40,
     paddingLeft: 15,
@@ -250,7 +252,6 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   content2: {
-    backgroundColor: 'white',
     alignItems: 'center',
     padding: 13,
     borderTopRightRadius: 17,
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
     height: 6,
     width: 55,
     borderRadius: 5,
-    backgroundColor: '#EAEAEA',
+
     marginBottom: 5,
   },
 });

@@ -13,9 +13,9 @@ export const GeneralStyle = StyleSheet.create({
     letterSpacing: 1.25,
   },
   btn: {
-    backgroundColor: '#032F3C',
     alignSelf: 'center',
-    width: getWidth(88),
+    flexGrow: 1,
+    marginHorizontal: 25,
     height: getHeight(6),
     justifyContent: 'center',
     alignItems: 'center',

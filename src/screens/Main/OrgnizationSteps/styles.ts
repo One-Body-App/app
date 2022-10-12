@@ -4,7 +4,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ' #E5E5E5;',
+    // backgroundColor: ' #E5E5E5',
     alignItems: 'center',
   },
   largeview: {

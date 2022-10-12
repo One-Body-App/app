@@ -125,7 +125,7 @@ export const styles = StyleSheet.create<Styles>({
     margin: getHeight(3),
     textAlign: 'center',
     fontWeight: '500',
-    color: '#032F3C',
+
     fontFamily: 'Rubik-Regular',
   },
 
@@ -133,7 +133,7 @@ export const styles = StyleSheet.create<Styles>({
     fontSize: getFontSize(3),
 
     fontWeight: 'bold',
-    color: '#032F3C',
+
     fontFamily: 'Rubik-Regular',
   },
   img: { width: 80, height: 80, alignSelf: 'center', borderRadius: 40 },
@@ -175,8 +175,6 @@ export const styles = StyleSheet.create<Styles>({
     borderRadius: 10,
   },
   content2: {
-    backgroundColor: 'white',
-
     padding: 13,
     borderTopRightRadius: 17,
     borderTopLeftRadius: 17,
@@ -201,7 +199,6 @@ export const styles = StyleSheet.create<Styles>({
     alignItems: 'center',
   },
   btn3: {
-    backgroundColor: '#E7F0F3',
     flexDirection: 'row',
     width: getWidth(80),
     margin: 5,
@@ -228,6 +225,5 @@ export const styles = StyleSheet.create<Styles>({
   logouttext: {
     fontSize: getFontSize(2.5),
     fontWeight: 'bold',
-    color: '#032F3C',
   },
 });

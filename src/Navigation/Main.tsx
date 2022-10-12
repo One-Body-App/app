@@ -89,7 +89,7 @@ const Main = () => {
       setUser(firebaseUser);
       dispatch(
         setUserData({
-          ...firebaseUser,
+          ...firebaseUser?.toJSON(),
           tokenResult: await firebaseUser?.getIdTokenResult(),
         })
       );
@@ -134,7 +134,7 @@ const Main = () => {
     config: {
       screens: {
         ConfirmLogin: {
-          path: '/auth/:action',
+          path: '/auth/:action/:provider?',
         },
         SignUp: {
           path: '/signup/:action',
@@ -146,10 +146,30 @@ const Main = () => {
     },
   };
 
+  const theme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: '#FFF',
+      primary: '#032F3C',
+      card: '#F6F6F6',
+    },
+  };
+
+  const darkTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+
+      primary: '#5B7279',
+      card: '#F6F6F6',
+    },
+  };
+
   const scheme = useColorScheme();
-  console.log(scheme === 'dark' ? DarkTheme : DefaultTheme);
+
   return (
-    <NavigationContainer linking={linking} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       <AppProvider>
         <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="SignUp">
           {user &&
