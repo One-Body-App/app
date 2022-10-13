@@ -1,9 +1,4 @@
 import * as React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Octicons from 'react-native-vector-icons/Octicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Home from '../screens/Main/Home';
 import Explore from '../screens/Main/Explore';
@@ -36,6 +31,7 @@ function Bottom({ navigation, route }) {
   React.useEffect(() => {
     tabs != undefined ? setTab(tabs) : null;
   }, [tabs]);
+  console.log(tab, 'tab');
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
@@ -86,7 +82,7 @@ function Bottom({ navigation, route }) {
           </View>
         ) : null}
       </View>
-      <LinearGradient style={{ flex: 0.11 }} colors={['#032F3C', '#094558', '#126B87']}>
+      {/* <LinearGradient style={{ flex: 0.11 }} colors={['#032F3C', '#094558', '#126B87']}>
         <View style={styles.tabBar}>
           {tab == 'Home' ? (
             <LinearGradient colors={['#07566A', '#20A2BF']} style={styles.tab}>
@@ -158,23 +154,23 @@ function Bottom({ navigation, route }) {
           )}
         </View>
       </LinearGradient>
-      {requestModel ? <PrayerModel setRequestModel={setRequestModel} /> : null}
+      {requestModel ? <PrayerModel setRequestModel={setRequestModel} /> : null} */}
     </View>
   );
 }
 export default Bottom;
-const styles = StyleSheet.create({
-  tabText: {
-    color: '#F6F6F6',
-    fontSize: 12,
-  },
-  tab: {
-    alignItems: 'center',
-    flex: 1,
-    paddingBottom: 7,
+// const styles = StyleSheet.create({
+//   tabText: {
+//     color: '#F6F6F6',
+//     fontSize: 12,
+//   },
+//   tab: {
+//     alignItems: 'center',
+//     flex: 1,
+//     paddingBottom: 7,
 
-    justifyContent: 'center',
-  },
+//     justifyContent: 'center',
+//   },
 
-  tabBar: { flexDirection: 'row', flex: 1, justifyContent: 'space-around' },
-});
+//   tabBar: { flexDirection: 'row', flex: 1, justifyContent: 'space-around' },
+// });

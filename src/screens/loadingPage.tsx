@@ -3,15 +3,20 @@ import { Image, View, StatusBar } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { SetSocial, SetTodayNews } from '@/redux/actions/SocialActions';
 import { ApiCall } from '@/services/api';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '../Navigation/types';
+import { RootState } from '../Redux/reducers/rootReducer';
 
-const LoadingPage = ({ navigation }) => {
-  const user = useSelector((state) => state.auth.userProfile);
-  const token = useSelector((state) => state.auth.userToken);
+type Props = StackScreenProps<RootStackParamList, 'LoadingPage'>;
+
+const LoadingPage = ({ navigation }: Props) => {
+  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
 
   const twitterUsers = ['147895001', '1380592017936375815', '1481475468125745154'];
 
-  const getTwiters = async (id) => {
+  const getTwiters = async (id: string) => {
     try {
       id = '1481475468125745154';
       const res = await ApiCall({
@@ -23,17 +28,17 @@ const LoadingPage = ({ navigation }) => {
         external: true,
       });
       console.log(res);
-      if (res?.status == '200') {
-        dispatch(SetSocial(res?.data));
+      if (res?.status == 200) {
+        dispatch(SetSocial(res?.response.data));
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response.data);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log(`saga get twitter timline ${id} error -- `, e.toString());
     }
   };
 
-  const getMultipleRandom = (arr, num) => {
+  const getMultipleRandom = (arr: string[], num: number) => {
     const shuffled = [...arr].sort(() => 0.5 - Math.random());
 
     return shuffled.slice(0, num);
@@ -43,37 +48,39 @@ const LoadingPage = ({ navigation }) => {
   };
   const getTodayNews = async () => {
     try {
+      console.log(token, 'tokentokentoken');
       const res = await ApiCall({
         route: 'blogs/get-feed/today-news',
         verb: 'get',
         token: token,
       });
       console.log(res);
-      if (res?.status == '200') {
-        if (res?.data && res?.data.length > 0) {
-          dispatch(SetTodayNews(res?.data[0]));
+      if (res?.status == 200) {
+        if (res?.response && res?.response.length > 0) {
+          dispatch(SetTodayNews(res?.response[0]));
         }
 
-        navigation.navigate('Bootombar', { tabs: 'Home' });
+        navigation.navigate('Bottombar', { tabs: 'Home' });
         // user?.phoneNumber
         //   ? navigation.navigate('Bootombar', { tabs: 'Home' })
         //   : navigation.navigate('AddPhoneNumber');
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log(e);
       console.log('saga error -- ', e.toString());
-      user?.phoneNumber
-        ? navigation.navigate('Bootombar', { tabs: 'Home' })
-        : navigation.navigate('AddPhoneNumber');
+
+      navigation.navigate('Bottombar', { tabs: 'Home' });
     }
   };
 
   useEffect(() => {
-    getAllTweets();
-    getTodayNews();
-  }, []);
+    if (token) {
+      getAllTweets();
+      getTodayNews();
+    }
+  }, [token]);
 
   return (
     <View>

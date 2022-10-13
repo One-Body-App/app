@@ -180,7 +180,8 @@ const Main = () => {
             <>
               {userProfile.isProfileCompleted ? (
                 <>
-                  <Stack.Screen name="Bootombar" component={Drawerr} />
+                  <Stack.Screen name="LoadingPage" component={LoadingPage} />
+                  <Stack.Screen name="Bottombar" component={Drawerr} />
                   <Stack.Screen name="InfluencerStepOne" component={InfluencerStepOne} />
                   <Stack.Screen name="InfluencerStepTwo" component={InfluencerStepTwo} />
                   <Stack.Screen name="InfluencerStepThree" component={InfluencerStepThree} />

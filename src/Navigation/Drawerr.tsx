@@ -8,7 +8,7 @@ import {
 import React from 'react';
 import { View, Image, Text, TouchableOpacity } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Bottom from './Bootom';
+import Bottom from './Bottom';
 import Notification from '../screens/Main/Notification';
 import Saved from '../screens/Main/Saved/Index';
 import Chanel from '../screens/Main/Chanel';
@@ -19,10 +19,11 @@ import InviteFriend from '../screens/Main/InviteFriend';
 import ImageModal from 'react-native-image-modal';
 import { useSelector } from 'react-redux';
 import ZendeskChat from 'react-native-zendesk-chat';
+import { RootState } from '../Redux/reducers/rootReducer';
 
 const Drawer = createDrawerNavigator();
 function NavHeader(props) {
-  const user = useSelector((state) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
 
   return (
     <View
@@ -135,7 +136,7 @@ export default function Drawerr() {
       }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     >
-      {/* <Drawer.Screen
+      <Drawer.Screen
         name="Home"
         options={{
           headerShown: false,
@@ -144,7 +145,7 @@ export default function Drawerr() {
           drawerActiveTintColor: '#032F3C',
         }}
         component={Bottom}
-      /> */}
+      />
       <Drawer.Screen
         name="Pray"
         options={{

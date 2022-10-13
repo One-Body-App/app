@@ -13,7 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Divider } from 'react-native-paper';
-import Swipeable from 'react-native-swipeable';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';

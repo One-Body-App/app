@@ -6,6 +6,7 @@ export type RootStackParamList = {
     showConfirmationEmailMessage?: boolean;
   };
   Bootombar: undefined;
+  LoadingPage: undefined;
   InfluencerStepOne: undefined;
   InfluencerStepTwo: undefined;
   InfluencerStepThree: undefined;
@@ -37,4 +38,7 @@ export type RootStackParamList = {
     setError: (errorText: string) => void;
   };
   NotificationSettings: undefined;
+  Bottombar: {
+    tabs: string;
+  };
 };
