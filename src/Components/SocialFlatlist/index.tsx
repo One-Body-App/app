@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
 import { styles } from './styles';
-import Social from '@/assets/svg/Social.svg';
+import Twitter from '@/assets/svg/Twitter.svg';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
@@ -80,7 +80,7 @@ const SocialFlatlist = () => {
             {item?.text}
           </Text>
           <View style={{ flexDirection: 'row', padding: 5 }}>
-            <Social />
+            <Twitter fill="#00acee" />
             <Text
               style={{
                 marginLeft: 5,
@@ -89,7 +89,7 @@ const SocialFlatlist = () => {
                 alignItems: 'center',
               }}
             >
-              @bishopjakes
+              @onebodynick
             </Text>
           </View>
         </View>

@@ -15,7 +15,7 @@ import Fontisto from 'react-native-vector-icons/Fontisto';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { getFontSize, getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';
 import SubscribeFlatlist from '../SubscribeFlatlist';
-import * as rssParser from 'react-native-rss-parser';
+
 import parse from 'rss-to-json';
 import { useNavigation } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';

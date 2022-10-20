@@ -226,12 +226,12 @@ const IndividualSteps = ({ navigation }: Props) => {
         verb: 'patch',
       });
 
-      if (res?.status == 200) {
+      if (res?.status != 200) {
         // getInfluencers();
         // dispatch(setLoader(false));
 
-        next();
-      } else {
+        // next();
+        // } else {
         dispatch(setLoader(false));
         console.log('error', res);
       }
@@ -888,19 +888,25 @@ const IndividualSteps = ({ navigation }: Props) => {
 
               {curentIndex == 5 ? (
                 <TouchableOpacity
-                  onPress={() => {
-                    const data = {
-                      churchType: churchType?.churchType,
-                      churchSubType: churchSubType?.churchType,
-                      oftenChurch: churchAttend,
-                      dateOfBirth: date,
-                      location: {
-                        longitude: longitude,
-                        latitude: latitude,
-                        address: location?.place_name,
-                      },
-                    };
-                    dispatch(profileUpdate({ data, token, role: user?.role }));
+                  onPress={async () => {
+                    console.log(Organization);
+                    if (Organization.length > 0) {
+                      await addFollowing();
+                      const data = {
+                        churchType: churchType?.churchType,
+                        churchSubType: churchSubType?.churchType,
+                        oftenChurch: churchAttend,
+                        dateOfBirth: date,
+                        location: {
+                          longitude: longitude,
+                          latitude: latitude,
+                          address: location?.place_name,
+                        },
+                      };
+                      dispatch(profileUpdate({ data, token, role: user?.role }));
+                    } else {
+                      showToast('Select at least 1 influencer/organization to continue');
+                    }
                   }}
                 >
                   <Text style={styles.footerText}>Done</Text>

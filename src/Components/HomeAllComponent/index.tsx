@@ -23,9 +23,9 @@ import { getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';
 import SubscribeFlatlist from '../SubscribeFlatlist';
 import Button from '../Button';
 import { GeneralStyle } from '../../constants/GeneralStyle';
-import { color } from 'react-native-reanimated';
+
 import SocialFlatlist from '../SocialFlatlist';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
@@ -58,6 +58,7 @@ const HomeAllComponent = () => {
       console.log('saga error -- ', e.toString());
     }
   };
+  const { colors } = useTheme();
 
   useEffect(() => {
     getRecentBlog();
@@ -138,12 +139,29 @@ const HomeAllComponent = () => {
               btnTextStyle={{ color: '#032F3C' }}
               onPress={() => console.log('press')}
             />
-            <TouchableOpacity style={{ ...GeneralStyle.btn, backgroundColor: '#f6f6f6' }}>
-              <Text style={{ color: '#032F3C' }}>Unsubscribe</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}>
-              <Text style={{ ...GeneralStyle.btnText, color: '#032f3c' }}>CLOSE</Text>
-            </TouchableOpacity>
+
+            <Button
+              btnStyle={{
+                ...GeneralStyle.btn,
+                backgroundColor: '#f6f6f6',
+                flexDirection: 'row',
+              }}
+              text="Unsubscribe"
+              btnTextStyle={{ color: '#032F3C' }}
+              onPress={() => console.log('press')}
+            />
+
+            <Button
+              text={'CLOSE'}
+              btnStyle={{
+                ...GeneralStyle.btn,
+                // backgroundColor: 'red',
+                backgroundColor: '#e6eaec',
+                flexDirection: 'row',
+              }}
+              btnTextStyle={{ ...GeneralStyle.btnText, color: '#032f3c' }}
+              onPress={() => {}}
+            />
           </View>
         </View>
       </Modal>

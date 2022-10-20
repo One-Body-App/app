@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import * as rssParser from 'react-native-rss-parser';
+
 import { useDispatch, useSelector } from 'react-redux';
 import parse from 'rss-to-json';
 import { SetAllBlog } from '@/redux/actions/SocialActions';

@@ -47,7 +47,8 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     alignSelf: 'center',
-    width: getWidth(70),
+
+    width: '100%',
     height: getHeight(6),
     // backgroundColor: '#F6F6F6',
     borderRadius: 7,

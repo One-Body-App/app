@@ -14,11 +14,10 @@ const LoadingPage = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
 
-  const twitterUsers = ['147895001', '1380592017936375815', '1481475468125745154'];
+  const twitterUsers = ['700214868'];
 
   const getTwiters = async (id: string) => {
     try {
-      id = '1481475468125745154';
       const res = await ApiCall({
         route: `https://api.twitter.com/2/users/${id}/tweets?tweet.fields=attachments,created_at&media.fields=preview_image_url`,
         token:
@@ -27,7 +26,7 @@ const LoadingPage = ({ navigation }: Props) => {
 
         external: true,
       });
-      console.log(res);
+      console.log(user, 'useruseruserres');
       if (res?.status == 200) {
         dispatch(SetSocial(res?.response.data));
       } else {

@@ -57,7 +57,7 @@ function NavHeader(props) {
             resizeMode={'contain'}
           />
           <Text
-            numberOfLines={3}
+            numberOfLines={2}
             style={{
               fontSize: getFontSize(2.4),
               fontFamily: 'Rubik-Medium',
@@ -127,8 +127,10 @@ export default function Drawerr() {
   return (
     <Drawer.Navigator
       screenOptions={{
+        drawerType: 'front',
         drawerStyle: {
           backgroundColor: '#E5E5E5',
+          // backgroundColor: 'transparent',
           borderBottomEndRadius: 30,
           borderTopEndRadius: 30,
           paddingLeft: getWidth(8),

@@ -96,7 +96,7 @@ const SubscribeFlatlist = () => {
             }}
           >
             <Text numberOfLines={2} style={styles.subscribetext}>
-              {item?.userName}
+              {item?.name}
             </Text>
             <Text
               numberOfLines={1}
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
 
-    width: getWidth(28),
+    width: getWidth(30),
     borderRadius: 10,
   },
   subtex: {
