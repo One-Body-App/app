@@ -244,7 +244,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
     dispatch(setLoader(true));
     try {
       const res = await ApiCall({
-        route: 'organization/add-interests',
+        route: 'user/add-interests',
         token: token,
         params: { interests: selectedInterest },
         verb: 'patch',
@@ -265,7 +265,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   const addFollowing = async () => {
     try {
       const res = await ApiCall({
-        route: 'organization/add-following',
+        route: 'user/add-following',
         token: token,
         params: { following: Organization },
         verb: 'patch',

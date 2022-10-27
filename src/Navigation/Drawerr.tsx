@@ -1,6 +1,7 @@
 import 'react-native-gesture-handler';
 import {
   createDrawerNavigator,
+  DrawerContentComponentProps,
   DrawerContentScrollView,
   DrawerItem,
   DrawerItemList,
@@ -22,7 +23,7 @@ import ZendeskChat from 'react-native-zendesk-chat';
 import { RootState } from '../Redux/reducers/rootReducer';
 
 const Drawer = createDrawerNavigator();
-function NavHeader(props) {
+function NavHeader(props: DrawerContentComponentProps) {
   const user = useSelector((state: RootState) => state.auth.userProfile);
 
   return (
@@ -86,7 +87,7 @@ function NavHeader(props) {
     </View>
   );
 }
-function CustomDrawerContent(props) {
+function CustomDrawerContent(props: DrawerContentComponentProps) {
   return (
     <DrawerContentScrollView {...props}>
       <NavHeader {...props} />

@@ -141,7 +141,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   socialpostview: {
-    backgroundColor: '#F6F6F6',
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',

@@ -152,7 +152,7 @@ export const styles = StyleSheet.create({
   newstitle: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#032F3C',
+
     fontFamily: 'Rubik-Medium',
     marginLeft: 10,
     padding: 10,
@@ -193,7 +193,6 @@ export const styles = StyleSheet.create({
     marginLeft: getWidth(2),
     padding: 10,
     paddingBottom: 0,
-    color: '#126B87',
   },
   socialpostfooter: {
     padding: 10,

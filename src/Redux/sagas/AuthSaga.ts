@@ -112,7 +112,7 @@ function* updateProfileRequest(params) {
   try {
     const res = yield ApiCall({
       params: params.data.data,
-      route: `individual/update-profile`,
+      route: `user/update-profile`,
       token: params.data.token,
       verb: 'patch',
     });
@@ -143,7 +143,7 @@ function* updateOrgProfileRequest(params) {
   try {
     const res = yield ApiCall({
       params: params.data.data,
-      route: 'organization/update-profile',
+      route: 'user/update-profile',
       token: params.data.token,
       verb: 'patch',
     });
@@ -198,7 +198,7 @@ export function* UpdateOrgProfileSaga() {
 function* getUserProfileRequest(params) {
   try {
     const res = yield ApiCall({
-      route: `${params.data.role}/my-profile`,
+      route: `user/my-profile`,
       token: params.data.token,
       verb: 'get',
     });

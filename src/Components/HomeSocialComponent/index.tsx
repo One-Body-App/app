@@ -18,14 +18,16 @@ import { ApiCall } from '@/services/api';
 import { SetRecentBlog, SetSocial } from '@/redux/actions/SocialActions';
 import { useDispatch, useSelector } from 'react-redux';
 import FastImage from 'react-native-fast-image';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { OpenURLButton } from '@/src/Services/constants';
 
 const HomeSocialComponent = () => {
   const dispatch = useDispatch();
   const [refreshing, setRefreshing] = useState(false);
-  const socialPost = useSelector((state) => state.social.SocialPost);
-  const token = useSelector((state) => state.auth.userToken);
-  const recentBlog = useSelector((state) => state.social.RecentBlog);
+  const socialPost = useSelector((state: RootState) => state.social.SocialPost);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
 
   const [data, setData] = useState([]);
   const navigation = useNavigation();
@@ -38,7 +40,7 @@ const HomeSocialComponent = () => {
   ];
   const twitterUsers = ['147895001', '1380592017936375815', '1481475468125745154'];
 
-  const getTwiters = async (id) => {
+  const getTwiters = async (id: string) => {
     try {
       const res = await ApiCall({
         route: `https://api.twitter.com/2/users/${id}/tweets?tweet.fields=attachments,created_at&media.fields=preview_image_url`,
@@ -48,7 +50,7 @@ const HomeSocialComponent = () => {
 
         external: true,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         // console.log('res', res.data);
         dispatch(SetSocial([...res?.response, ...socialPost]));
       } else {
@@ -75,12 +77,12 @@ const HomeSocialComponent = () => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(SetRecentBlog(res?.response[0]));
       } else {
         console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -88,16 +90,18 @@ const HomeSocialComponent = () => {
   useEffect(() => {
     getRecentBlog();
   }, []);
+
+  const { colors } = useTheme();
   return (
     <ScrollView
       refreshControl={
         <RefreshControl enabled={true} refreshing={refreshing} onRefresh={() => getAllTweets()} />
       }
-      style={{ flex: 1, backgroundColor: '#fff' }}
+      style={{ flex: 1 }}
     >
       <SocialFlatlist />
 
-      <Text style={styles.blogposttext}>Recent Blog Post</Text>
+      <Text style={{ ...styles.newstitle, color: colors.text }}>Recent Blog Post</Text>
       <View>
         <FlatList
           data={recentBlog}
@@ -110,9 +114,10 @@ const HomeSocialComponent = () => {
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('BlogView', { url: item?.link });
+                // navigation.navigate('BlogView', { url: item?.link });
+                OpenURLButton(item?.link);
               }}
-              style={styles.blogpostview}
+              style={{ ...styles.blogpostview, backgroundColor: colors.card }}
             >
               <FastImage
                 style={styles.blogpostimage}
@@ -128,7 +133,9 @@ const HomeSocialComponent = () => {
         />
       </View>
       <View style={styles.explorview}>
-        <Text style={styles.explortext}>Explore Influencers & Organizations</Text>
+        <Text style={{ ...styles.explortext, color: colors.text }}>
+          Explore Influencers & Organizations
+        </Text>
         <TouchableOpacity
           onPress={() => navigation.navigate('Home', { tabs: 'Explore' })}
           style={styles.viewtext}

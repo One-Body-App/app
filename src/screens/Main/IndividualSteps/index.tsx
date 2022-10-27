@@ -193,10 +193,10 @@ const IndividualSteps = ({ navigation }: Props) => {
   };
   const addInterests = async () => {
     // dispatch(setLoader(true));
-
+    console.log(token);
     try {
       const res = await ApiCall({
-        route: 'individual/add-interests',
+        route: 'user/add-interests',
         token: token,
         params: { interests: selectedInterest },
         verb: 'patch',
@@ -220,7 +220,7 @@ const IndividualSteps = ({ navigation }: Props) => {
   const addFollowing = async () => {
     try {
       const res = await ApiCall({
-        route: 'individual/add-following',
+        route: 'user/add-following',
         token: token,
         params: { following: Organization },
         verb: 'patch',

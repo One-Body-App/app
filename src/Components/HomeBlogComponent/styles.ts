@@ -7,7 +7,6 @@ export const styles = StyleSheet.create({
   },
 
   blogpostview: {
-    backgroundColor: '#f6f6f6',
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',

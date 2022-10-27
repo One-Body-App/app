@@ -240,7 +240,6 @@ export const styles = StyleSheet.create({
     color: '#126B87',
   },
   blogpostview: {
-    backgroundColor: '#FAFAFA',
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',

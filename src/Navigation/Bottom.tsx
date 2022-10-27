@@ -20,7 +20,12 @@ import MyProfile from '../screens/Main/MyProfile';
 import { getHeight } from '@/utils/ResponsiveFun';
 import PrayerModel from '../Components/PrayerModel';
 
-function Bottom({ navigation, route }) {
+import { RootStackParamList } from './types';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+
+type Props = DrawerScreenProps<RootStackParamList, 'Bottom'>;
+
+function Bottom({ navigation, route }: Props) {
   const tabs = route?.params?.tabs;
   const [requestModel, setRequestModel] = React.useState(false);
 
@@ -36,7 +41,11 @@ function Bottom({ navigation, route }) {
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         {tab == 'Home' ? (
-          <Home navigation={navigation} setRequestModel={setRequestModel} />
+          <Home
+            navigate={navigation.navigate}
+            openDrawer={navigation.openDrawer}
+            setRequestModel={setRequestModel}
+          />
         ) : tab == 'Explore' ? (
           <Explore navigation={navigation} goBack={goBack} />
         ) : tab == 'Message' ? (
@@ -70,7 +79,7 @@ function Bottom({ navigation, route }) {
             <TouchableOpacity
               style={{ flexDirection: 'row' }}
               onPress={() => {
-                navigation.navigate('My Channels');
+                // navigation.navigate('MyChannels');
               }}
             >
               <AntDesign name={'adduser'} color={'#4F6D77'} size={14} />

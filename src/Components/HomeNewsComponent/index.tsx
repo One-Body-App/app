@@ -17,17 +17,18 @@ import { getFontSize, getHeight, getWidth, timeSince } from '@/utils/ResponsiveF
 import SubscribeFlatlist from '../SubscribeFlatlist';
 
 import parse from 'rss-to-json';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { ApiCall } from '@/services/api';
 import { SetAllNews, SetLocalNews } from '@/redux/actions/SocialActions';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoader } from '@/redux/actions/GeneralActions';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
 const HomeNewsComponent = () => {
-  const token = useSelector((state) => state.auth.userToken);
-  const allNews = useSelector((state) => state.social.AllNews);
-  const LocalNews = useSelector((state) => state.social.LocalNews);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const allNews = useSelector((state: RootState) => state.social.AllNews);
+  const LocalNews = useSelector((state: RootState) => state.social.LocalNews);
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const Data = [
@@ -47,14 +48,14 @@ const HomeNewsComponent = () => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(SetAllNews(res?.response[0]));
         dispatch(setLoader(false));
       } else {
         console.log('error', res?.response);
         dispatch(setLoader(false));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -65,13 +66,13 @@ const HomeNewsComponent = () => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(SetLocalNews(res?.response[0]));
       } else {
         console.log('error', res?.response);
         dispatch(setLoader(false));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -81,15 +82,24 @@ const HomeNewsComponent = () => {
     getLocalNews();
   }, []);
 
+  const { colors } = useTheme();
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1 }}>
       <ScrollView
-        refreshing={refreshing}
         refreshControl={
-          <RefreshControl enabled={true} refreshing={refreshing} onRefresh={() => getAllNews()} />
+          <RefreshControl
+            enabled={true}
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await getAllNews();
+              setRefreshing(false);
+            }}
+          />
         }
       >
-        <Text style={styles.newstitle}>Today's News</Text>
+        <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
 
         <View>
           <FlatList
@@ -102,7 +112,7 @@ const HomeNewsComponent = () => {
                 onPress={() => {
                   navigation.navigate('BlogView', { url: item?.item?.id });
                 }}
-                style={styles.socialpostview}
+                style={{ ...styles.socialpostview, backgroundColor: colors.card }}
               >
                 {item?.item?.enclosures ? (
                   <FastImage
@@ -153,7 +163,7 @@ const HomeNewsComponent = () => {
             )}
           />
         </View>
-        <Text style={styles.blogposttext}>Local News</Text>
+        <Text style={{ ...styles.newstitle, color: colors.text }}>Local News</Text>
         <View>
           <FlatList
             data={LocalNews}
@@ -192,7 +202,9 @@ const HomeNewsComponent = () => {
           />
         </View>
         <View style={styles.explorview}>
-          <Text style={styles.explortext}>Explore Influencers & Organizations</Text>
+          <Text style={{ ...styles.explortext, color: colors.text }}>
+            Explore Influencers & Organizations
+          </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate('Home', { tabs: 'Explore' })}
             style={styles.viewtext}

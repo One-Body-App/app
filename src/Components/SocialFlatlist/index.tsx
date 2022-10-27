@@ -6,15 +6,17 @@ import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { SetSocial } from '@/redux/actions/SocialActions';
+import { useTheme } from '@react-navigation/native';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
 const SocialFlatlist = () => {
-  const socialPost = useSelector((state) => state.social.SocialPost);
+  const socialPost = useSelector((state: RootState) => state.social.SocialPost);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
 
   const twitterUsers = ['147895001', '1380592017936375815', '1481475468125745154'];
 
-  const getTwiters = async (id) => {
+  const getTwiters = async (id: string) => {
     try {
       const res = await ApiCall({
         route: `https://api.twitter.com/2/users/${id}/tweets?tweet.fields=attachments,created_at&media.fields=preview_image_url`,
@@ -24,17 +26,17 @@ const SocialFlatlist = () => {
 
         external: true,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(SetSocial([...res?.response, ...socialPost]));
       } else {
         console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log(`saga get twitter timline ${id} error -- `, e.toString());
     }
   };
 
-  const getMultipleRandom = (arr, num) => {
+  const getMultipleRandom = (arr: string[], num: number) => {
     const shuffled = [...arr].sort(() => 0.5 - Math.random());
 
     return shuffled.slice(0, num);
@@ -42,6 +44,8 @@ const SocialFlatlist = () => {
   const getAllTweets = () => {
     getMultipleRandom(twitterUsers, 2).map((item) => getTwiters(item));
   };
+
+  const { colors } = useTheme();
 
   return (
     <FlatList
@@ -59,7 +63,7 @@ const SocialFlatlist = () => {
       )}
       ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
       renderItem={({ item }) => (
-        <View style={styles.socialpostview}>
+        <View style={{ ...styles.socialpostview, backgroundColor: colors.card }}>
           {item?.attachments ? (
             <Image
               style={styles.socialpostimage}

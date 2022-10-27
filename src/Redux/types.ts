@@ -18,4 +18,6 @@ export type UserProfile = {
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
   subscribeToNewsletter: boolean;
+
+  profileImage?: string;
 };

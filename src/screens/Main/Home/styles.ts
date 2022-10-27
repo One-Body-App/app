@@ -13,12 +13,11 @@ export const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     paddingHorizontal: getWidth(5),
     justifyContent: 'space-between',
-
-    minHeight: getHeight(9),
-    maxHeight: getHeight(9),
+    paddingVertical: getHeight(2),
+    // height: getHeight(4),
   },
   fab: {
     justifyContent: 'center',
@@ -300,7 +299,6 @@ export const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
   },
   tabItem: {
     flex: 1,

@@ -1,5 +1,8 @@
 export type RootStackParamList = {
-  Home: undefined;
+  Home: {
+    tabs?: string;
+  };
+
   Login: {
     oauth_token?: string;
     oauth_verifier?: string;
@@ -40,5 +43,12 @@ export type RootStackParamList = {
   NotificationSettings: undefined;
   Bottombar: {
     tabs: string;
+  };
+  Search: undefined;
+  Bottom: {
+    tabs?: string;
+  };
+  BlogView: {
+    url?: string;
   };
 };

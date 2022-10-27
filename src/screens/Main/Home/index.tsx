@@ -1,43 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
-  SafeAreaView,
-  Text,
   View,
-  YellowBox,
-  TextInput,
-  Image,
   TouchableWithoutFeedback,
   TouchableOpacity,
   Animated,
-  FlatList,
-  RefreshControl,
-  ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Avatar } from 'react-native-paper';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { TabView, SceneMap } from 'react-native-tab-view';
+import { getFontSize, getWidth } from '@/utils/ResponsiveFun';
+import { TabView, SceneMap, SceneRendererProps, NavigationState } from 'react-native-tab-view';
 import { styles } from './styles';
 import HomeAllComponent from '@/components/HomeAllComponent';
 import HomeNewsComponent from '@/components/HomeNewsComponent';
 import HomeSocialComponent from '@/components/HomeSocialComponent';
 import HomeBlogComponent from '@/components/HomeBlogComponent';
 
-import Button from '@/components/Button';
-import { setLoader, setPrayersLive } from '@/redux//actions/GeneralActions';
-import PrayerModel from '@/components/PrayerModel';
+import { setPrayersLive } from '@/redux//actions/GeneralActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import LogoHeader from '@/assets/svg/logo2.svg';
 import { useDispatch, useSelector } from 'react-redux';
-import { getAllPrayerLive } from '@/redux//actions/PrayerAction';
 
 import { ApiCall } from '@/services/api';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { useTheme } from '@react-navigation/native';
 
-const Home = ({ navigation, setRequestModel }) => {
+interface Props {
+  setRequestModel: (requestModel: boolean) => void;
+  openDrawer: () => void;
+  navigate: (screenName: string) => void;
+}
+
+const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
   const [index, setIndex] = React.useState(0);
-  const token = useSelector((state) => state.auth.userToken);
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
 
   const [routes] = React.useState([
@@ -52,36 +50,6 @@ const Home = ({ navigation, setRequestModel }) => {
     Social: HomeSocialComponent,
     Blog: HomeBlogComponent,
   });
-  const renderTabBar = (props) => {
-    const inputRange = props.navigationState.routes.map((x, i) => i);
-
-    return (
-      <View style={styles.tabBar}>
-        {props.navigationState.routes.map((route, i) => {
-          return (
-            <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
-              <Animated.Text
-                style={
-                  props?.navigationState?.index == i
-                    ? {
-                        color: '#032F3C',
-                        fontWeight: 'bold',
-                      }
-                    : {
-                        color: '#126B87',
-                        fontWeight: 'bold',
-                      }
-                }
-              >
-                {route.title}
-              </Animated.Text>
-              {props?.navigationState?.index == i ? <View style={styles.propview} /> : null}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  };
 
   const getAllLive = async () => {
     try {
@@ -90,66 +58,108 @@ const Home = ({ navigation, setRequestModel }) => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(setPrayersLive(res?.response?.data));
       } else {
         console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga get all live prayer error -- ', e.toString());
     }
   };
 
+  const theme = useTheme();
+
   return (
-    <View style={styles.continer}>
-      <GeneralStatusBar
-        backgroundColor="#126B87"
-        barStyle="light-content"
-        hidden={false}
-        translucent={true}
-      />
+    <>
+      <SafeAreaView style={{ flex: 0, backgroundColor: '#126B87' }} />
 
-      <LinearGradient colors={['#126B87', '#094558', '#032F3C']} style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <Ionicons name="menu" size={24} color="white" />
-        </TouchableOpacity>
-        <LogoHeader
-          style={{
-            shadowColor: '#000',
-            shadowOffset: {
-              width: 0,
-              height: 6,
-            },
-            shadowOpacity: 0.39,
-            shadowRadius: 8.3,
+      <SafeAreaView style={styles.continer}>
+        <View style={{ flex: 1 }}>
+          <LinearGradient
+            colors={['#126B87', '#032F3C']}
+            locations={[0, 0.9]}
+            style={styles.header}
+          >
+            <TouchableOpacity onPress={() => openDrawer()}>
+              <Ionicons name="menu" size={24} color="white" />
+            </TouchableOpacity>
+            <View style={{ height: '100%' }}>
+              <LogoHeader
+                fill="#126B87"
+                height={40}
+                width={140}
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: {
+                    width: 0,
+                    height: 6,
+                  },
+                  shadowOpacity: 0.39,
+                  shadowRadius: 8.3,
 
-            elevation: 13,
-          }}
-        />
-        <TouchableOpacity onPress={() => navigation.navigate('Search')}>
-          <Ionicons name="search-outline" size={24} color="white" />
-        </TouchableOpacity>
-      </LinearGradient>
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        renderTabBar={renderTabBar}
-        onIndexChange={setIndex}
-        initialLayout={{ width: getWidth(100) }}
-      />
-      <TouchableWithoutFeedback
-        onPress={() => {
-          setRequestModel(true);
-          getAllLive();
-        }}
-      >
-        <Avatar.Image
-          style={styles.fab}
-          size={getFontSize(10)}
-          source={require('@/assets/images/fab.png')}
-        />
-      </TouchableWithoutFeedback>
-    </View>
+                  elevation: 13,
+                }}
+              />
+            </View>
+
+            <TouchableOpacity onPress={() => navigate('Search')}>
+              <Ionicons name="search-outline" size={24} color="white" />
+            </TouchableOpacity>
+          </LinearGradient>
+          <TabView
+            navigationState={{ index, routes }}
+            renderScene={renderScene}
+            renderTabBar={(props) => {
+              const inputRange = props.navigationState.routes.map((x, i) => i);
+
+              return (
+                <View style={styles.tabBar}>
+                  {props.navigationState.routes.map((route, i) => {
+                    return (
+                      <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
+                        <Animated.Text
+                          style={
+                            props?.navigationState?.index == i
+                              ? {
+                                  color: theme.dark ? theme.colors.text : '#032F3C',
+                                  fontWeight: 'bold',
+                                }
+                              : {
+                                  color: theme.dark ? '#B2BEB5' : '#126B87',
+                                  fontWeight: 'bold',
+                                }
+                          }
+                        >
+                          {route.title}
+                        </Animated.Text>
+                        {props?.navigationState?.index == i ? (
+                          <View style={styles.propview} />
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              );
+            }}
+            onIndexChange={setIndex}
+            initialLayout={{ width: getWidth(100) }}
+          />
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setRequestModel(true);
+              getAllLive();
+            }}
+          >
+            <Avatar.Image
+              style={styles.fab}
+              size={getFontSize(10)}
+              source={require('@/assets/images/fab.png')}
+            />
+          </TouchableWithoutFeedback>
+        </View>
+      </SafeAreaView>
+    </>
   );
 };
 

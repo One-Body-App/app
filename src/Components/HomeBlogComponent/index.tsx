@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import FastImage from 'react-native-fast-image';
@@ -8,12 +8,14 @@ import parse from 'rss-to-json';
 import { SetAllBlog } from '@/redux/actions/SocialActions';
 import { ApiCall } from '@/services/api';
 import { styles } from './styles';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { OpenURLButton } from '@/src/Services/constants';
 
 const HomeBlogComponent = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.userToken);
-  const allBlog = useSelector((state) => state.social.AllBlog);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const allBlog = useSelector((state: RootState) => state.social.AllBlog);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -24,12 +26,12 @@ const HomeBlogComponent = () => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(SetAllBlog(res?.response[0]));
       } else {
         console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -37,13 +39,15 @@ const HomeBlogComponent = () => {
   useEffect(() => {
     getAllBlog();
   }, []);
+
+  const { colors } = useTheme();
+
   return (
     <View
       style={{
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#fff',
       }}
     >
       <FlatList
@@ -60,9 +64,10 @@ const HomeBlogComponent = () => {
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => {
-              navigation.navigate('BlogView', { url: item?.link });
+              // navigation.navigate('BlogView', { url: item?.link });
+              OpenURLButton(item?.link);
             }}
-            style={{ ...styles.blogpostview, marginHorizontal: 10 }}
+            style={{ ...styles.blogpostview, marginHorizontal: 10, backgroundColor: colors.card }}
           >
             {item?.enclosures ? (
               <FastImage

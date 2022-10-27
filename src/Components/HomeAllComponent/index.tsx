@@ -7,6 +7,8 @@ import {
   Text,
   View,
   TouchableOpacity,
+  RefreshControl,
+  useColorScheme,
 } from 'react-native';
 import { styles } from './styles';
 import Modal from 'react-native-modal';
@@ -25,19 +27,26 @@ import Button from '../Button';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 
 import SocialFlatlist from '../SocialFlatlist';
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { SetRecentBlog } from '@/redux/actions/SocialActions';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { OpenURLButton } from '@/src/Services/constants';
+
+type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
 const HomeAllComponent = () => {
-  const token = useSelector((state) => state.auth.userToken);
-  const todayNews = useSelector((state) => state.social.TodayNews);
-  const recentBlog = useSelector((state) => state.social.RecentBlog);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const todayNews = useSelector((state: RootState) => state.social.TodayNews);
+  const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
+  const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<Props>>();
   const toggleModal = () => {
     setShow(!show);
   };
@@ -49,12 +58,12 @@ const HomeAllComponent = () => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(SetRecentBlog(res?.response[0]));
       } else {
         console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -64,7 +73,7 @@ const HomeAllComponent = () => {
     getRecentBlog();
   }, []);
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{ flex: 1 }}>
       <Modal
         backdropOpacity={0.3}
         isVisible={show}
@@ -165,8 +174,20 @@ const HomeAllComponent = () => {
           </View>
         </View>
       </Modal>
-      <ScrollView>
-        <Text style={styles.newstitle}>Today's News</Text>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            enabled={true}
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await getRecentBlog();
+              setRefreshing(false);
+            }}
+          />
+        }
+      >
+        <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
         <View>
           <FlatList
             data={todayNews}
@@ -177,51 +198,61 @@ const HomeAllComponent = () => {
             ListFooterComponent={() => <View style={{ padding: 7 }} />}
             ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
             renderItem={({ item }) => (
-              <ImageBackground
-                style={styles.newsimage}
-                imageStyle={{ borderRadius: 20 }}
-                source={{ uri: item?.enclosures[0]?.url }}
+              <TouchableOpacity
+                onPress={() => {
+                  OpenURLButton(item?.link);
+                }}
               >
-                <View
-                  style={{
-                    backgroundColor: '#00171e',
-                    borderRadius: 20,
-                    opacity: 0.65,
-                    flex: 1,
-                  }}
-                ></View>
-                <View
-                  style={{
-                    height: '100%',
-                    width: '100%',
-                    position: 'absolute',
-                    top: 0,
-                    justifyContent: 'space-between',
-                  }}
+                <ImageBackground
+                  style={styles.newsimage}
+                  imageStyle={{ borderRadius: 20 }}
+                  source={{ uri: item?.enclosures[0]?.url }}
                 >
-                  <TouchableOpacity onPress={toggleModal}>
-                    <Entypo
-                      name="dots-three-horizontal"
-                      style={styles.newsicon}
-                      size={25}
-                      color={'white'}
-                    />
-                  </TouchableOpacity>
-                  <Text style={styles.newstext}>{item?.title}</Text>
-                  <View style={styles.newsview}>
-                    <Text style={{ ...styles.messageText, color: '#B8BABE' }}>{item?.author}</Text>
-                    <Text style={styles.messageText}>{timeSince(item?.created)} ago</Text>
+                  <View
+                    style={{
+                      backgroundColor: '#00171e',
+                      borderRadius: 20,
+                      opacity: 0.65,
+                      flex: 1,
+                    }}
+                  ></View>
+                  <View
+                    style={{
+                      height: '100%',
+                      width: '100%',
+                      position: 'absolute',
+                      top: 0,
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <TouchableOpacity onPress={toggleModal}>
+                      <Entypo
+                        name="dots-three-horizontal"
+                        style={styles.newsicon}
+                        size={25}
+                        color={'white'}
+                      />
+                    </TouchableOpacity>
+                    <Text style={styles.newstext}>{item?.title}</Text>
+                    <View style={styles.newsview}>
+                      <Text style={{ ...styles.messageText, color: '#B8BABE' }}>
+                        {item?.author}
+                      </Text>
+                      <Text style={styles.messageText}>{timeSince(item?.created)} ago</Text>
+                    </View>
                   </View>
-                </View>
-              </ImageBackground>
+                </ImageBackground>
+              </TouchableOpacity>
             )}
           />
         </View>
-        <Text style={styles.socialposttext}>Latest News & Social Post</Text>
+        <Text style={{ ...styles.socialposttext, color: colors.text }}>
+          Latest News & Social Post
+        </Text>
         <View>
           <SocialFlatlist />
         </View>
-        <Text style={styles.blogposttext}>Recent Blog Post</Text>
+        <Text style={{ ...styles.blogposttext, color: colors.text }}>Recent Blog Post</Text>
         <View>
           <FlatList
             data={recentBlog}
@@ -234,7 +265,7 @@ const HomeAllComponent = () => {
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => {
-                  navigation.navigate('BlogView', { url: item?.link });
+                  OpenURLButton(item?.link);
                 }}
                 style={styles.blogpostview}
               >
@@ -252,7 +283,9 @@ const HomeAllComponent = () => {
           />
         </View>
         <View style={styles.explorview}>
-          <Text style={styles.explortext}>Explore Influencers & Organizations</Text>
+          <Text style={{ ...styles.explortext, color: colors.text }}>
+            Explore Influencers & Organizations
+          </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate('Home', { tabs: 'Explore' })}
             style={styles.viewtext}

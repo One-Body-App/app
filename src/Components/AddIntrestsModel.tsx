@@ -51,7 +51,7 @@ const AddIntrestsModel = (props) => {
   const addIntrest = async () => {
     try {
       const res = await ApiCall({
-        route: 'individual/add-interests',
+        route: 'user/add-interests',
         token: token,
         verb: 'patch',
         params: { interests: selectedIntrest },
