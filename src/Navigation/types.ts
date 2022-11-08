@@ -11,8 +11,12 @@ export type RootStackParamList = {
   Bootombar: undefined;
   LoadingPage: undefined;
   InfluencerStepOne: undefined;
-  InfluencerStepTwo: undefined;
-  InfluencerStepThree: undefined;
+  InfluencerStepTwo: {
+    code?: string;
+  };
+  InfluencerStepThree: {
+    data: any;
+  };
   AccountType: undefined;
   forget: undefined;
   SignUp: {
@@ -51,4 +55,5 @@ export type RootStackParamList = {
   BlogView: {
     url?: string;
   };
+  HomeNewsComponent: undefined;
 };

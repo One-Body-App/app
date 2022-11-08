@@ -317,7 +317,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               style={{ margin: getHeight(4), alignSelf: 'center' }}
             />
 
-            <Text style={{ ...styles.text, color: '#4F6D77' }}>Step 1 of 3</Text>
+            <Text style={{ ...styles.text, color: '#4F6D77' }}>Step 2 of 3</Text>
             <Text
               style={{
                 ...styles.heading,

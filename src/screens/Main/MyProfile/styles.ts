@@ -3,7 +3,8 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
   bottomView: {
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
     margin: 0,
   },
   profileview: {

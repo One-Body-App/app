@@ -39,7 +39,7 @@ const RemoveAccount = ({ navigation }: Props) => {
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <View style={styles.innerContainer}>
-        <Text style={styles.heading}>You will be missed</Text>
+        <Text style={{ ...styles.heading, color: colors.text }}>You will be missed</Text>
         <Text style={styles.text}>
           We are sorry to see you go. Removing your account will erase all of the data we have
           stored about you and there is
@@ -53,9 +53,9 @@ const RemoveAccount = ({ navigation }: Props) => {
             btnStyle={[
               styles.btn,
               reason == 'Could not find content relevant to my faith'
-                ? { backgroundColor: '#032F3C' }
+                ? { backgroundColor: colors.primary }
                 : {
-                    backgroundColor: 'white',
+                    backgroundColor: colors.card,
                     borderWidth: 0.5,
                     borderColor: 'gray',
                   },
@@ -73,9 +73,9 @@ const RemoveAccount = ({ navigation }: Props) => {
             btnStyle={[
               styles.btn,
               reason == 'I do not use OneBody enough'
-                ? { backgroundColor: '#032F3C' }
+                ? { backgroundColor: colors.primary }
                 : {
-                    backgroundColor: 'white',
+                    backgroundColor: colors.card,
                     borderWidth: 0.5,
                     borderColor: 'gray',
                   },
@@ -93,9 +93,9 @@ const RemoveAccount = ({ navigation }: Props) => {
             btnStyle={[
               styles.btn,
               reason == 'I have found too many bugs in app'
-                ? { backgroundColor: '#032F3C' }
+                ? { backgroundColor: colors.primary }
                 : {
-                    backgroundColor: 'white',
+                    backgroundColor: colors.card,
                     borderWidth: 0.5,
                     borderColor: 'gray',
                   },
@@ -113,9 +113,9 @@ const RemoveAccount = ({ navigation }: Props) => {
             btnStyle={[
               styles.btn,
               reason == 'App consume a lot of battery'
-                ? { backgroundColor: '#032F3C' }
+                ? { backgroundColor: colors.primary }
                 : {
-                    backgroundColor: 'white',
+                    backgroundColor: colors.card,
                     borderWidth: 0.5,
                     borderColor: 'gray',
                   },
@@ -158,7 +158,7 @@ const RemoveAccount = ({ navigation }: Props) => {
             text={'Cancel'}
             onPress={() => navigation.goBack()}
             btnStyle={{ ...GeneralStyle.btn, backgroundColor: colors.background }}
-            btnTextStyle={{ ...styles.btnText, color: '#126B87', fontSize: 14 }}
+            btnTextStyle={{ ...styles.btnText, color: colors.text, fontSize: 14 }}
           />
         </View>
       </View>

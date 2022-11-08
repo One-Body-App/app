@@ -21,6 +21,9 @@ import ImageModal from 'react-native-image-modal';
 import { useSelector } from 'react-redux';
 import ZendeskChat from 'react-native-zendesk-chat';
 import { RootState } from '../Redux/reducers/rootReducer';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
+import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
 
 const Drawer = createDrawerNavigator();
 function NavHeader(props: DrawerContentComponentProps) {
@@ -31,51 +34,68 @@ function NavHeader(props: DrawerContentComponentProps) {
       style={{
         backgroundColor: '#E5E5E5',
 
-        borderTopEndRadius: 30,
-
-        flexDirection: 'row',
-        width: '100%',
-        height: getHeight(22),
+        flex: 1,
       }}
     >
       <View
         style={{
           alignItems: 'center',
           justifyContent: 'center',
-
           flex: 1,
         }}
       >
-        <View>
-          <ImageModal
-            style={{
-              width: 90,
-              height: 90,
-              borderRadius: 45,
-              alignSelf: 'center',
-            }}
-            source={{ uri: user?.profileImage }}
-            resizeMode={'contain'}
-          />
+        <View style={{ flex: 1, marginVertical: 30 }}>
+          {user?.profileImage ? (
+            <ImageModal
+              style={{
+                width: 90,
+                height: 90,
+                borderRadius: 45,
+                alignSelf: 'center',
+              }}
+              source={{ uri: user?.profileImage }}
+              resizeMode={'contain'}
+            />
+          ) : (
+            <View
+              style={{
+                flex: 1,
+
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faUser}
+                size={60}
+                mask={faCircle}
+                style={{ color: '#000' }}
+                transform="shrink-6"
+              />
+            </View>
+          )}
+
           <Text
             numberOfLines={2}
             style={{
               fontSize: getFontSize(2.4),
               fontFamily: 'Rubik-Medium',
               marginTop: getHeight(1),
-              width: getWidth(35),
+              textAlign: 'center',
+
               color: '#032F3C',
             }}
           >
             {user?.name}
           </Text>
 
-          <TouchableOpacity onPress={() => props.navigation.navigate('Home', { tabs: 'Profile' })}>
+          <TouchableOpacity onPress={() => props.navigation.navigate('MyProfile')}>
             <Text
               style={{
                 fontSize: getFontSize(1.8),
 
                 color: '#4F6D77',
+                textAlign: 'center',
               }}
             >
               View My Profile
@@ -134,8 +154,8 @@ export default function Drawerr() {
           // backgroundColor: 'transparent',
           borderBottomEndRadius: 30,
           borderTopEndRadius: 30,
-          paddingLeft: getWidth(8),
         },
+        // overlayColor: '#000',
       }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     >

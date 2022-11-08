@@ -10,7 +10,6 @@ export const styles = StyleSheet.create({
   rolesview: {
     justifyContent: 'space-around',
     alignItems: 'center',
-    height: getHeight(30),
   },
   header: {
     position: 'absolute',
@@ -24,20 +23,12 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
-  innerContainer: {
-    flex: 1,
-    padding: 30,
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
 
   text: {
-    width: '80%',
-    textAlign: 'center',
-
-    width: getWidth(60),
+    width: '100%',
     textAlign: 'center',
     fontFamily: 'Rubik-Regular',
+    marginTop: 10,
   },
   footerText: {
     color: '#032F3C',
@@ -63,7 +54,6 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2.9),
     textAlign: 'center',
 
-    color: 'black',
     fontFamily: 'Rubik-Medium',
   },
   foter: {
@@ -74,9 +64,8 @@ export const styles = StyleSheet.create({
     position: 'absolute',
   },
   point: {
-    color: '#4F6D77',
     fontWeight: 'bold',
-    fontSize: getFontSize(2.7),
+    fontSize: getFontSize(2.5),
     fontFamily: 'Rubik-Regular',
   },
   btn: {
@@ -100,4 +89,20 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   btnText: { color: 'white', fontSize: getFontSize(2.5) },
+  headview: {
+    height: getHeight(8),
+
+    flexDirection: 'row',
+
+    justifyContent: 'space-between',
+    padding: 10,
+    alignItems: 'center',
+    shadowColor: '#126BB7',
+    shadowOffset: {
+      width: 0,
+      height: 25,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+  },
 });

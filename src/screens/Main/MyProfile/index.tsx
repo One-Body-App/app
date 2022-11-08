@@ -19,10 +19,14 @@ import Selected from '@/assets/svg/Selected.svg';
 import { ApiCall } from '@/services/api';
 import { getProfile } from '@/redux//actions/AuthActions';
 import ImageModal from 'react-native-image-modal';
+import { useTheme } from '@react-navigation/native';
+import Header from '@/src/Components/Header';
+import GoBackIcon from '@/src/Components/GoBackIcon';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
 const MyProfile = (props) => {
-  const user = useSelector((state) => state.auth.userProfile);
-  const token = useSelector((state) => state.auth.userToken);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
   const [badgesList, setBadgesList] = useState([]);
   const [requestModel, setRequestModel] = useState(false);
@@ -83,7 +87,7 @@ const MyProfile = (props) => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         setBadgesList(res?.data);
       } else {
         console.log('error', res?.datas);
@@ -101,12 +105,12 @@ const MyProfile = (props) => {
         params: { badges: selectedBadge },
         verb: 'patch',
       });
-      if (res.status == '200') {
+      if (res.status == 200) {
         dispatch(getProfile({ token: token, role: user.role }));
       } else {
         console.log('error', res);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -115,14 +119,10 @@ const MyProfile = (props) => {
     getBadeg();
   }, []);
 
+  const { colors } = useTheme();
+
   return (
-    <View style={{ backgroundColor: 'white', flex: 1 }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+    <View style={{ flex: 1 }}>
       <Modal
         backdropOpacity={0.3}
         isVisible={requestModel}
@@ -130,7 +130,6 @@ const MyProfile = (props) => {
         onSwipeComplete={() => setRequestModel(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
-        onRequestClose={() => setRequestModel(false)}
       >
         <View style={styles.content2}>
           <View style={styles.headLine} />
@@ -245,7 +244,7 @@ const MyProfile = (props) => {
         >
           {user?.name}
         </Text>
-        <Text
+        {/* <Text
           style={{
             textAlign: 'center',
             marginBottom: 10,
@@ -254,7 +253,7 @@ const MyProfile = (props) => {
           }}
         >
           @{user?.userName}
-        </Text>
+        </Text> */}
         {/* {user.role != 'individual' ? (
           <Text style={{textAlign: 'center', color: '#5B7279'}}>
             @nickdreamsalot . Minister and Ideator
@@ -263,14 +262,14 @@ const MyProfile = (props) => {
         <View style={styles.manyimageview}>
           <View>
             <FlatList
-              data={user?.badges_data}
+              data={user?.badges}
               numColumns={3}
               showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => (
                 <FastImage
                   style={styles.firstimage}
                   source={{
-                    uri: item?.badge,
+                    uri: item,
                   }}
                   resizeMode={FastImage.resizeMode.stretch}
                 />
@@ -289,19 +288,23 @@ const MyProfile = (props) => {
           </TouchableOpacity>
         </View>
         {user?.isInfluencer == true ? (
-          <Text style={styles.onebodytext}>{user?.website}</Text>
+          <>
+            <Text style={styles.onebodytext}>{user?.website}</Text>
+
+            <View style={{ alignItems: 'center' }}>
+              <Text
+                style={{
+                  color: '#032f3c',
+                  fontFamily: 'Rubik-Regular',
+                  marginVertical: getHeight(1),
+                }}
+              >
+                Reaching:{' '}
+                {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
+              </Text>
+            </View>
+          </>
         ) : null}
-        <View style={{ alignItems: 'center' }}>
-          <Text
-            style={{
-              color: '#032f3c',
-              fontFamily: 'Rubik-Regular',
-              marginVertical: getHeight(1),
-            }}
-          >
-            Influencing 1.4k
-          </Text>
-        </View>
         <View style={styles.bottomView}>
           <Button
             text={'Edit Profile'}

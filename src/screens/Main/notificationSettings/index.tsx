@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Switch, useTheme } from 'react-native-paper';
+import { Switch } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import { getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -15,6 +15,8 @@ import { ApiCall } from '@/src/Services/api';
 import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
 import { setProfile } from '@/src/Redux/actions/AuthActions';
+import { useTheme } from '@react-navigation/native';
+import GoBackIcon from '@/src/Components/GoBackIcon';
 
 type Props = StackScreenProps<RootStackParamList, 'NotificationSettings'>;
 
@@ -119,26 +121,17 @@ const NotificationSettings = ({ navigation }: Props) => {
   };
 
   return (
-    <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+    <View style={{ ...styles.container, backgroundColor: colors.background }}>
+      <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
 
       <Header
-        title={'Notification settings'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" color={colors.primary} size={20} />
-          </TouchableOpacity>
-        }
+        title={'Notifications settings'}
+        leftView={<GoBackIcon color={colors.text} />}
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <View style={styles.innerContainer}>
-        <View style={styles.list}>
-          <Text style={styles.heading}>Push Notifications</Text>
+        <View style={{ ...styles.list, backgroundColor: colors.card }}>
+          <Text style={{ ...styles.heading, color: colors.text }}>Push Notifications</Text>
 
           <Switch
             disabled={isLoading}
@@ -160,8 +153,8 @@ const NotificationSettings = ({ navigation }: Props) => {
             }}
           />
         </View>
-        <View style={styles.list}>
-          <Text style={styles.heading}>Email Notifications</Text>
+        <View style={{ ...styles.list, backgroundColor: colors.card }}>
+          <Text style={{ ...styles.heading, color: colors.text }}>Email Notifications</Text>
 
           <Switch
             disabled={isLoading}
@@ -184,9 +177,11 @@ const NotificationSettings = ({ navigation }: Props) => {
             }}
           />
         </View>
-        <View style={styles.list}>
+        <View style={{ ...styles.list, backgroundColor: colors.card }}>
           <View style={{ width: '80%' }}>
-            <Text style={styles.heading}>Subscribe to the Newsletter</Text>
+            <Text style={{ ...styles.heading, color: colors.text }}>
+              Subscribe to the Newsletter
+            </Text>
             {/* <Text numberOfLines={2} style={{ color: '#70747D' }}>
               Receive emails with events reccommendations based on...
             </Text> */}

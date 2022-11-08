@@ -29,15 +29,8 @@ const HomeSocialComponent = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
 
-  const [data, setData] = useState([]);
   const navigation = useNavigation();
-  const Data = [
-    { id: 1, image: 'dfafds', Text: 'fsda' },
-    { id: 2, image: 'dfafds', Text: 'fsda' },
-    { id: 3, image: 'dfafds', Text: 'fsda' },
-    { id: 4, image: 'dfafds', Text: 'fsda' },
-    { id: 5, image: 'dfafds', Text: 'fsda' },
-  ];
+
   const twitterUsers = ['147895001', '1380592017936375815', '1481475468125745154'];
 
   const getTwiters = async (id: string) => {
@@ -124,7 +117,7 @@ const HomeSocialComponent = () => {
                 resizeMode={'stretch'}
                 source={{ uri: item?.enclosures[0]?.url }}
               />
-              <Text numberOfLines={2} style={styles.blogpostpara}>
+              <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
                 {item?.title}
               </Text>
               <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>

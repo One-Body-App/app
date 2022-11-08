@@ -14,37 +14,24 @@ const LoadingPage = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
 
-  const twitterUsers = ['700214868'];
-
-  const getTwiters = async (id: string) => {
+  const getSocialPosts = async () => {
     try {
       const res = await ApiCall({
-        route: `https://api.twitter.com/2/users/${id}/tweets?tweet.fields=attachments,created_at&media.fields=preview_image_url`,
-        token:
-          'AAAAAAAAAAAAAAAAAAAAAFP6dQEAAAAAfEHDxiZeF%2Bpzfx00JP17XxmnY54%3DfKX6bIRiLBQLIenY311VU3Mv4pZunJzSNKOoXt3Kt136Zy9NZv',
+        route: `user/get-following-social`,
+        token,
         verb: 'get',
-
-        external: true,
       });
-      console.log(user, 'useruseruserres');
+      console.log(res?.response, 'useruseruserres');
       if (res?.status == 200) {
-        dispatch(SetSocial(res?.response.data));
+        dispatch(SetSocial(res?.response));
       } else {
-        console.log('error', res?.response.data);
+        console.log('error', res?.response);
       }
     } catch (e: any) {
-      console.log(`saga get twitter timline ${id} error -- `, e.toString());
+      console.log(`saga get twitter timline error -- `, e.toString());
     }
   };
 
-  const getMultipleRandom = (arr: string[], num: number) => {
-    const shuffled = [...arr].sort(() => 0.5 - Math.random());
-
-    return shuffled.slice(0, num);
-  };
-  const getAllTweets = () => {
-    getMultipleRandom(twitterUsers, 2).map((item) => getTwiters(item));
-  };
   const getTodayNews = async () => {
     try {
       console.log(token, 'tokentokentoken');
@@ -76,7 +63,7 @@ const LoadingPage = ({ navigation }: Props) => {
 
   useEffect(() => {
     if (token) {
-      getAllTweets();
+      getSocialPosts();
       getTodayNews();
     }
   }, [token]);

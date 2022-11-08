@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
-  Image,
   ImageBackground,
   ScrollView,
   Text,
@@ -10,34 +9,31 @@ import {
   RefreshControl,
 } from 'react-native';
 import { styles } from './styles';
-import { Avatar } from 'react-native-paper';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import Entypo from 'react-native-vector-icons/Entypo';
-import { getFontSize, getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';
 import SubscribeFlatlist from '../SubscribeFlatlist';
 
-import parse from 'rss-to-json';
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { ApiCall } from '@/services/api';
 import { SetAllNews, SetLocalNews } from '@/redux/actions/SocialActions';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { OpenURLButton } from '@/src/Services/constants';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { StackScreenProps } from '@react-navigation/stack';
 
-const HomeNewsComponent = () => {
+type Props = StackScreenProps<RootStackParamList, 'Home'>;
+
+const HomeNewsComponent = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const allNews = useSelector((state: RootState) => state.social.AllNews);
   const LocalNews = useSelector((state: RootState) => state.social.LocalNews);
-  const navigation = useNavigation();
+
   const dispatch = useDispatch();
-  const Data = [
-    { id: 1, image: 'dfafds', Text: 'fsda' },
-    { id: 2, image: 'dfafds', Text: 'fsda' },
-    { id: 3, image: 'dfafds', Text: 'fsda' },
-    { id: 4, image: 'dfafds', Text: 'fsda' },
-    { id: 5, image: 'dfafds', Text: 'fsda' },
-  ];
+
   const [refreshing, setRefreshing] = useState(false);
 
   const getAllNews = async () => {
@@ -103,6 +99,7 @@ const HomeNewsComponent = () => {
 
         <View>
           <FlatList
+            nestedScrollEnabled
             data={allNews}
             contentContainerStyle={{ marginTop: 20 }}
             showsHorizontalScrollIndicator={false}
@@ -110,7 +107,9 @@ const HomeNewsComponent = () => {
             renderItem={(item) => (
               <TouchableOpacity
                 onPress={() => {
-                  navigation.navigate('BlogView', { url: item?.item?.id });
+                  // navigation.navigate('BlogView', { url: item?.item?.id });
+                  OpenURLButton(item?.item?.link);
+                  console.log(item);
                 }}
                 style={{ ...styles.socialpostview, backgroundColor: colors.card }}
               >
@@ -126,7 +125,7 @@ const HomeNewsComponent = () => {
                     <Text
                       numberOfLines={2}
                       style={{
-                        color: '#032F3C',
+                        color: colors.text,
                         fontSize: 14,
                         lineHeight: 17,
                         letterSpacing: 0.1,
@@ -166,6 +165,7 @@ const HomeNewsComponent = () => {
         <Text style={{ ...styles.newstitle, color: colors.text }}>Local News</Text>
         <View>
           <FlatList
+            nestedScrollEnabled
             data={LocalNews}
             contentContainerStyle={{ marginTop: 20 }}
             showsHorizontalScrollIndicator={false}

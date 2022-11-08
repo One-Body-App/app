@@ -266,7 +266,7 @@ export const styles = StyleSheet.create({
     padding: 2,
     marginTop: getHeight(1),
     lineHeight: 18,
-    color: '#032F3C',
+
     fontFamily: 'Rubik-Medium',
 
     width: 150,

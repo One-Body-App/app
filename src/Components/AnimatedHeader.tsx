@@ -20,7 +20,7 @@ import { ApiCall } from '@/services/api';
 import AddIntrestsModel from './AddIntrestsModel';
 import Button from './Button';
 import { GeneralStyle } from '@/constants/GeneralStyle';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 
 const AnimatedHeader = ({
   animatedValue,
@@ -38,7 +38,7 @@ const AnimatedHeader = ({
   const token = useSelector((state) => state.auth.userToken);
   const intrest = useSelector((state) => state.user.userInrest);
   const user = useSelector((state) => state.auth.userProfile);
-
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [show, setShow] = useState(false);
   const headerHeight = animatedValue.interpolate({
@@ -222,7 +222,7 @@ const AnimatedHeader = ({
           }}
         >
           <TouchableOpacity onPress={() => goBack()}>
-            <Ionicons name="chevron-back-outline" size={20} />
+            <Ionicons name="chevron-back-outline" color={colors.primary} size={20} />
           </TouchableOpacity>
           <Animated.Text
             style={{

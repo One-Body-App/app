@@ -11,12 +11,10 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2.5),
     fontWeight: '400',
     fontFamily: 'Rubik-Regular',
-    color: '#032F3C',
   },
   logouttext: {
     fontSize: getFontSize(2.5),
     fontWeight: 'bold',
-    color: '#032F3C',
   },
 
   text: { width: '80%', textAlign: 'center' },
@@ -26,7 +24,7 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 0.3,
     borderBottomColor: '#BDC0C1',
     flexDirection: 'row',
-    backgroundColor: '#fff',
+
     justifyContent: 'space-between',
     paddingLeft: getWidth(10),
     paddingRight: getWidth(10),

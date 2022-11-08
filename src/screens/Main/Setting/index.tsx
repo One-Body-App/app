@@ -13,6 +13,8 @@ import auth from '@react-native-firebase/auth';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
+import { useTheme } from '@react-navigation/native';
+import GoBackIcon from '@/src/Components/GoBackIcon';
 
 type Props = StackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -56,22 +58,15 @@ const Settings = ({ navigation }: Props) => {
     }
   };
 
+  const { colors, dark } = useTheme();
+
   return (
     <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+      <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
 
       <Header
         title={'Settings'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={20} />
-          </TouchableOpacity>
-        }
+        leftView={<GoBackIcon color={colors.text} />}
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <ScrollView style={styles.innerContainer}>
@@ -80,10 +75,12 @@ const Settings = ({ navigation }: Props) => {
             onPress={() =>
               navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
             }
-            style={styles.list}
+            style={{ ...styles.list, backgroundColor: colors.card }}
           >
             <View>
-              <Text style={styles.heading}>Email</Text>
+              <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
+                Email
+              </Text>
               <Text style={{ color: '#70747D' }}>Update email address</Text>
             </View>
             <AntDesign name="right" size={20} color={'#70747D'} />
@@ -98,10 +95,12 @@ const Settings = ({ navigation }: Props) => {
                 onlyPassword: true,
               })
             }
-            style={styles.list}
+            style={{ ...styles.list, backgroundColor: colors.card }}
           >
             <View>
-              <Text style={styles.heading}>Password</Text>
+              <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
+                Password
+              </Text>
               <Text style={{ color: '#70747D' }}>Change Password</Text>
             </View>
             <AntDesign name="right" size={20} color={'#70747D'} />
@@ -110,10 +109,12 @@ const Settings = ({ navigation }: Props) => {
 
         <TouchableOpacity
           onPress={() => navigation.navigate('NotificationSettings')}
-          style={styles.list}
+          style={{ ...styles.list, backgroundColor: colors.card }}
         >
           <View>
-            <Text style={styles.heading}>Notifications Settings</Text>
+            <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
+              Notifications Settings
+            </Text>
           </View>
           <AntDesign name="right" size={20} color={'#70747D'} />
         </TouchableOpacity>
@@ -125,18 +126,23 @@ const Settings = ({ navigation }: Props) => {
                 ? Alert.alert('You Already a Influencer')
                 : navigation.navigate('InfluencerStepOne');
             }}
-            style={styles.list}
+            style={{ ...styles.list, backgroundColor: colors.card }}
           >
-            <Text style={styles.heading}>Become an influencer</Text>
+            <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
+              Become an influencer
+            </Text>
 
             <AntDesign name="right" size={20} color={'#70747D'} />
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity onPress={() => navigation.navigate('RemoveAccount')} style={styles.list}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('RemoveAccount')}
+          style={{ ...styles.list, backgroundColor: colors.card }}
+        >
           <Text
             style={{
-              ...styles.heading,
+              ...{ ...styles.heading, color: dark ? colors.text : '#032F3C' },
               color: 'red',
             }}
           >
@@ -152,9 +158,16 @@ const Settings = ({ navigation }: Props) => {
 
             await auth().signOut();
           }}
-          style={{ ...styles.lists, marginBottom: 10, borderBottomWidth: 0 }}
+          style={{
+            ...styles.list,
+            backgroundColor: colors.card,
+            marginBottom: 10,
+            borderBottomWidth: 0,
+          }}
         >
-          <Text style={styles.logouttext}>Log out</Text>
+          <Text style={{ ...styles.logouttext, color: dark ? colors.text : '#032F3C' }}>
+            Log out
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

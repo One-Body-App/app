@@ -11,50 +11,39 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 
 const SocialFlatlist = () => {
   const socialPost = useSelector((state: RootState) => state.social.SocialPost);
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
 
-  const twitterUsers = ['147895001', '1380592017936375815', '1481475468125745154'];
-
-  const getTwiters = async (id: string) => {
+  const getSocialPosts = async () => {
     try {
       const res = await ApiCall({
-        route: `https://api.twitter.com/2/users/${id}/tweets?tweet.fields=attachments,created_at&media.fields=preview_image_url`,
-        token:
-          'AAAAAAAAAAAAAAAAAAAAAFP6dQEAAAAAkF1k78i42go%2BLLsmlJcE58hCcCw%3DCHdg4ofpqUzHzmx7tdNw2Op8UMCApSSZ5rOceOobMF1kIuXvcT',
+        route: `user/get-following-social`,
+        token,
         verb: 'get',
-
-        external: true,
       });
       if (res?.status == 200) {
+        console.log(res?.response);
         dispatch(SetSocial([...res?.response, ...socialPost]));
       } else {
         console.log('error', res?.response);
       }
     } catch (e: any) {
-      console.log(`saga get twitter timline ${id} error -- `, e.toString());
+      console.log(`saga get twitter timline  error -- `, e.toString());
     }
-  };
-
-  const getMultipleRandom = (arr: string[], num: number) => {
-    const shuffled = [...arr].sort(() => 0.5 - Math.random());
-
-    return shuffled.slice(0, num);
-  };
-  const getAllTweets = () => {
-    getMultipleRandom(twitterUsers, 2).map((item) => getTwiters(item));
   };
 
   const { colors } = useTheme();
 
   return (
     <FlatList
+      nestedScrollEnabled
       data={socialPost}
       contentContainerStyle={{ marginTop: getHeight(1) }}
       showsHorizontalScrollIndicator={false}
       refreshing={refreshing}
       refreshControl={
-        <RefreshControl enabled={true} refreshing={refreshing} onRefresh={() => getAllTweets()} />
+        <RefreshControl enabled={true} refreshing={refreshing} onRefresh={() => getSocialPosts()} />
       }
       ListFooterComponent={() => (
         <View style={styles.socialpostfooter}>
@@ -76,12 +65,12 @@ const SocialFlatlist = () => {
               padding: 5,
               fontFamily: 'Rubik',
               lineHeight: 18,
-              color: '#032f3c',
+              color: colors.text,
               marginTop: getHeight(1),
               textAlign: 'center',
             }}
           >
-            {item?.text}
+            {item?.content}
           </Text>
           <View style={{ flexDirection: 'row', padding: 5 }}>
             <Twitter fill="#00acee" />

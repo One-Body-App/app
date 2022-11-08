@@ -5,7 +5,7 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, useColorScheme } from 'react-native';
+import { Linking, StyleSheet, useColorScheme } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -57,6 +57,7 @@ import Drawerr from './Drawerr';
 import { RootStackParamList } from './types';
 import ConfirmLogin from '../screens/Auth/Login/ConfirmLogin';
 import EmailChange from '../screens/Main/EmailChange';
+import messaging from '@react-native-firebase/messaging';
 
 const Stack = createNativeStackNavigator();
 const Main = () => {
@@ -142,7 +143,50 @@ const Main = () => {
         Login: {
           path: '/login/:action',
         },
+        InfluencerStepTwo: {
+          path: '/influencer/login/instagram',
+        },
       },
+    },
+    async getInitialURL() {
+      // Check if app was opened from a deep link
+      const url = await Linking.getInitialURL();
+
+      if (url != null) {
+        return url;
+      }
+
+      // Check if there is an initial firebase notification
+      const message = await messaging().getInitialNotification();
+
+      // Get the `url` property from the notification which corresponds to a screen
+      // This property needs to be set on the notification payload when sending it
+      return message?.data?.url;
+    },
+    subscribe(listener) {
+      const onReceiveURL = ({ url }: { url: string }) => listener(url);
+
+      // Listen to incoming links from deep linking
+      const subscription = Linking.addEventListener('url', onReceiveURL);
+
+      // Listen to firebase push notifications
+      const unsubscribeNotification = messaging().onNotificationOpenedApp((message) => {
+        const url = message.data?.url;
+
+        if (url) {
+          // Any custom logic to check whether the URL needs to be handled
+          //...
+
+          // Call the listener to let React Navigation handle the URL
+          listener(url);
+        }
+      });
+
+      return () => {
+        // Clean up the event listeners
+        subscription.remove();
+        unsubscribeNotification();
+      };
     },
   };
 
@@ -162,7 +206,7 @@ const Main = () => {
       ...DarkTheme.colors,
 
       primary: '#5B7279',
-      card: '#F6F6F6',
+      card: '#191919',
     },
   };
 

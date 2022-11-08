@@ -14,6 +14,7 @@ export type UserProfile = {
   updatedAt: string;
   userId: string;
   isInfluencer: boolean;
+  followers: number;
 
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;

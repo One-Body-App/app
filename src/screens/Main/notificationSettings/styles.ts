@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
+  container: { flex: 1 },
   innerContainer: {
     flex: 1,
     // marginTop: getHeight(5.5),
@@ -11,13 +11,10 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2.2),
     fontWeight: '400',
     fontFamily: 'Rubik-Regular',
-
-    color: '#032F3C',
   },
   logouttext: {
     fontSize: getFontSize(2.5),
     fontWeight: 'bold',
-    color: '#032F3C',
   },
 
   text: { width: '80%', textAlign: 'center' },
@@ -27,7 +24,7 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 0.3,
     borderBottomColor: '#ECF0F1',
     flexDirection: 'row',
-    backgroundColor: '#fff',
+
     justifyContent: 'space-between',
     paddingLeft: getWidth(5),
     paddingRight: getWidth(5),

@@ -31,11 +31,16 @@ import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
-const InfluencerStepThree = ({ navigation, route }) => {
+type Props = StackScreenProps<RootStackParamList, 'InfluencerStepThree'>;
+
+const InfluencerStepThree = ({ navigation, route }: Props) => {
   const { data } = route.params;
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.userToken);
+  const token = useSelector((state: RootState) => state.auth.userToken);
 
   const [checked, setChecked] = useState(false);
 
@@ -49,12 +54,12 @@ const InfluencerStepThree = ({ navigation, route }) => {
         verb: 'post',
       });
 
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(setLoader(false));
-        Alert.alert(res.message);
-        navigation.navigate('Home');
+        Alert.alert(res?.response.message);
+        navigation.navigate('Home', {});
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response.data);
       }
     } catch (e) {
       console.log('saga become infulancer err --- ', e);

@@ -1,23 +1,17 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  StyleSheet,
   Text,
   View,
-  FlatList,
-  Animated,
-  Image,
   ImageBackground,
   TouchableOpacity,
   Modal,
-  SafeAreaView,
-  ScrollView,
+  TextInput as TextInputNative,
+  Linking,
 } from 'react-native';
-import { Avatar, Checkbox, Provider, TextInput } from 'react-native-paper';
-import SelectDropdown from 'react-native-select-dropdown';
+import { TextInput } from 'react-native-paper';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/components/Header';
+
 import Button from '@/components/Button';
 import { styles } from './styles';
 import { validateFields } from '@/utils/validation/validate-fields';
@@ -28,16 +22,24 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { BASE_URL } from '@/src/Services/constants';
+import axios from 'axios';
 
-const InfluencerStepTwo = ({ navigation }) => {
+type Props = StackScreenProps<RootStackParamList, 'InfluencerStepTwo'>;
+
+const InfluencerStepTwo = ({ navigation, route }: Props) => {
+  const [token, setToken] = useState();
+
   const inputRefs = {
-    twitterUsername: useRef(null),
-    instagramUsername: useRef(null),
-    twitterHandler: useRef(null),
-    instagramHandler: useRef(null),
-    twitterTitle: useRef(null),
-    instagramTitle: useRef(null),
-    comments: useRef(null),
+    twitterUsername: useRef<TextInputNative>(null),
+    instagramUsername: useRef<TextInputNative>(null),
+    twitterHandler: useRef<TextInputNative>(null),
+    instagramHandler: useRef<TextInputNative>(null),
+    twitterTitle: useRef<TextInputNative>(null),
+    instagramTitle: useRef<TextInputNative>(null),
+    comments: useRef<TextInputNative>(null),
   };
   const [state, setState] = useState({
     twitterUsername: '',
@@ -55,6 +57,35 @@ const InfluencerStepTwo = ({ navigation }) => {
     comments: '',
     commentsError: '',
   });
+
+  useEffect(() => {
+    if (route.params?.code) {
+      const getInstagramAuthToken = async () => {
+        try {
+          const options = {
+            method: 'POST',
+            url: `${BASE_URL}/auth/instagram-token`,
+            data: {
+              code: route.params?.code,
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          };
+
+          const result = await axios.request(options);
+
+          if (result && result.data?.access_token) {
+            console.log(result.data?.access_token);
+            setToken(result.data?.access_token);
+          }
+        } catch (error: any) {
+          console.log(error);
+        }
+      };
+      getInstagramAuthToken();
+    }
+  }, [route.params]);
 
   const onNext = async () => {
     const {
@@ -99,8 +130,11 @@ const InfluencerStepTwo = ({ navigation }) => {
       });
     }
   };
-  const changeHandler = (type, value) => setState({ ...state, [type]: value });
+  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   const [modalVisible, setModalVisible] = useState(false);
+
+  const redirectUri = 'https://app.onebodyapp.com/influencer/login/instagram';
+  const appId = '746127593378692';
 
   return (
     <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
@@ -115,7 +149,6 @@ const InfluencerStepTwo = ({ navigation }) => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
-          Alert.alert('Modal has been closed.');
           setModalVisible(!modalVisible);
         }}
       >
@@ -301,7 +334,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               style={{ margin: getHeight(4), alignSelf: 'center' }}
             />
 
-            <Text style={{ ...styles.text, color: '#4F6D77' }}>Step 1 of 3</Text>
+            <Text style={{ ...styles.text, color: '#4F6D77' }}>Step 2 of 3</Text>
             <Text
               style={{
                 ...styles.heading,
@@ -343,7 +376,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   setState({ ...state, twitterUsernameError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.twitterHandler.current.focus()}
+              onSubmitEditing={() => inputRefs.twitterHandler.current?.focus()}
               onChangeText={(twitterUsername) =>
                 changeHandler('twitterUsername', twitterUsername.trim())
               }
@@ -366,7 +399,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   setState({ ...state, twitterHandlerError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.twitterTitle.current.focus()}
+              onSubmitEditing={() => inputRefs.twitterTitle.current?.focus()}
               onChangeText={(twitterHandler) =>
                 changeHandler('twitterHandler', twitterHandler.trim())
               }
@@ -390,7 +423,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   setState({ ...state, twitterTitleError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.instagramUsername.current.focus()}
+              onSubmitEditing={() => inputRefs.instagramUsername.current?.focus()}
               onChangeText={(twitterTitle) => changeHandler('twitterTitle', twitterTitle.trim())}
               blurOnSubmit={false}
             />
@@ -409,6 +442,15 @@ const InfluencerStepTwo = ({ navigation }) => {
             >
               <Ionicons name="logo-instagram" size={15} color={'#032F3C'} /> Instagram handle
             </Text>
+            <TouchableOpacity
+              onPress={() => {
+                Linking.openURL(
+                  `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code`
+                );
+              }}
+            >
+              <Text>Authenticate Instagram</Text>
+            </TouchableOpacity>
             <TextInput
               style={GeneralStyle.input}
               ref={inputRefs.instagramUsername}
@@ -425,7 +467,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   setState({ ...state, instagramUsernameError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.instagramHandler.current.focus()}
+              onSubmitEditing={() => inputRefs.instagramHandler.current?.focus()}
               onChangeText={(instagramUsername) =>
                 changeHandler('instagramUsername', instagramUsername.trim())
               }
@@ -448,7 +490,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   setState({ ...state, instagramHandlerError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.instagramTitle.current.focus()}
+              onSubmitEditing={() => inputRefs.instagramTitle.current?.focus()}
               onChangeText={(instagramHandler) =>
                 changeHandler('instagramHandler', instagramHandler.trim())
               }
@@ -472,7 +514,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   setState({ ...state, instagramTitleError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.comments.current.focus()}
+              onSubmitEditing={() => inputRefs.comments.current?.focus()}
               onChangeText={(instagramTitle) =>
                 changeHandler('instagramTitle', instagramTitle.trim())
               }

@@ -1,52 +1,50 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import {
-  StyleSheet,
   Text,
   View,
-  FlatList,
-  Animated,
-  Image,
   ImageBackground,
   TouchableOpacity,
   SafeAreaView,
-  TextInput,
   ScrollView,
 } from 'react-native';
-import { Avatar, Provider } from 'react-native-paper';
-import SelectDropdown from 'react-native-select-dropdown';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/components/Header';
-import Button from '@/components/Button';
 import { styles } from './styles';
-import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import Icon from 'react-native-vector-icons/Ionicons';
+import GoBackIcon from '@/src/Components/GoBackIcon';
+import { useTheme } from '@react-navigation/native';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
 
-const InfluencerStepOne = ({ navigation }) => {
-  const countries = ['option 1', 'option 2', 'option 3', 'option 4'];
+type Props = StackScreenProps<RootStackParamList, 'InfluencerStepOne'>;
+
+const InfluencerStepOne = ({ navigation }: Props) => {
+  const { colors } = useTheme();
   return (
-    <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
-      <View style={styles.innerContainer}>
-        <View style={styles.rolesview}>
-          <Logo
-            height={getHeight(14)}
-            width={getWidth(40)}
-            style={{ margin: getHeight(4), alignSelf: 'center' }}
-          />
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={styles.headview}>
+        <GoBackIcon color={colors.text} />
+      </View>
+      <ScrollView>
+        <View style={{ marginHorizontal: 10, marginBottom: 80 }}>
+          <Logo height={getHeight(14)} width={getWidth(40)} style={{ alignSelf: 'center' }} />
 
           <Text style={{ ...styles.text, color: '#4F6D77' }}>Step 1 of 3</Text>
-          <Text style={{ ...styles.heading, color: '#032F3C', marginTop: 12 }}>
+          <Text
+            style={{
+              ...styles.heading,
+
+              color: colors.text,
+              marginTop: 20,
+            }}
+          >
             Influencer rules
           </Text>
-        </View>
 
-        <View>
           <Text
             style={{
               fontFamily: 'Rubik-Regular',
-              color: '#032F3C',
+              color: colors.text,
               fontSize: 16,
             }}
           >
@@ -55,42 +53,66 @@ const InfluencerStepOne = ({ navigation }) => {
           <Text
             style={{
               fontFamily: 'Rubik-Regular',
-              color: '#032F3C',
+              color: colors.text,
               marginTop: 20,
               fontSize: 16,
             }}
           >
-            <Text style={styles.point}>a.</Text> Must have a confirmed Influencer account on IG or
-            Twitter. (Blue check) All IG/Twitter accounts must be set as public figure accounts in
-            order for API to aggregate their posts.
+            <Text style={{ ...styles.point, color: colors.primary }}>a.</Text> Must have a confirmed
+            Influencer account on IG or Twitter. (Blue check) All IG/Twitter accounts must be set as
+            public figure accounts in order for API to aggregate their posts.
           </Text>
           <Text
             style={{
               fontFamily: 'Rubik-Regular',
-              color: '#032F3C',
+              color: colors.text,
               marginTop: 20,
               fontSize: 16,
             }}
           >
-            <Text style={styles.point}>b.</Text> User must be a Pastor or clergy member in local
-            community. Confirmed through account review process. *Influencer accounts can be
-            approved through cross-confirmation via organization confirmation process.
+            <Text style={{ ...styles.point, color: colors.primary }}>b.</Text> User must be a Pastor
+            or clergy member in local community. Confirmed through account review process.
+            *Influencer accounts can be approved through cross-confirmation via organization
+            confirmation process.
           </Text>
           <Text
             style={{
               fontFamily: 'Rubik-Regular',
-              color: '#032F3C',
+              color: colors.text,
               marginTop: 20,
               fontSize: 16,
             }}
           >
-            <Text style={styles.point}>c.</Text> User must be a non-clergy public figure with a
-            platform based on Christian values as defined by One Body. This will require account
-            review.
+            <Text style={{ ...styles.point, color: colors.primary }}>c.</Text> User must be a
+            non-clergy public figure with a platform based on Christian values as defined by One
+            Body. This will require account review.
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Rubik-Regular',
+              color: colors.text,
+              marginTop: 20,
+              fontSize: 16,
+            }}
+          >
+            <Text style={{ ...styles.point, color: colors.primary }}>d.</Text> User must be a
+            non-clergy public figure with a platform based on Christian values as defined by One
+            Body. This will require account review.
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Rubik-Regular',
+              color: colors.text,
+              marginTop: 20,
+              fontSize: 16,
+            }}
+          >
+            <Text style={{ ...styles.point, color: colors.primary }}>e.</Text> User must be a
+            non-clergy public figure with a platform based on Christian values as defined by One
+            Body. This will require account review.
           </Text>
         </View>
-        <View />
-      </View>
+      </ScrollView>
       <View style={styles.foter}>
         <ImageBackground
           resizeMode="stretch"
@@ -115,10 +137,7 @@ const InfluencerStepOne = ({ navigation }) => {
           </TouchableOpacity>
         </ImageBackground>
       </View>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
-        <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={'#4F6D77'} />
-      </TouchableOpacity>
-    </LinearGradient>
+    </SafeAreaView>
   );
 };
 export default InfluencerStepOne;

@@ -16,6 +16,7 @@ import validator from '@/utils/validation/validator';
 import { useDispatch } from 'react-redux';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import Toast from 'react-native-simple-toast';
+import GoBackIcon from '@/src/Components/GoBackIcon';
 
 const ConfirmEmail = ({ navigation, route }) => {
   const { email } = route.params;
@@ -179,14 +180,7 @@ const ConfirmEmail = ({ navigation, route }) => {
           }}
         />
 
-        <TouchableOpacity style={styles.header} onPress={() => navigation.goBack()}>
-          <Icon
-            name="chevron-back"
-            style={{ margin: getFontSize(3) }}
-            size={20}
-            color={'#4F6D77'}
-          />
-        </TouchableOpacity>
+        <GoBackIcon color={'white'} />
       </LinearGradient>
     </View>
   );

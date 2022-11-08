@@ -47,6 +47,7 @@ const SubscribeFlatlist = () => {
   }, []);
   return (
     <FlatList
+      nestedScrollEnabled
       data={allusers}
       horizontal={true}
       showsHorizontalScrollIndicator={false}

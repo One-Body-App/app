@@ -1,33 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
-  Image,
   ImageBackground,
   ScrollView,
   Text,
   View,
   TouchableOpacity,
   RefreshControl,
-  useColorScheme,
 } from 'react-native';
 import { styles } from './styles';
 import Modal from 'react-native-modal';
-import { Avatar } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Feather from 'react-native-vector-icons/Feather';
-import Social from '@/assets/svg/Social.svg';
-import parse from 'rss-to-json';
-import { getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';
+
+import { timeSince } from '@/utils/ResponsiveFun';
 import SubscribeFlatlist from '../SubscribeFlatlist';
 import Button from '../Button';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 
 import SocialFlatlist from '../SocialFlatlist';
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
@@ -39,14 +35,14 @@ import { OpenURLButton } from '@/src/Services/constants';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
-const HomeAllComponent = () => {
+const HomeAllComponent = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const todayNews = useSelector((state: RootState) => state.social.TodayNews);
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
-  const navigation = useNavigation<NavigationProp<Props>>();
+
   const toggleModal = () => {
     setShow(!show);
   };
@@ -190,6 +186,7 @@ const HomeAllComponent = () => {
         <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
         <View>
           <FlatList
+            nestedScrollEnabled
             data={todayNews}
             horizontal={true}
             contentContainerStyle={{ marginTop: 20 }}
@@ -255,6 +252,7 @@ const HomeAllComponent = () => {
         <Text style={{ ...styles.blogposttext, color: colors.text }}>Recent Blog Post</Text>
         <View>
           <FlatList
+            nestedScrollEnabled
             data={recentBlog}
             horizontal={true}
             contentContainerStyle={{ marginTop: 20 }}
@@ -267,14 +265,14 @@ const HomeAllComponent = () => {
                 onPress={() => {
                   OpenURLButton(item?.link);
                 }}
-                style={styles.blogpostview}
+                style={{ ...styles.blogpostview, backgroundColor: colors.card }}
               >
                 <FastImage
                   style={styles.blogpostimage}
                   resizeMode={'stretch'}
                   source={{ uri: item?.enclosures[0]?.url }}
                 />
-                <Text numberOfLines={2} style={styles.blogpostpara}>
+                <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
                   {item?.title}
                 </Text>
                 <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>

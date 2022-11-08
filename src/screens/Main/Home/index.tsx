@@ -76,37 +76,6 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
 
       <SafeAreaView style={styles.continer}>
         <View style={{ flex: 1 }}>
-          <LinearGradient
-            colors={['#126B87', '#032F3C']}
-            locations={[0, 0.9]}
-            style={styles.header}
-          >
-            <TouchableOpacity onPress={() => openDrawer()}>
-              <Ionicons name="menu" size={24} color="white" />
-            </TouchableOpacity>
-            <View style={{ height: '100%' }}>
-              <LogoHeader
-                fill="#126B87"
-                height={40}
-                width={140}
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: {
-                    width: 0,
-                    height: 6,
-                  },
-                  shadowOpacity: 0.39,
-                  shadowRadius: 8.3,
-
-                  elevation: 13,
-                }}
-              />
-            </View>
-
-            <TouchableOpacity onPress={() => navigate('Search')}>
-              <Ionicons name="search-outline" size={24} color="white" />
-            </TouchableOpacity>
-          </LinearGradient>
           <TabView
             navigationState={{ index, routes }}
             renderScene={renderScene}

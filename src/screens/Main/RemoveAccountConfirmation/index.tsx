@@ -75,7 +75,7 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <View style={styles.innerContainer}>
-        <Text style={styles.heading}>You will be missed</Text>
+        <Text style={{ ...styles.heading, color: colors.text }}>You will be missed</Text>
         <Text style={styles.text}>
           We are sorry to see you go. Removing your account will erase all of the data we have
           stored about you and there is <Text style={{ color: '#E90202' }}>no recovery.</Text>
