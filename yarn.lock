@@ -9140,7 +9140,7 @@ __metadata:
     react-native-fbsdk-next: ^10.0.0
     react-native-floating-action: ^1.22.0
     react-native-geolocation-service: ^5.3.0
-    react-native-gesture-handler: ^2.3.1
+    react-native-gesture-handler: ^2.8.0
     react-native-gifted-chat: ^1.0.0
     react-native-hash: ^3.0.1
     react-native-image-crop-picker: ^0.37.3
@@ -9917,9 +9917,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-gesture-handler@npm:^2.3.1":
-  version: 2.5.0
-  resolution: "react-native-gesture-handler@npm:2.5.0"
+"react-native-gesture-handler@npm:^2.8.0":
+  version: 2.8.0
+  resolution: "react-native-gesture-handler@npm:2.8.0"
   dependencies:
     "@egjs/hammerjs": ^2.0.17
     hoist-non-react-statics: ^3.3.0
@@ -9929,7 +9929,7 @@ __metadata:
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: d086f14da7f45c24c675402a4e9dec0a5c32e7279110f1af0c178cae0b6ca40dea99f878120d7034ce9c84f01465f68d0f21dcc9c3869fd527ebd18255b73432
+  checksum: 3dc4ab5cf160e471b07cd644e24f6384bdc4fc777f259fb12dfb42a5c9a15f84f60043ce3a1cd737f8dc563892a52566c8ab33bed0b1635f2898ac8ba75c8668
   languageName: node
   linkType: hard
 

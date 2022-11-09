@@ -34,10 +34,10 @@ function Bottom({ navigation, route }: Props) {
   const tabs = route?.params?.tabs;
   const [requestModel, setRequestModel] = React.useState(false);
   console.log(tabs);
-  const [tab, setTab] = React.useState(tabs ?? 'Home');
+  const [tab, setTab] = React.useState(tabs ?? 'HomeTab');
   const goBack = () => {
     console.log('asdf');
-    setTab('Home');
+    setTab('HomeTab');
   };
   React.useEffect(() => {
     console.log(tabs, 'tabstabstabs');
@@ -105,7 +105,7 @@ function Bottom({ navigation, route }: Props) {
       }}
     >
       <Tab.Screen
-        name="Home"
+        name="HomeTab"
         component={Home}
         options={{
           tabBarLabel: 'Home',

@@ -42,7 +42,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
-
+  console.log(todayNews);
   const toggleModal = () => {
     setShow(!show);
   };
@@ -171,6 +171,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
         </View>
       </Modal>
       <ScrollView
+        style={{ flex: 1 }}
         refreshControl={
           <RefreshControl
             enabled={true}
@@ -194,6 +195,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
             ListHeaderComponent={() => <View style={{ padding: 7 }} />}
             ListFooterComponent={() => <View style={{ padding: 7 }} />}
             ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+            keyExtractor={(item) => item.published}
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => {
