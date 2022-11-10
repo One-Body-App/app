@@ -9157,7 +9157,7 @@ __metadata:
     react-native-permissions: ^3.6.0
     react-native-popup-menu: ^0.15.12
     react-native-qrcode-svg: ^6.1.2
-    react-native-reanimated: ^2.11.0
+    react-native-reanimated: ^2.12.0
     react-native-render-html: ^6.3.4
     react-native-safe-area-context: ^3.4.1
     react-native-screens: ^3.13.1
@@ -10171,9 +10171,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-reanimated@npm:^2.11.0":
-  version: 2.11.0
-  resolution: "react-native-reanimated@npm:2.11.0"
+"react-native-reanimated@npm:^2.12.0":
+  version: 2.12.0
+  resolution: "react-native-reanimated@npm:2.12.0"
   dependencies:
     "@babel/plugin-transform-object-assign": ^7.16.7
     "@babel/preset-typescript": ^7.16.7
@@ -10186,7 +10186,7 @@ __metadata:
     "@babel/core": ^7.0.0-0
     react: "*"
     react-native: "*"
-  checksum: 0c75ecff3c69996ec952f742249305f296d3d1b785c7e26d346b0f9a09c73b9cb7c1ab8bcd443178423521da6d042974c067df7ec5fc0311e15a0d8ea3c32216
+  checksum: ef94d7888ad77859a9cf13156a88d6b7f2d96622bf8f7a19415fd3b7f2a588a1a78214711ce77259bfc45ceb5112c43cad8b96b034dc3ab749a1e0a835a923d0
   languageName: node
   linkType: hard
 

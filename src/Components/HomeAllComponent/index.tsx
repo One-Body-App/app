@@ -1,13 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import {
-  FlatList,
-  ImageBackground,
-  ScrollView,
-  Text,
-  View,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
+import { FlatList, ImageBackground, ScrollView, Text, View, RefreshControl } from 'react-native';
+
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import { styles } from './styles';
 import Modal from 'react-native-modal';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -42,7 +36,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
-  console.log(todayNews);
+
   const toggleModal = () => {
     setShow(!show);
   };
@@ -65,9 +59,9 @@ const HomeAllComponent = ({ navigation }: Props) => {
   };
   const { colors } = useTheme();
 
-  useEffect(() => {
-    getRecentBlog();
-  }, []);
+  // useEffect(() => {
+  //   getRecentBlog();
+  // }, []);
   return (
     <View style={{ flex: 1 }}>
       <Modal

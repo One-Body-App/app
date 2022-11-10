@@ -98,12 +98,70 @@ const HomeNewsComponent = ({ navigation }: Props) => {
         <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
 
         <View>
-          <FlatList
+          {allNews.map((item, i) => (
+            <TouchableOpacity
+              onPress={() => {
+                // navigation.navigate('BlogView', { url: item?.item?.id });
+                OpenURLButton(item?.item?.link);
+                console.log(item);
+              }}
+              style={{ ...styles.socialpostview, backgroundColor: colors.card }}
+              key={i}
+            >
+              {item?.item?.enclosures ? (
+                <FastImage
+                  style={styles.socialpostimage}
+                  resizeMode={'stretch'}
+                  source={{ uri: item?.item?.enclosures[0]?.url }}
+                />
+              ) : null}
+              <View style={{ flex: 1, width: '100%', padding: 15 }}>
+                <View style={styles.afsd}>
+                  <Text
+                    numberOfLines={2}
+                    style={{
+                      color: colors.text,
+                      fontSize: 14,
+                      lineHeight: 17,
+                      letterSpacing: 0.1,
+                      width: '90%',
+                      fontWeight: '500',
+                    }}
+                  >
+                    {item?.item?.title}
+                  </Text>
+                  <Entypo name="dots-three-horizontal" color={'#70747d'} size={20} />
+                </View>
+                <View style={styles.sourcename}>
+                  <Text
+                    style={{
+                      color: '#70747D',
+                      fontSize: 12,
+                      fontWeight: '400',
+                    }}
+                  >
+                    {item?.item?.author}
+                  </Text>
+                  <Text
+                    style={{
+                      color: '#70747D',
+                      fontSize: 12,
+                      fontWeight: '400',
+                    }}
+                  >
+                    {timeSince(item?.item?.created)} ago
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+          {/* <FlatList
             nestedScrollEnabled
             data={allNews}
             contentContainerStyle={{ marginTop: 20 }}
             showsHorizontalScrollIndicator={false}
             ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+            keyExtractor={(item, index) => `${item.title}-${index}`}
             renderItem={(item) => (
               <TouchableOpacity
                 onPress={() => {
@@ -160,11 +218,36 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                 </View>
               </TouchableOpacity>
             )}
-          />
+          /> */}
         </View>
         <Text style={{ ...styles.newstitle, color: colors.text }}>Local News</Text>
         <View>
-          <FlatList
+          {LocalNews.map((item, i) => (
+            <ImageBackground
+              style={{
+                width: getWidth(90),
+                height: getHeight(14),
+                alignSelf: 'center',
+              }}
+              imageStyle={{ borderRadius: 10 }}
+              source={{ uri: item?.enclosures[0]?.url }}
+              key={i}
+            >
+              <View
+                style={{
+                  backgroundColor: '#000000',
+                  borderRadius: 10,
+                  opacity: 0.65,
+                  flex: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={styles.textstyle}>{item?.title}</Text>
+              </View>
+            </ImageBackground>
+          ))}
+          {/* <FlatList
             nestedScrollEnabled
             data={LocalNews}
             contentContainerStyle={{ marginTop: 20 }}
@@ -199,7 +282,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                 </View>
               </ImageBackground>
             )}
-          />
+          /> */}
         </View>
         <View style={styles.explorview}>
           <Text style={{ ...styles.explortext, color: colors.text }}>

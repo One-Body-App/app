@@ -25,7 +25,7 @@ export const GeneralStyle = StyleSheet.create({
   input: {
     height: getHeight(6),
     width: getWidth(88),
-    backgroundColor: 'white',
+
     // fontSize: getFontSize(1.6),
     alignSelf: 'center',
     paddingLeft: 5,

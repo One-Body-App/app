@@ -36,23 +36,9 @@ const SocialFlatlist = () => {
   const { colors } = useTheme();
 
   return (
-    <FlatList
-      nestedScrollEnabled
-      data={socialPost}
-      contentContainerStyle={{ marginTop: getHeight(1) }}
-      showsHorizontalScrollIndicator={false}
-      refreshing={refreshing}
-      refreshControl={
-        <RefreshControl enabled={true} refreshing={refreshing} onRefresh={() => getSocialPosts()} />
-      }
-      ListFooterComponent={() => (
-        <View style={styles.socialpostfooter}>
-          <Text style={{ color: '#757575' }}>View more</Text>
-        </View>
-      )}
-      ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-      renderItem={({ item }) => (
-        <View style={{ ...styles.socialpostview, backgroundColor: colors.card }}>
+    <>
+      {socialPost.map((item, i) => (
+        <View key={i} style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
           {item?.attachments ? (
             <Image
               style={styles.socialpostimage}
@@ -86,8 +72,8 @@ const SocialFlatlist = () => {
             </Text>
           </View>
         </View>
-      )}
-    />
+      ))}
+    </>
   );
 };
 export default SocialFlatlist;

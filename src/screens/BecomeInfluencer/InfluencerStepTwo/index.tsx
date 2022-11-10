@@ -7,6 +7,7 @@ import {
   Modal,
   TextInput as TextInputNative,
   Linking,
+  ScrollView,
 } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -26,6 +27,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { BASE_URL } from '@/src/Services/constants';
 import axios from 'axios';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<RootStackParamList, 'InfluencerStepTwo'>;
 
@@ -40,6 +42,9 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     twitterTitle: useRef<TextInputNative>(null),
     instagramTitle: useRef<TextInputNative>(null),
     comments: useRef<TextInputNative>(null),
+    bio: useRef<TextInputNative>(null),
+    title: useRef<TextInputNative>(null),
+    website: useRef<TextInputNative>(null),
   };
   const [state, setState] = useState({
     twitterUsername: '',
@@ -56,6 +61,12 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     instagramTitleError: '',
     comments: '',
     commentsError: '',
+    bio: '',
+    bioError: '',
+    title: '',
+    titleError: '',
+    website: '',
+    websiteError: '',
   });
 
   useEffect(() => {
@@ -76,7 +87,6 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
           const result = await axios.request(options);
 
           if (result && result.data?.access_token) {
-            console.log(result.data?.access_token);
             setToken(result.data?.access_token);
           }
         } catch (error: any) {
@@ -136,14 +146,17 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   const redirectUri = 'https://app.onebodyapp.com/influencer/login/instagram';
   const appId = '746127593378692';
 
+  const { dark, colors } = useTheme();
+
   return (
-    <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
+    <View style={styles.container}>
       <GeneralStatusBar
         backgroundColor="white"
         barStyle="dark-content"
         hidden={false}
         translucent={true}
       />
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -184,7 +197,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               >
                 <Ionicons name="logo-twitter" color={'#032F3C'} size={20} /> Twitter handle
               </Text>
-              <Text
+              {/* <Text
                 style={{
                   marginTop: 20,
                   color: '#032F3C',
@@ -193,7 +206,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 }}
               >
                 {state.twitterUsername}
-              </Text>
+              </Text> */}
               <Text
                 style={{
                   marginTop: 15,
@@ -204,7 +217,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               >
                 {state.twitterHandler}
               </Text>
-              <Text
+              {/* <Text
                 style={{
                   marginTop: 15,
                   color: '#032F3C',
@@ -213,7 +226,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 }}
               >
                 {state.twitterTitle}
-              </Text>
+              </Text> */}
 
               <Text
                 style={{
@@ -247,7 +260,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               >
                 {state.instagramHandler}
               </Text>
-              <Text
+              {/* <Text
                 style={{
                   marginTop: 15,
                   color: '#032F3C',
@@ -256,7 +269,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 }}
               >
                 {state.instagramTitle}
-              </Text>
+              </Text> */}
 
               <Text
                 style={{
@@ -338,7 +351,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
             <Text
               style={{
                 ...styles.heading,
-                color: '#032F3C',
+                color: dark ? colors.text : '#032F3C',
                 marginTop: 12,
                 fontFamily: 'Rubik-Medium',
               }}
@@ -346,6 +359,121 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               Application
             </Text>
           </View>
+          <TextInput
+            style={{ ...GeneralStyle.input, marginTop: 20, backgroundColor: colors.background }}
+            ref={inputRefs.title}
+            value={state.title}
+            returnKeyType={'next'}
+            mode="outlined"
+            activeOutlineColor={colors.primary}
+            outlineColor={'#9EA1A2'}
+            theme={{
+              roundness: 10,
+              dark: dark,
+              colors: { text: colors.text, placeholder: colors.primary },
+            }}
+            label={'Title'}
+            onFocus={() => setState({ ...state, titleError: '' })}
+            onBlur={() =>
+              validateFields(state.title, 'title', (error) =>
+                setState({ ...state, titleError: error })
+              )
+            }
+            onSubmitEditing={() => inputRefs.twitterHandler.current?.focus()}
+            onChangeText={(title) => changeHandler('title', title.trim())}
+            blurOnSubmit={false}
+          />
+          <Text style={GeneralStyle.InputError}>{state.titleError}</Text>
+          <TextInput
+            keyboardType="url"
+            style={{ ...GeneralStyle.input, backgroundColor: colors.background }}
+            ref={inputRefs.website}
+            value={state.website}
+            returnKeyType={'next'}
+            mode="outlined"
+            activeOutlineColor={colors.primary}
+            outlineColor={'#9EA1A2'}
+            theme={{
+              roundness: 10,
+              dark: dark,
+              colors: { text: colors.text, placeholder: colors.primary },
+            }}
+            label={'Website'}
+            onFocus={() => setState({ ...state, websiteError: '' })}
+            onBlur={() =>
+              validateFields(state.website, 'website', (error) =>
+                setState({ ...state, websiteError: error })
+              )
+            }
+            onSubmitEditing={() => inputRefs.twitterHandler.current?.focus()}
+            onChangeText={(website) => changeHandler('website', website.trim())}
+            blurOnSubmit={false}
+          />
+          <Text style={GeneralStyle.InputError}>{state.websiteError}</Text>
+          <Text style={{ color: '#4F6D77', fontSize: 17, fontWeight: '500', marginTop: 10 }}>
+            Bio
+          </Text>
+
+          <TextInput
+            style={{
+              ...GeneralStyle.input,
+              backgroundColor: colors.background,
+              height: getHeight(12),
+            }}
+            ref={inputRefs.bio}
+            multiline={true}
+            numberOfLines={5}
+            value={state.bio}
+            returnKeyType={'next'}
+            mode="outlined"
+            activeOutlineColor={colors.primary}
+            outlineColor={'#9EA1A2'}
+            theme={{
+              roundness: 10,
+              dark: dark,
+              colors: { text: colors.text, placeholder: colors.primary },
+            }}
+            onFocus={() => setState({ ...state, bioError: '' })}
+            onBlur={() =>
+              validateFields(state.bio, 'bio', (error) => setState({ ...state, bioError: error }))
+            }
+            onSubmitEditing={() => onNext()}
+            onChangeText={(bio) => changeHandler('bio', bio.trim())}
+            blurOnSubmit={false}
+          />
+          <Text style={GeneralStyle.InputError}>{state.bioError}</Text>
+          <Text style={{ color: '#4F6D77', fontSize: 17, fontWeight: '500' }}>Comments</Text>
+
+          <TextInput
+            style={{
+              ...GeneralStyle.input,
+              backgroundColor: colors.background,
+              height: getHeight(12),
+            }}
+            ref={inputRefs.comments}
+            multiline={true}
+            numberOfLines={5}
+            value={state.comments}
+            returnKeyType={'done'}
+            mode="outlined"
+            activeOutlineColor={colors.primary}
+            outlineColor={'#9EA1A2'}
+            theme={{
+              roundness: 10,
+              dark: dark,
+              colors: { text: colors.text, placeholder: colors.primary },
+            }}
+            onFocus={() => setState({ ...state, commentsError: '' })}
+            onBlur={() =>
+              validateFields(state.comments, 'comments', (error) =>
+                setState({ ...state, commentsError: error })
+              )
+            }
+            onSubmitEditing={() => onNext()}
+            onChangeText={(comments) => changeHandler('comments', comments.trim())}
+            blurOnSubmit={false}
+          />
+          <Text style={GeneralStyle.InputError}>{state.commentsError}</Text>
           <View style={{ justifyContent: 'flex-start', marginTop: getHeight(3) }}>
             <Text
               style={{
@@ -357,18 +485,25 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 fontFamily: 'Rubik-Regular',
               }}
             >
-              <Ionicons name="logo-twitter" size={20} /> Twitter handle
+              <Ionicons name="logo-twitter" size={20} /> Twitter
             </Text>
 
             <TextInput
-              style={GeneralStyle.input}
+              style={{
+                ...GeneralStyle.input,
+                backgroundColor: colors.background,
+              }}
               ref={inputRefs.twitterUsername}
               value={state.twitterUsername}
               returnKeyType={'next'}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlineColor={colors.primary}
               outlineColor={'#9EA1A2'}
-              theme={{ roundness: 10 }}
+              theme={{
+                roundness: 10,
+                dark: dark,
+                colors: { text: colors.text, placeholder: colors.primary },
+              }}
               label={'@Username'}
               onFocus={() => setState({ ...state, twitterUsernameError: '' })}
               onBlur={() =>
@@ -383,7 +518,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               blurOnSubmit={false}
             />
             <Text style={GeneralStyle.InputError}>{state.twitterUsernameError}</Text>
-            <TextInput
+            {/* <TextInput
               style={GeneralStyle.input}
               ref={inputRefs.twitterHandler}
               value={state.twitterHandler}
@@ -428,7 +563,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               blurOnSubmit={false}
             />
             <Text style={GeneralStyle.InputError}>{state.twitterTitleError}</Text>
-            <Text style={styles.twetertext}>Add twitter handle</Text>
+            <Text style={styles.twetertext}>Add twitter handle</Text> */}
 
             <Text
               style={{
@@ -440,7 +575,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 fontFamily: 'Rubik-Regular',
               }}
             >
-              <Ionicons name="logo-instagram" size={15} color={'#032F3C'} /> Instagram handle
+              <Ionicons name="logo-instagram" size={15} color={'#032F3C'} /> Instagram
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -448,10 +583,11 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                   `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code`
                 );
               }}
+              style={{ ...styles.btn2, backgroundColor: colors.background }}
             >
-              <Text>Authenticate Instagram</Text>
+              <Text style={{ color: colors.text }}>Authenticate with Instagram</Text>
             </TouchableOpacity>
-            <TextInput
+            {/* <TextInput
               style={GeneralStyle.input}
               ref={inputRefs.instagramUsername}
               value={state.instagramUsername}
@@ -521,32 +657,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               blurOnSubmit={false}
             />
             <Text style={GeneralStyle.InputError}>{state.instagramTitleError}</Text>
-            <Text style={styles.twetertext}>Add instagram handle</Text>
-            <Text style={{ color: '#4F6D77', fontSize: 17, fontWeight: '500' }}>Comments</Text>
-
-            <TextInput
-              style={{ ...GeneralStyle.input, height: getHeight(12) }}
-              ref={inputRefs.comments}
-              multiline={true}
-              numberOfLines={5}
-              value={state.comments}
-              returnKeyType={'done'}
-              mode="outlined"
-              activeOutlineColor={'#5B7279'}
-              theme={{ roundness: 10 }}
-              // label={'Write comment or any other information related to app...'}
-              outlineColor={'#9EA1A2'}
-              onFocus={() => setState({ ...state, commentsError: '' })}
-              onBlur={() =>
-                validateFields(state.comments, 'comments', (error) =>
-                  setState({ ...state, commentsError: error })
-                )
-              }
-              onSubmitEditing={() => onNext()}
-              onChangeText={(comments) => changeHandler('comments', comments.trim())}
-              blurOnSubmit={false}
-            />
-            <Text style={GeneralStyle.InputError}>{state.commentsError}</Text>
+            <Text style={styles.twetertext}>Add instagram handle</Text> */}
           </View>
           <View style={{ height: getHeight(10) }} />
         </KeyboardAwareScrollView>
@@ -585,10 +696,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
           </TouchableOpacity>
         </ImageBackground>
       </View>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
-        <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={'#4F6D77'} />
-      </TouchableOpacity>
-    </LinearGradient>
+    </View>
   );
 };
 export default InfluencerStepTwo;

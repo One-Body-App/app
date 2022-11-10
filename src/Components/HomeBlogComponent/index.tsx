@@ -1,8 +1,8 @@
 import { useNavigation, useTheme } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
 import FastImage from 'react-native-fast-image';
-
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useDispatch, useSelector } from 'react-redux';
 import parse from 'rss-to-json';
 import { SetAllBlog } from '@/redux/actions/SocialActions';

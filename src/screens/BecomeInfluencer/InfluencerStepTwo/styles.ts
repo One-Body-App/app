@@ -31,7 +31,7 @@ export const styles = StyleSheet.create({
     color: '#126B87',
     marginBottom: 22,
     fontWeight: '500',
-    fontSize: 14,
+
     textDecorationLine: 'underline',
   },
   formstepview: {
@@ -62,9 +62,7 @@ export const styles = StyleSheet.create({
     elevation: 21,
   },
   header: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    width: '100%',
     top: 40,
   },
   text: {
@@ -72,8 +70,6 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Rubik-Regular',
     color: '#888C93',
-    width: getWidth(60),
-    textAlign: 'center',
   },
   TextInput: {
     height: getHeight(5),
@@ -133,7 +129,6 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   btn2: {
-    backgroundColor: 'white',
     borderColor: '#F6F6F6',
     borderWidth: 1,
     width: getWidth(80),

@@ -524,7 +524,7 @@ PODS:
     - FirebaseCoreExtension (= 9.6.0)
     - React-Core
     - RNFBApp
-  - RNGestureHandler (2.5.0):
+  - RNGestureHandler (2.8.0):
     - React-Core
   - RNGoogleSignin (8.0.0):
     - GoogleSignIn (~> 6.2.2)
@@ -542,7 +542,7 @@ PODS:
     - React-Core
   - RNPermissions (3.6.0):
     - React-Core
-  - RNReanimated (2.11.0):
+  - RNReanimated (2.12.0):
     - DoubleConversion
     - FBLazyVector
     - FBReactNativeSpec
@@ -942,12 +942,12 @@ SPEC CHECKSUMS:
   RNFBAuth: 2b1091679f39e6cb6eb2479d85b08c1bd9360a9f
   RNFBDynamicLinks: 99402c84fe4d9f917dffc4ebe7779d3e604fbb23
   RNFBMessaging: 303404c507295755d6f7432d9dccc999e84b8073
-  RNGestureHandler: bad495418bcbd3ab47017a38d93d290ebd406f50
+  RNGestureHandler: 62232ba8f562f7dea5ba1b3383494eb5bf97a4d3
   RNGoogleSignin: b2179ba653c759b936404a7746fc5302f9de6a5a
   RNImageCropPicker: 44e2807bc410741f35d4c45b6586aedfe3da39d2
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
   RNPermissions: de7b7c3fe1680d974ac7a85e3e97aa539c0e68ea
-  RNReanimated: 3d8e34cff5c3e3b5006e428653faf8f8897e5f46
+  RNReanimated: c3e58924b9418883b0bde9e78c4c957302f02435
   RNScreens: 4a1af06327774490d97342c00aee0c2bafb497b7
   RNShare: ab582e93876d9df333a531390c658c31b50a767d
   RNSVG: 1153e8eeb34c788841016c517dba9f57f20b762f

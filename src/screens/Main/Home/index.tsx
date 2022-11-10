@@ -2,10 +2,12 @@ import React from 'react';
 import {
   View,
   TouchableWithoutFeedback,
-  TouchableOpacity,
   Animated,
   SafeAreaView,
+  Text,
+  TouchableOpacity,
 } from 'react-native';
+
 import LinearGradient from 'react-native-linear-gradient';
 import { Avatar } from 'react-native-paper';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -80,13 +82,11 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
             navigationState={{ index, routes }}
             renderScene={renderScene}
             renderTabBar={(props) => {
-              const inputRange = props.navigationState.routes.map((x, i) => i);
-
               return (
                 <View style={styles.tabBar}>
                   {props.navigationState.routes.map((route, i) => {
                     return (
-                      <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
+                      <TouchableOpacity key={i} style={styles.tabItem} onPress={() => setIndex(i)}>
                         <Animated.Text
                           style={
                             props?.navigationState?.index == i

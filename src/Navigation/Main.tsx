@@ -105,7 +105,7 @@ const Main = () => {
   useEffect(() => {
     const subscriber = auth().onIdTokenChanged(onAuthStateChanged);
 
-    dispatch(setLoader(true));
+    // dispatch(setLoader(true));
 
     return subscriber; // unsubscribe on unmount
   }, []);

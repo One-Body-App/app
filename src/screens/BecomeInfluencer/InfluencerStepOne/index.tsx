@@ -125,7 +125,7 @@ const InfluencerStepOne = ({ navigation }: Props) => {
           </View>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate('InfluencerStepTwo')}
+            onPress={() => navigation.navigate('InfluencerStepTwo', {})}
             style={{
               flexDirection: 'row',
               justifyContent: 'center',

@@ -1,14 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  FlatList,
-  Image,
-  ImageBackground,
-  ScrollView,
-  Text,
-  View,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
+import { FlatList, ScrollView, Text, View, RefreshControl } from 'react-native';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import { styles } from './styles';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import { timeSince } from '@/utils/ResponsiveFun';

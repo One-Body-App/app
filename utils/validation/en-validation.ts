@@ -163,4 +163,22 @@ export const enValidation = {
       message: '^This filed Required!',
     },
   },
+  bio: {
+    presence: {
+      message: '^This filed Required!',
+    },
+  },
+  title: {
+    presence: {
+      message: '^This filed Required!',
+    },
+  },
+  website: {
+    presence: {
+      message: '^This filed Required!',
+    },
+    url: {
+      message: '^Please enter a valid url starting with http/https',
+    },
+  },
 };
