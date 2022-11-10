@@ -79,7 +79,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
   }, []);
 
   const { colors } = useTheme();
-
+  console.log(allNews, 'allNews');
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -102,17 +102,21 @@ const HomeNewsComponent = ({ navigation }: Props) => {
             <TouchableOpacity
               onPress={() => {
                 // navigation.navigate('BlogView', { url: item?.item?.id });
-                OpenURLButton(item?.item?.link);
-                console.log(item);
+                OpenURLButton(item?.link);
               }}
-              style={{ ...styles.socialpostview, backgroundColor: colors.card }}
+              style={{
+                ...styles.socialpostview,
+                backgroundColor: colors.card,
+
+                margin: 7,
+              }}
               key={i}
             >
-              {item?.item?.enclosures ? (
+              {item?.enclosures ? (
                 <FastImage
                   style={styles.socialpostimage}
                   resizeMode={'stretch'}
-                  source={{ uri: item?.item?.enclosures[0]?.url }}
+                  source={{ uri: item?.enclosures[0]?.url }}
                 />
               ) : null}
               <View style={{ flex: 1, width: '100%', padding: 15 }}>
@@ -128,7 +132,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                       fontWeight: '500',
                     }}
                   >
-                    {item?.item?.title}
+                    {item?.title}
                   </Text>
                   <Entypo name="dots-three-horizontal" color={'#70747d'} size={20} />
                 </View>
@@ -140,7 +144,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                       fontWeight: '400',
                     }}
                   >
-                    {item?.item?.author}
+                    {item?.author}
                   </Text>
                   <Text
                     style={{
@@ -149,7 +153,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                       fontWeight: '400',
                     }}
                   >
-                    {timeSince(item?.item?.created)} ago
+                    {timeSince(item?.created)} ago
                   </Text>
                 </View>
               </View>
@@ -228,8 +232,10 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                 width: getWidth(90),
                 height: getHeight(14),
                 alignSelf: 'center',
+                // padding: 7,
+                margin: 7,
               }}
-              imageStyle={{ borderRadius: 10 }}
+              imageStyle={{ borderRadius: 10, padding: 7 }}
               source={{ uri: item?.enclosures[0]?.url }}
               key={i}
             >
