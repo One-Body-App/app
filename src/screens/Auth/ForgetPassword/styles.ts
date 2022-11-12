@@ -30,9 +30,39 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emailerrorview: { padding: 5, marginLeft: getWidth(5), flexDirection: 'row' },
+  emailsuccessview: {
+    width: '100%',
+
+    paddingHorizontal: 20,
+    // marginLeft: getWidth(5),
+    // flexDirection: 'row',
+    // textAlign: 'center',
+  },
+  emailSuccesssText: {
+    color: 'green',
+    marginTop: 20,
+    fontSize: getFontSize(2),
+    textAlign: 'center',
+  },
   emailerrortext: {
     color: 'red',
-    left: 10,
+
     fontSize: getFontSize(2),
+  },
+  headview: {
+    height: getHeight(8),
+
+    flexDirection: 'row',
+
+    justifyContent: 'space-between',
+    padding: 10,
+    alignItems: 'center',
+    shadowColor: '#126BB7',
+    shadowOffset: {
+      width: 0,
+      height: 25,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
   },
 });

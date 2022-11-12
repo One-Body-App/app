@@ -493,7 +493,7 @@ const LoginComponent: FC<Props> = ({
       </View>
     );
   }
-  console.log(enabledLoginProviders);
+
   const scheme = useColorScheme();
   const { colors } = useTheme();
 
@@ -607,7 +607,11 @@ const LoginComponent: FC<Props> = ({
         <Button
           text={'LOG IN'}
           disabled={!state.password || !state.email}
-          btnStyle={{ ...GeneralStyle.btn, marginTop: getHeight(2) }}
+          btnStyle={{
+            ...GeneralStyle.btn,
+            marginTop: getHeight(2),
+            backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
+          }}
           disabledBtnStyle={{
             ...GeneralStyle.btn,
             marginTop: getHeight(2),

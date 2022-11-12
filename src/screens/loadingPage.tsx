@@ -6,6 +6,7 @@ import { ApiCall } from '@/services/api';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../Navigation/types';
 import { RootState } from '../Redux/reducers/rootReducer';
+import auth from '@react-native-firebase/auth';
 
 type Props = StackScreenProps<RootStackParamList, 'LoadingPage'>;
 
@@ -20,42 +21,53 @@ const LoadingPage = ({ navigation }: Props) => {
 
   const getSocialPosts = async () => {
     try {
+      console.log('1111111');
       const res = await ApiCall({
         route: `user/get-following-social`,
         token,
         verb: 'get',
       });
-
+      console.log('1111111DONE', res);
+      setIsLoadedSocialPosts(true);
       if (res?.status == 200) {
-        setIsLoadedSocialPosts(true);
         dispatch(SetSocial(res?.response));
       } else {
+        if (res?.status == 401) {
+          auth().currentUser?.getIdToken(true);
+        }
         console.log('error', res?.response);
       }
     } catch (e: any) {
+      setIsLoadedSocialPosts(true);
       console.log(`saga get twitter timline error -- `, e.toString());
     }
   };
 
   const getTodayNews = async () => {
     try {
+      console.log('2222222');
       const res = await ApiCall({
         route: 'blogs/get-feed/today-news',
         verb: 'get',
         token: token,
       });
-
+      console.log('2222222DONE', res);
+      setIsloadedTodaysNews(true);
       if (res?.status == 200) {
         if (res?.response && res?.response.length > 0) {
-          dispatch(SetTodayNews(res?.response[0]));
-          setIsloadedTodaysNews(true);
+          dispatch(SetTodayNews(res?.response));
         }
 
         // navigation.navigate('Bottombar', { tabs: 'Home' });
       } else {
+        if (res?.status == 401) {
+          auth().currentUser?.getIdToken(true);
+        }
+
         console.log('error', res?.response);
       }
     } catch (e: any) {
+      setIsloadedTodaysNews(true);
       console.log(e);
       console.log('saga error -- ', e.toString());
 
@@ -64,26 +76,34 @@ const LoadingPage = ({ navigation }: Props) => {
   };
 
   const getRecentBlog = async () => {
+    console.log('3333333');
     try {
       const res = await ApiCall({
         route: `blogs/get-feed/recent-blogs`,
         verb: 'get',
         token: token,
       });
+      setIsLoadedRecentBlog(true);
+      console.log('3333333DONE', res);
       if (res?.status == 200) {
-        dispatch(SetRecentBlog(res?.response[0]));
-        setIsLoadedRecentBlog(true);
+        dispatch(SetRecentBlog(res?.response));
       } else {
+        if (res?.status == 401) {
+          auth().currentUser?.getIdToken(true);
+        }
         console.log('error', res?.response);
       }
     } catch (e: any) {
+      setIsLoadedRecentBlog(true);
       console.log('saga error -- ', e.toString());
     }
   };
 
   useEffect(() => {
+    console.log(isLoadedTodayNews, isLoadedRecentBlog, isLoadedSocialPosts);
     if (isLoadedTodayNews && isLoadedRecentBlog && isLoadedSocialPosts) {
-      navigation.navigate('Bottombar', { tabs: 'Home' });
+      console.log('asdfasdfasd');
+      navigation.replace('Bottombar', { tabs: 'Home' });
     }
   }, [isLoadedTodayNews, isLoadedRecentBlog, isLoadedSocialPosts]);
 

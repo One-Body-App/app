@@ -21,6 +21,8 @@ export const ApiCall = async ({
     if (baseurl) {
       url = `${baseurl}/${route}`;
     } else {
+      //
+      // url = `${!external ? `${BASE_URL}/` : ''}${route}`;
       url = `${!external ? `${BASE_URL}/` : ''}${route}`;
     }
     console.log(url, 'url', token);

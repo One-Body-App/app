@@ -10,6 +10,7 @@ import { ApiCall } from '@/services/api';
 import { styles } from './styles';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { OpenURLButton } from '@/src/Services/constants';
+import { isObject } from 'lodash';
 
 const HomeBlogComponent = () => {
   const navigation = useNavigation();
@@ -27,7 +28,7 @@ const HomeBlogComponent = () => {
         token: token,
       });
       if (res?.status == 200) {
-        dispatch(SetAllBlog(res?.response[0]));
+        dispatch(SetAllBlog(res?.response));
       } else {
         console.log('error', res?.response);
       }
@@ -61,6 +62,7 @@ const HomeBlogComponent = () => {
         ListHeaderComponent={() => <View style={{ padding: 2 }} />}
         ListFooterComponent={() => <View style={{ padding: 7 }} />}
         ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+        keyExtractor={(item, index) => `${item.created}_${index}`}
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => {
@@ -77,11 +79,11 @@ const HomeBlogComponent = () => {
               />
             ) : null}
             <Text numberOfLines={2} style={styles.blogpostpara}>
-              {item?.title}
+              {isObject(item?.title) ? item?.title.a.$text : item?.title}
             </Text>
 
             <Text numberOfLines={2} style={styles.blogposthour}>
-              {item?.author}
+              {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
             </Text>
           </TouchableOpacity>
         )}

@@ -6,9 +6,10 @@ import Logo from '@/assets/svg/Logo.svg';
 
 type Props = {
   title?: string;
+  left?: React.ReactNode;
 };
 
-const GradientHeader = ({ title }: Props) => {
+const GradientHeader = ({ title, left }: Props) => {
   return (
     <View
       style={{
@@ -40,6 +41,8 @@ const GradientHeader = ({ title }: Props) => {
           elevation: 0,
         }}
       >
+        {left}
+
         <Logo
           height={getHeight(16)}
           style={{

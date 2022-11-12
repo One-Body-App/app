@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Text, View, Image, TouchableOpacity } from 'react-native';
+import { Text, View, Image, TouchableOpacity, useColorScheme } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { TextInput as NativeTextInput } from 'react-native';
@@ -50,8 +50,11 @@ const SignupForm = ({ navigation }: Props) => {
   const [error, seterror] = React.useState<string>();
   const [hidePass, setHidePass] = useState(true);
   const [chidePass, setcHidePass] = useState(true);
+  const [loading, setIsloading] = useState(false);
+  const scheme = useColorScheme();
 
   const signUpUser = async () => {
+    setIsloading(true);
     const { email, password, name, cPassword } = state;
     const emailError = await validator('email', email);
     const nameError = await validator('name', name);
@@ -93,8 +96,10 @@ const SignupForm = ({ navigation }: Props) => {
                 // }),
               })
             );
+            setIsloading(false);
           })
           .catch((error) => {
+            setIsloading(false);
             if (error.code === 'auth/email-already-in-use') {
               seterror('That email address is already in use!');
               console.log('That email address is already in use!');
@@ -113,6 +118,7 @@ const SignupForm = ({ navigation }: Props) => {
         seterror('Both passwords MUST match!');
       }
     } else {
+      setIsloading(false);
       setState({
         ...state,
         emailError,
@@ -134,7 +140,9 @@ const SignupForm = ({ navigation }: Props) => {
         translucent={true}
       />
 
-      <GradientHeader />
+      <GradientHeader
+        left={<GoBackIcon color={'#FFF'} style={{ width: '100%', paddingHorizontal: 20 }} />}
+      />
       <KeyboardAwareScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient
           colors={['#fff', '#fff', '#E0EEF3']}
@@ -157,7 +165,7 @@ const SignupForm = ({ navigation }: Props) => {
                   setState({ ...state, nameError: error })
                 )
               }
-              onSubmitEditing={() => inputRefs.name.current?.focus()}
+              onSubmitEditing={() => inputRefs.email.current?.focus()}
               onChangeText={(name) => changeHandler('name', name)}
               blurOnSubmit={false}
               keyboardType="default"
@@ -293,9 +301,20 @@ const SignupForm = ({ navigation }: Props) => {
 
             <Button
               text={'SIGN UP'}
+              disabled={loading}
               onPress={() => signUpUser()}
               btnTextStyle={GeneralStyle.btnText}
-              btnStyle={GeneralStyle.btn}
+              disabledBtnStyle={{
+                ...GeneralStyle.btn,
+                marginTop: getHeight(2),
+                backgroundColor: '#E6EAEC',
+              }}
+              disabledBtnTextStyle={GeneralStyle.btnText}
+              btnStyle={{
+                ...GeneralStyle.btn,
+                marginTop: getHeight(2),
+                backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
+              }}
             />
             {error != null ? (
               <View style={styles.singerrorview1}>

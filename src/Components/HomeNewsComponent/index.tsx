@@ -24,12 +24,15 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { OpenURLButton } from '@/src/Services/constants';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
+import { isObject } from 'lodash';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
 const HomeNewsComponent = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const allNews = useSelector((state: RootState) => state.social.AllNews);
+  const allNews = useSelector((state: RootState) => {
+    return state.social.AllNews;
+  });
   const LocalNews = useSelector((state: RootState) => state.social.LocalNews);
 
   const dispatch = useDispatch();
@@ -44,11 +47,11 @@ const HomeNewsComponent = ({ navigation }: Props) => {
         verb: 'get',
         token: token,
       });
+
       if (res?.status == 200) {
-        dispatch(SetAllNews(res?.response[0]));
+        dispatch(SetAllNews(res?.response));
         dispatch(setLoader(false));
       } else {
-        console.log('error', res?.response);
         dispatch(setLoader(false));
       }
     } catch (e: any) {
@@ -63,7 +66,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
         token: token,
       });
       if (res?.status == 200) {
-        dispatch(SetLocalNews(res?.response[0]));
+        dispatch(SetLocalNews(res?.response));
       } else {
         console.log('error', res?.response);
         dispatch(setLoader(false));
@@ -79,7 +82,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
   }, []);
 
   const { colors } = useTheme();
-  console.log(allNews, 'allNews');
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -98,7 +101,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
         <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
 
         <View>
-          {allNews.map((item, i) => (
+          {allNews?.map((item, i) => (
             <TouchableOpacity
               onPress={() => {
                 // navigation.navigate('BlogView', { url: item?.item?.id });
@@ -132,7 +135,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                       fontWeight: '500',
                     }}
                   >
-                    {item?.title}
+                    {isObject(item?.title) ? item?.title?.a?.$text : item?.title}
                   </Text>
                   <Entypo name="dots-three-horizontal" color={'#70747d'} size={20} />
                 </View>
@@ -144,7 +147,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                       fontWeight: '400',
                     }}
                   >
-                    {item?.author}
+                    {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
                   </Text>
                   <Text
                     style={{
@@ -224,36 +227,38 @@ const HomeNewsComponent = ({ navigation }: Props) => {
             )}
           /> */}
         </View>
-        <Text style={{ ...styles.newstitle, color: colors.text }}>Local News</Text>
-        <View>
-          {LocalNews.map((item, i) => (
-            <ImageBackground
-              style={{
-                width: getWidth(90),
-                height: getHeight(14),
-                alignSelf: 'center',
-                // padding: 7,
-                margin: 7,
-              }}
-              imageStyle={{ borderRadius: 10, padding: 7 }}
-              source={{ uri: item?.enclosures[0]?.url }}
-              key={i}
-            >
-              <View
-                style={{
-                  backgroundColor: '#000000',
-                  borderRadius: 10,
-                  opacity: 0.65,
-                  flex: 1,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={styles.textstyle}>{item?.title}</Text>
-              </View>
-            </ImageBackground>
-          ))}
-          {/* <FlatList
+        {LocalNews ? (
+          <>
+            <Text style={{ ...styles.newstitle, color: colors.text }}>Local News</Text>
+            <View>
+              {LocalNews?.map((item, i) => (
+                <ImageBackground
+                  style={{
+                    width: getWidth(90),
+                    height: getHeight(14),
+                    alignSelf: 'center',
+                    // padding: 7,
+                    margin: 7,
+                  }}
+                  imageStyle={{ borderRadius: 10, padding: 7 }}
+                  source={{ uri: item?.enclosures[0]?.url }}
+                  key={i}
+                >
+                  <View
+                    style={{
+                      backgroundColor: '#000000',
+                      borderRadius: 10,
+                      opacity: 0.65,
+                      flex: 1,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={styles.textstyle}>{item?.title}</Text>
+                  </View>
+                </ImageBackground>
+              ))}
+              {/* <FlatList
             nestedScrollEnabled
             data={LocalNews}
             contentContainerStyle={{ marginTop: 20 }}
@@ -289,7 +294,10 @@ const HomeNewsComponent = ({ navigation }: Props) => {
               </ImageBackground>
             )}
           /> */}
-        </View>
+            </View>
+          </>
+        ) : null}
+
         <View style={styles.explorview}>
           <Text style={{ ...styles.explortext, color: colors.text }}>
             Explore Influencers & Organizations

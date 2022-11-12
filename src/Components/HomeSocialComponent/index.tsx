@@ -63,7 +63,7 @@ const HomeSocialComponent = () => {
         token: token,
       });
       if (res?.status == 200) {
-        dispatch(SetRecentBlog(res?.response[0]));
+        dispatch(SetRecentBlog(res?.response));
       } else {
         console.log('error', res?.response);
       }
@@ -95,6 +95,7 @@ const HomeSocialComponent = () => {
           showsHorizontalScrollIndicator={false}
           ListHeaderComponent={() => <View style={{ padding: 7 }} />}
           ListFooterComponent={() => <View style={{ padding: 7 }} />}
+          keyExtractor={(item, index) => `${item.created}_${index}`}
           ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
           renderItem={({ item }) => (
             <TouchableOpacity

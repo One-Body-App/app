@@ -44,4 +44,20 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2.3),
   },
   TabTex: { color: appColor.SecoundryColor, fontSize: getFontSize(2.3) },
+  headview: {
+    height: getHeight(8),
+
+    flexDirection: 'row',
+
+    justifyContent: 'space-between',
+    padding: 10,
+    alignItems: 'center',
+    shadowColor: '#126BB7',
+    shadowOffset: {
+      width: 0,
+      height: 25,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+  },
 });

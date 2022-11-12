@@ -26,6 +26,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { OpenURLButton } from '@/src/Services/constants';
+import { isObject } from 'lodash';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
@@ -49,7 +50,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
         token: token,
       });
       if (res?.status == 200) {
-        dispatch(SetRecentBlog(res?.response[0]));
+        dispatch(SetRecentBlog(res?.response));
       } else {
         console.log('error', res?.response);
       }
@@ -58,7 +59,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
     }
   };
   const { colors } = useTheme();
-
+  console.log(todayNews, 'todayNews');
   // useEffect(() => {
   //   getRecentBlog();
   // }, []);
@@ -189,7 +190,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
             ListHeaderComponent={() => <View style={{ padding: 7 }} />}
             ListFooterComponent={() => <View style={{ padding: 7 }} />}
             ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-            keyExtractor={(item) => item.published}
+            keyExtractor={(item, index) => `${item.created}_${index}`}
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => {
@@ -229,7 +230,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
                     <Text style={styles.newstext}>{item?.title}</Text>
                     <View style={styles.newsview}>
                       <Text style={{ ...styles.messageText, color: '#B8BABE' }}>
-                        {item?.author}
+                        {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
                       </Text>
                       <Text style={styles.messageText}>{timeSince(item?.created)} ago</Text>
                     </View>
@@ -256,6 +257,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
             ListHeaderComponent={() => <View style={{ padding: 7 }} />}
             ListFooterComponent={() => <View style={{ padding: 7 }} />}
             ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+            keyExtractor={(item, index) => `${item.created}_${index}`}
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => {
@@ -269,7 +271,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
                   source={{ uri: item?.enclosures[0]?.url }}
                 />
                 <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
-                  {item?.title}
+                  {isObject(item?.title) ? item?.title?.a.$text : item?.title}
                 </Text>
                 <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
               </TouchableOpacity>

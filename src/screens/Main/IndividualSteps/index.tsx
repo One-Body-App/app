@@ -162,7 +162,7 @@ const IndividualSteps = ({ navigation }: Props) => {
         verb: 'get',
         token: token,
       });
-
+      console.log(res, 'resresres');
       if (res?.status == 200) {
         setChurchTypes(res?.response);
       } else {

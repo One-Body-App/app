@@ -137,7 +137,7 @@ const MapBox = (props: MapBoxProps) => {
         setCheckIn(false);
       });
   };
-  console.log(colors.background);
+
   return (
     <Modal
       backdropOpacity={0.3}

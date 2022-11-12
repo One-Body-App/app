@@ -291,9 +291,9 @@ const Main = () => {
               <Stack.Screen name="PhoneValidateOtp" component={PhoneValidateOtp} />
               <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
               <Stack.Screen name="EndUserAgrement" component={EndUserAgrement} />
-              <Stack.Screen name="confirm" component={ConfirmPassword} />
+
               <Stack.Screen name="newpassword" component={NewPassword} />
-              <Stack.Screen name="PasswordResetOtp" component={PasswordResetOtp} />
+
               <Stack.Screen
                 name="ConfirmLogin"
                 component={ConfirmLogin}
