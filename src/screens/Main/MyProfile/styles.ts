@@ -3,14 +3,15 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
   bottomView: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 0,
+    // justifyContent: 'center',
+    // alignItems: 'center',
+    flex: 1,
   },
   profileview: {
-    justifyContent: 'space-around',
-    alignItems: 'center',
     flex: 1,
+    // justifyContent: 'space-around',
+    // alignItems: 'center',
+    // flex: 1,
   },
   untext: { color: 'black', marginTop: 10 },
   moretweet: { marginBottom: 30, textAlign: 'center', color: 'gray' },
@@ -168,9 +169,9 @@ export const styles = StyleSheet.create({
     backgroundColor: 'white',
     alignItems: 'center',
     padding: 13,
-    borderTopRightRadius: 17,
-    borderTopLeftRadius: 17,
-    height: getHeight(55),
+    borderRadius: 17,
+
+    height: getHeight(35),
   },
   propview: {
     height: getHeight(0.3),

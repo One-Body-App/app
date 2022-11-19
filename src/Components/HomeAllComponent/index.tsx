@@ -17,7 +17,7 @@ import Button from '../Button';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 
 import SocialFlatlist from '../SocialFlatlist';
-import { useTheme } from '@react-navigation/native';
+import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
@@ -28,24 +28,26 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { OpenURLButton } from '@/src/Services/constants';
 import { isObject } from 'lodash';
 
-type Props = StackScreenProps<RootStackParamList, 'Home'>;
+type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
-const HomeAllComponent = ({ navigation }: Props) => {
+const HomeAllComponent = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const todayNews = useSelector((state: RootState) => state.social.TodayNews);
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
-
+  const [page, setPage] = useState<number>(1);
+  const navigation = useNavigation<ScreenNavigationProp>();
+  console.log(todayNews, 'todayNewstodayNewstodayNews');
   const toggleModal = () => {
     setShow(!show);
   };
 
-  const getRecentBlog = async () => {
+  const getRecentBlog = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `blogs/get-feed/recent-blogs`,
+        route: `blogs/get-feed/recent-blogs/${pageNumber}`,
         verb: 'get',
         token: token,
       });
@@ -57,6 +59,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
+    setPage(pageNumber);
   };
   const { colors } = useTheme();
   console.log(todayNews, 'todayNews');
@@ -167,13 +170,14 @@ const HomeAllComponent = ({ navigation }: Props) => {
       </Modal>
       <ScrollView
         style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 75 }}
         refreshControl={
           <RefreshControl
             enabled={true}
             refreshing={refreshing}
             onRefresh={async () => {
               setRefreshing(true);
-              await getRecentBlog();
+              await getRecentBlog(page + 1);
               setRefreshing(false);
             }}
           />
@@ -200,7 +204,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
                 <ImageBackground
                   style={styles.newsimage}
                   imageStyle={{ borderRadius: 20 }}
-                  source={{ uri: item?.enclosures[0]?.url }}
+                  source={{ uri: item?.image?.url }}
                 >
                   <View
                     style={{
@@ -268,7 +272,7 @@ const HomeAllComponent = ({ navigation }: Props) => {
                 <FastImage
                   style={styles.blogpostimage}
                   resizeMode={'stretch'}
-                  source={{ uri: item?.enclosures[0]?.url }}
+                  source={{ uri: item?.image?.url }}
                 />
                 <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
                   {isObject(item?.title) ? item?.title?.a.$text : item?.title}

@@ -56,4 +56,10 @@ export type RootStackParamList = {
     url?: string;
   };
   HomeNewsComponent: undefined;
+  MyProfile: undefined;
+  EditProfile: undefined;
+  UserProfile: {
+    role: string;
+    id: string;
+  };
 };

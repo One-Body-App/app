@@ -40,7 +40,7 @@ const NotificationSettings = ({ navigation }: Props) => {
       id: 'loadig',
       placement: 'top',
       style: {
-        backgroundColor: colors.backdrop,
+        backgroundColor: colors.background,
       },
     });
     try {
@@ -85,7 +85,7 @@ const NotificationSettings = ({ navigation }: Props) => {
     const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
       id: 'loadingB',
       style: {
-        backgroundColor: colors.backdrop,
+        backgroundColor: colors.background,
       },
     });
     setIsLoading(true);

@@ -51,7 +51,7 @@ const styles = StyleSheet.create<{ headview: ViewStyle; titletext: TextStyle }>(
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 0,
-    // marginBottom: getHeight(6),
+    // marginBottom: getHeight("6"),
   },
   titletext: {
     fontSize: getFontSize(2.5),

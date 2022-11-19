@@ -14,12 +14,13 @@ export const GeneralStyle = StyleSheet.create({
   },
   btn: {
     alignSelf: 'center',
-    flexGrow: 1,
-    marginHorizontal: 25,
+    // flexGrow: 1,
+    // marginHorizontal: 25,
     height: getHeight(6),
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
+    width: '100%',
   },
 
   input: {

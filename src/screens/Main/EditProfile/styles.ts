@@ -47,13 +47,17 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
   topContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     flex: 1,
 
     justifyContent: 'space-around',
   },
-  imageContainer: { alignItems: 'center', marginTop: getHeight(5) },
-  InputsContainer: { width: getWidth(50), marginTop: 5 },
+  imageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: getHeight(5),
+  },
+  InputsContainer: { marginTop: 5, marginHorizontal: 10 },
   text: { width: '80%', textAlign: 'center' },
 
   TextInput: { backgroundColor: 'white' },

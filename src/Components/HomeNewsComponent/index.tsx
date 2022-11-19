@@ -24,32 +24,37 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { OpenURLButton } from '@/src/Services/constants';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
-import { isObject } from 'lodash';
+import { isArray, isObject } from 'lodash';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
 const HomeNewsComponent = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const allNews = useSelector((state: RootState) => {
-    return state.social.AllNews;
+    console.log(state.social, 'state.social');
+    return isArray(state.social.AllNews) ? state.social.AllNews : [];
   });
   const LocalNews = useSelector((state: RootState) => state.social.LocalNews);
 
   const dispatch = useDispatch();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
 
-  const getAllNews = async () => {
+  const getAllNews = async (pageNumber: number) => {
     dispatch(setLoader(true));
+    console.log('newsssss');
     try {
       const res = await ApiCall({
-        route: `blogs/get-feed/all-news`,
+        route: `blogs/get-feed/all-news/${pageNumber}`,
         verb: 'get',
         token: token,
       });
 
       if (res?.status == 200) {
-        dispatch(SetAllNews(res?.response));
+        // if (pageNumber > 1 && res?.response) {
+        dispatch(SetAllNews([...allNews, ...(res?.response ?? [])]));
+        // }
         dispatch(setLoader(false));
       } else {
         dispatch(setLoader(false));
@@ -57,11 +62,12 @@ const HomeNewsComponent = ({ navigation }: Props) => {
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
+    setPage(pageNumber);
   };
-  const getLocalNews = async () => {
+  const getLocalNews = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `blogs/get-feed/local-news`,
+        route: `blogs/get-feed/local-news/${pageNumber}`,
         verb: 'get',
         token: token,
       });
@@ -74,11 +80,15 @@ const HomeNewsComponent = ({ navigation }: Props) => {
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
+    setPage(pageNumber);
   };
 
   useEffect(() => {
-    getAllNews();
-    getLocalNews();
+    const getData = async () => {
+      await getAllNews(1);
+      await getLocalNews(1);
+    };
+    getData();
   }, []);
 
   const { colors } = useTheme();
@@ -92,11 +102,12 @@ const HomeNewsComponent = ({ navigation }: Props) => {
             refreshing={refreshing}
             onRefresh={async () => {
               setRefreshing(true);
-              await getAllNews();
+              await getAllNews(page + 1);
               setRefreshing(false);
             }}
           />
         }
+        contentContainerStyle={{ paddingBottom: 75 }}
       >
         <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
 
@@ -115,11 +126,11 @@ const HomeNewsComponent = ({ navigation }: Props) => {
               }}
               key={i}
             >
-              {item?.enclosures ? (
+              {item?.image ? (
                 <FastImage
                   style={styles.socialpostimage}
                   resizeMode={'stretch'}
-                  source={{ uri: item?.enclosures[0]?.url }}
+                  source={{ uri: item?.image?.url }}
                 />
               ) : null}
               <View style={{ flex: 1, width: '100%', padding: 15 }}>
@@ -162,6 +173,16 @@ const HomeNewsComponent = ({ navigation }: Props) => {
               </View>
             </TouchableOpacity>
           ))}
+          <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
+            <TouchableOpacity
+              onPress={async () => {
+                await getAllNews(page + 1);
+              }}
+            >
+              <Text>View More</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* <FlatList
             nestedScrollEnabled
             data={allNews}
@@ -182,7 +203,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                   <FastImage
                     style={styles.socialpostimage}
                     resizeMode={'stretch'}
-                    source={{ uri: item?.item?.enclosures[0]?.url }}
+                    source={{ uri: item?.image?.url  }}
                   />
                 ) : null}
                 <View style={{ flex: 1, width: '100%', padding: 15 }}>
@@ -227,7 +248,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
             )}
           /> */}
         </View>
-        {LocalNews ? (
+        {LocalNews.length > 0 ? (
           <>
             <Text style={{ ...styles.newstitle, color: colors.text }}>Local News</Text>
             <View>
@@ -241,7 +262,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                     margin: 7,
                   }}
                   imageStyle={{ borderRadius: 10, padding: 7 }}
-                  source={{ uri: item?.enclosures[0]?.url }}
+                  source={{ uri: item?.image?.url }}
                   key={i}
                 >
                   <View
@@ -277,7 +298,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                   alignSelf: 'center',
                 }}
                 imageStyle={{ borderRadius: 10 }}
-                source={{ uri: item?.enclosures[0]?.url }}
+                source={{ uri: item?.image?.url  }}
               >
                 <View
                   style={{
@@ -297,22 +318,6 @@ const HomeNewsComponent = ({ navigation }: Props) => {
             </View>
           </>
         ) : null}
-
-        <View style={styles.explorview}>
-          <Text style={{ ...styles.explortext, color: colors.text }}>
-            Explore Influencers & Organizations
-          </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Home', { tabs: 'Explore' })}
-            style={styles.viewtext}
-          >
-            <Text style={{ color: '#126B87' }}>View more</Text>
-            <Fontisto name="angle-right" size={12} color="#126B87" />
-          </TouchableOpacity>
-        </View>
-        <View>
-          <SubscribeFlatlist />
-        </View>
       </ScrollView>
     </View>
   );

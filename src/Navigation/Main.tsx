@@ -233,7 +233,7 @@ const Main = () => {
                   <Stack.Screen name="Help" component={Help} />
                   <Stack.Screen name="Faqs" component={Faqs} />
                   <Stack.Screen name="RemoveAccount" component={RemoveAccount} />
-                  <Stack.Screen name="editProfile" component={EditProfile} />
+                  <Stack.Screen name="EditProfile" component={EditProfile} />
                   <Stack.Screen name="Settings" component={Setting} />
                   <Stack.Screen name="PasswordChange" component={PasswordChange} />
                   <Stack.Screen name="EmailChange" component={EmailChange} />

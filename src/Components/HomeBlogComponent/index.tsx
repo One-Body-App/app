@@ -17,13 +17,14 @@ const HomeBlogComponent = () => {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const allBlog = useSelector((state: RootState) => state.social.AllBlog);
+  const [page, setPage] = useState(1);
 
   const [refreshing, setRefreshing] = useState(false);
 
-  const getAllBlog = async () => {
+  const getAllBlog = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `blogs/get-feed/all-blogs`,
+        route: `blogs/get-feed/all-blogs/${pageNumber}`,
         verb: 'get',
         token: token,
       });
@@ -35,10 +36,11 @@ const HomeBlogComponent = () => {
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
+    setPage(pageNumber);
   };
 
   useEffect(() => {
-    getAllBlog();
+    getAllBlog(1);
   }, []);
 
   const { colors } = useTheme();
@@ -57,7 +59,11 @@ const HomeBlogComponent = () => {
         showsVerticalScrollIndicator={false}
         refreshing={refreshing}
         refreshControl={
-          <RefreshControl enabled={true} refreshing={refreshing} onRefresh={() => getAllBlog()} />
+          <RefreshControl
+            enabled={true}
+            refreshing={refreshing}
+            onRefresh={() => getAllBlog(page + 1)}
+          />
         }
         ListHeaderComponent={() => <View style={{ padding: 2 }} />}
         ListFooterComponent={() => <View style={{ padding: 7 }} />}
@@ -71,11 +77,11 @@ const HomeBlogComponent = () => {
             }}
             style={{ ...styles.blogpostview, marginHorizontal: 10, backgroundColor: colors.card }}
           >
-            {item?.enclosures ? (
+            {item?.image ? (
               <FastImage
                 style={styles.blogpostimage}
                 resizeMode={'stretch'}
-                source={{ uri: item?.enclosures[0]?.url }}
+                source={{ uri: item?.image?.url }}
               />
             ) : null}
             <Text numberOfLines={2} style={styles.blogpostpara}>

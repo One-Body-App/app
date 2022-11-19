@@ -30,7 +30,7 @@ const LoadingPage = ({ navigation }: Props) => {
       console.log('1111111DONE', res);
       setIsLoadedSocialPosts(true);
       if (res?.status == 200) {
-        dispatch(SetSocial(res?.response));
+        dispatch(SetSocial(res?.response.content));
       } else {
         if (res?.status == 401) {
           auth().currentUser?.getIdToken(true);
@@ -47,7 +47,7 @@ const LoadingPage = ({ navigation }: Props) => {
     try {
       console.log('2222222');
       const res = await ApiCall({
-        route: 'blogs/get-feed/today-news',
+        route: 'blogs/get-feed/today-news/1',
         verb: 'get',
         token: token,
       });
@@ -79,7 +79,7 @@ const LoadingPage = ({ navigation }: Props) => {
     console.log('3333333');
     try {
       const res = await ApiCall({
-        route: `blogs/get-feed/recent-blogs`,
+        route: `blogs/get-feed/recent-blogs/1`,
         verb: 'get',
         token: token,
       });

@@ -1,10 +1,11 @@
 import { AnyAction, Reducer } from 'redux';
 import { ACTIONS } from '../action-types';
+import { UserProfile } from '../types';
 
 type UserReducers = {
   userInrest: string[];
   userSubscribes: string[];
-  allUser: string[];
+  allUser: UserProfile[];
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
   subscribeToNewsletter: boolean;

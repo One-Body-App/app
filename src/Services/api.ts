@@ -8,13 +8,16 @@ export const ApiCall = async ({
   token,
   baseurl,
   external,
-}: {
+  isFormUrlEncode,
+}: //
+{
   params?: Record<string, any>;
   route: string;
   verb: string;
   token?: string;
   baseurl?: string;
   external?: boolean;
+  isFormUrlEncode?: boolean;
 }): Promise<{ status: number; response: any }> => {
   try {
     let url = null;
@@ -25,7 +28,7 @@ export const ApiCall = async ({
       // url = `${!external ? `${BASE_URL}/` : ''}${route}`;
       url = `${!external ? `${BASE_URL}/` : ''}${route}`;
     }
-    console.log(url, 'url', token);
+    console.log(url, 'url', token, isFormUrlEncode);
     let response: AxiosResponse<any, any> | null = null;
     switch (verb) {
       case 'get':
@@ -33,6 +36,7 @@ export const ApiCall = async ({
           url,
           token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
         );
+
         break;
       case 'post':
         response = await axios.post(
@@ -44,8 +48,16 @@ export const ApiCall = async ({
       case 'patch':
         response = await axios.patch(
           url,
+          // isFormUrlEncode ? formData : params,
           params,
-          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          token
+            ? {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'application/x-www-form-urlencoded' : '',
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            : undefined
         );
         break;
       case 'delete':
@@ -62,7 +74,7 @@ export const ApiCall = async ({
     console.log(response);
     return { status: 200, response: response?.data };
   } catch (e: any) {
-    console.log(e);
+    console.log(e, 'eeeeee');
     // handle error
     return { status: 400, response: e.response.data };
   }

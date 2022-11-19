@@ -45,36 +45,37 @@ function NavHeader(props: DrawerContentComponentProps) {
         }}
       >
         <View style={{ flex: 1, marginVertical: 30 }}>
-          {user?.profileImage ? (
-            <ImageModal
-              style={{
-                width: 90,
-                height: 90,
-                borderRadius: 45,
-                alignSelf: 'center',
-              }}
-              source={{ uri: user?.profileImage }}
-              resizeMode={'contain'}
-            />
-          ) : (
-            <View
-              style={{
-                flex: 1,
+          <View
+            style={{
+              flex: 1,
 
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
+              justifyContent: 'center',
+              alignItems: 'center',
+              alignContent: 'center',
+            }}
+          >
+            {user?.profileImage ? (
+              <View>
+                <ImageModal
+                  style={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 45,
+                  }}
+                  source={{ uri: user?.profileImage }}
+                  resizeMode={'contain'}
+                />
+              </View>
+            ) : (
               <FontAwesomeIcon
                 icon={faUser}
-                size={60}
+                size={90}
                 mask={faCircle}
                 style={{ color: '#000' }}
                 transform="shrink-6"
               />
-            </View>
-          )}
-
+            )}
+          </View>
           <Text
             numberOfLines={2}
             style={{

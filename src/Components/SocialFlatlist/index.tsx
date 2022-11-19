@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Image, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { styles } from './styles';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
@@ -12,32 +12,34 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 const SocialFlatlist = () => {
   const socialPost = useSelector((state: RootState) => state.social.SocialPost);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [refreshing, setRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const dispatch = useDispatch();
+  const [page, setPage] = useState(1);
 
-  const getSocialPosts = async () => {
+  const getSocialPosts = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `user/get-following-social`,
+        route: `user/get-following-social/${pageNumber}`,
         token,
         verb: 'get',
       });
       if (res?.status == 200) {
-        console.log(res?.response);
-        dispatch(SetSocial([...res?.response, ...socialPost]));
+        setHasMore(res?.response.hasMore);
+        dispatch(SetSocial([...res?.response.content, ...socialPost]));
       } else {
         console.log('error', res?.response);
       }
     } catch (e: any) {
       console.log(`saga get twitter timline  error -- `, e.toString());
     }
+    setPage(pageNumber);
   };
 
   const { colors } = useTheme();
 
   return (
     <>
-      {socialPost.map((item, i) => (
+      {socialPost?.map((item, i) => (
         <View key={i} style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
           {item?.attachments ? (
             <Image
@@ -59,7 +61,7 @@ const SocialFlatlist = () => {
             {item?.content}
           </Text>
           <View style={{ flexDirection: 'row', padding: 5 }}>
-            <Twitter fill="#00acee" />
+            {item?.source == 'twitter' ? <Twitter fill="#00acee" /> : null}
             <Text
               style={{
                 marginLeft: 5,
@@ -68,11 +70,22 @@ const SocialFlatlist = () => {
                 alignItems: 'center',
               }}
             >
-              @onebodynick
+              @{item?.handler}
             </Text>
           </View>
         </View>
       ))}
+      {hasMore ? (
+        <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
+          <TouchableOpacity
+            onPress={async () => {
+              await getSocialPosts(page + 1);
+            }}
+          >
+            <Text>View More</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </>
   );
 };

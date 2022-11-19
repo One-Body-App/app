@@ -76,7 +76,6 @@ const AddIntrestsModel = (props) => {
       onSwipeComplete={() => setShow(false)}
       swipeDirection={['down']}
       style={styles.bottomView}
-      onRequestClose={() => setShow(false)}
     >
       <View style={styles.content2}>
         <View style={styles.headLine} />

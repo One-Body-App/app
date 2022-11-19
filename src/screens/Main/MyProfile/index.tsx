@@ -23,90 +23,75 @@ import { useTheme } from '@react-navigation/native';
 import Header from '@/src/Components/Header';
 import GoBackIcon from '@/src/Components/GoBackIcon';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
+import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
+import { Badge } from '@/src/Redux/types';
+import { StackScreenProps } from '@react-navigation/stack';
 
-const MyProfile = (props) => {
+type Route = {
+  key: string;
+  title: string;
+};
+type Props = StackScreenProps<RootStackParamList, 'MyProfile'>;
+
+const MyProfile = ({ navigation }: Props) => {
   const user = useSelector((state: RootState) => state.auth.userProfile);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
-  const [badgesList, setBadgesList] = useState([]);
-  const [requestModel, setRequestModel] = useState(false);
+  const [badgesList, setBadgesList] = useState<Badge[]>([]);
+  const [requestModel, setRequestModel] = useState<boolean>(false);
   const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState([
+  const [routes] = React.useState<Route[]>([
     { key: 'Instagram', title: 'Instagram' },
     { key: 'Blog', title: 'Blog' },
     { key: 'Twitter', title: 'Twitter' },
   ]);
 
-  const [selectedBadge, setSelectedBadge] = useState(user?.badges);
+  const [selectedBadges, setSelectedBadges] = useState<Badge[]>(user?.badgesData ?? []);
 
   const renderScene = SceneMap({
     Instagram: InstagramFlatlist,
     Blog: BlogFlatlist,
     Twitter: TwitterFlatlist,
   });
-  const renderTabBar = (props) => {
-    const inputRange = props.navigationState.routes.map((x, i) => i);
 
-    return (
-      <View style={styles.tabBar}>
-        {props.navigationState.routes.map((route, i) => {
-          return (
-            <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
-              <Animated.Text
-                style={
-                  props?.navigationState?.index == i
-                    ? {
-                        color: '#032F3C',
-                        fontFamily: 'Rubik-Medium',
-                      }
-                    : {
-                        color: '#032F3C',
-                        fontFamily: 'Rubik-Regular',
-                      }
-                }
-              >
-                {route.title}
-              </Animated.Text>
-              {props?.navigationState?.index == i ? <View style={styles.propview} /> : null}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  };
-  const unselect = (id) => {
-    const array = selectedBadge.filter((item) => item != id);
+  const unselect = (id: string) => {
+    const array = selectedBadges.filter((item) => item._id != id);
 
-    setSelectedBadge(array);
+    setSelectedBadges(array);
   };
 
-  const getBadeg = async () => {
+  const getBadge = async () => {
     try {
       const res = await ApiCall({
         route: 'user/badges',
         verb: 'get',
         token: token,
       });
+      console.log(res, 'resresres');
       if (res?.status == 200) {
-        setBadgesList(res?.data);
+        setBadgesList(res?.response.data);
       } else {
-        console.log('error', res?.datas);
+        console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error on what i Do -- ', e.toString());
     }
   };
 
-  const setBadegs = async (id) => {
+  const setBadges = async () => {
     try {
       const res = await ApiCall({
         route: 'user/assign-badge',
         token: token,
-        params: { badges: selectedBadge },
+        params: { badges: selectedBadges },
         verb: 'patch',
       });
       if (res.status == 200) {
-        dispatch(getProfile({ token: token, role: user.role }));
+        dispatch(getProfile({ token: token, role: user?.role }));
       } else {
         console.log('error', res);
       }
@@ -116,7 +101,7 @@ const MyProfile = (props) => {
   };
 
   useEffect(() => {
-    getBadeg();
+    getBadge();
   }, []);
 
   const { colors } = useTheme();
@@ -130,48 +115,48 @@ const MyProfile = (props) => {
         onSwipeComplete={() => setRequestModel(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
+        propagateSwipe
       >
         <View style={styles.content2}>
-          <View style={styles.headLine} />
+          <Text
+            style={{
+              color: '#032F3C',
+              marginLeft: 20,
+              marginRight: 20,
+              textAlign: 'center',
+              letterSpacing: 0.25,
+            }}
+          >
+            <Text style={{ fontWeight: 'bold' }}>Select up to 3 badage</Text> you would like to
+            display on your profile
+          </Text>
           <View style={styles.profileview}>
-            <Text
-              style={{
-                color: '#032F3C',
-                marginLeft: 20,
-                marginRight: 20,
-                textAlign: 'center',
-                letterSpacing: 0.25,
-              }}
-            >
-              <Text style={{ fontWeight: 'bold' }}>Select upto 3 badage</Text> you would like to
-              display on your profile
-            </Text>
-            <View style={{ marginTop: 10, height: getHeight(35) }}>
+            <View style={{ marginVertical: 15 }}>
               <FlatList
                 data={badgesList}
                 numColumns={3}
                 showsHorizontalScrollIndicator={false}
-                ListFooterComponent={() => <View style={{ padding: 7 }} />}
+                // ListFooterComponent={() => <View style={{ padding: 7 }} />}
                 ItemSeparatorComponent={() => <View style={{ margin: 7 }} />}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => {
-                      selectedBadge.includes(item?._id)
+                      user?.badges.includes(item?._id)
                         ? unselect(item?._id)
-                        : selectedBadge.length < 3
-                        ? setSelectedBadge([...selectedBadge, item?._id])
+                        : selectedBadges.length < 3
+                        ? setSelectedBadges([...selectedBadges, item])
                         : Toast.show('You cannot select more then 3 badges!');
                     }}
                     style={styles.ideaterview}
                   >
                     <FastImage
-                      style={{ width: 100, height: 100, borderRadius: 50 }}
+                      style={{ width: '33%', height: 40, borderRadius: 50 }}
                       source={{
                         uri: item?.badge,
                       }}
-                      resizeMode={FastImage.resizeMode.stretch}
+                      resizeMode={FastImage.resizeMode.contain}
                     />
-                    {selectedBadge.includes(item?._id) ? (
+                    {selectedBadges.filter((x) => x._id == item?._id).length > 0 ? (
                       <Selected
                         style={{
                           position: 'absolute',
@@ -194,9 +179,11 @@ const MyProfile = (props) => {
                 )}
               />
             </View>
+          </View>
+          <View style={{ width: '100%' }}>
             <TouchableOpacity
               onPress={() => {
-                setBadegs();
+                setBadges();
                 setRequestModel(false);
               }}
               style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}
@@ -220,19 +207,36 @@ const MyProfile = (props) => {
         style={{ marginTop: getHeight(2) }}
       >
         <View style={{ alignSelf: 'center' }}>
-          <ImageModal
-            style={{
-              width: 150,
-              height: 150,
-              alignSelf: 'center',
-              marginVertical: 10,
-              borderRadius: 75,
-            }}
-            source={{
-              uri: user?.profileImage,
-            }}
-            resizeMode={'contain'}
-          />
+          {user?.profileImage ? (
+            <ImageModal
+              style={{
+                width: 90,
+                height: 90,
+                borderRadius: 45,
+                alignSelf: 'center',
+              }}
+              source={{ uri: user?.profileImage }}
+              resizeMode={'contain'}
+            />
+          ) : (
+            <View
+              style={{
+                width: 90,
+                height: 90,
+
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faUser}
+                size={60}
+                mask={faCircle}
+                style={{ color: '#000' }}
+                transform="shrink-6"
+              />
+            </View>
+          )}
         </View>
         <Text
           style={{
@@ -240,6 +244,7 @@ const MyProfile = (props) => {
             color: '#032f3c',
             textAlign: 'center',
             fontSize: 20,
+            marginBottom: 20,
           }}
         >
           {user?.name}
@@ -262,14 +267,14 @@ const MyProfile = (props) => {
         <View style={styles.manyimageview}>
           <View>
             <FlatList
-              data={user?.badges}
+              data={user?.badgesData}
               numColumns={3}
               showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => (
                 <FastImage
                   style={styles.firstimage}
                   source={{
-                    uri: item,
+                    uri: item.badge,
                   }}
                   resizeMode={FastImage.resizeMode.stretch}
                 />
@@ -280,7 +285,7 @@ const MyProfile = (props) => {
           <TouchableOpacity
             style={{ marginHorizontal: getWidth(1) }}
             onPress={() => {
-              getBadeg();
+              getBadge();
               setRequestModel(true);
             }}
           >
@@ -305,10 +310,15 @@ const MyProfile = (props) => {
             </View>
           </>
         ) : null}
-        <View style={styles.bottomView}>
+        <View
+          style={{
+            alignItems: 'center',
+            flex: 1,
+          }}
+        >
           <Button
             text={'Edit Profile'}
-            onPress={() => props.navigation.navigate('editProfile')}
+            onPress={() => navigation.navigate('EditProfile')}
             btnStyle={styles.btn}
             btnTextStyle={{
               ...GeneralStyle.btnText,
@@ -322,13 +332,44 @@ const MyProfile = (props) => {
           <TabView
             navigationState={{ index, routes }}
             renderScene={renderScene}
-            renderTabBar={renderTabBar}
+            renderTabBar={(props) => {
+              const inputRange = props.navigationState.routes.map((x, i) => i);
+
+              return (
+                <View style={styles.tabBar}>
+                  {props.navigationState.routes.map((route, i) => {
+                    return (
+                      <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
+                        <Animated.Text
+                          style={
+                            props?.navigationState?.index == i
+                              ? {
+                                  color: '#032F3C',
+                                  fontFamily: 'Rubik-Medium',
+                                }
+                              : {
+                                  color: '#032F3C',
+                                  fontFamily: 'Rubik-Regular',
+                                }
+                          }
+                        >
+                          {route.title}
+                        </Animated.Text>
+                        {props?.navigationState?.index == i ? (
+                          <View style={styles.propview} />
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              );
+            }}
             onIndexChange={setIndex}
             initialLayout={{ width: getWidth(100) }}
           />
         ) : null}
       </ScrollView>
-      <TouchableOpacity onPress={() => props.goBack()} style={styles.header}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
         <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={'#032f3c'} />
       </TouchableOpacity>
     </View>

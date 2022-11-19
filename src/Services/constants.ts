@@ -1,4 +1,5 @@
 // export const BASE_URL = 'https://api.onebodyapp.com/api';
+import { Linking } from 'react-native';
 import {
   PROD_BASE_URL,
   DEV_BASE_URL,
@@ -43,6 +44,6 @@ export const OpenURLButton = async (url: string) => {
       });
     } else Linking.openURL(url);
   } catch (error: any) {
-    Alert.alert(error.message);
+    console.log(error.message);
   }
 };

@@ -569,7 +569,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 //     setState({ ...state, orgPhoneNoError: error })
                 //   )
                 // }
-                onSubmitEditing={() => gonext()}
+
                 onChangeText={(orgPhoneNo) => changeHandler('orgPhoneNo', orgPhoneNo)}
                 blurOnSubmit={false}
               />

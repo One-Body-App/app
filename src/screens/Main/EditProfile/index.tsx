@@ -5,7 +5,12 @@ import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '@/components/Button';
 
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import {
+  CameraOptions,
+  launchCamera,
+  launchImageLibrary,
+  MediaType,
+} from 'react-native-image-picker';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { profileUpdate } from '@/redux/actions/AuthActions';
@@ -19,28 +24,35 @@ import Instagram from '@/assets/svg/Instagram.svg';
 import { ApiCall } from '@/services/api';
 import ImagePicker from 'react-native-image-crop-picker';
 import GradientButton from '@/components/GradientButton';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { StackScreenProps } from '@react-navigation/stack';
+import { WhatIDo } from '@/src/Redux/types';
 
-const EditProfile = ({ navigation }) => {
-  const user = useSelector((state) => state.auth.userProfile);
-  const token = useSelector((state) => state.auth.userToken);
+type Props = StackScreenProps<RootStackParamList, 'EditProfile'>;
+
+const EditProfile = ({ navigation }: Props) => {
+  const user = useSelector((state: RootState) => state.auth.userProfile);
+
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const [gender, setGender] = useState(user?.gender);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
   const [imageToUpload, setImageToUpload] = useState('');
-  const [imageObject, setImageObject] = useState();
+  const [imageObject, setImageObject] = useState<{ uri: string; type: string; name: string }>();
   const [multipleImages, setMultipleImages] = useState();
-  const [fullname, setFullName] = useState(user?.name);
-  const [website, setWebsite] = useState(user?.website);
-  const [whatIDo, setWhatIDo] = useState(user?.whatIDo[0]);
+  const [fullname, setFullName] = useState<string>(user?.name ?? '');
+  const [website, setWebsite] = useState<string>(user?.website ?? '');
+  const [whatIDo, setWhatIDo] = useState<WhatIDo | null>(user?.whatIDo ? user?.whatIDo : null);
 
-  const [whatIDoList, setWhatIDoList] = useState([]);
+  const [whatIDoList, setWhatIDoList] = useState<WhatIDo[]>([]);
   const [visible, setVisible] = useState(false);
   const dispatch = useDispatch();
 
-  const captureImage = async (contentType) => {
-    let options = {
+  const captureImage = async (contentType: MediaType) => {
+    let options: CameraOptions = {
       mediaType: contentType,
       quality: 1,
-      noData: true,
+      // noData: true,
       videoQuality: 'low',
       durationLimit: 30,
     };
@@ -67,11 +79,11 @@ const EditProfile = ({ navigation }) => {
 
         return;
       }
-      let uri = response?.assets[0]?.uri;
-      let type = response?.assets[0]?.type;
-      let name = response?.assets[0]?.fileName;
-      const MyObject = { uri, type, name };
-      setImageObject(MyObject);
+      let uri = response?.assets?.at(0)?.uri ?? '';
+      let type = response?.assets?.at(0)?.type ?? '';
+      let name = response?.assets?.at(0)?.fileName ?? '';
+
+      setImageObject({ uri, type, name });
       setImageToUpload(uri);
       setTimeout(function () {
         cropimage(uri);
@@ -89,22 +101,22 @@ const EditProfile = ({ navigation }) => {
         token: token,
         verb: 'get',
       });
-      if (res?.status == '200') {
-        setWhatIDoList(res?.data);
+      if (res?.status == 200) {
+        setWhatIDoList(res?.response.data);
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error on what i Do -- ', e.toString());
     }
   };
 
   const chooseImageGallery = () => {
-    let options = {
+    let options: CameraOptions = {
       mediaType: 'mixed',
       quality: 1,
-      noData: true,
-      selectionLimit: 1,
+      // noData: true,
+      // selectionLimit: 1,
     };
     launchImageLibrary(options, (response) => {
       dispatch(setLoader(true));
@@ -125,22 +137,22 @@ const EditProfile = ({ navigation }) => {
         console.log(response.errorMessage);
         return;
       }
-      let uri = response?.assets[0]?.uri;
-      let type = response?.assets[0]?.type;
-      let name = response?.assets[0]?.fileName;
-      const MyObject = { uri, type, name };
-      setImageObject(MyObject);
-      setImageToUpload(uri);
+      let uri = response?.assets ? response?.assets[0]?.uri : '';
+      let type = response?.assets ? response?.assets[0]?.type : '';
+      let name = response?.assets ? response?.assets[0]?.fileName : '';
+      setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
+      setImageToUpload(uri ?? '');
       setTimeout(function () {
-        cropimage(uri);
+        cropimage(uri ?? '');
         dispatch(setLoader(false));
       }, 3000);
     });
   };
 
-  const cropimage = (uri) => {
+  const cropimage = (uri: string) => {
     ImagePicker.openCropper({
-      path: { uri },
+      mediaType: 'photo',
+      path: uri,
     }).then((image) => {
       setImageToUpload(image?.path);
       const MyObject = {
@@ -159,6 +171,7 @@ const EditProfile = ({ navigation }) => {
   useEffect(() => {
     getWhatIDo();
   }, []);
+
   return (
     <Provider>
       <SafeAreaView style={styles.container}>
@@ -169,7 +182,7 @@ const EditProfile = ({ navigation }) => {
           visible={pickerModalVisibile}
           hideVisible={() => setPickerModalVisibile(false)}
           galleryImage={() => chooseImageGallery()}
-          cameraImage={() => captureImage('image')}
+          cameraImage={() => captureImage('photo')}
         />
         <Modal
           backdropOpacity={0.3}
@@ -178,7 +191,8 @@ const EditProfile = ({ navigation }) => {
           onSwipeComplete={() => setVisible(false)}
           swipeDirection={['down']}
           style={styles.bottomView}
-          onRequestClose={() => hideVisible(false)}
+          avoidKeyboard={true}
+          propagateSwipe
         >
           <View style={styles.content2}>
             <View style={styles.headLine} />
@@ -229,40 +243,50 @@ const EditProfile = ({ navigation }) => {
                     : {uri: user?.profileImage}
                 }
               /> */}
-              <FastImage
-                style={{ width: 90, height: 90, borderRadius: 45 }}
-                source={imageToUpload ? { uri: imageToUpload } : { uri: user?.profileImage }}
-                resizeMode={FastImage.resizeMode.stretch}
-              />
-              <Text
+              <View
                 style={{
-                  color: '#757575',
-                  fontSize: 12,
-                  marginTop: getHeight(1),
-                  fontFamily: 'Rubik-Regular',
-                  textAlign: 'center',
+                  flexDirection: 'row',
                   width: '50%',
+                  justifyContent: 'center',
+                  alignContent: 'center',
                 }}
               >
-                Change Photo
-              </Text>
+                <FastImage
+                  style={{ width: 90, height: 90, borderRadius: 45 }}
+                  source={imageToUpload ? { uri: imageToUpload } : { uri: user?.profileImage }}
+                  resizeMode={FastImage.resizeMode.stretch}
+                />
+                <Text
+                  style={{
+                    color: '#757575',
+                    fontSize: 12,
+                    // marginTop: getHeight(1),
+                    fontFamily: 'Rubik-Regular',
+                    textAlign: 'center',
+                    width: '40%',
+                    alignSelf: 'center',
+                  }}
+                >
+                  Change Photo
+                </Text>
+              </View>
             </TouchableOpacity>
             <View style={styles.InputsContainer}>
               <TextInput
                 style={styles.TextInput}
                 onChangeText={(e) => setFullName(e)}
                 value={fullname}
-                label="Full Name"
+                label="Name"
                 activeOutlineColor={'#12D2D9'}
                 activeUnderlineColor={'#12D2D9'}
-                placeholder="Full Name"
+                placeholder="Name"
                 theme={{ roundness: 10 }}
               />
 
               <TextInput
                 style={styles.TextInput}
                 label="Account type"
-                value={user?.role}
+                value={user?.role == 'individual' ? 'Individual' : 'Organization'}
                 editable={false}
                 // placeholderTextColor={'red'}
               />
@@ -270,9 +294,9 @@ const EditProfile = ({ navigation }) => {
               <View>
                 <TextInput
                   style={styles.TextInput}
-                  value={whatIDo?.whatIDo ? whatIDo?.whatIDo : whatIDo}
+                  value={whatIDo?.whatIDo ? whatIDo?.whatIDo : ''}
                   editable={false}
-                  label="What i do"
+                  label="What I do"
                   onPressIn={() => {
                     getWhatIDo();
                     setVisible(true);
@@ -287,7 +311,7 @@ const EditProfile = ({ navigation }) => {
                   value={website}
                   label="Website"
                   keyboardType="url"
-                  placeholder="https://www.demo.com"
+                  placeholder="https://www.website.com"
                   activeOutlineColor={'#12D2D9'}
                   activeUnderlineColor={'#12D2D9'}
                   onChangeText={(e) => setWebsite(e)}
@@ -297,7 +321,7 @@ const EditProfile = ({ navigation }) => {
             </View>
           </View>
           <View style={styles.bottomContainer}>
-            {user?.isInfluencer == true ? (
+            {/* {user?.isInfluencer == true ? (
               <View style={{ ...styles.center, marginTop: getHeight(2) }}>
                 <Text style={styles.SocialText}>Link Social Media Account</Text>
                 <View style={styles.socialIcon}>
@@ -306,51 +330,42 @@ const EditProfile = ({ navigation }) => {
                   <Twitter />
                 </View>
               </View>
-            ) : null}
-            <View>
-              {user?.role == 'individual' ? (
-                <GradientButton
-                  text={'DONE'}
-                  onPress={() => {
-                    const data = new FormData();
-                    data.append('name', fullname);
-                    data.append('gender', gender);
-                    data.append('whatIDo', whatIDo?._id);
-                    data.append('website', website);
-                    data.append('photo', imageObject);
-                    dispatch(setLoader(true));
+            ) : null} */}
+            <View style={{ marginHorizontal: 25 }}>
+              <GradientButton
+                text={'DONE'}
+                onPress={() => {
+                  const data = new FormData();
+                  console.log(
+                    fullname,
+                    gender,
+                    whatIDo,
+                    website,
+                    imageObject,
+                    'fullname, gender, whatIDo, website, imageObject'
+                  );
+                  if (fullname) data.append('name', fullname);
+                  if (gender) data.append('gender', gender);
+                  if (whatIDo) data.append('whatIDo', whatIDo?._id);
+                  if (website) data.append('website', website);
+                  if (imageObject) data.append('photo', imageObject);
+                  dispatch(setLoader(true));
+
+                  if (user?.role == 'individual') {
                     dispatch(profileUpdate({ data, token, role: 'individual', go }));
-                  }}
-                  btnStyle={{
-                    ...GeneralStyle.btn,
-                    height: getHeight(7),
-                    width: getWidth(80),
-                    backgroundColor: '#0C5C75',
-                  }}
-                  btnTextStyle={GeneralStyle.btnText}
-                />
-              ) : (
-                <GradientButton
-                  text={'DONE'}
-                  onPress={() => {
-                    const data = new FormData();
-                    data.append('name', fullname);
-                    data.append('gender', gender);
-                    data.append('whatIDo', whatIDo?._id);
-                    data.append('website', website);
-                    data.append('photo', imageObject);
-                    dispatch(setLoader(true));
+                  } else {
                     dispatch(profileUpdate({ data, token, role: 'organization', go }));
-                  }}
-                  btnStyle={{
-                    ...GeneralStyle.btn,
-                    height: getHeight(7),
-                    width: getWidth(80),
-                    backgroundColor: '#0C5C75',
-                  }}
-                  btnTextStyle={GeneralStyle.btnText}
-                />
-              )}
+                  }
+                }}
+                btnStyle={{
+                  ...GeneralStyle.btn,
+                  height: getHeight(7),
+
+                  backgroundColor: '#0C5C75',
+                }}
+                btnTextStyle={GeneralStyle.btnText}
+              />
+
               <Button
                 text={'Cancel'}
                 btnStyle={{

@@ -108,19 +108,24 @@ export function* signUpSaga() {
   yield takeLatest(ACTIONS.SIGN_UP, signUpRequest);
 }
 function* updateProfileRequest(params) {
-  console.log(params);
+  console.log(params, 'paramsparamsparamsparams');
   try {
     const res = yield ApiCall({
       params: params.data.data,
       route: `user/update-profile`,
       token: params.data.token,
       verb: 'patch',
+      external: false,
+      isFormUrlEncode: true,
     });
     console.log(res);
-    if (res?.status == '200') {
-      yield put(getProfile({ token: params.data.token, role: 'individual' }));
+    if (res?.status == 200) {
+      yield put(getProfile({ token: params.data.token, role: params.data.role }));
 
       yield put(setLoader(false));
+      if (params.data.go) {
+        params.data.go();
+      }
     } else {
       yield put(setLoader(false));
       Alert.alert('Error', 'An error accoured during profile Update', [
@@ -150,8 +155,8 @@ function* updateOrgProfileRequest(params) {
 
     if (res?.status == '200') {
       yield put(getProfile({ token: params.data.token, role: 'organization' }));
-      params?.data?.go();
       yield put(setLoader(false));
+      params?.data?.go();
     } else {
       yield put(setLoader(false));
       Alert.alert('Error', 'An error accoured during profile Update', [

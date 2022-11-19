@@ -9,20 +9,28 @@ import Button from './Button';
 import { ApiCall } from '@/services/api';
 import { getuserAll } from '@/redux/actions/UserAction';
 import FastImage from 'react-native-fast-image';
-import { useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import ImageModal from 'react-native-image-modal';
+import { RootState } from '../Redux/reducers/rootReducer';
+
+import { RootStackParamList } from '../Navigation/types';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
+import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
+
+type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 const SubscribeFlatlist = () => {
   const dispatch = useDispatch();
-  const navigation = useNavigation();
-  const token = useSelector((state) => state.auth.userToken);
-  const allusers = useSelector((state) => state.user.allUser);
-  const user = useSelector((state) => state.auth.userProfile);
+  const navigation = useNavigation<ScreenNavigationProp>();
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const allusers = useSelector((state: RootState) => state.user.allUser);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
 
-  const [subscribe, setSubscibe] = useState([]);
+  const [subscribe, setSubscibe] = useState<string[]>([]);
   // const [allusers, setAllUsers] = useState([]);
 
-  const handelSubscribe = async (id) => {
+  const handleSubscribe = async (id: string) => {
     // updatelocalLike(id);
     setSubscibe([...subscribe, id]);
     try {
@@ -31,7 +39,7 @@ const SubscribeFlatlist = () => {
         token: token,
         verb: 'patch',
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(getuserAll({ token: token }));
       } else {
         const result = subscribe.filter((item) => item != id);
@@ -54,19 +62,6 @@ const SubscribeFlatlist = () => {
       ListFooterComponent={() => <View style={{ padding: 7 }} />}
       ListHeaderComponent={() => <View style={{ padding: 7 }} />}
       ItemSeparatorComponent={() => <View style={{ margin: 7 }} />}
-      ListEmptyComponent={() => (
-        <View style={styles.askinterest}>
-          <Text style={{ margin: 5, fontSize: getFontSize(2), color: '#7c7c7c' }}>
-            We have not found any other User
-          </Text>
-          <Button
-            text="Refresh"
-            btnStyle={styles.subscribebutton}
-            btnTextStyle={{ fontSize: getFontSize(2.5), color: 'white' }}
-            onPress={() => dispatch(getuserAll({ token: token }))}
-          />
-        </View>
-      )}
       renderItem={({ item, index }) => (
         <TouchableOpacity
           onPress={() =>
@@ -78,18 +73,28 @@ const SubscribeFlatlist = () => {
           style={styles.subscribeview}
         >
           <TouchableOpacity>
-            <ImageModal
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 50,
-                marginBottom: 5,
-              }}
-              source={{
-                uri: item?.profileImage,
-              }}
-              resizeMode={'contain'}
-            />
+            {item?.profileImage ? (
+              <View>
+                <ImageModal
+                  style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 50,
+                    marginBottom: 5,
+                  }}
+                  source={{ uri: item?.profileImage }}
+                  resizeMode={'contain'}
+                />
+              </View>
+            ) : (
+              <FontAwesomeIcon
+                icon={faUser}
+                size={90}
+                mask={faCircle}
+                style={{ color: '#000', marginBottom: 5 }}
+                transform="shrink-6"
+              />
+            )}
           </TouchableOpacity>
           <View
             style={{
@@ -116,7 +121,7 @@ const SubscribeFlatlist = () => {
             btnTextStyle={styles.subtex}
             text={subscribe.includes(item?._id) ? 'Subscribed' : 'Subscribe'}
             onPress={() => {
-              handelSubscribe(item?._id);
+              handleSubscribe(item?._id);
             }}
           />
         </TouchableOpacity>

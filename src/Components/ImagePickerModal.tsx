@@ -5,10 +5,14 @@ import { TouchableOpacity } from 'react-native';
 import { StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-// import { getWidth } from '@/utils/ResponsiveFun';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-
-const ImagePickerModal = (props) => {
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+type Props = {
+  visible: boolean;
+  hideVisible: () => void;
+  galleryImage: () => void;
+  cameraImage: () => void;
+};
+const ImagePickerModal = (props: Props) => {
   return (
     <Modal
       backdropOpacity={0.3}
@@ -17,7 +21,6 @@ const ImagePickerModal = (props) => {
       onSwipeComplete={() => props.hideVisible()}
       swipeDirection={['down']}
       style={styles.bottomView}
-      onRequestClose={() => props.hideVisible()}
     >
       <View style={styles.content2}>
         <View style={styles.headLine} />
@@ -110,7 +113,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 3,
     borderRightWidth: 3,
     borderLeftWidth: 3,
-    borderTopLeftRadius: 10,
     borderTopRightRadius: 30,
     borderTopLeftRadius: 30,
     borderTopColor: '#DF4B38',
