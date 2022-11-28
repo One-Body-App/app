@@ -54,7 +54,7 @@ const HomeStack = ({
       <Stack.Screen name="InfluencerStepOne" component={InfluencerStepOne} />
       <Stack.Screen name="InfluencerStepTwo" component={InfluencerStepTwo} />
       <Stack.Screen name="InfluencerStepThree" component={InfluencerStepThree} />
-      <Stack.Screen name="Prayer" component={Prayer} />
+      {/* <Stack.Screen name="Prayer" component={Prayer} /> */}
       <Stack.Screen name="IndividualSteps" component={IndividualSteps} />
       <Stack.Screen name="OrgnizationSteps" component={OrgnizationSteps} />
       <Stack.Screen name="Help" component={Help} />

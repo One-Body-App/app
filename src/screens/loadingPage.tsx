@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, View, StatusBar } from 'react-native';
+import { Image, View, StatusBar, Text, ImageBackground } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { SetRecentBlog, SetSocial, SetTodayNews } from '@/redux/actions/SocialActions';
 import { ApiCall } from '@/services/api';
@@ -76,7 +76,6 @@ const LoadingPage = ({ navigation }: Props) => {
   };
 
   const getRecentBlog = async () => {
-    console.log('3333333');
     try {
       const res = await ApiCall({
         route: `blogs/get-feed/recent-blogs/1`,
@@ -84,7 +83,7 @@ const LoadingPage = ({ navigation }: Props) => {
         token: token,
       });
       setIsLoadedRecentBlog(true);
-      console.log('3333333DONE', res);
+
       if (res?.status == 200) {
         dispatch(SetRecentBlog(res?.response));
       } else {
@@ -102,7 +101,6 @@ const LoadingPage = ({ navigation }: Props) => {
   useEffect(() => {
     console.log(isLoadedTodayNews, isLoadedRecentBlog, isLoadedSocialPosts);
     if (isLoadedTodayNews && isLoadedRecentBlog && isLoadedSocialPosts) {
-      console.log('asdfasdfasd');
       navigation.replace('Bottombar', { tabs: 'Home' });
     }
   }, [isLoadedTodayNews, isLoadedRecentBlog, isLoadedSocialPosts]);
@@ -118,11 +116,31 @@ const LoadingPage = ({ navigation }: Props) => {
   return (
     <View>
       <StatusBar barStyle="light-content" />
-      <Image
+      <ImageBackground
         resizeMode="cover"
-        style={{ width: '100%', height: '100%' }}
+        style={{
+          width: '100%',
+          height: '100%',
+
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
         source={require('@/assets/images/Loading.gif')}
-      />
+      >
+        <Text
+          style={{
+            fontSize: 24,
+            color: '#FFF',
+            marginBottom: 180,
+            fontFamily: 'Rubik-Regular',
+            fontWeight: '500',
+            textAlign: 'center',
+            marginHorizontal: 40,
+          }}
+        >
+          Please wait as we customize your feed
+        </Text>
+      </ImageBackground>
     </View>
   );
 };

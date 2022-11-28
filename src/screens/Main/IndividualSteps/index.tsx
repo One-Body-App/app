@@ -193,7 +193,7 @@ const IndividualSteps = ({ navigation }: Props) => {
   };
   const addInterests = async () => {
     // dispatch(setLoader(true));
-    console.log(token);
+    console.log(selectedInterest);
     try {
       const res = await ApiCall({
         route: 'user/add-interests',

@@ -49,11 +49,19 @@ const Signup = ({ navigation, route }: Props) => {
 
   const socialLogin = (newUserCredentials: FirebaseAuthTypes.UserCredential | null) => {
     if (newUserCredentials) {
+      const emailParts = newUserCredentials?.user.email?.split('@');
+      let username = newUserCredentials?.user.email?.replace('@', '');
+
+      if (emailParts && emailParts[0]) {
+        username = emailParts[0] + new Date().getTime();
+      }
+
       const data = {
         email: newUserCredentials?.user.email,
         name: newUserCredentials?.user.displayName,
         socialData: newUserCredentials?.additionalUserInfo,
         userId: newUserCredentials.user.uid,
+        username,
 
         role: accounType,
         token,

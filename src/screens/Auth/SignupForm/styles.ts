@@ -68,4 +68,29 @@ export const styles = StyleSheet.create({
     fontFamily: 'Rubik-Medium',
     underline: { textDecorationLine: 'underline' },
   },
+  btnText: {
+    fontSize: getFontSize(1.8),
+
+    fontFamily: 'Rubik-Medium',
+  },
+  btnSelected: {
+    width: getWidth(42),
+    height: getHeight(6),
+    borderWidth: 1,
+
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  btn: {
+    borderColor: '#B3C1C5',
+    borderWidth: 1,
+    width: getWidth(42),
+
+    height: getHeight(6),
+
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
 });

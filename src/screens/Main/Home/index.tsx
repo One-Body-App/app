@@ -114,7 +114,7 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
             onIndexChange={setIndex}
             initialLayout={{ width: getWidth(100) }}
           />
-          <TouchableWithoutFeedback
+          {/* <TouchableWithoutFeedback
             onPress={() => {
               setRequestModel(true);
               getAllLive();
@@ -125,7 +125,7 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
               size={getFontSize(10)}
               source={require('@/assets/images/fab.png')}
             />
-          </TouchableWithoutFeedback>
+          </TouchableWithoutFeedback> */}
         </View>
       </SafeAreaView>
     </>

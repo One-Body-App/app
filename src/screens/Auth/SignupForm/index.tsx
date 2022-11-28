@@ -6,12 +6,12 @@ import { TextInput as NativeTextInput } from 'react-native';
 
 import { validateFields } from '@/utils/validation/validate-fields';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GoBackIcon from '@/components/GoBackIcon';
 import { setLoginData, signUpRequest } from '@/redux//actions/AuthActions';
 import GradientHeader from '@/components/GradientHeader';
 import validator from '@/utils/validation/validator';
-import { setLoader } from '@/redux//actions/GeneralActions';
+import { setAccountType, setLoader } from '@/redux//actions/GeneralActions';
 import LinearGradient from 'react-native-linear-gradient';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { useDispatch, useSelector } from 'react-redux';
@@ -24,6 +24,10 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/Services/constants';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/Navigation/types';
+import { useTheme } from '@react-navigation/native';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
+import { faUsers } from '@fortawesome/free-solid-svg-icons/faUsers';
 
 type Props = StackScreenProps<RootStackParamList, 'SignupForm'>;
 
@@ -36,6 +40,7 @@ const SignupForm = ({ navigation }: Props) => {
     password: useRef<NativeTextInput>(null),
     cPassword: useRef<NativeTextInput>(null),
     name: useRef<NativeTextInput>(null),
+    username: useRef<NativeTextInput>(null),
   };
   const [state, setState] = useState({
     email: '',
@@ -46,6 +51,8 @@ const SignupForm = ({ navigation }: Props) => {
     cPasswordError: '',
     name: '',
     nameError: '',
+    username: '',
+    usernameError: '',
   });
   const [error, seterror] = React.useState<string>();
   const [hidePass, setHidePass] = useState(true);
@@ -55,19 +62,21 @@ const SignupForm = ({ navigation }: Props) => {
 
   const signUpUser = async () => {
     setIsloading(true);
-    const { email, password, name, cPassword } = state;
+    const { email, password, name, cPassword, username } = state;
     const emailError = await validator('email', email);
     const nameError = await validator('name', name);
+    const usernameError = await validator('username', username);
     const passwordError = await validator('password', password);
     const cPasswordError = await validator('cPassword', cPassword);
 
-    if (!emailError && !passwordError && !nameError && !cPasswordError) {
+    if (!emailError && !passwordError && !nameError && !cPasswordError && !usernameError) {
       if (password == cPassword) {
         const data = {
-          email: email,
-          name: name,
+          email,
+          name,
           role: AccountType,
           userId: '',
+          username,
         };
         auth()
           .createUserWithEmailAndPassword(email, password)
@@ -76,7 +85,6 @@ const SignupForm = ({ navigation }: Props) => {
             // const token = await user.user.getIdToken();
             // user.user.updatePhoneNumber()
             data.userId = user.user.uid;
-            console.log(user, 'useruseruseruseruseruseruser');
 
             // dispatch(setLoginData({ token: await user.user.getIdToken() }));
             dispatch(
@@ -130,7 +138,26 @@ const SignupForm = ({ navigation }: Props) => {
   };
 
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
+  const { colors } = useTheme();
 
+  const getButtonTextStyle = (selected: boolean) => {
+    if (selected) {
+      return {
+        ...styles.btnText,
+        color: scheme == 'dark' ? colors.text : '#032F3C',
+      };
+    }
+
+    return { ...styles.btnText, color: scheme == 'dark' ? '#838383' : '#B3C1C5' };
+  };
+
+  const getButtonContainer = (selected: boolean) => {
+    if (selected) {
+      return { ...styles.btnSelected, borderColor: colors.border };
+    } else {
+      return { ...styles.btn, borderColor: colors.border };
+    }
+  };
   return (
     <View style={styles.container}>
       <GeneralStatusBar
@@ -141,14 +168,120 @@ const SignupForm = ({ navigation }: Props) => {
       />
 
       <GradientHeader
-        left={<GoBackIcon color={'#FFF'} style={{ width: '100%', paddingHorizontal: 20 }} />}
+        left={
+          <GoBackIcon
+            color={'#FFF'}
+            style={{ width: '100%', paddingHorizontal: 20, marginTop: 20 }}
+          />
+        }
       />
       <KeyboardAwareScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient
           colors={['#fff', '#fff', '#E0EEF3']}
           style={{ flex: 1, paddingBottom: 110 }}
         >
+          <View style={{ paddingHorizontal: 25, flex: 1 }}>
+            <Text
+              style={{
+                marginTop: 24,
+                marginBottom: 16,
+                textAlign: 'center',
+                color: scheme == 'dark' ? colors.text : '#4F6D77',
+                fontWeight: '500',
+                fontFamily: 'Rubik-Regular',
+                fontSize: 16,
+                maxWidth: 250,
+                width: '100%',
+                alignSelf: 'center',
+              }}
+            >
+              What type of profile would you like?
+            </Text>
+            <View
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Button
+                text={'Individual'}
+                btnStyle={getButtonContainer(AccountType == 'individual')}
+                RightIcon={null}
+                leftIcon={
+                  <FontAwesomeIcon
+                    icon={faUser}
+                    style={{ margin: 5 }}
+                    size={getFontSize(1.8)}
+                    color={
+                      AccountType == 'individual'
+                        ? scheme == 'dark'
+                          ? colors.text
+                          : '#032F3C'
+                        : scheme == 'dark'
+                        ? '#838383'
+                        : '#B3C1C5'
+                    }
+                  />
+                }
+                btnTextStyle={getButtonTextStyle(AccountType == 'individual')}
+                onPress={() => {
+                  dispatch(setAccountType('individual'));
+                }}
+              />
+              <Button
+                text={'Organization'}
+                RightIcon={null}
+                btnStyle={getButtonContainer(AccountType == 'organization')}
+                leftIcon={
+                  <FontAwesomeIcon
+                    icon={faUsers}
+                    style={{ margin: 5 }}
+                    size={getFontSize(3)}
+                    color={
+                      AccountType == 'organization'
+                        ? scheme == 'dark'
+                          ? colors.text
+                          : '#032F3C'
+                        : scheme == 'dark'
+                        ? '#838383'
+                        : '#B3C1C5'
+                    }
+                  />
+                }
+                btnTextStyle={getButtonTextStyle(AccountType == 'organization')}
+                onPress={() => {
+                  dispatch(setAccountType('organization'));
+                }}
+              />
+            </View>
+          </View>
           <View style={{ paddingHorizontal: 25, paddingVertical: 15, flex: 1 }}>
+            <TextInput
+              style={GeneralStyle.input}
+              theme={{ roundness: 10 }}
+              ref={inputRefs.username}
+              value={state.username}
+              returnKeyType={'next'}
+              mode="outlined"
+              activeOutlineColor={appColor.InstructionColor}
+              outlineColor={'#888C93'}
+              label={'Username'}
+              onFocus={() => setState({ ...state, nameError: '' })}
+              onBlur={() =>
+                validateFields(state.username, 'username', (error) =>
+                  setState({ ...state, usernameError: error })
+                )
+              }
+              onSubmitEditing={() => inputRefs.username.current?.focus()}
+              onChangeText={(username) => changeHandler('username', username)}
+              blurOnSubmit={false}
+              keyboardType="default"
+              autoCapitalize="none"
+            />
+            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
+              {state.usernameError}
+            </Text>
             <TextInput
               style={GeneralStyle.input}
               theme={{ roundness: 10 }}
@@ -299,6 +432,12 @@ const SignupForm = ({ navigation }: Props) => {
               </View>
             </View>
 
+            {error != null ? (
+              <View style={styles.singerrorview1}>
+                <Text style={styles.singerrortext}>{error}</Text>
+              </View>
+            ) : null}
+
             <Button
               text={'SIGN UP'}
               disabled={loading}
@@ -316,11 +455,6 @@ const SignupForm = ({ navigation }: Props) => {
                 backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
               }}
             />
-            {error != null ? (
-              <View style={styles.singerrorview1}>
-                <Text style={styles.singerrortext}>{error}</Text>
-              </View>
-            ) : null}
           </View>
         </LinearGradient>
 

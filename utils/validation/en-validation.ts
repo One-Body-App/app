@@ -110,7 +110,7 @@ export const enValidation = {
     },
   },
 
-  userName: {
+  username: {
     presence: {
       message: '^Please enter a user name',
     },

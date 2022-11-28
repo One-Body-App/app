@@ -34,7 +34,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
     console.log(state.social, 'state.social');
     return isArray(state.social.AllNews) ? state.social.AllNews : [];
   });
-  const LocalNews = useSelector((state: RootState) => state.social.LocalNews);
+  // const LocalNews = useSelector((state: RootState) => state.social.LocalNews);
 
   const dispatch = useDispatch();
 
@@ -53,7 +53,16 @@ const HomeNewsComponent = ({ navigation }: Props) => {
 
       if (res?.status == 200) {
         // if (pageNumber > 1 && res?.response) {
-        dispatch(SetAllNews([...allNews, ...(res?.response ?? [])]));
+
+        let news = [];
+
+        if (pageNumber == 1) {
+          news = res?.response ?? [];
+        } else {
+          news = [...allNews, ...(res?.response ?? [])];
+        }
+        console.log(news.length, news);
+        dispatch(SetAllNews(news));
         // }
         dispatch(setLoader(false));
       } else {
@@ -64,35 +73,35 @@ const HomeNewsComponent = ({ navigation }: Props) => {
     }
     setPage(pageNumber);
   };
-  const getLocalNews = async (pageNumber: number) => {
-    try {
-      const res = await ApiCall({
-        route: `blogs/get-feed/local-news/${pageNumber}`,
-        verb: 'get',
-        token: token,
-      });
-      if (res?.status == 200) {
-        dispatch(SetLocalNews(res?.response));
-      } else {
-        console.log('error', res?.response);
-        dispatch(setLoader(false));
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-    }
-    setPage(pageNumber);
-  };
+  // const getLocalNews = async (pageNumber: number) => {
+  //   try {
+  //     const res = await ApiCall({
+  //       route: `blogs/get-feed/local-news/${pageNumber}`,
+  //       verb: 'get',
+  //       token: token,
+  //     });
+  //     if (res?.status == 200) {
+  //       dispatch(SetLocalNews(res?.response));
+  //     } else {
+  //       console.log('error', res?.response);
+  //       dispatch(setLoader(false));
+  //     }
+  //   } catch (e: any) {
+  //     console.log('saga error -- ', e.toString());
+  //   }
+  //   setPage(pageNumber);
+  // };
 
   useEffect(() => {
     const getData = async () => {
       await getAllNews(1);
-      await getLocalNews(1);
+      // await getLocalNews(1);
     };
     getData();
   }, []);
 
   const { colors } = useTheme();
-
+  console.log(allNews, 'allNews');
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -112,7 +121,7 @@ const HomeNewsComponent = ({ navigation }: Props) => {
         <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
 
         <View>
-          {allNews?.map((item, i) => (
+          {/* {allNews?.map((item, i) => (
             <TouchableOpacity
               onPress={() => {
                 // navigation.navigate('BlogView', { url: item?.item?.id });
@@ -181,74 +190,82 @@ const HomeNewsComponent = ({ navigation }: Props) => {
             >
               <Text>View More</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
 
-          {/* <FlatList
+          <FlatList
             nestedScrollEnabled
             data={allNews}
             contentContainerStyle={{ marginTop: 20 }}
             showsHorizontalScrollIndicator={false}
             ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
             keyExtractor={(item, index) => `${item.title}-${index}`}
-            renderItem={(item) => (
-              <TouchableOpacity
-                onPress={() => {
-                  // navigation.navigate('BlogView', { url: item?.item?.id });
-                  OpenURLButton(item?.item?.link);
-                  console.log(item);
-                }}
-                style={{ ...styles.socialpostview, backgroundColor: colors.card }}
-              >
-                {item?.item?.enclosures ? (
-                  <FastImage
-                    style={styles.socialpostimage}
-                    resizeMode={'stretch'}
-                    source={{ uri: item?.image?.url  }}
-                  />
-                ) : null}
-                <View style={{ flex: 1, width: '100%', padding: 15 }}>
-                  <View style={styles.afsd}>
-                    <Text
-                      numberOfLines={2}
-                      style={{
-                        color: colors.text,
-                        fontSize: 14,
-                        lineHeight: 17,
-                        letterSpacing: 0.1,
-                        width: '90%',
-                        fontWeight: '500',
-                      }}
-                    >
-                      {item?.item?.title}
-                    </Text>
-                    <Entypo name="dots-three-horizontal" color={'#70747d'} size={20} />
+            renderItem={({ item }: Record<string, any>) => {
+              console.log(item, 'item');
+              return (
+                <TouchableOpacity
+                  onPress={() => {
+                    // navigation.navigate('BlogView', { url: item?.item?.id });
+                    OpenURLButton(item?.link);
+                    console.log(item);
+                  }}
+                  style={{
+                    ...styles.socialpostview,
+                    backgroundColor: colors.card,
+
+                    margin: 7,
+                  }}
+                >
+                  {item?.image ? (
+                    <FastImage
+                      style={styles.socialpostimage}
+                      resizeMode={'stretch'}
+                      source={{ uri: item?.image?.url }}
+                    />
+                  ) : null}
+                  <View style={{ flex: 1, width: '100%', padding: 15 }}>
+                    <View style={styles.afsd}>
+                      <Text
+                        numberOfLines={2}
+                        style={{
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 17,
+                          letterSpacing: 0.1,
+                          width: '90%',
+                          fontWeight: '500',
+                        }}
+                      >
+                        {item?.title}
+                      </Text>
+                      <Entypo name="dots-three-horizontal" color={'#70747d'} size={20} />
+                    </View>
+                    <View style={styles.sourcename}>
+                      <Text
+                        style={{
+                          color: '#70747D',
+                          fontSize: 12,
+                          fontWeight: '400',
+                        }}
+                      >
+                        {item?.author}
+                      </Text>
+                      <Text
+                        style={{
+                          color: '#70747D',
+                          fontSize: 12,
+                          fontWeight: '400',
+                        }}
+                      >
+                        {timeSince(item?.created)} ago
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.sourcename}>
-                    <Text
-                      style={{
-                        color: '#70747D',
-                        fontSize: 12,
-                        fontWeight: '400',
-                      }}
-                    >
-                      {item?.item?.author}
-                    </Text>
-                    <Text
-                      style={{
-                        color: '#70747D',
-                        fontSize: 12,
-                        fontWeight: '400',
-                      }}
-                    >
-                      {timeSince(item?.item?.created)} ago
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-          /> */}
+                </TouchableOpacity>
+              );
+            }}
+          />
         </View>
-        {LocalNews.length > 0 ? (
+        {/* {LocalNews.length > 0 ? (
           <>
             <Text style={{ ...styles.newstitle, color: colors.text }}>Local News</Text>
             <View>
@@ -314,10 +331,10 @@ const HomeNewsComponent = ({ navigation }: Props) => {
                 </View>
               </ImageBackground>
             )}
-          /> */}
+          />
             </View>
           </>
-        ) : null}
+        ) : null} */}
       </ScrollView>
     </View>
   );

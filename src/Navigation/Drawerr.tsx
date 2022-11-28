@@ -13,7 +13,7 @@ import Bottom from './Bottom';
 import Notification from '../screens/Main/Notification';
 import Saved from '../screens/Main/Saved/Index';
 import Chanel from '../screens/Main/Chanel';
-import Prayer from '../screens/Main/Prayer';
+// import Prayer from '../screens/Main/Prayer';
 import Setting from '../screens/Main/Setting';
 import Help from '../screens/Main/Help';
 import InviteFriend from '../screens/Main/InviteFriend';
@@ -170,7 +170,7 @@ export default function Drawerr() {
         }}
         component={Bottom}
       />
-      <Drawer.Screen
+      {/* <Drawer.Screen
         name="Pray"
         options={{
           headerShown: false,
@@ -179,7 +179,7 @@ export default function Drawerr() {
           headerTintColor: '#24BFF0',
         }}
         component={Prayer}
-      />
+      /> */}
       <Drawer.Screen
         name="Notifications"
         options={{
