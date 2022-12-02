@@ -171,7 +171,7 @@ const EditProfile = ({ navigation }: Props) => {
   useEffect(() => {
     getWhatIDo();
   }, []);
-
+  console.log(whatIDo, 'whatIDo');
   return (
     <Provider>
       <SafeAreaView style={styles.container}>

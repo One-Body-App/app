@@ -54,9 +54,9 @@ const LoadingPage = ({ navigation }: Props) => {
       console.log('2222222DONE', res);
       setIsloadedTodaysNews(true);
       if (res?.status == 200) {
-        if (res?.response && res?.response.length > 0) {
-          dispatch(SetTodayNews(res?.response));
-        }
+        // if (res?.response && res?.response.length > 0) {
+        dispatch(SetTodayNews(res?.response));
+        // }
 
         // navigation.navigate('Bottombar', { tabs: 'Home' });
       } else {
@@ -99,15 +99,15 @@ const LoadingPage = ({ navigation }: Props) => {
   };
 
   useEffect(() => {
-    console.log(isLoadedTodayNews, isLoadedRecentBlog, isLoadedSocialPosts);
-    if (isLoadedTodayNews && isLoadedRecentBlog && isLoadedSocialPosts) {
+    console.log(isLoadedTodayNews, isLoadedRecentBlog);
+    if (isLoadedTodayNews && isLoadedRecentBlog) {
       navigation.replace('Bottombar', { tabs: 'Home' });
     }
-  }, [isLoadedTodayNews, isLoadedRecentBlog, isLoadedSocialPosts]);
+  }, [isLoadedTodayNews, isLoadedRecentBlog]);
 
   useEffect(() => {
     if (token) {
-      getSocialPosts();
+      // getSocialPosts();
       getTodayNews();
       getRecentBlog();
     }

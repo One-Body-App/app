@@ -48,6 +48,9 @@ import { useToast } from 'react-native-toast-notifications';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { ChurchType, Interest, User, whatIDo } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
+import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
 
@@ -176,7 +179,7 @@ const IndividualSteps = ({ navigation }: Props) => {
   const getInterest = async () => {
     try {
       const res = await ApiCall({
-        route: 'interests',
+        route: 'tags/interest',
         verb: 'get',
         token: token,
       });
@@ -193,7 +196,7 @@ const IndividualSteps = ({ navigation }: Props) => {
   };
   const addInterests = async () => {
     // dispatch(setLoader(true));
-    console.log(selectedInterest);
+
     try {
       const res = await ApiCall({
         route: 'user/add-interests',
@@ -270,7 +273,7 @@ const IndividualSteps = ({ navigation }: Props) => {
   //   },
   //   [date, open]
   // );
-  console.log(scheme, 'schemescheme');
+
   const data = [
     {
       id: 1,
@@ -330,14 +333,6 @@ const IndividualSteps = ({ navigation }: Props) => {
           </Text>
 
           <View>
-            {/* <SelectDropdown
-              data={countries}
-              defaultButtonText="Select one"
-              buttonTextStyle={{color: '#4F6D77'}}
-              buttonStyle={{...styles.btn, backgroundColor: '#E7F0F3'}}
-              onSelect={type => setChurchType(type)}
-            /> */}
-
             <Button
               text={
                 churchType == null || churchType.churchType == 'Non-Denomination'
@@ -728,8 +723,12 @@ const IndividualSteps = ({ navigation }: Props) => {
                           }
                         : styles.img
                     }
-                    source={{ uri: item?.profileImage }}
+                    resizeMode="contain"
+                    source={{
+                      uri: item?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
+                    }}
                   />
+
                   <View>
                     <Text style={{ ...styles.textname, textAlign: 'center' }}>{item?.name}</Text>
                     <Text

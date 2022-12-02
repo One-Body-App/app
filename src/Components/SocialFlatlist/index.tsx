@@ -35,12 +35,24 @@ const SocialFlatlist = () => {
     setPage(pageNumber);
   };
 
+  useEffect(() => {
+    const getData = async () => {
+      await getSocialPosts(page);
+    };
+    getData();
+  }, [page]);
+
   const { colors } = useTheme();
 
   return (
-    <>
-      {socialPost?.map((item, i) => (
-        <View key={i} style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
+    <FlatList
+      data={socialPost}
+      style={{ flex: 1 }}
+      renderItem={({ item, index }) => (
+        <View
+          key={index}
+          style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}
+        >
           {item?.attachments ? (
             <Image
               style={styles.socialpostimage}
@@ -74,19 +86,57 @@ const SocialFlatlist = () => {
             </Text>
           </View>
         </View>
-      ))}
-      {hasMore ? (
-        <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
-          <TouchableOpacity
-            onPress={async () => {
-              await getSocialPosts(page + 1);
-            }}
-          >
-            <Text>View More</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-    </>
+      )}
+    />
+    // <>
+    //   {socialPost?.map((item, i) => (
+    //     <View key={i} style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
+    //       {item?.attachments ? (
+    //         <Image
+    //           style={styles.socialpostimage}
+    //           resizeMode={'stretch'}
+    //           source={require('@/assets/images/Photo.png')}
+    //         />
+    //       ) : null}
+    //       <Text
+    //         style={{
+    //           padding: 5,
+    //           fontFamily: 'Rubik',
+    //           lineHeight: 18,
+    //           color: colors.text,
+    //           marginTop: getHeight(1),
+    //           textAlign: 'center',
+    //         }}
+    //       >
+    //         {item?.content}
+    //       </Text>
+    //       <View style={{ flexDirection: 'row', padding: 5 }}>
+    //         {item?.source == 'twitter' ? <Twitter fill="#00acee" /> : null}
+    //         <Text
+    //           style={{
+    //             marginLeft: 5,
+    //             fontFamily: 'Rubik',
+    //             color: '#68828A',
+    //             alignItems: 'center',
+    //           }}
+    //         >
+    //           @{item?.handler}
+    //         </Text>
+    //       </View>
+    //     </View>
+    //   ))}
+    //   {hasMore ? (
+    //     <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
+    //       <TouchableOpacity
+    //         onPress={async () => {
+    //           await getSocialPosts(page + 1);
+    //         }}
+    //       >
+    //         <Text>View More</Text>
+    //       </TouchableOpacity>
+    //     </View>
+    //   ) : null}
+    // </>
   );
 };
 export default SocialFlatlist;

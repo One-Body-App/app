@@ -155,7 +155,7 @@ export const styles = StyleSheet.create({
     fontFamily: 'Rubik-Medium',
     marginLeft: 10,
     padding: 10,
-    paddingBottom: 0,
+    paddingBottom: 10,
   },
   newsimage: {
     height: getHeight(40),
@@ -243,15 +243,15 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
-    width: getWidth(45),
+    // height: getHeight(23),
+    height: '100%',
     borderRadius: 16,
-    padding: 8,
   },
   blogpostimage: {
-    height: getHeight(15),
+    height: getHeight(12),
     width: getWidth(42),
     borderRadius: 16,
-    marginBottom: 5,
+    marginVertical: 5,
     shadowColor: '#0e5469',
     shadowOffset: {
       width: 0,
@@ -264,11 +264,8 @@ export const styles = StyleSheet.create({
   blogpostpara: {
     padding: 2,
     marginTop: getHeight(1),
-    lineHeight: 18,
-
+    width: 180,
     fontFamily: 'Rubik-Medium',
-
-    width: 150,
   },
   blogposthour: {
     padding: 8,

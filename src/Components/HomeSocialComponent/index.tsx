@@ -21,10 +21,6 @@ const HomeSocialComponent = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
 
-  const getAllTweets = () => {
-    // getMultipleRandom(twitterUsers, 2).map((item) => getTwiters(item));
-  };
-
   const getRecentBlog = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
@@ -44,53 +40,55 @@ const HomeSocialComponent = () => {
   };
 
   useEffect(() => {
-    getRecentBlog(1);
+    getRecentBlog(page);
   }, []);
 
   const { colors } = useTheme();
   return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl enabled={true} refreshing={refreshing} onRefresh={() => getAllTweets()} />
-      }
-      style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: 75 }}
-    >
-      <SocialFlatlist />
-
-      <Text style={{ ...styles.newstitle, color: colors.text }}>Recent Blog Post</Text>
-      <View>
-        <FlatList
-          data={recentBlog}
-          horizontal={true}
-          contentContainerStyle={{ marginTop: 20 }}
-          showsHorizontalScrollIndicator={false}
-          ListHeaderComponent={() => <View style={{ padding: 7 }} />}
-          ListFooterComponent={() => <View style={{ padding: 7 }} />}
-          keyExtractor={(item, index) => `${item.created}_${index}`}
-          ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                // navigation.navigate('BlogView', { url: item?.link });
-                OpenURLButton(item?.link);
-              }}
-              style={{ ...styles.blogpostview, backgroundColor: colors.card }}
-            >
-              <FastImage
-                style={styles.blogpostimage}
-                resizeMode={'stretch'}
-                source={{ uri: item?.image?.url }}
-              />
-              <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
-                {item?.title}
-              </Text>
-              <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
-            </TouchableOpacity>
-          )}
-        />
+    <View style={{ flex: 1 }}>
+      <View style={{ flex: 6 }}>
+        <SocialFlatlist />
       </View>
-    </ScrollView>
+
+      {/* <FlatList
+        refreshControl={
+          <RefreshControl enabled={true} refreshing={refreshing} onRefresh={() => getAllTweets()} />
+        }
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 75 }}
+      /> */}
+      {recentBlog.length > 0 ? (
+        <View style={{ flex: 4, paddingHorizontal: 20 }}>
+          <Text style={{ ...styles.newstitle, color: colors.text }}>Recent Blog Post</Text>
+
+          <FlatList
+            data={recentBlog}
+            horizontal={true}
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item, index) => `${item.created}_${index}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => {
+                  // navigation.navigate('BlogView', { url: item?.link });
+                  OpenURLButton(item?.link);
+                }}
+                style={styles.blogpostview}
+              >
+                <FastImage
+                  style={styles.blogpostimage}
+                  resizeMode="cover"
+                  source={{ uri: item?.image?.url }}
+                />
+                <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
+                  {item?.title}
+                </Text>
+                <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      ) : null}
+    </View>
   );
 };
 export default HomeSocialComponent;
