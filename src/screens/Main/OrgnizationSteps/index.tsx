@@ -75,8 +75,8 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
   const [state, setState] = useState({
     companyName: '',
-    orgfullName: '',
-    orgEmail: '',
+    orgfullName: user?.name ?? '',
+    orgEmail: user?.email ?? '',
     orgPhoneNo: '',
   });
 
@@ -225,7 +225,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   const getIntrest = async () => {
     try {
       const res = await ApiCall({
-        route: 'interests',
+        route: 'tags/interest',
         verb: 'get',
         token: token,
       });
@@ -648,7 +648,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             }}
           />
 
-          <View style={{ ...styles.flatlistview, marginTop: 25 }}>
+          <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
             {searchInterest.length < 1 ? <Text>No Search Results</Text> : null}
             {searchInterest.map((item, index) => (
               <TouchableOpacity
@@ -680,7 +680,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         </LinearGradient>
       ),
     },
@@ -740,7 +740,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
           />
 
           <View style={{ ...styles.largeview, marginTop: 25 }}>
-            <ScrollView>
+            <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
               {searchInfluencer.length < 1 ? <Text>No Search Results</Text> : null}
               {searchInfluencer.map((item, index) => (
                 <TouchableOpacity
@@ -769,10 +769,15 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                           }
                         : styles.img
                     }
-                    source={{ uri: item?.profileImage }}
+                    resizeMode="contain"
+                    source={{
+                      uri: item?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
+                    }}
                   />
                   <View>
-                    <Text style={{ ...styles.textname, textAlign: 'center' }}>{item?.name}</Text>
+                    <Text numberOfLines={1} style={{ ...styles.textname, textAlign: 'center' }}>
+                      {item?.name}
+                    </Text>
                     <Text
                       numberOfLines={1}
                       style={{
@@ -798,7 +803,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   };
   const next = () => {
     setShowErrors(false);
-    flatListRef.current?.scrollToIndex({ index: curentIndex + 1 });
+    if (curentIndex <= 5) flatListRef.current?.scrollToIndex({ index: curentIndex + 1 });
     setCurrentIndex(curentIndex + 1);
   };
 
@@ -939,21 +944,25 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
             {curentIndex == 5 ? (
               <TouchableOpacity
-                onPress={() => {
-                  const { orgfullName, orgEmail, orgPhoneNo, companyName } = state;
-                  const data = {
-                    typeOfOrganization: organizationType,
-                    companyEmail: orgEmail,
-                    companyName: companyName,
-                    fullName: orgfullName,
-                    companyPhoneNumber: orgPhoneNo,
-                    location: {
-                      longitude: longitude,
-                      latitude: latitude,
-                      address: location_label,
-                    },
-                  };
-                  dispatch(orgprofileUpdate({ data, token, go, role: user?.role }));
+                onPress={async () => {
+                  if (Organization.length > 0) {
+                    await addFollowing();
+                    const { orgfullName, orgEmail, orgPhoneNo, companyName } = state;
+                    const data = {
+                      typeOfOrganization: organizationType,
+                      companyEmail: orgEmail,
+                      companyName: companyName,
+                      fullName: orgfullName,
+                      companyPhoneNumber: orgPhoneNo,
+                      location: {
+                        longitude: longitude,
+                        latitude: latitude,
+                        address: location_label,
+                      },
+                    };
+
+                    dispatch(orgprofileUpdate({ data, token, go, role: user?.role }));
+                  }
                 }}
               >
                 <Text style={styles.footerText}>Done</Text>

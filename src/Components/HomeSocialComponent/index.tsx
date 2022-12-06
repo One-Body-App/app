@@ -47,7 +47,7 @@ const HomeSocialComponent = () => {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 6 }}>
-        <SocialFlatlist />
+        <SocialFlatlist startingPage={2} />
       </View>
 
       {/* <FlatList

@@ -888,7 +888,6 @@ const IndividualSteps = ({ navigation }: Props) => {
               {curentIndex == 5 ? (
                 <TouchableOpacity
                   onPress={async () => {
-                    console.log(Organization);
                     if (Organization.length > 0) {
                       await addFollowing();
                       const data = {

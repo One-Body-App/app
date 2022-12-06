@@ -39,7 +39,7 @@ const HomeAllComponent = () => {
   const [show, setShow] = useState<boolean>();
   const [page, setPage] = useState<number>(1);
   const navigation = useNavigation<ScreenNavigationProp>();
-  console.log(todayNews, 'todayNewstodayNewstodayNews');
+
   const toggleModal = () => {
     setShow(!show);
   };
@@ -62,7 +62,7 @@ const HomeAllComponent = () => {
     setPage(pageNumber);
   };
   const { colors } = useTheme();
-  console.log(todayNews, 'todayNews');
+
   // useEffect(() => {
   //   getRecentBlog();
   // }, []);
@@ -248,40 +248,45 @@ const HomeAllComponent = () => {
           Latest News & Social Post
         </Text>
         <View>
-          <SocialFlatlist />
+          <SocialFlatlist disableAutoLoadMore={true} startingPage={1} />
         </View>
-        <Text style={{ ...styles.blogposttext, color: colors.text }}>Recent Blog Post</Text>
-        <View>
-          <FlatList
-            nestedScrollEnabled
-            data={recentBlog}
-            horizontal={true}
-            contentContainerStyle={{ marginTop: 20 }}
-            showsHorizontalScrollIndicator={false}
-            ListHeaderComponent={() => <View style={{ padding: 7 }} />}
-            ListFooterComponent={() => <View style={{ padding: 7 }} />}
-            ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-            keyExtractor={(item, index) => `${item.created}_${index}`}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  OpenURLButton(item?.link);
-                }}
-                style={{ ...styles.blogpostview, backgroundColor: colors.card }}
-              >
-                <FastImage
-                  style={styles.blogpostimage}
-                  resizeMode={'stretch'}
-                  source={{ uri: item?.image?.url }}
-                />
-                <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
-                  {isObject(item?.title) ? item?.title?.a.$text : item?.title}
-                </Text>
-                <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+        {recentBlog.length > 0 ? (
+          <>
+            <Text style={{ ...styles.blogposttext, color: colors.text }}>Recent Blog Post</Text>
+            <View>
+              <FlatList
+                nestedScrollEnabled
+                data={recentBlog}
+                horizontal={true}
+                contentContainerStyle={{ marginTop: 20 }}
+                showsHorizontalScrollIndicator={false}
+                ListHeaderComponent={() => <View style={{ padding: 7 }} />}
+                ListFooterComponent={() => <View style={{ padding: 7 }} />}
+                ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+                keyExtractor={(item, index) => `${item.created}_${index}`}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      OpenURLButton(item?.link);
+                    }}
+                    style={{ ...styles.blogpostview, backgroundColor: colors.card }}
+                  >
+                    <FastImage
+                      style={styles.blogpostimage}
+                      resizeMode={'stretch'}
+                      source={{ uri: item?.image?.url }}
+                    />
+                    <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
+                      {isObject(item?.title) ? item?.title?.a.$text : item?.title}
+                    </Text>
+                    <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </>
+        ) : null}
+
         <View style={styles.explorview}>
           <Text style={{ ...styles.explortext, color: colors.text }}>
             Explore Influencers & Organizations

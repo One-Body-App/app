@@ -30,11 +30,12 @@ export const styles = StyleSheet.create({
     color: '#032F3C',
   },
   flatlistview: {
-    flex: 1,
     alignSelf: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
+    marginHorizontal: 10,
+    paddingBottom: 240,
   },
   innerContainer: {
     alignItems: 'center',
@@ -112,8 +113,6 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   text: {
-    width: '80%',
-    textAlign: 'center',
     color: '#4F6D77',
     width: getWidth(60),
     textAlign: 'center',

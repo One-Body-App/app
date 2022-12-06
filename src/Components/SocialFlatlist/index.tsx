@@ -9,37 +9,65 @@ import { SetSocial } from '@/redux/actions/SocialActions';
 import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 
-const SocialFlatlist = () => {
+const SocialFlatlist = ({
+  disableAutoLoadMore,
+  startingPage,
+}: {
+  disableAutoLoadMore?: boolean;
+  startingPage: number;
+}) => {
   const socialPost = useSelector((state: RootState) => state.social.SocialPost);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [hasMore, setHasMore] = useState(true);
   const dispatch = useDispatch();
   const [page, setPage] = useState(1);
+  const [isEndOfList, setIsEndOfList] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const getSocialPosts = async (pageNumber: number) => {
+    setIsLoading(true);
     try {
       const res = await ApiCall({
         route: `user/get-following-social/${pageNumber}`,
         token,
         verb: 'get',
       });
+      let posts = [];
+
       if (res?.status == 200) {
         setHasMore(res?.response.hasMore);
-        dispatch(SetSocial([...res?.response.content, ...socialPost]));
+        if (pageNumber == 1) {
+          posts = res?.response?.content ?? [];
+          setIsEndOfList(false);
+        } else {
+          posts = [...socialPost, ...(res?.response?.content ?? [])];
+          if (res?.response?.content < 1) {
+            setIsEndOfList(true);
+          }
+        }
+        dispatch(SetSocial(posts));
       } else {
         console.log('error', res?.response);
       }
+      setIsLoading(false);
+      setIsRefreshing(false);
     } catch (e: any) {
       console.log(`saga get twitter timline  error -- `, e.toString());
     }
+    setIsLoading(false);
+    setIsRefreshing(false);
+
     setPage(pageNumber);
   };
 
   useEffect(() => {
-    const getData = async () => {
-      await getSocialPosts(page);
-    };
-    getData();
+    if (page >= startingPage) {
+      const getData = async () => {
+        await getSocialPosts(page);
+      };
+      getData();
+    }
   }, [page]);
 
   const { colors } = useTheme();
@@ -48,9 +76,12 @@ const SocialFlatlist = () => {
     <FlatList
       data={socialPost}
       style={{ flex: 1 }}
+      keyExtractor={(item, index) => {
+        return `${item?.handler}-${item.id}-${index}`;
+      }}
       renderItem={({ item, index }) => (
         <View
-          key={index}
+          key={`${item?.handler}-${index}`}
           style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}
         >
           {item?.attachments ? (
@@ -85,6 +116,17 @@ const SocialFlatlist = () => {
               @{item?.handler}
             </Text>
           </View>
+        </View>
+      )}
+      onEndReachedThreshold={0.5}
+      onEndReached={() => {
+        if (!isLoading && !isRefreshing && !disableAutoLoadMore && !isEndOfList) setPage(page + 1);
+      }}
+      ListFooterComponent={() => (
+        <View>
+          {isEndOfList ? (
+            <Text style={{ textAlign: 'center' }}>Not more social posts at this time</Text>
+          ) : null}
         </View>
       )}
     />
