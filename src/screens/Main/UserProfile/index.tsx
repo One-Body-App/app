@@ -3,7 +3,7 @@ import { Animated, Text, View, FlatList, TouchableOpacity, ScrollView } from 're
 import Modal from 'react-native-modal';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
-import { TabView, SceneMap } from 'react-native-tab-view';
+import { TabView, SceneMap, SceneRendererProps, NavigationState } from 'react-native-tab-view';
 import Add_badges from '@/assets/svg/Add_badges.svg';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '@/components/Button';
@@ -18,50 +18,103 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import ImageModal from 'react-native-image-modal';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { User } from '@/utils/types';
+import { OpenURLButton } from '@/src/Services/constants';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
 
-const UserProfile = ({ navigation, route }) => {
-  const { id, role } = route.params;
+type Props = StackScreenProps<RootStackParamList, 'UserProfile'>;
+
+const UserProfile = ({ navigation, route }: Props) => {
+  const { id } = route.params;
   const dispatch = useDispatch();
-  const [user, setUser] = useState();
-  const token = useSelector((state) => state.auth.userToken);
+  const [user, setUser] = useState<User>();
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const currentUser = useSelector((state: RootState) => state.auth.userProfile);
 
   const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState([
-    { key: 'Instagram', title: 'Instagram' },
-    { key: 'Blog', title: 'Blog' },
-    { key: 'Twitter', title: 'Twitter' },
-  ]);
+  const [routes, setRoutes] = React.useState<{ key: string; title: string }[]>([]);
 
-  const renderScene = SceneMap({
-    Instagram: InstagramFlatlist,
-    Blog: BlogFlatlist,
-    Twitter: TwitterFlatlist,
-  });
-  const renderTabBar = (props) => {
+  useEffect(() => {
+    if (user?.influencerProfile) {
+      const routes = [];
+      if (user?.influencerProfile?.twitterId) {
+        routes.push({ key: 'Twitter', title: 'Twitter' });
+      }
+
+      if (user?.influencerProfile?.rssUrl) {
+        routes.push({ key: 'Blog', title: 'Blog' });
+      }
+
+      if (user?.influencerProfile?.instagramHandler) {
+        routes.push({ key: 'Instagram', title: 'Instagram' });
+      }
+      setRoutes(routes);
+    }
+  }, [user]);
+
+  const renderScene = ({
+    route,
+    jumpTo,
+  }: SceneRendererProps & {
+    route: any;
+  }) => {
+    switch (route.key) {
+      case 'Instagram':
+        return <InstagramFlatlist jumpTo={jumpTo} {...route} />;
+      case 'Blog':
+        return <BlogFlatlist {...route} jumpTo={jumpTo} currentUser={user} />;
+      case 'Twitter':
+        return <TwitterFlatlist jumpTo={jumpTo} {...route} />;
+    }
+  };
+
+  const renderTabBar = (
+    props: SceneRendererProps & {
+      navigationState: NavigationState<any>;
+    }
+  ) => {
     return (
       <View style={styles.tabBar}>
-        {props.navigationState.routes.map((route, i) => {
-          return (
-            <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
-              <Animated.Text
-                style={
-                  props?.navigationState?.index == i
-                    ? {
-                        color: '#032F3C',
-                        fontFamily: 'Rubik-Medium',
-                      }
-                    : {
-                        color: '#032F3C',
-                        fontFamily: 'Rubik-Regular',
-                      }
-                }
-              >
-                {route.title}
-              </Animated.Text>
-              {props?.navigationState?.index == i ? <View style={styles.propview} /> : null}
-            </TouchableOpacity>
-          );
-        })}
+        {props.navigationState.routes
+          .filter((route) => {
+            if (user?.influencerProfile?.twitterId && route.key == 'Twitter') {
+              return true;
+            }
+
+            if (user?.influencerProfile?.rssUrl && route.key == 'Blog') {
+              return true;
+            }
+
+            if (user?.influencerProfile?.instagramHandler && route.key == 'Instagram') {
+              return true;
+            }
+
+            return false;
+          })
+          .map((route, i) => {
+            return (
+              <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
+                <Animated.Text
+                  style={
+                    props?.navigationState?.index == i
+                      ? {
+                          color: '#032F3C',
+                          fontFamily: 'Rubik-Medium',
+                        }
+                      : {
+                          color: '#032F3C',
+                          fontFamily: 'Rubik-Regular',
+                        }
+                  }
+                >
+                  {route.title}
+                </Animated.Text>
+                {props?.navigationState?.index == i ? <View style={styles.propview} /> : null}
+              </TouchableOpacity>
+            );
+          })}
       </View>
     );
   };
@@ -70,55 +123,57 @@ const UserProfile = ({ navigation, route }) => {
     dispatch(setLoader(true));
     getUser();
   }, []);
+
   const getUser = async () => {
     try {
       const res = await ApiCall({
-        route: `user/${id}/${role}`,
+        route: `user/${id}`,
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+
+      if (res?.status == 200) {
         dispatch(setLoader(false));
-        setUser(res?.data);
+        setUser(res?.response);
       } else {
-        console.log('error', res?.data);
+        console.log('error', res?.response);
         dispatch(setLoader(false));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
-  const OpenConversation = async (id) => {
-    // onCreateOrJoin(id);
-    dispatch(setLoader(true));
-    try {
-      const res = await ApiCall({
-        params: { receiver: id },
-        token: token,
-        route: 'chat/new-chat-room',
-        verb: 'post',
-      });
+  // const OpenConversation = async (id) => {
+  //   // onCreateOrJoin(id);
+  //   dispatch(setLoader(true));
+  //   try {
+  //     const res = await ApiCall({
+  //       params: { receiver: id },
+  //       token: token,
+  //       route: 'chat/new-chat-room',
+  //       verb: 'post',
+  //     });
 
-      if (res?.status == '200') {
-        dispatch(setLoader(false));
+  //     if (res?.status == 200) {
+  //       dispatch(setLoader(false));
 
-        navigation.navigate(
-          'conversation',
-          res?.data?.receiver
-            ? {
-                reciver: res?.data?.receiver,
-                reciverId: res?.data?._id,
-              }
-            : { reciver: res?.data?.sender, reciverId: res?.data?._id }
-        );
-        // navigation.navigate('conversation');
-      } else {
-        console.log('error', res?.data);
-      }
-    } catch (e) {
-      console.log('chanel create err --- ', e);
-    }
-  };
+  //       navigation.navigate(
+  //         'conversation',
+  //         res?.data?.receiver
+  //           ? {
+  //               reciver: res?.data?.receiver,
+  //               reciverId: res?.data?._id,
+  //             }
+  //           : { reciver: res?.data?.sender, reciverId: res?.data?._id }
+  //       );
+  //       // navigation.navigate('conversation');
+  //     } else {
+  //       console.log('error', res?.data);
+  //     }
+  //   } catch (e) {
+  //     console.log('chanel create err --- ', e);
+  //   }
+  // };
 
   return (
     <View style={{ backgroundColor: 'white', flex: 1 }}>
@@ -129,86 +184,97 @@ const UserProfile = ({ navigation, route }) => {
         translucent={true}
       />
 
-      <ScrollView
+      {/* <ScrollView
         contentContainerStyle={{ height: getHeight(125) }}
         showsVerticalScrollIndicator={false}
         style={{ marginTop: getHeight(2) }}
+      > */}
+      <View style={{ alignSelf: 'center', paddingTop: 30 }}>
+        <ImageModal
+          style={{
+            width: 150,
+            height: 150,
+            alignSelf: 'center',
+            marginVertical: 10,
+            borderRadius: 75,
+            borderColor: '#BBBBBB',
+            borderWidth: 1,
+          }}
+          source={{
+            uri: user?.profileImage,
+          }}
+          resizeMode={'contain'}
+        />
+      </View>
+      <Text
+        style={{
+          fontWeight: '500',
+          color: '#032f3c',
+          textAlign: 'center',
+          fontSize: 20,
+        }}
       >
-        <View style={{ alignSelf: 'center' }}>
-          <ImageModal
-            style={{
-              width: 150,
-              height: 150,
-              alignSelf: 'center',
-              marginVertical: 10,
-              borderRadius: 75,
-            }}
-            source={{
-              uri: user?.profileImage,
-            }}
-            resizeMode={'contain'}
-          />
-        </View>
-        <Text
-          style={{
-            fontWeight: '500',
-            color: '#032f3c',
-            textAlign: 'center',
-            fontSize: 20,
-          }}
-        >
-          {user?.name}
-        </Text>
-        <Text
-          style={{
-            textAlign: 'center',
-            marginBottom: 10,
-            color: '#5b7279',
-            marginTop: 5,
-          }}
-        >
-          @{user?.userName}
-        </Text>
-        {/* {user.role != 'individual' ? (
+        {user?.name}
+      </Text>
+      <Text
+        style={{
+          textAlign: 'center',
+          marginBottom: 10,
+          color: '#5b7279',
+          marginTop: 5,
+        }}
+      >
+        {user?.username ? `@${user?.username}` : ''}
+      </Text>
+      {/* {user.role != 'individual' ? (
           <Text style={{textAlign: 'center', color: '#5B7279'}}>
             @nickdreamsalot . Minister and Ideator
           </Text>
         ) : null} */}
-        <View style={styles.manyimageview}>
-          <View>
-            <FlatList
-              data={user?.badges_data}
-              numColumns={3}
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <FastImage
-                  style={styles.firstimage}
-                  source={{
-                    uri: item?.badge,
-                  }}
-                  resizeMode={FastImage.resizeMode.stretch}
-                />
-              )}
-            />
+      <View style={styles.manyimageview}>
+        <View>
+          <FlatList
+            data={user?.badgesData}
+            numColumns={3}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <FastImage
+                style={styles.firstimage}
+                source={{
+                  uri: item.badge,
+                }}
+                resizeMode={FastImage.resizeMode.stretch}
+              />
+            )}
+          />
+        </View>
+      </View>
+      {user?.isInfluencer == true ? (
+        <>
+          {user?.website ? (
+            <TouchableOpacity onPress={() => OpenURLButton(user?.website)}>
+              <Text style={styles.onebodytext}>{user?.website}</Text>
+            </TouchableOpacity>
+          ) : null}
+          <View style={{ alignItems: 'center' }}>
+            <Text
+              style={{
+                color: '#032f3c',
+                fontFamily: 'Rubik-Regular',
+                marginVertical: getHeight(1),
+              }}
+            >
+              Reaching:{' '}
+              {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
+            </Text>
           </View>
-        </View>
-        {user?.isInfluencer == true ? (
-          <Text style={styles.onebodytext}>{user?.website}</Text>
-        ) : null}
-        <View style={{ alignItems: 'center' }}>
-          <Text
-            style={{
-              color: '#032f3c',
-              fontFamily: 'Rubik-Regular',
-              marginVertical: getHeight(1),
-            }}
-          >
-            Influencing 1.4k
-          </Text>
-        </View>
-        <View style={styles.bottomView}>
+        </>
+      ) : null}
+
+      <View style={styles.bottomView}>
+        {currentUser?.following.some((following) => following == currentUser._id) ? (
           <Button
-            text={'Subscribed'}
+            text={'Unfollow'}
             btnStyle={{
               ...styles.btn,
               backgroundColor: '#F6F6F6',
@@ -219,8 +285,26 @@ const UserProfile = ({ navigation, route }) => {
               color: '#595959',
               letterSpacing: 0,
             }}
+            onPress={() => {}}
           />
+        ) : (
           <Button
+            text={'Follow'}
+            btnStyle={{
+              ...styles.btn,
+              backgroundColor: '#F6F6F6',
+              borderWidth: 0,
+            }}
+            btnTextStyle={{
+              ...GeneralStyle.btnText,
+              color: '#595959',
+              letterSpacing: 0,
+            }}
+            onPress={() => {}}
+          />
+        )}
+
+        {/* <Button
             text={'Message'}
             onPress={() => OpenConversation(user?._id)}
             btnStyle={styles.btn}
@@ -229,19 +313,19 @@ const UserProfile = ({ navigation, route }) => {
               color: '#032f3c',
               letterSpacing: 0,
             }}
-          />
-        </View>
+          /> */}
+      </View>
 
-        {user?.isInfluencer == true ? (
-          <TabView
-            navigationState={{ index, routes }}
-            renderScene={renderScene}
-            renderTabBar={renderTabBar}
-            onIndexChange={setIndex}
-            initialLayout={{ width: getWidth(100) }}
-          />
-        ) : null}
-      </ScrollView>
+      {user?.isInfluencer == true && routes.length > 0 ? (
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          renderTabBar={renderTabBar}
+          onIndexChange={setIndex}
+          // initialLayout={{ width: getWidth(100) }}
+        />
+      ) : null}
+      {/* </ScrollView> */}
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
         <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={'#032f3c'} />
       </TouchableOpacity>

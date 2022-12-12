@@ -3,8 +3,9 @@ import { FlatList, Image, Text, View } from 'react-native';
 import { styles } from './styles';
 import Social from '@/assets/svg/Social.svg';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
+import { SceneRendererProps } from 'react-native-tab-view';
 
-const InstagramFlatlist = () => {
+const InstagramFlatlist = ({}: SceneRendererProps) => {
   const time = [
     {
       picture: require('@/assets/images/pray.jpeg'),

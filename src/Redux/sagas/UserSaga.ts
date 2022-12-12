@@ -19,7 +19,7 @@ function* UserGetRequest(params) {
       route: 'user/my-profile',
       verb: 'get',
     });
-    console.log(res);
+    console.log('user/my-profile', res);
     if (res?.status == '200') {
       if (params.data.get == 'interests') {
         console.log('response', res?.response);
@@ -48,12 +48,13 @@ function* GetAllUserRequest(params) {
   try {
     const res = yield ApiCall({
       token: params.data.token,
-      route: 'user/get-users-to-subscribe',
+      route: `user/get-users-to-subscribe${
+        params.data?.limit ? `?limit=${params.data?.limit}` : ''
+      }`,
       verb: 'get',
     });
 
     if (res?.status == '200') {
-      console.log('res all user', res?.response?.data);
       yield put(setUserAll(res?.response?.data));
 
       yield put(setLoader(false));

@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, ImageBackground, ScrollView, Text, View, RefreshControl } from 'react-native';
+import {
+  FlatList,
+  ImageBackground,
+  ScrollView,
+  Text,
+  View,
+  RefreshControl,
+  Image,
+} from 'react-native';
 
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { styles } from './styles';
@@ -11,7 +19,7 @@ import Fontisto from 'react-native-vector-icons/Fontisto';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Feather from 'react-native-vector-icons/Feather';
 
-import { timeSince } from '@/utils/ResponsiveFun';
+import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import SubscribeFlatlist from '../SubscribeFlatlist';
 import Button from '../Button';
 import { GeneralStyle } from '../../constants/GeneralStyle';
@@ -27,10 +35,12 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { OpenURLButton } from '@/src/Services/constants';
 import { isObject } from 'lodash';
+import Twitter from '@/assets/svg/Twitter.svg';
+import { SceneRendererProps } from 'react-native-tab-view';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
-const HomeAllComponent = () => {
+const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const todayNews = useSelector((state: RootState) => state.social.TodayNews);
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
@@ -38,6 +48,7 @@ const HomeAllComponent = () => {
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
   const [page, setPage] = useState<number>(1);
+  const [socialPosts, setSocialPosts] = useState<any[]>();
   const navigation = useNavigation<ScreenNavigationProp>();
 
   const toggleModal = () => {
@@ -63,9 +74,31 @@ const HomeAllComponent = () => {
   };
   const { colors } = useTheme();
 
-  // useEffect(() => {
-  //   getRecentBlog();
-  // }, []);
+  const getSocialPosts = async () => {
+    try {
+      const res = await ApiCall({
+        route: `user/get-following-social/1`,
+        token,
+        verb: 'get',
+      });
+      let posts = [];
+
+      if (res?.status == 200) {
+        posts = res?.response?.content ?? [];
+
+        setSocialPosts(posts);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
+      console.log(`saga get twitter timline  error -- `, e.toString());
+    }
+  };
+
+  useEffect(() => {
+    getSocialPosts();
+  }, []);
+
   return (
     <View style={{ flex: 1 }}>
       <Modal
@@ -244,11 +277,63 @@ const HomeAllComponent = () => {
             )}
           />
         </View>
-        <Text style={{ ...styles.socialposttext, color: colors.text }}>
-          Latest News & Social Post
-        </Text>
+        <Text style={{ ...styles.socialposttext, color: colors.text }}>Latest Post</Text>
         <View>
-          <SocialFlatlist disableAutoLoadMore={true} startingPage={1} />
+          <FlatList
+            data={socialPosts}
+            style={{ flex: 1 }}
+            keyExtractor={(item, index) => {
+              return `${item?.handler}-${item.id}-${index}`;
+            }}
+            renderItem={({ item, index }) => (
+              <View
+                key={`${item?.handler}-${index}`}
+                style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}
+              >
+                {item?.attachments ? (
+                  <Image
+                    style={styles.socialpostimage}
+                    resizeMode={'stretch'}
+                    source={require('@/assets/images/Photo.png')}
+                  />
+                ) : null}
+                <Text
+                  style={{
+                    padding: 5,
+                    fontFamily: 'Rubik',
+                    lineHeight: 18,
+                    color: colors.text,
+                    marginTop: getHeight(1),
+                    textAlign: 'center',
+                  }}
+                >
+                  {item?.content}
+                </Text>
+                <View style={{ flexDirection: 'row', padding: 5 }}>
+                  {item?.source == 'twitter' ? <Twitter fill="#00acee" /> : null}
+                  <Text
+                    style={{
+                      marginLeft: 5,
+                      fontFamily: 'Rubik',
+                      color: '#68828A',
+                      alignItems: 'center',
+                    }}
+                  >
+                    @{item?.handler}
+                  </Text>
+                </View>
+              </View>
+            )}
+            ListFooterComponent={() => (
+              <View style={{ alignSelf: 'center', alignContent: 'center' }}>
+                <Button
+                  text="View More"
+                  btnTextStyle={{ color: '#032F3C', textAlign: 'center' }}
+                  onPress={() => jumpTo('Social')}
+                />
+              </View>
+            )}
+          />
         </View>
         {recentBlog.length > 0 ? (
           <>

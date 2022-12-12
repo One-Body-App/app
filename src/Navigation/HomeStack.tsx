@@ -26,8 +26,9 @@ import UserProfileView from '../screens/Main/UserProfile';
 import BlogView from '../screens/Main/BlogView';
 import Faqs from '../screens/Main/Help/Faqs';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { UserProfile } from '../Redux/types';
+
 import Toast from 'react-native-toast-message';
+import { User } from '@/utils/types';
 
 const Stack = createNativeStackNavigator();
 const HomeStack = ({
@@ -36,7 +37,7 @@ const HomeStack = ({
   token,
 }: {
   user?: FirebaseAuthTypes.User;
-  userProfile: UserProfile | null;
+  userProfile: User | null;
   token?: string;
 }) => {
   return (

@@ -1,21 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, Image, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { styles } from './styles';
-import Twitter from '@/assets/svg/Twitter.svg';
-import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
+
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { SetSocial } from '@/redux/actions/SocialActions';
 import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
+import SocialItem from '../ListItems/SocialItem';
 
-const SocialFlatlist = ({
-  disableAutoLoadMore,
-  startingPage,
-}: {
-  disableAutoLoadMore?: boolean;
-  startingPage: number;
-}) => {
+const SocialFlatlist = () => {
   const socialPost = useSelector((state: RootState) => state.social.SocialPost);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [hasMore, setHasMore] = useState(true);
@@ -62,15 +56,11 @@ const SocialFlatlist = ({
   };
 
   useEffect(() => {
-    if (page >= startingPage) {
-      const getData = async () => {
-        await getSocialPosts(page);
-      };
-      getData();
-    }
+    const getData = async () => {
+      await getSocialPosts(page);
+    };
+    getData();
   }, [page]);
-
-  const { colors } = useTheme();
 
   return (
     <FlatList
@@ -79,48 +69,10 @@ const SocialFlatlist = ({
       keyExtractor={(item, index) => {
         return `${item?.handler}-${item.id}-${index}`;
       }}
-      renderItem={({ item, index }) => (
-        <View
-          key={`${item?.handler}-${index}`}
-          style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}
-        >
-          {item?.attachments ? (
-            <Image
-              style={styles.socialpostimage}
-              resizeMode={'stretch'}
-              source={require('@/assets/images/Photo.png')}
-            />
-          ) : null}
-          <Text
-            style={{
-              padding: 5,
-              fontFamily: 'Rubik',
-              lineHeight: 18,
-              color: colors.text,
-              marginTop: getHeight(1),
-              textAlign: 'center',
-            }}
-          >
-            {item?.content}
-          </Text>
-          <View style={{ flexDirection: 'row', padding: 5 }}>
-            {item?.source == 'twitter' ? <Twitter fill="#00acee" /> : null}
-            <Text
-              style={{
-                marginLeft: 5,
-                fontFamily: 'Rubik',
-                color: '#68828A',
-                alignItems: 'center',
-              }}
-            >
-              @{item?.handler}
-            </Text>
-          </View>
-        </View>
-      )}
+      renderItem={({ item }) => <SocialItem item={item} />}
       onEndReachedThreshold={0.5}
       onEndReached={() => {
-        if (!isLoading && !isRefreshing && !disableAutoLoadMore && !isEndOfList) setPage(page + 1);
+        if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
       }}
       ListFooterComponent={() => (
         <View>

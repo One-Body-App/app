@@ -1,82 +1,83 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, Image, Text, View } from 'react-native';
+import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
 import { styles } from './styles';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
+import SocialItem from '../ListItems/SocialItem';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { SceneRendererProps } from 'react-native-tab-view';
+import { User } from '@/utils/types';
 
-const TwitterFlatlist = () => {
-  const [tweets, setTweets] = useState([]);
+const TwitterFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: User }) => {
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const [page, setPage] = useState<number>(1);
+  const [tweets, setTweets] = useState<any>([]);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
 
-  const getTwiters = async (id) => {
+  const getTwitterData = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `https://api.twitter.com/2/users/1380592017936375815/tweets?tweet.fields=attachments,created_at&media.fields=preview_image_url&expansions=attachments.media_keys`,
-        token:
-          'AAAAAAAAAAAAAAAAAAAAAFP6dQEAAAAAkF1k78i42go%2BLLsmlJcE58hCcCw%3DCHdg4ofpqUzHzmx7tdNw2Op8UMCApSSZ5rOceOobMF1kIuXvcT',
+        route: `user/get-social-twitter/${currentUser._id}/${pageNumber}`,
         verb: 'get',
-        external: true,
+        token: token,
       });
-      if (res?.status == '200') {
-        setTweets([...tweets, ...res?.response?.data]);
+      if (res?.status == 200) {
+        let tweetsData = [];
+
+        if (pageNumber == 1) {
+          tweetsData = res?.response.content ?? [];
+          setIsEndOfList(false);
+        } else {
+          tweetsData = [...tweets, ...(res?.response.content ?? [])];
+          if (res?.response.hasMore < 1) {
+            setIsEndOfList(true);
+          }
+        }
+
+        setTweets(tweetsData);
       } else {
         console.log('error', res?.response);
       }
-    } catch (e) {
-      console.log(`saga get my twitter timline error -- `, e.toString());
+      setLoadingMore(false);
+      setRefreshing(false);
+    } catch (e: any) {
+      setLoadingMore(false);
+      setRefreshing(false);
     }
+    setPage(pageNumber);
   };
-  var urlRegex = /(https?:\/\/[^ ]*)/;
-  useEffect(() => {
-    getTwiters();
-  }, []);
 
+  useEffect(() => {
+    getTwitterData(1);
+  }, []);
+  console.log(tweets);
   return (
     <FlatList
       data={tweets}
       contentContainerStyle={{ marginTop: getHeight(1) }}
       showsHorizontalScrollIndicator={false}
-      ListFooterComponent={() => (
-        <View style={styles.socialpostfooter}>
-          <Text style={{ color: '#757575' }}>View more</Text>
-        </View>
-      )}
       ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-      renderItem={({ item }) => (
-        <View style={styles.socialpostview}>
-          {/* <Image
-            style={styles.socialpostimage}
-            resizeMode={'stretch'}
-            source={require('./@/assets/images/Photo.png')}
-          /> */}
-          <Text
-            style={{
-              padding: 5,
-              fontFamily: 'Rubik',
-              lineHeight: 18,
-              color: '#032f3c',
-              marginTop: getHeight(1),
-              textAlign: 'center',
-            }}
-          >
-            {item?.text}
-          </Text>
-          <View style={{ flexDirection: 'row', padding: 5 }}>
-            <Twitter />
-            <Text
-              style={{
-                marginLeft: 5,
-                fontFamily: 'Rubik',
-                color: '#68828A',
-                alignItems: 'center',
-              }}
-            >
-              @onebodynick
-            </Text>
-          </View>
-        </View>
-      )}
+      renderItem={({ item }) => <SocialItem item={item} />}
+      keyExtractor={(item) => item.id}
+      refreshControl={
+        <RefreshControl
+          enabled={true}
+          refreshing={refreshing}
+          onRefresh={async () => {
+            setIsEndOfList(false);
+            setRefreshing(true);
+            setPage(1);
+          }}
+        />
+      }
+      onEndReachedThreshold={0.5}
+      onEndReached={() => {
+        if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+      }}
     />
   );
 };

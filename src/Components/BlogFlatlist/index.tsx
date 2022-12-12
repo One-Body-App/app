@@ -1,39 +1,101 @@
-import React, { useRef, useState } from 'react';
-import { Animated, FlatList, Image, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  FlatList,
+  Image,
+  RefreshControl,
+  SafeAreaView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { styles } from './styles';
 import Social from '@/assets/svg/Social.svg';
-import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
-import { useSelector } from 'react-redux';
+import { getFontSize, getHeight, timeSince } from '@/utils/ResponsiveFun';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ApiCall } from '@/src/Services/api';
+import { SceneRendererProps } from 'react-native-tab-view';
+import { User } from '@/utils/types';
+import { isObject } from 'lodash';
+import { OpenURLButton } from '@/src/Services/constants';
+import ArticleItem from '../ListItems/ArticleItem';
+import { useTheme } from '@react-navigation/native';
 
-const BlogFlatlist = () => {
+const BlogFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: User }) => {
   // const offset = useRef(new Animated.Value(0)).current;
-  const user = useSelector((state) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const [page, setPage] = useState<number>(1);
+  const [blogs, setBlogs] = useState<any>([]);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
 
-  const Data = [
-    { id: 1, image: 'dfafds', Text: 'fsda' },
-    { id: 2, image: 'dfafds', Text: 'fsda' },
-    { id: 3, image: 'dfafds', Text: 'fsda' },
-    { id: 4, image: 'dfafds', Text: 'fsda' },
-    { id: 5, image: 'dfafds', Text: 'fsda' },
-    { id: 6, image: 'dfafds', Text: 'fsda' },
-    { id: 7, image: 'dfafds', Text: 'fsda' },
-    { id: 8, image: 'dfafds', Text: 'fsda' },
-    { id: 9, image: 'dfafds', Text: 'fsda' },
-  ];
+  const getBlog = async (pageNumber: number) => {
+    try {
+      const res = await ApiCall({
+        route: `blogs/get-blog-feed/${currentUser._id}/${pageNumber}`,
+        verb: 'get',
+        token: token,
+      });
+      if (res?.status == 200) {
+        let blogData = [];
 
-  // const opacity = offset.interpolate({
-  //   inputRange: [0, 180, 210],
-  //   outputRange: [0, 0.5, 1],
-  //   extrapolate: 'clamp',
-  // });
+        if (pageNumber == 1) {
+          blogData = res?.response ?? [];
+          setIsEndOfList(false);
+        } else {
+          blogData = [...blogs, ...(res?.response ?? [])];
+          if (res?.response.length < 1) {
+            setIsEndOfList(true);
+          }
+        }
+
+        setBlogs(blogData);
+      } else {
+        console.log('error', res?.response);
+      }
+      setLoadingMore(false);
+      setRefreshing(false);
+    } catch (e: any) {
+      setLoadingMore(false);
+      setRefreshing(false);
+    }
+    setPage(pageNumber);
+  };
+
+  useEffect(() => {
+    const getData = async () => {
+      await getBlog(page);
+    };
+    getData();
+  }, [page, user]);
+  const { colors } = useTheme();
+
   return (
-    <View>
+    <SafeAreaView>
       <FlatList
-        data={Data}
+        data={blogs}
         numColumns={2}
+        // contentContainerStyle={{
+        //   marginTop: getHeight(1),
+        //   marginBottom: getHeight(10),
+        // }}
         contentContainerStyle={{
-          marginTop: getHeight(1),
+          paddingBottom: 50,
         }}
+        refreshControl={
+          <RefreshControl
+            enabled={true}
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setIsEndOfList(false);
+              setRefreshing(true);
+              setPage(1);
+            }}
+          />
+        }
         // onScroll={Animated.event(
         //   [{nativeEvent: {contentOffset: {y: offset}}}],
         //   {
@@ -41,21 +103,36 @@ const BlogFlatlist = () => {
         //   },
         // )}
         showsVerticalScrollIndicator={false}
-        ListFooterComponent={() => <View style={{ padding: 7 }} />}
-        ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-        renderItem={() => (
-          <View style={styles.blogpostview}>
-            <Image
-              style={styles.blogpostimage}
-              resizeMode={'stretch'}
-              source={require('@/assets/images/pray.jpeg')}
-            />
-            <Text numberOfLines={2} style={styles.blogpostpara}>
-              Churchgoers Proud of Church’s COVID-19 kfdsakkf fdskfds kfka
-            </Text>
-            <Text style={styles.blogposthour}>11h ago</Text>
-          </View>
+        renderItem={({ item }) => (
+          // <TouchableOpacity
+          //   onPress={() => {
+          //     OpenURLButton(item?.link);
+          //   }}
+          // >
+          //   <View style={styles.blogpostview}>
+          //     <Image
+          //       style={styles.blogpostimage}
+          //       resizeMode="cover"
+          //       source={{ uri: item?.image?.url }}
+          //     />
+          //     <Text numberOfLines={2} style={styles.blogpostpara}>
+          //       {isObject(item?.title) ? item?.title?.a.$text : item?.title}
+          //     </Text>
+
+          //     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+          //   </View>
+          // </TouchableOpacity>
+          <ArticleItem
+            item={item}
+            imageSizeType="cover"
+            blogPostStyle={{ ...styles.blogpostview, backgroundColor: colors.card }}
+            blogPostImageStyle={styles.blogpostimage}
+          />
         )}
+        onEndReachedThreshold={0.5}
+        onEndReached={() => {
+          if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+        }}
       />
       {/* <Animated.View
         style={{
@@ -66,7 +143,8 @@ const BlogFlatlist = () => {
           {user?.name}
         </Animated.Text>
       </Animated.View> */}
-    </View>
+    </SafeAreaView>
   );
 };
+
 export default BlogFlatlist;

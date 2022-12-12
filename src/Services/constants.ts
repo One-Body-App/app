@@ -1,4 +1,5 @@
 // export const BASE_URL = 'https://api.onebodyapp.com/api';
+import { unescape } from 'lodash';
 import { Linking } from 'react-native';
 import {
   PROD_BASE_URL,
@@ -23,27 +24,43 @@ export const GOOGLE_LOGIN_CLIENT_ID = _GOOGLE_LOGIN_CLIENT_ID;
 export const OpenURLButton = async (url: string) => {
   try {
     if (await InAppBrowser.isAvailable()) {
-      const result = await InAppBrowser.open(url, {
-        readerMode: false,
-        animated: true,
-        modalPresentationStyle: 'fullScreen',
-        modalTransitionStyle: 'coverVertical',
-        modalEnabled: true,
-        enableBarCollapsing: false,
+      const canOpen = await Linking.canOpenURL(url);
+      const urlToUse = unescape(decodeURI(decodeHTMLEntities(url)));
 
-        showTitle: true,
-        enableUrlBarHiding: true,
-        enableDefaultShare: true,
-        forceCloseOnRedirection: false,
-        animations: {
-          startEnter: 'slide_in_right',
-          startExit: 'slide_out_left',
-          endEnter: 'slide_in_left',
-          endExit: 'slide_out_right',
-        },
-      });
-    } else Linking.openURL(url);
+      if (canOpen) {
+        await InAppBrowser.open(urlToUse, {
+          readerMode: false,
+          animated: true,
+          modalPresentationStyle: 'fullScreen',
+          modalTransitionStyle: 'coverVertical',
+          modalEnabled: true,
+          enableBarCollapsing: false,
+
+          showTitle: true,
+          enableUrlBarHiding: true,
+          enableDefaultShare: true,
+          forceCloseOnRedirection: false,
+          animations: {
+            startEnter: 'slide_in_right',
+            startExit: 'slide_out_left',
+            endEnter: 'slide_in_left',
+            endExit: 'slide_out_right',
+          },
+        });
+      }
+    }
   } catch (error: any) {
     console.log(error.message);
   }
+};
+
+export const getCloser = (value: number, checkOne: number, checkTwo: number) =>
+  Math.abs(value - checkOne) < Math.abs(value - checkTwo) ? checkOne : checkTwo;
+
+export const decodeHTMLEntities = (str: string) => {
+  if (str) {
+    str = str.replace(/&#038/gim, '&');
+  }
+
+  return str;
 };

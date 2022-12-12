@@ -15,10 +15,11 @@ import { OpenURLButton } from '@/src/Services/constants';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { isArray, isObject } from 'lodash';
+import ArticleItem from '../ListItems/ArticleItem';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
-const HomeNewsComponent = ({ navigation }: Props) => {
+const HomeNewsComponent = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const allNews = useSelector((state: RootState) => {
     return isArray(state.social.AllNews) ? state.social.AllNews : [];
@@ -107,67 +108,80 @@ const HomeNewsComponent = ({ navigation }: Props) => {
             title = '';
           }
           return (
-            <TouchableOpacity
-              onPress={() => {
-                // navigation.navigate('BlogView', { url: item?.item?.id });
-                OpenURLButton(item?.link);
-              }}
-              style={{
+            <ArticleItem
+              item={item}
+              imageSizeType="stretch"
+              blogPostStyle={{
                 ...styles.socialpostview,
                 backgroundColor: colors.card,
-
+                padding: 0,
                 margin: 7,
               }}
-            >
-              {item?.image ? (
-                <FastImage
-                  style={styles.socialpostimage}
-                  resizeMode={'stretch'}
-                  source={{ uri: item?.image?.url }}
-                />
-              ) : null}
-              <View style={{ flex: 1, width: '100%', padding: 15 }}>
-                {title ? (
-                  <View style={styles.afsd}>
-                    <Text
-                      numberOfLines={2}
-                      style={{
-                        color: colors.text,
-                        fontSize: 14,
-                        lineHeight: 17,
-                        letterSpacing: 0.1,
-                        width: '90%',
-                        fontWeight: '500',
-                      }}
-                    >
-                      {title}
-                    </Text>
-                    <Entypo name="dots-three-horizontal" color={'#70747d'} size={20} />
-                  </View>
-                ) : null}
+              blogPostImageStyle={styles.socialpostimage}
+              blogPostTitleStyle={styles.sourcename}
+            />
 
-                <View style={styles.sourcename}>
-                  <Text
-                    style={{
-                      color: '#70747D',
-                      fontSize: 12,
-                      fontWeight: '400',
-                    }}
-                  >
-                    {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
-                  </Text>
-                  <Text
-                    style={{
-                      color: '#70747D',
-                      fontSize: 12,
-                      fontWeight: '400',
-                    }}
-                  >
-                    {timeSince(item?.created)} ago
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+            // <TouchableOpacity
+            //   onPress={() => {
+            //     // navigation.navigate('BlogView', { url: item?.item?.id });
+            //     OpenURLButton(item?.link);
+            //   }}
+            //   style={{
+            //     ...styles.socialpostview,
+            //     backgroundColor: colors.card,
+
+            //     margin: 7,
+            //   }}
+            // >
+            //   {item?.image ? (
+            //     <FastImage
+            //       style={styles.socialpostimage}
+            //       resizeMode={'stretch'}
+            //       source={{ uri: item?.image?.url }}
+            //     />
+            //   ) : null}
+            //   <View style={{ flex: 1, width: '100%', padding: 15 }}>
+            //     {title ? (
+            //       <View style={styles.afsd}>
+            //         <Text
+            //           numberOfLines={2}
+            //           style={{
+            //             color: colors.text,
+            //             fontSize: 14,
+            //             lineHeight: 17,
+            //             letterSpacing: 0.1,
+            //             width: '90%',
+            //             fontWeight: '500',
+            //           }}
+            //         >
+            //           {title}
+            //         </Text>
+            //         <Entypo name="dots-three-horizontal" color={'#70747d'} size={20} />
+            //       </View>
+            //     ) : null}
+
+            //     <View style={styles.sourcename}>
+            //       <Text
+            //         style={{
+            //           color: '#70747D',
+            //           fontSize: 12,
+            //           fontWeight: '400',
+            //         }}
+            //       >
+            //         {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
+            //       </Text>
+            //       <Text
+            //         style={{
+            //           color: '#70747D',
+            //           fontSize: 12,
+            //           fontWeight: '400',
+            //         }}
+            //       >
+            //         {timeSince(item?.created)} ago
+            //       </Text>
+            //     </View>
+            //   </View>
+            // </TouchableOpacity>
           );
         }}
         onEndReachedThreshold={0.5}

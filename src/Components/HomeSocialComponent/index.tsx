@@ -3,7 +3,7 @@ import { FlatList, ScrollView, Text, View, RefreshControl } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { styles } from './styles';
 import Fontisto from 'react-native-vector-icons/Fontisto';
-import { timeSince } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth, timeSince } from '@/utils/ResponsiveFun';
 import SubscribeFlatlist from '../SubscribeFlatlist';
 import SocialFlatlist from '../SocialFlatlist';
 import { ApiCall } from '@/services/api';
@@ -13,6 +13,7 @@ import FastImage from 'react-native-fast-image';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { OpenURLButton } from '@/src/Services/constants';
+import ArticleItem from '../ListItems/ArticleItem';
 
 const HomeSocialComponent = () => {
   const dispatch = useDispatch();
@@ -47,7 +48,7 @@ const HomeSocialComponent = () => {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 6 }}>
-        <SocialFlatlist startingPage={2} />
+        <SocialFlatlist />
       </View>
 
       {/* <FlatList
@@ -67,23 +68,16 @@ const HomeSocialComponent = () => {
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item, index) => `${item.created}_${index}`}
             renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  // navigation.navigate('BlogView', { url: item?.link });
-                  OpenURLButton(item?.link);
+              <ArticleItem
+                imageSizeType="cover"
+                item={item}
+                blogPostStyle={{ height: '100%', width: getWidth(42), borderRadius: 16 }}
+                blogPostImageStyle={{
+                  borderTopLeftRadius: 16,
+                  borderTopRightRadius: 16,
+                  height: getHeight(12),
                 }}
-                style={styles.blogpostview}
-              >
-                <FastImage
-                  style={styles.blogpostimage}
-                  resizeMode="cover"
-                  source={{ uri: item?.image?.url }}
-                />
-                <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
-                  {item?.title}
-                </Text>
-                <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
-              </TouchableOpacity>
+              />
             )}
           />
         </View>

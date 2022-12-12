@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -8,15 +8,15 @@ import Home from '../screens/Main/Home';
 import Explore from '../screens/Main/Explore';
 import Message from '../screens/Main/Message';
 
-import {Text, View, TouchableOpacity, StyleSheet} from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MessageScreens from './messageStack';
 
 import MyProfile from '../screens/Main/MyProfile';
 
 const Tab = createBottomTabNavigator();
-function Bottom({navigation}) {
-  const CustomTabBar = props => {
+function Bottom({ navigation }) {
+  const CustomTabBar = (props) => {
     const navigateToHomeScreen = () => {
       props.navigation.navigate('Home');
     };
@@ -35,20 +35,14 @@ function Bottom({navigation}) {
       <LinearGradient colors={['#032F3C', '#094558', '#126B87']}>
         <View style={styles.tabBar}>
           <TouchableOpacity style={styles.tab} onPress={navigateToHomeScreen}>
-            <Icon
-              name="home"
-              color={props.focused ? 'red' : 'white'}
-              size={30}
-            />
+            <Icon name="home" color={props.focused ? 'red' : 'white'} size={30} />
             <Text style={styles.tabText}>Home</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.tab}
-            onPress={navigateToExploreScreen}>
+          <TouchableOpacity style={styles.tab} onPress={navigateToExploreScreen}>
             <MaterialIcons name="explore" color={'#F6F6F6'} size={30} />
             <Text style={styles.tabText}>Explore</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.tab}
             onPress={navigateToMessageScreen}>
             <Ionicons
@@ -57,10 +51,8 @@ function Bottom({navigation}) {
               size={30}
             />
             <Text style={styles.tabText}>Messages</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.tab}
-            onPress={navigateToProfileScreen}>
+          </TouchableOpacity> */}
+          <TouchableOpacity style={styles.tab} onPress={navigateToProfileScreen}>
             <FontAwesome5 name="user-circle" color={'#F6F6F6'} size={30} />
             <Text style={styles.tabText}>Profile</Text>
           </TouchableOpacity>
@@ -74,19 +66,16 @@ function Bottom({navigation}) {
       screenOptions={{
         headerShown: false,
       }}
-      tabBar={props => <CustomTabBar {...props} />}>
+      tabBar={(props) => <CustomTabBar {...props} />}
+    >
       <Tab.Screen
         name="Home"
         component={Home}
         options={{
-          tabBarIcon: ({focused}) => {
+          tabBarIcon: ({ focused }) => {
             return (
-              <View style={{alignItems: 'center', justifyContent: 'center'}}>
-                <Icon
-                  name="home-outline"
-                  color={focused ? 'red' : 'white'}
-                  size={27}
-                />
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="home-outline" color={focused ? 'red' : 'white'} size={27} />
                 <Text>Home</Text>
               </View>
             );
@@ -98,14 +87,10 @@ function Bottom({navigation}) {
         // component={Message}
         component={MessageScreens}
         options={{
-          tabBarIcon: ({focused}) => {
+          tabBarIcon: ({ focused }) => {
             return (
-              <View style={{alignItems: 'center', justifyContent: 'center'}}>
-                <Icon
-                  name="view-grid-outline"
-                  color={focused ? 'red' : 'white'}
-                  size={27}
-                />
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="view-grid-outline" color={focused ? 'red' : 'white'} size={27} />
                 <Text>Message</Text>
               </View>
             );
@@ -116,14 +101,10 @@ function Bottom({navigation}) {
         name="Explore"
         component={Explore}
         options={{
-          tabBarIcon: ({focused}) => {
+          tabBarIcon: ({ focused }) => {
             return (
-              <View style={{alignItems: 'center', justifyContent: 'center'}}>
-                <Icon
-                  name="bell-outline"
-                  color={focused ? 'red' : 'white'}
-                  size={27}
-                />
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="bell-outline" color={focused ? 'red' : 'white'} size={27} />
                 <Text>Notification</Text>
               </View>
             );
@@ -134,14 +115,10 @@ function Bottom({navigation}) {
         name="Profile"
         component={MyProfile}
         options={{
-          tabBarIcon: ({focused}) => {
+          tabBarIcon: ({ focused }) => {
             return (
-              <View style={{alignItems: 'center', justifyContent: 'center'}}>
-                <MaterialIcons
-                  name="person-outline"
-                  color={focused ? 'red' : 'white'}
-                  size={27}
-                />
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialIcons name="person-outline" color={focused ? 'red' : 'white'} size={27} />
                 <Text>Profile</Text>
               </View>
             );

@@ -79,7 +79,7 @@ function NavHeader(props: DrawerContentComponentProps) {
           <Text
             numberOfLines={2}
             style={{
-              fontSize: getFontSize(2.4),
+              fontSize: getFontSize(1.8),
               fontFamily: 'Rubik-Medium',
               marginTop: getHeight(1),
               textAlign: 'center',

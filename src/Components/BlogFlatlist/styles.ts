@@ -21,19 +21,23 @@ export const styles = StyleSheet.create({
     color: '#032F3C',
   },
   blogpostview: {
-    backgroundColor: '#FAFAFA',
     alignSelf: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    width: getWidth(50),
+    height: getHeight(22),
     borderRadius: 16,
-    padding: 8,
+    // width: '50%',
+    flex: 1,
+
+    margin: 8,
   },
   blogpostimage: {
-    height: getHeight(15),
-    width: getWidth(42),
-    borderRadius: 16,
+    height: getHeight(10),
+
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     marginBottom: 5,
+
     shadowColor: '#0e5469',
     shadowOffset: {
       width: 0,

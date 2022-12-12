@@ -101,7 +101,7 @@ const AnimatedHeader = ({
     // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
   }, []);
   return (
-    <View style={{ backgroundColor: 'white' }}>
+    <View>
       <Animated.View style={{ ...styles.animview, height: headerHeight }}>
         <Animated.View style={{ ...styles.secview, opacity: opacity3 }}>
           <View style={styles.inputview}>
@@ -171,7 +171,7 @@ const AnimatedHeader = ({
                         width: '70%',
                       }}
                     >
-                      You have not any Intrest click on above link for add intrest.
+                      You have not any Interest click on link above to add interest.
                     </Text>
                   </View>
                 )}

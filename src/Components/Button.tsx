@@ -19,6 +19,7 @@ const Button = ({
   disabled,
   disabledBtnStyle,
   disabledBtnTextStyle,
+  wrapperViewBtnStyle,
   wrapperBtnStyle,
 }: {
   text: string;
@@ -28,12 +29,13 @@ const Button = ({
   btnStyle?: StyleProp<ViewStyle>;
   disabledBtnStyle?: StyleProp<ViewStyle>;
   wrapperBtnStyle?: StyleProp<ViewStyle>;
+  wrapperViewBtnStyle?: StyleProp<ViewStyle>;
   disabledBtnTextStyle?: StyleProp<TextStyle>;
   onPress: (event: GestureResponderEvent) => void;
   disabled?: boolean;
 }) => {
   return (
-    <View style={{ flexDirection: 'row' }}>
+    <View style={[{ flexDirection: 'row' }, wrapperViewBtnStyle]}>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={(event) => (onPress ? onPress(event) : null)}
@@ -43,6 +45,7 @@ const Button = ({
         <View
           style={[
             { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+
             wrapperBtnStyle,
           ]}
         >

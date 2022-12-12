@@ -59,7 +59,7 @@ export type RootStackParamList = {
   MyProfile: undefined;
   EditProfile: undefined;
   UserProfile: {
-    role: string;
     id: string;
   };
+  Social: undefined;
 };

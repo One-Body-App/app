@@ -1,3 +1,5 @@
+import { Interest } from '@/utils/types';
+
 export type Badge = {
   _id: string;
   deleteFlag: boolean;
@@ -10,29 +12,30 @@ export type WhatIDo = {
   whatIDo: string;
   deletedFlag: boolean;
 };
-export type UserProfile = {
-  _id: string;
-  gender: string;
-  name: string;
-  website: string;
-  whatIDo: WhatIDo;
-  isProfileCompleted: boolean;
-  role: string;
+// export type UserProfile = {
+//   _id: string;
+//   gender: string;
+//   name: string;
+//   website: string;
+//   whatIDo: WhatIDo;
+//   isProfileCompleted: boolean;
+//   role: string;
+//   username: string;
+//   badges: string[];
+//   badgesData: Badge[];
+//   createdAt: string;
+//   email: string;
+//   interests: Interest[];
+//   token: string;
+//   updatedAt: string;
+//   userId: string;
+//   isInfluencer: boolean;
+//   followers: number;
+//   following: string[];
 
-  badges: string[];
-  badgesData: Badge[];
-  createdAt: string;
-  email: string;
-  interests: string[];
-  token: string;
-  updatedAt: string;
-  userId: string;
-  isInfluencer: boolean;
-  followers: number;
+//   pushNotificationsEnabled: boolean;
+//   emailNotificationsEnabled: boolean;
+//   subscribedToNewsletter: boolean;
 
-  pushNotificationsEnabled: boolean;
-  emailNotificationsEnabled: boolean;
-  subscribeToNewsletter: boolean;
-
-  profileImage?: string;
-};
+//   profileImage?: string;
+// };

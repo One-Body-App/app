@@ -35,12 +35,12 @@ const SubscribeFlatlist = () => {
     setSubscibe([...subscribe, id]);
     try {
       const res = await ApiCall({
-        route: `${user?.role}/subscribe/${id}`,
+        route: `user/subscribe/${id}`,
         token: token,
         verb: 'patch',
       });
       if (res?.status == 200) {
-        dispatch(getuserAll({ token: token }));
+        dispatch(getuserAll({ token: token, limit: 10 }));
       } else {
         const result = subscribe.filter((item) => item != id);
         setSubscibe(result);
@@ -51,7 +51,7 @@ const SubscribeFlatlist = () => {
     }
   };
   useEffect(() => {
-    dispatch(getuserAll({ token: token }));
+    dispatch(getuserAll({ token: token, limit: 10 }));
   }, []);
   return (
     <FlatList
@@ -66,7 +66,6 @@ const SubscribeFlatlist = () => {
         <TouchableOpacity
           onPress={() =>
             navigation.navigate('UserProfile', {
-              role: item?.role,
               id: item?._id,
             })
           }
@@ -89,7 +88,7 @@ const SubscribeFlatlist = () => {
             ) : (
               <FontAwesomeIcon
                 icon={faUser}
-                size={90}
+                size={100}
                 mask={faCircle}
                 style={{ color: '#000', marginBottom: 5 }}
                 transform="shrink-6"

@@ -1,3 +1,5 @@
+import { Badge } from '@/src/Redux/types';
+
 export type ChurchType = {
   churchType: string;
   children: ChurchType[];
@@ -18,22 +20,46 @@ export type whatIDo = {
 };
 
 export type User = {
-  OTP: { status: boolean };
   badges: string[];
   createdAt: string;
   deactivated: { isDeactivated: boolean };
   email: string;
-  interests: string[];
+  interests: Interest[];
   isInfluencer: boolean;
   isProfileCompleted: boolean;
   name: string;
   profileImage: string;
   role: string;
   updatedAt: string;
-  userName: string;
+  username: string;
   website: string;
   whatIDo: whatIDo;
   _id: string;
+  badgesData: Badge[];
+  gender: string;
+  token: string;
+  userId: string;
+  followers: number;
+  following: string[];
+  pushNotificationsEnabled: boolean;
+  emailNotificationsEnabled: boolean;
+  subscribedToNewsletter: boolean;
+  influencerProfile?: InfluencerProfile;
+};
+
+type InfluencerProfile = {
+  _id: string;
+  userID?: string;
+  twitterId?: string;
+  twitterHandler?: string;
+  instagramId?: string;
+  instagramHandler?: string;
+  rssUrl: string;
+  category: string[];
+  comments: string;
+  influencerStatus: 'approved' | 'pending';
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type OrganizationType = {

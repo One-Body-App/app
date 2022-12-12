@@ -92,7 +92,6 @@ const Chanel = ({ navigation }) => {
           <TouchableOpacity
             onPress={() =>
               navigation.navigate('UserProfile', {
-                role: item?.role,
                 id: item?._id,
               })
             }

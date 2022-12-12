@@ -159,8 +159,9 @@ export const styles = StyleSheet.create({
   },
   socialpostimage: {
     height: getHeight(22),
-    width: getWidth(85),
-    borderRadius: 10,
+    // width: getWidth(85),
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     marginBottom: 5,
   },
   newspostimage: {
