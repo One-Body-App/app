@@ -38,7 +38,6 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import Modal from 'react-native-modal';
 import { Interest, User } from '@/utils/types';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';
-import { UserProfile } from '@/src/Redux/types';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
@@ -50,7 +49,6 @@ const Explore = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.userProfile);
   const allusers = useSelector((state: RootState) => state.user.allUser);
-  console.log('all user', user);
 
   // const [subscribe, setSubscibe] = useState<string[]>(user?.following ?? []);
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
@@ -59,7 +57,7 @@ const Explore = () => {
   const [following, setFollowing] = useState<User[]>([]);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
   const [searchChannels, setSearchChannels] = useState<User[]>([]);
-  const [searchChannelsToFollow, setSearchChannelsToFollow] = useState<UserProfile[]>(allusers);
+  const [searchChannelsToFollow, setSearchChannelsToFollow] = useState<User[]>(allusers);
   const [searchChannelsToFollowText, setSearchChannelsToFollowText] = useState<string>('');
   const [selectedInterest, setSelectedInterest] = useState<Interest[]>(user?.interests ?? []);
 
@@ -244,13 +242,8 @@ const Explore = () => {
   }, [searchChannelsToFollowText]);
   const { colors } = useTheme();
   return (
-    <View style={{ backgroundColor: 'white' }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+    <View style={{ backgroundColor: colors.background, flex: 1 }}>
+      <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
 
       <Text style={{ ...styles.title, color: colors.text }}>
         Explore Influencers & Organizations
@@ -261,7 +254,7 @@ const Explore = () => {
         data={searchChannelsToFollow}
         numColumns={2}
         contentContainerStyle={{
-          marginBottom: getHeight(120),
+          paddingBottom: 120,
           marginHorizontal: getWidth(3),
         }}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: offset } } }], {
@@ -290,7 +283,6 @@ const Explore = () => {
                 alignContent: 'center',
                 justifyContent: 'center',
                 alignSelf: 'center',
-                backgroundColor: '#BBBBBB',
                 padding: 10,
 
                 borderRadius: 120,
@@ -302,6 +294,8 @@ const Explore = () => {
                   height: 100,
                   borderRadius: 100,
                   marginBottom: 5,
+                  borderColor: '#BBBBBB',
+                  borderWidth: 1,
                 }}
                 resizeMode="contain"
                 source={{
@@ -548,6 +542,3 @@ const Explore = () => {
   );
 };
 export default Explore;
-function showToast(arg0: string) {
-  throw new Error('Function not implemented.');
-}

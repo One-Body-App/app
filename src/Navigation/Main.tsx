@@ -251,9 +251,11 @@ const Main = () => {
                     name="RemoveAccountConfirmation"
                     component={RemoveAccountConfirmation}
                   />
-                  <Stack.Screen name="PhoneNumberUpdate" component={PhoneNumberUpdate} />
-                  <Stack.Screen name="AddPhoneNumber" component={AddPhoneNumber} />
-                  <Stack.Screen name="UserProfile" component={UserProfile} />
+                  {/* <Stack.Screen name="PhoneNumberUpdate" component={PhoneNumberUpdate} />
+                  <Stack.Screen name="AddPhoneNumber" component={AddPhoneNumber} /> */}
+
+                  {/* <Stack.Screen name="UserProfile" component={UserProfile} /> */}
+
                   <Stack.Screen
                     name="Search"
                     component={Search}

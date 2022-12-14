@@ -2,6 +2,7 @@ export type RootStackParamList = {
   Home: {
     tabs?: string;
   };
+  Explore: undefined;
 
   Login: {
     oauth_token?: string;

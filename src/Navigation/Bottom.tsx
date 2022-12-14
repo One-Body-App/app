@@ -26,6 +26,8 @@ import { BottomTabBar, createBottomTabNavigator } from '@react-navigation/bottom
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome5';
 import LogoHeader from '@/assets/svg/logo2.svg';
+import HomeStack from './HomeStack';
+import ExploreStack from './ExploreStack';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Bottom'>;
 const Tab = createBottomTabNavigator();
@@ -106,7 +108,7 @@ function Bottom({ navigation, route }: Props) {
     >
       <Tab.Screen
         name="HomeTab"
-        component={Home}
+        component={HomeStack}
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: (props) => <FontAwesome name="home" size={props.size} color={props.color} />,
@@ -114,7 +116,7 @@ function Bottom({ navigation, route }: Props) {
       />
       <Tab.Screen
         name="Explore"
-        component={Explore}
+        component={ExploreStack}
         options={{
           tabBarLabel: 'Explore',
           tabBarIcon: (props) => (
@@ -122,7 +124,7 @@ function Bottom({ navigation, route }: Props) {
           ),
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Message"
         component={Message}
         options={{
@@ -131,7 +133,7 @@ function Bottom({ navigation, route }: Props) {
             <FontAwesome name="comments" size={props.size} color={props.color} />
           ),
         }}
-      />
+      /> */}
       <Tab.Screen
         name="MyProfile"
         component={MyProfile}

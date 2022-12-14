@@ -202,4 +202,11 @@ export const styles = StyleSheet.create({
     backgroundColor: '#EAEAEA',
     marginBottom: 5,
   },
+  headerWrapper: {
+    position: 'absolute',
+    backgroundColor: 'red',
+    height: 200,
+    left: 0,
+    right: 0,
+  },
 });

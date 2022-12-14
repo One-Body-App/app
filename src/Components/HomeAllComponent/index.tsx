@@ -376,16 +376,13 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
           <Text style={{ ...styles.explortext, color: colors.text }}>
             Explore Influencers & Organizations
           </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Home', { tabs: 'Explore' })}
-            style={styles.viewtext}
-          >
+          <TouchableOpacity onPress={() => navigation.navigate('Explore')} style={styles.viewtext}>
             <Text style={{ color: '#126B87' }}>View more</Text>
             <Fontisto name="angle-right" size={12} color="#126B87" />
           </TouchableOpacity>
         </View>
         <View style={{ paddingLeft: 5 }}>
-          <SubscribeFlatlist />
+          <SubscribeFlatlist horizontal={true} />
         </View>
       </ScrollView>
     </View>

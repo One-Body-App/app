@@ -369,9 +369,6 @@ const MyProfile = ({ navigation }: Props) => {
           />
         ) : null}
       </ScrollView>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
-        <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={'#032f3c'} />
-      </TouchableOpacity>
     </View>
   );
 };

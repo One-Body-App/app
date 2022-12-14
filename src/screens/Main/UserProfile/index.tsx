@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Text, View, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import Modal from 'react-native-modal';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
@@ -23,6 +23,8 @@ import { User } from '@/utils/types';
 import { OpenURLButton } from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
+import Animated from 'react-native-reanimated';
+import SubscribeFlatlist from '@/src/Components/SubscribeFlatlist';
 
 type Props = StackScreenProps<RootStackParamList, 'UserProfile'>;
 
@@ -35,7 +37,28 @@ const UserProfile = ({ navigation, route }: Props) => {
 
   const [index, setIndex] = React.useState(0);
   const [routes, setRoutes] = React.useState<{ key: string; title: string }[]>([]);
+  const [scrollPosition, setScrollPosition] = React.useState(0);
+  const [direction, setDirection] = React.useState('');
+  const [relatedUsers, setRelatedUsers] = React.useState<User[] | undefined>();
 
+  const updateScrollPosition = (position: number) => {
+    // console.log(scrollPosition - position);
+    if (
+      (position > scrollPosition || position == scrollPosition) &&
+      scrollPosition - position < 0 &&
+      scrollPosition - position < -45
+    ) {
+      setDirection('down');
+    } else if (
+      position < scrollPosition &&
+      scrollPosition - position > 0 &&
+      scrollPosition - position > 55
+    ) {
+      setDirection('up');
+    }
+
+    setScrollPosition(position);
+  };
   useEffect(() => {
     if (user?.influencerProfile) {
       const routes = [];
@@ -62,11 +85,22 @@ const UserProfile = ({ navigation, route }: Props) => {
   }) => {
     switch (route.key) {
       case 'Instagram':
-        return <InstagramFlatlist jumpTo={jumpTo} {...route} />;
+        return (
+          <InstagramFlatlist setScrollPosition={updateScrollPosition} jumpTo={jumpTo} {...route} />
+        );
       case 'Blog':
-        return <BlogFlatlist {...route} jumpTo={jumpTo} currentUser={user} />;
+        return (
+          <BlogFlatlist
+            setScrollPosition={updateScrollPosition}
+            {...route}
+            jumpTo={jumpTo}
+            currentUser={user}
+          />
+        );
       case 'Twitter':
-        return <TwitterFlatlist jumpTo={jumpTo} {...route} />;
+        return (
+          <TwitterFlatlist setScrollPosition={updateScrollPosition} jumpTo={jumpTo} {...route} />
+        );
     }
   };
 
@@ -122,7 +156,8 @@ const UserProfile = ({ navigation, route }: Props) => {
   useEffect(() => {
     dispatch(setLoader(true));
     getUser();
-  }, []);
+    getRelatedUser();
+  }, [id]);
 
   const getUser = async () => {
     try {
@@ -135,6 +170,26 @@ const UserProfile = ({ navigation, route }: Props) => {
       if (res?.status == 200) {
         dispatch(setLoader(false));
         setUser(res?.response);
+      } else {
+        console.log('error', res?.response);
+        dispatch(setLoader(false));
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const getRelatedUser = async () => {
+    try {
+      const res = await ApiCall({
+        route: `user/get-related-users/${id}/1?itemsPerPage=12`,
+        verb: 'get',
+        token: token,
+      });
+      console.log(res?.response, 'res?.responseres?.responseres?.response1231242343');
+      if (res?.status == 200) {
+        dispatch(setLoader(false));
+        setRelatedUsers(res?.response);
       } else {
         console.log('error', res?.response);
         dispatch(setLoader(false));
@@ -176,26 +231,29 @@ const UserProfile = ({ navigation, route }: Props) => {
   // };
 
   return (
-    <View style={{ backgroundColor: 'white', flex: 1 }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
+    <View style={{ flex: 1 }}>
+      <Button
+        onPress={() => navigation.goBack()}
+        text=""
+        leftIcon={<Icon name="chevron-back" size={20} color={'#032f3c'} />}
+        btnStyle={{ padding: 20 }}
       />
 
-      {/* <ScrollView
-        contentContainerStyle={{ height: getHeight(125) }}
-        showsVerticalScrollIndicator={false}
-        style={{ marginTop: getHeight(2) }}
-      > */}
-      <View style={{ alignSelf: 'center', paddingTop: 30 }}>
+      {/* <ScrollView style={{ marginTop: getHeight(2) }} nestedScrollEnabled={true}> */}
+      <View
+        style={{
+          alignSelf: 'center',
+          width: direction == 'down' ? 75 : 150,
+          height: direction == 'down' ? 75 : 150,
+          marginBottom: 10,
+        }}
+      >
         <ImageModal
           style={{
-            width: 150,
-            height: 150,
+            width: direction == 'down' ? 75 : 150,
+            height: direction == 'down' ? 75 : 150,
             alignSelf: 'center',
-            marginVertical: 10,
+
             borderRadius: 75,
             borderColor: '#BBBBBB',
             borderWidth: 1,
@@ -211,100 +269,117 @@ const UserProfile = ({ navigation, route }: Props) => {
           fontWeight: '500',
           color: '#032f3c',
           textAlign: 'center',
-          fontSize: 20,
+          fontSize: direction == 'down' ? 15 : 20,
         }}
       >
         {user?.name}
       </Text>
-      <Text
-        style={{
-          textAlign: 'center',
-          marginBottom: 10,
-          color: '#5b7279',
-          marginTop: 5,
-        }}
-      >
-        {user?.username ? `@${user?.username}` : ''}
-      </Text>
+
+      {direction == 'down' ? null : (
+        <Animated.Text
+          style={[
+            {
+              textAlign: 'center',
+              marginBottom: 10,
+              color: '#5b7279',
+              marginTop: 5,
+            },
+          ]}
+        >
+          {user?.username ? `@${user?.username}` : ''}
+        </Animated.Text>
+      )}
+
       {/* {user.role != 'individual' ? (
           <Text style={{textAlign: 'center', color: '#5B7279'}}>
             @nickdreamsalot . Minister and Ideator
           </Text>
         ) : null} */}
-      <View style={styles.manyimageview}>
-        <View>
-          <FlatList
-            data={user?.badgesData}
-            numColumns={3}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <FastImage
-                style={styles.firstimage}
-                source={{
-                  uri: item.badge,
-                }}
-                resizeMode={FastImage.resizeMode.stretch}
-              />
-            )}
-          />
-        </View>
-      </View>
-      {user?.isInfluencer == true ? (
-        <>
-          {user?.website ? (
-            <TouchableOpacity onPress={() => OpenURLButton(user?.website)}>
-              <Text style={styles.onebodytext}>{user?.website}</Text>
-            </TouchableOpacity>
-          ) : null}
-          <View style={{ alignItems: 'center' }}>
-            <Text
-              style={{
-                color: '#032f3c',
-                fontFamily: 'Rubik-Regular',
-                marginVertical: getHeight(1),
-              }}
-            >
-              Reaching:{' '}
-              {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
-            </Text>
+      {direction == 'down' ? null : (
+        <Animated.View style={styles.manyimageview}>
+          <View
+            style={{
+              flex: 0,
+              padding: 5,
+            }}
+          >
+            <FlatList
+              data={user?.badgesData}
+              numColumns={3}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <FastImage
+                  style={styles.firstimage}
+                  source={{
+                    uri: item.badge,
+                  }}
+                  resizeMode={FastImage.resizeMode.stretch}
+                />
+              )}
+            />
           </View>
-        </>
-      ) : null}
+        </Animated.View>
+      )}
+      {direction == 'down' ? null : (
+        <Animated.View>
+          {user?.isInfluencer == true ? (
+            <>
+              {user?.website ? (
+                <TouchableOpacity onPress={() => OpenURLButton(user?.website)}>
+                  <Text style={styles.onebodytext}>{user?.website}</Text>
+                </TouchableOpacity>
+              ) : null}
+              <View style={{ alignItems: 'center' }}>
+                <Text
+                  style={{
+                    color: '#032f3c',
+                    fontFamily: 'Rubik-Regular',
+                    marginVertical: getHeight(1),
+                  }}
+                >
+                  Reaching:{' '}
+                  {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
+                </Text>
+              </View>
+            </>
+          ) : null}
+        </Animated.View>
+      )}
+      {direction == 'down' ? null : (
+        <View style={styles.bottomView}>
+          {currentUser?.following.some((following) => following == currentUser._id) ? (
+            <Button
+              text={'Unfollow'}
+              btnStyle={{
+                ...styles.btn,
+                backgroundColor: '#F6F6F6',
+                borderWidth: 0,
+              }}
+              btnTextStyle={{
+                ...GeneralStyle.btnText,
+                color: '#595959',
+                letterSpacing: 0,
+              }}
+              onPress={() => {}}
+            />
+          ) : (
+            <Button
+              text={'Follow'}
+              btnStyle={{
+                ...styles.btn,
+                backgroundColor: '#F6F6F6',
+                borderWidth: 0,
+              }}
+              btnTextStyle={{
+                ...GeneralStyle.btnText,
+                color: '#595959',
+                letterSpacing: 0,
+              }}
+              onPress={() => {}}
+            />
+          )}
 
-      <View style={styles.bottomView}>
-        {currentUser?.following.some((following) => following == currentUser._id) ? (
-          <Button
-            text={'Unfollow'}
-            btnStyle={{
-              ...styles.btn,
-              backgroundColor: '#F6F6F6',
-              borderWidth: 0,
-            }}
-            btnTextStyle={{
-              ...GeneralStyle.btnText,
-              color: '#595959',
-              letterSpacing: 0,
-            }}
-            onPress={() => {}}
-          />
-        ) : (
-          <Button
-            text={'Follow'}
-            btnStyle={{
-              ...styles.btn,
-              backgroundColor: '#F6F6F6',
-              borderWidth: 0,
-            }}
-            btnTextStyle={{
-              ...GeneralStyle.btnText,
-              color: '#595959',
-              letterSpacing: 0,
-            }}
-            onPress={() => {}}
-          />
-        )}
-
-        {/* <Button
+          {/* <Button
             text={'Message'}
             onPress={() => OpenConversation(user?._id)}
             btnStyle={styles.btn}
@@ -314,7 +389,8 @@ const UserProfile = ({ navigation, route }: Props) => {
               letterSpacing: 0,
             }}
           /> */}
-      </View>
+        </View>
+      )}
 
       {user?.isInfluencer == true && routes.length > 0 ? (
         <TabView
@@ -324,11 +400,17 @@ const UserProfile = ({ navigation, route }: Props) => {
           onIndexChange={setIndex}
           // initialLayout={{ width: getWidth(100) }}
         />
-      ) : null}
+      ) : (
+        <SubscribeFlatlist
+          numColumns={3}
+          setScrollPosition={updateScrollPosition}
+          hideFollowButton={true}
+          itemStyle={{ width: '33%' }}
+          users={relatedUsers}
+        />
+      )}
+
       {/* </ScrollView> */}
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
-        <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={'#032f3c'} />
-      </TouchableOpacity>
     </View>
   );
 };

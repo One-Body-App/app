@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 import { Avatar, TextInput } from 'react-native-paper';
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,10 +25,25 @@ import { RootStackParamList } from '../Navigation/types';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
+import { User } from '@/utils/types';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
-const SubscribeFlatlist = () => {
+const SubscribeFlatlist = ({
+  horizontal,
+  numColumns,
+  hideFollowButton,
+  itemStyle,
+  setScrollPosition,
+  users,
+}: {
+  horizontal?: boolean;
+  numColumns?: number;
+  hideFollowButton?: boolean;
+  itemStyle?: StyleProp<ViewStyle>;
+  setScrollPosition?: (position: number) => void;
+  users?: User[];
+}) => {
   const dispatch = useDispatch();
   const navigation = useNavigation<ScreenNavigationProp>();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -56,12 +79,16 @@ const SubscribeFlatlist = () => {
   return (
     <FlatList
       nestedScrollEnabled
-      data={allusers}
-      horizontal={true}
+      data={users ? users : allusers}
+      numColumns={numColumns}
+      horizontal={horizontal}
       showsHorizontalScrollIndicator={false}
       ListFooterComponent={() => <View style={{ padding: 7 }} />}
       ListHeaderComponent={() => <View style={{ padding: 7 }} />}
       ItemSeparatorComponent={() => <View style={{ margin: 7 }} />}
+      onScroll={(e) => {
+        if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
+      }}
       renderItem={({ item, index }) => (
         <TouchableOpacity
           onPress={() =>
@@ -69,32 +96,33 @@ const SubscribeFlatlist = () => {
               id: item?._id,
             })
           }
-          style={styles.subscribeview}
+          style={[styles.subscribeview, itemStyle]}
         >
-          <TouchableOpacity>
-            {item?.profileImage ? (
-              <View>
-                <ImageModal
-                  style={{
-                    width: 100,
-                    height: 100,
-                    borderRadius: 50,
-                    marginBottom: 5,
-                  }}
-                  source={{ uri: item?.profileImage }}
-                  resizeMode={'contain'}
-                />
-              </View>
-            ) : (
-              <FontAwesomeIcon
-                icon={faUser}
-                size={100}
-                mask={faCircle}
-                style={{ color: '#000', marginBottom: 5 }}
-                transform="shrink-6"
+          {item?.profileImage ? (
+            <View>
+              <ImageModal
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 50,
+                  marginBottom: 5,
+                  borderColor: '#BBBBBB',
+                  borderWidth: 1,
+                }}
+                source={{ uri: item?.profileImage }}
+                resizeMode={'contain'}
               />
-            )}
-          </TouchableOpacity>
+            </View>
+          ) : (
+            <FontAwesomeIcon
+              icon={faUser}
+              size={100}
+              mask={faCircle}
+              style={{ color: '#000', marginBottom: 5 }}
+              transform="shrink-6"
+            />
+          )}
+
           <View
             style={{
               height: getHeight(6),
@@ -112,17 +140,19 @@ const SubscribeFlatlist = () => {
               {item?.whatIDo?.whatIDo}
             </Text>
           </View>
-          <Button
-            btnStyle={[
-              styles.subscribebutton,
-              subscribe.includes(item?._id) ? { backgroundColor: 'gray' } : null,
-            ]}
-            btnTextStyle={styles.subtex}
-            text={subscribe.includes(item?._id) ? 'Subscribed' : 'Subscribe'}
-            onPress={() => {
-              handleSubscribe(item?._id);
-            }}
-          />
+          {!hideFollowButton ? (
+            <Button
+              btnStyle={[
+                styles.subscribebutton,
+                subscribe.includes(item?._id) ? { backgroundColor: 'gray' } : null,
+              ]}
+              btnTextStyle={styles.subtex}
+              text={subscribe.includes(item?._id) ? 'Following' : 'Follow'}
+              onPress={() => {
+                handleSubscribe(item?._id);
+              }}
+            />
+          ) : null}
         </TouchableOpacity>
       )}
     />
