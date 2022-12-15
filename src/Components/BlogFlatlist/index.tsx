@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   FlatList,
   Image,
@@ -21,6 +22,7 @@ import { isObject } from 'lodash';
 import { OpenURLButton } from '@/src/Services/constants';
 import ArticleItem from '../ListItems/ArticleItem';
 import { useTheme } from '@react-navigation/native';
+import { color } from 'react-native-reanimated';
 
 const BlogFlatlist = ({
   currentUser,
@@ -32,7 +34,7 @@ const BlogFlatlist = ({
   const [page, setPage] = useState<number>(1);
   const [blogs, setBlogs] = useState<any>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(true);
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
 
   const getBlog = async (pageNumber: number) => {
@@ -74,74 +76,97 @@ const BlogFlatlist = ({
     const getData = async () => {
       await getBlog(page);
     };
+    setLoadingMore(true);
     getData();
   }, [page, user]);
   const { colors } = useTheme();
 
   return (
-    <FlatList
-      nestedScrollEnabled={true}
-      data={blogs}
-      numColumns={2}
-      onScroll={(e) => {
-        setScrollPosition(e.nativeEvent.contentOffset.y);
-      }}
-      // contentContainerStyle={{
-      //   marginTop: getHeight(1),
-      //   marginBottom: getHeight(10),
-      // }}
-      contentContainerStyle={{
-        paddingBottom: 50,
-      }}
-      refreshControl={
-        <RefreshControl
-          enabled={true}
-          refreshing={refreshing}
-          onRefresh={async () => {
-            setIsEndOfList(false);
-            setRefreshing(true);
-            setPage(page + 1);
-          }}
+    <View>
+      {loadingMore ? (
+        <ActivityIndicator
+          animating={loadingMore}
+          size="large"
+          color={colors.text}
+          style={{ marginTop: 10 }}
         />
-      }
-      // onScroll={Animated.event(
-      //   [{nativeEvent: {contentOffset: {y: offset}}}],
-      //   {
-      //     useNativeDriver: false,
-      //   },
-      // )}
-      showsVerticalScrollIndicator={false}
-      renderItem={({ item }) => (
-        // <TouchableOpacity
-        //   onPress={() => {
-        //     OpenURLButton(item?.link);
-        //   }}
-        // >
-        //   <View style={styles.blogpostview}>
-        //     <Image
-        //       style={styles.blogpostimage}
-        //       resizeMode="cover"
-        //       source={{ uri: item?.image?.url }}
-        //     />
-        //     <Text numberOfLines={2} style={styles.blogpostpara}>
-        //       {isObject(item?.title) ? item?.title?.a.$text : item?.title}
-        //     </Text>
+      ) : null}
+      <FlatList
+        nestedScrollEnabled={true}
+        data={blogs}
+        numColumns={2}
+        onScroll={(e) => {
+          setScrollPosition(e.nativeEvent.contentOffset.y);
+        }}
+        // contentContainerStyle={{
+        //   marginTop: getHeight(1),
+        //   marginBottom: getHeight(10),
+        // }}
+        contentContainerStyle={{
+          paddingBottom: 50,
+        }}
+        refreshControl={
+          <RefreshControl
+            enabled={true}
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setIsEndOfList(false);
+              setRefreshing(true);
+              setPage(page + 1);
+            }}
+          />
+        }
+        ListEmptyComponent={() => {
+          if (loadingMore) {
+            return null;
+          }
+          return (
+            <View>
+              <Text style={{ color: colors.text, textAlign: 'center' }}>
+                No content at the moment
+              </Text>
+            </View>
+          );
+        }}
+        // onScroll={Animated.event(
+        //   [{nativeEvent: {contentOffset: {y: offset}}}],
+        //   {
+        //     useNativeDriver: false,
+        //   },
+        // )}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          // <TouchableOpacity
+          //   onPress={() => {
+          //     OpenURLButton(item?.link);
+          //   }}
+          // >
+          //   <View style={styles.blogpostview}>
+          //     <Image
+          //       style={styles.blogpostimage}
+          //       resizeMode="cover"
+          //       source={{ uri: item?.image?.url }}
+          //     />
+          //     <Text numberOfLines={2} style={styles.blogpostpara}>
+          //       {isObject(item?.title) ? item?.title?.a.$text : item?.title}
+          //     </Text>
 
-        //     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
-        //   </View>
-        // </TouchableOpacity>
-        <ArticleItem
-          item={item}
-          imageSizeType="cover"
-          blogPostStyle={{ ...styles.blogpostview, backgroundColor: colors.card }}
-          blogPostImageStyle={styles.blogpostimage}
-        />
-      )}
-      onEndReachedThreshold={0.5}
-      onEndReached={() => {
-        if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
-      }}
-    />
+          //     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+          //   </View>
+          // </TouchableOpacity>
+          <ArticleItem
+            item={item}
+            imageSizeType="cover"
+            blogPostStyle={{ ...styles.blogpostview, backgroundColor: colors.card }}
+            blogPostImageStyle={styles.blogpostimage}
+          />
+        )}
+        onEndReachedThreshold={0.5}
+        onEndReached={() => {
+          if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+        }}
+      />
+    </View>
   );
 };
 

@@ -46,7 +46,7 @@ import { LoginManager } from 'react-native-fbsdk-next';
 import messaging from '@react-native-firebase/messaging';
 import { useToast } from 'react-native-toast-notifications';
 import { RootStackParamList } from '@/src/Navigation/types';
-import { ChurchType, Interest, User, whatIDo } from '@/utils/types';
+import { ChurchType, Interest, User } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
@@ -719,7 +719,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                         ? {
                             ...styles.img,
                             borderWidth: 2.5,
-                            borderColor: '#032F3C',
+                            borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
                           }
                         : styles.img
                     }

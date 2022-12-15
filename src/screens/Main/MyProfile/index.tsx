@@ -28,8 +28,10 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
-import { Badge } from '@/src/Redux/types';
+
 import { StackScreenProps } from '@react-navigation/stack';
+import { Badge } from '@/utils/types';
+import { OpenURLButton } from '@/src/Services/constants';
 
 type Route = {
   key: string;
@@ -105,7 +107,7 @@ const MyProfile = ({ navigation }: Props) => {
   }, []);
 
   const { colors } = useTheme();
-
+  console.log(user);
   return (
     <View style={{ flex: 1 }}>
       <Modal
@@ -207,36 +209,18 @@ const MyProfile = ({ navigation }: Props) => {
         style={{ marginTop: getHeight(2) }}
       >
         <View style={{ alignSelf: 'center' }}>
-          {user?.profileImage ? (
-            <ImageModal
-              style={{
-                width: 90,
-                height: 90,
-                borderRadius: 45,
-                alignSelf: 'center',
-              }}
-              source={{ uri: user?.profileImage }}
-              resizeMode={'contain'}
-            />
-          ) : (
-            <View
-              style={{
-                width: 90,
-                height: 90,
-
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <FontAwesomeIcon
-                icon={faUser}
-                size={60}
-                mask={faCircle}
-                style={{ color: '#000' }}
-                transform="shrink-6"
-              />
-            </View>
-          )}
+          <ImageModal
+            style={{
+              width: 90,
+              height: 90,
+              borderRadius: 45,
+              alignSelf: 'center',
+              marginBottom: 10,
+              borderColor: user?.profileImage ? '#032F3C' : '#09aadb',
+            }}
+            source={{ uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png' }}
+            resizeMode={'contain'}
+          />
         </View>
         <Text
           style={{
@@ -244,26 +228,26 @@ const MyProfile = ({ navigation }: Props) => {
             color: '#032f3c',
             textAlign: 'center',
             fontSize: 20,
-            marginBottom: 20,
           }}
         >
-          {user?.name}
+          {user?.role == 'organization' && user?.profile?.companyName
+            ? user?.profile?.companyName
+            : user?.name}
         </Text>
-        {/* <Text
-          style={{
-            textAlign: 'center',
-            marginBottom: 10,
-            color: '#5b7279',
-            marginTop: 5,
-          }}
+        <Text
+          style={[
+            {
+              textAlign: 'center',
+              marginBottom: 20,
+              color: '#5b7279',
+              marginTop: 5,
+            },
+          ]}
         >
-          @{user?.userName}
-        </Text> */}
-        {/* {user.role != 'individual' ? (
-          <Text style={{textAlign: 'center', color: '#5B7279'}}>
-            @nickdreamsalot . Minister and Ideator
-          </Text>
-        ) : null} */}
+          {user?.username ? `@${user?.username}` : ''}
+          {`${user?.whatIDo ? `• ${user?.whatIDo.whatIDo}` : ''}`}
+        </Text>
+
         <View style={styles.manyimageview}>
           <View>
             <FlatList
@@ -281,7 +265,6 @@ const MyProfile = ({ navigation }: Props) => {
               )}
             />
           </View>
-
           <TouchableOpacity
             style={{ marginHorizontal: getWidth(1) }}
             onPress={() => {
@@ -292,23 +275,39 @@ const MyProfile = ({ navigation }: Props) => {
             <Add_badges />
           </TouchableOpacity>
         </View>
-        {user?.isInfluencer == true ? (
+        {user?.isInfluencer == true || user?.role == 'organization' ? (
           <>
-            <Text style={styles.onebodytext}>{user?.website}</Text>
-
-            <View style={{ alignItems: 'center' }}>
-              <Text
-                style={{
-                  color: '#032f3c',
-                  fontFamily: 'Rubik-Regular',
-                  marginVertical: getHeight(1),
-                }}
-              >
-                Reaching:{' '}
-                {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
-              </Text>
-            </View>
+            <Text numberOfLines={3} style={styles.bio}>
+              {user?.bio}
+            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                OpenURLButton(
+                  `${
+                    user?.website.indexOf('https://') == -1
+                      ? `https://${user?.website}`
+                      : user?.website
+                  }`
+                )
+              }
+            >
+              <Text style={styles.onebodytext}>{user?.website}</Text>
+            </TouchableOpacity>
           </>
+        ) : null}
+        {user?.isInfluencer == true ? (
+          <View style={{ alignItems: 'center' }}>
+            <Text
+              style={{
+                color: '#032f3c',
+                fontFamily: 'Rubik-Regular',
+                marginVertical: getHeight(1),
+              }}
+            >
+              Reaching:{' '}
+              {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
+            </Text>
+          </View>
         ) : null}
         <View
           style={{

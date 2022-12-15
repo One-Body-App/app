@@ -75,16 +75,16 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
   const [state, setState] = useState({
     companyName: '',
-    orgfullName: user?.name ?? '',
-    orgEmail: user?.email ?? '',
-    orgPhoneNo: '',
+    contactName: user?.name ?? '',
+    contactEmail: user?.email ?? '',
+    contactPhoneNumber: '',
   });
 
   const [stateError, setStateError] = useState({
     companyNameError: '',
-    orgfullNameError: '',
-    orgEmailError: '',
-    orgPhoneNoError: '',
+    contactNameError: '',
+    contactEmailError: '',
+    contactPhoneNumberError: '',
     location_labelError: '',
   });
 
@@ -101,16 +101,16 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   }, [organizationType]);
 
   useEffect(() => {
-    validateFields(state.orgfullName, 'orgfullName', (error) =>
-      setStateError({ ...stateError, orgfullNameError: error })
+    validateFields(state.contactName, 'contactName', (error) =>
+      setStateError({ ...stateError, contactNameError: error })
     );
 
-    validateFields(state.orgEmail, 'orgEmail', (error) =>
-      setStateError({ ...stateError, orgEmailError: error })
+    validateFields(state.contactEmail, 'contactEmail', (error) =>
+      setStateError({ ...stateError, contactEmailError: error })
     );
 
-    validateFields(state.orgPhoneNo, 'orgPhoneNo', (error) =>
-      setStateError({ ...stateError, orgPhoneNoError: error })
+    validateFields(state.contactPhoneNumber, 'contactPhoneNumber', (error) =>
+      setStateError({ ...stateError, contactPhoneNumberError: error })
     );
 
     validateFields(state.companyName, 'companyName', (error) => {
@@ -164,9 +164,9 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
   const inputRefs = {
     companyName: useRef<NativeTextInput>(null),
-    orgfullName: useRef<NativeTextInput>(null),
-    orgEmail: useRef<NativeTextInput>(null),
-    orgPhoneNo: useRef<NativeTextInput>(null),
+    contactName: useRef<NativeTextInput>(null),
+    contactEmail: useRef<NativeTextInput>(null),
+    contactPhoneNumber: useRef<NativeTextInput>(null),
     location_label: useRef<NativeTextInput>(null),
   };
 
@@ -187,7 +187,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   const getOrganizationTypes = async () => {
     try {
       const res = await ApiCall({
-        route: 'global/organization-type',
+        route: 'tags/organization-types',
         verb: 'get',
         token: token,
       });
@@ -388,7 +388,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               onSelect={type => setORGType(type)}
             /> */}
             <Button
-              text={organizationType == null ? 'Select One' : organizationType.organizationType}
+              text={organizationType == null ? 'Select One' : organizationType.name}
               btnStyle={styles.btn3}
               leftIcon={<View />}
               RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
@@ -510,71 +510,73 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               <TextInput
                 style={{ ...GeneralStyle.input, width: getWidth(80) }}
                 theme={{ roundness: 10 }}
-                ref={inputRefs.orgfullName}
-                value={state.orgfullName}
+                ref={inputRefs.contactName}
+                value={state.contactName}
                 returnKeyType={'next'}
                 mode="outlined"
                 activeOutlineColor={'#5B7279'}
                 label={'Full Name'}
-                onFocus={() => setStateError({ ...stateError, orgfullNameError: '' })}
+                onFocus={() => setStateError({ ...stateError, contactNameError: '' })}
                 // onBlur={() => {
-                //   validateFields(state.orgfullName, 'orgfullName', (error) =>
-                //     setState({ ...state, orgfullNameError: error })
+                //   validateFields(state.contactName, 'contactName', (error) =>
+                //     setState({ ...state, contactNameError: error })
                 //   );
                 // }}
-                onSubmitEditing={() => inputRefs.orgEmail.current?.focus()}
-                onChangeText={(orgfullName) => changeHandler('orgfullName', orgfullName)}
+                onSubmitEditing={() => inputRefs.contactEmail.current?.focus()}
+                onChangeText={(contactName) => changeHandler('contactName', contactName)}
                 blurOnSubmit={false}
               />
               <Text style={{ ...GeneralStyle.InputError }} numberOfLines={2}>
-                {showErrors ? stateError.orgfullNameError : null}
+                {showErrors ? stateError.contactNameError : null}
               </Text>
 
               <TextInput
                 style={{ ...GeneralStyle.input, width: getWidth(80) }}
                 theme={{ roundness: 10 }}
                 mode="outlined"
-                ref={inputRefs.orgEmail}
-                value={state.orgEmail}
+                ref={inputRefs.contactEmail}
+                value={state.contactEmail}
                 returnKeyType={'next'}
                 activeOutlineColor={'#5B7279'}
                 label={'Email'}
-                onFocus={() => setStateError({ ...stateError, orgEmailError: '' })}
+                onFocus={() => setStateError({ ...stateError, contactEmailError: '' })}
                 // onBlur={() =>
-                //   validateFields(state.orgEmail, 'orgEmail', (error) =>
-                //     setState({ ...state, orgEmailError: error })
+                //   validateFields(state.contactEmail, 'contactEmail', (error) =>
+                //     setState({ ...state, contactEmailError: error })
                 //   )
                 // }
-                onSubmitEditing={() => inputRefs.orgPhoneNo.current?.focus()}
-                onChangeText={(orgEmail) => changeHandler('orgEmail', orgEmail.trim())}
+                onSubmitEditing={() => inputRefs.contactPhoneNumber.current?.focus()}
+                onChangeText={(contactEmail) => changeHandler('contactEmail', contactEmail.trim())}
                 blurOnSubmit={false}
               />
               <Text style={{ ...GeneralStyle.InputError }} numberOfLines={2}>
-                {showErrors ? stateError.orgEmailError : null}
+                {showErrors ? stateError.contactEmailError : null}
               </Text>
 
               <TextInput
                 style={{ ...GeneralStyle.input, width: getWidth(80) }}
                 theme={{ roundness: 10 }}
-                ref={inputRefs.orgPhoneNo}
-                value={state.orgPhoneNo}
+                ref={inputRefs.contactPhoneNumber}
+                value={state.contactPhoneNumber}
                 returnKeyType={'done'}
                 mode="outlined"
                 keyboardType="number-pad"
                 activeOutlineColor={'#5B7279'}
                 label={'Phone number'}
-                onFocus={() => setStateError({ ...stateError, orgPhoneNoError: '' })}
+                onFocus={() => setStateError({ ...stateError, contactPhoneNumberError: '' })}
                 // onBlur={() =>
-                //   validateFields(state.orgPhoneNo, 'orgPhoneNo', (error) =>
-                //     setState({ ...state, orgPhoneNoError: error })
+                //   validateFields(state.contactPhoneNumber, 'contactPhoneNumber', (error) =>
+                //     setState({ ...state, contactPhoneNumberError: error })
                 //   )
                 // }
 
-                onChangeText={(orgPhoneNo) => changeHandler('orgPhoneNo', orgPhoneNo)}
+                onChangeText={(contactPhoneNumber) =>
+                  changeHandler('contactPhoneNumber', contactPhoneNumber)
+                }
                 blurOnSubmit={false}
               />
               <Text style={{ ...GeneralStyle.InputError }} numberOfLines={2}>
-                {showErrors ? stateError.orgPhoneNoError : null}
+                {showErrors ? stateError.contactPhoneNumberError : null}
               </Text>
             </View>
             <Text
@@ -765,7 +767,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                         ? {
                             ...styles.img,
                             borderWidth: 2.5,
-                            borderColor: '#032F3C',
+                            borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
                           }
                         : styles.img
                     }
@@ -803,8 +805,10 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   };
   const next = () => {
     setShowErrors(false);
-    if (curentIndex <= 5) flatListRef.current?.scrollToIndex({ index: curentIndex + 1 });
-    setCurrentIndex(curentIndex + 1);
+    if (curentIndex < 5) {
+      flatListRef.current?.scrollToIndex({ index: curentIndex + 1 });
+      setCurrentIndex(curentIndex + 1);
+    }
   };
 
   const gonext = async () => {
@@ -821,7 +825,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
         }
         break;
       case 2:
-        const companyNameError = await validator('companyName', state.orgfullName);
+        const companyNameError = await validator('companyName', state.companyName);
 
         if (
           !stateError.companyNameError &&
@@ -840,25 +844,25 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
         break;
       case 3:
-        const orgfullNameError = await validator('orgfullName', state.orgfullName);
-        const orgPhoneNoError = await validator('orgPhoneNo', state.orgfullName);
-        const orgEmailError = await validator('orgEmail', state.orgfullName);
+        const contactNameError = await validator('contactName', state.contactName);
+        const contactPhoneNumberError = await validator('contactPhoneNumber', state.contactName);
+        const contactEmailError = await validator('contactEmail', state.contactName);
 
         if (
-          !stateError.orgfullNameError &&
-          !stateError.orgEmailError &&
-          !stateError.orgPhoneNoError &&
-          state.orgfullName &&
-          state.orgEmail &&
-          state.orgPhoneNo
+          !stateError.contactNameError &&
+          !stateError.contactEmailError &&
+          !stateError.contactPhoneNumberError &&
+          state.contactName &&
+          state.contactEmail &&
+          state.contactPhoneNumber
         ) {
           next();
         } else {
           setStateError({
             ...stateError,
-            orgfullNameError,
-            orgPhoneNoError,
-            orgEmailError,
+            contactNameError,
+            contactPhoneNumberError,
+            contactEmailError,
           });
           setShowErrors(true);
         }
@@ -947,13 +951,14 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 onPress={async () => {
                   if (Organization.length > 0) {
                     await addFollowing();
-                    const { orgfullName, orgEmail, orgPhoneNo, companyName } = state;
+                    const { contactName, contactEmail, contactPhoneNumber, companyName } = state;
+                    console.log(state, 'statestate');
                     const data = {
                       typeOfOrganization: organizationType,
-                      companyEmail: orgEmail,
+                      contactEmail: contactEmail,
                       companyName: companyName,
-                      fullName: orgfullName,
-                      companyPhoneNumber: orgPhoneNo,
+                      contactName: contactName,
+                      contactPhoneNumber: contactPhoneNumber,
                       location: {
                         longitude: longitude,
                         latitude: latitude,
@@ -1018,7 +1023,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                     }}
                     numberOfLines={1}
                   >
-                    {item.organizationType}
+                    {item.name}
                   </Text>
                 </TouchableOpacity>
               );

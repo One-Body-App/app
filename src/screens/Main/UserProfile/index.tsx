@@ -33,6 +33,7 @@ const UserProfile = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
   const [user, setUser] = useState<User>();
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const isLoading = useSelector((state: RootState) => state.general.loader);
   const currentUser = useSelector((state: RootState) => state.auth.userProfile);
 
   const [index, setIndex] = React.useState(0);
@@ -67,7 +68,7 @@ const UserProfile = ({ navigation, route }: Props) => {
       }
 
       if (user?.influencerProfile?.rssUrl) {
-        routes.push({ key: 'Blog', title: 'Blog' });
+        routes.push({ key: 'Blog', title: 'Blog/News' });
       }
 
       if (user?.influencerProfile?.instagramHandler) {
@@ -166,7 +167,7 @@ const UserProfile = ({ navigation, route }: Props) => {
         verb: 'get',
         token: token,
       });
-
+      console.log(res, 'resresres');
       if (res?.status == 200) {
         dispatch(setLoader(false));
         setUser(res?.response);
@@ -186,7 +187,7 @@ const UserProfile = ({ navigation, route }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res?.response, 'res?.responseres?.responseres?.response1231242343');
+
       if (res?.status == 200) {
         dispatch(setLoader(false));
         setRelatedUsers(res?.response);
@@ -239,7 +240,6 @@ const UserProfile = ({ navigation, route }: Props) => {
         btnStyle={{ padding: 20 }}
       />
 
-      {/* <ScrollView style={{ marginTop: getHeight(2) }} nestedScrollEnabled={true}> */}
       <View
         style={{
           alignSelf: 'center',
@@ -255,11 +255,11 @@ const UserProfile = ({ navigation, route }: Props) => {
             alignSelf: 'center',
 
             borderRadius: 75,
-            borderColor: '#BBBBBB',
+            borderColor: user?.profileImage ? '#032F3C' : '#09aadb',
             borderWidth: 1,
           }}
           source={{
-            uri: user?.profileImage,
+            uri: user?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
           }}
           resizeMode={'contain'}
         />
@@ -272,7 +272,9 @@ const UserProfile = ({ navigation, route }: Props) => {
           fontSize: direction == 'down' ? 15 : 20,
         }}
       >
-        {user?.name}
+        {user?.role == 'organization' && user?.profile?.companyName
+          ? user?.profile?.companyName
+          : user?.name}
       </Text>
 
       {direction == 'down' ? null : (
@@ -287,6 +289,7 @@ const UserProfile = ({ navigation, route }: Props) => {
           ]}
         >
           {user?.username ? `@${user?.username}` : ''}
+          {`${user?.whatIDo ? `• ${user?.whatIDo.whatIDo}` : ''}`}
         </Animated.Text>
       )}
 
@@ -320,28 +323,31 @@ const UserProfile = ({ navigation, route }: Props) => {
           </View>
         </Animated.View>
       )}
+      {user?.isInfluencer == true || user?.role == 'organization' ? (
+        <>
+          <Text numberOfLines={3} style={styles.bio}>
+            {user?.bio}
+          </Text>
+          <TouchableOpacity onPress={() => OpenURLButton(user?.website)}>
+            <Text style={styles.onebodytext}>{user?.website}</Text>
+          </TouchableOpacity>
+        </>
+      ) : null}
       {direction == 'down' ? null : (
         <Animated.View>
           {user?.isInfluencer == true ? (
-            <>
-              {user?.website ? (
-                <TouchableOpacity onPress={() => OpenURLButton(user?.website)}>
-                  <Text style={styles.onebodytext}>{user?.website}</Text>
-                </TouchableOpacity>
-              ) : null}
-              <View style={{ alignItems: 'center' }}>
-                <Text
-                  style={{
-                    color: '#032f3c',
-                    fontFamily: 'Rubik-Regular',
-                    marginVertical: getHeight(1),
-                  }}
-                >
-                  Reaching:{' '}
-                  {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
-                </Text>
-              </View>
-            </>
+            <View style={{ alignItems: 'center' }}>
+              <Text
+                style={{
+                  color: '#032f3c',
+                  fontFamily: 'Rubik-Regular',
+                  marginVertical: getHeight(1),
+                }}
+              >
+                Reaching:{' '}
+                {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
+              </Text>
+            </View>
           ) : null}
         </Animated.View>
       )}
@@ -392,23 +398,27 @@ const UserProfile = ({ navigation, route }: Props) => {
         </View>
       )}
 
-      {user?.isInfluencer == true && routes.length > 0 ? (
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          renderTabBar={renderTabBar}
-          onIndexChange={setIndex}
-          // initialLayout={{ width: getWidth(100) }}
-        />
-      ) : (
-        <SubscribeFlatlist
-          numColumns={3}
-          setScrollPosition={updateScrollPosition}
-          hideFollowButton={true}
-          itemStyle={{ width: '33%' }}
-          users={relatedUsers}
-        />
-      )}
+      {user ? (
+        <>
+          {user?.isInfluencer == true && routes.length > 0 ? (
+            <TabView
+              navigationState={{ index, routes }}
+              renderScene={renderScene}
+              renderTabBar={renderTabBar}
+              onIndexChange={setIndex}
+              // initialLayout={{ width: getWidth(100) }}
+            />
+          ) : (
+            <SubscribeFlatlist
+              numColumns={3}
+              setScrollPosition={updateScrollPosition}
+              hideFollowButton={true}
+              itemStyle={{ width: '33%' }}
+              users={relatedUsers}
+            />
+          )}
+        </>
+      ) : null}
 
       {/* </ScrollView> */}
     </View>

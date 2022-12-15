@@ -13,6 +13,11 @@ export const styles = StyleSheet.create({
     // alignItems: 'center',
     // flex: 1,
   },
+  bio: {
+    textAlign: 'center',
+    color: '#032F3C',
+    paddingHorizontal: 20,
+  },
   untext: { color: 'black', marginTop: 10 },
   moretweet: { marginBottom: 30, textAlign: 'center', color: 'gray' },
   empview: {
@@ -132,6 +137,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
   },
   monistertext: { textAlign: 'center', color: '#5B7279' },
   usernamestyle: { textAlign: 'center', marginBottom: 10 },

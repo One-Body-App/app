@@ -288,13 +288,13 @@ const Explore = () => {
                 borderRadius: 120,
               }}
             >
-              <ImageModal
+              <FastImage
                 style={{
                   width: 100,
                   height: 100,
                   borderRadius: 100,
                   marginBottom: 5,
-                  borderColor: '#BBBBBB',
+                  borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
                   borderWidth: 1,
                 }}
                 resizeMode="contain"
@@ -484,10 +484,10 @@ const Explore = () => {
                       alignContent: 'center',
                       justifyContent: 'center',
                       alignSelf: 'center',
-                      backgroundColor: '#BBBBBB',
                       padding: 5,
                       flexDirection: 'row',
                       borderRadius: 120,
+                      borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
                     }}
                   >
                     <Image

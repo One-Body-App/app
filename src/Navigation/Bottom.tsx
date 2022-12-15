@@ -28,6 +28,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome5';
 import LogoHeader from '@/assets/svg/logo2.svg';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
+import ProfileStack from './ProfileStack';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Bottom'>;
 const Tab = createBottomTabNavigator();
@@ -136,7 +137,7 @@ function Bottom({ navigation, route }: Props) {
       /> */}
       <Tab.Screen
         name="MyProfile"
-        component={MyProfile}
+        component={ProfileStack}
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: (props) => (

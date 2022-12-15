@@ -147,7 +147,7 @@ export function* UpdateProfileSaga() {
 function* updateOrgProfileRequest(params) {
   try {
     const res = yield ApiCall({
-      params: params.data.data,
+      params: { ...params.data.data, role: 'organization' },
       route: 'user/update-profile',
       token: params.data.token,
       verb: 'patch',
@@ -208,7 +208,6 @@ function* getUserProfileRequest(params) {
       verb: 'get',
     });
     if (res?.status == '200') {
-      console.log(res);
       yield put(setProfile(res?.response));
       yield put(setLoader(false));
     } else {

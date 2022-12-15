@@ -1,17 +1,5 @@
 import { Interest } from '@/utils/types';
 
-export type Badge = {
-  _id: string;
-  deleteFlag: boolean;
-  title: string;
-  badge: string;
-};
-
-export type WhatIDo = {
-  _id: string;
-  whatIDo: string;
-  deletedFlag: boolean;
-};
 // export type UserProfile = {
 //   _id: string;
 //   gender: string;

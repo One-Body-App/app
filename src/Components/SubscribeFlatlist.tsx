@@ -7,18 +7,17 @@ import {
   TouchableOpacity,
   StyleProp,
   ViewStyle,
+  Image,
 } from 'react-native';
-import { Avatar, TextInput } from 'react-native-paper';
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 import Button from './Button';
 import { ApiCall } from '@/services/api';
 import { getuserAll } from '@/redux/actions/UserAction';
 import FastImage from 'react-native-fast-image';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import ImageModal from 'react-native-image-modal';
 import { RootState } from '../Redux/reducers/rootReducer';
 
 import { RootStackParamList } from '../Navigation/types';
@@ -98,30 +97,20 @@ const SubscribeFlatlist = ({
           }
           style={[styles.subscribeview, itemStyle]}
         >
-          {item?.profileImage ? (
-            <View>
-              <ImageModal
-                style={{
-                  width: 100,
-                  height: 100,
-                  borderRadius: 50,
-                  marginBottom: 5,
-                  borderColor: '#BBBBBB',
-                  borderWidth: 1,
-                }}
-                source={{ uri: item?.profileImage }}
-                resizeMode={'contain'}
-              />
-            </View>
-          ) : (
-            <FontAwesomeIcon
-              icon={faUser}
-              size={100}
-              mask={faCircle}
-              style={{ color: '#000', marginBottom: 5 }}
-              transform="shrink-6"
+          <View>
+            <FastImage
+              style={{
+                width: 100,
+                height: 100,
+                borderRadius: 50,
+                marginBottom: 5,
+                borderColor: '#BBBBBB',
+                borderWidth: 1,
+              }}
+              source={{ uri: item?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png' }}
+              resizeMode={'contain'}
             />
-          )}
+          </View>
 
           <View
             style={{
@@ -129,7 +118,9 @@ const SubscribeFlatlist = ({
             }}
           >
             <Text numberOfLines={2} style={styles.subscribetext}>
-              {item?.name}
+              {item?.role == 'organization' && item?.profile?.companyName
+                ? item?.profile?.companyName
+                : item?.name}
             </Text>
             <Text
               numberOfLines={1}

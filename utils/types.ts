@@ -1,5 +1,3 @@
-import { Badge } from '@/src/Redux/types';
-
 export type ChurchType = {
   churchType: string;
   children: ChurchType[];
@@ -11,12 +9,40 @@ export type Interest = {
   deleteFlag: boolean;
   _id: string;
 };
-export type whatIDo = {
+export type WhatIDo = {
   _id: string;
   deleteFlag: boolean;
   whatIDo: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type Badge = {
+  _id: string;
+  deleteFlag: boolean;
+  title: string;
+  badge: string;
+};
+
+export type Location = {
+  longitude: number;
+  latitude: number;
+  address: string;
+};
+
+export type TGender = 'Male' | 'Female';
+
+type Profile = {
+  churchType: string;
+  oftenChurch: string;
+  dateOfBirth: string;
+  gender: TGender;
+  location: Location;
+  typeOfOrganization: string;
+  companyName: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhoneNumber: string;
 };
 
 export type User = {
@@ -32,8 +58,9 @@ export type User = {
   role: string;
   updatedAt: string;
   username: string;
+  bio?: string;
   website: string;
-  whatIDo: whatIDo;
+  whatIDo: WhatIDo;
   _id: string;
   badgesData: Badge[];
   gender: string;
@@ -45,6 +72,7 @@ export type User = {
   emailNotificationsEnabled: boolean;
   subscribedToNewsletter: boolean;
   influencerProfile?: InfluencerProfile;
+  profile: Profile;
 };
 
 type InfluencerProfile = {
@@ -63,7 +91,7 @@ type InfluencerProfile = {
 };
 
 export type OrganizationType = {
-  organizationType: string;
+  name: string;
 
   _id: string;
 };

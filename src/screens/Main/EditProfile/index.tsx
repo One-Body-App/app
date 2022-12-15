@@ -27,13 +27,16 @@ import GradientButton from '@/components/GradientButton';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
-import { WhatIDo } from '@/src/Redux/types';
+import { WhatIDo } from '@/utils/types';
+import { useTheme } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { getuserGet, getUserProfile } from '@/src/Redux/actions/UserAction';
 
 type Props = StackScreenProps<RootStackParamList, 'EditProfile'>;
 
 const EditProfile = ({ navigation }: Props) => {
   const user = useSelector((state: RootState) => state.auth.userProfile);
-
+  const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [gender, setGender] = useState(user?.gender);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
@@ -41,7 +44,9 @@ const EditProfile = ({ navigation }: Props) => {
   const [imageObject, setImageObject] = useState<{ uri: string; type: string; name: string }>();
   const [multipleImages, setMultipleImages] = useState();
   const [fullname, setFullName] = useState<string>(user?.name ?? '');
+  const [username, setUsername] = useState<string>(user?.username ?? '');
   const [website, setWebsite] = useState<string>(user?.website ?? '');
+  const [bio, setBio] = useState<string>(user?.bio ?? '');
   const [whatIDo, setWhatIDo] = useState<WhatIDo | null>(user?.whatIDo ? user?.whatIDo : null);
 
   const [whatIDoList, setWhatIDoList] = useState<WhatIDo[]>([]);
@@ -171,70 +176,82 @@ const EditProfile = ({ navigation }: Props) => {
   useEffect(() => {
     getWhatIDo();
   }, []);
-  console.log(whatIDo, 'whatIDo');
+
   return (
-    <Provider>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.headview}>
+    <SafeAreaView style={styles.container}>
+      <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Button
+            onPress={() => navigation.goBack()}
+            text=""
+            leftIcon={<Icon name="chevron-back" size={20} color={'#032f3c'} />}
+            btnStyle={{ flex: 1 }}
+            wrapperBtnStyle={{ justifyContent: 'flex-start', paddingLeft: 10, paddingVertical: 10 }}
+          />
+        </View>
+        <View style={{ flex: 4, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={styles.titletext}>Edit Profile</Text>
         </View>
-        <ImagePickerModal
-          visible={pickerModalVisibile}
-          hideVisible={() => setPickerModalVisibile(false)}
-          galleryImage={() => chooseImageGallery()}
-          cameraImage={() => captureImage('photo')}
-        />
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={visible}
-          onBackdropPress={() => setVisible(false)}
-          onSwipeComplete={() => setVisible(false)}
-          swipeDirection={['down']}
-          style={styles.bottomView}
-          avoidKeyboard={true}
-          propagateSwipe
-        >
-          <View style={styles.content2}>
-            <View style={styles.headLine} />
-            <View style={styles.container}>
-              <FlatList
-                data={whatIDoList}
-                keyExtractor={(item, index) => index.toString()}
-                ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
-                ItemSeparatorComponent={() => <Divider />}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setWhatIDo(item);
+        <View style={{ flex: 1 }} />
+      </View>
 
-                      setVisible(false);
+      <ImagePickerModal
+        visible={pickerModalVisibile}
+        hideVisible={() => setPickerModalVisibile(false)}
+        galleryImage={() => chooseImageGallery()}
+        cameraImage={() => captureImage('photo')}
+      />
+      <Modal
+        backdropOpacity={0.3}
+        isVisible={visible}
+        onBackdropPress={() => setVisible(false)}
+        onSwipeComplete={() => setVisible(false)}
+        swipeDirection={['down']}
+        style={styles.bottomView}
+        avoidKeyboard={true}
+        propagateSwipe
+      >
+        <View style={styles.content2}>
+          <View style={styles.headLine} />
+          <View style={styles.container}>
+            <FlatList
+              data={whatIDoList}
+              keyExtractor={(item, index) => index.toString()}
+              ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
+              ItemSeparatorComponent={() => <Divider />}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setWhatIDo(item);
+
+                    setVisible(false);
+                  }}
+                  style={styles.listItem}
+                >
+                  <Text
+                    style={{
+                      color: '#81979E',
+                      fontSize: getFontSize(2.2),
+                      fontFamily: 'Rubik-Regular',
                     }}
-                    style={styles.listItem}
+                    numberOfLines={1}
                   >
-                    <Text
-                      style={{
-                        color: '#81979E',
-                        fontSize: getFontSize(2.2),
-                        fontFamily: 'Rubik-Regular',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item?.whatIDo}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-            </View>
+                    {item?.whatIDo}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
           </View>
-        </Modal>
-        <ScrollView>
-          <View style={styles.topContainer}>
-            <TouchableOpacity
-              onPress={() => setPickerModalVisibile(true)}
-              style={styles.imageContainer}
-            >
-              {/* <Avatar.Image
+        </View>
+      </Modal>
+      <ScrollView>
+        <View style={styles.topContainer}>
+          <TouchableOpacity
+            onPress={() => setPickerModalVisibile(true)}
+            style={styles.imageContainer}
+          >
+            {/* <Avatar.Image
                 size={getFontSize(14)}
                 resizeMode={'stretch'}
                 source={
@@ -243,55 +260,72 @@ const EditProfile = ({ navigation }: Props) => {
                     : {uri: user?.profileImage}
                 }
               /> */}
-              <View
+            <View
+              style={{
+                flexDirection: 'row',
+                width: '50%',
+                justifyContent: 'center',
+                alignContent: 'center',
+              }}
+            >
+              <FastImage
+                style={{ width: 90, height: 90, borderRadius: 45 }}
+                source={
+                  imageToUpload
+                    ? { uri: imageToUpload }
+                    : {
+                        uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                      }
+                }
+                resizeMode={FastImage.resizeMode.stretch}
+              />
+              <Text
                 style={{
-                  flexDirection: 'row',
-                  width: '50%',
-                  justifyContent: 'center',
-                  alignContent: 'center',
+                  color: '#757575',
+                  fontSize: 12,
+                  // marginTop: getHeight(1),
+                  fontFamily: 'Rubik-Regular',
+                  textAlign: 'center',
+                  width: '40%',
+                  alignSelf: 'center',
                 }}
               >
-                <FastImage
-                  style={{ width: 90, height: 90, borderRadius: 45 }}
-                  source={imageToUpload ? { uri: imageToUpload } : { uri: user?.profileImage }}
-                  resizeMode={FastImage.resizeMode.stretch}
-                />
-                <Text
-                  style={{
-                    color: '#757575',
-                    fontSize: 12,
-                    // marginTop: getHeight(1),
-                    fontFamily: 'Rubik-Regular',
-                    textAlign: 'center',
-                    width: '40%',
-                    alignSelf: 'center',
-                  }}
-                >
-                  Change Photo
-                </Text>
-              </View>
-            </TouchableOpacity>
-            <View style={styles.InputsContainer}>
-              <TextInput
-                style={styles.TextInput}
-                onChangeText={(e) => setFullName(e)}
-                value={fullname}
-                label="Name"
-                activeOutlineColor={'#12D2D9'}
-                activeUnderlineColor={'#12D2D9'}
-                placeholder="Name"
-                theme={{ roundness: 10 }}
-              />
+                Change Photo
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.InputsContainer}>
+            <TextInput
+              style={styles.TextInput}
+              onChangeText={(e) => setUsername(e)}
+              value={username}
+              label="Username"
+              activeOutlineColor={'#12D2D9'}
+              activeUnderlineColor={'#12D2D9'}
+              placeholder="username"
+              theme={{ roundness: 10 }}
+            />
 
-              <TextInput
-                style={styles.TextInput}
-                label="Account type"
-                value={user?.role == 'individual' ? 'Individual' : 'Organization'}
-                editable={false}
-                // placeholderTextColor={'red'}
-              />
-              {/* {user?.role != 'individual' ? ( */}
-              <View>
+            <TextInput
+              style={styles.TextInput}
+              onChangeText={(e) => setFullName(e)}
+              value={fullname}
+              label="Name"
+              activeOutlineColor={'#12D2D9'}
+              activeUnderlineColor={'#12D2D9'}
+              placeholder="Name"
+              theme={{ roundness: 10 }}
+            />
+
+            <TextInput
+              style={styles.TextInput}
+              label="Account type"
+              value={user?.role == 'individual' ? 'Individual' : 'Organization'}
+              editable={false}
+              // placeholderTextColor={'red'}
+            />
+            <View>
+              {user?.role == 'individual' ? (
                 <TextInput
                   style={styles.TextInput}
                   value={whatIDo?.whatIDo ? whatIDo?.whatIDo : ''}
@@ -305,23 +339,75 @@ const EditProfile = ({ navigation }: Props) => {
                   activeUnderlineColor={'#12D2D9'}
                   // onChangeText={e => setWhatIDo(e)}
                 />
-
-                <TextInput
-                  style={styles.TextInput}
-                  value={website}
-                  label="Website"
-                  keyboardType="url"
-                  placeholder="https://www.website.com"
-                  activeOutlineColor={'#12D2D9'}
-                  activeUnderlineColor={'#12D2D9'}
-                  onChangeText={(e) => setWebsite(e)}
-                />
-              </View>
-              {/* // ) : null} */}
+              ) : (
+                <>
+                  <TextInput
+                    style={styles.TextInput}
+                    value={whatIDo?.whatIDo ? whatIDo?.whatIDo : ''}
+                    editable={false}
+                    label="Who We Are?"
+                    onPressIn={() => {
+                      getWhatIDo();
+                      setVisible(true);
+                    }}
+                    activeOutlineColor={'#12D2D9'}
+                    activeUnderlineColor={'#12D2D9'}
+                    // onChangeText={e => setWhatIDo(e)}
+                  />
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      paddingVertical: 10,
+                    }}
+                  >
+                    <TextInput
+                      multiline={true}
+                      numberOfLines={5}
+                      label="Bio"
+                      value={user?.bio}
+                      returnKeyType={'next'}
+                      mode="outlined"
+                      activeOutlineColor={'#12D2D9'}
+                      activeUnderlineColor={'#12D2D9'}
+                      outlineColor={colors.border}
+                      maxLength={150}
+                      style={{
+                        flex: 4,
+                      }}
+                      theme={{
+                        dark: dark,
+                        colors: {
+                          text: colors.text,
+                          placeholder: colors.primary,
+                          background: colors.background,
+                        },
+                      }}
+                      onChangeText={(e) => setBio(e)}
+                      blurOnSubmit={false}
+                    />
+                    <Text style={{ flex: 1, textAlign: 'center' }}>{bio.length}/150</Text>
+                  </View>
+                </>
+              )}
+              <TextInput
+                style={styles.TextInput}
+                value={website}
+                label="Website"
+                keyboardType="url"
+                autoCorrect={false}
+                autoCapitalize="none"
+                placeholder="https://www.website.com"
+                activeOutlineColor={'#12D2D9'}
+                activeUnderlineColor={'#12D2D9'}
+                onChangeText={(e) => setWebsite(e)}
+              />
             </View>
           </View>
-          <View style={styles.bottomContainer}>
-            {/* {user?.isInfluencer == true ? (
+        </View>
+        <View style={styles.bottomContainer}>
+          {/* {user?.isInfluencer == true ? (
               <View style={{ ...styles.center, marginTop: getHeight(2) }}>
                 <Text style={styles.SocialText}>Link Social Media Account</Text>
                 <View style={styles.socialIcon}>
@@ -331,56 +417,57 @@ const EditProfile = ({ navigation }: Props) => {
                 </View>
               </View>
             ) : null} */}
-            <View style={{ marginHorizontal: 25 }}>
-              <GradientButton
-                text={'DONE'}
-                onPress={() => {
-                  const data = new FormData();
-                  console.log(
-                    fullname,
-                    gender,
-                    whatIDo,
-                    website,
-                    imageObject,
-                    'fullname, gender, whatIDo, website, imageObject'
-                  );
-                  if (fullname) data.append('name', fullname);
-                  if (gender) data.append('gender', gender);
-                  if (whatIDo) data.append('whatIDo', whatIDo?._id);
-                  if (website) data.append('website', website);
-                  if (imageObject) data.append('photo', imageObject);
-                  dispatch(setLoader(true));
+          <View style={{ marginHorizontal: 25 }}>
+            <GradientButton
+              text={'DONE'}
+              onPress={() => {
+                const data = new FormData();
+                console.log(
+                  fullname,
+                  gender,
+                  whatIDo,
+                  website,
+                  imageObject,
+                  'fullname, gender, whatIDo, website, imageObject'
+                );
+                if (fullname) data.append('name', fullname);
+                if (gender) data.append('gender', gender);
+                if (whatIDo) data.append('whatIDo', whatIDo?._id);
+                if (website) data.append('website', website);
+                if (imageObject) data.append('photo', imageObject);
+                if (bio) data.append('bio', bio);
 
-                  if (user?.role == 'individual') {
-                    dispatch(profileUpdate({ data, token, role: 'individual', go }));
-                  } else {
-                    dispatch(profileUpdate({ data, token, role: 'organization', go }));
-                  }
-                }}
-                btnStyle={{
-                  ...GeneralStyle.btn,
-                  height: getHeight(7),
+                dispatch(setLoader(true));
 
-                  backgroundColor: '#0C5C75',
-                }}
-                btnTextStyle={GeneralStyle.btnText}
-              />
+                if (user?.role == 'individual') {
+                  dispatch(profileUpdate({ data, token, role: 'individual', go }));
+                } else {
+                  dispatch(profileUpdate({ data, token, role: 'organization', go }));
+                }
+              }}
+              btnStyle={{
+                ...GeneralStyle.btn,
+                height: getHeight(7),
 
-              <Button
-                text={'Cancel'}
-                btnStyle={{
-                  ...GeneralStyle.btn,
-                  backgroundColor: 'white',
-                  marginTop: getHeight(2),
-                }}
-                onPress={() => navigation.goBack()}
-                btnTextStyle={{ ...GeneralStyle.btnText, color: '#707470' }}
-              />
-            </View>
+                backgroundColor: '#0C5C75',
+              }}
+              btnTextStyle={GeneralStyle.btnText}
+            />
+
+            <Button
+              text={'Cancel'}
+              btnStyle={{
+                ...GeneralStyle.btn,
+                backgroundColor: 'white',
+                marginTop: getHeight(2),
+              }}
+              onPress={() => navigation.goBack()}
+              btnTextStyle={{ ...GeneralStyle.btnText, color: '#707470' }}
+            />
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    </Provider>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 export default EditProfile;

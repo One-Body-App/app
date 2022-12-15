@@ -4,7 +4,6 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
   },
   listItem: {
     height: getHeight(5),
@@ -12,19 +11,12 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headview: {
-    height: getHeight(8),
 
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    padding: 10,
-    alignItems: 'center',
-  },
   titletext: {
     fontSize: getFontSize(2.2),
     fontFamily: 'Rubik-Medium',
     color: '#032F3C',
+    textAlign: 'center',
   },
   bottomView: {
     justifyContent: 'flex-end',
@@ -55,15 +47,14 @@ export const styles = StyleSheet.create({
   imageContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: getHeight(5),
+    marginTop: getHeight(1),
   },
   InputsContainer: { marginTop: 5, marginHorizontal: 10 },
   text: { width: '80%', textAlign: 'center' },
 
   TextInput: { backgroundColor: 'white' },
   bottomContainer: {
-    height: getHeight(35),
-
+    marginTop: 50,
     justifyContent: 'space-around',
     alignItems: 'center',
   },

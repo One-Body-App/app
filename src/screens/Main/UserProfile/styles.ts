@@ -12,6 +12,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  bio: {
+    textAlign: 'center',
+    color: '#032F3C',
+    paddingHorizontal: 20,
+  },
   untext: { color: 'black', marginTop: 10 },
   moretweet: { marginBottom: 30, textAlign: 'center', color: 'gray' },
   empview: {

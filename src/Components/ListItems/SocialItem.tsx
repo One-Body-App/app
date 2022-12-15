@@ -17,7 +17,7 @@ const SocialItem = ({
   socialPostviewStyle?: StyleProp<ViewStyle>;
 }) => {
   const { colors } = useTheme();
-  console.log(item);
+
   return (
     <View
       style={[
