@@ -21,6 +21,8 @@ const HomeSocialComponent = () => {
   const [page, setPage] = useState(1);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
+  const [show, setShow] = useState<boolean>(false);
+  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
 
   const getRecentBlog = async (pageNumber: number) => {
     try {
@@ -43,6 +45,11 @@ const HomeSocialComponent = () => {
   useEffect(() => {
     getRecentBlog(page);
   }, []);
+
+  const showModal = (userId: string) => {
+    setCurrentPopupItemId(userId);
+    setShow(true);
+  };
 
   const { colors } = useTheme();
   return (
@@ -77,6 +84,7 @@ const HomeSocialComponent = () => {
                   borderTopRightRadius: 16,
                   height: getHeight(12),
                 }}
+                showModal={showModal}
               />
             )}
           />

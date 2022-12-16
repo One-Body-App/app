@@ -37,6 +37,7 @@ import { OpenURLButton } from '@/src/Services/constants';
 import { isObject } from 'lodash';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { SceneRendererProps } from 'react-native-tab-view';
+import OptionsModal from '../ListItems/OptionsModal';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
@@ -47,12 +48,14 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
+  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
   const [page, setPage] = useState<number>(1);
   const [socialPosts, setSocialPosts] = useState<any[]>();
   const navigation = useNavigation<ScreenNavigationProp>();
 
-  const toggleModal = () => {
-    setShow(!show);
+  const showModal = (userId: string) => {
+    setCurrentPopupItemId(userId);
+    setShow(true);
   };
 
   const getRecentBlog = async (pageNumber: number) => {
@@ -98,109 +101,13 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   useEffect(() => {
     getSocialPosts();
   }, []);
-
   return (
     <View style={{ flex: 1 }}>
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={show}
-        onBackdropPress={() => setShow(false)}
-        onSwipeComplete={() => setShow(false)}
-        swipeDirection={['down']}
-        style={styles.bottomView}
-      >
-        <View style={styles.content2}>
-          <View style={styles.headLine} />
-          <View style={styles.contview}>
-            <View style={styles.saveview}>
-              <Button
-                btnStyle={styles.savetuch}
-                text="Save"
-                leftIcon={
-                  <Feather style={{ marginRight: 3 }} name="bookmark" size={17} color="#032F3C" />
-                }
-                btnTextStyle={{ color: '#032F3C' }}
-                onPress={() => console.log('press')}
-              />
-              {/* <TouchableOpacity style={styles.savetuch}>
-                <Text style={{color: '#032F3C'}}>Save</Text>
-              </TouchableOpacity> */}
-              <Button
-                btnStyle={styles.sharetouch}
-                text="Share"
-                leftIcon={
-                  <MaterialCommunityIcons
-                    style={{ marginRight: 3 }}
-                    name="share-outline"
-                    size={18}
-                    color="#032F3C"
-                  />
-                }
-                btnTextStyle={{ color: '#032F3C' }}
-                onPress={() => console.log('press')}
-              />
-              {/* <TouchableOpacity style={styles.sharetouch}>
-                <MaterialCommunityIcons name="rocket" size={20} color="#900" />
-                <Text style={{color: '#032F3C'}}>Share</Text>
-              </TouchableOpacity> */}
-            </View>
-            <Button
-              btnStyle={styles.reporttouch}
-              text="Report"
-              leftIcon={
-                <AntDesign
-                  style={{ marginRight: 5 }}
-                  name="infocirlceo"
-                  size={14}
-                  color="#E90202"
-                />
-              }
-              btnTextStyle={{ color: '#E90202' }}
-              onPress={() => console.log('press')}
-            />
-            {/* <TouchableOpacity style={styles.reporttouch}>
-              <Text style={{color: '#E90202'}}>Report</Text>
-            </TouchableOpacity> */}
-            {/* <TouchableOpacity style={styles.linktouch}>
-              <Text style={{color: '#032F3C'}}>Link</Text>
-            </TouchableOpacity> */}
-            <Button
-              btnStyle={{
-                ...GeneralStyle.btn,
-                backgroundColor: '#f6f6f6',
-                flexDirection: 'row',
-              }}
-              text="Link"
-              leftIcon={<Entypo style={{ marginRight: 3 }} name="link" size={18} color="#032F3C" />}
-              btnTextStyle={{ color: '#032F3C' }}
-              onPress={() => console.log('press')}
-            />
-
-            <Button
-              btnStyle={{
-                ...GeneralStyle.btn,
-                backgroundColor: '#f6f6f6',
-                flexDirection: 'row',
-              }}
-              text="Unsubscribe"
-              btnTextStyle={{ color: '#032F3C' }}
-              onPress={() => console.log('press')}
-            />
-
-            <Button
-              text={'CLOSE'}
-              btnStyle={{
-                ...GeneralStyle.btn,
-                // backgroundColor: 'red',
-                backgroundColor: '#e6eaec',
-                flexDirection: 'row',
-              }}
-              btnTextStyle={{ ...GeneralStyle.btnText, color: '#032f3c' }}
-              onPress={() => {}}
-            />
-          </View>
-        </View>
-      </Modal>
+      <OptionsModal
+        show={show ?? false}
+        setShow={setShow}
+        currentPopupItemId={currentPopupItemId}
+      />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 75 }}
@@ -256,7 +163,11 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                       justifyContent: 'space-between',
                     }}
                   >
-                    <TouchableOpacity onPress={toggleModal}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        showModal(item?.userData?._id);
+                      }}
+                    >
                       <Entypo
                         name="dots-three-horizontal"
                         style={styles.newsicon}
@@ -277,7 +188,7 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
             )}
           />
         </View>
-        <Text style={{ ...styles.socialposttext, color: colors.text }}>Latest Post</Text>
+        <Text style={{ ...styles.socialposttext, color: colors.text }}>Latest Posts</Text>
         <View>
           <FlatList
             data={socialPosts}
@@ -297,20 +208,35 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                     source={require('@/assets/images/Photo.png')}
                   />
                 ) : null}
-                <Text
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.navigate('UserProfile', {
+                      id: item?.userData?._id,
+                    });
+                  }}
                   style={{
+                    flexDirection: 'row',
                     padding: 5,
-                    fontFamily: 'Rubik',
-                    lineHeight: 18,
-                    color: colors.text,
-                    marginTop: getHeight(1),
-                    textAlign: 'center',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                   }}
                 >
-                  {item?.content}
-                </Text>
-                <View style={{ flexDirection: 'row', padding: 5 }}>
-                  {item?.source == 'twitter' ? <Twitter fill="#00acee" /> : null}
+                  <FastImage
+                    source={{
+                      uri:
+                        item?.userData?.profileImage ??
+                        'https://cdn.onebodyapp.com/user/no-image.png',
+                    }}
+                    style={{
+                      width: 25,
+                      height: 25,
+                      borderRadius: 25,
+                      // marginBottom: 5,
+                      borderColor: item?.userData?.profileImage ? '#032F3C' : '#09aadb',
+                      borderWidth: 1,
+                    }}
+                    resizeMode={'contain'}
+                  />
                   <Text
                     style={{
                       marginLeft: 5,
@@ -319,9 +245,46 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                       alignItems: 'center',
                     }}
                   >
-                    @{item?.handler}
+                    {item?.userData?.name}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', padding: 5 }}>
+                  <Text
+                    style={{
+                      padding: 5,
+                      fontFamily: 'Rubik',
+                      lineHeight: 18,
+                      color: colors.text,
+                      marginTop: getHeight(1),
+                      textAlign: 'center',
+                    }}
+                  >
+                    {item?.content}
                   </Text>
                 </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    let url = '';
+                    if (item?.source == 'twitter') {
+                      url = `https://twitter.com/${item?.handler}/status/${item?.id}`;
+                    } else {
+                      url = '';
+                    }
+
+                    if (url) OpenURLButton(url);
+                  }}
+                >
+                  <Text
+                    style={{
+                      marginLeft: 5,
+                      fontFamily: 'Rubik',
+                      color: '#68828A',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {item?.source == 'twitter' ? 'View on Twitter' : 'View on Instagram'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
             ListFooterComponent={() => (

@@ -23,6 +23,7 @@ import { OpenURLButton } from '@/src/Services/constants';
 import ArticleItem from '../ListItems/ArticleItem';
 import { useTheme } from '@react-navigation/native';
 import { color } from 'react-native-reanimated';
+import OptionsModal from '../ListItems/OptionsModal';
 
 const BlogFlatlist = ({
   currentUser,
@@ -33,9 +34,11 @@ const BlogFlatlist = ({
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [page, setPage] = useState<number>(1);
   const [blogs, setBlogs] = useState<any>([]);
+  const [show, setShow] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(true);
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
+  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
 
   const getBlog = async (pageNumber: number) => {
     try {
@@ -81,8 +84,13 @@ const BlogFlatlist = ({
   }, [page, user]);
   const { colors } = useTheme();
 
+  const showModal = (userId: string) => {
+    setCurrentPopupItemId(userId);
+    setShow(true);
+  };
+
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       {loadingMore ? (
         <ActivityIndicator
           animating={loadingMore}
@@ -91,6 +99,13 @@ const BlogFlatlist = ({
           style={{ marginTop: 10 }}
         />
       ) : null}
+      <OptionsModal
+        show={show ?? false}
+        setShow={setShow}
+        currentPopupItemId={currentPopupItemId}
+        hideChannelSection={true}
+        height={getHeight(25)}
+      />
       <FlatList
         nestedScrollEnabled={true}
         data={blogs}
@@ -154,12 +169,17 @@ const BlogFlatlist = ({
           //     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
           //   </View>
           // </TouchableOpacity>
-          <ArticleItem
-            item={item}
-            imageSizeType="cover"
-            blogPostStyle={{ ...styles.blogpostview, backgroundColor: colors.card }}
-            blogPostImageStyle={styles.blogpostimage}
-          />
+          <View style={{ flex: 1, paddingHorizontal: 10 }}>
+            <ArticleItem
+              item={item}
+              imageSizeType="cover"
+              blogPostStyle={{ ...styles.blogpostview, backgroundColor: colors.card }}
+              blogPostImageStyle={styles.blogpostimage}
+              showModal={showModal}
+              iconSize={15}
+              hideProfileName={true}
+            />
+          </View>
         )}
         onEndReachedThreshold={0.5}
         onEndReached={() => {

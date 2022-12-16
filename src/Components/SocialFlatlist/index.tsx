@@ -8,6 +8,7 @@ import { SetSocial } from '@/redux/actions/SocialActions';
 import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import SocialItem from '../ListItems/SocialItem';
+import { isObject } from 'lodash';
 
 const SocialFlatlist = () => {
   const socialPost = useSelector((state: RootState) => state.social.SocialPost);
@@ -18,6 +19,8 @@ const SocialFlatlist = () => {
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [show, setShow] = useState<boolean>(false);
+  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
 
   const getSocialPosts = async (pageNumber: number) => {
     setIsLoading(true);
@@ -69,7 +72,12 @@ const SocialFlatlist = () => {
       keyExtractor={(item, index) => {
         return `${item?.handler}-${item.id}-${index}`;
       }}
-      renderItem={({ item }) => <SocialItem item={item} />}
+      renderItem={({ item }) => (
+        <SocialItem
+          item={item}
+          author={isObject(item?.author) ? item?.author?.a?.$text : item?.author}
+        />
+      )}
       onEndReachedThreshold={0.5}
       onEndReached={() => {
         if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);

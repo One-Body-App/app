@@ -116,7 +116,6 @@ function* updateProfileRequest(params) {
       token: params.data.token,
       verb: 'patch',
       external: false,
-      isFormUrlEncode: true,
     });
     console.log(res);
     if (res?.status == 200) {

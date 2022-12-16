@@ -72,7 +72,16 @@ const HomeBlogComponent = () => {
       <FlatList
         data={allBlog}
         ListEmptyComponent={() => {
-          return <Text>Please follow some Blogs to show content here</Text>;
+          return (
+            <View>
+              <Text>Please follow some Blogs to show content here</Text>
+              <TouchableOpacity>
+                <Text style={{ textAlign: 'center', marginTop: 10, color: '#126B87' }}>
+                  Find a blog to follow
+                </Text>
+              </TouchableOpacity>
+            </View>
+          );
         }}
         numColumns={2}
         showsVerticalScrollIndicator={false}

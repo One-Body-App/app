@@ -16,6 +16,7 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { isArray, isObject } from 'lodash';
 import ArticleItem from '../ListItems/ArticleItem';
+import OptionsModal from '../ListItems/OptionsModal';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
@@ -80,12 +81,23 @@ const HomeNewsComponent = () => {
     };
     getData();
   }, [page]);
+  const [show, setShow] = useState<boolean>();
+  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
+
+  const showModal = (userId: string) => {
+    setCurrentPopupItemId(userId);
+    setShow(true);
+  };
 
   const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
-
+      {/* <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text> */}
+      <OptionsModal
+        show={show ?? false}
+        setShow={setShow}
+        currentPopupItemId={currentPopupItemId}
+      />
       <FlatList
         refreshControl={
           <RefreshControl
@@ -116,9 +128,11 @@ const HomeNewsComponent = () => {
                 backgroundColor: colors.card,
                 padding: 0,
                 margin: 7,
+                flex: 1,
               }}
               blogPostImageStyle={styles.socialpostimage}
               blogPostTitleStyle={styles.sourcename}
+              showModal={showModal}
             />
 
             // <TouchableOpacity

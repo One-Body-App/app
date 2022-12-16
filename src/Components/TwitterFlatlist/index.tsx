@@ -25,6 +25,7 @@ const TwitterFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: Us
         verb: 'get',
         token: token,
       });
+
       if (res?.status == 200) {
         let tweetsData = [];
 

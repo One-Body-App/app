@@ -173,6 +173,7 @@ export const styles = StyleSheet.create({
   newsicon: {
     alignSelf: 'flex-end',
     padding: 15,
+    flex: 1,
   },
   newstext: {
     color: 'white',
@@ -244,7 +245,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     // height: getHeight(23),
-    backgroundColor: 'red',
+    width: '100%',
   },
   blogpostimage: {
     width: '100%',
@@ -263,7 +264,7 @@ export const styles = StyleSheet.create({
   blogpostpara: {
     padding: 2,
     marginTop: getHeight(1),
-
+    flex: 2,
     fontFamily: 'Rubik-Medium',
   },
   blogposthour: {
@@ -337,7 +338,6 @@ export const styles = StyleSheet.create({
     padding: 13,
     borderTopRightRadius: 17,
     borderTopLeftRadius: 17,
-    height: getHeight(45),
   },
   headLine: {
     height: 6,
@@ -354,12 +354,12 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
-  socialpostview: {
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '90%',
-    borderRadius: 20,
-    padding: 8,
-  },
+  // socialpostview: {
+  //   alignSelf: 'center',
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  //   width: '90%',
+  //   borderRadius: 20,
+  //   padding: 8,
+  // },
 });

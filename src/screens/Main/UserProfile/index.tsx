@@ -100,7 +100,12 @@ const UserProfile = ({ navigation, route }: Props) => {
         );
       case 'Twitter':
         return (
-          <TwitterFlatlist setScrollPosition={updateScrollPosition} jumpTo={jumpTo} {...route} />
+          <TwitterFlatlist
+            setScrollPosition={updateScrollPosition}
+            currentUser={user}
+            jumpTo={jumpTo}
+            {...route}
+          />
         );
     }
   };

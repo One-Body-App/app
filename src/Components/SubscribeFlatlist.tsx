@@ -104,7 +104,7 @@ const SubscribeFlatlist = ({
                 height: 100,
                 borderRadius: 50,
                 marginBottom: 5,
-                borderColor: '#BBBBBB',
+                borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
                 borderWidth: 1,
               }}
               source={{ uri: item?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png' }}

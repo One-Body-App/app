@@ -57,24 +57,26 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    width: getWidth(40),
+    flex: 1,
     height: getHeight(6),
     backgroundColor: '#F6F6F6',
     borderRadius: 7,
+    marginHorizontal: 10,
   },
   savetuch: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: getWidth(40),
+    flex: 1,
     height: getHeight(6),
     backgroundColor: '#F6F6F6',
     borderRadius: 7,
+    marginHorizontal: 10,
   },
   saveview: {
     flexDirection: 'row',
+
     justifyContent: 'space-around',
-    width: '100%',
   },
   header: {
     flexDirection: 'row',
@@ -342,7 +344,7 @@ export const styles = StyleSheet.create({
     padding: 13,
     borderTopRightRadius: 17,
     borderTopLeftRadius: 17,
-    height: getHeight(45),
+    height: getHeight(35),
   },
   headLine: {
     height: 6,
