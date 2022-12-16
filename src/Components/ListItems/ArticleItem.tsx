@@ -1,5 +1,6 @@
 import { OpenURLButton } from '@/src/Services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
+import { ArticleType } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { isObject } from 'lodash';
 import React from 'react';
@@ -18,25 +19,13 @@ const ArticleItem = ({
   iconSize,
   hideProfileName,
 }: {
-  item: {
-    link?: string;
-    created: Date;
-    image: { url: string };
-    title: string | { a: any };
-    userData: {
-      _id: string;
-      name: string;
-      username: string;
-      role: string;
-      profileImage: string;
-    };
-  };
+  item: ArticleType;
   blogPostStyle?: StyleProp<ViewStyle>;
   blogPostImageStyle?: StyleProp<ImageStyle>;
   blogPostTitleStyle?: StyleProp<TextStyle>;
   imageSizeType: ResizeMode;
   iconSize?: number;
-  showModal: (id: string) => void;
+  showModal: (item: ArticleType) => void;
   hideProfileName?: boolean;
 }) => {
   const { colors } = useTheme();
@@ -66,7 +55,7 @@ const ArticleItem = ({
             <View style={{ flex: 1 }}>
               <TouchableOpacity
                 onPress={() => {
-                  showModal(item?.userData?._id);
+                  showModal(item);
                 }}
               >
                 <Entypo

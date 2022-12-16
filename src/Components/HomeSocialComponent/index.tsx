@@ -14,6 +14,7 @@ import { useNavigation, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { OpenURLButton } from '@/src/Services/constants';
 import ArticleItem from '../ListItems/ArticleItem';
+import { ArticleType } from '@/utils/types';
 
 const HomeSocialComponent = () => {
   const dispatch = useDispatch();
@@ -22,7 +23,7 @@ const HomeSocialComponent = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
   const [show, setShow] = useState<boolean>(false);
-  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
+  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
 
   const getRecentBlog = async (pageNumber: number) => {
     try {
@@ -46,8 +47,8 @@ const HomeSocialComponent = () => {
     getRecentBlog(page);
   }, []);
 
-  const showModal = (userId: string) => {
-    setCurrentPopupItemId(userId);
+  const showModal = (item: ArticleType) => {
+    setCurrentPopupItem(item);
     setShow(true);
   };
 

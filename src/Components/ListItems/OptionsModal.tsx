@@ -1,6 +1,6 @@
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import React from 'react';
-import { View } from 'react-native';
+import { View, Share } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Modal from 'react-native-modal';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
@@ -9,24 +9,97 @@ import Feather from 'react-native-vector-icons/Feather';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { styles } from './style';
 import { getHeight } from '@/utils/ResponsiveFun';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { ApiCall } from '@/src/Services/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ArticleType } from '@/utils/types';
+import { isObject } from 'lodash';
+import { getuserGet } from '@/src/Redux/actions/UserAction';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 const OptionsModal = ({
   show,
   setShow,
-  currentPopupItemId,
+  currentPopupItem,
   hideChannelSection,
   height,
 }: {
   show: boolean;
   setShow: (show: boolean) => void;
-  currentPopupItemId?: string;
+  currentPopupItem?: ArticleType;
   hideChannelSection?: boolean;
   height?: number;
 }) => {
   const { colors } = useTheme();
   const navigation = useNavigation<ScreenNavigationProp>();
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const dispatch = useDispatch();
+
+  const removePost = async (link: string) => {
+    dispatch(setLoader(true));
+
+    try {
+      const res = await ApiCall({
+        route: `user/remove-post`,
+        verb: 'delete',
+        token: token,
+        params: {
+          link,
+        },
+      });
+
+      if (res?.status == 200) {
+        dispatch(getuserGet({ token }));
+      }
+      dispatch(setLoader(false));
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const savePost = async (
+    title: string,
+
+    createdAt?: Date,
+    userId?: string,
+    link?: string,
+    image?: string
+  ) => {
+    dispatch(setLoader(true));
+
+    try {
+      const res = await ApiCall({
+        route: `user/save-post`,
+        verb: 'post',
+        token: token,
+        params: {
+          title,
+          image,
+          createdAt,
+          userId,
+          link,
+        },
+      });
+
+      if (res?.status == 200) {
+        dispatch(getuserGet({ token }));
+      }
+      dispatch(setLoader(false));
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+  let isThisPostSaved = false;
+  if (user?.savedPost) {
+    user?.savedPost.forEach((savedPost) => {
+      if (savedPost.link == currentPopupItem?.link) {
+        isThisPostSaved = true;
+      }
+    });
+  }
 
   return (
     <Modal
@@ -37,19 +110,34 @@ const OptionsModal = ({
       swipeDirection={['down']}
       style={styles.bottomView}
     >
-      <View style={[styles.content2, { height: height ?? getHeight(45) }]}>
+      <View style={[styles.content2, { height: height ?? getHeight(35) }]}>
         <View style={styles.headLine} />
         <View style={styles.contview}>
           <View style={styles.saveview}>
             <View style={{ flex: 1 }}>
               <Button
                 btnStyle={styles.savetuch}
-                text="Save"
+                text={isThisPostSaved ? 'Remove' : 'Save'}
                 leftIcon={
                   <Feather style={{ marginRight: 3 }} name="bookmark" size={17} color="#032F3C" />
                 }
                 btnTextStyle={{ color: '#032F3C' }}
-                onPress={() => console.log('press')}
+                onPress={() => {
+                  if (isThisPostSaved) {
+                    if (currentPopupItem?.link) removePost(currentPopupItem?.link);
+                  } else {
+                    savePost(
+                      isObject(currentPopupItem?.title)
+                        ? currentPopupItem?.title?.a.$text
+                        : currentPopupItem?.title,
+
+                      currentPopupItem?.created,
+                      currentPopupItem?.userData._id,
+                      currentPopupItem?.link,
+                      currentPopupItem?.image.url
+                    );
+                  }
+                }}
               />
             </View>
 
@@ -69,7 +157,11 @@ const OptionsModal = ({
                   />
                 }
                 btnTextStyle={{ color: '#032F3C' }}
-                onPress={() => console.log('press')}
+                onPress={async () => {
+                  await Share.share({
+                    message: `${currentPopupItem?.title}`,
+                  });
+                }}
               />
             </View>
 
@@ -110,9 +202,9 @@ const OptionsModal = ({
                 btnTextStyle={{ color: '#032F3C' }}
                 onPress={() => {
                   setShow(false);
-                  if (currentPopupItemId)
+                  if (currentPopupItem)
                     navigation.navigate('UserProfile', {
-                      id: currentPopupItemId,
+                      id: currentPopupItem?.userData._id,
                     });
                 }}
               />

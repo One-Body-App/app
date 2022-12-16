@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,10 +9,10 @@ import {
   ImageBackground,
   TouchableOpacity,
   SafeAreaView,
-  TextInput,
   ScrollView,
   Alert,
 } from 'react-native';
+import { TextInput } from 'react-native-paper';
 import { Avatar, Checkbox, Provider } from 'react-native-paper';
 import SelectDropdown from 'react-native-select-dropdown';
 
@@ -34,6 +34,9 @@ import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { Interest } from '@/utils/types';
+import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import EvilIcons from 'react-native-vector-icons/EvilIcons';
 
 type Props = StackScreenProps<RootStackParamList, 'InfluencerStepThree'>;
 
@@ -42,29 +45,37 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
 
+  const [interest, setInterest] = useState<Interest[]>([]);
+  const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
+  const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
+
   const [checked, setChecked] = useState(false);
 
-  const becmoeInfolancer = async () => {
-    dispatch(setLoader(true));
+  const getInterest = async () => {
     try {
       const res = await ApiCall({
-        params: data,
+        route: 'tags/interest',
+        verb: 'get',
         token: token,
-        route: 'user/become-influencer',
-        verb: 'post',
       });
 
       if (res?.status == 200) {
-        dispatch(setLoader(false));
-        Alert.alert(res?.response.message);
-        navigation.navigate('Home', {});
+        setInterest(res?.response);
+        setSearchInterest(res?.response);
       } else {
-        console.log('error', res?.response.data);
+        console.log('error', res?.response);
       }
-    } catch (e) {
-      console.log('saga become infulancer err --- ', e);
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
     }
   };
+
+  useEffect(() => {
+    if (token) {
+      getInterest();
+    }
+  }, [token]);
+
   return (
     <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
       <GeneralStatusBar
@@ -74,83 +85,83 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
         translucent={true}
       />
       <ScrollView>
-        <View style={styles.innerContainer}>
-          <View style={styles.privecystepview}>
-            <Logo
-              height={getHeight(14)}
-              width={getWidth(40)}
-              style={{ margin: getHeight(1), alignSelf: 'center' }}
-            />
+        <View style={styles.innerContainer} key={5}>
+          <Text
+            style={{
+              ...styles.heading,
+              fontSize: getFontSize(2.3),
+              marginBottom: 10,
+              lineHeight: 22,
+              width: getWidth(80),
+            }}
+          >
+            Select a minimum of 3 topics{' '}
+            <Text style={{ fontWeight: '400' }}>to personalize your News/Blog stream.</Text>
+          </Text>
 
-            <Text style={{ ...styles.text, color: '#4F6D77' }}>Step 3 of 3</Text>
-            <Text
-              style={{
-                ...styles.heading,
-                color: '#032F3C',
-                marginTop: 12,
-                fontFamily: 'Rubik-Medium',
-              }}
-            >
-              Influencer Agreement
-            </Text>
-          </View>
-
-          <View>
-            <Text style={styles.headingt}>Overview</Text>
-            <Text style={styles.paragraph}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dis sed ullamcorper malesuada
-              lobortis. Dui id eu ipsum ultrices.
-            </Text>
-            <Text style={styles.headingt}>Your Consent</Text>
-            <Text style={styles.paragraph}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dis sed ullamcorper malesuada
-              lobortis. Dui id eu ipsum ultrices.
-            </Text>
-            <Text style={styles.headingt}>Information We Collect</Text>
-            <Text style={styles.paragraph}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dis sed ullamcorper malesuada
-              lobortis. Dui id eu ipsum ultrices. Lorem ipsum dolor sit amet, consectetur adipiscing
-              elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </Text>
-            <Text style={styles.headingt}>Use of Personal Information</Text>
-            <Text style={styles.paragraph}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dis sed ullamcorper malesuada
-              lobortis. Dui id eu ipsum ultrices.
-            </Text>
-            <View style={{ marginTop: getHeight(3), flexDirection: 'row' }}>
-              <MaterialCommunityIcons name="arrow-collapse-down" size={20} color="#032F3C" />
-              <Text
-                style={{
-                  color: '#032F3C',
-                  textDecorationLine: 'underline',
-                  fontSize: 16,
-                  fontFamily: 'Rubik-Regular',
-                  paddingLeft: 8,
-                }}
-              >
-                Download end user agreement
-              </Text>
-            </View>
-            <View
-              style={{
-                marginTop: getHeight(3),
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Checkbox
-                status={checked ? 'checked' : 'unchecked'}
-                onPress={() => {
-                  setChecked(!checked);
-                }}
+          <TextInput
+            style={{ ...GeneralStyle.input, width: getWidth(80) }}
+            mode="outlined"
+            clearButtonMode="always"
+            onChangeText={(text) => {
+              const newSearchInterest = [];
+              for (let i = 0; i < interest.length; i++) {
+                if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                  newSearchInterest.push(interest[i]);
+                }
+                setSearchInterest(newSearchInterest);
+              }
+            }}
+            left={
+              <TextInput.Icon
+                name={() => (
+                  <EvilIcons
+                    name={'search'}
+                    size={getFontSize(4)}
+                    color={'#5B7279'}
+                    style={{ marginTop: 5 }}
+                  />
+                )}
               />
-              <Text style={styles.paragraph}>
-                I have gone through the document and accept the End User Agreement.
-              </Text>
-            </View>
-            <View style={{ width: getWidth(70), height: getHeight(20) }} />
-          </View>
-          <View />
+            }
+            theme={{ roundness: 40 }}
+            activeOutlineColor={'#5B7279'}
+            outlineColor="#9EA1A2"
+            label={'Search by Interests'}
+            placeholderTextColor={'black'}
+          />
+
+          <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
+            {searchInterest.length < 1 ? <Text>No Search Results</Text> : null}
+            {searchInterest.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() =>
+                  selectedInterest.includes(item?._id)
+                    ? setSelectedInterest(
+                        selectedInterest.filter(function (item2) {
+                          return item2 !== item?._id;
+                        })
+                      )
+                    : setSelectedInterest([...selectedInterest, item?._id])
+                }
+                style={
+                  selectedInterest.includes(item?._id)
+                    ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
+                    : styles.listItem
+                }
+              >
+                <Text
+                  numberOfLines={1}
+                  style={
+                    selectedInterest.includes(item?._id) ? { color: 'white' } : { color: '#757575' }
+                  }
+                >
+                  {item?.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       </ScrollView>
       <View style={styles.foter}>
@@ -176,14 +187,21 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
           </View>
 
           <TouchableOpacity
-            onPress={() => becmoeInfolancer()}
+            onPress={() => {
+              navigation.navigate('InfluencerStepFour', {
+                data: {
+                  ...route.params.data,
+                  interests: selectedInterest,
+                },
+              });
+            }}
             style={{
               flexDirection: 'row',
               justifyContent: 'center',
               alignItems: 'center',
             }}
           >
-            <Text style={styles.footerText}>Done</Text>
+            <Text style={styles.footerText}>Next</Text>
           </TouchableOpacity>
         </ImageBackground>
       </View>

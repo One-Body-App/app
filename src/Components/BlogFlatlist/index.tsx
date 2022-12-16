@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { ApiCall } from '@/src/Services/api';
 import { SceneRendererProps } from 'react-native-tab-view';
-import { User } from '@/utils/types';
+import { ArticleType, User } from '@/utils/types';
 import { isObject } from 'lodash';
 import { OpenURLButton } from '@/src/Services/constants';
 import ArticleItem from '../ListItems/ArticleItem';
@@ -38,7 +38,7 @@ const BlogFlatlist = ({
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(true);
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
-  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
+  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
 
   const getBlog = async (pageNumber: number) => {
     try {
@@ -84,8 +84,8 @@ const BlogFlatlist = ({
   }, [page, user]);
   const { colors } = useTheme();
 
-  const showModal = (userId: string) => {
-    setCurrentPopupItemId(userId);
+  const showModal = (item: ArticleType) => {
+    setCurrentPopupItem(item);
     setShow(true);
   };
 
@@ -102,7 +102,7 @@ const BlogFlatlist = ({
       <OptionsModal
         show={show ?? false}
         setShow={setShow}
-        currentPopupItemId={currentPopupItemId}
+        currentPopupItem={currentPopupItem}
         hideChannelSection={true}
         height={getHeight(25)}
       />

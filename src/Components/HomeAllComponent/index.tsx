@@ -38,6 +38,7 @@ import { isObject } from 'lodash';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { SceneRendererProps } from 'react-native-tab-view';
 import OptionsModal from '../ListItems/OptionsModal';
+import { ArticleType } from '@/utils/types';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
@@ -48,13 +49,13 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
-  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
+  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
   const [page, setPage] = useState<number>(1);
   const [socialPosts, setSocialPosts] = useState<any[]>();
   const navigation = useNavigation<ScreenNavigationProp>();
 
-  const showModal = (userId: string) => {
-    setCurrentPopupItemId(userId);
+  const showModal = (item: ArticleType) => {
+    setCurrentPopupItem(item);
     setShow(true);
   };
 
@@ -103,11 +104,7 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   }, []);
   return (
     <View style={{ flex: 1 }}>
-      <OptionsModal
-        show={show ?? false}
-        setShow={setShow}
-        currentPopupItemId={currentPopupItemId}
-      />
+      <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 75 }}
@@ -165,7 +162,7 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                   >
                     <TouchableOpacity
                       onPress={() => {
-                        showModal(item?.userData?._id);
+                        showModal(item);
                       }}
                     >
                       <Entypo

@@ -47,8 +47,9 @@ export const styles = StyleSheet.create({
   },
   innerContainer: {
     flex: 1,
-    padding: 30,
+    paddingHorizontal: 20,
     alignItems: 'center',
+    paddingTop: 100,
   },
 
   text: {
@@ -71,7 +72,7 @@ export const styles = StyleSheet.create({
   progressBarStatus: {
     position: 'absolute',
     backgroundColor: '#12D2D9',
-    width: 90,
+    width: 50,
     height: 7,
     borderRadius: 5,
   },
@@ -111,4 +112,25 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   btnText: { color: 'white', fontSize: getFontSize(2.5) },
+  flatlistview: {
+    // flex: 1,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginHorizontal: 10,
+    paddingBottom: 240,
+    // paddingTop: 10,
+  },
+  listItem: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    borderRadius: 10,
+    marginHorizontal: 7,
+    marginVertical: 5,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: 'gray',
+  },
 });

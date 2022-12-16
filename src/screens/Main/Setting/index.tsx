@@ -75,7 +75,7 @@ const Settings = ({ navigation }: Props) => {
             onPress={() =>
               navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
             }
-            style={{ ...styles.list, backgroundColor: colors.card }}
+            style={{ ...styles.list, backgroundColor: colors.background }}
           >
             <View>
               <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
@@ -95,7 +95,7 @@ const Settings = ({ navigation }: Props) => {
                 onlyPassword: true,
               })
             }
-            style={{ ...styles.list, backgroundColor: colors.card }}
+            style={{ ...styles.list, backgroundColor: colors.background }}
           >
             <View>
               <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
@@ -109,7 +109,7 @@ const Settings = ({ navigation }: Props) => {
 
         <TouchableOpacity
           onPress={() => navigation.navigate('NotificationSettings')}
-          style={{ ...styles.list, backgroundColor: colors.card }}
+          style={{ ...styles.list, backgroundColor: colors.background }}
         >
           <View>
             <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
@@ -126,7 +126,7 @@ const Settings = ({ navigation }: Props) => {
                 ? Alert.alert('You Already a Influencer')
                 : navigation.navigate('InfluencerStepOne');
             }}
-            style={{ ...styles.list, backgroundColor: colors.card }}
+            style={{ ...styles.list, backgroundColor: colors.background }}
           >
             <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
               Become an influencer
@@ -138,7 +138,7 @@ const Settings = ({ navigation }: Props) => {
 
         <TouchableOpacity
           onPress={() => navigation.navigate('RemoveAccount')}
-          style={{ ...styles.list, backgroundColor: colors.card }}
+          style={{ ...styles.list, backgroundColor: colors.background }}
         >
           <Text
             style={{
@@ -160,7 +160,7 @@ const Settings = ({ navigation }: Props) => {
           }}
           style={{
             ...styles.list,
-            backgroundColor: colors.card,
+            backgroundColor: colors.background,
             marginBottom: 10,
             borderBottomWidth: 0,
           }}

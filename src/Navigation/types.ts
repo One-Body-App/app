@@ -18,6 +18,9 @@ export type RootStackParamList = {
   InfluencerStepThree: {
     data: any;
   };
+  InfluencerStepFour: {
+    data: any;
+  };
   AccountType: undefined;
   forget: undefined;
   SignUp: {
@@ -63,4 +66,5 @@ export type RootStackParamList = {
     id: string;
   };
   Social: undefined;
+  Saved: undefined;
 };

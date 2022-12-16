@@ -13,28 +13,48 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Header from '@/components/Header';
-import Fontisto from 'react-native-vector-icons/Fontisto';
+
 import Save from '@/assets/svg/Save.svg';
 import { styles } from './styles';
-const DATA = [
-  {
-    id: '1',
-    title: 'First Item',
-  },
-  {
-    id: '2',
-    title: 'Second Item',
-  },
-  {
-    id: '3',
-    title: 'Third Item',
-  },
-  {
-    id: '4',
-    title: 'Third Item',
-  },
-];
-const Saved = ({ navigation }) => {
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import FastImage from 'react-native-fast-image';
+import { OpenURLButton } from '@/src/Services/constants';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { ApiCall } from '@/src/Services/api';
+import { getuserGet } from '@/src/Redux/actions/UserAction';
+
+type Props = StackScreenProps<RootStackParamList, 'Saved'>;
+
+const Saved = ({ navigation }: Props) => {
+  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const dispatch = useDispatch();
+
+  const removePost = async (link: string) => {
+    dispatch(setLoader(true));
+
+    try {
+      const res = await ApiCall({
+        route: `user/remove-post`,
+        verb: 'delete',
+        token: token,
+        params: {
+          link,
+        },
+      });
+
+      if (res?.status == 200) {
+        dispatch(getuserGet({ token }));
+      }
+      dispatch(setLoader(false));
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
   return (
     <View style={styles.container}>
       <GeneralStatusBar
@@ -63,16 +83,28 @@ const Saved = ({ navigation }) => {
         }}
       >
         <FlatList
-          data={DATA}
+          data={user?.savedPost}
           numColumns={2}
           ItemSeparatorComponent={() => <View style={{ height: getHeight(3) }} />}
           contentContainerStyle={{ justifyContent: 'space-between' }}
-          renderItem={() => (
-            <View style={{ ...styles.blogpostview, marginHorizontal: 10 }}>
-              <Image
+          ListEmptyComponent={() => {
+            return (
+              <View>
+                <Text>No saved posts</Text>
+              </View>
+            );
+          }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={{ ...styles.blogpostview, marginHorizontal: 10 }}
+              onPress={() => {
+                OpenURLButton(item.link);
+              }}
+            >
+              <FastImage
                 style={styles.blogpostimage}
                 resizeMode={'stretch'}
-                source={require('@/assets/images/pray.jpeg')}
+                source={{ uri: item.image }}
               />
               <View
                 style={{
@@ -91,12 +123,18 @@ const Saved = ({ navigation }) => {
                 <Save height={getHeight(3)} width={getWidth(3)} />
               </View>
               <Text numberOfLines={2} style={styles.blogpostpara}>
-                Churchgoers Proud of Church’s COVID-19 kfdsakkf fdskfds kfka
+                {item.title}
               </Text>
-              <View style={{ height: getHeight(1) }} />
-            </View>
+              <TouchableOpacity
+                onPress={() => {
+                  removePost(item.link);
+                }}
+              >
+                <Text>Remove</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
           )}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `${item.title}-${item.createdAt}`}
         />
       </View>
     </View>

@@ -42,7 +42,7 @@ const EditProfile = ({ navigation }: Props) => {
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
   const [imageToUpload, setImageToUpload] = useState('');
   const [imageObject, setImageObject] = useState<{ uri: string; type: string; name: string }>();
-  const [multipleImages, setMultipleImages] = useState();
+
   const [fullname, setFullName] = useState<string>(user?.name ?? '');
   const [username, setUsername] = useState<string>(user?.username ?? '');
   const [website, setWebsite] = useState<string>(user?.website ?? '');

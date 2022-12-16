@@ -45,6 +45,14 @@ type Profile = {
   contactPhoneNumber: string;
 };
 
+export type SavedPost = {
+  title: string;
+  image: string;
+  createdAt: Date;
+  userId: string;
+  link: string;
+};
+
 export type User = {
   badges: string[];
   createdAt: string;
@@ -73,6 +81,7 @@ export type User = {
   subscribedToNewsletter: boolean;
   influencerProfile?: InfluencerProfile;
   profile: Profile;
+  savedPost?: SavedPost[];
 };
 
 type InfluencerProfile = {
@@ -94,4 +103,18 @@ export type OrganizationType = {
   name: string;
 
   _id: string;
+};
+
+export type ArticleType = {
+  link?: string;
+  created: Date;
+  image: { url: string };
+  title: string | { a: any };
+  userData: {
+    _id: string;
+    name: string;
+    username: string;
+    role: string;
+    profileImage: string;
+  };
 };

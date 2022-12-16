@@ -28,7 +28,7 @@ export const ApiCall = async ({
       // url = `${!external ? `${BASE_URL}/` : ''}${route}`;
       url = `${!external ? `${BASE_URL}/` : ''}${route}`;
     }
-    console.log(url, 'url', token, params);
+
     let response: AxiosResponse<any, any> | null = null;
     switch (verb) {
       case 'get':
