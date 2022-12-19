@@ -43,8 +43,9 @@ import Geolocation from 'react-native-geolocation-service';
 import messaging from '@react-native-firebase/messaging';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { Interest, OrganizationType, User } from '@/utils/types';
+import { Interest, Tag, User } from '@/utils/types';
 import { useToast } from 'react-native-toast-notifications';
+import { profile } from 'console';
 
 type Props = NativeStackScreenProps<any, 'OrgnizationSteps'>;
 
@@ -67,8 +68,8 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   const [location_label, setLocation_label] = useState<MapSuggestion | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
-  const [organizationTypes, setOrganizationTypes] = useState<OrganizationType[]>([]);
-  const [organizationType, setOrganizationType] = useState<OrganizationType | null>();
+  const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
+  const [organizationType, setOrganizationType] = useState<Tag | null>();
   const [organizationTypeError, setOrganizationTypeError] = useState<string>('');
   const toast = useToast();
   const [showErrors, setShowErrors] = useState<boolean>(false);
@@ -787,7 +788,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                         alignSelf: 'center',
                       }}
                     >
-                      {item?.whatIDo?.whatIDo}
+                      {item?.whatIDo?.name}
                     </Text>
                   </View>
                 </TouchableOpacity>

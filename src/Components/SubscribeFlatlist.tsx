@@ -128,7 +128,7 @@ const SubscribeFlatlist = ({
                 color: '#757575',
               }}
             >
-              {item?.whatIDo?.whatIDo}
+              {item?.name}
             </Text>
           </View>
           {!hideFollowButton ? (

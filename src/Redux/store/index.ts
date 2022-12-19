@@ -9,7 +9,7 @@ import { configureStore } from '@reduxjs/toolkit';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  blacklist: ['general', 'prayer'],
+  blacklist: ['general', 'prayer', 'auth'],
 };
 // creates the store
 /* ------------- Redux Configuration ------------- */

@@ -37,6 +37,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest } from '@/utils/types';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
+import { useToast } from 'react-native-toast-notifications';
 
 type Props = StackScreenProps<RootStackParamList, 'InfluencerStepThree'>;
 
@@ -47,7 +48,8 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
 
   const [interest, setInterest] = useState<Interest[]>([]);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
-  const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
+  const [selectedInterest, setSelectedInterest] = useState<string>('');
+  const toast = useToast();
 
   const [checked, setChecked] = useState(false);
 
@@ -95,8 +97,7 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
               width: getWidth(80),
             }}
           >
-            Select a minimum of 3 topics{' '}
-            <Text style={{ fontWeight: '400' }}>to personalize your News/Blog stream.</Text>
+            Select 1 topic <Text style={{ fontWeight: '400' }}>that you want to reach.</Text>
           </Text>
 
           <TextInput
@@ -136,26 +137,16 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
             {searchInterest.map((item, index) => (
               <TouchableOpacity
                 key={index}
-                onPress={() =>
-                  selectedInterest.includes(item?._id)
-                    ? setSelectedInterest(
-                        selectedInterest.filter(function (item2) {
-                          return item2 !== item?._id;
-                        })
-                      )
-                    : setSelectedInterest([...selectedInterest, item?._id])
-                }
+                onPress={() => setSelectedInterest(item?._id)}
                 style={
-                  selectedInterest.includes(item?._id)
+                  selectedInterest == item?._id
                     ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
                     : styles.listItem
                 }
               >
                 <Text
                   numberOfLines={1}
-                  style={
-                    selectedInterest.includes(item?._id) ? { color: 'white' } : { color: '#757575' }
-                  }
+                  style={selectedInterest == item?._id ? { color: 'white' } : { color: '#757575' }}
                 >
                   {item?.name}
                 </Text>
@@ -188,12 +179,18 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
 
           <TouchableOpacity
             onPress={() => {
-              navigation.navigate('InfluencerStepFour', {
-                data: {
-                  ...route.params.data,
-                  interests: selectedInterest,
-                },
-              });
+              if (selectedInterest) {
+                navigation.navigate('InfluencerStepFour', {
+                  data: {
+                    ...route.params.data,
+                    interests: selectedInterest,
+                  },
+                });
+              } else {
+                toast.show('Please select 1 topic', {
+                  type: 'danger',
+                });
+              }
             }}
             style={{
               flexDirection: 'row',

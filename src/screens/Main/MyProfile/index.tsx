@@ -245,7 +245,7 @@ const MyProfile = ({ navigation }: Props) => {
           ]}
         >
           {user?.username ? `@${user?.username}` : ''}
-          {`${user?.whatIDo ? `• ${user?.whatIDo.whatIDo}` : ''}`}
+          {`${user?.whatIDo ? `• ${user?.whatIDo.name}` : ''}`}
         </Text>
 
         <View style={styles.manyimageview}>

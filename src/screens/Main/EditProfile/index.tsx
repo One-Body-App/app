@@ -27,7 +27,7 @@ import GradientButton from '@/components/GradientButton';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
-import { WhatIDo } from '@/utils/types';
+import { Tag } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getuserGet, getUserProfile } from '@/src/Redux/actions/UserAction';
@@ -47,9 +47,13 @@ const EditProfile = ({ navigation }: Props) => {
   const [username, setUsername] = useState<string>(user?.username ?? '');
   const [website, setWebsite] = useState<string>(user?.website ?? '');
   const [bio, setBio] = useState<string>(user?.bio ?? '');
-  const [whatIDo, setWhatIDo] = useState<WhatIDo | null>(user?.whatIDo ? user?.whatIDo : null);
+  const [whatIDo, setWhatIDo] = useState<Tag | null>(user?.whatIDo ? user?.whatIDo : null);
+  const [organizationType, setOrganizationType] = useState<Tag | null>(
+    user?.typeOfOrganization ? user?.typeOfOrganization : null
+  );
 
-  const [whatIDoList, setWhatIDoList] = useState<WhatIDo[]>([]);
+  const [whatIDoList, setWhatIDoList] = useState<Tag[]>([]);
+  const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
   const [visible, setVisible] = useState(false);
   const dispatch = useDispatch();
 
@@ -102,17 +106,35 @@ const EditProfile = ({ navigation }: Props) => {
   const getWhatIDo = async () => {
     try {
       const res = await ApiCall({
-        route: 'user/what-I-do',
+        route: 'tags/professions',
         token: token,
         verb: 'get',
       });
       if (res?.status == 200) {
-        setWhatIDoList(res?.response.data);
+        setWhatIDoList(res?.response);
       } else {
         console.log('error', res?.response);
       }
     } catch (e: any) {
       console.log('saga error on what i Do -- ', e.toString());
+    }
+  };
+
+  const getOrganizationTypes = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'tags/organization-types',
+        verb: 'get',
+        token: token,
+      });
+
+      if (res?.status == 200) {
+        setOrganizationTypes(res?.response);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
     }
   };
 
@@ -174,9 +196,15 @@ const EditProfile = ({ navigation }: Props) => {
   };
 
   useEffect(() => {
-    getWhatIDo();
-  }, []);
-
+    if (user) {
+      if (user?.role == 'individual') {
+        getWhatIDo();
+      } else {
+        getOrganizationTypes();
+      }
+    }
+  }, [user]);
+  console.log(whatIDoList);
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
@@ -214,34 +242,65 @@ const EditProfile = ({ navigation }: Props) => {
         <View style={styles.content2}>
           <View style={styles.headLine} />
           <View style={styles.container}>
-            <FlatList
-              data={whatIDoList}
-              keyExtractor={(item, index) => index.toString()}
-              ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
-              ItemSeparatorComponent={() => <Divider />}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    setWhatIDo(item);
+            {user?.role == 'individual' ? (
+              <FlatList
+                data={whatIDoList}
+                keyExtractor={(item, index) => index.toString()}
+                ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
+                ItemSeparatorComponent={() => <Divider />}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setWhatIDo(item);
 
-                    setVisible(false);
-                  }}
-                  style={styles.listItem}
-                >
-                  <Text
-                    style={{
-                      color: '#81979E',
-                      fontSize: getFontSize(2.2),
-                      fontFamily: 'Rubik-Regular',
+                      setVisible(false);
                     }}
-                    numberOfLines={1}
+                    style={styles.listItem}
                   >
-                    {item?.whatIDo}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
+                    <Text
+                      style={{
+                        color: '#81979E',
+                        fontSize: getFontSize(2.2),
+                        fontFamily: 'Rubik-Regular',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item?.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <FlatList
+                data={organizationTypes}
+                keyExtractor={(item, index) => index.toString()}
+                ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
+                ItemSeparatorComponent={() => <Divider />}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setOrganizationType(item);
+
+                      setVisible(false);
+                    }}
+                    style={styles.listItem}
+                  >
+                    <Text
+                      style={{
+                        color: '#81979E',
+                        fontSize: getFontSize(2.2),
+                        fontFamily: 'Rubik-Regular',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item?.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
           </View>
         </View>
       </Modal>
@@ -328,7 +387,7 @@ const EditProfile = ({ navigation }: Props) => {
               {user?.role == 'individual' ? (
                 <TextInput
                   style={styles.TextInput}
-                  value={whatIDo?.whatIDo ? whatIDo?.whatIDo : ''}
+                  value={whatIDo?.name ? whatIDo?.name : ''}
                   editable={false}
                   label="What I do"
                   onPressIn={() => {
@@ -343,7 +402,7 @@ const EditProfile = ({ navigation }: Props) => {
                 <>
                   <TextInput
                     style={styles.TextInput}
-                    value={whatIDo?.whatIDo ? whatIDo?.whatIDo : ''}
+                    value={organizationType?.name ? organizationType?.name : ''}
                     editable={false}
                     label="Who We Are?"
                     onPressIn={() => {
@@ -354,55 +413,59 @@ const EditProfile = ({ navigation }: Props) => {
                     activeUnderlineColor={'#12D2D9'}
                     // onChangeText={e => setWhatIDo(e)}
                   />
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      paddingVertical: 10,
-                    }}
-                  >
-                    <TextInput
-                      multiline={true}
-                      numberOfLines={5}
-                      label="Bio"
-                      value={user?.bio}
-                      returnKeyType={'next'}
-                      mode="outlined"
-                      activeOutlineColor={'#12D2D9'}
-                      activeUnderlineColor={'#12D2D9'}
-                      outlineColor={colors.border}
-                      maxLength={150}
+                  {user?.isInfluencer == true ? (
+                    <View
                       style={{
-                        flex: 4,
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        paddingVertical: 10,
                       }}
-                      theme={{
-                        dark: dark,
-                        colors: {
-                          text: colors.text,
-                          placeholder: colors.primary,
-                          background: colors.background,
-                        },
-                      }}
-                      onChangeText={(e) => setBio(e)}
-                      blurOnSubmit={false}
-                    />
-                    <Text style={{ flex: 1, textAlign: 'center' }}>{bio.length}/150</Text>
-                  </View>
+                    >
+                      <TextInput
+                        multiline={true}
+                        numberOfLines={5}
+                        label="Bio"
+                        value={user?.bio}
+                        returnKeyType={'next'}
+                        mode="outlined"
+                        activeOutlineColor={'#12D2D9'}
+                        activeUnderlineColor={'#12D2D9'}
+                        outlineColor={colors.border}
+                        maxLength={150}
+                        style={{
+                          flex: 4,
+                        }}
+                        theme={{
+                          dark: dark,
+                          colors: {
+                            text: colors.text,
+                            placeholder: colors.primary,
+                            background: colors.background,
+                          },
+                        }}
+                        onChangeText={(e) => setBio(e)}
+                        blurOnSubmit={false}
+                      />
+                      <Text style={{ flex: 1, textAlign: 'center' }}>{bio.length}/150</Text>
+                    </View>
+                  ) : null}
                 </>
               )}
-              <TextInput
-                style={styles.TextInput}
-                value={website}
-                label="Website"
-                keyboardType="url"
-                autoCorrect={false}
-                autoCapitalize="none"
-                placeholder="https://www.website.com"
-                activeOutlineColor={'#12D2D9'}
-                activeUnderlineColor={'#12D2D9'}
-                onChangeText={(e) => setWebsite(e)}
-              />
+              {user?.isInfluencer == true ? (
+                <TextInput
+                  style={styles.TextInput}
+                  value={website}
+                  label="Website"
+                  keyboardType="url"
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  placeholder="https://www.website.com"
+                  activeOutlineColor={'#12D2D9'}
+                  activeUnderlineColor={'#12D2D9'}
+                  onChangeText={(e) => setWebsite(e)}
+                />
+              ) : null}
             </View>
           </View>
         </View>

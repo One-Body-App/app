@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   GestureResponderEvent,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { Avatar, TextInput } from 'react-native-paper';
@@ -60,6 +61,16 @@ const Explore = () => {
   const [searchChannelsToFollow, setSearchChannelsToFollow] = useState<User[]>(allusers);
   const [searchChannelsToFollowText, setSearchChannelsToFollowText] = useState<string>('');
   const [selectedInterest, setSelectedInterest] = useState<Interest[]>(user?.interests ?? []);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    setIsRefreshing(false);
+  }, [searchChannelsToFollow]);
+
+  useEffect(() => {
+    setSearchChannelsToFollow(allusers);
+  }, [allusers]);
 
   useEffect(() => {
     dispatch(getuserAll({ token: token }));
@@ -241,6 +252,7 @@ const Explore = () => {
     );
   }, [searchChannelsToFollowText]);
   const { colors } = useTheme();
+
   return (
     <View style={{ backgroundColor: colors.background, flex: 1 }}>
       <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
@@ -257,9 +269,6 @@ const Explore = () => {
           paddingBottom: 120,
           marginHorizontal: getWidth(3),
         }}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: offset } } }], {
-          useNativeDriver: false,
-        })}
         showsHorizontalScrollIndicator={false}
         ListEmptyComponent={() => (
           <View style={styles.askinterest}>
@@ -268,77 +277,91 @@ const Explore = () => {
             </Text>
           </View>
         )}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('UserProfile', {
-                id: item?._id,
-              })
-            }
-            style={styles.subscribeview}
-          >
-            <View
-              style={{
-                alignItems: 'center',
-                alignContent: 'center',
-                justifyContent: 'center',
-                alignSelf: 'center',
-                padding: 10,
-
-                borderRadius: 120,
-              }}
+        refreshing={isRefreshing}
+        refreshControl={
+          <RefreshControl
+            enabled={true}
+            refreshing={isRefreshing}
+            onRefresh={() => {
+              setIsRefreshing(true);
+              setSearchChannelsToFollow([]);
+              dispatch(getuserAll({ token: token }));
+            }}
+          />
+        }
+        renderItem={({ item, index }) => {
+          return (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('UserProfile', {
+                  id: item?._id,
+                })
+              }
+              style={styles.subscribeview}
             >
-              <FastImage
+              <View
                 style={{
-                  width: 100,
-                  height: 100,
-                  borderRadius: 100,
-                  marginBottom: 5,
-                  borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
-                  borderWidth: 1,
-                }}
-                resizeMode="contain"
-                source={{
-                  uri: item?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
-                }}
-              />
-            </View>
-
-            <View
-              style={{
-                height: getHeight(6),
-                alignItems: 'center',
-              }}
-            >
-              <Text numberOfLines={2} style={styles.subscribetext}>
-                {item?.name}
-              </Text>
-              <Text
-                style={{
-                  color: '#757575',
+                  alignItems: 'center',
+                  alignContent: 'center',
+                  justifyContent: 'center',
                   alignSelf: 'center',
+                  padding: 10,
+
+                  borderRadius: 120,
                 }}
               >
-                {item?.whatIDo?.whatIDo}
-              </Text>
-            </View>
+                <FastImage
+                  style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 100,
+                    marginBottom: 5,
+                    borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
+                    borderWidth: 1,
+                  }}
+                  resizeMode="contain"
+                  source={{
+                    uri: item?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                  }}
+                />
+              </View>
 
-            <Button
-              btnStyle={[
-                styles.subscribebutton,
-                following.some((user) => user._id == item?._id)
-                  ? { backgroundColor: 'gray' }
-                  : null,
-              ]}
-              btnTextStyle={styles.subtex}
-              text={following.some((user) => user._id == item?._id) ? 'Following' : 'Follow'}
-              onPress={() => {
-                handleSubscribe(item?._id);
-              }}
-              wrapperViewBtnStyle={{ flex: 1, justifyContent: 'center' }}
-            />
-          </TouchableOpacity>
-        )}
+              <View
+                style={{
+                  height: getHeight(6),
+                  alignItems: 'center',
+                }}
+              >
+                <Text numberOfLines={2} style={styles.subscribetext}>
+                  {item?.name}
+                </Text>
+                <Text
+                  style={{
+                    color: '#757575',
+                    alignSelf: 'center',
+                  }}
+                >
+                  {item.whatIDo?.name}
+                </Text>
+              </View>
+
+              <Button
+                btnStyle={[
+                  styles.subscribebutton,
+                  following.some((user) => user._id == item?._id)
+                    ? { backgroundColor: 'gray' }
+                    : null,
+                ]}
+                btnTextStyle={styles.subtex}
+                text={following.some((user) => user._id == item?._id) ? 'Following' : 'Follow'}
+                onPress={() => {
+                  handleSubscribe(item?._id);
+                }}
+                wrapperViewBtnStyle={{ flex: 1, justifyContent: 'center' }}
+              />
+            </TouchableOpacity>
+          );
+        }}
       />
 
       <Modal
@@ -469,71 +492,73 @@ const Explore = () => {
                 useNativeDriver: false,
               })}
               showsHorizontalScrollIndicator={false}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('UserProfile', {
-                      id: item?._id,
-                    })
-                  }
-                  style={{ ...styles.subscribeview, flexDirection: 'row' }}
-                >
-                  <View
-                    style={{
-                      alignItems: 'center',
-                      alignContent: 'center',
-                      justifyContent: 'center',
-                      alignSelf: 'center',
-                      padding: 5,
-                      flexDirection: 'row',
-                      borderRadius: 120,
-                      borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
-                    }}
+              renderItem={({ item, index }) => {
+                return (
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate('UserProfile', {
+                        id: item?._id,
+                      })
+                    }
+                    style={{ ...styles.subscribeview, flexDirection: 'row' }}
                   >
-                    <Image
+                    <View
                       style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: 50,
-                        marginBottom: 5,
+                        alignItems: 'center',
+                        alignContent: 'center',
+                        justifyContent: 'center',
+                        alignSelf: 'center',
+                        padding: 5,
+                        flexDirection: 'row',
+                        borderRadius: 120,
+                        borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
                       }}
-                      resizeMode="contain"
-                      source={{
-                        uri: item?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
+                    >
+                      <Image
+                        style={{
+                          width: 50,
+                          height: 50,
+                          borderRadius: 50,
+                          marginBottom: 5,
+                        }}
+                        resizeMode="contain"
+                        source={{
+                          uri: item?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
+                        }}
+                      />
+                    </View>
+
+                    <View
+                      style={{
+                        flex: 2,
+                        justifyContent: 'center',
+                        paddingHorizontal: 10,
                       }}
+                    >
+                      <Text numberOfLines={2} style={[styles.subscribetext, { textAlign: 'left' }]}>
+                        {item?.name}
+                      </Text>
+                    </View>
+
+                    <Button
+                      btnStyle={[
+                        styles.subscribebutton,
+                        {
+                          padding: 8,
+
+                          width: getWidth(23),
+                        },
+                      ]}
+                      btnTextStyle={styles.subtex}
+                      text="Unfollow"
+                      onPress={() => {
+                        handleUnSubscribe(item?._id);
+                      }}
+                      wrapperViewBtnStyle={{ flex: 1, justifyContent: 'center' }}
                     />
-                  </View>
-
-                  <View
-                    style={{
-                      flex: 2,
-                      justifyContent: 'center',
-                      paddingHorizontal: 10,
-                    }}
-                  >
-                    <Text numberOfLines={2} style={[styles.subscribetext, { textAlign: 'left' }]}>
-                      {item?.name}
-                    </Text>
-                  </View>
-
-                  <Button
-                    btnStyle={[
-                      styles.subscribebutton,
-                      {
-                        padding: 8,
-
-                        width: getWidth(23),
-                      },
-                    ]}
-                    btnTextStyle={styles.subtex}
-                    text="Unfollow"
-                    onPress={() => {
-                      handleUnSubscribe(item?._id);
-                    }}
-                    wrapperViewBtnStyle={{ flex: 1, justifyContent: 'center' }}
-                  />
-                </TouchableOpacity>
-              )}
+                  </TouchableOpacity>
+                );
+              }}
             />
           </View>
         </View>

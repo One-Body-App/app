@@ -9,12 +9,13 @@ export type Interest = {
   deleteFlag: boolean;
   _id: string;
 };
-export type WhatIDo = {
+export type Tag = {
   _id: string;
   deleteFlag: boolean;
-  whatIDo: string;
+  name: string;
   createdAt: string;
   updatedAt: string;
+  parent?: string;
 };
 
 export type Badge = {
@@ -33,16 +34,15 @@ export type Location = {
 export type TGender = 'Male' | 'Female';
 
 type Profile = {
-  churchType: string;
-  oftenChurch: string;
+  churchType?: string;
+  oftenChurch?: string;
   dateOfBirth: string;
   gender: TGender;
   location: Location;
-  typeOfOrganization: string;
-  companyName: string;
-  contactName: string;
-  contactEmail: string;
-  contactPhoneNumber: string;
+  companyName?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhoneNumber?: string;
 };
 
 export type SavedPost = {
@@ -68,7 +68,7 @@ export type User = {
   username: string;
   bio?: string;
   website: string;
-  whatIDo: WhatIDo;
+
   _id: string;
   badgesData: Badge[];
   gender: string;
@@ -82,6 +82,8 @@ export type User = {
   influencerProfile?: InfluencerProfile;
   profile: Profile;
   savedPost?: SavedPost[];
+  whatIDo?: Tag;
+  typeOfOrganization?: Tag;
 };
 
 type InfluencerProfile = {
@@ -97,12 +99,6 @@ type InfluencerProfile = {
   influencerStatus: 'approved' | 'pending';
   createdAt: string;
   updatedAt: string;
-};
-
-export type OrganizationType = {
-  name: string;
-
-  _id: string;
 };
 
 export type ArticleType = {

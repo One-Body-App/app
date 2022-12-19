@@ -104,7 +104,7 @@ const LoginComponent: FC<Props> = ({
 
   const [showSendEmailConfirmation, setShowSendEmailConfirmation] = useState<boolean>(true);
 
-  const accounType = useSelector((state: RootState) => state.general.accountType);
+  const accountType = useSelector((state: RootState) => state.general.accountType);
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -161,14 +161,14 @@ const LoginComponent: FC<Props> = ({
 
   useEffect(() => {
     const checkNewUserCredentials = async () => {
-      if (newUserCredentials && accounType) {
+      if (newUserCredentials && accountType) {
         const data = {
           email: newUserCredentials?.user.email,
           name: newUserCredentials?.user.displayName,
           socialData: newUserCredentials?.additionalUserInfo,
           userId: newUserCredentials.user.uid,
           token,
-          role: accounType,
+          role: accountType,
         };
 
         dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));
@@ -604,23 +604,27 @@ const LoginComponent: FC<Props> = ({
       ) : null}
 
       {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
-        <Button
-          text={'LOG IN'}
-          disabled={!state.password || !state.email}
-          btnStyle={{
-            ...GeneralStyle.btn,
-            marginTop: getHeight(2),
-            backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
-          }}
-          disabledBtnStyle={{
-            ...GeneralStyle.btn,
-            marginTop: getHeight(2),
-            backgroundColor: '#E6EAEC',
-          }}
-          btnTextStyle={GeneralStyle.btnText}
-          disabledBtnTextStyle={GeneralStyle.btnText}
-          onPress={() => signInUser()}
-        />
+        <View style={{ marginHorizontal: 20 }}>
+          <Button
+            text={'LOG IN'}
+            disabled={!state.password || !state.email}
+            btnStyle={{
+              ...GeneralStyle.btn,
+
+              marginTop: getHeight(2),
+              backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
+            }}
+            disabledBtnStyle={{
+              ...GeneralStyle.btn,
+              marginTop: getHeight(2),
+
+              backgroundColor: '#E6EAEC',
+            }}
+            btnTextStyle={GeneralStyle.btnText}
+            disabledBtnTextStyle={GeneralStyle.btnText}
+            onPress={() => signInUser()}
+          />
+        </View>
       ) : null}
 
       {error ? (

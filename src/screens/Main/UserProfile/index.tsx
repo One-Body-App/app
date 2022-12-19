@@ -294,7 +294,7 @@ const UserProfile = ({ navigation, route }: Props) => {
           ]}
         >
           {user?.username ? `@${user?.username}` : ''}
-          {`${user?.whatIDo ? `• ${user?.whatIDo.whatIDo}` : ''}`}
+          {`${user?.whatIDo ? `• ${user?.whatIDo.name}` : ''}`}
         </Animated.Text>
       )}
 

@@ -738,7 +738,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                         alignSelf: 'center',
                       }}
                     >
-                      {item?.whatIDo?.whatIDo}
+                      {item?.whatIDo?.name}
                     </Text>
                   </View>
                 </TouchableOpacity>
