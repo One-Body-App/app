@@ -25,7 +25,6 @@ export const styles = StyleSheet.create({
   },
 
   text: {
-    width: '100%',
     textAlign: 'center',
     fontFamily: 'Rubik-Regular',
     marginTop: 10,

@@ -72,12 +72,7 @@ const SocialFlatlist = () => {
       keyExtractor={(item, index) => {
         return `${item?.handler}-${item.id}-${index}`;
       }}
-      renderItem={({ item }) => (
-        <SocialItem
-          item={item}
-          author={isObject(item?.author) ? item?.author?.a?.$text : item?.author}
-        />
-      )}
+      renderItem={({ item }) => <SocialItem item={item} />}
       onEndReachedThreshold={0.5}
       onEndReached={() => {
         if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);

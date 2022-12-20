@@ -316,12 +316,16 @@ const Explore = () => {
                     height: 100,
                     borderRadius: 100,
                     marginBottom: 5,
-                    borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
+                    borderColor:
+                      item?.profileImage && item?.profileImage != '' ? '#032F3C' : '#09aadb',
                     borderWidth: 1,
                   }}
                   resizeMode="contain"
                   source={{
-                    uri: item?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                    uri:
+                      item?.profileImage && item?.profileImage != ''
+                        ? item?.profileImage
+                        : 'https://cdn.onebodyapp.com/user/no-image.png',
                   }}
                 />
               </View>
@@ -511,7 +515,8 @@ const Explore = () => {
                         padding: 5,
                         flexDirection: 'row',
                         borderRadius: 120,
-                        borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
+                        borderColor:
+                          item?.profileImage && item?.profileImage != '' ? '#032F3C' : '#09aadb',
                       }}
                     >
                       <Image
@@ -523,7 +528,10 @@ const Explore = () => {
                         }}
                         resizeMode="contain"
                         source={{
-                          uri: item?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
+                          uri:
+                            item?.profileImage && item?.profileImage != ''
+                              ? item?.profileImage
+                              : 'https://cdn.onebodyapp.com/user/no-image.png',
                         }}
                       />
                     </View>

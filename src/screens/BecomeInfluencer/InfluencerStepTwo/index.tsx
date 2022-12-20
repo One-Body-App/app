@@ -55,6 +55,8 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     instagramUsernameError: '',
     instagramId: '',
     instagramToken: '',
+    instagramTokenExpiresAtReal: '',
+    instagramTokenExpiresAt: '',
     instagramIdError: '',
     twitterTitle: '',
     twitterTitleError: '',
@@ -76,7 +78,11 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     rssFeed2Error: '',
   });
 
-  const getInstagramData = async (accessToken: string) => {
+  const getInstagramData = async (
+    accessToken: string,
+    accessTokenExpiresAt: string,
+    accessTokenExpiresAtReal: string
+  ) => {
     try {
       const options = {
         method: 'GET',
@@ -92,6 +98,8 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         instagramUsername: result.data.username,
         instagramId: result.data.id,
         instagramToken: accessToken,
+        instagramTokenExpiresAt: accessTokenExpiresAt,
+        instagramTokenExpiresAtReal: accessTokenExpiresAtReal,
       });
       console.log(result);
     } catch (e) {
@@ -115,10 +123,14 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
           };
 
           const result = await axios.request(options);
-          console.log(result.data);
+
           if (result && result.data?.access_token) {
             setToken(result.data?.access_token);
-            getInstagramData(result.data?.access_token);
+            getInstagramData(
+              result.data?.access_token,
+              result.data?.expiresAt,
+              result.data?.expiresAtReal
+            );
           }
         } catch (error: any) {
           console.log(error);
@@ -205,7 +217,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                       fontWeight: '700',
                       fontSize: getFontSize(2.3),
 
-                      marginBottom: 10,
+                      marginVertical: 10,
                       fontFamily: 'Rubik-Regular',
                     }}
                   >
@@ -235,7 +247,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                   fontFamily: 'Rubik-Regular',
                 }}
               >
-                <Ionicons name="logo-twitter" color={'#032F3C'} size={20} /> Instagram handle
+                <Ionicons name="logo-instagram" color={'#032F3C'} size={20} /> Instagram handle
               </Text>
               <Text
                 style={{
@@ -357,6 +369,8 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                   instagramUsername,
                   instagramId,
                   instagramToken,
+                  instagramTokenExpiresAt,
+                  instagramTokenExpiresAtReal,
                   bio,
 
                   comments,
@@ -373,6 +387,8 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                     instagramUsername,
                     instagramToken,
                     instagramId,
+                    instagramTokenExpiresAt,
+                    instagramTokenExpiresAtReal,
 
                     bio,
                     comments,
@@ -549,9 +565,15 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               label={'@Username'}
               onFocus={() => setState({ ...state, twitterUsernameError: '' })}
               onSubmitEditing={() => inputRefs.twitterUsername.current?.focus()}
-              onChangeText={(twitterUsername) =>
-                changeHandler('twitterUsername', twitterUsername.trim())
-              }
+              onChangeText={(twitterUsername) => {
+                if (twitterUsername)
+                  changeHandler(
+                    'twitterUsername',
+                    twitterUsername[0] != '@'
+                      ? `@${twitterUsername.toLowerCase().trim()}`
+                      : twitterUsername.toLowerCase().trim()
+                  );
+              }}
               blurOnSubmit={false}
             />
             <Text style={GeneralStyle.InputError}>{state.twitterUsernameError}</Text>

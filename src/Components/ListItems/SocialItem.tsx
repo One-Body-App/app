@@ -12,14 +12,15 @@ import {
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { styles } from './style';
 import { OpenURLButton } from '@/src/Services/constants';
-import Entypo from 'react-native-vector-icons/Entypo';
+
 import FastImage from 'react-native-fast-image';
 import { RootStackParamList } from '@/src/Navigation/types';
+import Video from 'react-native-video';
+
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 const SocialItem = ({
   item,
-  author,
   socialPostviewStyle,
 }: {
   currentPopupItemId?: string;
@@ -29,9 +30,9 @@ const SocialItem = ({
     handler: string;
     link: string;
     title: string;
-    image?: {
-      url: string;
-    };
+    mediaUrl?: string;
+    mediaType?: string;
+    permalink?: string;
     userData: {
       _id: string;
       name: string;
@@ -42,15 +43,23 @@ const SocialItem = ({
     created: Date;
     id: string;
   };
-  author?: string;
   socialPostviewStyle?: StyleProp<ViewStyle>;
 }) => {
   const { colors } = useTheme();
   const navigation = useNavigation<ScreenNavigationProp>();
-
+  let url = '';
+  if (item?.source == 'twitter') {
+    url = `https://twitter.com/${item?.handler}/status/${item?.id}`;
+  } else {
+    url = item?.permalink || '';
+  }
+  const videoStyle = {
+    height: 250,
+    width: 250,
+  };
   return (
     <View style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
-      {author ? (
+      {item.userData ? (
         <TouchableOpacity
           onPress={() => {
             navigation.navigate('UserProfile', {
@@ -66,14 +75,20 @@ const SocialItem = ({
         >
           <FastImage
             source={{
-              uri: item?.userData?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
+              uri:
+                item?.userData?.profileImage && item?.userData?.profileImage != ''
+                  ? item?.userData?.profileImage
+                  : 'https://cdn.onebodyapp.com/user/no-image.png',
             }}
             style={{
               width: 25,
               height: 25,
               borderRadius: 25,
               // marginBottom: 5,
-              borderColor: item?.userData?.profileImage ? '#032F3C' : '#09aadb',
+              borderColor:
+                item?.userData?.profileImage && item?.userData?.profileImage != ''
+                  ? '#032F3C'
+                  : '#09aadb',
               borderWidth: 1,
             }}
             resizeMode={'contain'}
@@ -91,6 +106,27 @@ const SocialItem = ({
         </TouchableOpacity>
       ) : null}
 
+      {item?.mediaUrl ? (
+        <>
+          {item.mediaType == 'VIDEO' ? (
+            <Video
+              source={{
+                uri: item?.mediaUrl,
+              }}
+              style={{ width: '100%', height: 300, borderRadius: 20 }}
+              controls={true}
+              resizeMode="cover"
+              paused={true}
+              hideShutterView={true}
+            />
+          ) : (
+            <FastImage
+              style={{ width: '100%', height: 300, borderRadius: 20 }}
+              source={{ uri: item?.mediaUrl }}
+            />
+          )}
+        </>
+      ) : null}
       <View style={{ flexDirection: 'row', padding: 5 }}>
         <Text
           style={{
@@ -105,29 +141,25 @@ const SocialItem = ({
           {item?.content}
         </Text>
       </View>
-      <TouchableOpacity
-        onPress={() => {
-          let url = '';
-          if (item?.source == 'twitter') {
-            url = `https://twitter.com/${item?.handler}/status/${item?.id}`;
-          } else {
-            url = '';
-          }
 
-          if (url) OpenURLButton(url);
-        }}
-      >
-        <Text
-          style={{
-            marginLeft: 5,
-            fontFamily: 'Rubik',
-            color: '#68828A',
-            alignItems: 'center',
+      {url ? (
+        <TouchableOpacity
+          onPress={() => {
+            if (url) OpenURLButton(url);
           }}
         >
-          {item?.source == 'twitter' ? 'View on Twitter' : 'View on Instagram'}
-        </Text>
-      </TouchableOpacity>
+          <Text
+            style={{
+              marginLeft: 5,
+              fontFamily: 'Rubik',
+              color: '#68828A',
+              alignItems: 'center',
+            }}
+          >
+            {item?.source == 'twitter' ? 'View on Twitter' : 'View on Instagram'}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 };

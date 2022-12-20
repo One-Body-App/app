@@ -86,6 +86,7 @@
     "react-native-toast-message": "^2.1.5",
     "react-native-toast-notifications": "^3.3.1",
     "react-native-vector-icons": "^9.1.0",
+    "react-native-video": "^5.2.1",
     "react-native-webview": "^11.22.2",
     "react-native-zendesk-chat": "^0.4.1",
     "react-redux": "^7.2.6",

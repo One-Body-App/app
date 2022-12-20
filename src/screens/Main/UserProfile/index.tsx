@@ -87,7 +87,12 @@ const UserProfile = ({ navigation, route }: Props) => {
     switch (route.key) {
       case 'Instagram':
         return (
-          <InstagramFlatlist setScrollPosition={updateScrollPosition} jumpTo={jumpTo} {...route} />
+          <InstagramFlatlist
+            setScrollPosition={updateScrollPosition}
+            jumpTo={jumpTo}
+            currentUser={user}
+            {...route}
+          />
         );
       case 'Blog':
         return (
@@ -173,7 +178,7 @@ const UserProfile = ({ navigation, route }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res, 'resresres');
+
       if (res?.status == 200) {
         dispatch(setLoader(false));
         setUser(res?.response);

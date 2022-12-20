@@ -39,6 +39,7 @@ import Twitter from '@/assets/svg/Twitter.svg';
 import { SceneRendererProps } from 'react-native-tab-view';
 import OptionsModal from '../ListItems/OptionsModal';
 import { ArticleType } from '@/utils/types';
+import SocialItem from '../ListItems/SocialItem';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
@@ -120,71 +121,76 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
           />
         }
       >
-        <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
-        <View>
-          <FlatList
-            nestedScrollEnabled
-            data={todayNews}
-            horizontal={true}
-            contentContainerStyle={{ marginTop: 20 }}
-            showsHorizontalScrollIndicator={false}
-            ListHeaderComponent={() => <View style={{ padding: 7 }} />}
-            ListFooterComponent={() => <View style={{ padding: 7 }} />}
-            ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-            keyExtractor={(item, index) => `${item.created}_${index}`}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  OpenURLButton(item?.link);
-                }}
-              >
-                <ImageBackground
-                  style={styles.newsimage}
-                  imageStyle={{ borderRadius: 20 }}
-                  source={{ uri: item?.image?.url }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: '#00171e',
-                      borderRadius: 20,
-                      opacity: 0.65,
-                      flex: 1,
-                    }}
-                  ></View>
-                  <View
-                    style={{
-                      height: '100%',
-                      width: '100%',
-                      position: 'absolute',
-                      top: 0,
-                      justifyContent: 'space-between',
+        {todayNews.length > 0 ? (
+          <>
+            <Text style={{ ...styles.newstitle, color: colors.text }}>Today's News</Text>
+            <View>
+              <FlatList
+                nestedScrollEnabled
+                data={todayNews}
+                horizontal={true}
+                contentContainerStyle={{ marginTop: 20 }}
+                showsHorizontalScrollIndicator={false}
+                ListHeaderComponent={() => <View style={{ padding: 7 }} />}
+                ListFooterComponent={() => <View style={{ padding: 7 }} />}
+                ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+                keyExtractor={(item, index) => `${item.created}_${index}`}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      OpenURLButton(item?.link);
                     }}
                   >
-                    <TouchableOpacity
-                      onPress={() => {
-                        showModal(item);
-                      }}
+                    <ImageBackground
+                      style={styles.newsimage}
+                      imageStyle={{ borderRadius: 20 }}
+                      source={{ uri: item?.image?.url }}
                     >
-                      <Entypo
-                        name="dots-three-horizontal"
-                        style={styles.newsicon}
-                        size={25}
-                        color={'white'}
-                      />
-                    </TouchableOpacity>
-                    <Text style={styles.newstext}>{item?.title}</Text>
-                    <View style={styles.newsview}>
-                      <Text style={{ ...styles.messageText, color: '#B8BABE' }}>
-                        {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
-                      </Text>
-                      <Text style={styles.messageText}>{timeSince(item?.created)} ago</Text>
-                    </View>
-                  </View>
-                </ImageBackground>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+                      <View
+                        style={{
+                          backgroundColor: '#00171e',
+                          borderRadius: 20,
+                          opacity: 0.65,
+                          flex: 1,
+                        }}
+                      ></View>
+                      <View
+                        style={{
+                          height: '100%',
+                          width: '100%',
+                          position: 'absolute',
+                          top: 0,
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={() => {
+                            showModal(item);
+                          }}
+                        >
+                          <Entypo
+                            name="dots-three-horizontal"
+                            style={styles.newsicon}
+                            size={25}
+                            color={'white'}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.newstext}>{item?.title}</Text>
+                        <View style={styles.newsview}>
+                          <Text style={{ ...styles.messageText, color: '#B8BABE' }}>
+                            {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
+                          </Text>
+                          <Text style={styles.messageText}>{timeSince(item?.created)} ago</Text>
+                        </View>
+                      </View>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </>
+        ) : null}
+
         <Text style={{ ...styles.socialposttext, color: colors.text }}>Latest Posts</Text>
         <View>
           <FlatList
@@ -193,97 +199,7 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
             keyExtractor={(item, index) => {
               return `${item?.handler}-${item.id}-${index}`;
             }}
-            renderItem={({ item, index }) => (
-              <View
-                key={`${item?.handler}-${index}`}
-                style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}
-              >
-                {item?.attachments ? (
-                  <Image
-                    style={styles.socialpostimage}
-                    resizeMode={'stretch'}
-                    source={require('@/assets/images/Photo.png')}
-                  />
-                ) : null}
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate('UserProfile', {
-                      id: item?.userData?._id,
-                    });
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    padding: 5,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <FastImage
-                    source={{
-                      uri:
-                        item?.userData?.profileImage ??
-                        'https://cdn.onebodyapp.com/user/no-image.png',
-                    }}
-                    style={{
-                      width: 25,
-                      height: 25,
-                      borderRadius: 25,
-                      // marginBottom: 5,
-                      borderColor: item?.userData?.profileImage ? '#032F3C' : '#09aadb',
-                      borderWidth: 1,
-                    }}
-                    resizeMode={'contain'}
-                  />
-                  <Text
-                    style={{
-                      marginLeft: 5,
-                      fontFamily: 'Rubik',
-                      color: '#68828A',
-                      alignItems: 'center',
-                    }}
-                  >
-                    {item?.userData?.name}
-                  </Text>
-                </TouchableOpacity>
-                <View style={{ flexDirection: 'row', padding: 5 }}>
-                  <Text
-                    style={{
-                      padding: 5,
-                      fontFamily: 'Rubik',
-                      lineHeight: 18,
-                      color: colors.text,
-                      marginTop: getHeight(1),
-                      textAlign: 'center',
-                    }}
-                  >
-                    {item?.content}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => {
-                    let url = '';
-                    if (item?.source == 'twitter') {
-                      url = `https://twitter.com/${item?.handler}/status/${item?.id}`;
-                    } else {
-                      url = '';
-                    }
-
-                    if (url) OpenURLButton(url);
-                  }}
-                >
-                  <Text
-                    style={{
-                      marginLeft: 5,
-                      fontFamily: 'Rubik',
-                      color: '#68828A',
-                      alignItems: 'center',
-                    }}
-                  >
-                    {item?.source == 'twitter' ? 'View on Twitter' : 'View on Instagram'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            renderItem={({ item }) => <SocialItem item={item} />}
             ListFooterComponent={() => (
               <View style={{ alignSelf: 'center', alignContent: 'center' }}>
                 <Button

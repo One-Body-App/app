@@ -53,9 +53,9 @@ const TwitterFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: Us
   };
 
   useEffect(() => {
-    getTwitterData(1);
-  }, []);
-  console.log(tweets);
+    getTwitterData(page);
+  }, [page]);
+
   return (
     <FlatList
       data={tweets}

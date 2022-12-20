@@ -768,13 +768,19 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                         ? {
                             ...styles.img,
                             borderWidth: 2.5,
-                            borderColor: item?.profileImage ? '#032F3C' : '#09aadb',
+                            borderColor:
+                              item?.profileImage && item?.profileImage != ''
+                                ? '#032F3C'
+                                : '#09aadb',
                           }
                         : styles.img
                     }
                     resizeMode="contain"
                     source={{
-                      uri: item?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
+                      uri:
+                        item?.profileImage && item?.profileImage != ''
+                          ? item?.profileImage
+                          : 'https://cdn.onebodyapp.com/user/no-image.png',
                     }}
                   />
                   <View>
