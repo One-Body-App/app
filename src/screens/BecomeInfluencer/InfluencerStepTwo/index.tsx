@@ -54,6 +54,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     instagramUsername: '',
     instagramUsernameError: '',
     instagramId: '',
+    instagramToken: '',
     instagramIdError: '',
     twitterTitle: '',
     twitterTitleError: '',
@@ -68,10 +69,10 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     website: '',
     websiteError: '',
     rssFeed1: '',
-    rssFeed1Category: '',
+    rssFeed1Category: 'news',
     rssFeed1Error: '',
     rssFeed2: '',
-    rssFeed2Category: '',
+    rssFeed2Category: 'news',
     rssFeed2Error: '',
   });
 
@@ -90,6 +91,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         ...state,
         instagramUsername: result.data.username,
         instagramId: result.data.id,
+        instagramToken: accessToken,
       });
       console.log(result);
     } catch (e) {
@@ -127,7 +129,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   }, [route.params]);
 
   const onNext = async () => {
-    const { twitterUsername, instagramId, instagramTitle, comments } = state;
+    const { twitterUsername, instagramId, instagramTitle, comments, instagramToken } = state;
     const twitterUsernameError = await validator('twitterUsername', twitterUsername);
 
     const instagramIdError = await validator('instagramId', instagramId);
@@ -354,6 +356,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                   twitterUsername,
                   instagramUsername,
                   instagramId,
+                  instagramToken,
                   bio,
 
                   comments,
@@ -368,6 +371,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                   data: {
                     twitterUsername,
                     instagramUsername,
+                    instagramToken,
                     instagramId,
 
                     bio,
@@ -740,8 +744,8 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                   setState({ ...state, rssFeed1Category: itemValue });
                 }}
               >
-                <Picker.Item label="News" value="blog" />
-                <Picker.Item label="Blog" value="news" />
+                <Picker.Item label="News" value="news" />
+                <Picker.Item label="Blog" value="blog" />
               </Picker>
             </>
 
