@@ -71,7 +71,7 @@ const UserProfile = ({ navigation, route }: Props) => {
         routes.push({ key: 'Blog', title: 'Blog/News' });
       }
 
-      if (user?.influencerProfile?.instagramHandler) {
+      if (user?.influencerProfile?.instagramId) {
         routes.push({ key: 'Instagram', title: 'Instagram' });
       }
       setRoutes(routes);
@@ -119,6 +119,7 @@ const UserProfile = ({ navigation, route }: Props) => {
       <View style={styles.tabBar}>
         {props.navigationState.routes
           .filter((route) => {
+            console.log(user?.influencerProfile, 'user?.influencerProfile');
             if (user?.influencerProfile?.twitterId && route.key == 'Twitter') {
               return true;
             }
@@ -127,7 +128,7 @@ const UserProfile = ({ navigation, route }: Props) => {
               return true;
             }
 
-            if (user?.influencerProfile?.instagramHandler && route.key == 'Instagram') {
+            if (user?.influencerProfile?.instagramId && route.key == 'Instagram') {
               return true;
             }
 
