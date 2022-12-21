@@ -12,79 +12,107 @@ import Button from '@/components/Button';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { setLoader } from '@/redux//actions/GeneralActions';
-import { getuserGet, setUserIntrest, setUserSubscribe } from '@/redux//actions/UserAction';
+import { getuserAll } from '@/redux//actions/UserAction';
 import AddIntrestsModel from '@/components/AddIntrestsModel';
 import SubscribeFlatlist from '@/components/SubscribeFlatlist';
 import FastImage from 'react-native-fast-image';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Entypo from 'react-native-vector-icons/Entypo';
 import ImageModal from 'react-native-image-modal';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { Interest, User } from '@/utils/types';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { StackScreenProps } from '@react-navigation/stack';
 
-const Chanel = ({ navigation }) => {
-  const loader = useSelector((state) => state.general.loader);
-  const intrest = useSelector((state) => state.user.userInrest);
-  const user = useSelector((state) => state.auth.userProfile);
+type Props = StackScreenProps<RootStackParamList, 'Channel'>;
 
-  const subscribes = useSelector((state) => state.user.userSubscribes);
+const Chanel = ({ navigation }: Props) => {
+  const subscribes = useSelector((state: RootState) => state.user.userSubscribes);
   const [show, setShow] = useState(false);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
   const [showSubscription, setShowSubscription] = useState(false);
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.userToken);
+  const token = useSelector((state: RootState) => state.auth.userToken);
 
-  const removeIntrest = async (id) => {
-    const arr = intrest.filter((item) => item._id != id);
-    dispatch(setUserIntrest(arr));
+  const [following, setFollowing] = useState<User[]>([]);
+
+  const [selectedInterest, setSelectedInterest] = useState<Interest[]>(user?.interests ?? []);
+
+  const removeInterests = async (newInterest: Interest) => {
+    dispatch(setLoader(true));
+
     try {
       const res = await ApiCall({
-        route: `${user?.role}/remove-interest`,
+        route: 'user/remove-interests',
         token: token,
-        params: { interests: [id] },
+        params: {
+          interests: selectedInterest.filter((interest) => interest._id != newInterest._id),
+        },
         verb: 'patch',
       });
-      if (res?.status == '200') {
-        // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
 
-        console.log('res == 200 ... ', res);
+      if (res?.status == 200) {
+        dispatch(setLoader(false));
+        selectedInterest.filter((itemToFilter) => itemToFilter._id == newInterest?._id).length > 0
+          ? setSelectedInterest(
+              selectedInterest.filter(function (item2) {
+                return item2._id !== newInterest?._id;
+              })
+            )
+          : setSelectedInterest([...selectedInterest, newInterest]);
       } else {
-        console.log('res != 200', res);
+        dispatch(setLoader(false));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
 
-  const unSubscribed = async (id) => {
-    const arr = subscribes.filter((item) => item._id != id);
-    dispatch(setUserSubscribe(arr));
+  const handleUnSubscribe = async (id: string) => {
     try {
       const res = await ApiCall({
-        route: `${user?.role}/unsubscribe/${id}`,
+        route: `user/unsubscribe/${id}`,
         token: token,
         verb: 'patch',
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
-        console.log('res == 200 ... ', res?.response);
+        await getFollowing();
       } else {
-        console.log('res != 200 ... ', res?.response);
+        const result = following.filter((item) => item._id != id);
+        // setSubscibe(result);
       }
     } catch (e) {
+      console.log('saga sign up err --- ', e);
+    }
+  };
+
+  const getFollowing = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'user/get-following',
+        verb: 'get',
+        token: token,
+      });
+      console.log(res?.response, 'res?.responseres?.response');
+      if (res?.status == 200) {
+        setFollowing(res?.response?.data);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
 
   useEffect(() => {
-    dispatch(setLoader(true));
-    // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
-    setTimeout(function () {
-      // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
-    }, 2000);
+    getFollowing();
   }, []);
 
   const SubscribeFlatlists = () => {
     return (
       <FlatList
-        data={subscribes}
+        data={following}
         ListFooterComponent={() => <View style={{ padding: 7 }} />}
         ListHeaderComponent={<Text style={styles.mysubscription}>My Subscriptions</Text>}
         ItemSeparatorComponent={() => <Divider />}
@@ -102,7 +130,10 @@ const Chanel = ({ navigation }) => {
                 resizeMode="contain"
                 style={{ width: 70, height: 70, borderRadius: 35 }}
                 source={{
-                  uri: item?.profileImage,
+                  uri:
+                    item?.profileImage && item?.profileImage != ''
+                      ? item?.profileImage
+                      : 'https://cdn.onebodyapp.com/user/no-image.png',
                 }}
               />
 
@@ -116,7 +147,7 @@ const Chanel = ({ navigation }) => {
                     fontFamily: 'Rubik-Regular',
                   }}
                 >
-                  {item?.whatIDo?.whatIDo}
+                  {item?.whatIDo?.name}
                 </Text>
               </View>
             </View>
@@ -124,9 +155,9 @@ const Chanel = ({ navigation }) => {
             <Button
               btnStyle={[styles.subscribebutton]}
               btnTextStyle={styles.subtex}
-              text={'Subscribed'}
+              text={'Unfollow'}
               onPress={() => {
-                unSubscribed(item?._id);
+                handleUnSubscribe(item?._id);
               }}
             />
           </TouchableOpacity>
@@ -145,7 +176,7 @@ const Chanel = ({ navigation }) => {
       />
 
       <Header
-        title={'My Channels'}
+        title={'Connections'}
         leftView={
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back-outline" size={20} />
@@ -162,7 +193,6 @@ const Chanel = ({ navigation }) => {
           onSwipeComplete={() => setShowSubscription(false)}
           swipeDirection={['down']}
           style={styles.bottomView}
-          onRequestClose={() => setShowSubscription(false)}
         >
           <View style={styles.content3}>
             <View style={styles.headLine} />
@@ -172,7 +202,7 @@ const Chanel = ({ navigation }) => {
           </View>
         </Modal>
         <FlatList
-          data={intrest}
+          data={selectedInterest}
           ListFooterComponent={
             <View>
               <SubscribeFlatlists />
@@ -184,7 +214,7 @@ const Chanel = ({ navigation }) => {
           numColumns={4}
           renderItem={({ item, index }) => (
             <TouchableOpacity
-              onPress={() => removeIntrest(item?._id)}
+              onPress={() => removeInterests(item)}
               style={[styles.listItem, { backgroundColor: '#032F3C' }]}
             >
               <Text numberOfLines={1} style={{ color: 'white', maxWidth: getWidth(19) }}>
@@ -198,7 +228,7 @@ const Chanel = ({ navigation }) => {
           leftIcon={<Entypo name="plus" color={'#032f3c'} style={{ marginRight: 5 }} />}
           btnStyle={styles.batonstyle}
           btnTextStyle={{ fontSize: getFontSize(2), color: '#032f3c' }}
-          onPress={() => navigation.navigate('Home', { tabs: 'Explore' })}
+          onPress={() => navigation.navigate('Explore')}
         />
       </View>
     </View>

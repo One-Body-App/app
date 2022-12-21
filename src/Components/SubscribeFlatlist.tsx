@@ -63,6 +63,8 @@ const SubscribeFlatlist = ({
       });
       if (res?.status == 200) {
         dispatch(getuserAll({ token: token, limit: 10 }));
+        dispatch(getTodayNews());
+        dispatch(getRecentBlog());
       } else {
         const result = subscribe.filter((item) => item != id);
         setSubscibe(result);
@@ -194,3 +196,10 @@ const styles = StyleSheet.create({
   },
 });
 export default SubscribeFlatlist;
+function getTodayNews(): any {
+  throw new Error('Function not implemented.');
+}
+
+function getRecentBlog(): any {
+  throw new Error('Function not implemented.');
+}

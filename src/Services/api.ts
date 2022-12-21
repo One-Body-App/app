@@ -1,5 +1,6 @@
 import { BASE_URL } from './constants';
 import axios, { AxiosResponse } from 'axios';
+import { firebase } from '@react-native-firebase/auth';
 
 export const ApiCall = async ({
   params,
@@ -20,6 +21,11 @@ export const ApiCall = async ({
   isFormUrlEncode?: boolean;
 }): Promise<{ status: number; response: any }> => {
   try {
+    let tokenToUse = '';
+    if (token) {
+      tokenToUse = (await firebase.auth().currentUser?.getIdToken()) ?? '';
+    }
+
     let url = null;
     if (baseurl) {
       url = `${baseurl}/${route}`;
@@ -34,7 +40,7 @@ export const ApiCall = async ({
       case 'get':
         response = await axios.get(
           url,
-          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          token ? { headers: { Authorization: `Bearer ${tokenToUse}` } } : undefined
         );
 
         break;
@@ -42,7 +48,7 @@ export const ApiCall = async ({
         response = await axios.post(
           url,
           params,
-          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          token ? { headers: { Authorization: `Bearer ${tokenToUse}` } } : undefined
         );
         break;
       case 'patch':
@@ -56,7 +62,7 @@ export const ApiCall = async ({
                   'Content-Type': isFormUrlEncode
                     ? 'application/x-www-form-urlencoded'
                     : 'application/json',
-                  Authorization: `Bearer ${token}`,
+                  Authorization: `Bearer ${tokenToUse}`,
                 },
               }
             : undefined
@@ -64,7 +70,7 @@ export const ApiCall = async ({
         break;
       case 'delete':
         response = await axios.delete(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          headers: token ? { Authorization: `Bearer ${tokenToUse}` } : undefined,
           params,
         });
         break;
@@ -73,10 +79,8 @@ export const ApiCall = async ({
         return { status: 400, response: 'method not found' };
     }
 
-    console.log(response);
     return { status: 200, response: response?.data };
   } catch (e: any) {
-    console.log(e, 'eeeeee');
     // handle error
     return { status: 400, response: e.response.data };
   }

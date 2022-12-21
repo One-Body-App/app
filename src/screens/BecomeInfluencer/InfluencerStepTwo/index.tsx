@@ -101,7 +101,6 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         instagramTokenExpiresAt: accessTokenExpiresAt,
         instagramTokenExpiresAtReal: accessTokenExpiresAtReal,
       });
-      console.log(result);
     } catch (e) {
       console.log(e);
     }

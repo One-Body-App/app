@@ -73,7 +73,7 @@ const MyProfile = ({ navigation }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res, 'resresres');
+
       if (res?.status == 200) {
         setBadgesList(res?.response.data);
       } else {
@@ -107,7 +107,7 @@ const MyProfile = ({ navigation }: Props) => {
   }, []);
 
   const { colors } = useTheme();
-  console.log(user);
+
   return (
     <View style={{ flex: 1 }}>
       <Modal

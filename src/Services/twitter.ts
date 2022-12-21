@@ -58,7 +58,7 @@ export const obtainOauthRequestToken = async ({
       body: JSON.stringify(oauthSignature),
     });
     const response = await res?.json();
-    console.log(response);
+
     return parseOAuthRequestToken(response.data);
   } catch (err) {
     console.log(err);

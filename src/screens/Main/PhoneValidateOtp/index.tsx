@@ -29,7 +29,7 @@ const PhoneValidateOtp = ({ navigation }) => {
   const token = useSelector((state) => state.auth.userToken);
   const [error, seterror] = React.useState();
   const [code, setCode] = useState(1234);
-  console.log(user);
+
   const dispatch = useDispatch();
   const checkOtp = async (code) => {
     seterror(null);

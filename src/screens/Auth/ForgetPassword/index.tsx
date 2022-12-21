@@ -29,7 +29,7 @@ const ForgotPassword = ({ navigation }: Props) => {
 
   const emailvalidate = (text: string) => {
     let reg = /^\w+([\.\-\+]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
-    console.log(reg);
+
     if (reg.test(text) === false) {
       return true;
     } else {

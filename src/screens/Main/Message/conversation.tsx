@@ -47,7 +47,6 @@ const ConversationScreen = ({ navigation, route }) => {
         dispatch(getChats({ token }));
         setSms(null);
       } else {
-        console.log('error', res?.data);
       }
     } catch (e) {
       console.log('chanel create err --- ', e);

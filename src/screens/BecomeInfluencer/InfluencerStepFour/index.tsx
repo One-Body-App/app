@@ -65,7 +65,7 @@ const InfluencerStepFour = ({ navigation, route }: Props) => {
       console.log('saga become infulancer err --- ', e);
     }
   };
-  console.log(route.params.data, 'route.params.dataroute.params.data');
+
   return (
     <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
       <GeneralStatusBar

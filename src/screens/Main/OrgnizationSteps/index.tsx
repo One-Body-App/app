@@ -66,8 +66,8 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   const [CheckIn, setCheckIn] = useState<boolean>(false);
 
   const [location_label, setLocation_label] = useState<MapSuggestion | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number>();
+  const [latitude, setLatitude] = useState<number>();
   const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
   const [organizationType, setOrganizationType] = useState<Tag | null>();
   const [organizationTypeError, setOrganizationTypeError] = useState<string>('');
@@ -959,9 +959,9 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                   if (Organization.length > 0) {
                     await addFollowing();
                     const { contactName, contactEmail, contactPhoneNumber, companyName } = state;
-                    console.log(state, 'statestate');
+
                     const data = {
-                      typeOfOrganization: organizationType,
+                      typeOfOrganization: organizationType?._id,
                       contactEmail: contactEmail,
                       companyName: companyName,
                       contactName: contactName,

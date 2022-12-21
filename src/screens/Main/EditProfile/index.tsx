@@ -27,10 +27,13 @@ import GradientButton from '@/components/GradientButton';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
-import { Tag } from '@/utils/types';
+import { ChurchType, Location, Tag } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getuserGet, getUserProfile } from '@/src/Redux/actions/UserAction';
+import DatePicker from 'react-native-date-picker';
+import { format, parse } from 'date-fns';
+import MapBox, { MapSuggestion } from '@/src/Components/MapBox';
 
 type Props = StackScreenProps<RootStackParamList, 'EditProfile'>;
 
@@ -56,6 +59,51 @@ const EditProfile = ({ navigation }: Props) => {
   const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
   const [visible, setVisible] = useState(false);
   const dispatch = useDispatch();
+  const [date, setDate] = useState<string>(user?.profile?.dateOfBirth ?? '');
+  const [open, setOpen] = useState(false);
+
+  const [oftenChurchVisible, setOftenChurchVisible] = useState(false);
+  const [oftenChurch, setOftenChurch] = useState(user?.profile?.oftenChurch ?? '');
+
+  const [churchTypeModalVisible, setChurchTypeModalVisible] = useState(false);
+  const [churchSubTypeModalVisible, setChurchSubTypeModalVisible] = useState(false);
+  const [churchSubType, setSubChurchType] = useState<string>(user?.profile?.churchSubType ?? '');
+  const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
+  const [churchType, setChurchType] = useState<string>(user?.profile?.churchType ?? '');
+  const [citySelector, setCitySelector] = useState<boolean>(false);
+  const [location, setLocation] = useState<Location | null>(user?.profile.location ?? null);
+  const [newLocation, setNewLocation] = useState<MapSuggestion | null>(null);
+  const [longitude, setLongitude] = useState<number>();
+  const [latitude, setLatitude] = useState<number>();
+
+  const oftenChurchOptions = ['Weekly', 'Bi-Weekly', 'Once a month', 'I only watch at home'];
+
+  useEffect(() => {
+    if (newLocation) {
+      setLocation({
+        longitude,
+        latitude,
+        address: newLocation.place_name,
+      });
+    }
+  }, [newLocation]);
+  const getChurchTypes = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'global/church-type',
+        verb: 'get',
+        token: token,
+      });
+
+      if (res?.status == 200) {
+        setChurchTypes(res?.response);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
 
   const captureImage = async (contentType: MediaType) => {
     let options: CameraOptions = {
@@ -204,7 +252,15 @@ const EditProfile = ({ navigation }: Props) => {
       }
     }
   }, [user]);
-  console.log(whatIDoList);
+
+  useEffect(() => {
+    if (token) {
+      getChurchTypes();
+    }
+  }, [token]);
+
+  const selectedChurchType = churchTypes.filter((type) => type.churchType == churchType);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
@@ -383,6 +439,104 @@ const EditProfile = ({ navigation }: Props) => {
               editable={false}
               // placeholderTextColor={'red'}
             />
+
+            {user?.role == 'individual' ? (
+              <>
+                <TextInput
+                  label="What type of church do you attend?"
+                  activeOutlineColor={'#12D2D9'}
+                  activeUnderlineColor={'#12D2D9'}
+                  style={styles.TextInput}
+                  theme={{ roundness: 10 }}
+                  showSoftInputOnFocus={false}
+                  onPressIn={() => setChurchTypeModalVisible(true)}
+                  value={churchType}
+                />
+
+                {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
+                  <TextInput
+                    label="What subtype of the church that you attend?"
+                    activeOutlineColor={'#12D2D9'}
+                    activeUnderlineColor={'#12D2D9'}
+                    style={styles.TextInput}
+                    theme={{ roundness: 10 }}
+                    showSoftInputOnFocus={false}
+                    onPressIn={() => setChurchSubTypeModalVisible(true)}
+                    value={churchSubType}
+                  />
+                ) : null}
+
+                <TextInput
+                  label="How often do you attend church?"
+                  activeOutlineColor={'#12D2D9'}
+                  activeUnderlineColor={'#12D2D9'}
+                  style={styles.TextInput}
+                  theme={{ roundness: 10 }}
+                  showSoftInputOnFocus={false}
+                  onPressIn={() => setOftenChurchVisible(true)}
+                  value={oftenChurch}
+                />
+
+                <TextInput
+                  label="What City are you in?"
+                  activeOutlineColor={'#12D2D9'}
+                  activeUnderlineColor={'#12D2D9'}
+                  style={styles.TextInput}
+                  theme={{ roundness: 10 }}
+                  showSoftInputOnFocus={false}
+                  onPressIn={() => setCitySelector(true)}
+                  value={location?.address}
+                />
+
+                <MapBox
+                  location={newLocation}
+                  setLongitude={setLongitude}
+                  setLatitude={setLatitude}
+                  CheckIn={citySelector}
+                  setCheckIn={setCitySelector}
+                  setLocation={setNewLocation}
+                />
+
+                <TextInput
+                  label="Date of Birth"
+                  activeOutlineColor={'#12D2D9'}
+                  activeUnderlineColor={'#12D2D9'}
+                  style={styles.TextInput}
+                  theme={{ roundness: 10 }}
+                  showSoftInputOnFocus={false}
+                  onFocus={() => setOpen(true)}
+                  onChangeText={(value) => setDate(value)}
+                  onPressIn={() => setOpen(true)}
+                  value={date}
+                  right={
+                    <TextInput.Icon
+                      name="calendar"
+                      onPress={() => setOpen(true)}
+                      style={{ paddingTop: 6 }}
+                      color={'#032f3c'}
+                    />
+                  }
+                />
+              </>
+            ) : null}
+
+            <DatePicker
+              modal
+              minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
+              maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+              mode="date"
+              androidVariant="nativeAndroid"
+              open={open}
+              date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
+              onConfirm={(date) => {
+                setOpen(false);
+                setDate(format(date, 'MM/dd/yyyy'));
+              }}
+              onCancel={() => {
+                setOpen(false);
+              }}
+            />
+
             <View>
               {user?.role == 'individual' ? (
                 <TextInput
@@ -480,7 +634,7 @@ const EditProfile = ({ navigation }: Props) => {
                 </View>
               </View>
             ) : null} */}
-          <View style={{ marginHorizontal: 25 }}>
+          <View style={{ marginHorizontal: 25, width: '100%' }}>
             <GradientButton
               text={'DONE'}
               onPress={() => {
@@ -491,14 +645,25 @@ const EditProfile = ({ navigation }: Props) => {
                   whatIDo,
                   website,
                   imageObject,
-                  'fullname, gender, whatIDo, website, imageObject'
+                  username,
+                  churchType,
+                  churchSubType,
+                  oftenChurch,
+                  organizationType,
+
+                  'fullname, gender, whatIDo, website, imageObject asdfaksdfklj'
                 );
                 if (fullname) data.append('name', fullname);
                 if (gender) data.append('gender', gender);
                 if (whatIDo) data.append('whatIDo', whatIDo?._id);
+                if (organizationType) data.append('typeOfOrganization', organizationType?._id);
                 if (website) data.append('website', website);
                 if (imageObject) data.append('photo', imageObject);
                 if (bio) data.append('bio', bio);
+                if (username) data.append('username', username);
+                if (churchType) data.append('churchType', churchType);
+                if (churchSubType) data.append('churchSubType', churchSubType);
+                if (oftenChurch) data.append('oftenChurch', oftenChurch);
 
                 dispatch(setLoader(true));
 
@@ -529,6 +694,130 @@ const EditProfile = ({ navigation }: Props) => {
             />
           </View>
         </View>
+        <Modal
+          backdropOpacity={0.3}
+          isVisible={churchTypeModalVisible}
+          onBackdropPress={() => setChurchTypeModalVisible(false)}
+          onSwipeComplete={() => setChurchTypeModalVisible(false)}
+          swipeDirection={['down']}
+          style={styles.bottomView}
+          propagateSwipe={true}
+        >
+          <View style={{ ...styles.content2, backgroundColor: colors.background }}>
+            <View style={styles.headLine} />
+
+            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+              {churchTypes?.map((item, index) => {
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      // setWhatIDo(item);
+                      setChurchType(item.churchType);
+                      setSubChurchType('');
+
+                      setChurchTypeModalVisible(false);
+                    }}
+                    style={styles.listItem2}
+                    key={index}
+                  >
+                    <Text
+                      style={{
+                        color: '#81979E',
+                        fontSize: getFontSize(2.2),
+                        fontFamily: 'Rubik-Regular',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item.churchType}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </Modal>
+        <Modal
+          backdropOpacity={0.3}
+          isVisible={churchSubTypeModalVisible}
+          onBackdropPress={() => setChurchSubTypeModalVisible(false)}
+          onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
+          swipeDirection={['down']}
+          style={styles.bottomView}
+          propagateSwipe={true}
+        >
+          <View style={styles.content2}>
+            <View style={styles.headLine} />
+            {selectedChurchType.length > 0 ? (
+              <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+                {selectedChurchType[0].children.map((item, index) => {
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        // setWhatIDo(item);
+                        setSubChurchType(item.churchType);
+                        setChurchSubTypeModalVisible(false);
+                      }}
+                      style={styles.listItem2}
+                      key={index}
+                    >
+                      <Text
+                        style={{
+                          color: '#81979E',
+                          fontSize: getFontSize(2.2),
+                          fontFamily: 'Rubik-Regular',
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item.churchType}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : null}
+          </View>
+        </Modal>
+        <Modal
+          backdropOpacity={0.3}
+          isVisible={oftenChurchVisible}
+          onBackdropPress={() => setOftenChurchVisible(false)}
+          onSwipeComplete={() => setOftenChurchVisible(false)}
+          swipeDirection={['down']}
+          style={styles.bottomView}
+          propagateSwipe={true}
+        >
+          <View style={styles.content2}>
+            <View style={styles.headLine} />
+            {oftenChurchOptions.length > 0 ? (
+              <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+                {oftenChurchOptions.map((item, index) => {
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        // setWhatIDo(item);
+                        setOftenChurch(item);
+                        setOftenChurchVisible(false);
+                      }}
+                      style={styles.listItem2}
+                      key={index}
+                    >
+                      <Text
+                        style={{
+                          color: '#81979E',
+                          fontSize: getFontSize(2.2),
+                          fontFamily: 'Rubik-Regular',
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : null}
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );

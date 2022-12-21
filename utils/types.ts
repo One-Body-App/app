@@ -26,8 +26,8 @@ export type Badge = {
 };
 
 export type Location = {
-  longitude: number;
-  latitude: number;
+  longitude?: number;
+  latitude?: number;
   address: string;
 };
 
@@ -35,6 +35,7 @@ export type TGender = 'Male' | 'Female';
 
 type Profile = {
   churchType?: string;
+  churchSubType?: string;
   oftenChurch?: string;
   dateOfBirth: string;
   gender: TGender;

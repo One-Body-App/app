@@ -43,7 +43,6 @@ function Bottom({ navigation, route }: Props) {
     setTab('HomeTab');
   };
   React.useEffect(() => {
-    console.log(tabs, 'tabstabstabs');
     if (tabs) setTab(tabs);
   }, [tabs]);
   console.log(tab, 'tab');

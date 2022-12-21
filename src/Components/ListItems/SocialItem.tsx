@@ -99,7 +99,9 @@ const SocialItem = ({
               fontFamily: 'Rubik',
               color: '#68828A',
               alignItems: 'center',
+              maxWidth: 200,
             }}
+            numberOfLines={2}
           >
             {item?.userData?.name}
           </Text>

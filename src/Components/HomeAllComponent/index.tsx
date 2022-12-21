@@ -46,6 +46,7 @@ type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const todayNews = useSelector((state: RootState) => state.social.TodayNews);
+
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
@@ -103,6 +104,7 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   useEffect(() => {
     getSocialPosts();
   }, []);
+
   return (
     <View style={{ flex: 1 }}>
       <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />

@@ -31,7 +31,7 @@ const NotificationSettings = ({ navigation }: Props) => {
   const [notificationSwitch, setNotificationSwitch] = React.useState({
     pushNotificationsEnabled: false,
     emailNotificationsEnabled: false,
-    subscribeToNewsletter: false,
+    subscribedToNewsletter: false,
   });
   const { colors } = useTheme();
 
@@ -55,7 +55,7 @@ const NotificationSettings = ({ navigation }: Props) => {
         setNotificationSwitch({
           pushNotificationsEnabled: res.response?.pushNotificationsEnabled ?? false,
           emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
-          subscribeToNewsletter: res.response?.subscribeToNewsletter ?? false,
+          subscribedToNewsletter: res.response?.subscribedToNewsletter ?? false,
         });
 
         setIsLoaded(true);
@@ -92,7 +92,7 @@ const NotificationSettings = ({ navigation }: Props) => {
     try {
       const notifications = {
         pushNotificationsEnabled: notificationSwitch.pushNotificationsEnabled,
-        subscribeToNewsletter: notificationSwitch.subscribeToNewsletter,
+        subscribedToNewsletter: notificationSwitch.subscribedToNewsletter,
         emailNotificationsEnabled: notificationSwitch.emailNotificationsEnabled,
       };
 
@@ -189,7 +189,7 @@ const NotificationSettings = ({ navigation }: Props) => {
 
           <Switch
             disabled={isLoading}
-            value={notificationSwitch.subscribeToNewsletter}
+            value={notificationSwitch.subscribedToNewsletter}
             color="#126B87"
             onValueChange={() => {
               // updateUserDataNotifications({
@@ -203,7 +203,7 @@ const NotificationSettings = ({ navigation }: Props) => {
               // setNewsletterNotificationSwitch(!newsletterNotificationSwitchOn);
               setNotificationSwitch({
                 ...notificationSwitch,
-                subscribeToNewsletter: !notificationSwitch.subscribeToNewsletter,
+                subscribedToNewsletter: !notificationSwitch.subscribedToNewsletter,
               });
             }}
           />

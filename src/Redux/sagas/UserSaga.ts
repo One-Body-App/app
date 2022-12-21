@@ -12,17 +12,15 @@ import {
 } from '../actions/UserAction';
 
 function* UserGetRequest(params) {
-  console.log(params);
   try {
     const res = yield ApiCall({
       token: params.data.token,
       route: 'user/my-profile',
       verb: 'get',
     });
-    console.log('user/my-profile', res);
+
     if (res?.status == '200') {
       if (params.data.get == 'interests') {
-        console.log('response', res?.response);
         yield put(setLoader(false));
         yield put(setUserIntrest(res?.response?.interests));
       } else {
@@ -32,7 +30,6 @@ function* UserGetRequest(params) {
         yield put(setUserProfile(res?.response));
       }
     } else {
-      console.log('error', res?.response);
       yield put(setLoader(false));
     }
     if (params.data.go) params.data.go();

@@ -72,7 +72,7 @@ const LoginComponent: FC<Props> = ({
   enabledLoginProviders,
 }) => {
   const dispatch = useDispatch();
-  console.log(enabledLoginProviders, 'enabledLoginProviders');
+
   const userProfile = useSelector((state: RootState) => state.auth.userProfile);
   const toScreen = useSelector((state: RootState) => state.general.loginVerficationBackPage);
   const toScreenParams = useSelector(
@@ -227,7 +227,7 @@ const LoginComponent: FC<Props> = ({
               if (verifyAccount) {
                 if (toScreen) {
                   navigation.goBack();
-                  console.log(toScreen);
+
                   navigation.push(toScreen as keyof RootStackParamList, {
                     setError: seterror,
                     ...toScreenParams,
@@ -457,8 +457,12 @@ const LoginComponent: FC<Props> = ({
   if (isVerificationNeeded || (showConfirmationEmailMessage && userProfile)) {
     return (
       <View style={{ marginHorizontal: 25, marginVertical: 10 }}>
-        <Text style={{ textAlign: 'center' }}>Please Check your email for a confirmation</Text>
-        <TouchableOpacity
+        <Text style={{ ...styles.paragraph, textAlign: 'center', marginTop: 20, marginBottom: 30 }}>
+          Please Check your email for a confirmation
+        </Text>
+
+        <GradientButton
+          text={'Resend email'}
           onPress={async () => {
             try {
               const options = {
@@ -475,12 +479,26 @@ const LoginComponent: FC<Props> = ({
               console.log(e);
             }
           }}
-          style={styles.forgotPassword}
-        >
-          <Text style={styles.forgetStyle}>Resend email</Text>
-        </TouchableOpacity>
+          btnStyle={{
+            ...GeneralStyle.btn,
+            height: getHeight(7),
+
+            backgroundColor: '#0C5C75',
+          }}
+          btnTextStyle={GeneralStyle.btnText}
+        />
         <Button
-          text="Cancel"
+          text={'Cancel'}
+          btnStyle={{
+            ...GeneralStyle.btn,
+            marginHorizontal: 20,
+            // backgroundColor: colors.background,
+          }}
+          btnTextStyle={{
+            marginHorizontal: 20,
+            color: '#70747D',
+            fontSize: 14,
+          }}
           onPress={async () => {
             LoginManager.logOut();
             await auth().signOut();

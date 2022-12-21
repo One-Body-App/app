@@ -133,14 +133,14 @@ const RemoveAccount = ({ navigation }: Props) => {
             text={'REMOVE ACCOUNT'}
             btnStyle={{
               ...GeneralStyle.btn,
-
+              marginHorizontal: 20,
               backgroundColor: 'red',
             }}
             disabled={!reason}
             btnTextStyle={GeneralStyle.btnText}
             disabledBtnStyle={{
               ...GeneralStyle.btn,
-
+              marginHorizontal: 20,
               backgroundColor: colors.card,
             }}
             disabledBtnTextStyle={{ ...GeneralStyle.btnText, color: '#81979E' }}
@@ -155,7 +155,7 @@ const RemoveAccount = ({ navigation }: Props) => {
             }}
           />
           <Button
-            text={'Cancel'}
+            text={'Oops, keep my account'}
             onPress={() => navigation.goBack()}
             btnStyle={{ ...GeneralStyle.btn, backgroundColor: colors.background }}
             btnTextStyle={{ ...styles.btnText, color: colors.text, fontSize: 14 }}

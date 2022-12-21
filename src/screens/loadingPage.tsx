@@ -21,13 +21,12 @@ const LoadingPage = ({ navigation }: Props) => {
 
   const getSocialPosts = async () => {
     try {
-      console.log('1111111');
       const res = await ApiCall({
         route: `user/get-following-social`,
         token,
         verb: 'get',
       });
-      console.log('1111111DONE', res);
+
       setIsLoadedSocialPosts(true);
       if (res?.status == 200) {
         dispatch(SetSocial(res?.response.content));
@@ -45,13 +44,12 @@ const LoadingPage = ({ navigation }: Props) => {
 
   const getTodayNews = async () => {
     try {
-      console.log('2222222');
       const res = await ApiCall({
         route: 'blogs/get-feed/today-news/1',
         verb: 'get',
         token: token,
       });
-      console.log('2222222DONE', res);
+
       setIsloadedTodaysNews(true);
       if (res?.status == 200) {
         // if (res?.response && res?.response.length > 0) {
@@ -99,7 +97,6 @@ const LoadingPage = ({ navigation }: Props) => {
   };
 
   useEffect(() => {
-    console.log(isLoadedTodayNews, isLoadedRecentBlog);
     if (isLoadedTodayNews && isLoadedRecentBlog) {
       navigation.replace('Bottombar', { tabs: 'Home' });
     }

@@ -22,6 +22,12 @@ export const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     margin: 0,
   },
+  listItem2: {
+    height: getHeight(7),
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   content2: {
     backgroundColor: 'white',
 

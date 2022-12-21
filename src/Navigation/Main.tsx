@@ -66,7 +66,7 @@ const Main = () => {
   const loader = useSelector((state: RootState) => state.general.loader);
   const userProfile = useSelector((state: RootState) => state.auth.userProfile);
   const dispatch = useDispatch();
-  console.log(userProfile);
+
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');

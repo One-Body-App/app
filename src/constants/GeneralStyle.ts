@@ -20,7 +20,8 @@ export const GeneralStyle = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
-    width: '100%',
+    flex: 1,
+    marginHorizontal: 20,
   },
 
   input: {

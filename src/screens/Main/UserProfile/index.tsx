@@ -124,7 +124,6 @@ const UserProfile = ({ navigation, route }: Props) => {
       <View style={styles.tabBar}>
         {props.navigationState.routes
           .filter((route) => {
-            console.log(user?.influencerProfile, 'user?.influencerProfile');
             if (user?.influencerProfile?.twitterId && route.key == 'Twitter') {
               return true;
             }

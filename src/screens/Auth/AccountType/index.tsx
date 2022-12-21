@@ -53,7 +53,7 @@ const AccountType = ({ route, navigation }: Props) => {
         params: { role: selected },
         verb: 'patch',
       });
-      console.log(res);
+
       if (res?.status == 200) {
         dispatch(setProfile(res.response));
         console.log('role res == 200 ... ', res);

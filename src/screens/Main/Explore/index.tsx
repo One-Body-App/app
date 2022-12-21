@@ -58,7 +58,7 @@ const Explore = () => {
   const [following, setFollowing] = useState<User[]>([]);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
   const [searchChannels, setSearchChannels] = useState<User[]>([]);
-  const [searchChannelsToFollow, setSearchChannelsToFollow] = useState<User[]>(allusers);
+  const [searchChannelsToFollow, setSearchChannelsToFollow] = useState<User[]>();
   const [searchChannelsToFollowText, setSearchChannelsToFollowText] = useState<string>('');
   const [selectedInterest, setSelectedInterest] = useState<Interest[]>(user?.interests ?? []);
 
@@ -101,7 +101,6 @@ const Explore = () => {
         dispatch(getuserAll({ token: token }));
       } else {
         dispatch(setLoader(false));
-        console.log('error', res);
       }
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
@@ -238,7 +237,7 @@ const Explore = () => {
           />
 
           <Button
-            text={'View My Channels'}
+            text={'Connections'}
             onPress={(): void => {
               setShowFollowingModal(true);
             }}

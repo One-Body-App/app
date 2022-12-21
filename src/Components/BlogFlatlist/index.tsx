@@ -65,7 +65,7 @@ const BlogFlatlist = ({
         console.log('error', res?.response);
       }
       setLoadingMore(false);
-      console.log(1, 'donedone');
+
       setRefreshing(false);
     } catch (e: any) {
       console.log('err', 'donedone');

@@ -3,7 +3,7 @@ export type RootStackParamList = {
     tabs?: string;
   };
   Explore: undefined;
-
+  Channel: undefined;
   Login: {
     oauth_token?: string;
     oauth_verifier?: string;

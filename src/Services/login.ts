@@ -23,7 +23,7 @@ export const processLogin = async (
       route: 'auth/my-profile',
       verb: 'get',
     });
-    console.log(userProfileResult, 'userProfileResult');
+
     if (userProfileResult.status == 200) {
       if (userProfileResult.response == '') {
         setNewUserCredentials(userCredentials);

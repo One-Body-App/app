@@ -191,7 +191,7 @@ export default function Drawerr() {
         component={Notification}
       />
       <Drawer.Screen
-        name="Channels"
+        name="Connections"
         options={{
           headerShown: false,
           drawerInactiveTintColor: '#4F6D77',

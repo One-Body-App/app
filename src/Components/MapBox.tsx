@@ -38,8 +38,8 @@ export enum MapBoxTypes {
 
 type MapBoxProps = {
   location: MapSuggestion | null;
-  setLongitude: Dispatch<SetStateAction<number | null>>;
-  setLatitude: Dispatch<SetStateAction<number | null>>;
+  setLongitude: Dispatch<SetStateAction<number | undefined>>;
+  setLatitude: Dispatch<SetStateAction<number | undefined>>;
   CheckIn: boolean;
   setCheckIn: Dispatch<SetStateAction<boolean>>;
   setLocation: Dispatch<SetStateAction<MapSuggestion | null>>;
@@ -102,7 +102,7 @@ const MapBox = (props: MapBoxProps) => {
     } else {
       try {
         const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
           {
             title: 'Location Access Required',
             message: 'This App needs to Access your location',

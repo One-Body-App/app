@@ -63,9 +63,9 @@ const IndividualSteps = ({ navigation }: Props) => {
   const [location, setLocation] = useState<MapSuggestion | null>(null);
   const [countrySelector, setCountrySelector] = useState<boolean>(false);
   const [location_country, setLocation_country] = useState<MapSuggestion | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number>();
   const [locationData, setLocationData] = useState<{ latitude: number; longitude: number }>();
-  const [latitude, setLatitude] = useState<number | null>(null);
+  const [latitude, setLatitude] = useState<number>();
   const [churchTypeModalVisible, setChurchTypeModalVisible] = useState(false);
   const [churchSubTypeModalVisible, setChurchSubTypeModalVisible] = useState(false);
   const [Organization, setOrganization] = useState<string[]>([]);
@@ -165,7 +165,7 @@ const IndividualSteps = ({ navigation }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res, 'resresres');
+
       if (res?.status == 200) {
         setChurchTypes(res?.response);
       } else {
@@ -481,6 +481,7 @@ const IndividualSteps = ({ navigation }: Props) => {
 
             <DatePicker
               modal
+              minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
               maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
               mode="date"
               androidVariant="nativeAndroid"

@@ -35,7 +35,7 @@ const InfluencerStepOne = ({ navigation }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res);
+
       if (res?.status == 200) {
         setIsLoading(false);
 

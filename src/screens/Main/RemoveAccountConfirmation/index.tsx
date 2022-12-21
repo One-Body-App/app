@@ -58,7 +58,7 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
       console.log('saga change pasword err --- ', e);
     }
   };
-  console.log(userProfile);
+
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <GeneralStatusBar
@@ -85,19 +85,33 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
             text={'REMOVE ACCOUNT'}
             btnStyle={{
               ...GeneralStyle.btn,
-
+              marginHorizontal: 20,
               backgroundColor: 'red',
             }}
             btnTextStyle={GeneralStyle.btnText}
-            disabledBtnTextStyle={{ ...GeneralStyle.btnText, color: '#81979E' }}
+            disabledBtnTextStyle={{
+              ...GeneralStyle.btnText,
+              marginHorizontal: 20,
+              color: '#81979E',
+            }}
             onPress={() => accountDeactivate()}
           />
 
           <Button
             text={'Cancel'}
             onPress={() => navigation.goBack()}
-            btnStyle={{ ...GeneralStyle.btn, backgroundColor: colors.background, marginTop: 20 }}
-            btnTextStyle={{ ...styles.btnText, color: '#126B87', fontSize: 14 }}
+            btnStyle={{
+              ...GeneralStyle.btn,
+              marginHorizontal: 20,
+              backgroundColor: colors.background,
+              marginTop: 20,
+            }}
+            btnTextStyle={{
+              ...styles.btnText,
+              marginHorizontal: 20,
+              color: '#126B87',
+              fontSize: 14,
+            }}
           />
         </View>
       </View>

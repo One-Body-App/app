@@ -23,7 +23,7 @@ function* loginRequest(params) {
 
     if (res?.status == '200') {
       yield put(setLoader(false));
-      console.log('loginnnnnnnnnn', res);
+
       if (res?.user?.email) {
         params.data.gotoOtp();
       }
@@ -49,7 +49,6 @@ export function* loginSaga() {
 }
 
 function* loginSocialRequest(params) {
-  console.log(params.data);
   try {
     const res = yield ApiCall({
       params: params.data.data,
@@ -57,7 +56,7 @@ function* loginSocialRequest(params) {
       verb: 'post',
       token: params.data.token,
     });
-    console.log(res, 'res');
+
     if (res?.status == '200') {
       if (res?.response?.email && params.data.gotoSignup) {
         yield put(setProfile(res?.response));
@@ -72,7 +71,6 @@ function* loginSocialRequest(params) {
       yield put(setLoader(false));
     }
   } catch (e) {
-    console.log('saga social login error -- ', e.toString());
     yield put(setLoader(false));
   }
 }
@@ -82,7 +80,6 @@ export function* loginSocialSaga() {
 
 function* signUpRequest(params) {
   try {
-    console.log(params, 'asdf');
     const res = yield ApiCall({
       params: params.data.data,
       route: 'auth/register',
@@ -108,7 +105,6 @@ export function* signUpSaga() {
   yield takeLatest(ACTIONS.SIGN_UP, signUpRequest);
 }
 function* updateProfileRequest(params) {
-  console.log(params, 'paramsparamsparamsparams');
   try {
     const res = yield ApiCall({
       params: params.data.data,
@@ -117,7 +113,7 @@ function* updateProfileRequest(params) {
       verb: 'patch',
       external: false,
     });
-    console.log(res);
+
     if (res?.status == 200) {
       yield put(getProfile({ token: params.data.token, role: params.data.role }));
 
@@ -206,7 +202,7 @@ function* getUserProfileRequest(params) {
       token: params.data.token,
       verb: 'get',
     });
-    if (res?.status == '200') {
+    if (res?.status == 200) {
       yield put(setProfile(res?.response));
       yield put(setLoader(false));
     } else {
