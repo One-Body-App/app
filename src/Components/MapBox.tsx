@@ -22,7 +22,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '@react-navigation/native';
 
 const access_token =
-  'pk.eyJ1IjoiaW5hYW0xIiwiYSI6ImNramtmNmljYzJhMWMycnFwM28zOHE4ZzIifQ.pBIP97q3Us332iKImTP9aQ';
+  'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
 
 export enum MapBoxTypes {
   country = 'country',
@@ -123,7 +123,7 @@ const MapBox = (props: MapBoxProps) => {
   const getcurrentLocation = (longitude: number, latitude: number) => {
     fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${access_token}${
-        props.types ? `&types=${props.types?.join(',')}` : 'types=place'
+        props.types ? `&types=${props.types?.join(',')}` : '&types=place'
       }${props.countries ? `&country=${props.countries?.join(',')}` : ''}`
     )
       .then((response) => response.json())

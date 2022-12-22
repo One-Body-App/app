@@ -344,6 +344,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 marginTop: getHeight(4),
                 height: getHeight(7.5),
                 width: getWidth(78),
+                flex: 0,
               }}
               btnTextStyle={GeneralStyle.btnText}
               onPress={() => {

@@ -303,6 +303,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                 marginTop: getHeight(4),
                 height: getHeight(7),
                 width: getWidth(80),
+                flex: 0,
               }}
               btnTextStyle={GeneralStyle.btnText}
               onPress={() => {

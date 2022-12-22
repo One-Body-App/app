@@ -457,8 +457,19 @@ const LoginComponent: FC<Props> = ({
   if (isVerificationNeeded || (showConfirmationEmailMessage && userProfile)) {
     return (
       <View style={{ marginHorizontal: 25, marginVertical: 10 }}>
-        <Text style={{ ...styles.paragraph, textAlign: 'center', marginTop: 20, marginBottom: 30 }}>
-          Please Check your email for a confirmation
+        <Text
+          style={{
+            ...styles.btnTitle,
+            fontFamily: 'Rubik-Bold',
+            fontSize: 20,
+            textAlign: 'center',
+            marginTop: 20,
+          }}
+        >
+          Verify your email address
+        </Text>
+        <Text style={{ ...styles.paragraph, textAlign: 'center', marginTop: 10, marginBottom: 30 }}>
+          You’ll need to verify your email to complete your account activation.
         </Text>
 
         <GradientButton
@@ -622,7 +633,7 @@ const LoginComponent: FC<Props> = ({
       ) : null}
 
       {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
-        <View style={{ marginHorizontal: 20 }}>
+        <View style={{ marginHorizontal: 10 }}>
           <Button
             text={'LOG IN'}
             disabled={!state.password || !state.email}
