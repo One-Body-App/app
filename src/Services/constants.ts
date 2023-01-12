@@ -21,32 +21,36 @@ export const TERMS_CONDITIONS_URL = _TERMS_CONDITIONS_URL;
 
 export const GOOGLE_LOGIN_CLIENT_ID = _GOOGLE_LOGIN_CLIENT_ID;
 
-export const OpenURLButton = async (url: string) => {
+export const OpenURLButton = async (url: string, externalBrowser?: boolean) => {
   try {
     if (await InAppBrowser.isAvailable()) {
       const canOpen = await Linking.canOpenURL(url);
       const urlToUse = unescape(decodeURI(decodeHTMLEntities(url)));
 
       if (canOpen) {
-        await InAppBrowser.open(urlToUse, {
-          readerMode: false,
-          animated: true,
-          modalPresentationStyle: 'fullScreen',
-          modalTransitionStyle: 'coverVertical',
-          modalEnabled: true,
-          enableBarCollapsing: false,
+        if (externalBrowser) {
+          Linking.openURL(urlToUse);
+        } else {
+          await InAppBrowser.open(urlToUse, {
+            readerMode: false,
+            animated: true,
+            modalPresentationStyle: 'fullScreen',
+            modalTransitionStyle: 'coverVertical',
+            modalEnabled: true,
+            enableBarCollapsing: false,
 
-          showTitle: true,
-          enableUrlBarHiding: true,
-          enableDefaultShare: true,
-          forceCloseOnRedirection: false,
-          animations: {
-            startEnter: 'slide_in_right',
-            startExit: 'slide_out_left',
-            endEnter: 'slide_in_left',
-            endExit: 'slide_out_right',
-          },
-        });
+            showTitle: true,
+            enableUrlBarHiding: true,
+            enableDefaultShare: true,
+            forceCloseOnRedirection: false,
+            animations: {
+              startEnter: 'slide_in_right',
+              startExit: 'slide_out_left',
+              endEnter: 'slide_in_left',
+              endExit: 'slide_out_right',
+            },
+          });
+        }
       }
     }
   } catch (error: any) {

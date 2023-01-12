@@ -115,8 +115,8 @@ const InfluencerStepOne = ({ navigation }: Props) => {
                       fontSize: 16,
                     }}
                   >
-                    In order for users to be an influencer they must meet ONE of the following
-                    criteria:
+                    In order for you to become an Influencer on the One Body app, you must meet one
+                    of the following criteria:
                   </Text>
                   <Text
                     style={{
@@ -126,20 +126,7 @@ const InfluencerStepOne = ({ navigation }: Props) => {
                       fontSize: 16,
                     }}
                   >
-                    <Text style={{ ...styles.point, color: colors.primary }}>a.</Text> Must have a
-                    confirmed Influencer account on IG or Twitter. (Blue check) All IG/Twitter
-                    accounts must be set as public figure accounts in order for API to aggregate
-                    their posts.
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: 'Rubik-Regular',
-                      color: colors.text,
-                      marginTop: 20,
-                      fontSize: 16,
-                    }}
-                  >
-                    <Text style={{ ...styles.point, color: colors.primary }}>b.</Text> User must be
+                    <Text style={{ ...styles.point, color: colors.primary }}>a.</Text> User must be
                     a Pastor or clergy member in local community. Confirmed through account review
                     process. *Influencer accounts can be approved through cross-confirmation via
                     organization confirmation process.
@@ -152,7 +139,7 @@ const InfluencerStepOne = ({ navigation }: Props) => {
                       fontSize: 16,
                     }}
                   >
-                    <Text style={{ ...styles.point, color: colors.primary }}>c.</Text> User must be
+                    <Text style={{ ...styles.point, color: colors.primary }}>b.</Text> User must be
                     a non-clergy public figure with a platform based on Christian values as defined
                     by One Body. This will require account review.
                   </Text>
@@ -164,21 +151,9 @@ const InfluencerStepOne = ({ navigation }: Props) => {
                       fontSize: 16,
                     }}
                   >
-                    <Text style={{ ...styles.point, color: colors.primary }}>d.</Text> User must be
-                    a non-clergy public figure with a platform based on Christian values as defined
-                    by One Body. This will require account review.
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: 'Rubik-Regular',
-                      color: colors.text,
-                      marginTop: 20,
-                      fontSize: 16,
-                    }}
-                  >
-                    <Text style={{ ...styles.point, color: colors.primary }}>e.</Text> User must be
-                    a non-clergy public figure with a platform based on Christian values as defined
-                    by One Body. This will require account review.
+                    <Text style={{ ...styles.point, color: colors.primary }}>c.</Text> Instagram
+                    account must be set to public. Accounts set to private cannot be aggregated.
+                    *RSS must be publicly available for News or Blog publishers.
                   </Text>
                 </View>
               </ScrollView>

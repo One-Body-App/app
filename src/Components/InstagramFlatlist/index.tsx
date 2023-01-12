@@ -9,8 +9,14 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { User } from '@/utils/types';
 import SocialItem from '../ListItems/SocialItem';
+import { OpenURLButton } from '@/src/Services/constants';
+import Button from '../Button';
+import { GeneralStyle } from '@/src/constants/GeneralStyle';
 
-const InstagramFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: User }) => {
+const InstagramFlatlist = ({
+  currentUser,
+  setScrollPosition,
+}: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [page, setPage] = useState<number>(1);
   const [instagramPosts, setInstagramPosts] = useState<any>([]);
@@ -21,7 +27,7 @@ const InstagramFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: 
   const getInstagramData = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `user/get-social-instagram/${currentUser._id}/${pageNumber}`,
+        route: `user/get-social-instagram/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
         verb: 'get',
         token: token,
       });
@@ -65,6 +71,9 @@ const InstagramFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: 
       ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
       renderItem={({ item }) => <SocialItem item={item} />}
       keyExtractor={(item) => item.id}
+      onScroll={(e) => {
+        setScrollPosition(e.nativeEvent.contentOffset.y);
+      }}
       refreshControl={
         <RefreshControl
           enabled={true}
@@ -76,9 +85,28 @@ const InstagramFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: 
           }}
         />
       }
-      onEndReachedThreshold={0.5}
-      onEndReached={() => {
-        if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+      ListFooterComponent={() => {
+        return (
+          <Button
+            text="View more on Instagram"
+            btnStyle={{
+              ...GeneralStyle.btn,
+              marginHorizontal: 20,
+              // backgroundColor: colors.background,
+            }}
+            btnTextStyle={{
+              marginHorizontal: 20,
+              color: '#70747D',
+              fontSize: 14,
+            }}
+            onPress={() => {
+              OpenURLButton(
+                `https://instagram.com/${currentUser.influencerProfile?.instagramHandler}`,
+                true
+              );
+            }}
+          />
+        );
       }}
     />
   );

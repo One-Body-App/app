@@ -9,8 +9,14 @@ import SocialItem from '../ListItems/SocialItem';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { SceneRendererProps } from 'react-native-tab-view';
 import { User } from '@/utils/types';
+import Button from '../Button';
+import { OpenURLButton } from '@/src/Services/constants';
+import { GeneralStyle } from '@/src/constants/GeneralStyle';
 
-const TwitterFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: User }) => {
+const TwitterFlatlist = ({
+  currentUser,
+  setScrollPosition,
+}: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [page, setPage] = useState<number>(1);
   const [tweets, setTweets] = useState<any>([]);
@@ -21,7 +27,7 @@ const TwitterFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: Us
   const getTwitterData = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `user/get-social-twitter/${currentUser._id}/${pageNumber}`,
+        route: `user/get-social-twitter/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
         verb: 'get',
         token: token,
       });
@@ -64,6 +70,9 @@ const TwitterFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: Us
       ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
       renderItem={({ item }) => <SocialItem item={item} />}
       keyExtractor={(item) => item.id}
+      onScroll={(e) => {
+        setScrollPosition(e.nativeEvent.contentOffset.y);
+      }}
       refreshControl={
         <RefreshControl
           enabled={true}
@@ -75,9 +84,31 @@ const TwitterFlatlist = ({ currentUser }: SceneRendererProps & { currentUser: Us
           }}
         />
       }
-      onEndReachedThreshold={0.5}
-      onEndReached={() => {
-        if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+      ListFooterComponentStyle={{
+        marginBottom: 20,
+      }}
+      ListFooterComponent={() => {
+        return (
+          <Button
+            text="View more on Twitter"
+            btnStyle={{
+              ...GeneralStyle.btn,
+              marginHorizontal: 20,
+              // backgroundColor: colors.background,
+            }}
+            btnTextStyle={{
+              marginHorizontal: 20,
+              color: '#70747D',
+              fontSize: 14,
+            }}
+            onPress={() => {
+              OpenURLButton(
+                `https://twitter.com/${currentUser.influencerProfile?.twitterHandler}`,
+                true
+              );
+            }}
+          />
+        );
       }}
     />
   );
