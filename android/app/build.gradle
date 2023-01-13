@@ -299,6 +299,13 @@ dependencies {
     api group: 'com.zendesk', name: 'chat', version: '2.2.0'
     api group: 'com.zendesk', name: 'messaging', version: '4.3.1'
 
+    // For animated GIF support
+    implementation 'com.facebook.fresco:animated-gif:2.5.0'
+
+    // For WebP support, including animated WebP
+    implementation 'com.facebook.fresco:animated-webp:2.5.0'
+    implementation 'com.facebook.fresco:webpsupport:2.5.0'
+
     if (enableHermes) {
         //noinspection GradleDynamicVersion
         implementation("com.facebook.react:hermes-engine:+") { // From node_modules
