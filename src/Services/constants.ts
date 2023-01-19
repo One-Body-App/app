@@ -12,8 +12,8 @@ import InAppBrowser from 'react-native-inappbrowser-reborn';
 
 export const BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
 // export const BASE_URL = 'https://192.168.4.134/api';
-console.log(BASE_URL, 'BASE_URLBASE_URL');
 // export const BASE_URL = PROD_BASE_URL;
+// console.log(BASE_URL, 'BASE_URLBASE_URL');
 
 export const PRIVACY_POLICY_URL = _PRIVACY_POLICY_URL;
 

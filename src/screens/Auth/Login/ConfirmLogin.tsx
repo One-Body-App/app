@@ -12,7 +12,7 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { setLoginVerificationBackPage } from '@/src/Redux/actions/GeneralActions';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import auth from '@react-native-firebase/auth';
 import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<RootStackParamList, 'ConfirmLogin'>;

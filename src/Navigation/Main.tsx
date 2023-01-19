@@ -145,7 +145,7 @@ const Main = () => {
           path: '/login/:action',
         },
         InfluencerStepTwo: {
-          path: '/influencer/login/instagram',
+          path: '/influencer/login/:action',
         },
       },
     },

@@ -13,6 +13,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
   },
+
   wavebgimage: {
     flex: 1,
     justifyContent: 'space-around',

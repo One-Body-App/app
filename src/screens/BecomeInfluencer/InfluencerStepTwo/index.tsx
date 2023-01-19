@@ -29,6 +29,7 @@ import { BASE_URL } from '@/src/Services/constants';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
+import { getTwitterLoginToken } from '@/src/Services/login';
 
 type Props = StackScreenProps<RootStackParamList, 'InfluencerStepTwo'>;
 
@@ -107,7 +108,8 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   };
 
   useEffect(() => {
-    if (route.params?.code) {
+    console.log(route);
+    if (route.params?.action == 'instagram' && route.params?.code) {
       const getInstagramAuthToken = async () => {
         try {
           const options = {
@@ -136,6 +138,43 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         }
       };
       getInstagramAuthToken();
+    }
+
+    if (
+      route.params?.action == 'twitter' &&
+      route.params?.oauth_token &&
+      route.params?.oauth_verifier
+    ) {
+      const getTwitterAuthToken = async () => {
+        try {
+          const options = {
+            method: 'POST',
+            url: 'https://api.twitter.com/oauth/access_token',
+            params: {
+              oauth_token: route.params?.oauth_token,
+              oauth_verifier: route.params?.oauth_verifier,
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          };
+          const result = await axios.request(options);
+
+          if (result.data) {
+            const tokenData = result.data.split('&')?.map((item: string) => {
+              return item.split('=')[1];
+            });
+
+            const screenName = tokenData[3];
+
+            setState({
+              ...state,
+              twitterUsername: screenName,
+            });
+          }
+        } catch (error: any) {}
+      };
+      getTwitterAuthToken();
     }
   }, [route.params]);
 
@@ -170,6 +209,18 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   const appId = '746127593378692';
 
   const { dark, colors } = useTheme();
+
+  const onTwitterButtonPress = async () => {
+    try {
+      const urlToken = await getTwitterLoginToken(false, false, true);
+
+      if (urlToken) {
+        Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -545,7 +596,18 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               <Ionicons name="logo-twitter" size={20} /> Twitter
             </Text>
 
-            <TextInput
+            {state.twitterUsername ? (
+              <Text>Logged in as @{state.twitterUsername}</Text>
+            ) : (
+              <TouchableOpacity
+                onPress={() => onTwitterButtonPress()}
+                style={{ ...styles.btn2, backgroundColor: colors.background }}
+              >
+                <Text style={{ color: colors.text }}>Authenticate with Twitter</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* <TextInput
               style={{
                 ...GeneralStyle.input,
                 backgroundColor: colors.background,
@@ -575,7 +637,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               }}
               blurOnSubmit={false}
             />
-            <Text style={GeneralStyle.InputError}>{state.twitterUsernameError}</Text>
+            <Text style={GeneralStyle.InputError}>{state.twitterUsernameError}</Text> */}
             {/* <TextInput
               style={GeneralStyle.input}
               ref={inputRefs.twitterHandler}

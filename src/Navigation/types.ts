@@ -14,6 +14,9 @@ export type RootStackParamList = {
   InfluencerStepOne: undefined;
   InfluencerStepTwo: {
     code?: string;
+    action?: string;
+    oauth_token?: string;
+    oauth_verifier?: string;
   };
   InfluencerStepThree: {
     data: any;

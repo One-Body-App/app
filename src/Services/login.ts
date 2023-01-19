@@ -43,7 +43,11 @@ export const processLogin = async (
   }
 };
 
-export const getTwitterLoginToken = async (signup?: boolean, confirmation?: boolean) => {
+export const getTwitterLoginToken = async (
+  signup?: boolean,
+  confirmation?: boolean,
+  influencer?: boolean
+) => {
   let params = '';
 
   if (signup) {
@@ -53,6 +57,11 @@ export const getTwitterLoginToken = async (signup?: boolean, confirmation?: bool
   if (confirmation) {
     params = '?confirmation=1';
   }
+
+  if (influencer) {
+    params = '?influencer=1';
+  }
+
   const options = {
     method: 'GET',
     url: `${BASE_URL}/auth/twitter-token${params ?? ''}`,

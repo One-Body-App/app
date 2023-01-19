@@ -72,3 +72,4 @@ buck-out/
 !.yarn/versions
 
 *.aab
+android/app/release/*

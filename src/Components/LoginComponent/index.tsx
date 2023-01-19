@@ -95,7 +95,7 @@ const LoginComponent: FC<Props> = ({
   const [error, seterror] = useState<string>();
   const [success, setSuccess] = useState<string>('');
   const [hidePass, setHidePass] = useState(true);
-  const [isVerificationNeeded, setIsVerificationNeeded] = useState(false);
+  const [isVerificationNeeded, setIsVerificationNeeded] = useState<boolean>(false);
   const [token, setToken] = useState('');
   const [showConfirmEmail, setShowConfirmEmail] = useState<boolean>(false);
 
@@ -298,6 +298,7 @@ const LoginComponent: FC<Props> = ({
             dispatch(setLoader(false));
           } else {
             setIsVerificationNeeded(true);
+            dispatch(setLoader(false));
           }
         }
 
@@ -454,6 +455,9 @@ const LoginComponent: FC<Props> = ({
     }
   };
 
+  const scheme = useColorScheme();
+  const { colors } = useTheme();
+
   if (isVerificationNeeded || (showConfirmationEmailMessage && userProfile)) {
     return (
       <View style={{ marginHorizontal: 25, marginVertical: 10 }}>
@@ -522,9 +526,6 @@ const LoginComponent: FC<Props> = ({
       </View>
     );
   }
-
-  const scheme = useColorScheme();
-  const { colors } = useTheme();
 
   const getButtonTextStyle = () => {
     return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : '#032F3C' };
