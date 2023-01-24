@@ -36,7 +36,7 @@ const HomeNewsComponent = () => {
   const [page, setPage] = useState(1);
 
   const getAllNews = async (pageNumber: number) => {
-    dispatch(setLoader(true));
+    if (!refreshing) dispatch(setLoader(true));
     setLoadingMore(true);
     try {
       const res = await ApiCall({
@@ -63,14 +63,17 @@ const HomeNewsComponent = () => {
         dispatch(SetAllNews(news));
 
         setLoadingMore(false);
-        setRefreshing(false);
-        dispatch(setLoader(false));
+
+        if (!refreshing) dispatch(setLoader(false));
       } else {
         setLoadingMore(false);
-        setRefreshing(false);
-        dispatch(setLoader(false));
+
+        if (!refreshing) dispatch(setLoader(false));
       }
+
+      setRefreshing(false);
     } catch (e: any) {
+      console.log(e);
       console.log('saga error -- ', e.toString());
     }
     setPage(pageNumber);
@@ -81,7 +84,16 @@ const HomeNewsComponent = () => {
       await getAllNews(page);
     };
     getData();
-  }, [page]);
+  }, [page, refreshing]);
+
+  useEffect(() => {
+    const getData = async () => {
+      await getAllNews(1);
+      setPage(1);
+    };
+    getData();
+  }, [refreshing]);
+
   const [show, setShow] = useState<boolean>();
   const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
 
@@ -100,9 +112,9 @@ const HomeNewsComponent = () => {
           <RefreshControl
             enabled={true}
             refreshing={refreshing}
-            onRefresh={async () => {
+            onRefresh={() => {
+              console.log('asdf');
               setRefreshing(true);
-              setPage(1);
             }}
           />
         }

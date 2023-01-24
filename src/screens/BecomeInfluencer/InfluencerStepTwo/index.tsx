@@ -108,7 +108,6 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   };
 
   useEffect(() => {
-    console.log(route);
     if (route.params?.action == 'instagram' && route.params?.code) {
       const getInstagramAuthToken = async () => {
         try {

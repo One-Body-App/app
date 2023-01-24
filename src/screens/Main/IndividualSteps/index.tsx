@@ -614,34 +614,38 @@ const IndividualSteps = ({ navigation }: Props) => {
 
           <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
             {searchInterest.length < 1 ? <Text>No Search Results</Text> : null}
-            {searchInterest.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() =>
-                  selectedInterest.includes(item?._id)
-                    ? setSelectedInterest(
-                        selectedInterest.filter(function (item2) {
-                          return item2 !== item?._id;
-                        })
-                      )
-                    : setSelectedInterest([...selectedInterest, item?._id])
-                }
-                style={
-                  selectedInterest.includes(item?._id)
-                    ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
-                    : styles.listItem
-                }
-              >
-                <Text
-                  numberOfLines={1}
+            {searchInterest.map((item, index) => {
+              return (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() =>
+                    selectedInterest.includes(item?._id)
+                      ? setSelectedInterest(
+                          selectedInterest.filter(function (item2) {
+                            return item2 !== item?._id;
+                          })
+                        )
+                      : setSelectedInterest([...selectedInterest, item?._id])
+                  }
                   style={
-                    selectedInterest.includes(item?._id) ? { color: 'white' } : { color: '#757575' }
+                    selectedInterest.includes(item?._id)
+                      ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
+                      : styles.listItem
                   }
                 >
-                  {item?.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    numberOfLines={1}
+                    style={
+                      selectedInterest.includes(item?._id)
+                        ? { color: 'white' }
+                        : { color: '#757575' }
+                    }
+                  >
+                    {item?.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
       ),
@@ -698,59 +702,61 @@ const IndividualSteps = ({ navigation }: Props) => {
           <View style={{ ...styles.largeview, marginTop: 25 }}>
             <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
               {searchInfluencer.length < 1 ? <Text>No Search Results</Text> : null}
-              {searchInfluencer.map((item, index) => (
-                <TouchableOpacity
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    if (Organization.includes(item._id)) {
-                      setOrganization(
-                        Organization.filter((organizationId) => {
-                          return organizationId !== item._id;
-                        })
-                      );
-                    } else {
-                      setOrganization([...Organization, item._id]);
-                    }
-                  }}
-                  style={styles.box}
-                  key={index}
-                >
-                  <Image
-                    style={
-                      Organization.includes(item._id)
-                        ? {
-                            ...styles.img,
-                            borderWidth: 2.5,
-                            borderColor:
-                              item?.profileImage && item?.profileImage != ''
-                                ? '#032F3C'
-                                : '#09aadb',
-                          }
-                        : styles.img
-                    }
-                    resizeMode="contain"
-                    source={{
-                      uri:
-                        item?.profileImage && item?.profileImage != ''
-                          ? item?.profileImage
-                          : 'https://cdn.onebodyapp.com/user/no-image.png',
+              {searchInfluencer.map((item, index) => {
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.6}
+                    onPress={() => {
+                      if (Organization.includes(item._id)) {
+                        setOrganization(
+                          Organization.filter((organizationId) => {
+                            return organizationId !== item._id;
+                          })
+                        );
+                      } else {
+                        setOrganization([...Organization, item._id]);
+                      }
                     }}
-                  />
-
-                  <View>
-                    <Text style={{ ...styles.textname, textAlign: 'center' }}>{item?.name}</Text>
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        color: '#757575',
-                        alignSelf: 'center',
+                    style={styles.box}
+                    key={index}
+                  >
+                    <Image
+                      style={
+                        Organization.includes(item._id)
+                          ? {
+                              ...styles.img,
+                              borderWidth: 2.5,
+                              borderColor:
+                                item?.profileImage && item?.profileImage != ''
+                                  ? '#032F3C'
+                                  : '#09aadb',
+                            }
+                          : styles.img
+                      }
+                      resizeMode="contain"
+                      source={{
+                        uri:
+                          item?.profileImage && item?.profileImage != ''
+                            ? item?.profileImage
+                            : 'https://cdn.onebodyapp.com/user/no-image.png',
                       }}
-                    >
-                      {item?.whatIDo?.name}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                    />
+
+                    <View>
+                      <Text style={{ ...styles.textname, textAlign: 'center' }}>{item?.name}</Text>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          color: '#757575',
+                          alignSelf: 'center',
+                        }}
+                      >
+                        {item?.whatIDo?.name}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
         </View>

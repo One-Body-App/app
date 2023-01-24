@@ -28,6 +28,7 @@ const HomeBlogComponent = () => {
         verb: 'get',
         token: token,
       });
+
       if (res?.status == 200) {
         let blog = [];
 
@@ -59,6 +60,14 @@ const HomeBlogComponent = () => {
     getAllBlog(page);
   }, [page]);
 
+  useEffect(() => {
+    const getData = async () => {
+      await getAllBlog(1);
+      setPage(1);
+    };
+    getData();
+  }, [isRefreshing]);
+
   const { colors } = useTheme();
 
   return (
@@ -89,10 +98,9 @@ const HomeBlogComponent = () => {
         refreshControl={
           <RefreshControl
             enabled={true}
-            refreshing={isLoading}
+            refreshing={isRefreshing}
             onRefresh={() => {
               setIsRefreshing(true);
-              setPage(page + 1);
             }}
           />
         }

@@ -159,7 +159,8 @@ const OptionsModal = ({
                 btnTextStyle={{ color: '#032F3C' }}
                 onPress={async () => {
                   await Share.share({
-                    message: `${currentPopupItem?.title}`,
+                    title: `${currentPopupItem?.title}`,
+                    url: currentPopupItem?.link ?? '',
                   });
                 }}
               />
