@@ -8,7 +8,7 @@ const GeneralStatusBar = ({
   barStyle,
   hidden,
 }: {
-  backgroundColor: string;
+  backgroundColor?: string;
   translucent?: boolean;
   barStyle?: StatusBarStyle;
   hidden: boolean;

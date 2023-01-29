@@ -71,7 +71,7 @@ const TwitterFlatlist = ({
       renderItem={({ item }) => <SocialItem item={item} />}
       keyExtractor={(item) => item.id}
       onScroll={(e) => {
-        setScrollPosition(e.nativeEvent.contentOffset.y);
+        if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
       }}
       refreshControl={
         <RefreshControl

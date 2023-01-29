@@ -12,6 +12,7 @@ import {
   useColorScheme,
   StatusBar,
   SafeAreaView,
+  Keyboard,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -101,13 +102,9 @@ const IndividualSteps = ({ navigation }: Props) => {
         }
       } else {
         const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Access Required',
-            message: 'This App needs to Access your location',
-            buttonPositive: '',
-          }
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
         );
+
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           //To Check, If Permission is granted
           Geolocation.getCurrentPosition((info) => {
@@ -487,7 +484,11 @@ const IndividualSteps = ({ navigation }: Props) => {
               mode="date"
               androidVariant="nativeAndroid"
               open={open}
-              date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
+              date={
+                date
+                  ? parse(date, 'MM/dd/yyyy', new Date())
+                  : new Date(new Date().setFullYear(new Date().getFullYear() - 90))
+              }
               onConfirm={(date) => {
                 setOpen(false);
                 setDate(format(date, 'MM/dd/yyyy'));
@@ -495,6 +496,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               onCancel={() => {
                 setOpen(false);
               }}
+              textColor={Platform.OS === 'android' ? 'black' : ''}
             />
           </View>
           <Text
@@ -513,7 +515,10 @@ const IndividualSteps = ({ navigation }: Props) => {
             theme={{ roundness: 10 }}
             activeOutlineColor={'#5B7279'}
             showSoftInputOnFocus={false}
-            onPressIn={() => setCountrySelector(true)}
+            onPressIn={(e) => {
+              Keyboard.dismiss();
+              setCountrySelector(true);
+            }}
             label={'City/State'}
             placeholderTextColor={'black'}
           />
@@ -572,6 +577,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               ...styles.heading,
               fontSize: getFontSize(2.3),
               marginBottom: 10,
+              marginTop: 40,
               lineHeight: 22,
               width: getWidth(80),
             }}
@@ -659,6 +665,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               ...styles.heading,
               fontSize: getFontSize(2.2),
               marginBottom: 10,
+              marginTop: 40,
               lineHeight: 22,
               width: getWidth(80),
             }}

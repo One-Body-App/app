@@ -4,7 +4,7 @@ import Home from '../screens/Main/Home';
 import Explore from '../screens/Main/Explore';
 import Message from '../screens/Main/Message';
 
-import { Text, View, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Homesvg from '@/assets/svg/Home.svg';
 import Refreshsvg from '@/assets/svg/Refresh.svg';
@@ -29,6 +29,7 @@ import LogoHeader from '@/assets/svg/logo2.svg';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
+import GeneralStatusBar from '../Components/GeneralStatusBar';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Bottom'>;
 const Tab = createBottomTabNavigator();
@@ -45,13 +46,19 @@ function Bottom({ navigation, route }: Props) {
   React.useEffect(() => {
     if (tabs) setTab(tabs);
   }, [tabs]);
-  console.log(tab, 'tab');
+
   return (
     <Tab.Navigator
       screenOptions={{
         header: () => {
           return (
             <SafeAreaView style={{ backgroundColor: '#126B87' }}>
+              <GeneralStatusBar
+                backgroundColor="#126B87"
+                hidden={false}
+                translucent={Platform.OS == 'android'}
+                barStyle={Platform.OS == 'android' ? 'light-content' : undefined}
+              />
               <LinearGradient
                 colors={['#126B87', '#032F3C']}
                 locations={[0, 0.9]}

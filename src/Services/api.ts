@@ -20,6 +20,15 @@ export const ApiCall = async ({
   external?: boolean;
   isFormUrlEncode?: boolean;
 }): Promise<{ status: number; response: any }> => {
+  console.log({
+    params,
+    route,
+    verb,
+    token,
+    baseurl,
+    external,
+    isFormUrlEncode,
+  });
   try {
     let tokenToUse = '';
     if (token) {
@@ -59,9 +68,7 @@ export const ApiCall = async ({
           token
             ? {
                 headers: {
-                  'Content-Type': isFormUrlEncode
-                    ? 'application/x-www-form-urlencoded'
-                    : 'application/json',
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
                   Authorization: `Bearer ${tokenToUse}`,
                 },
               }
@@ -81,6 +88,7 @@ export const ApiCall = async ({
 
     return { status: 200, response: response?.data };
   } catch (e: any) {
+    console.log(e);
     // handle error
     return { status: 400, response: e.response.data };
   }

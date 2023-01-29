@@ -385,7 +385,7 @@ PODS:
   - React-jsinspector (0.69.3)
   - React-logger (0.69.3):
     - glog
-  - react-native-date-picker (4.2.5):
+  - react-native-date-picker (4.2.6):
     - React-Core
   - react-native-fbsdk-next (10.0.0):
     - React-Core
@@ -915,7 +915,7 @@ SPEC CHECKSUMS:
   React-jsiexecutor: 1842ca163b160aeb224d2c65b2a60c393b273c67
   React-jsinspector: bb2605f98aada5d81f3494690da3ef3b4ff3b716
   React-logger: 23a50ef4c18bf9adbb51e2c979318e6b3a2e44a1
-  react-native-date-picker: 55193347d8d0f40948f441ffd4e5db6f0a8fbe13
+  react-native-date-picker: 93e43b3084cea595b4d68b1405d6d99849663bd6
   react-native-fbsdk-next: 75ea1d4b48e047796f3264535a1cab502686a3e2
   react-native-geolocation: 69f4fd37650b8e7fee91816d395e62dd16f5ab8d
   react-native-geolocation-service: f32ef48fa665bd710207a3ac39bc127cac9cb993

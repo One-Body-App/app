@@ -99,56 +99,27 @@ const InfluencerStepFour = ({ navigation, route }: Props) => {
           <View>
             <Text style={styles.headingt}>Overview</Text>
             <Text style={styles.paragraph}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dis sed ullamcorper malesuada
-              lobortis. Dui id eu ipsum ultrices.
+              If approved, we will begin immediately aggregating your social content from the
+              sources you provided. Post normally on your social or RSS feeds and you should see
+              content begin to be displayed shortly (usually in less than 1 hour).
             </Text>
+            <Text style={styles.paragraph}>
+              From time to time we will ask you to re-certify your authentication to Instagram and
+              Twitter. This will help us ensure that your account is secure.
+            </Text>
+            <Text style={styles.paragraph}>
+              Any posted content that goes against the One Body Ethos will be filtered and either
+              suppressed or entirely removed. Please make yourself familiar with the One Body Ethos.
+              You will be notified of any content moderation actions.
+            </Text>
+
             <Text style={styles.headingt}>Your Consent</Text>
             <Text style={styles.paragraph}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dis sed ullamcorper malesuada
-              lobortis. Dui id eu ipsum ultrices.
+              By completing this application, you acknowledge that you are asking One Body Inc. To
+              aggregate and display your original posts and content from 3rd party platforms into
+              the One Body app.
             </Text>
-            <Text style={styles.headingt}>Information We Collect</Text>
-            <Text style={styles.paragraph}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dis sed ullamcorper malesuada
-              lobortis. Dui id eu ipsum ultrices. Lorem ipsum dolor sit amet, consectetur adipiscing
-              elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            </Text>
-            <Text style={styles.headingt}>Use of Personal Information</Text>
-            <Text style={styles.paragraph}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dis sed ullamcorper malesuada
-              lobortis. Dui id eu ipsum ultrices.
-            </Text>
-            <View style={{ marginTop: getHeight(3), flexDirection: 'row' }}>
-              <MaterialCommunityIcons name="arrow-collapse-down" size={20} color="#032F3C" />
-              <Text
-                style={{
-                  color: '#032F3C',
-                  textDecorationLine: 'underline',
-                  fontSize: 16,
-                  fontFamily: 'Rubik-Regular',
-                  paddingLeft: 8,
-                }}
-              >
-                Download end user agreement
-              </Text>
-            </View>
-            <View
-              style={{
-                marginTop: getHeight(3),
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Checkbox
-                status={checked ? 'checked' : 'unchecked'}
-                onPress={() => {
-                  setChecked(!checked);
-                }}
-              />
-              <Text style={styles.paragraph}>
-                I have gone through the document and accept the End User Agreement.
-              </Text>
-            </View>
+
             <View style={{ width: getWidth(70), height: getHeight(20) }} />
           </View>
           <View />

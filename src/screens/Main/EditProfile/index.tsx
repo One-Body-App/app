@@ -639,20 +639,7 @@ const EditProfile = ({ navigation }: Props) => {
               text={'DONE'}
               onPress={() => {
                 const data = new FormData();
-                console.log(
-                  fullname,
-                  gender,
-                  whatIDo,
-                  website,
-                  imageObject,
-                  username,
-                  churchType,
-                  churchSubType,
-                  oftenChurch,
-                  organizationType,
 
-                  'fullname, gender, whatIDo, website, imageObject asdfaksdfklj'
-                );
                 if (fullname) data.append('name', fullname);
                 if (gender) data.append('gender', gender);
                 if (whatIDo) data.append('whatIDo', whatIDo?._id);

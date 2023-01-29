@@ -37,8 +37,6 @@ const Login = ({ route, navigation }: Props) => {
         enabledLoginProviders={loginProviders}
         {...route.params}
       />
-
-      <GoBackIcon color={'white'} />
     </View>
   );
 };

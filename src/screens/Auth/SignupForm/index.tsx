@@ -477,8 +477,6 @@ const SignupForm = ({ navigation }: Props) => {
           </View>
         </View>
       </KeyboardAwareScrollView>
-
-      <GoBackIcon color={'white'} />
     </View>
   );
 };

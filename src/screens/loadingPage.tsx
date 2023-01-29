@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, View, StatusBar, Text, ImageBackground } from 'react-native';
+import { Image, View, StatusBar, Text, ImageBackground, Platform } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { SetRecentBlog, SetSocial, SetTodayNews } from '@/redux/actions/SocialActions';
 import { ApiCall } from '@/services/api';
@@ -7,6 +7,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../Navigation/types';
 import { RootState } from '../Redux/reducers/rootReducer';
 import auth from '@react-native-firebase/auth';
+import GeneralStatusBar from '../Components/GeneralStatusBar';
 
 type Props = StackScreenProps<RootStackParamList, 'LoadingPage'>;
 
@@ -112,7 +113,12 @@ const LoadingPage = ({ navigation }: Props) => {
 
   return (
     <View>
-      <StatusBar barStyle="light-content" />
+      <GeneralStatusBar
+        backgroundColor="#126B87"
+        hidden={false}
+        translucent={Platform.OS == 'android'}
+        barStyle={Platform.OS == 'android' ? 'light-content' : undefined}
+      />
       <ImageBackground
         resizeMode="cover"
         style={{

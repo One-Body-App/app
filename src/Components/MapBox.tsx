@@ -4,13 +4,14 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   Platform,
   TouchableOpacity,
   View,
   Image,
   PermissionsAndroid,
+  ActivityIndicator,
 } from 'react-native';
+import { TextInput } from 'react-native-paper';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/AntDesign';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -68,6 +69,7 @@ const MapBox = (props: MapBoxProps) => {
   const { colors } = useTheme();
 
   const [show, setshown] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [suggetions, setSuggetions] = useState<MapSuggestion[]>();
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
 
@@ -91,6 +93,7 @@ const MapBox = (props: MapBoxProps) => {
   };
   const onclose = () => {
     setLocation(null);
+    setsearchLocation('');
 
     // setCheckIn(false);
   };
@@ -133,7 +136,7 @@ const MapBox = (props: MapBoxProps) => {
         setLatitude(latitude);
         setLongitude(longitude);
         // dispatch(setLoader(false));
-
+        setLoading(false);
         setCheckIn(false);
       });
   };
@@ -154,27 +157,51 @@ const MapBox = (props: MapBoxProps) => {
           <View style={styles.inputView}>
             <TextInput
               value={searchLocation}
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.background }]}
               placeholder="Where are you?"
               onChangeText={(val) => getSuggestion(val)}
               autoFocus={true}
               clearButtonMode="always"
+              activeOutlineColor={colors.background}
+              outlineColor={colors.background}
+              selectionColor={colors.text}
+              placeholderTextColor={'black'}
+              mode="outlined"
+              theme={{ roundness: 20 }}
             />
             {!props.hideSearchMyLocation ? (
-              <TouchableOpacity onPress={() => onclose()} style={styles.iconTouch}>
+              <>
                 {location != null ? (
-                  <Icon name="closecircleo" size={23} color="red" />
+                  <TouchableOpacity onPress={() => onclose()} style={styles.iconTouch}>
+                    <Icon name="closecircleo" size={23} color="red" />
+                  </TouchableOpacity>
                 ) : (
-                  <MaterialIcons
-                    name={'my-location'}
-                    onPress={() => {
-                      getlocationPermison();
-                    }}
-                    color="#126B87"
-                    size={getFontSize(3.5)}
-                  />
+                  <>
+                    {loading ? (
+                      <ActivityIndicator
+                        animating={loading}
+                        size="small"
+                        color={colors.text}
+                        style={{ marginTop: 8, marginRight: 15 }}
+                      />
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setLoading(true);
+                          getlocationPermison();
+                        }}
+                        style={styles.iconTouch}
+                      >
+                        <MaterialIcons
+                          name={'my-location'}
+                          color="#126B87"
+                          size={getFontSize(3.5)}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
-              </TouchableOpacity>
+              </>
             ) : null}
           </View>
 
@@ -220,18 +247,22 @@ const styles = StyleSheet.create({
   },
   placeItemView: { padding: 10 },
   input: {
-    height: 40,
-    paddingLeft: 15,
+    height: 36,
 
     width: getWidth(80),
   },
   inputView: {
     height: 40,
+
     margin: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+
     borderWidth: 1,
     borderRadius: 20,
+    paddingBottom: 6,
+    // paddingLeft: 1,
   },
   bottomView: {
     justifyContent: 'flex-end',
@@ -241,6 +272,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
     paddingRight: getWidth(2),
+    paddingTop: 3,
     color: 'red',
   },
   mapImage: {

@@ -112,8 +112,9 @@ function* updateProfileRequest(params) {
       token: params.data.token,
       verb: 'patch',
       external: false,
+      isFormUrlEncode: true,
     });
-
+    console.log(res);
     if (res?.status == 200) {
       yield put(getProfile({ token: params.data.token, role: params.data.role }));
 
@@ -128,6 +129,7 @@ function* updateProfileRequest(params) {
       ]);
     }
   } catch (e) {
+    console.log(e);
     yield put(setLoader(false));
     Alert.alert('Error', 'An error accoured during profile Update', [
       { text: 'Close', onPress: () => console.log('Close Pressed') },
