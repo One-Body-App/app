@@ -1,5 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { Text, View, Image, TouchableOpacity, useColorScheme } from 'react-native';
+import {
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  useColorScheme,
+  Animated,
+  Dimensions,
+} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { TextInput as NativeTextInput } from 'react-native';
@@ -28,10 +36,27 @@ import { useTheme } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faUsers } from '@fortawesome/free-solid-svg-icons/faUsers';
+const { width: wWidth } = Dimensions.get('window');
 
 type Props = StackScreenProps<RootStackParamList, 'SignupForm'>;
+const animatedBarWidth = new Animated.Value(0);
+const animatedInnerBarWidth = new Animated.Value(0);
+const widthByPercent = (percentage: number, containerWidth = wWidth) => {
+  const value = (percentage * containerWidth) / 100;
+  return Math.round(value);
+};
+
+const showFullBar = (isShow = true) => {
+  const barWidth = isShow ? widthByPercent(70) : 0;
+  Animated.timing(animatedBarWidth, {
+    toValue: barWidth,
+    duration: 20,
+    useNativeDriver: true,
+  }).start();
+};
 
 const SignupForm = ({ navigation }: Props) => {
+  const barWidth = widthByPercent(70);
   const AccountType = useSelector((state: RootState) => state.general.accountType);
   const dispatch = useDispatch();
 
@@ -158,6 +183,24 @@ const SignupForm = ({ navigation }: Props) => {
       return { ...styles.btn, borderColor: colors.border };
     }
   };
+
+  const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/g;
+  const atLeastOneUppercase = /[A-Z]/g; // capital letters from A to Z
+  const atLeastOneLowercase = /[a-z]/g; // small letters from a to z
+  const atLeastOneNumeric = /[0-9]/g; // numbers from 0 to 9
+  const atLeastOneSpecialChar = /[#?!@$%^&*-]/g; // any of the special characters within the square brackets
+  const sixCharsOrMore = /.{6,}/g; // six characters or more
+
+  const passwordTracker = {
+    uppercase: state.password.match(atLeastOneUppercase),
+    // lowercase: state.password.match(atLeastOneLowercase),
+    number: state.password.match(atLeastOneNumeric),
+    specialChar: state.password.match(atLeastOneSpecialChar),
+    sixCharsOrMore: state.password.match(sixCharsOrMore),
+  };
+
+  const passwordStrength = Object.values(passwordTracker).filter((value) => value).length;
+
   return (
     <View style={styles.container}>
       <GeneralStatusBar
@@ -331,6 +374,20 @@ const SignupForm = ({ navigation }: Props) => {
               blurOnSubmit={false}
               autoCapitalize="none"
             />
+            <View style={[styles.passwordStrengthWrapper]}>
+              <Animated.View
+                style={[
+                  styles.passwordStrengthBar,
+
+                  { backgroundColor: '#ffffff', width: animatedBarWidth },
+                ]}
+              >
+                <Animated.View
+                  style={[styles.innerPasswordStrengthBar, { width: animatedInnerBarWidth }]}
+                />
+              </Animated.View>
+              <Text style={[styles.strengthDescription]}>label</Text>
+            </View>
             <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
               {state.emailError}
             </Text>
@@ -347,9 +404,9 @@ const SignupForm = ({ navigation }: Props) => {
               secureTextEntry={hidePass ? true : false}
               right={
                 <TextInput.Icon
-                  name={() => (
+                  icon={() => (
                     <MaterialCommunityIcons
-                      name={hidePass ? 'eye-off-outline' : 'eye-outline'}
+                      name={hidePass ? 'eye-outline' : 'eye-off-outline'}
                       size={20}
                       color={'#5B7279'}
                       style={{
@@ -377,6 +434,60 @@ const SignupForm = ({ navigation }: Props) => {
               {state.passwordError}
             </Text>
 
+            {state.password.length > 0 ? (
+              <View>
+                {passwordStrength < 5 ? (
+                  <View>
+                    <MaterialCommunityIcons
+                      name={!passwordTracker.sixCharsOrMore ? 'close' : 'check'}
+                      size={20}
+                      color={!passwordTracker.sixCharsOrMore ? 'red' : ''}
+                      style={{
+                        alignSelf: 'center',
+
+                        marginTop: getHeight(1),
+                      }}
+                    />
+                    <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : '' }}>
+                      At least 6 characters
+                    </Text>
+                  </View>
+                ) : null}
+
+                <View>
+                  <MaterialCommunityIcons
+                    name={!passwordTracker.specialChar ? 'close' : 'check'}
+                    size={20}
+                    color={!passwordTracker.specialChar ? 'red' : ''}
+                    style={{
+                      alignSelf: 'center',
+
+                      marginTop: getHeight(1),
+                    }}
+                  />
+                  <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : '' }}>
+                    At least 1 special character
+                  </Text>
+                </View>
+
+                <View>
+                  <MaterialCommunityIcons
+                    name={!passwordTracker.number ? 'close' : 'check'}
+                    size={20}
+                    color={!passwordTracker.number ? 'red' : ''}
+                    style={{
+                      alignSelf: 'center',
+
+                      marginTop: getHeight(1),
+                    }}
+                  />
+                  <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : '' }}>
+                    Contains at least 1 number
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
             <TextInput
               theme={{ roundness: 10 }}
               activeOutlineColor={appColor.InstructionColor}
@@ -389,7 +500,7 @@ const SignupForm = ({ navigation }: Props) => {
               secureTextEntry={chidePass ? true : false}
               right={
                 <TextInput.Icon
-                  name={() => (
+                  icon={() => (
                     <MaterialCommunityIcons
                       name={chidePass ? 'eye-off-outline' : 'eye-outline'}
                       size={20}

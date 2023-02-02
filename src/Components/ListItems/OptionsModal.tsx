@@ -1,6 +1,6 @@
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import React from 'react';
-import { View, Share } from 'react-native';
+import { View, Share, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Modal from 'react-native-modal';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
@@ -160,7 +160,12 @@ const OptionsModal = ({
                 onPress={async () => {
                   await Share.share({
                     title: `${currentPopupItem?.title}`,
-                    url: currentPopupItem?.link ?? '',
+                    url:
+                      Platform.OS == 'ios' && currentPopupItem?.link ? currentPopupItem?.link : '',
+                    message:
+                      Platform.OS == 'android' && currentPopupItem?.link
+                        ? currentPopupItem?.link
+                        : '',
                   });
                 }}
               />

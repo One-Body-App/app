@@ -599,7 +599,7 @@ const LoginComponent: FC<Props> = ({
             secureTextEntry={hidePass ? true : false}
             right={
               <TextInput.Icon
-                name={() => (
+                icon={() => (
                   <MaterialCommunityIcons
                     name={hidePass ? 'eye-off-outline' : 'eye-outline'}
                     size={getFontSize(3)}

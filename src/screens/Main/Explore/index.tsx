@@ -196,7 +196,7 @@ const Explore = () => {
           value={searchChannelsToFollowText}
           left={
             <TextInput.Icon
-              name={() => (
+              icon={() => (
                 <EvilIcons
                   name={'search'}
                   size={getFontSize(4)}
@@ -394,7 +394,7 @@ const Explore = () => {
               }}
               left={
                 <TextInput.Icon
-                  name={() => (
+                  icon={() => (
                     <EvilIcons
                       name={'search'}
                       size={getFontSize(4)}
@@ -469,7 +469,7 @@ const Explore = () => {
               }}
               left={
                 <TextInput.Icon
-                  name={() => (
+                  icon={() => (
                     <EvilIcons
                       name={'search'}
                       size={getFontSize(4)}

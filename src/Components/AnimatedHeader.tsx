@@ -110,7 +110,7 @@ const AnimatedHeader = ({
               mode="outlined"
               left={
                 <TextInput.Icon
-                  name={() => (
+                  icon={() => (
                     <EvilIcons
                       name={'search'}
                       size={getFontSize(4)}

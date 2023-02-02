@@ -81,7 +81,7 @@ const PhoneNumberUpdate = ({ navigation, route }) => {
             mode="outlined"
             right={
               <TextInput.Icon
-                name={() => (
+                icon={() => (
                   <AntDesign
                     name={editPhone ? 'edit' : 'lock'}
                     size={20}

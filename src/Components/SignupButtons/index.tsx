@@ -246,9 +246,9 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
             By signing up, you agree to our
           </Text>
           <View style={{ flexDirection: 'row' }}>
-            <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
+            <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
               <Text style={{ ...styles.text, color: scheme == 'dark' ? colors.text : '#81979E' }}>
-                User Agreements
+                User Agreement
               </Text>
             </TouchableOpacity>
             <Text
@@ -257,7 +257,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
               {' '}
               &{' '}
             </Text>
-            <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
+            <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
               <Text style={{ ...styles.text, color: scheme == 'dark' ? colors.text : '#81979E' }}>
                 Privacy Policy
               </Text>

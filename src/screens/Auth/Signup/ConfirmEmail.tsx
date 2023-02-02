@@ -104,7 +104,7 @@ const ConfirmEmail = ({ navigation, route }) => {
             secureTextEntry={hidePassN ? true : false}
             right={
               <TextInput.Icon
-                name={() => (
+                icon={() => (
                   <MaterialCommunityIcons
                     name={hidePassN ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
@@ -145,7 +145,7 @@ const ConfirmEmail = ({ navigation, route }) => {
             secureTextEntry={hidePassC ? true : false}
             right={
               <TextInput.Icon
-                name={() => (
+                icon={() => (
                   <MaterialCommunityIcons
                     name={hidePassC ? 'eye-off-outline' : 'eye-outline'}
                     size={20}

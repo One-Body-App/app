@@ -75,7 +75,7 @@ const Search = ({ navigation }) => {
         mode="outlined"
         left={
           <TextInput.Icon
-            name={() => (
+            icon={() => (
               <EvilIcons
                 name={'search'}
                 size={getFontSize(4)}

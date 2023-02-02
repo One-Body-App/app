@@ -99,7 +99,7 @@ const PasswordChange = ({ navigation, route }: Props) => {
           secureTextEntry={hidePassN ? true : false}
           right={
             <TextInput.Icon
-              name={() => (
+              icon={() => (
                 <MaterialCommunityIcons
                   name={hidePassN ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
@@ -141,7 +141,7 @@ const PasswordChange = ({ navigation, route }: Props) => {
           secureTextEntry={hidePassC ? true : false}
           right={
             <TextInput.Icon
-              name={() => (
+              icon={() => (
                 <MaterialCommunityIcons
                   name={hidePassC ? 'eye-off-outline' : 'eye-outline'}
                   size={20}

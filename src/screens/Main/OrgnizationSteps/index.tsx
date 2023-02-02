@@ -626,7 +626,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             mode="outlined"
             left={
               <TextInput.Icon
-                name={() => (
+                icon={() => (
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
@@ -726,7 +726,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             }}
             left={
               <TextInput.Icon
-                name={() => (
+                icon={() => (
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}

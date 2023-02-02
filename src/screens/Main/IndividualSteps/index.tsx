@@ -469,7 +469,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               value={date}
               right={
                 <TextInput.Icon
-                  name="calendar"
+                  icon="calendar"
                   onPress={() => setOpen(true)}
                   style={{ paddingTop: 6 }}
                   color={'#032f3c'}
@@ -487,7 +487,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               date={
                 date
                   ? parse(date, 'MM/dd/yyyy', new Date())
-                  : new Date(new Date().setFullYear(new Date().getFullYear() - 90))
+                  : new Date(new Date().setFullYear(2000))
               }
               onConfirm={(date) => {
                 setOpen(false);
@@ -601,7 +601,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             }}
             left={
               <TextInput.Icon
-                name={() => (
+                icon={() => (
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
@@ -689,7 +689,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             }}
             left={
               <TextInput.Icon
-                name={() => (
+                icon={() => (
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
