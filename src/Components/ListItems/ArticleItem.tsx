@@ -8,6 +8,7 @@ import { StyleProp, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'r
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { styles } from './style';
+import { decode } from 'html-entities';
 
 const ArticleItem = ({
   item,
@@ -49,7 +50,7 @@ const ArticleItem = ({
                 numberOfLines={2}
                 style={[styles.blogpostpara, { color: colors.text }, blogPostTitleStyle]}
               >
-                {isObject(item?.title) ? item?.title?.a.$text : item?.title}
+                {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
               </Text>
             </View>
             <View style={{ flex: 1 }}>

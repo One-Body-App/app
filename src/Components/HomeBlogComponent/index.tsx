@@ -10,6 +10,7 @@ import { styles } from './styles';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { OpenURLButton } from '@/src/Services/constants';
 import { isObject } from 'lodash';
+import { decode } from 'html-entities';
 
 const HomeBlogComponent = () => {
   const dispatch = useDispatch();
@@ -123,7 +124,7 @@ const HomeBlogComponent = () => {
               />
             ) : null}
             <Text numberOfLines={2} style={styles.blogpostpara}>
-              {isObject(item?.title) ? item?.title.a.$text : item?.title}
+              {isObject(item?.title) ? decode(item?.title.a.$text) : decode(item?.title)}
             </Text>
 
             <Text numberOfLines={2} style={styles.blogposthour}>

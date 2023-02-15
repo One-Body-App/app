@@ -40,6 +40,7 @@ import { SceneRendererProps } from 'react-native-tab-view';
 import OptionsModal from '../ListItems/OptionsModal';
 import { ArticleType } from '@/utils/types';
 import SocialItem from '../ListItems/SocialItem';
+import { decode } from 'html-entities';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
@@ -240,7 +241,7 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                       source={{ uri: item?.image?.url }}
                     />
                     <Text numberOfLines={2} style={{ ...styles.blogpostpara, color: colors.text }}>
-                      {isObject(item?.title) ? item?.title?.a.$text : item?.title}
+                      {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
                     </Text>
                     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
                   </TouchableOpacity>

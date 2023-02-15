@@ -161,7 +161,7 @@ const MapBox = (props: MapBoxProps) => {
               placeholder="Where are you?"
               onChangeText={(val) => getSuggestion(val)}
               autoFocus={true}
-              clearButtonMode="always"
+              clearButtonMode="never"
               activeOutlineColor={colors.background}
               outlineColor={colors.background}
               selectionColor={colors.text}
@@ -171,7 +171,7 @@ const MapBox = (props: MapBoxProps) => {
             />
             {!props.hideSearchMyLocation ? (
               <>
-                {location != null ? (
+                {location != null && searchLocation ? (
                   <TouchableOpacity onPress={() => onclose()} style={styles.iconTouch}>
                     <Icon name="closecircleo" size={23} color="red" />
                   </TouchableOpacity>

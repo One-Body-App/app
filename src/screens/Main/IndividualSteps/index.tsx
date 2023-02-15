@@ -583,7 +583,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             }}
           >
             Select a minimum of 3 topics{' '}
-            <Text style={{ fontWeight: '400' }}>to personalize your News/Blog stream.</Text>
+            <Text style={{ fontWeight: '400' }}>to personalize your experience.</Text>
           </Text>
 
           <TextInput
@@ -671,7 +671,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             }}
           >
             Select Influencers & Organizations{' '}
-            <Text style={{ fontWeight: '400' }}>to personalize your Social stream.</Text>
+            <Text style={{ fontWeight: '400' }}>to personalize your Social Feed.</Text>
           </Text>
 
           <TextInput

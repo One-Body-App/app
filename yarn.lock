@@ -6308,6 +6308,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-entities@npm:^2.3.3":
+  version: 2.3.3
+  resolution: "html-entities@npm:2.3.3"
+  checksum: 92521501da8aa5f66fee27f0f022d6e9ceae62667dae93aa6a2f636afa71ad530b7fb24a18d4d6c124c9885970cac5f8a52dbf1731741161002816ae43f98196
+  languageName: node
+  linkType: hard
+
 "html-escaper@npm:^2.0.0":
   version: 2.0.2
   resolution: "html-escaper@npm:2.0.2"
@@ -9155,6 +9162,7 @@ __metadata:
     eslint-plugin-react-hooks: ^4.3.0
     eslint-plugin-react-native: ^4.0.0
     events: ^3.3.0
+    html-entities: ^2.3.3
     jest: ^26.6.3
     lodash: ^4.17.21
     metro-react-native-babel-preset: ^0.70.3
@@ -9177,7 +9185,7 @@ __metadata:
     react-native-hash: ^3.0.1
     react-native-image-crop-picker: ^0.37.3
     react-native-image-modal: ^2.0.4
-    react-native-image-picker: ^4.7.3
+    react-native-image-picker: ^5.0.1
     react-native-inappbrowser-reborn: ^3.7.0
     react-native-keyboard-aware-scroll-view: ^0.9.5
     react-native-linear-gradient: ^2.5.6
@@ -10032,13 +10040,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-image-picker@npm:^4.7.3":
-  version: 4.8.4
-  resolution: "react-native-image-picker@npm:4.8.4"
+"react-native-image-picker@npm:^5.0.1":
+  version: 5.0.1
+  resolution: "react-native-image-picker@npm:5.0.1"
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 594de841729816fe23d8110a9e88adb21788dde40a0d2036a6a29eb78a54a5e0f854e150b85a776a2397389d3fc8fb714eed7f5b7cc4f029f66b8d02cf3bb79e
+  checksum: c14eb042ed55a6edbe6d0d5b09627e6191ca730451c4086b0ea218c6cfd10645372f7eabb77141ea8f63e35bb4b8c7ed0e4e100b3cd6bba5e51c4b38581505b0
   languageName: node
   linkType: hard
 

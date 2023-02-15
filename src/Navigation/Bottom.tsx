@@ -4,7 +4,15 @@ import Home from '../screens/Main/Home';
 import Explore from '../screens/Main/Explore';
 import Message from '../screens/Main/Message';
 
-import { Text, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import {
+  Text,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  Platform,
+  StatusBar,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Homesvg from '@/assets/svg/Home.svg';
 import Refreshsvg from '@/assets/svg/Refresh.svg';
@@ -36,13 +44,9 @@ const Tab = createBottomTabNavigator();
 
 function Bottom({ navigation, route }: Props) {
   const tabs = route?.params?.tabs;
-  const [requestModel, setRequestModel] = React.useState(false);
-  console.log(tabs);
+
   const [tab, setTab] = React.useState(tabs ?? 'HomeTab');
-  const goBack = () => {
-    console.log('asdf');
-    setTab('HomeTab');
-  };
+
   React.useEffect(() => {
     if (tabs) setTab(tabs);
   }, [tabs]);
@@ -53,21 +57,22 @@ function Bottom({ navigation, route }: Props) {
         header: () => {
           return (
             <SafeAreaView style={{ backgroundColor: '#126B87' }}>
-              <GeneralStatusBar
-                backgroundColor="#126B87"
-                hidden={false}
+              <StatusBar
                 translucent={Platform.OS == 'android'}
+                backgroundColor="#126B87"
                 barStyle={Platform.OS == 'android' ? 'light-content' : undefined}
+                hidden={false}
               />
-              <LinearGradient
-                colors={['#126B87', '#032F3C']}
-                locations={[0, 0.9]}
+              <View
+                // colors={['#126B87', '#032F3C']}
+                // locations={[0, 0.9]}
                 style={{
+                  backgroundColor: '#126B87',
                   flexDirection: 'row',
-                  alignItems: 'flex-end',
+                  // alignItems: 'flex-end',
                   paddingHorizontal: getWidth(5),
                   justifyContent: 'space-between',
-                  paddingVertical: getHeight(2),
+                  paddingVertical: getHeight(1),
                   // height: getHeight(4),
                 }}
               >
@@ -80,11 +85,11 @@ function Bottom({ navigation, route }: Props) {
                 </TouchableOpacity>
                 <View style={{ height: '100%' }}>
                   <LogoHeader
-                    fill="#126B87"
-                    height={40}
+                    fill="#fff"
+                    height={30}
                     width={140}
                     style={{
-                      shadowColor: '#000',
+                      // shadowColor: '#000',
                       shadowOffset: {
                         width: 0,
                         height: 6,
@@ -100,25 +105,41 @@ function Bottom({ navigation, route }: Props) {
                 <TouchableOpacity onPress={() => navigation.navigate('Search')}>
                   <Ionicons name="search-outline" size={24} color="white" />
                 </TouchableOpacity>
-              </LinearGradient>
+              </View>
             </SafeAreaView>
           );
         },
+        // tabBarActiveBackgroundColor: '#4d9eba',
+        tabBarActiveTintColor: 'white',
+        tabBarInactiveTintColor: '#9AACB1',
+        tabBarInactiveBackgroundColor: '#126B87',
+
+        // tabBarLabelStyle: { paddingBottom: 8 },
+        tabBarStyle: { backgroundColor: '#126B87', height: 75 },
+        // tabBarBackground: () => (
+        //   <LinearGradient colors={['#000', 'red']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }} />
+        // ),
+
+        // tabBarBackground: () => {
+        //   return (
+        //     <LinearGradient colors={['#000', 'red']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }}>
+        //       {' '}
+        //     </LinearGradient>
+        //   );
+        // },
       }}
-      tabBar={(props) => {
-        return (
-          <LinearGradient colors={['#000', 'red']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }}>
-            <BottomTabBar {...props} style={{ backgroundColor: 'transparent' }} />
-          </LinearGradient>
-        );
-      }}
+      // tabBar={(props) => {
+      //   console.log(props, 'asdfasdfsadf');
+      //   return <BottomTabBar {...props} style={{ backgroundColor: 'red' }} />;
+      // }}
     >
       <Tab.Screen
         name="HomeTab"
         component={HomeStack}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: (props) => <FontAwesome name="home" size={props.size} color={props.color} />,
+
+          tabBarIcon: (props) => <FontAwesome name="home" size={20} color={props.color} />,
         }}
       />
       <Tab.Screen
@@ -126,9 +147,7 @@ function Bottom({ navigation, route }: Props) {
         component={ExploreStack}
         options={{
           tabBarLabel: 'Explore',
-          tabBarIcon: (props) => (
-            <FontAwesome name="compass" size={props.size} color={props.color} />
-          ),
+          tabBarIcon: (props) => <FontAwesome name="compass" size={20} color={props.color} />,
         }}
       />
       {/* <Tab.Screen
@@ -146,9 +165,7 @@ function Bottom({ navigation, route }: Props) {
         component={ProfileStack}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: (props) => (
-            <FontAwesome name="user-circle" size={props.size} color={props.color} />
-          ),
+          tabBarIcon: (props) => <FontAwesome name="user-circle" size={20} color={props.color} />,
         }}
       />
     </Tab.Navigator>

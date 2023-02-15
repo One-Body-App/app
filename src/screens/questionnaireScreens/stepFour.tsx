@@ -161,7 +161,7 @@ const StepFour = (props) => {
           }}
         >
           Select Influencers & Organizations
-          <Text style={{ fontWeight: '500' }}> to personalize your Social stream</Text>
+          <Text style={{ fontWeight: '500' }}> to personalize your Social Feed</Text>
         </Text>
         <View
           style={{

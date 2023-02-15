@@ -113,12 +113,12 @@ const LoadingPage = ({ navigation }: Props) => {
 
   return (
     <View>
-      <GeneralStatusBar
-        backgroundColor="#126B87"
-        hidden={false}
+      <StatusBar
         translucent={Platform.OS == 'android'}
+        backgroundColor="#126B87"
         barStyle={Platform.OS == 'android' ? 'light-content' : undefined}
       />
+
       <ImageBackground
         resizeMode="cover"
         style={{
