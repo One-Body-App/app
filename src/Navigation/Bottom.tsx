@@ -38,6 +38,7 @@ import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
 import GeneralStatusBar from '../Components/GeneralStatusBar';
+import DeviceInfo from 'react-native-device-info';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Bottom'>;
 const Tab = createBottomTabNavigator();
@@ -51,20 +52,23 @@ function Bottom({ navigation, route }: Props) {
     if (tabs) setTab(tabs);
   }, [tabs]);
 
+  const HEADER_PADDING_TOP =
+    Platform.OS === 'ios' ? (DeviceInfo.hasNotch() || DeviceInfo.hasDynamicIsland() ? 60 : 40) : 40;
+
   return (
     <Tab.Navigator
       screenOptions={{
         header: () => {
           return (
-            <SafeAreaView style={{ backgroundColor: '#126B87' }}>
+            <View>
               <StatusBar
                 translucent={Platform.OS == 'android'}
-                backgroundColor="#126B87"
-                barStyle={Platform.OS == 'android' ? 'light-content' : undefined}
+                backgroundColor="transparent"
+                barStyle={'light-content'}
                 hidden={false}
               />
-              <View
-                // colors={['#126B87', '#032F3C']}
+              <LinearGradient
+                colors={['#126B87', '#032F3C']}
                 // locations={[0, 0.9]}
                 style={{
                   backgroundColor: '#126B87',
@@ -73,6 +77,7 @@ function Bottom({ navigation, route }: Props) {
                   paddingHorizontal: getWidth(5),
                   justifyContent: 'space-between',
                   paddingVertical: getHeight(1),
+                  paddingTop: HEADER_PADDING_TOP,
                   // height: getHeight(4),
                 }}
               >
@@ -105,17 +110,17 @@ function Bottom({ navigation, route }: Props) {
                 <TouchableOpacity onPress={() => navigation.navigate('Search')}>
                   <Ionicons name="search-outline" size={24} color="white" />
                 </TouchableOpacity>
-              </View>
-            </SafeAreaView>
+              </LinearGradient>
+            </View>
           );
         },
         // tabBarActiveBackgroundColor: '#4d9eba',
         tabBarActiveTintColor: 'white',
         tabBarInactiveTintColor: '#9AACB1',
-        tabBarInactiveBackgroundColor: '#126B87',
+        // tabBarInactiveBackgroundColor: '#126B87',
 
-        // tabBarLabelStyle: { paddingBottom: 8 },
-        tabBarStyle: { backgroundColor: '#126B87', height: 75 },
+        tabBarLabelStyle: { paddingBottom: 4 },
+        tabBarStyle: { backgroundColor: '#032F3C' },
         // tabBarBackground: () => (
         //   <LinearGradient colors={['#000', 'red']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }} />
         // ),
@@ -130,7 +135,11 @@ function Bottom({ navigation, route }: Props) {
       }}
       // tabBar={(props) => {
       //   console.log(props, 'asdfasdfsadf');
-      //   return <BottomTabBar {...props} style={{ backgroundColor: 'red' }} />;
+      //   return (
+      //     <LinearGradient colors={['#126B87', '#032F3C']}>
+      //       <BottomTabBar {...props} style={{ backgroundColor: 'transparent' }} />
+      //     </LinearGradient>
+      //   );
       // }}
     >
       <Tab.Screen

@@ -295,7 +295,7 @@ const MyProfile = ({ navigation }: Props) => {
             </TouchableOpacity>
           </>
         ) : null}
-        {user?.isInfluencer == true ? (
+        {user?.isInfluencer == true && user?.role == 'individual' ? (
           <View style={{ alignItems: 'center' }}>
             <Text
               style={{

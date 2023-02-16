@@ -9174,7 +9174,7 @@ __metadata:
     react-native-animated-progress: ^1.0.2
     react-native-autoscroll-flatlist: ^1.11.1
     react-native-date-picker: ^4.2.6
-    react-native-device-info: ^8.4.9
+    react-native-device-info: ^10.4.0
     react-native-dotenv: ^3.3.1
     react-native-fast-image: ^8.5.11
     react-native-fbsdk-next: ^10.0.0
@@ -9900,12 +9900,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-device-info@npm:^8.4.9":
-  version: 8.7.1
-  resolution: "react-native-device-info@npm:8.7.1"
+"react-native-device-info@npm:^10.4.0":
+  version: 10.4.0
+  resolution: "react-native-device-info@npm:10.4.0"
   peerDependencies:
     react-native: "*"
-  checksum: ada819913315958bd8297059682d2345e410104930ce928acd373eba71f2e683a05f1ddb19ea6b3f511b641a85f3c6d6d6fa3d830026ee9edf17fdb61f4a69b0
+  checksum: 1207ec6774e6918326eb2556478ac8fe02864fa8598b904aae3a5f8526c2da19cc73a35581e6c2ea7d56f12ccbdc08eef5366ea3f9d0b5603d87245436315485
   languageName: node
   linkType: hard
 

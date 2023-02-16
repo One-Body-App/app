@@ -408,7 +408,7 @@ PODS:
     - React
   - react-native-hash (3.0.1):
     - React
-  - react-native-image-picker (4.8.4):
+  - react-native-image-picker (5.0.1):
     - React-Core
   - react-native-pager-view (5.4.25):
     - React-Core
@@ -502,7 +502,7 @@ PODS:
     - React-Core
   - RNCPicker (2.4.3):
     - React-Core
-  - RNDeviceInfo (8.7.1):
+  - RNDeviceInfo (10.4.0):
     - React-Core
   - RNFastImage (8.5.11):
     - React-Core
@@ -920,7 +920,7 @@ SPEC CHECKSUMS:
   react-native-geolocation: 69f4fd37650b8e7fee91816d395e62dd16f5ab8d
   react-native-geolocation-service: f32ef48fa665bd710207a3ac39bc127cac9cb993
   react-native-hash: 17b3c3896711278eebb9e66e532c2d8e5f3b7c30
-  react-native-image-picker: cffb727cf2f59bd5c0408e30b3dbe0b935f88835
+  react-native-image-picker: 8cb4280e2c1efc3daeb2d9d597f9429a60472e40
   react-native-pager-view: da490aa1f902c9a5aeecf0909cc975ad0e92e53e
   react-native-render-html: 984dfe2294163d04bf5fe25d7c9f122e60e05ebe
   react-native-safe-area-context: 9e40fb181dac02619414ba1294d6c2a807056ab9
@@ -944,7 +944,7 @@ SPEC CHECKSUMS:
   RNCCheckbox: ed1b4ca295475b41e7251ebae046360a703b6eb5
   RNCClipboard: 41d8d918092ae8e676f18adada19104fa3e68495
   RNCPicker: a99807a74d9cd65c394f6e2a6c843a377b355b4d
-  RNDeviceInfo: aad3c663b25752a52bf8fce93f2354001dd185aa
+  RNDeviceInfo: 749f2e049dcd79e2e44f134f66b73a06951b5066
   RNFastImage: 1f2cab428712a4baaf78d6169eaec7f622556dd7
   RNFBAnalytics: c6f5b13cdd8070b6be3d2f3416f7b576efd1f5d4
   RNFBApp: 75adb6116fa1504b370c2dcadfdafe0362c78664

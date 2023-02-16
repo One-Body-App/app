@@ -2,7 +2,7 @@ import { StatusBar, PixelRatio, Dimensions, Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 const { height, width } = Dimensions.get('window');
 export function isIphoneX() {
-  return Platform.OS === 'ios' && DeviceInfo.hasNotch();
+  return (Platform.OS === 'ios' && DeviceInfo.hasNotch()) || DeviceInfo.hasDynamicIsland();
 }
 
 export function getHeight(elemHeight: number) {
