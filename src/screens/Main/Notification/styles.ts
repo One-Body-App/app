@@ -5,12 +5,9 @@ const styles = StyleSheet.create({
   background: { height: getHeight(100), width: getWidth(100) },
   container: {
     flex: 1,
-    backgroundColor: 'white',
   },
 
   card: {
-    backgroundColor: 'white',
-
     elevation: 1.3,
 
     padding: getWidth(3),

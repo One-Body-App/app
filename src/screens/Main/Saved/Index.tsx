@@ -25,8 +25,10 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { ApiCall } from '@/src/Services/api';
 import { getuserGet } from '@/src/Redux/actions/UserAction';
+import { useTheme } from '@react-navigation/native';
+import { DrawerScreenProps } from '@react-navigation/drawer';
 
-type Props = StackScreenProps<RootStackParamList, 'Saved'>;
+type Props = DrawerScreenProps<RootStackParamList, 'Saved'>;
 
 const Saved = ({ navigation }: Props) => {
   const user = useSelector((state: RootState) => state.auth.userProfile);
@@ -54,21 +56,16 @@ const Saved = ({ navigation }: Props) => {
       console.log('saga error -- ', e.toString());
     }
   };
-
+  const { colors, dark } = useTheme();
   return (
     <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+      <GeneralStatusBar hidden={false} translucent={true} />
 
       <Header
         title={'Saved'}
         leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back-outline" size={20} />
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Ionicons name="menu" size={24} color={colors.text} />
           </TouchableOpacity>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
@@ -79,14 +76,13 @@ const Saved = ({ navigation }: Props) => {
           marginTop: getHeight(4),
           flex: 1,
           paddingHorizontal: 5,
-          alignItems: 'center',
         }}
       >
         <FlatList
           data={user?.savedPost}
           numColumns={2}
+          columnWrapperStyle={{ alignItems: 'flex-start' }}
           ItemSeparatorComponent={() => <View style={{ height: getHeight(3) }} />}
-          contentContainerStyle={{ justifyContent: 'space-between' }}
           ListEmptyComponent={() => {
             return (
               <View>
@@ -96,7 +92,10 @@ const Saved = ({ navigation }: Props) => {
           }}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={{ ...styles.blogpostview, marginHorizontal: 10 }}
+              style={{
+                ...styles.blogpostview,
+                marginHorizontal: 10,
+              }}
               onPress={() => {
                 OpenURLButton(item.link);
               }}
@@ -122,7 +121,10 @@ const Saved = ({ navigation }: Props) => {
               >
                 <Save height={getHeight(3)} width={getWidth(3)} />
               </View>
-              <Text numberOfLines={2} style={styles.blogpostpara}>
+              <Text
+                numberOfLines={2}
+                style={[styles.blogpostpara, { color: dark ? colors.text : '#032F3C' }]}
+              >
                 {item.title}
               </Text>
               <TouchableOpacity

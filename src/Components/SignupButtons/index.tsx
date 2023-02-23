@@ -140,7 +140,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
   const disabled = !!!AccountType;
 
   const scheme = useColorScheme();
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
 
   const getButtonTextStyle = () => {
     return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : '#032F3C' };
@@ -223,7 +223,11 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           leftIcon={
             <Ionicons
               name="mail"
-              style={{ marginRight: getWidth(3), color: disabled ? '#B3C1C5' : '' }}
+              style={{
+                marginRight: getWidth(3),
+                // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
+                color: dark ? colors.text : '#B3C1C5',
+              }}
               size={getFontSize(4)}
             />
           }

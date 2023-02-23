@@ -13,10 +13,15 @@ const Header = ({ title, leftView, RightView }: Props) => {
   const { colors, dark } = useTheme();
 
   return (
-    <View style={styles.headview}>
+    <View
+      style={[
+        styles.headview,
+        { backgroundColor: colors.background, borderBottomColor: colors.border },
+      ]}
+    >
       <View
         style={{
-          paddingTop: 10,
+          // paddingTop: 10,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -34,12 +39,12 @@ const Header = ({ title, leftView, RightView }: Props) => {
 };
 const styles = StyleSheet.create<{ headview: ViewStyle; titletext: TextStyle }>({
   headview: {
-    height: getHeight(10),
+    height: getHeight(5),
 
     flexDirection: 'row',
 
     justifyContent: 'space-between',
-    padding: 10,
+    paddingHorizontal: 10,
     alignItems: 'center',
     shadowColor: 'rgba(18, 107, 135, 0.25)',
     borderBottomColor: 'rgba(18, 107, 135, 0.05)',

@@ -9,6 +9,7 @@ import ZendeskChat from 'react-native-zendesk-chat';
 import dynamicLinks from '@react-native-firebase/dynamic-links';
 import { Linking } from 'react-native';
 import { ToastProvider } from 'react-native-toast-notifications';
+import { Provider as PaperProvider } from 'react-native-paper';
 
 const App = () => {
   const handleDynamicLink = (link: string) => {
@@ -55,7 +56,9 @@ const App = () => {
     <ToastProvider offsetTop={60}>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
-          <Main />
+          <PaperProvider>
+            <Main />
+          </PaperProvider>
         </PersistGate>
       </Provider>
     </ToastProvider>

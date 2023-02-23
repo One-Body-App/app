@@ -24,6 +24,7 @@ import { styles } from './styles';
 import Share from 'react-native-share';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
+import { useTheme } from '@react-navigation/native';
 
 const InviteFriend = ({ navigation }) => {
   const shareUrl = async () => {
@@ -40,21 +41,16 @@ const InviteFriend = ({ navigation }) => {
       setResult('error: '.concat(getErrorString(error)));
     }
   };
-
+  const { dark, colors } = useTheme();
   return (
     <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+      <GeneralStatusBar hidden={false} translucent={true} />
 
       <Header
         title={'Invite a friend'}
         leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={20} />
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Ionicons name="menu" size={24} color={colors.text} />
           </TouchableOpacity>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
@@ -67,7 +63,9 @@ const InviteFriend = ({ navigation }) => {
             marginBottom: getHeight(5),
           }}
         >
-          <Text style={styles.heading}>Scan QR code</Text>
+          <Text style={[styles.heading, { color: dark ? colors.text : '#032F3C' }]}>
+            Scan QR code
+          </Text>
           <Text style={styles.text}>Scan QR code to invite your friend</Text>
         </View>
         <QRCode
@@ -84,7 +82,9 @@ const InviteFriend = ({ navigation }) => {
             marginTop: getHeight(7),
           }}
         >
-          <Text style={styles.heading}>Invite link</Text>
+          <Text style={[styles.heading, { color: dark ? colors.text : '#032F3C' }]}>
+            Invite link
+          </Text>
           <Text style={styles.text}>Or send an invite link to your friend</Text>
         </View>
 

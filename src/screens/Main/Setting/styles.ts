@@ -5,7 +5,7 @@ export const styles = StyleSheet.create({
   container: { flex: 1 },
   innerContainer: {
     flex: 1,
-    marginTop: getHeight(1.5),
+    // marginTop: getHeight(1.5),
   },
   heading: {
     fontSize: getFontSize(2.5),
@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
 
   text: { width: '80%', textAlign: 'center' },
   list: {
-    height: getHeight(14),
+    height: getHeight(12),
     // borderBottomWidth: 0.3,
     borderBottomWidth: 0.3,
     borderBottomColor: '#BDC0C1',
@@ -28,7 +28,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingLeft: getWidth(10),
     paddingRight: getWidth(10),
-    marginTop: 10,
+    // marginTop: 10,
     alignItems: 'center',
   },
   lists: {

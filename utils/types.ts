@@ -44,6 +44,8 @@ type Profile = {
   contactName?: string;
   contactEmail?: string;
   contactPhoneNumber?: string;
+  whatIDo?: Tag;
+  typeOfOrganization?: Tag;
 };
 
 export type SavedPost = {

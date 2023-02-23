@@ -7,7 +7,6 @@ export const GeneralStyle = StyleSheet.create({
     backgroundColor: 'white',
   },
   btnText: {
-    color: 'white',
     fontSize: getFontSize(2.1),
     fontFamily: 'Rubik-Medium',
     letterSpacing: 1.25,

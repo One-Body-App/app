@@ -28,6 +28,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { ApiCall } from '@/services/api';
 import { useSelector } from 'react-redux';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
+import { useTheme } from '@react-navigation/native';
 // create a component
 const Notification = ({ navigation }) => {
   const [DATA, SetDATA] = useState([]);
@@ -71,20 +72,17 @@ const Notification = ({ navigation }) => {
     getAllNotification();
   }, []);
 
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+      <GeneralStatusBar hidden={false} translucent={true} />
 
       <Header
         title={'Notifications'}
         leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={20} />
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Ionicons name="menu" size={24} color={colors.text} />
           </TouchableOpacity>
         }
         RightView={<View style={{ width: getWidth(5) }} />}

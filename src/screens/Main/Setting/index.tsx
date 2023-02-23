@@ -15,8 +15,9 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { useTheme } from '@react-navigation/native';
 import GoBackIcon from '@/src/Components/GoBackIcon';
+import { DrawerScreenProps } from '@react-navigation/drawer';
 
-type Props = StackScreenProps<RootStackParamList, 'Settings'>;
+type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;
 
 const Settings = ({ navigation }: Props) => {
   const GOOGLE_PACKAGE_NAME = '';
@@ -66,7 +67,11 @@ const Settings = ({ navigation }: Props) => {
 
       <Header
         title={'Settings'}
-        leftView={<GoBackIcon color={colors.text} />}
+        leftView={
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Ionicons name="menu" size={24} color={colors.text} />
+          </TouchableOpacity>
+        }
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <ScrollView style={styles.innerContainer}>

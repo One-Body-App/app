@@ -2,9 +2,8 @@ import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
+  container: { flex: 1 },
   blogpostview: {
-    backgroundColor: '#f6f6f6',
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
@@ -29,7 +28,7 @@ export const styles = StyleSheet.create({
     padding: 5,
     marginTop: getHeight(1),
     lineHeight: 18,
-    color: '#032F3C',
+
     fontFamily: 'Rubik-Medium',
 
     width: 150,

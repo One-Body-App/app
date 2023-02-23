@@ -63,9 +63,10 @@ export const enValidation = {
     presence: {
       message: '^Please enter a confirm password',
     },
-    length: {
-      minimum: 6,
-      message: '^Your password must be at least 6 characters',
+    // confirmPassword: {
+    equality: {
+      attribute: 'password',
+      message: '^The Confirmation must match the Password',
     },
   },
   fullname: {
@@ -116,7 +117,7 @@ export const enValidation = {
     },
     length: {
       minimum: 4,
-      message: '^Your full name must be at least 4 characters',
+      message: '^Your username must be at least 4 characters',
     },
   },
   confirmpass: {

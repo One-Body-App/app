@@ -61,17 +61,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
 
-    width: getWidth(90),
+    flex: 1,
     padding: getHeight(1),
     borderRadius: 10,
-    alignSelf: 'center',
-    backgroundColor: 'white',
+    // alignSelf: 'center',
   },
 
   subscribetext: {
-    padding: 2,
-
-    color: '#032F3C',
     fontFamily: 'Rubik-Medium',
   },
   subscribebutton: {
@@ -114,20 +110,23 @@ export const styles = StyleSheet.create({
   simpleview: {
     // justifyContent: 'center',
     // alignItems: 'center',
+    flex: 1,
+
+    paddingRight: 10,
     paddingLeft: getWidth(3),
   },
   mysubscription: {
     color: '#126B87',
     justifyContent: 'center',
-    margin: getHeight(5),
+    marginTop: getHeight(2),
     fontWeight: '600',
-    fontSize: getFontSize(2.2),
+    fontSize: getFontSize(2.5),
     alignSelf: 'center',
   },
   myinterest: {
     color: '#126B87',
     justifyContent: 'center',
-    margin: getHeight(5),
+    marginTop: getHeight(2),
     marginBottom: getHeight(2.5),
     fontWeight: '600',
     fontSize: getFontSize(2.2),

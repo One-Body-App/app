@@ -24,15 +24,17 @@ import { RootState } from '../Redux/reducers/rootReducer';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
+import { useTheme } from '@react-navigation/native';
 
 const Drawer = createDrawerNavigator();
 function NavHeader(props: DrawerContentComponentProps) {
   const user = useSelector((state: RootState) => state.auth.userProfile);
+  const { dark } = useTheme();
 
   return (
     <View
       style={{
-        backgroundColor: '#E5E5E5',
+        // backgroundColor: '#E5E5E5',
 
         flex: 1,
       }}
@@ -84,7 +86,7 @@ function NavHeader(props: DrawerContentComponentProps) {
               marginTop: getHeight(1),
               textAlign: 'center',
 
-              color: '#032F3C',
+              color: dark ? '#9AACB1' : '#032F3C',
             }}
           >
             {user?.name}
@@ -151,7 +153,7 @@ export default function Drawerr() {
       screenOptions={{
         drawerType: 'front',
         drawerStyle: {
-          backgroundColor: '#E5E5E5',
+          // backgroundColor: '#E5E5E5',
           // backgroundColor: 'transparent',
           borderBottomEndRadius: 30,
           borderTopEndRadius: 30,
@@ -165,8 +167,8 @@ export default function Drawerr() {
         options={{
           headerShown: false,
 
-          drawerInactiveTintColor: '#4F6D77',
-          drawerActiveTintColor: '#032F3C',
+          // drawerInactiveTintColor: '#4F6D77',
+          // drawerActiveTintColor: '#032F3C',
         }}
         component={Bottom}
       />
@@ -184,9 +186,9 @@ export default function Drawerr() {
         name="Notifications"
         options={{
           headerShown: false,
-          drawerInactiveTintColor: '#4F6D77',
-          drawerActiveTintColor: '#032F3C',
-          headerTintColor: '#24BFF0',
+          // drawerInactiveTintColor: '#4F6D77',
+          // drawerActiveTintColor: '#032F3C',
+          // headerTintColor: '#24BFF0',
         }}
         component={Notification}
       />
@@ -194,9 +196,9 @@ export default function Drawerr() {
         name="Connections"
         options={{
           headerShown: false,
-          drawerInactiveTintColor: '#4F6D77',
-          drawerActiveTintColor: '#032F3C',
-          headerTintColor: '#24BFF0',
+          // drawerInactiveTintColor: '#4F6D77',
+          // drawerActiveTintColor: '#032F3C',
+          // headerTintColor: '#24BFF0',
         }}
         component={Chanel}
       />
@@ -204,9 +206,9 @@ export default function Drawerr() {
         name="Saved"
         options={{
           headerShown: false,
-          drawerInactiveTintColor: '#4F6D77',
-          drawerActiveTintColor: '#032F3C',
-          headerTintColor: '#24BFF0',
+          // drawerInactiveTintColor: '#4F6D77',
+          // drawerActiveTintColor: '#032F3C',
+          // headerTintColor: '#24BFF0',
         }}
         component={Saved}
       />
@@ -214,9 +216,9 @@ export default function Drawerr() {
         name="Invite"
         options={{
           headerShown: false,
-          drawerInactiveTintColor: '#4F6D77',
-          drawerActiveTintColor: '#032F3C',
-          headerTintColor: '#24BFF0',
+          // drawerInactiveTintColor: '#4F6D77',
+          // drawerActiveTintColor: '#032F3C',
+          // headerTintColor: '#24BFF0',
         }}
         component={InviteFriend}
       />
@@ -224,9 +226,9 @@ export default function Drawerr() {
         name="Settings"
         options={{
           headerShown: false,
-          drawerInactiveTintColor: '#4F6D77',
-          drawerActiveTintColor: '#032F3C',
-          headerTintColor: '#24BFF0',
+          // drawerInactiveTintColor: '#4F6D77',
+          // drawerActiveTintColor: '#032F3C',
+          // headerTintColor: '#24BFF0',
         }}
         component={Setting}
       />
@@ -234,9 +236,9 @@ export default function Drawerr() {
         name="Help"
         options={{
           headerShown: false,
-          drawerInactiveTintColor: '#4F6D77',
-          drawerActiveTintColor: '#032F3C',
-          headerTintColor: '#24BFF0',
+          // drawerInactiveTintColor: '#4F6D77',
+          // drawerActiveTintColor: '#032F3C',
+          // headerTintColor: '#24BFF0',
         }}
         component={Help}
       />

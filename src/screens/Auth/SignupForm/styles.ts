@@ -63,7 +63,6 @@ export const styles = StyleSheet.create({
     fontFamily: 'Rubik-Medium',
   },
   text: {
-    color: '#81979E',
     marginTop: 2,
     fontFamily: 'Rubik-Medium',
     underline: { textDecorationLine: 'underline' },
@@ -92,5 +91,55 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
+  },
+
+  wrapper: {
+    backgroundColor: 'transparent',
+  },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderBottomWidth: 0.8,
+    borderColor: 'rgba(242, 242, 242, 0.5)',
+  },
+  input: {
+    flex: 1,
+    color: '#fff',
+    paddingTop: 7,
+    paddingBottom: 10,
+    fontSize: 20,
+  },
+  passwordStrengthWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 10,
+  },
+  passwordStrengthBar: {
+    height: 10,
+    position: 'relative',
+    // top: 5,
+    // bottom: 5,
+    borderRadius: 5,
+    backgroundColor: 'red',
+    // flex: 1,
+    marginTop: 10,
+    marginLeft: 5,
+  },
+  innerPasswordStrengthBar: {
+    height: 10,
+    borderRadius: 5,
+    width: 0,
+  },
+  strengthDescription: {
+    color: '#fff',
+    backgroundColor: 'transparent',
+    textAlign: 'right',
+    position: 'absolute',
+    right: 5,
+    top: 1,
+    fontSize: 14,
   },
 });

@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
+  container: { flex: 1 },
   innerContainer: {
     alignItems: 'center',
     marginTop: getHeight(5.5),
@@ -20,7 +20,7 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: getFontSize(2.7),
     margin: 10,
-    color: '#032F3C',
+
     letterSpacing: 0.25,
     fontFamily: 'Rubik-Medium',
   },

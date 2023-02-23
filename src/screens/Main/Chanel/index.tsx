@@ -23,8 +23,10 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest, User } from '@/utils/types';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useTheme } from '@react-navigation/native';
+import { DrawerScreenProps } from '@react-navigation/drawer';
 
-type Props = StackScreenProps<RootStackParamList, 'Channel'>;
+type Props = DrawerScreenProps<RootStackParamList, 'Channel'>;
 
 const Chanel = ({ navigation }: Props) => {
   const subscribes = useSelector((state: RootState) => state.user.userSubscribes);
@@ -94,7 +96,7 @@ const Chanel = ({ navigation }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res?.response, 'res?.responseres?.response');
+
       if (res?.status == 200) {
         setFollowing(res?.response?.data);
       } else {
@@ -109,77 +111,102 @@ const Chanel = ({ navigation }: Props) => {
     getFollowing();
   }, []);
 
+  const { dark } = useTheme();
+
   const SubscribeFlatlists = () => {
     return (
       <FlatList
         data={following}
-        ListFooterComponent={() => <View style={{ padding: 7 }} />}
         ListHeaderComponent={<Text style={styles.mysubscription}>My Subscriptions</Text>}
         ItemSeparatorComponent={() => <Divider />}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('UserProfile', {
-                id: item?._id,
-              })
-            }
-            style={styles.subscribeview}
-          >
-            <View style={{ flexDirection: 'row', width: '45%' }}>
-              <ImageModal
-                resizeMode="contain"
-                style={{ width: 70, height: 70, borderRadius: 35 }}
-                source={{
-                  uri:
-                    item?.profileImage && item?.profileImage != ''
-                      ? item?.profileImage
-                      : 'https://cdn.onebodyapp.com/user/no-image.png',
-                }}
-              />
+        renderItem={({ item, index }) => {
+          return (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('UserProfile', {
+                  id: item?._id,
+                })
+              }
+              style={styles.subscribeview}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flex: 1,
 
-              <View style={{ ...styles.simpleview, justifyContent: 'center' }}>
-                <Text numberOfLines={2} style={styles.subscribetext}>
-                  {item?.name}
-                </Text>
-                <Text
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View
                   style={{
-                    color: '#757575',
-                    fontFamily: 'Rubik-Regular',
+                    ...styles.simpleview,
+                    flexDirection: 'row',
+
+                    alignItems: 'center',
                   }}
                 >
-                  {item?.whatIDo?.name}
-                </Text>
+                  <View style={{ flex: 1 }}>
+                    <ImageModal
+                      resizeMode="contain"
+                      style={{ width: 70, height: 70, borderRadius: 35 }}
+                      source={{
+                        uri:
+                          item?.profileImage && item?.profileImage != ''
+                            ? item?.profileImage
+                            : 'https://cdn.onebodyapp.com/user/no-image.png',
+                      }}
+                    />
+                  </View>
+                  <View style={{ flex: 2.3 }}>
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        styles.subscribetext,
+                        { color: dark ? colors.text : '#032F3C', paddingLeft: 10 },
+                      ]}
+                    >
+                      {item?.name}
+                    </Text>
+                    <Text
+                      style={{
+                        color: '#757575',
+                        fontFamily: 'Rubik-Regular',
+                        paddingLeft: 10,
+                      }}
+                    >
+                      {item?.profile?.whatIDo?.name ?? item?.profile?.typeOfOrganization?.name}
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ justifyContent: 'center' }}>
+                  <Button
+                    btnStyle={[styles.subscribebutton]}
+                    btnTextStyle={styles.subtex}
+                    text={'Unfollow'}
+                    onPress={() => {
+                      handleUnSubscribe(item?._id);
+                    }}
+                  />
+                </View>
               </View>
-            </View>
-
-            <Button
-              btnStyle={[styles.subscribebutton]}
-              btnTextStyle={styles.subtex}
-              text={'Unfollow'}
-              onPress={() => {
-                handleUnSubscribe(item?._id);
-              }}
-            />
-          </TouchableOpacity>
-        )}
+            </TouchableOpacity>
+          );
+        }}
       />
     );
   };
 
+  const { colors } = useTheme();
+
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+    <View style={{ flex: 1 }}>
+      <GeneralStatusBar hidden={false} translucent={true} />
 
       <Header
         title={'Connections'}
         leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back-outline" size={20} />
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Ionicons name="menu" size={24} color={colors.text} />
           </TouchableOpacity>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
@@ -203,14 +230,9 @@ const Chanel = ({ navigation }: Props) => {
         </Modal>
         <FlatList
           data={selectedInterest}
-          ListFooterComponent={
-            <View>
-              <SubscribeFlatlists />
-            </View>
-          }
+          ListFooterComponent={<SubscribeFlatlists />}
           ListHeaderComponent={<Text style={styles.myinterest}>My Interests</Text>}
           keyExtractor={(item, index) => index.toString()}
-          showsVerticalScrollIndicator={false}
           numColumns={4}
           renderItem={({ item, index }) => (
             <TouchableOpacity

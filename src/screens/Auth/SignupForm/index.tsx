@@ -92,7 +92,7 @@ const SignupForm = ({ navigation }: Props) => {
     const nameError = await validator('name', name);
     const usernameError = await validator('username', username);
     const passwordError = await validator('password', password);
-    const cPasswordError = await validator('cPassword', cPassword);
+    const cPasswordError = await validator('cPassword', cPassword, { password });
 
     if (!emailError && !passwordError && !nameError && !cPasswordError && !usernameError) {
       if (password == cPassword) {
@@ -163,7 +163,7 @@ const SignupForm = ({ navigation }: Props) => {
   };
 
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
 
   const getButtonTextStyle = (selected: boolean) => {
     if (selected) {
@@ -220,7 +220,7 @@ const SignupForm = ({ navigation }: Props) => {
       />
       <KeyboardAwareScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={['#fff', '#fff', '#E0EEF3']}
+          colors={[colors.background, colors.background, dark ? colors.background : '#E0EEF3']}
           style={{ flex: 1, paddingBottom: 110 }}
         >
           <View style={{ paddingHorizontal: 25, flex: 1 }}>
@@ -322,9 +322,11 @@ const SignupForm = ({ navigation }: Props) => {
               keyboardType="default"
               autoCapitalize="none"
             />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
+
+            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}>
               {state.usernameError}
             </Text>
+
             <TextInput
               style={GeneralStyle.input}
               theme={{ roundness: 10 }}
@@ -347,7 +349,7 @@ const SignupForm = ({ navigation }: Props) => {
               keyboardType="default"
               autoCapitalize="words"
             />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
+            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}>
               {state.nameError}
             </Text>
 
@@ -361,7 +363,7 @@ const SignupForm = ({ navigation }: Props) => {
               mode="outlined"
               activeOutlineColor={appColor.InstructionColor}
               outlineColor={'#888C93'}
-              label={'Your e-mail'}
+              label={'Your email'}
               autoCorrect={false}
               onFocus={() => setState({ ...state, emailError: '' })}
               onBlur={() =>
@@ -374,21 +376,7 @@ const SignupForm = ({ navigation }: Props) => {
               blurOnSubmit={false}
               autoCapitalize="none"
             />
-            <View style={[styles.passwordStrengthWrapper]}>
-              <Animated.View
-                style={[
-                  styles.passwordStrengthBar,
-
-                  { backgroundColor: '#ffffff', width: animatedBarWidth },
-                ]}
-              >
-                <Animated.View
-                  style={[styles.innerPasswordStrengthBar, { width: animatedInnerBarWidth }]}
-                />
-              </Animated.View>
-              <Text style={[styles.strengthDescription]}>label</Text>
-            </View>
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
+            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}>
               {state.emailError}
             </Text>
 
@@ -430,58 +418,61 @@ const SignupForm = ({ navigation }: Props) => {
               onChangeText={(password) => changeHandler('password', password)}
               blurOnSubmit={false}
             />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
-              {state.passwordError}
-            </Text>
+
+            {/* <View style={[styles.passwordStrengthWrapper]}>
+              <Animated.View
+                style={[
+                  styles.passwordStrengthBar,
+
+                  { backgroundColor: '#ffffff', width: animatedBarWidth },
+                ]}
+              >
+                <Animated.View
+                  style={[styles.innerPasswordStrengthBar, { width: animatedInnerBarWidth }]}
+                />
+              </Animated.View>
+            </View> */}
 
             {state.password.length > 0 ? (
-              <View>
+              <View style={{ marginVertical: 10 }}>
                 {passwordStrength < 5 ? (
-                  <View>
+                  <View style={{ flexDirection: 'row' }}>
                     <MaterialCommunityIcons
                       name={!passwordTracker.sixCharsOrMore ? 'close' : 'check'}
                       size={20}
-                      color={!passwordTracker.sixCharsOrMore ? 'red' : ''}
-                      style={{
-                        alignSelf: 'center',
-
-                        marginTop: getHeight(1),
-                      }}
+                      color={!passwordTracker.sixCharsOrMore ? 'red' : 'green'}
+                      style={
+                        {
+                          // alignSelf: 'center',
+                          // justifyContent: 'center',
+                          // marginTop: getHeight(1),
+                        }
+                      }
                     />
-                    <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : '' }}>
+                    <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : 'green' }}>
                       At least 6 characters
                     </Text>
                   </View>
                 ) : null}
 
-                <View>
+                <View style={{ flexDirection: 'row' }}>
                   <MaterialCommunityIcons
                     name={!passwordTracker.specialChar ? 'close' : 'check'}
                     size={20}
-                    color={!passwordTracker.specialChar ? 'red' : ''}
-                    style={{
-                      alignSelf: 'center',
-
-                      marginTop: getHeight(1),
-                    }}
+                    color={!passwordTracker.specialChar ? 'red' : 'green'}
                   />
-                  <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : '' }}>
+                  <Text style={{ color: !passwordTracker.specialChar ? 'red' : 'green' }}>
                     At least 1 special character
                   </Text>
                 </View>
 
-                <View>
+                <View style={{ flexDirection: 'row' }}>
                   <MaterialCommunityIcons
                     name={!passwordTracker.number ? 'close' : 'check'}
                     size={20}
-                    color={!passwordTracker.number ? 'red' : ''}
-                    style={{
-                      alignSelf: 'center',
-
-                      marginTop: getHeight(1),
-                    }}
+                    color={!passwordTracker.number ? 'red' : 'green'}
                   />
-                  <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : '' }}>
+                  <Text style={{ color: !passwordTracker.number ? 'red' : 'green' }}>
                     Contains at least 1 number
                   </Text>
                 </View>
@@ -502,7 +493,7 @@ const SignupForm = ({ navigation }: Props) => {
                 <TextInput.Icon
                   icon={() => (
                     <MaterialCommunityIcons
-                      name={chidePass ? 'eye-off-outline' : 'eye-outline'}
+                      name={chidePass ? 'eye-outline' : 'eye-off-outline'}
                       size={20}
                       color={'#5B7279'}
                       style={{
@@ -518,8 +509,11 @@ const SignupForm = ({ navigation }: Props) => {
               style={GeneralStyle.input}
               onFocus={() => setState({ ...state, cPasswordError: '' })}
               onBlur={() =>
-                validateFields(state.cPassword, 'cPassword', (error) =>
-                  setState({ ...state, cPasswordError: error })
+                validateFields(
+                  state.cPassword,
+                  'cPassword',
+                  (error) => setState({ ...state, cPasswordError: error }),
+                  { password: state.password }
                 )
               }
               onSubmitEditing={() => signUpUser()}
@@ -531,14 +525,23 @@ const SignupForm = ({ navigation }: Props) => {
             </Text>
 
             <View style={{ ...styles.center, paddingBottom: 20 }}>
-              <Text style={{ color: '#032F3C' }}>By signing up, you agree to our</Text>
+              <Text style={{ color: dark ? colors.text : '#032F3C' }}>
+                By signing up, you agree to our
+              </Text>
               <View style={{ flexDirection: 'row' }}>
                 <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
-                  <Text style={styles.text}>User Agreements</Text>
+                  <Text style={[styles.text, { color: dark ? colors.text : '#81979E' }]}>
+                    User Agreements
+                  </Text>
                 </TouchableOpacity>
-                <Text style={styles.simpleText}> & </Text>
+                <Text style={[styles.simpleText, { color: dark ? colors.text : '#81979E' }]}>
+                  {' '}
+                  &{' '}
+                </Text>
                 <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
-                  <Text style={styles.text}>Privacy Policy</Text>
+                  <Text style={[styles.text, { color: dark ? colors.text : '#81979E' }]}>
+                    Privacy Policy
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -553,17 +556,16 @@ const SignupForm = ({ navigation }: Props) => {
               text={'SIGN UP'}
               disabled={loading}
               onPress={() => signUpUser()}
-              btnTextStyle={GeneralStyle.btnText}
+              btnTextStyle={[GeneralStyle.btnText, { color: dark ? colors.text : '#E6EAEC' }]}
               disabledBtnStyle={{
                 ...GeneralStyle.btn,
                 marginTop: getHeight(2),
-                backgroundColor: '#E6EAEC',
               }}
               disabledBtnTextStyle={GeneralStyle.btnText}
               btnStyle={{
                 ...GeneralStyle.btn,
                 marginTop: getHeight(2),
-                backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
+                backgroundColor: scheme == 'dark' ? colors.card : '#0C5C75',
               }}
             />
           </View>
