@@ -18,6 +18,7 @@ import { GeneralStyle } from '../../constants/GeneralStyle';
 import Google from '@/assets/svg/G.svg';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Facebook from '@/assets/svg/Facebook.svg';
+import Apple from '@/assets/svg/Apple.svg';
 import Button from '../Button';
 import { styles } from './styles';
 import { appColor } from '../../constants';
@@ -34,6 +35,7 @@ import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID } from '@/src/Services/constants';
 import { useToast } from 'react-native-toast-notifications';
 import G from '@/assets/svg/G.svg';
 import { useTheme } from '@react-navigation/native';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
 
 interface Props extends StackScreenProps<RootStackParamList, any> {
   showConfirmationEmailMessage: boolean;
@@ -346,6 +348,45 @@ const LoginComponent: FC<Props> = ({
       console.log(e);
     }
   };
+
+  async function onAppleButtonPress() {
+    // performs login request
+    // const appleAuthRequestResponse = await appleAuth.performRequest({
+    //   requestedOperation: appleAuth.Operation.LOGIN,
+    //   requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+    // });
+
+    // // get current authentication state for user
+    // // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
+    // const credentialState = await appleAuth.getCredentialStateForUser(
+    //   appleAuthRequestResponse.user
+    // );
+
+    // // use credentialState response to ensure the user is authenticated
+    // if (credentialState === appleAuth.State.AUTHORIZED) {
+    //   console.warn('apple response', appleAuthRequestResponse);
+
+    //   // user is authenticated
+    // }
+
+    // Start the sign-in request
+    const appleAuthRequestResponse = await appleAuth.performRequest({
+      requestedOperation: appleAuth.Operation.LOGIN,
+      requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+    });
+
+    // Ensure Apple returned a user identityToken
+    if (!appleAuthRequestResponse.identityToken) {
+      throw new Error('Apple Sign-In failed - no identify token returned');
+    }
+
+    // Create a Firebase credential from the response
+    const { identityToken, nonce } = appleAuthRequestResponse;
+    const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+
+    // Sign the user in with the credential
+    return auth().signInWithCredential(appleCredential);
+  }
 
   const googleSignIn = async () => {
     try {
@@ -732,7 +773,7 @@ const LoginComponent: FC<Props> = ({
         enabledLoginProviders?.includes('twitter.com') &&
         enabledLoginProviders?.includes('password') ? (
           <TouchableOpacity onPress={() => onTwitterButtonPress()}>
-            <View style={{ ...styles.socialContainer, marginRight: 0 }}>
+            <View style={{ ...styles.socialContainer }}>
               <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
             </View>
           </TouchableOpacity>
@@ -748,6 +789,33 @@ const LoginComponent: FC<Props> = ({
                 btnTextStyle={getButtonTextStyle()}
                 onPress={() => {
                   onTwitterButtonPress();
+                }}
+                disabledBtnStyle={getDisabledButtonStyle()}
+                disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                wrapperBtnStyle={{ width: '100%' }}
+              />
+            ) : null}
+          </>
+        )}
+
+        {enabledLoginProviders &&
+        enabledLoginProviders?.includes('apple') &&
+        enabledLoginProviders?.includes('password') ? (
+          <TouchableOpacity onPress={() => onAppleButtonPress()}>
+            <View style={{ ...styles.socialContainer, marginRight: 0 }}>
+              <Apple fill="#00acee" style={{ alignSelf: 'center' }} />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <>
+            {enabledLoginProviders && enabledLoginProviders?.includes('apple') ? (
+              <Button
+                text={'Login with Apple'}
+                leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}
+                btnStyle={getButtonContainer()}
+                btnTextStyle={getButtonTextStyle()}
+                onPress={() => {
+                  onAppleButtonPress();
                 }}
                 disabledBtnStyle={getDisabledButtonStyle()}
                 disabledBtnTextStyle={getDisabledButtonTextStyle()}

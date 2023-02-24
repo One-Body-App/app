@@ -122,7 +122,7 @@ export const styles = StyleSheet.create({
     height: getHeight(5),
     width: getWidth(20),
     shadowColor: '#126BB7',
-    marginRight: 20,
+    marginRight: 15,
     backgroundColor: '#FFF',
     shadowOffset: { width: 1, height: 4 },
     shadowOpacity: 0.2,

@@ -1356,6 +1356,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@invertase/react-native-apple-authentication@npm:^2.2.2":
+  version: 2.2.2
+  resolution: "@invertase/react-native-apple-authentication@npm:2.2.2"
+  checksum: d51c121eba66721e914c16bfa352929b03bf8f6a38aae4b06157ee3399d0ecdc42bd53d5e655ae39b460ec7c759f87753d2c917bccedb3118e2c1bd75d6f874c
+  languageName: node
+  linkType: hard
+
 "@istanbuljs/load-nyc-config@npm:^1.0.0":
   version: 1.1.0
   resolution: "@istanbuljs/load-nyc-config@npm:1.1.0"
@@ -6527,6 +6534,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"install@npm:^0.13.0":
+  version: 0.13.0
+  resolution: "install@npm:0.13.0"
+  checksum: 645bad1253115309c64d791c901caa8acd61a4012731015e3ee5eef88baaca026f3a48dc15a73a2827f7f5b05609804968ea1e3c6525dc0b3a21241837b9cf59
+  languageName: node
+  linkType: hard
+
 "internal-slot@npm:^1.0.3":
   version: 1.0.3
   resolution: "internal-slot@npm:1.0.3"
@@ -9115,6 +9129,7 @@ __metadata:
     "@fortawesome/free-regular-svg-icons": ^6.2.0
     "@fortawesome/free-solid-svg-icons": ^6.2.0
     "@fortawesome/react-native-fontawesome": ^0.3.0
+    "@invertase/react-native-apple-authentication": ^2.2.2
     "@react-native-async-storage/async-storage": ^1.15.15
     "@react-native-community/checkbox": ^0.5.12
     "@react-native-community/clipboard": ^1.5.1
@@ -9163,6 +9178,7 @@ __metadata:
     eslint-plugin-react-native: ^4.0.0
     events: ^3.3.0
     html-entities: ^2.3.3
+    install: ^0.13.0
     jest: ^26.6.3
     lodash: ^4.17.21
     metro-react-native-babel-preset: ^0.70.3
@@ -9212,6 +9228,7 @@ __metadata:
     react-native-tab-view: ^3.1.1
     react-native-toast-message: ^2.1.5
     react-native-toast-notifications: ^3.3.1
+    react-native-tracking-transparency: ^0.1.2
     react-native-vector-icons: ^9.2.0
     react-native-video: ^5.2.1
     react-native-webview: ^11.22.2
@@ -10393,6 +10410,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: c3c6eddfff818e067fb6eeb46711afb53af83bbf6e9c4089cea578c6103a3fbbaa54d0e0c24d6c4d972d30f8fa32360187bad2ee7bdd5e425e0cf883dfdae48e
+  languageName: node
+  linkType: hard
+
+"react-native-tracking-transparency@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "react-native-tracking-transparency@npm:0.1.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 972706c14929c3c158cd47dc908ba1c448f482f64a9a1fb2087374b5fbc4124d54dd678de7094d6ad866a75415479e6a120d3cc7e39f338fee27ee214a4b902a
   languageName: node
   linkType: hard
 

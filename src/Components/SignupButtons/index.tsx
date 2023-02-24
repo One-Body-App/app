@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, Linking, useColorScheme } from 'react-native';
+import { Text, View, TouchableOpacity, Linking, useColorScheme, Platform } from 'react-native';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -27,6 +27,8 @@ import {
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { useTheme } from '@react-navigation/native';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 interface Props extends StackScreenProps<RootStackParamList, 'SignUp'> {
   errorFromLogin?: string;
@@ -69,6 +71,36 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
   useEffect(() => {
     socialLogin(newUserCredentials);
   }, [newUserCredentials]);
+
+  const onAppleButtonPress = async () => {
+    // performs login request
+    const appleAuthRequestResponse = await appleAuth.performRequest({
+      requestedOperation: appleAuth.Operation.LOGIN,
+      requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+    });
+
+    // Ensure Apple returned a user identityToken
+    if (!appleAuthRequestResponse.identityToken) {
+      throw new Error('Apple Sign-In failed - no identify token returned');
+    }
+
+    // Create a Firebase credential from the response
+    const { identityToken, nonce } = appleAuthRequestResponse;
+    const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+
+    // get current authentication state for user
+    // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
+    const credentialState = await appleAuth.getCredentialStateForUser(
+      appleAuthRequestResponse.user
+    );
+
+    // use credentialState response to ensure the user is authenticated
+    if (credentialState === appleAuth.State.AUTHORIZED) {
+      const userCredentials = await auth().signInWithCredential(appleCredential);
+      console.log(userCredentials);
+      // processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+    }
+  };
 
   const onTwitterButtonPress = async () => {
     try {
@@ -217,29 +249,83 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           wrapperBtnStyle={{ width: '100%' }}
         />
 
-        <Button
-          disabled={disabled}
-          text={'Sign up with Email'}
-          leftIcon={
-            <Ionicons
-              name="mail"
-              style={{
-                marginRight: getWidth(3),
-                // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
-                color: dark ? colors.text : '#B3C1C5',
-              }}
-              size={getFontSize(4)}
-            />
-          }
-          onPress={() => {
-            AccountType != null ? navigation.navigate('SignupForm') : null;
-          }}
-          btnStyle={getButtonContainer()}
-          disabledBtnStyle={getDisabledButtonStyle()}
-          btnTextStyle={getButtonTextStyle()}
-          disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperBtnStyle={{ width: '100%' }}
-        />
+        {Platform.OS == 'ios' ? (
+          <Button
+            disabled={disabled}
+            text={'Sign up with Apple'}
+            leftIcon={
+              <FontAwesome
+                name="apple"
+                style={{
+                  marginRight: getWidth(3),
+                  // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
+                  color: dark ? colors.text : '#B3C1C5',
+                }}
+                size={getFontSize(4)}
+              />
+            }
+            onPress={() => {
+              AccountType != null ? onAppleButtonPress() : null;
+            }}
+            btnStyle={getButtonContainer()}
+            disabledBtnStyle={getDisabledButtonStyle()}
+            btnTextStyle={getButtonTextStyle()}
+            disabledBtnTextStyle={getDisabledButtonTextStyle()}
+            wrapperBtnStyle={{ width: '100%' }}
+          />
+        ) : (
+          <Button
+            disabled={disabled}
+            text={'Sign up with Email'}
+            leftIcon={
+              <Ionicons
+                name="mail"
+                style={{
+                  marginRight: getWidth(3),
+                  // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
+                  color: dark ? colors.text : '#B3C1C5',
+                }}
+                size={getFontSize(4)}
+              />
+            }
+            onPress={() => {
+              AccountType != null ? navigation.navigate('SignupForm') : null;
+            }}
+            btnStyle={getButtonContainer()}
+            disabledBtnStyle={getDisabledButtonStyle()}
+            btnTextStyle={getButtonTextStyle()}
+            disabledBtnTextStyle={getDisabledButtonTextStyle()}
+            wrapperBtnStyle={{ width: '100%' }}
+          />
+        )}
+
+        {Platform.OS == 'ios' ? (
+          <Button
+            disabled={disabled}
+            text={'Or, Sign up with Email'}
+            onPress={() => {
+              AccountType != null ? navigation.navigate('SignupForm') : null;
+            }}
+            btnStyle={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+
+              marginVertical: 5,
+            }}
+            disabledBtnStyle={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+
+              marginVertical: 5,
+            }}
+            btnTextStyle={{ ...getButtonTextStyle(), fontSize: 12 }}
+            disabledBtnTextStyle={{ ...getDisabledButtonTextStyle(), fontSize: 12 }}
+            wrapperBtnStyle={{ width: '100%' }}
+          />
+        ) : null}
+
         {error != null ? (
           <View style={styles.Errorview}>
             <Text style={styles.errortext}>{error}</Text>
