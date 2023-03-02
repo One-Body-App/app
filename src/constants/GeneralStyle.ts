@@ -15,12 +15,13 @@ export const GeneralStyle = StyleSheet.create({
     alignSelf: 'center',
     // flexGrow: 1,
     // marginHorizontal: 25,
-    height: getHeight(6),
+    // height: getHeight(6),
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
-    flex: 1,
+    // flex: 1,
     marginHorizontal: 20,
+    padding: 20,
   },
 
   input: {

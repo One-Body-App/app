@@ -154,6 +154,7 @@ export const styles = StyleSheet.create({
   ideaterview: {
     width: getWidth(30),
     alignItems: 'center',
+    height: 70,
   },
   btn: {
     height: getHeight(6),

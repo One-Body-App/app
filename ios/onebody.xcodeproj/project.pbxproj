@@ -716,7 +716,7 @@
 				CODE_SIGN_ENTITLEMENTS = onebody/onebody.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 51;
 				DEVELOPMENT_TEAM = 9N63S64RJ2;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
@@ -828,6 +828,7 @@
 				INFOPLIST_FILE = onebody/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "One Body";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -861,7 +862,7 @@
 				CODE_SIGN_ENTITLEMENTS = onebody/onebody.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
+				CURRENT_PROJECT_VERSION = 51;
 				DEVELOPMENT_TEAM = 9N63S64RJ2;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
@@ -973,6 +974,7 @@
 				INFOPLIST_FILE = onebody/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "One Body";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

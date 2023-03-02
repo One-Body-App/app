@@ -8,7 +8,6 @@ import {
   Image,
   ImageBackground,
   TouchableOpacity,
-  SafeAreaView,
   TextInput,
   ScrollView,
 } from 'react-native';

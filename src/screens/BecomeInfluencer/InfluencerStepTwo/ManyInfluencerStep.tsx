@@ -9,7 +9,6 @@ import {
   ImageBackground,
   TouchableOpacity,
   Modal,
-  SafeAreaView,
   ScrollView,
 } from 'react-native';
 import { Avatar, Checkbox, Provider, TextInput } from 'react-native-paper';

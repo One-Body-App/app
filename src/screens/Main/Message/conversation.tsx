@@ -10,7 +10,6 @@ import {
   TextInput,
   FlatList,
   Button,
-  SafeAreaView,
 } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat';
 import GeneralStatusBar from '@/components/GeneralStatusBar';

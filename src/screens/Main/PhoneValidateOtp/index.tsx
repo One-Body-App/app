@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Text,
-  View,
-  SafeAreaView,
-  Touchable,
-  StatusBar,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
+import { Text, View, Touchable, StatusBar, Image, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 import { styles } from './styles';

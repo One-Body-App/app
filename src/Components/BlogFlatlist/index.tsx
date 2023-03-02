@@ -5,7 +5,6 @@ import {
   FlatList,
   Image,
   RefreshControl,
-  SafeAreaView,
   Text,
   TouchableOpacity,
   View,

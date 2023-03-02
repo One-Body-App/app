@@ -1,32 +1,9 @@
 import * as React from 'react';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Home from '../screens/Main/Home';
-import Explore from '../screens/Main/Explore';
-import Message from '../screens/Main/Message';
 
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Platform,
-  StatusBar,
-} from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import Homesvg from '@/assets/svg/Home.svg';
-import Refreshsvg from '@/assets/svg/Refresh.svg';
 
-import Exploresvg from '@/assets/svg/Explore.svg';
-import Messagesvg from '@/assets/svg/Messages.svg';
-import Profilesvg from '@/assets/svg/Profile.svg';
-import Explorefillsvg from '@/assets/svg/Explorefill.svg';
-import Messagefillsvg from '@/assets/svg/MessagesFill.svg';
-import Profilefillsvg from '@/assets/svg/ProfileFill.svg';
-
-import MyProfile from '../screens/Main/MyProfile';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
-import PrayerModel from '../Components/PrayerModel';
 
 import { RootStackParamList } from './types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
@@ -37,7 +14,6 @@ import LogoHeader from '@/assets/svg/logo2.svg';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
-import GeneralStatusBar from '../Components/GeneralStatusBar';
 import DeviceInfo from 'react-native-device-info';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Bottom'>;
@@ -52,8 +28,7 @@ function Bottom({ navigation, route }: Props) {
     if (tabs) setTab(tabs);
   }, [tabs]);
 
-  const HEADER_PADDING_TOP =
-    Platform.OS === 'ios' ? (DeviceInfo.hasNotch() || DeviceInfo.hasDynamicIsland() ? 60 : 40) : 40;
+  const HEADER_PADDING_TOP = DeviceInfo.hasNotch() || DeviceInfo.hasDynamicIsland() ? 60 : 40;
 
   return (
     <Tab.Navigator
@@ -88,6 +63,7 @@ function Bottom({ navigation, route }: Props) {
                 >
                   <Ionicons name="menu" size={24} color="white" />
                 </TouchableOpacity>
+
                 <View style={{ height: '100%' }}>
                   <LogoHeader
                     fill="#fff"
@@ -178,6 +154,7 @@ function Bottom({ navigation, route }: Props) {
         }}
       />
     </Tab.Navigator>
+
     // <View style={{ flex: 1 }}>
     //   <View style={{ flex: 1 }}>
     //     {tab == 'Home' ? (

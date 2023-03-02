@@ -1,7 +1,6 @@
 import React, { useState, useEffect, SetStateAction, Dispatch } from 'react';
 import {
   FlatList,
-  SafeAreaView,
   StyleSheet,
   Text,
   Platform,

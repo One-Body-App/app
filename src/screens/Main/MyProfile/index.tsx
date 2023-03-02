@@ -143,11 +143,26 @@ const MyProfile = ({ navigation }: Props) => {
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => {
-                      user?.badges.includes(item?._id)
-                        ? unselect(item?._id)
-                        : selectedBadges.length < 3
-                        ? setSelectedBadges([...selectedBadges, item])
-                        : Toast.show('You cannot select more then 3 badges!');
+                      if (user?.badges.includes(item?._id)) {
+                        unselect(item?._id);
+                      } else {
+                        const badgeIndex = selectedBadges.findIndex((badgeToCheck) => {
+                          return badgeToCheck._id == item?._id;
+                        });
+
+                        if (badgeIndex > -1) {
+                          const newSelectedBadges = selectedBadges.filter((selectedBadge) => {
+                            return selectedBadge._id != selectedBadges[badgeIndex]._id;
+                          });
+                          setSelectedBadges(newSelectedBadges);
+                        } else {
+                          if (selectedBadges.length < 3) {
+                            setSelectedBadges([...selectedBadges, item]);
+                          } else {
+                            Toast.show('You cannot select more then 3 badges!');
+                          }
+                        }
+                      }
                     }}
                     style={styles.ideaterview}
                   >
@@ -159,14 +174,15 @@ const MyProfile = ({ navigation }: Props) => {
                       resizeMode={FastImage.resizeMode.contain}
                     />
                     {selectedBadges.filter((x) => x._id == item?._id).length > 0 ? (
-                      <Selected
+                      <View
                         style={{
                           position: 'absolute',
                           alignSelf: 'center',
-
-                          marginTop: getHeight(5),
+                          marginTop: 2,
                         }}
-                      />
+                      >
+                        <Selected />
+                      </View>
                     ) : null}
                     <Text
                       style={{
@@ -182,6 +198,7 @@ const MyProfile = ({ navigation }: Props) => {
               />
             </View>
           </View>
+
           <View style={{ width: '100%' }}>
             <TouchableOpacity
               onPress={() => {
@@ -247,53 +264,55 @@ const MyProfile = ({ navigation }: Props) => {
           {user?.username ? `@${user?.username}` : ''}
           {`${user?.whatIDo ? `• ${user?.whatIDo.name}` : ''}`}
         </Text>
-
-        <View style={styles.manyimageview}>
-          <View>
-            <FlatList
-              data={user?.badgesData}
-              numColumns={3}
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <FastImage
-                  style={styles.firstimage}
-                  source={{
-                    uri: item.badge,
-                  }}
-                  resizeMode={FastImage.resizeMode.stretch}
-                />
-              )}
-            />
-          </View>
-          <TouchableOpacity
-            style={{ marginHorizontal: getWidth(1) }}
-            onPress={() => {
-              getBadge();
-              setRequestModel(true);
-            }}
-          >
-            <Add_badges />
-          </TouchableOpacity>
-        </View>
-        {user?.isInfluencer == true || user?.role == 'organization' ? (
-          <>
-            <Text numberOfLines={3} style={styles.bio}>
-              {user?.bio}
-            </Text>
+        {user?.role == 'individual' ? (
+          <View style={styles.manyimageview}>
+            <View>
+              <FlatList
+                data={user?.badgesData}
+                numColumns={3}
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <FastImage
+                    style={styles.firstimage}
+                    source={{
+                      uri: item.badge,
+                    }}
+                    resizeMode={FastImage.resizeMode.stretch}
+                  />
+                )}
+              />
+            </View>
             <TouchableOpacity
-              onPress={() =>
-                OpenURLButton(
-                  `${
-                    user?.website.indexOf('https://') == -1
-                      ? `https://${user?.website}`
-                      : user?.website
-                  }`
-                )
-              }
+              style={{ marginHorizontal: getWidth(1) }}
+              onPress={() => {
+                getBadge();
+                setRequestModel(true);
+              }}
             >
-              <Text style={styles.onebodytext}>{user?.website}</Text>
+              <Add_badges />
             </TouchableOpacity>
-          </>
+          </View>
+        ) : null}
+
+        {user?.isInfluencer == true || user?.role == 'organization' ? (
+          <Text numberOfLines={3} style={styles.bio}>
+            {user?.bio}
+          </Text>
+        ) : null}
+        {user?.website ? (
+          <TouchableOpacity
+            onPress={() =>
+              OpenURLButton(
+                `${
+                  user?.website.indexOf('https://') == -1
+                    ? `https://${user?.website}`
+                    : user?.website
+                }`
+              )
+            }
+          >
+            <Text style={styles.onebodytext}>{user?.website}</Text>
+          </TouchableOpacity>
         ) : null}
         {user?.isInfluencer == true && user?.role == 'individual' ? (
           <View style={{ alignItems: 'center' }}>
@@ -326,7 +345,6 @@ const MyProfile = ({ navigation }: Props) => {
             }}
           />
         </View>
-
         {user?.isInfluencer == true ? (
           <TabView
             navigationState={{ index, routes }}

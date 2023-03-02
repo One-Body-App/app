@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Text,
-  View,
-  SafeAreaView,
-  Touchable,
-  StatusBar,
-  Image,
-  FlatList,
-  TouchableOpacity,
-} from 'react-native';
+import { Text, View, Touchable, StatusBar, Image, FlatList, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/components/GeneralStatusBar';

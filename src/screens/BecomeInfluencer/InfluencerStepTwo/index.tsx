@@ -205,7 +205,12 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   const [modalVisible, setModalVisible] = useState(false);
 
   const redirectUri = 'https://app.onebodyapp.com/influencer/login/instagram';
+
+  // Production
   const appId = '746127593378692';
+
+  //Testing
+  // const appId = '509955224421946';
 
   const { dark, colors } = useTheme();
 

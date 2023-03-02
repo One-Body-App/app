@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Text,
   View,
   FlatList,
   Image,
@@ -19,7 +18,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Button from '@/components/Button';
 import { styles } from './styles';
-import { Divider, Switch, TextInput } from 'react-native-paper';
+import { Divider, Switch, TextInput, Text } from 'react-native-paper';
 import ProgressBar from 'react-native-animated-progress';
 import Toast from 'react-native-toast-message';
 import DatePicker from 'react-native-date-picker';

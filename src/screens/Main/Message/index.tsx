@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 // import Swipeout from 'react-native-swipeout';
 // import Swipeable from 'react-native-swipeable';
 import {
-  SafeAreaView,
   FlatList,
   View,
   Image,

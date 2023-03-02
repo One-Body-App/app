@@ -606,20 +606,19 @@ const EditProfile = ({ navigation }: Props) => {
                   ) : null}
                 </>
               )}
-              {user?.isInfluencer == true ? (
-                <TextInput
-                  style={styles.TextInput}
-                  value={website}
-                  label="Website"
-                  keyboardType="url"
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  placeholder="https://www.website.com"
-                  activeOutlineColor={'#12D2D9'}
-                  activeUnderlineColor={'#12D2D9'}
-                  onChangeText={(e) => setWebsite(e)}
-                />
-              ) : null}
+
+              <TextInput
+                style={styles.TextInput}
+                value={website}
+                label="Website"
+                keyboardType="url"
+                autoCorrect={false}
+                autoCapitalize="none"
+                placeholder="https://www.website.com"
+                activeOutlineColor={'#12D2D9'}
+                activeUnderlineColor={'#12D2D9'}
+                onChangeText={(e) => setWebsite(e)}
+              />
             </View>
           </View>
         </View>

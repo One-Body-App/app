@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   FlatList,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
