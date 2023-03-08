@@ -173,11 +173,12 @@ const ConfirmEmail = ({ navigation, route }) => {
         </View>
         <Button
           text={'CHANGE PASSWORD'}
-          btnStyle={GeneralStyle.btn}
-          btnTextStyle={GeneralStyle.btnText}
           onPress={() => {
             PasswordUpdate();
           }}
+          mode="contained"
+          paper
+          btnStyle={{ marginHorizontal: 0 }}
         />
 
         <GoBackIcon color={'white'} />

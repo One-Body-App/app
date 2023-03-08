@@ -59,6 +59,14 @@ const Settings = ({ navigation }: Props) => {
     }
   };
 
+  const time = new Date().getTime() / 1000;
+  let showInfluencerNotification = false;
+
+  if (userProfile?.influencerProfile?.instagramTokenExpirationReal && !showInfluencerNotification) {
+    showInfluencerNotification =
+      userProfile?.influencerProfile?.instagramTokenExpirationReal < time;
+  }
+
   const { colors, dark } = useTheme();
 
   return (
@@ -113,7 +121,7 @@ const Settings = ({ navigation }: Props) => {
         ) : null}
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('NotificationSettings')}
+          onPress={() => navigation.navigate('Notifications')}
           style={{ ...styles.list, backgroundColor: colors.background }}
         >
           <View>
@@ -124,7 +132,33 @@ const Settings = ({ navigation }: Props) => {
           <AntDesign name="right" size={20} color={'#70747D'} />
         </TouchableOpacity>
 
-        {userProfile?.isInfluencer == true ? null : (
+        {userProfile?.isInfluencer == true ? (
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('InfluencerSettings');
+            }}
+            style={{ ...styles.list, backgroundColor: colors.background }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
+                Influencer Settings
+              </Text>
+              {showInfluencerNotification ? (
+                <View
+                  style={{
+                    backgroundColor: 'red',
+                    width: 8,
+                    height: 8,
+                    borderRadius: 8,
+                    marginLeft: 8,
+                  }}
+                />
+              ) : null}
+            </View>
+
+            <AntDesign name="right" size={20} color={'#70747D'} />
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity
             onPress={() => {
               userProfile?.isInfluencer == true

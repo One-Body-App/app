@@ -31,6 +31,8 @@ import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import { getTwitterLoginToken } from '@/src/Services/login';
 
+import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/src/Services/constants';
+
 type Props = StackScreenProps<RootStackParamList, 'InfluencerStepTwo'>;
 
 const InfluencerStepTwo = ({ navigation, route }: Props) => {
@@ -119,6 +121,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
             },
             headers: {
               'Content-Type': 'application/json',
+              authorization: `Bearer ${token}`,
             },
           };
 
@@ -203,14 +206,6 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   };
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   const [modalVisible, setModalVisible] = useState(false);
-
-  const redirectUri = 'https://app.onebodyapp.com/influencer/login/instagram';
-
-  // Production
-  const appId = '746127593378692';
-
-  //Testing
-  // const appId = '509955224421946';
 
   const { dark, colors } = useTheme();
 
@@ -707,7 +702,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               <TouchableOpacity
                 onPress={() => {
                   Linking.openURL(
-                    `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code`
+                    `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${INSTAGRAM_LOGIN_REDIRECT}&scope=user_profile,user_media&response_type=code`
                   );
                 }}
                 style={{ ...styles.btn2, backgroundColor: colors.background }}

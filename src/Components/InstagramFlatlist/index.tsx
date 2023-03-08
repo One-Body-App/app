@@ -63,52 +63,59 @@ const InstagramFlatlist = ({
     getInstagramData(page);
   }, [page]);
 
-  return (
-    <FlatList
-      data={instagramPosts}
-      contentContainerStyle={{ marginTop: getHeight(1) }}
-      showsHorizontalScrollIndicator={false}
-      ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-      renderItem={({ item }) => <SocialItem item={item} />}
-      keyExtractor={(item) => item.id}
-      onScroll={(e) => {
-        if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
-      }}
-      refreshControl={
-        <RefreshControl
-          enabled={true}
-          refreshing={refreshing}
-          onRefresh={async () => {
-            setIsEndOfList(false);
-            setRefreshing(true);
-            setPage(1);
-          }}
-        />
-      }
-      ListFooterComponent={() => {
-        return (
-          <Button
-            text="View more on Instagram"
-            btnStyle={{
-              ...GeneralStyle.btn,
-              marginHorizontal: 20,
-              // backgroundColor: colors.background,
-            }}
-            btnTextStyle={{
-              marginHorizontal: 20,
-              color: '#70747D',
-              fontSize: 14,
-            }}
-            onPress={() => {
-              OpenURLButton(
-                `https://instagram.com/${currentUser.influencerProfile?.instagramHandler}`,
-                true
-              );
+  if (instagramPosts.length) {
+    return (
+      <FlatList
+        data={instagramPosts}
+        contentContainerStyle={{ marginTop: getHeight(1) }}
+        showsHorizontalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+        renderItem={({ item }) => <SocialItem item={item} />}
+        keyExtractor={(item) => item.id}
+        onScroll={(e) => {
+          if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
+        }}
+        refreshControl={
+          <RefreshControl
+            enabled={true}
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setIsEndOfList(false);
+              setRefreshing(true);
+              setPage(1);
             }}
           />
-        );
-      }}
-    />
-  );
+        }
+        ListFooterComponent={() => {
+          return (
+            <Button
+              text="View more on Instagram"
+              // btnStyle={{
+              //   ...GeneralStyle.btn,
+              //   marginHorizontal: 20,
+              //   // backgroundColor: colors.background,
+              // }}
+              // btnTextStyle={{
+              //   marginHorizontal: 20,
+              //   color: '#70747D',
+              //   fontSize: 14,
+              // }}
+              mode="text"
+              paper
+              textColor="#70747D"
+              onPress={() => {
+                OpenURLButton(
+                  `https://instagram.com/${currentUser.influencerProfile?.instagramHandler}`,
+                  true
+                );
+              }}
+            />
+          );
+        }}
+      />
+    );
+  } else {
+    return null;
+  }
 };
 export default InstagramFlatlist;

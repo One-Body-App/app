@@ -299,9 +299,9 @@ const SignupForm = ({ navigation }: Props) => {
               />
             </View>
           </View>
-          <View style={{ paddingHorizontal: 25, paddingVertical: 15, flex: 1 }}>
+          <View style={{ paddingHorizontal: 25, paddingBottom: 15, flex: 1 }}>
             <TextInput
-              style={GeneralStyle.input}
+              style={{ ...GeneralStyle.input, marginTop: 15 }}
               theme={{ roundness: 10 }}
               ref={inputRefs.username}
               value={state.username}
@@ -322,13 +322,16 @@ const SignupForm = ({ navigation }: Props) => {
               keyboardType="default"
               autoCapitalize="none"
             />
-
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}>
-              {state.usernameError}
-            </Text>
+            {state.usernameError ? (
+              <Text
+                style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}
+              >
+                {state.usernameError}
+              </Text>
+            ) : null}
 
             <TextInput
-              style={GeneralStyle.input}
+              style={{ ...GeneralStyle.input, marginTop: 15 }}
               theme={{ roundness: 10 }}
               ref={inputRefs.name}
               value={state.name}
@@ -349,12 +352,16 @@ const SignupForm = ({ navigation }: Props) => {
               keyboardType="default"
               autoCapitalize="words"
             />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}>
-              {state.nameError}
-            </Text>
+            {state.nameError ? (
+              <Text
+                style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}
+              >
+                {state.nameError}
+              </Text>
+            ) : null}
 
             <TextInput
-              style={GeneralStyle.input}
+              style={{ ...GeneralStyle.input, marginTop: 15 }}
               theme={{ roundness: 10 }}
               ref={inputRefs.email}
               value={state.email}
@@ -376,9 +383,13 @@ const SignupForm = ({ navigation }: Props) => {
               blurOnSubmit={false}
               autoCapitalize="none"
             />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}>
-              {state.emailError}
-            </Text>
+            {state.emailError ? (
+              <Text
+                style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}
+              >
+                {state.emailError}
+              </Text>
+            ) : null}
 
             <TextInput
               theme={{ roundness: 10 }}
@@ -407,7 +418,7 @@ const SignupForm = ({ navigation }: Props) => {
                   )}
                 />
               }
-              style={GeneralStyle.input}
+              style={{ ...GeneralStyle.input, marginTop: 15 }}
               onFocus={() => setState({ ...state, passwordError: '' })}
               onBlur={() =>
                 validateFields(state.password, 'password', (error) =>
@@ -506,7 +517,7 @@ const SignupForm = ({ navigation }: Props) => {
                   )}
                 />
               }
-              style={GeneralStyle.input}
+              style={{ ...GeneralStyle.input, marginTop: 15 }}
               onFocus={() => setState({ ...state, cPasswordError: '' })}
               onBlur={() =>
                 validateFields(
@@ -556,17 +567,20 @@ const SignupForm = ({ navigation }: Props) => {
               text={'SIGN UP'}
               disabled={loading}
               onPress={() => signUpUser()}
-              btnTextStyle={[GeneralStyle.btnText, { color: dark ? colors.text : '#E6EAEC' }]}
-              disabledBtnStyle={{
-                ...GeneralStyle.btn,
-                marginTop: getHeight(2),
-              }}
-              disabledBtnTextStyle={GeneralStyle.btnText}
-              btnStyle={{
-                ...GeneralStyle.btn,
-                marginTop: getHeight(2),
-                backgroundColor: scheme == 'dark' ? colors.card : '#0C5C75',
-              }}
+              // btnTextStyle={[GeneralStyle.btnText, { color: dark ? colors.text : '#E6EAEC' }]}
+              // disabledBtnStyle={{
+              //   ...GeneralStyle.btn,
+              //   marginTop: getHeight(2),
+              // }}
+              // disabledBtnTextStyle={GeneralStyle.btnText}
+              // btnStyle={{
+              //   ...GeneralStyle.btn,
+              //   marginTop: getHeight(2),
+              //   backgroundColor: scheme == 'dark' ? colors.card : '#0C5C75',
+              // }}
+              mode="contained"
+              paper
+              btnStyle={{ marginHorizontal: 0 }}
             />
           </View>
         </LinearGradient>

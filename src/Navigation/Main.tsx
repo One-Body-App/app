@@ -29,6 +29,7 @@ import PasswordResetOtp from '../screens/Auth/PasswordResetOtp';
 import Signup from '../screens/Auth/Signup';
 import SignupForm from '../screens/Auth/SignupForm';
 import InfluencerStepOne from '../screens/BecomeInfluencer/InfluencerStepOne';
+import InfluencerSettings from '../screens/Main/influencerSettings';
 import InfluencerStepThree from '../screens/BecomeInfluencer/InfluencerStepThree';
 import InfluencerStepTwo from '../screens/BecomeInfluencer/InfluencerStepTwo';
 import LoadingPage from '../screens/loadingPage';
@@ -42,7 +43,6 @@ import Help from '../screens/Main/Help';
 import Faqs from '../screens/Main/Help/Faqs';
 import IndividualSteps from '../screens/Main/IndividualSteps';
 import ConversationScreen from '../screens/Main/Message/conversation';
-import NotificationSettings from '../screens/Main/notificationSettings/index';
 import OrgnizationSteps from '../screens/Main/OrgnizationSteps';
 import PasswordChange from '../screens/Main/PasswordChange';
 import PhoneNumberUpdate from '../screens/Main/PhoneNumberUpdate';
@@ -51,9 +51,9 @@ import PhoneValidateOtp from '../screens/Main/PhoneValidateOtp';
 import Prayer from '../screens/Main/Prayer';
 import PrivacyPolicy from '../screens/Main/PrivacyPolicy';
 import Search from '../screens/Main/Search';
-import Setting from '../screens/Main/Setting';
+import Notification from '../screens/Main/Notification';
 import UserProfile from '../screens/Main/UserProfile';
-import Drawerr from './Drawerr';
+import Drawer from './Drawer';
 import { RootStackParamList } from './types';
 import ConfirmLogin from '../screens/Auth/Login/ConfirmLogin';
 import EmailChange from '../screens/Main/EmailChange';
@@ -147,6 +147,10 @@ const Main = () => {
         InfluencerStepTwo: {
           path: '/influencer/login/:action',
         },
+
+        InfluencerSettings: {
+          path: '/influencer-settings/:action/:service',
+        },
       },
     },
     async getInitialURL() {
@@ -226,7 +230,8 @@ const Main = () => {
               {userProfile.isProfileCompleted ? (
                 <>
                   <Stack.Screen name="LoadingPage" component={LoadingPage} />
-                  <Stack.Screen name="Bottombar" component={Drawerr} />
+                  <Stack.Screen name="Bottombar" component={Drawer} />
+                  <Stack.Screen name="InfluencerSettings" component={InfluencerSettings} />
                   <Stack.Screen name="InfluencerStepOne" component={InfluencerStepOne} />
                   <Stack.Screen name="InfluencerStepTwo" component={InfluencerStepTwo} />
                   <Stack.Screen name="InfluencerStepThree" component={InfluencerStepThree} />
@@ -236,7 +241,6 @@ const Main = () => {
                   <Stack.Screen name="Faqs" component={Faqs} />
                   <Stack.Screen name="RemoveAccount" component={RemoveAccount} />
 
-                  <Stack.Screen name="Settings" component={Setting} />
                   <Stack.Screen name="PasswordChange" component={PasswordChange} />
                   <Stack.Screen name="EmailChange" component={EmailChange} />
 
@@ -244,11 +248,7 @@ const Main = () => {
                   <Stack.Screen name="confirm" component={ConfirmPassword} />
                   <Stack.Screen name="newpassword" component={NewPassword} />
                   <Stack.Screen name="conversation" component={ConversationScreen} />
-                  <Stack.Screen
-                    options={{ headerShown: false }}
-                    name="NotificationSettings"
-                    component={NotificationSettings}
-                  />
+
                   <Stack.Screen
                     name="RemoveAccountConfirmation"
                     component={RemoveAccountConfirmation}

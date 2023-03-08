@@ -52,6 +52,13 @@ export type RootStackParamList = {
     setError: (errorText: string) => void;
   };
   NotificationSettings: undefined;
+  InfluencerSettings: {
+    code?: string;
+    action?: string;
+    service?: string;
+    oauth_token?: string;
+    oauth_verifier?: string;
+  };
   Bottombar: {
     tabs: string;
   };

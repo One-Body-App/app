@@ -121,12 +121,15 @@ const ForgotPassword = ({ navigation }: Props) => {
           {!showSuccess ? (
             <Button
               text={'SEND RESET LINK'}
-              btnStyle={{
-                ...GeneralStyle.btn,
-                marginTop: getHeight(5),
-                backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
-              }}
-              btnTextStyle={GeneralStyle.btnText}
+              mode="contained"
+              paper
+              btnStyle={{ marginHorizontal: 24 }}
+              // btnStyle={{
+              //   ...GeneralStyle.btn,
+              //   marginTop: getHeight(5),
+              //   backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
+              // }}
+              // btnTextStyle={GeneralStyle.btnText}
               onPress={() => forget()}
             />
           ) : (

@@ -634,7 +634,7 @@ const EditProfile = ({ navigation }: Props) => {
               </View>
             ) : null} */}
           <View style={{ marginHorizontal: 25, width: '100%' }}>
-            <GradientButton
+            <Button
               text={'DONE'}
               onPress={() => {
                 const data = new FormData();
@@ -659,24 +659,31 @@ const EditProfile = ({ navigation }: Props) => {
                   dispatch(profileUpdate({ data, token, role: 'organization', go }));
                 }
               }}
-              btnStyle={{
-                ...GeneralStyle.btn,
-                height: getHeight(7),
+              // btnStyle={{
+              //   ...GeneralStyle.btn,
+              //   height: getHeight(7),
 
-                backgroundColor: '#0C5C75',
-              }}
-              btnTextStyle={GeneralStyle.btnText}
+              //   backgroundColor: '#0C5C75',
+              // }}
+              // btnTextStyle={GeneralStyle.btnText}
+              mode="contained"
+              paper
+              btnStyle={{ marginHorizontal: 10 }}
             />
 
             <Button
               text={'Cancel'}
-              btnStyle={{
-                ...GeneralStyle.btn,
-                backgroundColor: 'white',
-                marginTop: getHeight(2),
-              }}
+              mode="text"
+              textColor="#70747D"
+              paper
+              btnStyle={{ marginHorizontal: 0 }}
+              // btnStyle={{
+              //   ...GeneralStyle.btn,
+              //   backgroundColor: 'white',
+              //   marginTop: getHeight(2),
+              // }}
               onPress={() => navigation.goBack()}
-              btnTextStyle={{ ...GeneralStyle.btnText, color: '#707470' }}
+              // btnTextStyle={{ ...GeneralStyle.btnText, color: '#707470' }}
             />
           </View>
         </View>

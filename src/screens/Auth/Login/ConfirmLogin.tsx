@@ -27,7 +27,9 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
 
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: false });
-    dispatch(setLoginVerificationBackPage(route.params.toScreen, route.params.toScreenRouteParams));
+    dispatch(
+      setLoginVerificationBackPage(route.params?.toScreen, route.params?.toScreenRouteParams)
+    );
     if (authReducer.userData?.email) {
       const getSignInMethods = async () => {
         const providers = await auth().fetchSignInMethodsForEmail(

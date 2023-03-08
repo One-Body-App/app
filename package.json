@@ -69,7 +69,7 @@
     "react-native-material-menu": "^2.0.0",
     "react-native-modal": "^13.0.1",
     "react-native-pager-view": "^5.4.11",
-    "react-native-paper": "^5.1.4",
+    "react-native-paper": "^5.3.1",
     "react-native-paper-dropdown": "^1.0.7",
     "react-native-permissions": "^3.6.0",
     "react-native-popup-menu": "^0.15.12",
@@ -132,6 +132,7 @@
     "metro-react-native-babel-preset": "^0.70.3",
     "node-git-hooks": "^1.0.6",
     "prettier": "^2.7.1",
+    "react-native-asset": "^2.1.0",
     "react-native-svg-transformer": "^1.0.0",
     "react-test-renderer": "18.0.0",
     "typescript": "^4.7.4"

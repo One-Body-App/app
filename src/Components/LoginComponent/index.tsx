@@ -20,6 +20,7 @@ import Twitter from '@/assets/svg/Twitter.svg';
 import Facebook from '@/assets/svg/Facebook.svg';
 import Apple from '@/assets/svg/Apple.svg';
 import Button from '../Button';
+import { Button as ButtonPaper } from 'react-native-paper';
 import { styles } from './styles';
 import { appColor } from '../../constants';
 import { requestUserPermission } from '../../Services/Notification/notificationServices';
@@ -36,6 +37,7 @@ import { useToast } from 'react-native-toast-notifications';
 import G from '@/assets/svg/G.svg';
 import { useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 interface Props extends StackScreenProps<RootStackParamList, any> {
   showConfirmationEmailMessage: boolean;
@@ -676,25 +678,45 @@ const LoginComponent: FC<Props> = ({
 
       {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
         <View style={{ marginHorizontal: 10 }}>
-          <Button
+          {/* <Button
             text={'LOG IN'}
             disabled={!state.password || !state.email}
             btnStyle={{
               ...GeneralStyle.btn,
-
+              flex: 1,
               marginTop: getHeight(2),
+              marginHorizontal: 14,
               backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
             }}
             disabledBtnStyle={{
               ...GeneralStyle.btn,
               marginTop: getHeight(2),
+              flex: 1,
 
-              backgroundColor: '#E6EAEC',
+              marginHorizontal: 14,
+              backgroundColor: scheme == 'dark' ? '#ccc' : 'rgba(3, 47, 60, 0.35)',
             }}
             btnTextStyle={GeneralStyle.btnText}
-            disabledBtnTextStyle={GeneralStyle.btnText}
+            disabledBtnTextStyle={{
+              ...GeneralStyle.btnText,
+              color: '#FFF',
+            }}
             onPress={() => signInUser()}
-          />
+          /> */}
+          <ButtonPaper
+            mode="contained"
+            onPress={() => signInUser()}
+            disabled={!state.password || !state.email}
+            style={{ marginVertical: 15, marginHorizontal: 13 }}
+            labelStyle={{
+              paddingVertical: 7,
+              fontSize: getFontSize(2.1),
+              // fontFamily: 'Rubik-Medium',
+              letterSpacing: 1.25,
+            }}
+          >
+            LOG IN
+          </ButtonPaper>
         </View>
       ) : null}
 
@@ -716,14 +738,21 @@ const LoginComponent: FC<Props> = ({
         </View>
       ) : null}
 
-      <View style={{ ...styles.SocialView, marginTop: 20 }}>
+      <View style={{ ...styles.SocialView, marginTop: 20, height: 40, marginHorizontal: 23 }}>
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('google.com') &&
         enabledLoginProviders?.includes('password') ? (
-          <TouchableOpacity onPress={() => googleSignIn()} style={styles.socialContainer}>
+          <ButtonPaper
+            mode="outlined"
+            onPress={() => googleSignIn()}
+            style={{ marginRight: 10, flex: 1 }}
+          >
             <Google style={{ alignSelf: 'center' }} />
-          </TouchableOpacity>
+          </ButtonPaper>
         ) : (
+          // <TouchableOpacity onPress={() => googleSignIn()} style={styles.socialContainer}>
+          //   <Google style={{ alignSelf: 'center' }} />
+          // </TouchableOpacity>
           <>
             {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
               <Button
@@ -743,10 +772,17 @@ const LoginComponent: FC<Props> = ({
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('facebook.com') &&
         enabledLoginProviders?.includes('password') ? (
-          <TouchableOpacity onPress={() => facebookLogin()} style={styles.socialContainer}>
+          <ButtonPaper
+            mode="outlined"
+            onPress={() => facebookLogin()}
+            style={{ marginRight: 10, flex: 1 }}
+          >
             <Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />
-          </TouchableOpacity>
+          </ButtonPaper>
         ) : (
+          // <TouchableOpacity onPress={() => facebookLogin()} style={styles.socialContainer}>
+          //   <Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />
+          // </TouchableOpacity>
           <>
             {enabledLoginProviders && enabledLoginProviders?.includes('facebook.com') ? (
               <Button
@@ -772,12 +808,19 @@ const LoginComponent: FC<Props> = ({
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('twitter.com') &&
         enabledLoginProviders?.includes('password') ? (
-          <TouchableOpacity onPress={() => onTwitterButtonPress()}>
-            <View style={{ ...styles.socialContainer }}>
-              <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
-            </View>
-          </TouchableOpacity>
+          <ButtonPaper
+            mode="outlined"
+            onPress={() => onTwitterButtonPress()}
+            style={{ marginRight: 10, flex: 1 }}
+          >
+            <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
+          </ButtonPaper>
         ) : (
+          // <TouchableOpacity onPress={() => onTwitterButtonPress()}>
+          //   <View style={{ ...styles.socialContainer }}>
+          //     <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
+          //   </View>
+          // </TouchableOpacity>
           <>
             {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
               <Button
@@ -801,12 +844,24 @@ const LoginComponent: FC<Props> = ({
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('apple') &&
         enabledLoginProviders?.includes('password') ? (
-          <TouchableOpacity onPress={() => onAppleButtonPress()}>
-            <View style={{ ...styles.socialContainer, marginRight: 0 }}>
-              <Apple fill="#00acee" style={{ alignSelf: 'center' }} />
-            </View>
-          </TouchableOpacity>
+          <ButtonPaper mode="outlined" onPress={() => onAppleButtonPress()} style={{ flex: 1 }}>
+            <FontAwesome
+              name="apple"
+              style={{
+                flex: 1,
+                // marginRight: getWidth(3),
+                // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
+                color: colors.text,
+              }}
+              size={22}
+            />
+          </ButtonPaper>
         ) : (
+          // <TouchableOpacity onPress={() => onAppleButtonPress(>
+          //   <View style={{ ...styles.socialContainer, marginRight: 0 }}>
+          //     <Apple fill="#00acee" style={{ alignSelf: 'center' }} />
+          //   </View>
+          // </TouchableOpacity>
           <>
             {enabledLoginProviders && enabledLoginProviders?.includes('apple') ? (
               <Button

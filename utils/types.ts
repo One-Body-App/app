@@ -96,6 +96,8 @@ type InfluencerProfile = {
   twitterHandler?: string;
   instagramId?: string;
   instagramHandler?: string;
+  instagramTokenExpirationReal?: number;
+  instagramTokenExpiration?: number;
   rssUrl: string;
   category: string[];
   comments: string;

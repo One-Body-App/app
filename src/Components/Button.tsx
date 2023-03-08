@@ -1,3 +1,4 @@
+import { getFontSize } from '@/utils/ResponsiveFun';
 import React, { ReactNode } from 'react';
 import {
   GestureResponderEvent,
@@ -8,6 +9,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { Button as ButtonPaper } from 'react-native-paper';
 
 const Button = ({
   text,
@@ -21,6 +23,9 @@ const Button = ({
   disabledBtnTextStyle,
   wrapperViewBtnStyle,
   wrapperBtnStyle,
+  paper,
+  mode,
+  textColor,
 }: {
   text: string;
   leftIcon?: ReactNode;
@@ -33,8 +38,31 @@ const Button = ({
   disabledBtnTextStyle?: StyleProp<TextStyle>;
   onPress: (event: GestureResponderEvent) => void;
   disabled?: boolean;
+  paper?: boolean;
+  mode?: 'text' | 'outlined' | 'contained' | 'elevated' | 'contained-tonal';
+  textColor?: string;
 }) => {
-  return (
+  return paper ? (
+    <>
+      <ButtonPaper
+        mode={mode}
+        onPress={(event) => (onPress ? onPress(event) : null)}
+        disabled={disabled}
+        style={btnStyle ?? { marginVertical: 15, marginHorizontal: 13 }}
+        textColor={textColor}
+        labelStyle={
+          btnTextStyle ?? {
+            paddingVertical: 7,
+            fontSize: getFontSize(2.1),
+            // fontFamily: 'Rubik-Medium',
+            letterSpacing: 1.25,
+          }
+        }
+      >
+        {text}
+      </ButtonPaper>
+    </>
+  ) : (
     <View style={[{ flexDirection: 'row' }, wrapperViewBtnStyle]}>
       <TouchableOpacity
         activeOpacity={0.7}

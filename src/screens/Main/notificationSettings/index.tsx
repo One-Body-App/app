@@ -17,8 +17,9 @@ import { useToast } from 'react-native-toast-notifications';
 import { setProfile } from '@/src/Redux/actions/AuthActions';
 import { useTheme } from '@react-navigation/native';
 import GoBackIcon from '@/src/Components/GoBackIcon';
+import { DrawerScreenProps } from '@react-navigation/drawer';
 
-type Props = StackScreenProps<RootStackParamList, 'NotificationSettings'>;
+type Props = DrawerScreenProps<RootStackParamList, 'NotificationSettings'>;
 
 const NotificationSettings = ({ navigation }: Props) => {
   const dispatch = useDispatch();
@@ -126,7 +127,11 @@ const NotificationSettings = ({ navigation }: Props) => {
 
       <Header
         title={'Notifications settings'}
-        leftView={<GoBackIcon color={colors.text} />}
+        leftView={
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Ionicons name="menu" size={24} color={colors.text} />
+          </TouchableOpacity>
+        }
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <View style={styles.innerContainer}>
