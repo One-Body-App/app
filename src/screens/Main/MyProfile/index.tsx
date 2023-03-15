@@ -334,16 +334,14 @@ const MyProfile = ({ navigation }: Props) => {
             flex: 1,
           }}
         >
-          <Button
-            text={'Edit Profile'}
-            onPress={() => navigation.navigate('EditProfile')}
-            btnStyle={styles.btn}
-            btnTextStyle={{
-              ...GeneralStyle.btnText,
-              color: '#032f3c',
-              letterSpacing: 0,
-            }}
-          />
+          <View style={{ width: '100%' }}>
+            <Button
+              text={'Edit Profile'}
+              onPress={() => navigation.navigate('EditProfile')}
+              mode="outlined"
+              paper
+            />
+          </View>
         </View>
         {user?.isInfluencer == true ? (
           <TabView

@@ -11,6 +11,10 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { OpenURLButton } from '@/src/Services/constants';
 import { isObject } from 'lodash';
 import { decode } from 'html-entities';
+import ArticleItem from '../ListItems/ArticleItem';
+import { ArticleType } from '@/utils/types';
+import OptionsModal from '../ListItems/OptionsModal';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 const HomeBlogComponent = () => {
   const dispatch = useDispatch();
@@ -21,7 +25,13 @@ const HomeBlogComponent = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEndOfList, setIsEndOfList] = useState(false);
+  const [show, setShow] = useState<boolean>();
+  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
 
+  const showModal = (item: ArticleType) => {
+    setCurrentPopupItem(item);
+    setShow(true);
+  };
   const getAllBlog = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
@@ -79,6 +89,7 @@ const HomeBlogComponent = () => {
         alignItems: 'center',
       }}
     >
+      <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
       <FlatList
         data={allBlog}
         ListEmptyComponent={() => {
@@ -93,7 +104,7 @@ const HomeBlogComponent = () => {
             </View>
           );
         }}
-        numColumns={2}
+        numColumns={1}
         showsVerticalScrollIndicator={false}
         refreshing={isLoading}
         refreshControl={
@@ -109,28 +120,61 @@ const HomeBlogComponent = () => {
         ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
         keyExtractor={(item, index) => `${item.created}_${index}`}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => {
-              // navigation.navigate('BlogView', { url: item?.link });
-              OpenURLButton(item?.link);
-            }}
-            style={{ ...styles.blogpostview, marginHorizontal: 10, backgroundColor: colors.card }}
-          >
-            {item?.image ? (
-              <FastImage
-                style={styles.blogpostimage}
-                resizeMode={'stretch'}
-                source={{ uri: item?.image?.url }}
-              />
-            ) : null}
-            <Text numberOfLines={2} style={styles.blogpostpara}>
-              {isObject(item?.title) ? decode(item?.title.a.$text) : decode(item?.title)}
-            </Text>
+          // <TouchableOpacity
+          //   onPress={() => {
+          //     // navigation.navigate('BlogView', { url: item?.link });
+          //     OpenURLButton(item?.link);
+          //   }}
+          //   style={{ ...styles.blogpostview, marginHorizontal: 10, backgroundColor: colors.card }}
+          // >
+          //   {item?.image ? (
+          //     <FastImage
+          //       style={styles.blogpostimage}
+          //       resizeMode={'stretch'}
+          //       source={{ uri: item?.image?.url }}
+          //     />
+          //   ) : null}
+          //   <Text numberOfLines={2} style={styles.blogpostpara}>
+          //     {isObject(item?.title) ? decode(item?.title.a.$text) : decode(item?.title)}
+          //   </Text>
 
-            <Text numberOfLines={2} style={styles.blogposthour}>
-              {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
-            </Text>
-          </TouchableOpacity>
+          //   <Text numberOfLines={2} style={styles.blogposthour}>
+          //     {isObject(item?.author) ? item?.author?.a?.$text : item?.author}
+          //   </Text>
+          // </TouchableOpacity>
+
+          <ArticleItem
+            item={item}
+            imageSizeType="contain"
+            blogPostStyle={{
+              // ...styles.socialpostview,
+              // backgroundColor: '#F6F6F6',
+              alignSelf: 'center',
+              justifyContent: 'center',
+              alignItems: 'center',
+              // width: '90%',
+              borderRadius: 20,
+              // padding: 8,
+              backgroundColor: colors.card,
+              // padding: 0,
+              // margin: 7,
+              flex: 1,
+            }}
+            blogPostImageStyle={{
+              height: getHeight(23),
+              width: getWidth(95),
+              // borderRadius: 20,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              // marginBottom: 5,
+            }}
+            blogPostTitleStyle={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginTop: getHeight(1),
+            }}
+            showModal={showModal}
+          />
         )}
         onEndReachedThreshold={0.5}
         onEndReached={() => {

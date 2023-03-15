@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, SafeAreaView, ScrollView, FlatList } from 'react-native';
-import { Divider, Provider, TextInput } from 'react-native-paper';
+import { View, TouchableOpacity, SafeAreaView, ScrollView, FlatList } from 'react-native';
+import { Divider, Provider, TextInput, Text } from 'react-native-paper';
 import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '@/components/Button';
@@ -267,10 +267,9 @@ const EditProfile = ({ navigation }: Props) => {
         <View style={{ flex: 1 }}>
           <Button
             onPress={() => navigation.goBack()}
-            text=""
-            leftIcon={<Icon name="chevron-back" size={20} color={'#032f3c'} />}
-            btnStyle={{ flex: 1 }}
-            wrapperBtnStyle={{ justifyContent: 'flex-start', paddingLeft: 10, paddingVertical: 10 }}
+            mode="text"
+            paper
+            content={<Icon name="chevron-back" size={20} color={colors.text} />}
           />
         </View>
         <View style={{ flex: 4, justifyContent: 'center', alignItems: 'center' }}>
@@ -411,7 +410,7 @@ const EditProfile = ({ navigation }: Props) => {
           </TouchableOpacity>
           <View style={styles.InputsContainer}>
             <TextInput
-              style={styles.TextInput}
+              style={{ backgroundColor: colors.background }}
               onChangeText={(e) => setUsername(e)}
               value={username}
               label="Username"
@@ -422,7 +421,7 @@ const EditProfile = ({ navigation }: Props) => {
             />
 
             <TextInput
-              style={styles.TextInput}
+              style={{ backgroundColor: colors.background }}
               onChangeText={(e) => setFullName(e)}
               value={fullname}
               label="Name"
@@ -433,10 +432,11 @@ const EditProfile = ({ navigation }: Props) => {
             />
 
             <TextInput
-              style={styles.TextInput}
+              style={{ backgroundColor: colors.background }}
               label="Account type"
               value={user?.role == 'individual' ? 'Individual' : 'Organization'}
               editable={false}
+              theme={{ roundness: 10 }}
               // placeholderTextColor={'red'}
             />
 
@@ -446,7 +446,7 @@ const EditProfile = ({ navigation }: Props) => {
                   label="What type of church do you attend?"
                   activeOutlineColor={'#12D2D9'}
                   activeUnderlineColor={'#12D2D9'}
-                  style={styles.TextInput}
+                  style={{ backgroundColor: colors.background }}
                   theme={{ roundness: 10 }}
                   showSoftInputOnFocus={false}
                   onPressIn={() => setChurchTypeModalVisible(true)}
@@ -458,7 +458,7 @@ const EditProfile = ({ navigation }: Props) => {
                     label="What subtype of the church that you attend?"
                     activeOutlineColor={'#12D2D9'}
                     activeUnderlineColor={'#12D2D9'}
-                    style={styles.TextInput}
+                    style={{ backgroundColor: colors.background }}
                     theme={{ roundness: 10 }}
                     showSoftInputOnFocus={false}
                     onPressIn={() => setChurchSubTypeModalVisible(true)}
@@ -470,7 +470,7 @@ const EditProfile = ({ navigation }: Props) => {
                   label="How often do you attend church?"
                   activeOutlineColor={'#12D2D9'}
                   activeUnderlineColor={'#12D2D9'}
-                  style={styles.TextInput}
+                  style={{ backgroundColor: colors.background }}
                   theme={{ roundness: 10 }}
                   showSoftInputOnFocus={false}
                   onPressIn={() => setOftenChurchVisible(true)}
@@ -481,7 +481,7 @@ const EditProfile = ({ navigation }: Props) => {
                   label="What City are you in?"
                   activeOutlineColor={'#12D2D9'}
                   activeUnderlineColor={'#12D2D9'}
-                  style={styles.TextInput}
+                  style={{ backgroundColor: colors.background }}
                   theme={{ roundness: 10 }}
                   showSoftInputOnFocus={false}
                   onPressIn={() => setCitySelector(true)}
@@ -501,7 +501,7 @@ const EditProfile = ({ navigation }: Props) => {
                   label="Date of Birth"
                   activeOutlineColor={'#12D2D9'}
                   activeUnderlineColor={'#12D2D9'}
-                  style={styles.TextInput}
+                  style={{ backgroundColor: colors.background }}
                   theme={{ roundness: 10 }}
                   showSoftInputOnFocus={false}
                   onFocus={() => setOpen(true)}
@@ -540,7 +540,7 @@ const EditProfile = ({ navigation }: Props) => {
             <View>
               {user?.role == 'individual' ? (
                 <TextInput
-                  style={styles.TextInput}
+                  style={{ backgroundColor: colors.background }}
                   value={whatIDo?.name ? whatIDo?.name : ''}
                   editable={false}
                   label="What I do"
@@ -555,7 +555,7 @@ const EditProfile = ({ navigation }: Props) => {
               ) : (
                 <>
                   <TextInput
-                    style={styles.TextInput}
+                    style={{ backgroundColor: colors.background }}
                     value={organizationType?.name ? organizationType?.name : ''}
                     editable={false}
                     label="Who We Are?"
@@ -608,7 +608,7 @@ const EditProfile = ({ navigation }: Props) => {
               )}
 
               <TextInput
-                style={styles.TextInput}
+                style={{ backgroundColor: colors.background }}
                 value={website}
                 label="Website"
                 keyboardType="url"

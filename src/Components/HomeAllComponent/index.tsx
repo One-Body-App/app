@@ -41,12 +41,14 @@ import OptionsModal from '../ListItems/OptionsModal';
 import { ArticleType } from '@/utils/types';
 import SocialItem from '../ListItems/SocialItem';
 import { decode } from 'html-entities';
+import ArticleItem from '../ListItems/ArticleItem';
+import { SearchBase, SearchComponent, SearchBox } from '@appbaseio/react-native-searchbox';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const todayNews = useSelector((state: RootState) => state.social.TodayNews);
+  const todayNews = []; //useSelector((state: RootState) => state.social.TodayNews);
 
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
   const [refreshing, setRefreshing] = useState(false);
@@ -102,8 +104,29 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
     }
   };
 
+  const getData = async () => {
+    try {
+      const res = await ApiCall({
+        route: `user/get-following-feed/1`,
+        token,
+        verb: 'get',
+      });
+      let posts = [];
+
+      if (res?.status == 200) {
+        posts = res?.response ?? [];
+
+        setSocialPosts(posts);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
+      console.log(`saga get twitter timline  error -- `, e.toString());
+    }
+  };
+
   useEffect(() => {
-    getSocialPosts();
+    getData();
   }, []);
 
   return (
@@ -202,7 +225,30 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
             keyExtractor={(item, index) => {
               return `${item?.handler}-${item.id}-${index}`;
             }}
-            renderItem={({ item }) => <SocialItem item={item} />}
+            renderItem={({ item }) => {
+              if (item.type == 'social') return <SocialItem item={item} />;
+
+              return (
+                <ArticleItem
+                  item={item}
+                  imageSizeType="cover"
+                  blogPostStyle={{
+                    ...styles.socialpostview,
+                    backgroundColor: colors.card,
+                    padding: 0,
+                    margin: 7,
+                    flex: 1,
+                  }}
+                  blogPostImageStyle={styles.socialpostimage}
+                  blogPostTitleStyle={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginTop: getHeight(1),
+                  }}
+                  showModal={showModal}
+                />
+              );
+            }}
             ListFooterComponent={() => (
               <View style={{ alignSelf: 'center', alignContent: 'center' }}>
                 <Button

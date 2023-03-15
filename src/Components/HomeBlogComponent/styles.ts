@@ -11,7 +11,6 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 16,
-    padding: 8,
   },
   blogpostimage: {
     height: getHeight(12),

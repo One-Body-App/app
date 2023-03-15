@@ -98,15 +98,15 @@ const LoadingPage = ({ navigation }: Props) => {
   };
 
   useEffect(() => {
-    if (isLoadedTodayNews && isLoadedRecentBlog) {
+    if (isLoadedRecentBlog) {
       navigation.replace('Bottombar', { tabs: 'Home' });
     }
-  }, [isLoadedTodayNews, isLoadedRecentBlog]);
+  }, [isLoadedRecentBlog]);
 
   useEffect(() => {
     if (token) {
       // getSocialPosts();
-      getTodayNews();
+      // getTodayNews();
       getRecentBlog();
     }
   }, [token]);

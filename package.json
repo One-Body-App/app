@@ -11,6 +11,8 @@
     "debug": "open 'rndebugger://set-debugger-loc?host=localhost&port=8081'"
   },
   "dependencies": {
+    "@appbaseio/react-native-searchbox": "^1.7.0-preview.5",
+    "@elastic/elasticsearch": "^8.6.0",
     "@fortawesome/fontawesome-svg-core": "^6.2.0",
     "@fortawesome/free-brands-svg-icons": "^6.2.0",
     "@fortawesome/free-regular-svg-icons": "^6.2.0",
