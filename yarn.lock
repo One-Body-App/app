@@ -2122,13 +2122,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-picker/picker@npm:^2.3.1":
-  version: 2.4.3
-  resolution: "@react-native-picker/picker@npm:2.4.3"
+"@react-native-picker/picker@npm:^2.4.8":
+  version: 2.4.8
+  resolution: "@react-native-picker/picker@npm:2.4.8"
   peerDependencies:
     react: ">=16"
     react-native: ">=0.57"
-  checksum: 4513a763765f38d9f21215624e96e5280bc8c366589d61b06e3531343a3bf9ef7283574658df4e4381dfd6892e6380c7e902bee5a331da2bf577976dfbde51b3
+  checksum: c2ac00b379a9a43188be53ce8e4eb849e6d02ad8a3afe18a88416d8d0d433ac33396eea34a6fdad27f8b4f8c88bc77b4a87fec146c99d987bd91244980762879
   languageName: node
   linkType: hard
 
@@ -9320,7 +9320,7 @@ __metadata:
     "@react-native-firebase/dynamic-links": ^15.6.0
     "@react-native-firebase/messaging": ^15.6.0
     "@react-native-google-signin/google-signin": ^8.0.0
-    "@react-native-picker/picker": ^2.3.1
+    "@react-native-picker/picker": ^2.4.8
     "@react-navigation/bottom-tabs": ^6.4.0
     "@react-navigation/drawer": ^6.5.0
     "@react-navigation/material-bottom-tabs": ^6.1.1

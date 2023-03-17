@@ -107,7 +107,8 @@ const LoadingPage = ({ navigation }: Props) => {
     if (token) {
       // getSocialPosts();
       // getTodayNews();
-      getRecentBlog();
+      // getRecentBlog();
+      navigation.replace('Bottombar', { tabs: 'Home' });
     }
   }, [token]);
 

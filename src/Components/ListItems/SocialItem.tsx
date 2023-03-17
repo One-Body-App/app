@@ -26,6 +26,7 @@ const SocialItem = ({
   currentPopupItemId?: string;
   item: {
     content: string;
+    date: string;
     source: 'twitter' | 'instagram';
     handler: string;
     link: string;
@@ -57,6 +58,7 @@ const SocialItem = ({
     height: 250,
     width: 250,
   };
+
   return (
     <View style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
       {item.userData ? (
@@ -143,7 +145,7 @@ const SocialItem = ({
           {item?.content}
         </Text>
       </View>
-
+      <Text>{item?.date}</Text>
       {url ? (
         <TouchableOpacity
           onPress={() => {

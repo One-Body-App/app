@@ -48,7 +48,7 @@ type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const todayNews = []; //useSelector((state: RootState) => state.social.TodayNews);
+  const todayNews = useSelector((state: RootState) => state.social.TodayNews);
 
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
   const [refreshing, setRefreshing] = useState(false);

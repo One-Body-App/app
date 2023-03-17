@@ -5,7 +5,14 @@ export const styles = StyleSheet.create({
   continer: {
     flex: 1,
   },
-
+  list: {
+    maxHeight: 40,
+  },
+  contentContainer: {
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
