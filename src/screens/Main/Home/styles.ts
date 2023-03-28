@@ -1,5 +1,19 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TextStyle, ViewStyle } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+
+const menuItemText: TextStyle = {
+  color: '#126B87',
+  fontSize: 15,
+  textAlign: 'center',
+  fontWeight: '500',
+  textTransform: 'uppercase',
+};
+
+const menuItem: ViewStyle = {
+  paddingTop: 15,
+  paddingBottom: 9,
+  marginHorizontal: 15,
+};
 
 export const styles = StyleSheet.create({
   continer: {
@@ -188,16 +202,17 @@ export const styles = StyleSheet.create({
   },
   socialpostimage: {
     height: getHeight(22),
-    width: getWidth(85),
-    borderRadius: 10,
+    width: '100%',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     marginBottom: 5,
   },
   newspostimage: {
     height: getHeight(22),
     width: '100%',
 
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   blogposttext: {
     fontSize: getFontSize(3.2),
@@ -311,5 +326,21 @@ export const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 16,
+  },
+  menuItem,
+  menuItemText,
+  menuItemTextSelected: {
+    ...menuItemText,
+    color: '#032F3C',
+  },
+  menuItemSelected: {
+    ...menuItem,
+    borderBottomWidth: 3,
+    borderBottomColor: '#12D2D9',
+
+    borderBottomLeftRadius: 1.5,
+    borderBottomRightRadius: 1.5,
+    borderTopRightRadius: 1.5,
+    borderTopLeftRadius: 1.5,
   },
 });

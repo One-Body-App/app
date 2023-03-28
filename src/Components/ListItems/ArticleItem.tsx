@@ -30,7 +30,7 @@ const ArticleItem = ({
   hideProfileName?: boolean;
 }) => {
   const { colors } = useTheme();
-
+  console.log(item, 'item');
   return (
     <TouchableOpacity
       onPress={() => {
@@ -72,7 +72,9 @@ const ArticleItem = ({
             {hideProfileName ? null : (
               <Text style={styles.blogposthour}>{item?.userData?.name}</Text>
             )}
-            <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+            {item?.created ? (
+              <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+            ) : null}
           </View>
         </View>
       </View>

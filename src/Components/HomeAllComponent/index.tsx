@@ -115,7 +115,7 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
 
       if (res?.status == 200) {
         posts = res?.response ?? [];
-
+        console.log(posts, 'posts');
         setSocialPosts(posts);
       } else {
         console.log('error', res?.response);
@@ -226,7 +226,11 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
               return `${item?.handler}-${item.id}-${index}`;
             }}
             renderItem={({ item }) => {
+              console.log(item.type);
               if (item.type == 'social') return <SocialItem item={item} />;
+              if (item.type == 'tasteBreaker') {
+                return <Text>tasteBreaker</Text>;
+              }
 
               return (
                 <ArticleItem

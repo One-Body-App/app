@@ -21,7 +21,6 @@ type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 const SocialItem = ({
   item,
-  socialPostviewStyle,
 }: {
   currentPopupItemId?: string;
   item: {
@@ -117,7 +116,7 @@ const SocialItem = ({
               source={{
                 uri: item?.mediaUrl,
               }}
-              style={{ width: '100%', height: 300, borderRadius: 20 }}
+              style={{ width: '100%', height: 300, borderRadius: 10 }}
               controls={true}
               resizeMode="cover"
               paused={true}
@@ -125,7 +124,7 @@ const SocialItem = ({
             />
           ) : (
             <FastImage
-              style={{ width: '100%', height: 300, borderRadius: 20 }}
+              style={{ width: '100%', height: 300, borderRadius: 10 }}
               source={{ uri: item?.mediaUrl }}
             />
           )}

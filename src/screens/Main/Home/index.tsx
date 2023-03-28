@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   TouchableWithoutFeedback,
   Animated,
   SafeAreaView,
-  Text,
   TouchableOpacity,
   Dimensions,
   ScaledSize,
   StyleSheet,
   FlatList,
   Platform,
+  RefreshControl,
+  ActivityIndicator,
+  Button,
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
-import { Avatar, Title } from 'react-native-paper';
+import { Avatar, Text, Title } from 'react-native-paper';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -46,11 +48,16 @@ interface Props {
 }
 
 enum FeedTypes {
-  All = 'All Posts',
+  All = 'All',
   News = 'News',
   Social = 'Social',
   Blog = 'Blog',
 }
+
+type feedOptions = {
+  type: FeedTypes;
+  page: number;
+};
 
 const feedTypes: FeedTypes[] = [FeedTypes.All, FeedTypes.News, FeedTypes.Social, FeedTypes.Blog];
 
@@ -89,11 +96,15 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
     }
   };
 
-  const [selectedFeedType, setSelectedFeedType] = useState<FeedTypes>(feedTypes[0]);
+  const [feedOptions, setFeedOptions] = useState<feedOptions>({
+    type: feedTypes[0],
+    page: 1,
+  });
+
   const [feedData, setFeedData] = useState<any>();
   const [show, setShow] = useState<boolean>();
   const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
-  const [page, setPage] = useState(1);
+
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -125,9 +136,10 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
   };
 
   const getFeedData = async (type: FeedTypes, pageNumber: number) => {
+    setIsLoading(true);
     try {
       const res = await ApiCall({
-        route: `user/get-following-feed/${type}/${page}`,
+        route: `user/get-following-feed/${type}/${pageNumber}`,
         token,
         verb: 'get',
       });
@@ -153,13 +165,27 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
     } catch (e: any) {
       console.log(`saga get twitter timline  error -- `, e.toString());
     }
+    setIsLoading(false);
   };
 
   const { colors } = useTheme();
+
   useEffect(() => {
     // getData(page);
-    getFeedData(selectedFeedType, page);
-  }, [page, selectedFeedType]);
+    getFeedData(feedOptions.type, feedOptions.page);
+  }, [feedOptions]);
+
+  const listRef = useRef<FlatList>(null);
+
+  const filterUpdate = (itemValue: FeedTypes) => {
+    setIsRefreshing(false);
+    setFeedOptions({
+      type: itemValue,
+      page: 1,
+    });
+
+    // listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
 
   return (
     <>
@@ -167,70 +193,131 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
 
       <SafeAreaView style={styles.continer}>
         <View style={{ flex: 1 }}>
-          {Platform.OS == 'android' ? (
-            <Picker
-              selectedValue={selectedFeedType}
-              onValueChange={(itemValue, itemIndex) => setSelectedFeedType(itemValue)}
-            >
-              {feedTypes.map((feedType) => {
-                return <Picker.Item label={feedType} value={feedType} />;
-              })}
-            </Picker>
-          ) : (
-            <>
-              <Title>Feed</Title>
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={feedTypes}
-                keyExtractor={(item: string) => item}
-                renderItem={({ item }: any) => (
-                  <Tag
-                    category={item}
-                    selectedCategory={selectedFeedType}
-                    setSelectedCategory={setSelectedFeedType}
-                  />
-                )}
-                style={styles.list}
-                contentContainerStyle={styles.contentContainer}
-              />
-            </>
-          )}
-          <FlatList
-            data={feedData}
-            style={{ flex: 1 }}
-            keyExtractor={(item, index) => {
-              return `${item?.handler}-${item.id}-${index}`;
-            }}
-            renderItem={({ item }) => {
-              if (item.type == 'social') return <SocialItem item={item} />;
-
+          <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 20 }}>
+            {feedTypes.map((feedType) => {
               return (
-                <ArticleItem
-                  item={item}
-                  imageSizeType="cover"
-                  blogPostStyle={{
-                    ...styles.socialpostview,
-                    backgroundColor: colors.card,
-                    padding: 0,
-                    margin: 7,
-                    flex: 1,
-                  }}
-                  blogPostImageStyle={styles.socialpostimage}
-                  blogPostTitleStyle={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    marginTop: getHeight(1),
-                  }}
-                  showModal={showModal}
-                />
+                <View style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    onPress={() => filterUpdate(feedType)}
+                    style={feedOptions.type == feedType ? styles.menuItemSelected : styles.menuItem}
+                  >
+                    <Text
+                      style={
+                        feedOptions.type == feedType
+                          ? styles.menuItemTextSelected
+                          : styles.menuItemText
+                      }
+                    >
+                      {feedType}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               );
-            }}
-            onEndReachedThreshold={0.5}
-            onEndReached={() => {
-              if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
-            }}
-          />
+            })}
+          </View>
+
+          {isLoading && feedOptions.page == 1 && false ? (
+            <View style={{ marginTop: 10 }}>
+              <ActivityIndicator />
+            </View>
+          ) : (
+            <FlatList
+              data={feedData}
+              ref={listRef}
+              style={{ flex: 1 }}
+              keyExtractor={(item, index) => {
+                return `${item?.handler}-${item.id}-${index}`;
+              }}
+              renderItem={({ item }) => {
+                if (item.type == 'social')
+                  return <SocialItem key={`social_${item.id}`} item={item} />;
+
+                if (item.type == 'tasteBreaker') {
+                  return (
+                    <>
+                      <Title style={{ marginLeft: 20 }}>Taste Breakers</Title>
+                      <FlatList
+                        nestedScrollEnabled
+                        data={item.items}
+                        horizontal={true}
+                        contentContainerStyle={{ marginTop: 20 }}
+                        showsHorizontalScrollIndicator={false}
+                        ListHeaderComponent={() => <View style={{ padding: 7 }} />}
+                        ListFooterComponent={() => <View style={{ padding: 7 }} />}
+                        ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+                        keyExtractor={(item, index) => `${item.created}_${index}`}
+                        renderItem={({ item }) => (
+                          <ArticleItem
+                            key={`article_${item.id}`}
+                            item={item}
+                            imageSizeType="cover"
+                            blogPostStyle={{
+                              ...styles.socialpostview,
+                              backgroundColor: colors.card,
+                              padding: 0,
+                              margin: 7,
+                              flex: 1,
+                              width: 300,
+                            }}
+                            blogPostImageStyle={styles.socialpostimage}
+                            blogPostTitleStyle={{
+                              // flexDirection: 'row',
+                              // justifyContent: 'space-between',
+                              marginTop: getHeight(1),
+                            }}
+                            showModal={showModal}
+                          />
+                        )}
+                      />
+                    </>
+                  );
+                }
+                return (
+                  <ArticleItem
+                    key={`article_${item.id}`}
+                    item={item}
+                    imageSizeType="cover"
+                    blogPostStyle={{
+                      ...styles.socialpostview,
+                      backgroundColor: colors.card,
+                      padding: 0,
+                      margin: 7,
+                      flex: 1,
+                    }}
+                    blogPostImageStyle={styles.socialpostimage}
+                    blogPostTitleStyle={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginTop: getHeight(1),
+                    }}
+                    showModal={showModal}
+                  />
+                );
+              }}
+              refreshing={isLoading}
+              refreshControl={
+                <RefreshControl
+                  enabled={true}
+                  refreshing={isRefreshing}
+                  onRefresh={() => {
+                    setIsRefreshing(true);
+                  }}
+                />
+              }
+              onEndReachedThreshold={0.5}
+              onEndReached={() => {
+                if (!isLoading && !isRefreshing && !isEndOfList) {
+                  setFeedOptions({
+                    ...feedOptions,
+                    page: feedOptions.page + 1,
+                  });
+                }
+              }}
+              ListFooterComponent={() => (
+                <View>{isLoading ? <ActivityIndicator size="small" /> : null}</View>
+              )}
+            />
+          )}
           {/* <TabView
             navigationState={{ index, routes }}
             renderScene={renderScene}

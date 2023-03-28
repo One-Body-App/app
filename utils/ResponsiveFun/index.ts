@@ -21,6 +21,7 @@ export function getFontSize(font: number) {
   return Math.round(deviceHeightPercent);
 }
 export function timeSince(date: Date) {
+  console.log(date);
   var seconds = Math.floor((new Date().valueOf() - date.valueOf()) / 1000);
 
   var interval = seconds / 31536000;
