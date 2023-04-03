@@ -293,7 +293,7 @@ export default function DrawerElem(props: DrawerContentComponentProps) {
           // drawerActiveTintColor: '#032F3C',
           // headerTintColor: '#24BFF0',
         }}
-        component={NotificationSettings}
+        component={Notification}
       />
       <DrawerNavigation.Screen
         name="Connections"

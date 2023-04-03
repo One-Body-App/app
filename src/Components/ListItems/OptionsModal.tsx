@@ -114,7 +114,7 @@ const OptionsModal = ({
         <View style={styles.headLine} />
         <View style={styles.contview}>
           <View style={styles.saveview}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, paddingRight: 5 }}>
               <Button
                 btnStyle={styles.savetuch}
                 text={isThisPostSaved ? 'Remove' : 'Save'}
@@ -144,7 +144,7 @@ const OptionsModal = ({
             {/* <TouchableOpacity style={styles.savetuch}>
                 <Text style={{color: '#032F3C'}}>Save</Text>
               </TouchableOpacity> */}
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, paddingLeft: 5 }}>
               <Button
                 btnStyle={styles.sharetouch}
                 text="Share"
@@ -197,12 +197,14 @@ const OptionsModal = ({
               <Text style={{color: '#032F3C'}}>Link</Text>
             </TouchableOpacity> */}
           {hideChannelSection ? null : (
-            <View style={{ marginHorizontal: 10 }}>
+            <View>
               <Button
                 btnStyle={{
                   ...GeneralStyle.btn,
                   backgroundColor: '#f6f6f6',
                   flexDirection: 'row',
+                  flexGrow: 1,
+                  marginHorizontal: 0,
                 }}
                 text="View Channel"
                 btnTextStyle={{ color: '#032F3C' }}
@@ -235,6 +237,7 @@ const OptionsModal = ({
               // backgroundColor: 'red',
               // backgroundColor: '#e6eaec',
               flexDirection: 'row',
+              flexGrow: 1,
             }}
             btnTextStyle={{ ...GeneralStyle.btnText, color: '#032f3c' }}
             onPress={() => {

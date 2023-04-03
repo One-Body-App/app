@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
-import { Avatar, Text, Title } from 'react-native-paper';
+import { Avatar, Caption, Text, Title } from 'react-native-paper';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -41,6 +41,7 @@ import { Tag } from '@/src/Components/Tag';
 import SocialItem from '@/src/Components/ListItems/SocialItem';
 import ArticleItem from '@/src/Components/ListItems/ArticleItem';
 import { ArticleType } from '@/utils/types';
+import OptionsModal from '@/src/Components/ListItems/OptionsModal';
 interface Props {
   setRequestModel: (requestModel: boolean) => void;
   openDrawer: () => void;
@@ -122,7 +123,7 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
         verb: 'get',
       });
       let posts = [];
-      console.log(res);
+
       if (res?.status == 200) {
         posts = res?.response ?? [];
 
@@ -161,11 +162,16 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
         setFeedData(newFeedData);
       } else {
         console.log('error', res?.response);
+        setFeedData([]);
+        setIsEndOfList(true);
       }
     } catch (e: any) {
+      setFeedData([]);
       console.log(`saga get twitter timline  error -- `, e.toString());
     }
+
     setIsLoading(false);
+    setIsRefreshing(false);
   };
 
   const { colors } = useTheme();
@@ -174,6 +180,14 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
     // getData(page);
     getFeedData(feedOptions.type, feedOptions.page);
   }, [feedOptions]);
+
+  useEffect(() => {
+    // getData(page);
+    if (isRefreshing) {
+      getFeedData(feedOptions.type, feedOptions.page);
+      setIsEndOfList(false);
+    }
+  }, [isRefreshing]);
 
   const listRef = useRef<FlatList>(null);
 
@@ -192,6 +206,7 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
       <SafeAreaView style={{ flex: 0, backgroundColor: '#126B87' }} />
 
       <SafeAreaView style={styles.continer}>
+        <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 20 }}>
             {feedTypes.map((feedType) => {
@@ -224,7 +239,6 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
             <FlatList
               data={feedData}
               ref={listRef}
-              style={{ flex: 1 }}
               keyExtractor={(item, index) => {
                 return `${item?.handler}-${item.id}-${index}`;
               }}
@@ -234,16 +248,13 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
 
                 if (item.type == 'tasteBreaker') {
                   return (
-                    <>
-                      <Title style={{ marginLeft: 20 }}>Taste Breakers</Title>
+                    <View style={{ paddingHorizontal: 10, paddingVertical: 20, marginBottom: 10 }}>
+                      <Caption style={{ marginLeft: 10, marginBottom: 10 }}>Taste Breakers</Caption>
                       <FlatList
                         nestedScrollEnabled
                         data={item.items}
                         horizontal={true}
-                        contentContainerStyle={{ marginTop: 20 }}
                         showsHorizontalScrollIndicator={false}
-                        ListHeaderComponent={() => <View style={{ padding: 7 }} />}
-                        ListFooterComponent={() => <View style={{ padding: 7 }} />}
                         ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
                         keyExtractor={(item, index) => `${item.created}_${index}`}
                         renderItem={({ item }) => (
@@ -254,22 +265,45 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
                             blogPostStyle={{
                               ...styles.socialpostview,
                               backgroundColor: colors.card,
-                              padding: 0,
-                              margin: 7,
-                              flex: 1,
+
                               width: 300,
                             }}
                             blogPostImageStyle={styles.socialpostimage}
                             blogPostTitleStyle={{
                               // flexDirection: 'row',
                               // justifyContent: 'space-between',
+                              flexWrap: 'wrap',
                               marginTop: getHeight(1),
                             }}
                             showModal={showModal}
                           />
                         )}
                       />
-                    </>
+                    </View>
+                  );
+                }
+
+                if (item.type == 'relatedContent') {
+                  return (
+                    <View style={{ paddingHorizontal: 10, paddingVertical: 20, marginBottom: 10 }}>
+                      <Caption style={{ marginLeft: 10 }}>Suggested</Caption>
+                      <ArticleItem
+                        key={`relatedContent_${item.id}`}
+                        item={item.item}
+                        imageSizeType="cover"
+                        blogPostStyle={{
+                          ...styles.socialpostview,
+                          backgroundColor: '#DDD',
+                        }}
+                        blogPostImageStyle={styles.socialpostimage}
+                        blogPostTitleStyle={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          marginTop: getHeight(1),
+                        }}
+                        showModal={showModal}
+                      />
+                    </View>
                   );
                 }
                 return (
@@ -280,9 +314,6 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
                     blogPostStyle={{
                       ...styles.socialpostview,
                       backgroundColor: colors.card,
-                      padding: 0,
-                      margin: 7,
-                      flex: 1,
                     }}
                     blogPostImageStyle={styles.socialpostimage}
                     blogPostTitleStyle={{

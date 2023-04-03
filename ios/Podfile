@@ -1,10 +1,9 @@
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 
-platform :ios, '12.4'
 install! 'cocoapods', :deterministic_uuids => false
 use_frameworks! :linkage => :static
-
+platform :ios, min_ios_version_supported
 
 production = ENV["PRODUCTION"] == "1"
 
@@ -46,9 +45,16 @@ target 'onebody' do
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['ENABLE_BITCODE'] = 'NO'
+        current_target = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        minimum_target = min_ios_version_supported
+        if current_target.to_f < minimum_target.to_f
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = minimum_target
+        end
       end
     end
   end
+
+
 
   pre_install do |installer|
    installer.pod_targets.each do |pod|

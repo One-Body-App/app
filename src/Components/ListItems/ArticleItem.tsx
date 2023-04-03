@@ -4,7 +4,16 @@ import { ArticleType } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { isObject } from 'lodash';
 import React from 'react';
-import { StyleProp, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
+import {
+  Dimensions,
+  Image,
+  StyleProp,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { styles } from './style';
@@ -30,52 +39,52 @@ const ArticleItem = ({
   hideProfileName?: boolean;
 }) => {
   const { colors } = useTheme();
-  console.log(item, 'item');
+
   return (
     <TouchableOpacity
       onPress={() => {
         if (item?.link) OpenURLButton(item?.link);
       }}
+      style={[styles.blogpostview, { width: Dimensions.get('window').width - 32 }, blogPostStyle]}
     >
-      <View style={[styles.blogpostview, blogPostStyle]}>
+      {item?.image?.url ? (
         <FastImage
           style={[styles.blogpostimage, blogPostImageStyle]}
           resizeMode={imageSizeType}
           source={{ uri: item?.image?.url }}
         />
-        <View style={{ flex: 1, width: '100%', paddingHorizontal: 10, paddingVertical: 10 }}>
-          <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'space-between' }}>
-            <View style={{ flex: 5 }}>
-              <Text
-                numberOfLines={2}
-                style={[styles.blogpostpara, { color: colors.text }, blogPostTitleStyle]}
-              >
-                {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
-              </Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <TouchableOpacity
-                onPress={() => {
-                  showModal(item);
-                }}
-              >
-                <Entypo
-                  name="dots-three-horizontal"
-                  style={styles.newsicon}
-                  size={iconSize ?? 25}
-                  color={'#70747D'}
-                />
-              </TouchableOpacity>
-            </View>
+      ) : null}
+
+      <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, width: '100%' }}>
+        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'space-between' }}>
+          <View style={{ flex: 5 }}>
+            <Text
+              numberOfLines={2}
+              style={[styles.blogpostpara, { color: colors.text }, blogPostTitleStyle]}
+            >
+              {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
+            </Text>
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {hideProfileName ? null : (
-              <Text style={styles.blogposthour}>{item?.userData?.name}</Text>
-            )}
-            {item?.created ? (
-              <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
-            ) : null}
+          <View style={{ flex: 1 }}>
+            <TouchableOpacity
+              onPress={() => {
+                showModal(item);
+              }}
+            >
+              <Entypo
+                name="dots-three-horizontal"
+                style={styles.newsicon}
+                size={iconSize ?? 25}
+                color={'#70747D'}
+              />
+            </TouchableOpacity>
           </View>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {hideProfileName ? null : <Text style={styles.blogposthour}>{item?.userData?.name}</Text>}
+          {item?.created ? (
+            <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+          ) : null}
         </View>
       </View>
     </TouchableOpacity>

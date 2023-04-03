@@ -56,7 +56,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    width: getWidth(40),
+    width: '100%',
     height: getHeight(6),
     backgroundColor: '#F6F6F6',
     borderRadius: 7,
@@ -65,14 +65,14 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: getWidth(40),
+    width: '100%',
     height: getHeight(6),
     backgroundColor: '#F6F6F6',
     borderRadius: 7,
   },
   saveview: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     width: '100%',
   },
   header: {
@@ -230,6 +230,7 @@ export const styles = StyleSheet.create({
 
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
+    paddingHorizontal: 10,
   },
   blogposttext: {
     fontSize: 20,
@@ -245,11 +246,16 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     // height: getHeight(23),
-    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    marginVertical: 15,
   },
   blogpostimage: {
-    width: '100%',
-
     // borderRadius: 16,
     // marginVertical: 5,
     shadowColor: '#0e5469',
@@ -260,6 +266,7 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 30,
     elevation: 0,
+    flex: 1,
   },
   blogpostpara: {
     padding: 2,
