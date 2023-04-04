@@ -121,7 +121,7 @@ const Settings = ({ navigation }: Props) => {
         ) : null}
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('Notifications')}
+          onPress={() => navigation.navigate('NotificationSettings')}
           style={{ ...styles.list, backgroundColor: colors.background }}
         >
           <View>

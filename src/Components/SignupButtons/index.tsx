@@ -97,7 +97,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
     // use credentialState response to ensure the user is authenticated
     if (credentialState === appleAuth.State.AUTHORIZED) {
       const userCredentials = await auth().signInWithCredential(appleCredential);
-      console.log(userCredentials);
+
       // processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
     }
   };

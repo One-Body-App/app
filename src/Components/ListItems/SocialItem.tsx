@@ -1,6 +1,7 @@
 import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import React from 'react';
 import {
+  Dimensions,
   Image,
   ImageBackground,
   StyleProp,
@@ -21,6 +22,7 @@ type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 const SocialItem = ({
   item,
+  socialPostviewStyle,
 }: {
   currentPopupItemId?: string;
   item: {
@@ -59,7 +61,13 @@ const SocialItem = ({
   };
 
   return (
-    <View style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
+    <View
+      style={[
+        styles.socialpostview,
+        { width: Dimensions.get('window').width - 32 },
+        socialPostviewStyle,
+      ]}
+    >
       {item.userData ? (
         <TouchableOpacity
           onPress={() => {
@@ -116,7 +124,7 @@ const SocialItem = ({
               source={{
                 uri: item?.mediaUrl,
               }}
-              style={{ width: '100%', height: 300, borderRadius: 10 }}
+              style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
               controls={true}
               resizeMode="cover"
               paused={true}
@@ -124,7 +132,7 @@ const SocialItem = ({
             />
           ) : (
             <FastImage
-              style={{ width: '100%', height: 300, borderRadius: 10 }}
+              style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
               source={{ uri: item?.mediaUrl }}
             />
           )}
@@ -138,13 +146,12 @@ const SocialItem = ({
             lineHeight: 18,
             color: colors.text,
             marginTop: getHeight(1),
-            textAlign: 'center',
           }}
         >
           {item?.content}
         </Text>
       </View>
-      <Text>{item?.date}</Text>
+
       {url ? (
         <TouchableOpacity
           onPress={() => {
@@ -157,6 +164,7 @@ const SocialItem = ({
               fontFamily: 'Rubik',
               color: '#68828A',
               alignItems: 'center',
+              marginBottom: 5,
             }}
           >
             {item?.source == 'twitter' ? 'View on Twitter' : 'View on Instagram'}

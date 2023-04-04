@@ -19,7 +19,6 @@ const validator = async (field: string, value: string, extraFieldData?: Object) 
   // Validate against the constraint and hold the error messages
   var result = validate({}, constraint); //
   if (value != '' && value != null) {
-    console.log(object, constraint);
     result = validate(object, constraint);
   }
   if (result) {

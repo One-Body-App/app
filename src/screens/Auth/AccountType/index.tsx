@@ -56,7 +56,6 @@ const AccountType = ({ route, navigation }: Props) => {
 
       if (res?.status == 200) {
         dispatch(setProfile(res.response));
-        console.log('role res == 200 ... ', res);
       } else {
         console.log('error', res);
       }

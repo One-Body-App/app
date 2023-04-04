@@ -5,7 +5,7 @@ import { Provider, useDispatch } from 'react-redux';
 import Main from '@/navigation/Main';
 import { PersistGate } from 'redux-persist/integration/react';
 import SplashScreen from 'react-native-splash-screen';
-import ZendeskChat from 'react-native-zendesk-chat';
+// import ZendeskChat from 'react-native-zendesk-chat';
 import dynamicLinks from '@react-native-firebase/dynamic-links';
 import { Alert, Linking, Platform } from 'react-native';
 import { ToastProvider } from 'react-native-toast-notifications';
@@ -149,10 +149,10 @@ const App = () => {
   };
 
   useEffect(() => {
-    ZendeskChat.init(
-      'ny6aLGLinweALR8qvzeoql7EAo1YpFW8',
-      '6im7AfpfISANDuQOXekDDaEEMBMrhDxPgZPTkfHJ'
-    );
+    // ZendeskChat.init(
+    //   'ny6aLGLinweALR8qvzeoql7EAo1YpFW8',
+    //   '6im7AfpfISANDuQOXekDDaEEMBMrhDxPgZPTkfHJ'
+    // );
     SplashScreen.hide();
 
     const event = Linking.addEventListener('url', ({ url }) => handleDynamicLink(url));

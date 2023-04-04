@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		00E356F31AD99517003FC87E /* onebodyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* onebodyTests.m */; };
+		0E98C8DDF0A1224E970A3610 /* libPods-onebody-onebodyTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9293DA598E741715A3C8A9AA /* libPods-onebody-onebodyTests.a */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
@@ -54,9 +55,8 @@
 		72A8C9FA28C2A5C600811FC8 /* libswiftWebKit.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A8C9F528C2A48400811FC8 /* libswiftWebKit.tbd */; };
 		72F05C49289CEB68004C3A5F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */; };
 		7C2133B1178542F1A1A6EE1A /* Rubik-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EE323BEB8E934340AFDD662E /* Rubik-Light.ttf */; };
-		881E0F34149B76C55539F705 /* Pods_onebody.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CD51AF030899C244D75CA60F /* Pods_onebody.framework */; };
-		B344838D068E5F5401D9E3DA /* Pods_onebody_onebodyTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B5B20A6901C9105453F27A93 /* Pods_onebody_onebodyTests.framework */; };
 		BE2849414510415DB666B7F8 /* Rubik-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 44766743176243F2A0EC09FF /* Rubik-Italic.ttf */; };
+		E0B026650B471A15F1282803 /* libPods-onebody.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 536A5845256B44DC10646CC1 /* libPods-onebody.a */; };
 		E827FD5C72AD4DF2A43E9F10 /* Rubik-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 340D85C79D7D4904814500E1 /* Rubik-LightItalic.ttf */; };
 		EC87E17E6CA046B0ADD2A1D2 /* Rubik-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F529C1C408174256BDE7330A /* Rubik-SemiBoldItalic.ttf */; };
 		EE2C3FD2E7AD4A49B29CFB40 /* Rubik-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2C62561DB03E43B188904A89 /* Rubik-SemiBold.ttf */; };
@@ -91,6 +91,7 @@
 		340D85C79D7D4904814500E1 /* Rubik-LightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-LightItalic.ttf"; path = "../src/assets/fonts/Rubik-LightItalic.ttf"; sourceTree = "<group>"; };
 		38C862DC59847CA050FBA0A7 /* Pods-onebody-onebodyTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody-onebodyTests.debug.xcconfig"; path = "Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests.debug.xcconfig"; sourceTree = "<group>"; };
 		44766743176243F2A0EC09FF /* Rubik-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Italic.ttf"; path = "../src/assets/fonts/Rubik-Italic.ttf"; sourceTree = "<group>"; };
+		536A5845256B44DC10646CC1 /* libPods-onebody.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-onebody.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5C6032C3DCAA0C976701D2D7 /* Pods-onebody-onebodyTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody-onebodyTests.release.xcconfig"; path = "Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests.release.xcconfig"; sourceTree = "<group>"; };
 		7278A14A289CB24F003FC089 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		728343DF28A1F5A90048A31B /* onebody.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = onebody.entitlements; path = onebody/onebody.entitlements; sourceTree = "<group>"; };
@@ -129,13 +130,12 @@
 		72A8C9F528C2A48400811FC8 /* libswiftWebKit.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libswiftWebKit.tbd; path = usr/lib/swift/libswiftWebKit.tbd; sourceTree = SDKROOT; };
 		72A8C9F828C2A50700811FC8 /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk/System/iOSSupport/System/Library/Frameworks/JavaScriptCore.framework; sourceTree = DEVELOPER_DIR; };
 		72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		9293DA598E741715A3C8A9AA /* libPods-onebody-onebodyTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-onebody-onebodyTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A034E90601C5402CA7C81835 /* Rubik-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Black.ttf"; path = "../src/assets/fonts/Rubik-Black.ttf"; sourceTree = "<group>"; };
-		B5B20A6901C9105453F27A93 /* Pods_onebody_onebodyTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_onebody_onebodyTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C03E3CEBCE2B400D81586AC9 /* Rubik-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-BoldItalic.ttf"; path = "../src/assets/fonts/Rubik-BoldItalic.ttf"; sourceTree = "<group>"; };
 		C1B855E71A04BE97C55FACB2 /* Pods-onebody.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody.debug.xcconfig"; path = "Target Support Files/Pods-onebody/Pods-onebody.debug.xcconfig"; sourceTree = "<group>"; };
 		C5E6F91A107346A3BE15C8CB /* Rubik-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-ExtraBold.ttf"; path = "../src/assets/fonts/Rubik-ExtraBold.ttf"; sourceTree = "<group>"; };
 		CD4992585B48416A99B3F4C1 /* Rubik-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Medium.ttf"; path = "../src/assets/fonts/Rubik-Medium.ttf"; sourceTree = "<group>"; };
-		CD51AF030899C244D75CA60F /* Pods_onebody.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_onebody.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		ECD718E1CE3F24C34156E9DB /* Pods-onebody.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody.release.xcconfig"; path = "Target Support Files/Pods-onebody/Pods-onebody.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		ED52189242474D6FACB618EA /* Rubik-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Regular.ttf"; path = "../src/assets/fonts/Rubik-Regular.ttf"; sourceTree = "<group>"; };
@@ -148,7 +148,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B344838D068E5F5401D9E3DA /* Pods_onebody_onebodyTests.framework in Frameworks */,
+				0E98C8DDF0A1224E970A3610 /* libPods-onebody-onebodyTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -157,7 +157,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				72A8C9FA28C2A5C600811FC8 /* libswiftWebKit.tbd in Frameworks */,
-				881E0F34149B76C55539F705 /* Pods_onebody.framework in Frameworks */,
+				E0B026650B471A15F1282803 /* libPods-onebody.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -202,8 +202,8 @@
 				72A8C9F828C2A50700811FC8 /* JavaScriptCore.framework */,
 				72A8C9F528C2A48400811FC8 /* libswiftWebKit.tbd */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				CD51AF030899C244D75CA60F /* Pods_onebody.framework */,
-				B5B20A6901C9105453F27A93 /* Pods_onebody_onebodyTests.framework */,
+				536A5845256B44DC10646CC1 /* libPods-onebody.a */,
+				9293DA598E741715A3C8A9AA /* libPods-onebody-onebodyTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -716,7 +716,7 @@
 				CODE_SIGN_ENTITLEMENTS = onebody/onebody.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = 9N63S64RJ2;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
@@ -828,7 +828,7 @@
 				INFOPLIST_FILE = onebody/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "One Body - Christian Media";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -862,7 +862,7 @@
 				CODE_SIGN_ENTITLEMENTS = onebody/onebody.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = 9N63S64RJ2;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
@@ -974,7 +974,7 @@
 				INFOPLIST_FILE = onebody/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "One Body - Christian Media";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

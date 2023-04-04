@@ -19,7 +19,7 @@ import { useTheme } from '@react-navigation/native';
 import GoBackIcon from '@/src/Components/GoBackIcon';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 
-type Props = DrawerScreenProps<RootStackParamList, 'NotificationSettings'>;
+type Props = StackScreenProps<RootStackParamList, 'NotificationSettings'>;
 
 const NotificationSettings = ({ navigation }: Props) => {
   const dispatch = useDispatch();
@@ -75,7 +75,6 @@ const NotificationSettings = ({ navigation }: Props) => {
   }, []);
 
   useEffect(() => {
-    console.log(isLoading);
     if (isLoaded && !isLoading) {
       updateNotifications();
     }
@@ -127,11 +126,7 @@ const NotificationSettings = ({ navigation }: Props) => {
 
       <Header
         title={'Notifications settings'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu" size={24} color={colors.text} />
-          </TouchableOpacity>
-        }
+        leftView={<GoBackIcon color={colors.text} />}
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <View style={styles.innerContainer}>

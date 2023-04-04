@@ -86,7 +86,7 @@ function* signUpRequest(params) {
       verb: 'post',
       token: params.token,
     });
-    console.log(res);
+
     if (res?.status == '200') {
       yield put(setSignUpData(res?.response));
       params.data.go();
@@ -114,7 +114,7 @@ function* updateProfileRequest(params) {
       external: false,
       isFormUrlEncode: true,
     });
-    console.log(res);
+
     if (res?.status == 200) {
       yield put(getProfile({ token: params.data.token, role: params.data.role }));
 
@@ -180,7 +180,7 @@ function* getProfileRequest(params) {
       token: params.data.token,
       verb: 'get',
     });
-    console.log(res);
+
     if (res?.status == '200') {
       yield put(setProfile({ token: params.data.token, ...res.response }));
       // params?.data?.go();

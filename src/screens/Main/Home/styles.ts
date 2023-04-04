@@ -182,16 +182,16 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  socialpostview: {
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
+  // socialpostview: {
+  //   alignSelf: 'center',
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
 
-    borderRadius: 10,
-    // padding: 0,
-    flex: 1,
-    marginHorizontal: 7,
-  },
+  //   borderRadius: 10,
+  //   // padding: 0,
+  //   flex: 1,
+  //   marginHorizontal: 7,
+  // },
   NewsToday: {
     backgroundColor: 'white',
     alignSelf: 'center',

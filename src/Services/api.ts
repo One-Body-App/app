@@ -20,15 +20,6 @@ export const ApiCall = async ({
   external?: boolean;
   isFormUrlEncode?: boolean;
 }): Promise<{ status: number; response: any }> => {
-  console.log({
-    params,
-    route,
-    verb,
-    token,
-    baseurl,
-    external,
-    isFormUrlEncode,
-  });
   try {
     let tokenToUse = '';
     if (token) {

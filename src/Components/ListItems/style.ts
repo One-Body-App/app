@@ -201,13 +201,25 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   socialpostview: {
-    backgroundColor: '#F6F6F6',
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
     width: '90%',
-    borderRadius: 20,
+    borderRadius: 5,
     padding: 8,
+
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    marginVertical: 15,
+
+    // padding: 0,
+    flex: 1,
+    marginHorizontal: 7,
   },
   NewsToday: {
     backgroundColor: 'white',
@@ -228,8 +240,8 @@ export const styles = StyleSheet.create({
     height: getHeight(22),
     width: '100%',
 
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
     paddingHorizontal: 10,
   },
   blogposttext: {
@@ -242,6 +254,11 @@ export const styles = StyleSheet.create({
     color: '#126B87',
   },
   blogpostview: {
+    borderRadius: 5,
+    // padding: 0,
+    flex: 1,
+    marginHorizontal: 7,
+
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
@@ -252,7 +269,7 @@ export const styles = StyleSheet.create({
       height: 5,
     },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowRadius: 2,
     marginVertical: 15,
   },
   blogpostimage: {

@@ -42,6 +42,8 @@ import SocialItem from '@/src/Components/ListItems/SocialItem';
 import ArticleItem from '@/src/Components/ListItems/ArticleItem';
 import { ArticleType } from '@/utils/types';
 import OptionsModal from '@/src/Components/ListItems/OptionsModal';
+import { styles as globalStyle } from '@/src/Components/ListItems/style';
+
 interface Props {
   setRequestModel: (requestModel: boolean) => void;
   openDrawer: () => void;
@@ -174,7 +176,7 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
     setIsRefreshing(false);
   };
 
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
 
   useEffect(() => {
     // getData(page);
@@ -200,6 +202,8 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
 
     // listRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
+
+  const cardSecondaryColor = dark ? '#353535' : '#DDD';
 
   return (
     <>
@@ -244,7 +248,13 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
               }}
               renderItem={({ item }) => {
                 if (item.type == 'social')
-                  return <SocialItem key={`social_${item.id}`} item={item} />;
+                  return (
+                    <SocialItem
+                      key={`social_${item.id}`}
+                      item={item}
+                      socialPostviewStyle={{ backgroundColor: colors.card }}
+                    />
+                  );
 
                 if (item.type == 'tasteBreaker') {
                   return (
@@ -263,15 +273,12 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
                             item={item}
                             imageSizeType="cover"
                             blogPostStyle={{
-                              ...styles.socialpostview,
-                              backgroundColor: colors.card,
-
+                              ...globalStyle.blogpostview,
+                              backgroundColor: cardSecondaryColor,
                               width: 300,
                             }}
-                            blogPostImageStyle={styles.socialpostimage}
+                            blogPostImageStyle={globalStyle.newspostimage}
                             blogPostTitleStyle={{
-                              // flexDirection: 'row',
-                              // justifyContent: 'space-between',
                               flexWrap: 'wrap',
                               marginTop: getHeight(1),
                             }}
@@ -292,10 +299,10 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
                         item={item.item}
                         imageSizeType="cover"
                         blogPostStyle={{
-                          ...styles.socialpostview,
-                          backgroundColor: '#DDD',
+                          ...globalStyle.blogpostview,
+                          backgroundColor: cardSecondaryColor,
                         }}
-                        blogPostImageStyle={styles.socialpostimage}
+                        blogPostImageStyle={globalStyle.newspostimage}
                         blogPostTitleStyle={{
                           flexDirection: 'row',
                           justifyContent: 'space-between',
@@ -312,10 +319,10 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
                     item={item}
                     imageSizeType="cover"
                     blogPostStyle={{
-                      ...styles.socialpostview,
+                      ...globalStyle.blogpostview,
                       backgroundColor: colors.card,
                     }}
-                    blogPostImageStyle={styles.socialpostimage}
+                    blogPostImageStyle={globalStyle.newspostimage}
                     blogPostTitleStyle={{
                       flexDirection: 'row',
                       justifyContent: 'space-between',
@@ -349,54 +356,6 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
               )}
             />
           )}
-          {/* <TabView
-            navigationState={{ index, routes }}
-            renderScene={renderScene}
-            renderTabBar={(props) => {
-              return (
-                <View style={styles.tabBar}>
-                  {props.navigationState.routes.map((route, i) => {
-                    return (
-                      <TouchableOpacity key={i} style={styles.tabItem} onPress={() => setIndex(i)}>
-                        <Animated.Text
-                          style={
-                            props?.navigationState?.index == i
-                              ? {
-                                  color: theme.dark ? theme.colors.text : '#032F3C',
-                                  fontWeight: 'bold',
-                                }
-                              : {
-                                  color: theme.dark ? '#B2BEB5' : '#126B87',
-                                  fontWeight: 'bold',
-                                }
-                          }
-                        >
-                          {route.title}
-                        </Animated.Text>
-                        {props?.navigationState?.index == i ? (
-                          <View style={styles.propview} />
-                        ) : null}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              );
-            }}
-            onIndexChange={setIndex}
-            initialLayout={{ width: getWidth(100) }}
-          /> */}
-          {/* <TouchableWithoutFeedback
-            onPress={() => {
-              setRequestModel(true);
-              getAllLive();
-            }}
-          >
-            <Avatar.Image
-              style={styles.fab}
-              size={getFontSize(10)}
-              source={require('@/assets/images/fab.png')}
-            />
-          </TouchableWithoutFeedback> */}
         </View>
       </SafeAreaView>
     </>

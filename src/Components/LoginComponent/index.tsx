@@ -413,7 +413,7 @@ const LoginComponent: FC<Props> = ({
         if (verifyAccount) {
           if (toScreen) {
             navigation.goBack();
-            console.log(toScreen);
+
             navigation.push(toScreen as keyof RootStackParamList, {
               setError: seterror,
               ...toScreenParams,
@@ -473,7 +473,7 @@ const LoginComponent: FC<Props> = ({
         if (verifyAccount) {
           if (toScreen) {
             navigation.goBack();
-            console.log(toScreen);
+
             navigation.push(toScreen as keyof RootStackParamList, {
               setError: seterror,
               ...toScreenParams,

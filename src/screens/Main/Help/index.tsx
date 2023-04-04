@@ -24,7 +24,7 @@ import Button from '@/components/Button';
 import { styles } from './styles';
 import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import ZendeskChat from 'react-native-zendesk-chat';
+// import ZendeskChat from 'react-native-zendesk-chat';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 
@@ -53,28 +53,27 @@ const Help = ({ navigation }) => {
     }
   };
   const openChat = () => {
-    ZendeskChat.startChat({
-      name: user?.name,
-      email: user?.mail,
-      phone: user?.phone,
-      department: 'help',
-      // The behaviorFlags are optional, and each default to 'true' if omitted
-
-      behaviorFlags: {
-        showAgentAvailability: true,
-        showChatTranscriptPrompt: true,
-        showPreChatForm: true,
-        showOfflineForm: true,
-      },
-      // The preChatFormOptions are optional & each defaults to "optional" if omitted
-      preChatFormOptions: {
-        name: 'optional',
-        email: 'optional',
-        phone: 'optional',
-        department: 'optional',
-      },
-      localizedDismissButtonTitle: 'Close',
-    });
+    // ZendeskChat.startChat({
+    //   name: user?.name,
+    //   email: user?.mail,
+    //   phone: user?.phone,
+    //   department: 'help',
+    //   // The behaviorFlags are optional, and each default to 'true' if omitted
+    //   behaviorFlags: {
+    //     showAgentAvailability: true,
+    //     showChatTranscriptPrompt: true,
+    //     showPreChatForm: true,
+    //     showOfflineForm: true,
+    //   },
+    //   // The preChatFormOptions are optional & each defaults to "optional" if omitted
+    //   preChatFormOptions: {
+    //     name: 'optional',
+    //     email: 'optional',
+    //     phone: 'optional',
+    //     department: 'optional',
+    //   },
+    //   localizedDismissButtonTitle: 'Close',
+    // });
   };
   const getFAQs = async (id) => {
     dispatch(setLoader(true));
