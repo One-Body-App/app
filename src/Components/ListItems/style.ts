@@ -1,6 +1,15 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
+const shadowPosts = {
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 1,
+    height: 1,
+  },
+  shadowOpacity: 0.3,
+  shadowRadius: 3,
+};
 export const styles = StyleSheet.create({
   continer: {
     flex: 1,
@@ -208,13 +217,7 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 8,
 
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
+    ...shadowPosts,
     marginVertical: 15,
 
     // padding: 0,
@@ -254,6 +257,7 @@ export const styles = StyleSheet.create({
     color: '#126B87',
   },
   blogpostview: {
+    ...shadowPosts,
     borderRadius: 5,
     // padding: 0,
     flex: 1,
@@ -263,13 +267,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     // height: getHeight(23),
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
+
     marginVertical: 15,
   },
   blogpostimage: {

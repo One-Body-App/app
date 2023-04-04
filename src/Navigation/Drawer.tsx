@@ -315,7 +315,7 @@ export default function DrawerElem(props: DrawerContentComponentProps) {
         }}
         component={Saved}
       />
-      <DrawerNavigation.Screen
+      {/* <DrawerNavigation.Screen
         name="Invite"
         options={{
           headerShown: false,
@@ -324,7 +324,7 @@ export default function DrawerElem(props: DrawerContentComponentProps) {
           // headerTintColor: '#24BFF0',
         }}
         component={InviteFriend}
-      />
+      /> */}
       <DrawerNavigation.Screen
         name="Settings"
         options={{
@@ -406,12 +406,12 @@ function DrawerContent(props: DrawerContentComponentProps) {
               props.navigation.navigate('Saved');
             }}
           />
-          <DrawerItem
+          {/* <DrawerItem
             label="Invite"
             onPress={() => {
               props.navigation.navigate('Invite');
             }}
-          />
+          /> */}
         </Drawer.Section>
         <Drawer.Section>
           <DrawerItem
