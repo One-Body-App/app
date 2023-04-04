@@ -13,6 +13,7 @@ import { Button as ButtonPaper } from 'react-native-paper';
 
 const Button = ({
   text,
+  content,
   leftIcon,
   RightIcon,
   btnTextStyle,
@@ -27,7 +28,8 @@ const Button = ({
   mode,
   textColor,
 }: {
-  text: string;
+  text?: string;
+  content?: ReactNode;
   leftIcon?: ReactNode;
   RightIcon?: ReactNode;
   btnTextStyle?: StyleProp<TextStyle>;
@@ -59,7 +61,7 @@ const Button = ({
           }
         }
       >
-        {text}
+        {text || content}
       </ButtonPaper>
     </>
   ) : (

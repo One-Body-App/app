@@ -9,6 +9,7 @@ import {
   PermissionsAndroid,
   Platform,
   ScrollView,
+  useColorScheme,
 } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
@@ -46,6 +47,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest, Tag, User } from '@/utils/types';
 import { useToast } from 'react-native-toast-notifications';
 import { profile } from 'console';
+import { useTheme } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<any, 'OrgnizationSteps'>;
 
@@ -178,6 +180,8 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
   const [influencer, setInfluencer] = useState<User[]>([]);
   const [searchInfluencer, setSearchInfluencer] = useState<User[]>([]);
+  const scheme = useColorScheme();
+  const { colors } = useTheme();
 
   useEffect(() => {
     getIntrest();
@@ -313,14 +317,14 @@ const OrgnizationSteps = ({ navigation }: Props) => {
     {
       id: 1,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-
+        // <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
+        //   <GeneralStatusBar
+        //     backgroundColor="white"
+        //     barStyle="dark-content"
+        //     hidden={false}
+        //     translucent={true}
+        //   />
+        <View style={styles.innerContainer}>
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
 
           <Text
@@ -342,11 +346,11 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               btnStyle={{
                 ...GeneralStyle.btn,
                 marginTop: getHeight(4),
-                height: getHeight(7.5),
-                width: getWidth(78),
+                height: getHeight(7),
+                width: getWidth(80),
                 flex: 0,
               }}
-              btnTextStyle={GeneralStyle.btnText}
+              btnTextStyle={{ ...GeneralStyle.btnText, color: '#FFF' }}
               onPress={() => {
                 gonext();
               }}
@@ -361,15 +365,17 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             }}
             style={{ marginVertical: 10, borderBottomWidth: 0 }}
           >
-            <Text style={styles.logouttext}>Cancel</Text>
+            <Text style={{ ...styles.logouttext, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+              Cancel
+            </Text>
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 2,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
+        <View style={styles.innerContainer} key={2}>
           <GeneralStatusBar
             backgroundColor="white"
             barStyle="dark-content"
@@ -379,8 +385,18 @@ const OrgnizationSteps = ({ navigation }: Props) => {
 
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
           <Text style={{ ...styles.text, color: '#888C93' }}>Step 1 of 7</Text>
-          <Text style={{ ...styles.heading, width: getWidth(80) }}>Identify your Organization</Text>
-          <Text style={styles.text}>What type of Organization are you?</Text>
+          <Text
+            style={{
+              ...styles.heading,
+              color: scheme == 'dark' ? '#fff' : '#032F3C',
+              width: getWidth(80),
+            }}
+          >
+            Identify your Organization
+          </Text>
+          <Text style={{ ...styles.heading, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+            What type of Organization are you?
+          </Text>
           <View>
             {/* <SelectDropdown
               data={countries}
@@ -391,7 +407,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             /> */}
             <Button
               text={organizationType == null ? 'Select One' : organizationType.name}
-              btnStyle={styles.btn3}
+              btnStyle={{ ...styles.btn3, backgroundColor: scheme == 'dark' ? '#fff' : '#E7F0F3' }}
               leftIcon={<View />}
               RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
@@ -402,13 +418,13 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               {showErrors ? organizationTypeError : null}
             </Text>
           </View>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 3,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
+        <View style={styles.innerContainer} key={4}>
           <GeneralStatusBar
             backgroundColor="white"
             barStyle="dark-content"
@@ -482,13 +498,13 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               />
             ) : null}
           </View>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 4,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
+        <View style={styles.innerContainer} key={5}>
           <GeneralStatusBar
             backgroundColor="white"
             barStyle="dark-content"
@@ -594,13 +610,13 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               responsible for all account related communications.{' '}
             </Text>
           </KeyboardAwareScrollView>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 5,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
+        <View style={styles.innerContainer} key={5}>
           <GeneralStatusBar
             backgroundColor="white"
             barStyle="dark-content"
@@ -685,13 +701,13 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </LinearGradient>
+        </View>
       ),
     },
     {
       id: 6,
       component: (
-        <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.innerContainer}>
+        <View style={styles.innerContainer} key={6}>
           <GeneralStatusBar
             backgroundColor="white"
             barStyle="dark-content"
@@ -802,7 +818,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               ))}
             </ScrollView>
           </View>
-        </LinearGradient>
+        </View>
       ),
     },
   ];
@@ -1007,7 +1023,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
         propagateSwipe={true}
         swipeDirection="down"
       >
-        <View style={styles.content2}>
+        <View style={{ ...styles.content2, backgroundColor: colors.card }}>
           <View style={styles.headLine} />
 
           <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>

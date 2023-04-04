@@ -301,7 +301,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                 width: getWidth(80),
                 flex: 0,
               }}
-              btnTextStyle={GeneralStyle.btnText}
+              btnTextStyle={{ ...GeneralStyle.btnText, color: '#FFF' }}
               onPress={() => {
                 gonext();
               }}
@@ -834,15 +834,7 @@ const IndividualSteps = ({ navigation }: Props) => {
   };
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={
-          scheme == 'dark'
-            ? [colors.background, colors.background, '#434748']
-            : [colors.background, colors.background, '#E0EEF3']
-        }
-        style={styles.innerContainer}
-        key={1}
-      >
+      <View>
         <StatusBar
           translucent={true}
           backgroundColor={colors.background}
@@ -1030,7 +1022,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             </ScrollView>
           </View>
         </Modal>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 };

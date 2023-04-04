@@ -271,7 +271,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE } from '../Services/constants';
 import Setting from '../screens/Main/Setting';
-import NotificationSettings from '../screens/Main/notificationSettings';
 
 const DrawerNavigation = createDrawerNavigator();
 
@@ -293,7 +292,7 @@ export default function DrawerElem(props: DrawerContentComponentProps) {
           // drawerActiveTintColor: '#032F3C',
           // headerTintColor: '#24BFF0',
         }}
-        component={NotificationSettings}
+        component={Notification}
       />
       <DrawerNavigation.Screen
         name="Connections"

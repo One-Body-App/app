@@ -1,6 +1,7 @@
 import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import React from 'react';
 import {
+  Dimensions,
   Image,
   ImageBackground,
   StyleProp,
@@ -26,6 +27,7 @@ const SocialItem = ({
   currentPopupItemId?: string;
   item: {
     content: string;
+    date: string;
     source: 'twitter' | 'instagram';
     handler: string;
     link: string;
@@ -57,8 +59,15 @@ const SocialItem = ({
     height: 250,
     width: 250,
   };
+
   return (
-    <View style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
+    <View
+      style={[
+        styles.socialpostview,
+        { width: Dimensions.get('window').width - 32 },
+        socialPostviewStyle,
+      ]}
+    >
       {item.userData ? (
         <TouchableOpacity
           onPress={() => {
@@ -115,7 +124,7 @@ const SocialItem = ({
               source={{
                 uri: item?.mediaUrl,
               }}
-              style={{ width: '100%', height: 300, borderRadius: 20 }}
+              style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
               controls={true}
               resizeMode="cover"
               paused={true}
@@ -123,7 +132,7 @@ const SocialItem = ({
             />
           ) : (
             <FastImage
-              style={{ width: '100%', height: 300, borderRadius: 20 }}
+              style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
               source={{ uri: item?.mediaUrl }}
             />
           )}
@@ -137,7 +146,6 @@ const SocialItem = ({
             lineHeight: 18,
             color: colors.text,
             marginTop: getHeight(1),
-            textAlign: 'center',
           }}
         >
           {item?.content}
@@ -156,6 +164,7 @@ const SocialItem = ({
               fontFamily: 'Rubik',
               color: '#68828A',
               alignItems: 'center',
+              marginBottom: 5,
             }}
           >
             {item?.source == 'twitter' ? 'View on Twitter' : 'View on Instagram'}

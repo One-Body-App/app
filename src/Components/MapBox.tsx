@@ -65,7 +65,7 @@ let timer: NodeJS.Timeout | null = null;
 
 const MapBox = (props: MapBoxProps) => {
   const { setLocation, location, setCheckIn, CheckIn, setLongitude, setLatitude } = props;
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
 
   const [show, setshown] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -150,21 +150,21 @@ const MapBox = (props: MapBoxProps) => {
       style={styles.bottomView}
       avoidKeyboard={true}
     >
-      <View style={{ ...styles.content2, backgroundColor: colors.background }}>
+      <View style={{ ...styles.content2, backgroundColor: colors.card }}>
         <View style={styles.headLine} />
         <View style={styles.container}>
           <View style={styles.inputView}>
             <TextInput
               value={searchLocation}
-              style={[styles.input, { backgroundColor: colors.background }]}
+              style={[styles.input, { backgroundColor: colors.card }]}
               placeholder="Where are you?"
               onChangeText={(val) => getSuggestion(val)}
               autoFocus={true}
               clearButtonMode="never"
-              activeOutlineColor={colors.background}
-              outlineColor={colors.background}
+              activeOutlineColor={colors.card}
+              outlineColor={colors.card}
               selectionColor={colors.text}
-              placeholderTextColor={'black'}
+              placeholderTextColor={dark ? '#5e5e5e' : '#dbdbdb'}
               mode="outlined"
               theme={{ roundness: 20 }}
             />
@@ -221,8 +221,8 @@ const MapBox = (props: MapBoxProps) => {
                       setCheckIn(false);
                     }}
                   >
-                    <View style={styles.placeItemView}>
-                      <Text>{item.place_name}</Text>
+                    <View style={[styles.placeItemView]}>
+                      <Text style={{ color: colors.text }}>{item.place_name}</Text>
                     </View>
                   </TouchableOpacity>
                 );
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 100,
   },
-  placeItemView: { padding: 10 },
+  placeItemView: { paddingVertical: 10, paddingHorizontal: 20 },
   input: {
     height: 36,
 

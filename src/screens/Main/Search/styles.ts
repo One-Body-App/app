@@ -3,12 +3,23 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'white' },
+
   headLine: {
     height: 6,
     width: 55,
     borderRadius: 5,
     backgroundColor: '#EAEAEA',
     marginBottom: 5,
+  },
+  socialpostview: {
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    borderRadius: 10,
+    // padding: 0,
+    flex: 1,
+    marginHorizontal: 7,
   },
   tabBar: {
     flexDirection: 'row',

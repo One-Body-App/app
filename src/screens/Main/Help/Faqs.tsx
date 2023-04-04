@@ -24,7 +24,7 @@ import Button from '@/components/Button';
 import { styles } from './styles';
 import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import ZendeskChat from 'react-native-zendesk-chat';
+// import ZendeskChat from 'react-native-zendesk-chat';
 import { useSelector } from 'react-redux';
 
 import RenderHtml from 'react-native-render-html';

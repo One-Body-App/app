@@ -59,6 +59,7 @@ import ConfirmLogin from '../screens/Auth/Login/ConfirmLogin';
 import EmailChange from '../screens/Main/EmailChange';
 import messaging from '@react-native-firebase/messaging';
 import InfluencerStepFour from '../screens/BecomeInfluencer/InfluencerStepFour';
+import NotificationSettings from '../screens/Main/notificationSettings';
 
 const Stack = createNativeStackNavigator();
 const Main = () => {
@@ -232,6 +233,7 @@ const Main = () => {
                   <Stack.Screen name="LoadingPage" component={LoadingPage} />
                   <Stack.Screen name="Bottombar" component={Drawer} />
                   <Stack.Screen name="InfluencerSettings" component={InfluencerSettings} />
+                  <Stack.Screen name="NotificationSettings" component={NotificationSettings} />
                   <Stack.Screen name="InfluencerStepOne" component={InfluencerStepOne} />
                   <Stack.Screen name="InfluencerStepTwo" component={InfluencerStepTwo} />
                   <Stack.Screen name="InfluencerStepThree" component={InfluencerStepThree} />

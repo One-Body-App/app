@@ -107,6 +107,7 @@ type InfluencerProfile = {
 };
 
 export type ArticleType = {
+  id?: stringl;
   link?: string;
   created: Date;
   image: { url: string };

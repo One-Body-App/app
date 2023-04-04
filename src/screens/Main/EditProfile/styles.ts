@@ -14,8 +14,8 @@ export const styles = StyleSheet.create({
 
   titletext: {
     fontSize: getFontSize(2.2),
-    fontFamily: 'Rubik-Medium',
-    color: '#032F3C',
+    // fontFamily: 'Rubik-Medium',
+    // color: '#032F3C',
     textAlign: 'center',
   },
   bottomView: {
