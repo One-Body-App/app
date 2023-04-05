@@ -269,7 +269,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import Bottom from './Bottom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
-import { NO_PROFILE_IMAGE } from '../Services/constants';
+import { NO_PROFILE_IMAGE, OpenURLButton } from '../Services/constants';
 import Setting from '../screens/Main/Setting';
 
 const DrawerNavigation = createDrawerNavigator();
@@ -423,7 +423,7 @@ function DrawerContent(props: DrawerContentComponentProps) {
           <DrawerItem
             label="Help"
             onPress={() => {
-              props.navigation.navigate('Help');
+              OpenURLButton('https://forms.gle/KGVE9oDoQjeFH1d36');
             }}
           />
         </Drawer.Section>

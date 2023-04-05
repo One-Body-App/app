@@ -65,7 +65,7 @@ const ArticleItem = ({
               {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
             </Text>
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, justifyContent: 'center' }}>
             <TouchableOpacity
               onPress={() => {
                 showModal(item);
@@ -73,17 +73,24 @@ const ArticleItem = ({
             >
               <Entypo
                 name="dots-three-horizontal"
-                style={styles.newsicon}
+                style={[styles.newsicon, { textAlign: 'right' }]}
                 size={iconSize ?? 25}
                 color={'#70747D'}
               />
             </TouchableOpacity>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          {hideProfileName ? null : <Text style={styles.blogposthour}>{item?.userData?.name}</Text>}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexGrow: 0 }}>
+          {hideProfileName ? null : (
+            <Text style={[styles.blogposthour, { flex: 2.4 }]} numberOfLines={1}>
+              {item?.userData?.name}
+            </Text>
+          )}
+
           {item?.created ? (
-            <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+            <Text style={[styles.blogposthour, { flex: 1, textAlign: 'right' }]}>
+              {timeSince(item?.created)} ago
+            </Text>
           ) : null}
         </View>
       </View>

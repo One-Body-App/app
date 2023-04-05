@@ -724,6 +724,9 @@ PODS:
   - RNScreens (3.15.0):
     - React-Core
     - React-RCTImage
+  - RNSentry (5.3.0):
+    - React-Core
+    - Sentry/HybridSDK (= 8.3.3)
   - RNShare (7.7.0):
     - React-Core
   - RNSVG (13.9.0):
@@ -734,6 +737,9 @@ PODS:
   - SDWebImageWebPCoder (0.8.5):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.10)
+  - Sentry/HybridSDK (8.3.3):
+    - SentryPrivate (= 8.3.3)
+  - SentryPrivate (8.3.3)
   - SocketRocket (0.6.0)
   - Toast (4.0.0)
   - TOCropViewController (2.6.1)
@@ -841,6 +847,7 @@ DEPENDENCIES:
   - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
+  - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - RNShare (from `../node_modules/react-native-share`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
@@ -888,6 +895,8 @@ SPEC REPOS:
     - PromisesObjC
     - SDWebImage
     - SDWebImageWebPCoder
+    - Sentry
+    - SentryPrivate
     - SocketRocket
     - Toast
     - TOCropViewController
@@ -1036,6 +1045,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
     :path: "../node_modules/react-native-screens"
+  RNSentry:
+    :path: "../node_modules/@sentry/react-native"
   RNShare:
     :path: "../node_modules/react-native-share"
   RNSVG:
@@ -1154,10 +1165,13 @@ SPEC CHECKSUMS:
   RNPermissions: de7b7c3fe1680d974ac7a85e3e97aa539c0e68ea
   RNReanimated: cc5e3aa479cb9170bcccf8204291a6950a3be128
   RNScreens: 4a1af06327774490d97342c00aee0c2bafb497b7
+  RNSentry: 8363f1eff1c685a502e15080b5e2f447969897c5
   RNShare: ab582e93876d9df333a531390c658c31b50a767d
   RNSVG: 53c661b76829783cdaf9b7a57258f3d3b4c28315
   SDWebImage: a7f831e1a65eb5e285e3fb046a23fcfbf08e696d
   SDWebImageWebPCoder: 908b83b6adda48effe7667cd2b7f78c897e5111d
+  Sentry: 8ffc397d98fe58d693e73959b26ed0eaee55646a
+  SentryPrivate: bf776a47a131648f5023097215987b40fbd47025
   SocketRocket: fccef3f9c5cedea1353a9ef6ada904fde10d6608
   Toast: 91b396c56ee72a5790816f40d3a94dd357abc196
   TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863

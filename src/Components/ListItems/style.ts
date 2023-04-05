@@ -4,11 +4,12 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 const shadowPosts = {
   shadowColor: '#000',
   shadowOffset: {
-    width: 1,
-    height: 1,
+    width: 0,
+    height: 0,
   },
-  shadowOpacity: 0.3,
-  shadowRadius: 3,
+  shadowOpacity: 0.15,
+  shadowRadius: 5,
+  elevation: 1,
 };
 export const styles = StyleSheet.create({
   continer: {
@@ -181,7 +182,7 @@ export const styles = StyleSheet.create({
   },
   newsicon: {
     alignSelf: 'flex-end',
-    padding: 15,
+
     flex: 1,
   },
   newstext: {

@@ -239,7 +239,7 @@ const Main = () => {
                   <Stack.Screen name="InfluencerStepThree" component={InfluencerStepThree} />
                   <Stack.Screen name="InfluencerStepFour" component={InfluencerStepFour} />
                   {/* <Stack.Screen name="Prayer" component={Prayer} /> */}
-                  <Stack.Screen name="Help" component={Help} />
+                  {/* <Stack.Screen name="Help" component={Help} /> */}
                   <Stack.Screen name="Faqs" component={Faqs} />
                   <Stack.Screen name="RemoveAccount" component={RemoveAccount} />
 

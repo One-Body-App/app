@@ -43,6 +43,7 @@ import ArticleItem from '@/src/Components/ListItems/ArticleItem';
 import { ArticleType } from '@/utils/types';
 import OptionsModal from '@/src/Components/ListItems/OptionsModal';
 import { styles as globalStyle } from '@/src/Components/ListItems/style';
+import { useScrollToTop } from '@react-navigation/native';
 
 interface Props {
   setRequestModel: (requestModel: boolean) => void;
@@ -64,40 +65,8 @@ type feedOptions = {
 
 const feedTypes: FeedTypes[] = [FeedTypes.All, FeedTypes.News, FeedTypes.Social, FeedTypes.Blog];
 
-const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
-  const [index, setIndex] = React.useState(0);
+const Home = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const dispatch = useDispatch();
-
-  const [routes] = React.useState([
-    { key: 'All', title: 'ALL' },
-    { key: 'News', title: 'NEWS' },
-    { key: 'Social', title: 'SOCIAL' },
-    { key: 'Blog', title: 'BLOG' },
-  ]);
-  const renderScene = SceneMap({
-    All: HomeAllComponent,
-    News: HomeNewsComponent,
-    Social: HomeSocialComponent,
-    Blog: HomeBlogComponent,
-  });
-
-  const getAllLive = async () => {
-    try {
-      const res = await ApiCall({
-        route: 'prayers/live-wall',
-        verb: 'get',
-        token: token,
-      });
-      if (res?.status == 200) {
-        dispatch(setPrayersLive(res?.response?.data));
-      } else {
-        console.log('error', res?.response);
-      }
-    } catch (e: any) {
-      console.log('saga get all live prayer error -- ', e.toString());
-    }
-  };
 
   const [feedOptions, setFeedOptions] = useState<feedOptions>({
     type: feedTypes[0],
@@ -115,27 +84,6 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
   const showModal = (item: ArticleType) => {
     setCurrentPopupItem(item);
     setShow(true);
-  };
-
-  const getData = async (page: number) => {
-    try {
-      const res = await ApiCall({
-        route: `blogs/get-feed/all/${page}`,
-        token,
-        verb: 'get',
-      });
-      let posts = [];
-
-      if (res?.status == 200) {
-        posts = res?.response ?? [];
-
-        setFeedData(posts);
-      } else {
-        console.log('error', res?.response);
-      }
-    } catch (e: any) {
-      console.log(`saga get twitter timline  error -- `, e.toString());
-    }
   };
 
   const getFeedData = async (type: FeedTypes, pageNumber: number) => {
@@ -192,9 +140,16 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
   }, [isRefreshing]);
 
   const listRef = useRef<FlatList>(null);
+  useScrollToTop(listRef);
 
   const filterUpdate = (itemValue: FeedTypes) => {
     setIsRefreshing(false);
+
+    listRef.current?.scrollToOffset({
+      animated: true,
+      offset: 0,
+    });
+
     setFeedOptions({
       type: itemValue,
       page: 1,
@@ -215,7 +170,7 @@ const Home = ({ openDrawer, navigate, setRequestModel }: Props) => {
           <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 20 }}>
             {feedTypes.map((feedType) => {
               return (
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1 }} key={feedType}>
                   <TouchableOpacity
                     onPress={() => filterUpdate(feedType)}
                     style={feedOptions.type == feedType ? styles.menuItemSelected : styles.menuItem}

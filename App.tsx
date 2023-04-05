@@ -17,6 +17,13 @@ import {
 } from 'react-native-paper';
 import { Appearance } from 'react-native';
 
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://5a54913b45c44079b31e038fc1e7b4aa@o4504958486642688.ingest.sentry.io/4504958800560128',
+  enabled: process.env.NODE_ENV == 'production',
+});
+
 const colorsLight = {
   primary: 'rgb(0, 103, 129)',
   onPrimary: 'rgb(255, 255, 255)',
@@ -196,4 +203,4 @@ const App = () => {
     </ToastProvider>
   );
 };
-export default App;
+export default Sentry.wrap(App);
