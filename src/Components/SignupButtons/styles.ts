@@ -63,7 +63,6 @@ export const styles = StyleSheet.create({
   text: {
     marginTop: 2,
     fontFamily: 'Rubik-Medium',
-    underline: { textDecorationLine: 'underline' },
   },
   simpleText: {
     marginTop: 2,

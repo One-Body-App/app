@@ -2,8 +2,6 @@ import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
-
   headLine: {
     height: 6,
     width: 55,

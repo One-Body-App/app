@@ -12,6 +12,7 @@ import { User } from '@/utils/types';
 import Button from '../Button';
 import { OpenURLButton } from '@/src/Services/constants';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import { useTheme } from '@react-navigation/native';
 
 const TwitterFlatlist = ({
   currentUser,
@@ -26,8 +27,9 @@ const TwitterFlatlist = ({
 
   const getTwitterData = async (pageNumber: number) => {
     try {
+      console.log(currentUser);
       const res = await ApiCall({
-        route: `user/get-social-twitter/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
+        route: `user/get-social/twitter/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
         verb: 'get',
         token: token,
       });
@@ -36,10 +38,10 @@ const TwitterFlatlist = ({
         let tweetsData = [];
 
         if (pageNumber == 1) {
-          tweetsData = res?.response.content ?? [];
+          tweetsData = res?.response ?? [];
           setIsEndOfList(false);
         } else {
-          tweetsData = [...tweets, ...(res?.response.content ?? [])];
+          tweetsData = [...tweets, ...(res?.response ?? [])];
           if (res?.response.hasMore < 1) {
             setIsEndOfList(true);
           }
@@ -62,13 +64,21 @@ const TwitterFlatlist = ({
     getTwitterData(page);
   }, [page]);
 
+  const { colors } = useTheme();
+
   return (
     <FlatList
       data={tweets}
       contentContainerStyle={{ marginTop: getHeight(1) }}
       showsHorizontalScrollIndicator={false}
       ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-      renderItem={({ item }) => <SocialItem item={item} />}
+      renderItem={({ item }) => (
+        <SocialItem
+          key={item.id}
+          item={item}
+          socialPostviewStyle={{ backgroundColor: colors.card }}
+        />
+      )}
       keyExtractor={(item) => item.id}
       onScroll={(e) => {
         if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
@@ -89,25 +99,28 @@ const TwitterFlatlist = ({
       }}
       ListFooterComponent={() => {
         return (
-          <Button
-            text="View more on Twitter"
-            btnStyle={{
-              ...GeneralStyle.btn,
-              marginHorizontal: 20,
-              // backgroundColor: colors.background,
-            }}
-            btnTextStyle={{
-              marginHorizontal: 20,
-              color: '#70747D',
-              fontSize: 14,
-            }}
-            onPress={() => {
-              OpenURLButton(
-                `https://twitter.com/${currentUser.influencerProfile?.twitterHandler}`,
-                true
-              );
-            }}
-          />
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Button
+              text="View more on Twitter"
+              btnStyle={{
+                ...GeneralStyle.btn,
+                marginHorizontal: 20,
+                // backgroundColor: colors.background,
+              }}
+              btnTextStyle={{
+                marginHorizontal: 20,
+                color: '#70747D',
+                fontSize: 14,
+              }}
+              paper
+              onPress={() => {
+                OpenURLButton(
+                  `https://twitter.com/${currentUser.influencerProfile?.twitterHandler}`,
+                  true
+                );
+              }}
+            />
+          </View>
         );
       }}
     />

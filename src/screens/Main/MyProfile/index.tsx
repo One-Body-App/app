@@ -3,7 +3,7 @@ import { Animated, Text, View, FlatList, TouchableOpacity, ScrollView } from 're
 import Modal from 'react-native-modal';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
-import { TabView, SceneMap } from 'react-native-tab-view';
+import { TabView, SceneMap, SceneRendererProps } from 'react-native-tab-view';
 import Add_badges from '@/assets/svg/Add_badges.svg';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '@/components/Button';
@@ -46,20 +46,84 @@ const MyProfile = ({ navigation }: Props) => {
   const [badgesList, setBadgesList] = useState<Badge[]>([]);
   const [requestModel, setRequestModel] = useState<boolean>(false);
   const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState<Route[]>([
-    { key: 'Instagram', title: 'Instagram' },
-    { key: 'Blog', title: 'Blog' },
-    { key: 'Twitter', title: 'Twitter' },
-  ]);
+  const [routes, setRoutes] = React.useState<Route[]>([]);
 
   const [selectedBadges, setSelectedBadges] = useState<Badge[]>(user?.badgesData ?? []);
+  const [scrollPosition, setScrollPosition] = React.useState(0);
+  const [direction, setDirection] = React.useState('');
 
-  const renderScene = SceneMap({
-    Instagram: InstagramFlatlist,
-    Blog: BlogFlatlist,
-    Twitter: TwitterFlatlist,
-  });
+  const updateScrollPosition = (position: number) => {
+    if (
+      (position > scrollPosition || position == scrollPosition) &&
+      scrollPosition - position < 0 &&
+      scrollPosition - position < -45
+    ) {
+      setDirection('down');
+    } else if (
+      position < scrollPosition &&
+      scrollPosition - position > 0 &&
+      scrollPosition - position > 55
+    ) {
+      setDirection('up');
+    }
 
+    setScrollPosition(position);
+  };
+
+  useEffect(() => {
+    if (user?.influencerProfile) {
+      const routes = [];
+      if (user?.influencerProfile?.twitterId) {
+        routes.push({ key: 'Twitter', title: 'Twitter' });
+      }
+
+      if (user?.influencerProfile?.rssUrl) {
+        routes.push({ key: 'Blog', title: 'Blog/News' });
+      }
+
+      if (user?.influencerProfile?.instagramId) {
+        routes.push({ key: 'Instagram', title: 'Instagram' });
+      }
+      setRoutes(routes);
+    }
+  }, [user]);
+
+  const renderScene = ({
+    route,
+    jumpTo,
+  }: SceneRendererProps & {
+    route: any;
+  }) => {
+    switch (route.key) {
+      case 'Instagram':
+        return (
+          <InstagramFlatlist
+            setScrollPosition={updateScrollPosition}
+            jumpTo={jumpTo}
+            currentUser={user}
+            {...route}
+          />
+        );
+      case 'Blog':
+        return (
+          <BlogFlatlist
+            setScrollPosition={updateScrollPosition}
+            {...route}
+            jumpTo={jumpTo}
+            currentUser={user}
+          />
+        );
+      case 'Twitter':
+        return (
+          <TwitterFlatlist
+            setScrollPosition={updateScrollPosition}
+            currentUser={user}
+            jumpTo={jumpTo}
+            {...route}
+          />
+        );
+    }
+  };
   const unselect = (id: string) => {
     const array = selectedBadges.filter((item) => item._id != id);
 
@@ -220,129 +284,139 @@ const MyProfile = ({ navigation }: Props) => {
           </View>
         </View>
       </Modal>
-      <ScrollView
-        contentContainerStyle={{ height: getHeight(102) }}
-        showsVerticalScrollIndicator={false}
-        style={{ marginTop: getHeight(2) }}
-      >
-        <View style={{ alignSelf: 'center' }}>
-          <ImageModal
-            style={{
-              width: 90,
-              height: 90,
-              borderRadius: 45,
-              alignSelf: 'center',
-              marginBottom: 10,
-              borderColor: user?.profileImage ? '#032F3C' : '#09aadb',
-            }}
-            source={{ uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png' }}
-            resizeMode={'contain'}
-          />
-        </View>
-        <Text
-          style={{
-            fontWeight: '500',
-            color: '#032f3c',
-            textAlign: 'center',
-            fontSize: 20,
-          }}
-        >
-          {user?.role == 'organization' && user?.profile?.companyName
-            ? user?.profile?.companyName
-            : user?.name}
-        </Text>
-        <Text
-          style={[
-            {
-              textAlign: 'center',
-              marginBottom: 20,
-              color: '#5b7279',
-              marginTop: 5,
-            },
-          ]}
-        >
-          {user?.username ? `@${user?.username}` : ''}
-          {`${user?.whatIDo ? `• ${user?.whatIDo.name}` : ''}`}
-        </Text>
-        {user?.role == 'individual' ? (
-          <View style={styles.manyimageview}>
-            <View>
-              <FlatList
-                data={user?.badgesData}
-                numColumns={3}
-                showsHorizontalScrollIndicator={false}
-                renderItem={({ item }) => (
-                  <FastImage
-                    style={styles.firstimage}
-                    source={{
-                      uri: item.badge,
-                    }}
-                    resizeMode={FastImage.resizeMode.stretch}
-                  />
-                )}
+
+      {direction == 'down' ? null : (
+        <Animated.View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
+          <View>
+            <View style={{ alignSelf: 'center' }}>
+              <ImageModal
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 45,
+
+                  marginBottom: 10,
+                  borderColor: user?.profileImage ? '#032F3C' : '#09aadb',
+                }}
+                source={{
+                  uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                }}
+                resizeMode={'cover'}
               />
             </View>
-            <TouchableOpacity
-              style={{ marginHorizontal: getWidth(1) }}
-              onPress={() => {
-                getBadge();
-                setRequestModel(true);
-              }}
-            >
-              <Add_badges />
-            </TouchableOpacity>
           </View>
-        ) : null}
-
-        {user?.isInfluencer == true || user?.role == 'organization' ? (
-          <Text numberOfLines={3} style={styles.bio}>
-            {user?.bio}
-          </Text>
-        ) : null}
-        {user?.website ? (
-          <TouchableOpacity
-            onPress={() =>
-              OpenURLButton(
-                `${
-                  user?.website.indexOf('https://') == -1
-                    ? `https://${user?.website}`
-                    : user?.website
-                }`
-              )
-            }
-          >
-            <Text style={styles.onebodytext}>{user?.website}</Text>
-          </TouchableOpacity>
-        ) : null}
-        {user?.isInfluencer == true && user?.role == 'individual' ? (
-          <View style={{ alignItems: 'center' }}>
-            <Text
-              style={{
-                color: '#032f3c',
-                fontFamily: 'Rubik-Regular',
-                marginVertical: getHeight(1),
-              }}
-            >
-              Reaching:{' '}
-              {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
-            </Text>
-          </View>
-        ) : null}
-        <View
-          style={{
-            alignItems: 'center',
-            flex: 1,
-          }}
-        >
-          <View style={{ width: '100%' }}>
-            <Button
-              text={'Edit Profile'}
-              onPress={() => navigation.navigate('EditProfile')}
-              mode="outlined"
-              paper
+        </Animated.View>
+      )}
+      <Text
+        style={{
+          fontWeight: '500',
+          color: '#032f3c',
+          textAlign: 'center',
+          fontSize: 20,
+          marginTop: direction == 'down' ? 10 : 0,
+        }}
+      >
+        {user?.role == 'organization' && user?.profile?.companyName
+          ? user?.profile?.companyName
+          : user?.name}
+      </Text>
+      <Text
+        style={[
+          {
+            textAlign: 'center',
+            marginBottom: 20,
+            color: '#5b7279',
+            marginTop: 5,
+          },
+        ]}
+      >
+        {user?.username ? `@${user?.username}` : ''}
+        {`${user?.whatIDo ? `• ${user?.whatIDo.name}` : ''}`}
+      </Text>
+      {user?.role == 'individual' ? (
+        <View style={styles.manyimageview}>
+          <View>
+            <FlatList
+              data={user?.badgesData}
+              numColumns={3}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <FastImage
+                  style={styles.firstimage}
+                  source={{
+                    uri: item.badge,
+                  }}
+                  resizeMode={FastImage.resizeMode.stretch}
+                />
+              )}
             />
           </View>
+          <TouchableOpacity
+            style={{ marginHorizontal: getWidth(1) }}
+            onPress={() => {
+              getBadge();
+              setRequestModel(true);
+            }}
+          >
+            <Add_badges />
+          </TouchableOpacity>
         </View>
+      ) : null}
+
+      {user?.isInfluencer == true || user?.role == 'organization' ? (
+        <Text numberOfLines={3} style={styles.bio}>
+          {user?.bio}
+        </Text>
+      ) : null}
+      {user?.website ? (
+        <TouchableOpacity
+          onPress={() =>
+            OpenURLButton(
+              `${
+                user?.website.indexOf('https://') == -1 ? `https://${user?.website}` : user?.website
+              }`
+            )
+          }
+        >
+          <Text style={styles.onebodytext}>{user?.website}</Text>
+        </TouchableOpacity>
+      ) : null}
+
+      {direction == 'down' ? null : (
+        <Animated.View>
+          {user?.isInfluencer == true && user?.role == 'individual' ? (
+            <View style={{ alignItems: 'center' }}>
+              <Text
+                style={{
+                  color: '#032f3c',
+                  fontFamily: 'Rubik-Regular',
+                  marginVertical: getHeight(1),
+                }}
+              >
+                Reaching:{' '}
+                {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
+              </Text>
+            </View>
+          ) : null}
+        </Animated.View>
+      )}
+
+      <View
+        style={{
+          alignItems: 'center',
+          flex: 1,
+        }}
+      >
+        <View style={{ width: '100%' }}>
+          <Button
+            text={'Edit Profile'}
+            onPress={() => navigation.navigate('EditProfile')}
+            mode="outlined"
+            paper
+          />
+        </View>
+      </View>
+      <View style={{ flex: 3 }}>
         {user?.isInfluencer == true ? (
           <TabView
             navigationState={{ index, routes }}
@@ -352,30 +426,50 @@ const MyProfile = ({ navigation }: Props) => {
 
               return (
                 <View style={styles.tabBar}>
-                  {props.navigationState.routes.map((route, i) => {
-                    return (
-                      <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
-                        <Animated.Text
-                          style={
-                            props?.navigationState?.index == i
-                              ? {
-                                  color: '#032F3C',
-                                  fontFamily: 'Rubik-Medium',
-                                }
-                              : {
-                                  color: '#032F3C',
-                                  fontFamily: 'Rubik-Regular',
-                                }
-                          }
+                  {props.navigationState.routes
+                    .filter((route) => {
+                      if (user?.influencerProfile?.twitterId && route.key == 'Twitter') {
+                        return true;
+                      }
+
+                      if (user?.influencerProfile?.rssUrl && route.key == 'Blog') {
+                        return true;
+                      }
+
+                      if (user?.influencerProfile?.instagramId && route.key == 'Instagram') {
+                        return true;
+                      }
+
+                      return false;
+                    })
+                    .map((route, i) => {
+                      return (
+                        <TouchableOpacity
+                          style={styles.tabItem}
+                          onPress={() => setIndex(i)}
+                          key={i}
                         >
-                          {route.title}
-                        </Animated.Text>
-                        {props?.navigationState?.index == i ? (
-                          <View style={styles.propview} />
-                        ) : null}
-                      </TouchableOpacity>
-                    );
-                  })}
+                          <Animated.Text
+                            style={
+                              props?.navigationState?.index == i
+                                ? {
+                                    color: '#032F3C',
+                                    fontFamily: 'Rubik-Medium',
+                                  }
+                                : {
+                                    color: '#032F3C',
+                                    fontFamily: 'Rubik-Regular',
+                                  }
+                            }
+                          >
+                            {route.title}
+                          </Animated.Text>
+                          {props?.navigationState?.index == i ? (
+                            <View style={styles.propview} />
+                          ) : null}
+                        </TouchableOpacity>
+                      );
+                    })}
                 </View>
               );
             }}
@@ -383,7 +477,7 @@ const MyProfile = ({ navigation }: Props) => {
             initialLayout={{ width: getWidth(100) }}
           />
         ) : null}
-      </ScrollView>
+      </View>
     </View>
   );
 };

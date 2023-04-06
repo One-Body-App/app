@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
 import { styles } from './styles';
 import Social from '@/assets/svg/Social.svg';
@@ -12,6 +12,7 @@ import SocialItem from '../ListItems/SocialItem';
 import { OpenURLButton } from '@/src/Services/constants';
 import Button from '../Button';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import { useTheme } from '@react-navigation/native';
 
 const InstagramFlatlist = ({
   currentUser,
@@ -25,9 +26,10 @@ const InstagramFlatlist = ({
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
 
   const getInstagramData = async (pageNumber: number) => {
+    console.log('currentUser,currentUsercurrentUser');
     try {
       const res = await ApiCall({
-        route: `user/get-social-instagram/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
+        route: `user/get-social/instagram/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
         verb: 'get',
         token: token,
       });
@@ -60,17 +62,48 @@ const InstagramFlatlist = ({
   };
 
   useEffect(() => {
-    getInstagramData(page);
-  }, [page]);
+    if (currentUser) {
+      getInstagramData(page);
+    }
+  }, [page, currentUser]);
+  const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      setVisibleItemsIndex(viewableItems.map((item: any) => item.index));
+    }
+  }, []);
+
+  const viewabilityConfigCallbackPairs = useRef([
+    {
+      viewabilityConfig: {
+        minimumViewTime: 100,
+        itemVisiblePercentThreshold: 75,
+      },
+      onViewableItemsChanged: onViewableItemsChanged,
+    },
+  ]);
+  const { colors } = useTheme();
 
   if (instagramPosts.length) {
     return (
       <FlatList
         data={instagramPosts}
+        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
         contentContainerStyle={{ marginTop: getHeight(1) }}
         showsHorizontalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-        renderItem={({ item }) => <SocialItem item={item} />}
+        renderItem={({ item, index }) => (
+          <SocialItem
+            visible={
+              visibleItemsIndex && visibleItemsIndex.length > 0
+                ? visibleItemsIndex?.indexOf(index) > -1
+                : false
+            }
+            item={item}
+            socialPostviewStyle={{ backgroundColor: colors.card }}
+          />
+        )}
         keyExtractor={(item) => item.id}
         onScroll={(e) => {
           if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
@@ -95,11 +128,11 @@ const InstagramFlatlist = ({
               //   marginHorizontal: 20,
               //   // backgroundColor: colors.background,
               // }}
-              // btnTextStyle={{
-              //   marginHorizontal: 20,
-              //   color: '#70747D',
-              //   fontSize: 14,
-              // }}
+              btnTextStyle={{
+                marginHorizontal: 20,
+                color: '#70747D',
+                fontSize: 14,
+              }}
               mode="text"
               paper
               textColor="#70747D"

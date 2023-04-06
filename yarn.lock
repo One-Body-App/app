@@ -4007,7 +4007,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-native-video@npm:^5.0.14":
+"@types/react-native-video-player@npm:^0.10.3":
+  version: 0.10.3
+  resolution: "@types/react-native-video-player@npm:0.10.3"
+  dependencies:
+    "@types/react": "*"
+    "@types/react-native": "*"
+    "@types/react-native-video": "*"
+  checksum: 23740be7aa70dad34e0c1ce18acbf513b9d879f486d251c35c597796fcd7946bffaec696b9758a91ba86081a04493d2b9fa478f88db034d94cae909499a592de
+  languageName: node
+  linkType: hard
+
+"@types/react-native-video@npm:*, @types/react-native-video@npm:^5.0.14":
   version: 5.0.14
   resolution: "@types/react-native-video@npm:5.0.14"
   dependencies:
@@ -10861,6 +10872,7 @@ __metadata:
     "@types/react-native-dotenv": ^0.2.0
     "@types/react-native-vector-icons": ^6.4.11
     "@types/react-native-video": ^5.0.14
+    "@types/react-native-video-player": ^0.10.3
     "@types/react-test-renderer": ^18.0.0
     "@typescript-eslint/eslint-plugin": latest
     "@typescript-eslint/parser": latest
@@ -10929,7 +10941,7 @@ __metadata:
     react-native-svg-transformer: ^1.0.0
     react-native-swipe-list-view: ^3.2.9
     react-native-swipeable: ^0.6.0
-    react-native-tab-view: ^3.1.1
+    react-native-tab-view: ^3.5.1
     react-native-toast-message: ^2.1.5
     react-native-toast-notifications: ^3.3.1
     react-native-tracking-transparency: ^0.1.2
@@ -12090,14 +12102,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-tab-view@npm:^3.1.1":
-  version: 3.1.1
-  resolution: "react-native-tab-view@npm:3.1.1"
+"react-native-tab-view@npm:^3.5.1":
+  version: 3.5.1
+  resolution: "react-native-tab-view@npm:3.5.1"
+  dependencies:
+    use-latest-callback: ^0.1.5
   peerDependencies:
     react: "*"
     react-native: "*"
     react-native-pager-view: "*"
-  checksum: 8866e746f989b02243bcf1e5259698c3db50446d2b3a2c717873376734526be7fbeac520014adbe28cc0da116a7b5cd37508a6f56b90f992724be5f6222e0b71
+  checksum: 22213e8bde3b0e16631d290a3da146789dcad461dbdc424cf6448c683a2d75c12abbae5aa329c83788123f6dd0865b451ba57848856483607327fb5fdad2fe12
   languageName: node
   linkType: hard
 
@@ -14218,6 +14232,13 @@ __metadata:
   peerDependencies:
     react: ">=16.8"
   checksum: 1e15fb21306c74f877e9d57686546c363165429412dcb9260254d2dd8f56692cb01ba2162f9169e6fc15b01cf3921b9cd8a9c60cf777d0143afcee92c1a7976a
+  languageName: node
+  linkType: hard
+
+"use-latest-callback@npm:^0.1.5":
+  version: 0.1.5
+  resolution: "use-latest-callback@npm:0.1.5"
+  checksum: a7af3275985b7918c3e0e7a57bb5fc8ad678b21673fc618fe778d111992bdabb4f9592cd3e0286e032a7c956ee3c9d1aba39801c13f32d68bc4c4a008e38783b
   languageName: node
   linkType: hard
 

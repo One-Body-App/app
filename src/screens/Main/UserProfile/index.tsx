@@ -34,7 +34,6 @@ const UserProfile = ({ navigation, route }: Props) => {
   const [user, setUser] = useState<User>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const isLoading = useSelector((state: RootState) => state.general.loader);
-  const currentUser = useSelector((state: RootState) => state.auth.userProfile);
 
   const [index, setIndex] = React.useState(0);
   const [routes, setRoutes] = React.useState<{ key: string; title: string }[]>([]);
@@ -43,7 +42,6 @@ const UserProfile = ({ navigation, route }: Props) => {
   const [relatedUsers, setRelatedUsers] = React.useState<User[] | undefined>();
 
   const updateScrollPosition = (position: number) => {
-    // console.log(scrollPosition - position);
     if (
       (position > scrollPosition || position == scrollPosition) &&
       scrollPosition - position < 0 &&
@@ -182,7 +180,6 @@ const UserProfile = ({ navigation, route }: Props) => {
         dispatch(setLoader(false));
         setUser(res?.response);
       } else {
-        console.log('error', res?.response);
         dispatch(setLoader(false));
       }
     } catch (e: any) {
@@ -240,6 +237,10 @@ const UserProfile = ({ navigation, route }: Props) => {
   //     console.log('chanel create err --- ', e);
   //   }
   // };
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -363,7 +364,7 @@ const UserProfile = ({ navigation, route }: Props) => {
       )}
       {direction == 'down' ? null : (
         <View style={styles.bottomView}>
-          {currentUser?.following.some((following) => following == currentUser._id) ? (
+          {/* {currentUser?.following.some((following) => following == currentUser._id) ? (
             <Button
               text={'Unfollow'}
               btnStyle={{
@@ -393,7 +394,7 @@ const UserProfile = ({ navigation, route }: Props) => {
               }}
               onPress={() => {}}
             />
-          )}
+          )} */}
 
           {/* <Button
             text={'Message'}

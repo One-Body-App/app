@@ -216,11 +216,13 @@ const Explore = () => {
 
             const newSearchChannels = [];
             for (let i = 0; i < following.length; i++) {
-              if (allusers[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                newSearchChannels.push(allusers[i]);
+              if (allusers[i] && allusers[i].name) {
+                if (allusers[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                  newSearchChannels.push(allusers[i]);
+                }
               }
-              setSearchChannelsToFollow(newSearchChannels);
             }
+            setSearchChannelsToFollow(newSearchChannels);
           }}
         />
 
@@ -272,7 +274,9 @@ const Explore = () => {
         ListEmptyComponent={() => (
           <View style={styles.askinterest}>
             <Text style={{ margin: 15, color: '#7c7c7c' }}>
-              Looks like you haven’t selected any interests
+              {searchChannelsToFollowText
+                ? 'No search results'
+                : 'Looks like you haven’t selected any interests'}
             </Text>
           </View>
         )}

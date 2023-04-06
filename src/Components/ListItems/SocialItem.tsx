@@ -1,5 +1,5 @@
 import { getHeight, timeSince } from '@/utils/ResponsiveFun';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -23,8 +23,10 @@ type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 const SocialItem = ({
   item,
   socialPostviewStyle,
+  visible,
 }: {
   currentPopupItemId?: string;
+  visible?: boolean;
   item: {
     content: string;
     date: string;
@@ -48,6 +50,8 @@ const SocialItem = ({
   socialPostviewStyle?: StyleProp<ViewStyle>;
 }) => {
   const { colors } = useTheme();
+  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const navigation = useNavigation<ScreenNavigationProp>();
   let url = '';
   if (item?.source == 'twitter') {
@@ -55,10 +59,11 @@ const SocialItem = ({
   } else {
     url = item?.permalink || '';
   }
-  const videoStyle = {
-    height: 250,
-    width: 250,
-  };
+
+  useEffect(() => {
+    setIsPlaying(visible ?? false);
+    setIsMuted(visible ?? false);
+  }, [visible]);
 
   return (
     <View
@@ -120,16 +125,26 @@ const SocialItem = ({
       {item?.mediaUrl ? (
         <>
           {item.mediaType == 'VIDEO' ? (
-            <Video
-              source={{
-                uri: item?.mediaUrl,
-              }}
-              style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
-              controls={true}
-              resizeMode="cover"
-              paused={true}
-              hideShutterView={true}
-            />
+            <>
+              <Video
+                source={{
+                  uri: item?.mediaUrl,
+                }}
+                style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
+                controls={false}
+                resizeMode="cover"
+                paused={!isPlaying}
+                muted={isMuted}
+                repeat={true}
+                onTouchEnd={() => {
+                  if (!isPlaying) {
+                    setIsPlaying(true);
+                  }
+                  setIsMuted(!isMuted);
+                }}
+                // hideShutterView={true}
+              />
+            </>
           ) : (
             <FastImage
               style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}

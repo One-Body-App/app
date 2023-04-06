@@ -23,6 +23,7 @@ import ArticleItem from '../ListItems/ArticleItem';
 import { useTheme } from '@react-navigation/native';
 import { color } from 'react-native-reanimated';
 import OptionsModal from '../ListItems/OptionsModal';
+import { styles as globalStyle } from '@/src/Components/ListItems/style';
 
 const BlogFlatlist = ({
   currentUser,
@@ -42,10 +43,11 @@ const BlogFlatlist = ({
   const getBlog = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `blogs/get-blog-feed/${currentUser._id}/${pageNumber}`,
-        verb: 'get',
+        route: `user/get-blog-feed/${currentUser._id}/${pageNumber}`,
+        verb: 'post',
         token: token,
       });
+
       if (res?.status == 200) {
         let blogData = [];
 
@@ -67,7 +69,7 @@ const BlogFlatlist = ({
 
       setRefreshing(false);
     } catch (e: any) {
-      console.log('err', 'donedone');
+      console.log(e, 'err', 'donedone');
       setLoadingMore(false);
       setRefreshing(false);
     }
@@ -75,11 +77,13 @@ const BlogFlatlist = ({
   };
 
   useEffect(() => {
-    const getData = async () => {
-      await getBlog(page);
-    };
-    setLoadingMore(true);
-    getData();
+    if (user) {
+      const getData = async () => {
+        await getBlog(page);
+      };
+      setLoadingMore(true);
+      getData();
+    }
   }, [page, user]);
   const { colors } = useTheme();
 
@@ -89,7 +93,7 @@ const BlogFlatlist = ({
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View>
       {loadingMore ? (
         <ActivityIndicator
           animating={loadingMore}
@@ -108,7 +112,6 @@ const BlogFlatlist = ({
       <FlatList
         nestedScrollEnabled={true}
         data={blogs}
-        numColumns={2}
         onScroll={(e) => {
           setScrollPosition(e.nativeEvent.contentOffset.y);
         }}
@@ -126,7 +129,7 @@ const BlogFlatlist = ({
             onRefresh={async () => {
               setIsEndOfList(false);
               setRefreshing(true);
-              setPage(page + 1);
+              setPage(1);
             }}
           />
         }
@@ -168,17 +171,23 @@ const BlogFlatlist = ({
           //     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
           //   </View>
           // </TouchableOpacity>
-          <View style={{ flex: 1, paddingHorizontal: 10 }}>
-            <ArticleItem
-              item={item}
-              imageSizeType="cover"
-              blogPostStyle={{ ...styles.blogpostview, backgroundColor: colors.card }}
-              blogPostImageStyle={styles.blogpostimage}
-              showModal={showModal}
-              iconSize={15}
-              hideProfileName={true}
-            />
-          </View>
+
+          <ArticleItem
+            key={`article_${item.id}`}
+            item={item}
+            imageSizeType="cover"
+            blogPostStyle={{
+              ...globalStyle.blogpostview,
+              backgroundColor: colors.card,
+            }}
+            blogPostImageStyle={globalStyle.newspostimage}
+            blogPostTitleStyle={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginTop: getHeight(1),
+            }}
+            showModal={showModal}
+          />
         )}
         onEndReachedThreshold={0.5}
         onEndReached={() => {

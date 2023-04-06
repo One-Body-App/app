@@ -189,7 +189,6 @@ export const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
   },
   header: {
     position: 'absolute',

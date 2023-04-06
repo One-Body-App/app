@@ -20,6 +20,7 @@ import OptionsModal from '@/src/Components/ListItems/OptionsModal';
 import { ArticleType } from '@/utils/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { RootStackParamList } from '@/src/Navigation/types';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;
 
@@ -104,7 +105,7 @@ const Search = ({ navigation }: Props) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView>
       <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
       <Ionicons
         name="close"
@@ -175,7 +176,7 @@ const Search = ({ navigation }: Props) => {
         onIndexChange={setIndex}
         initialLayout={{ width: getWidth(100) }}
       /> */}
-    </View>
+    </SafeAreaView>
   );
 };
 export default Search;

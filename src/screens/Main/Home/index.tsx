@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   TouchableWithoutFeedback,
@@ -44,12 +44,8 @@ import { ArticleType } from '@/utils/types';
 import OptionsModal from '@/src/Components/ListItems/OptionsModal';
 import { styles as globalStyle } from '@/src/Components/ListItems/style';
 import { useScrollToTop } from '@react-navigation/native';
-
-interface Props {
-  setRequestModel: (requestModel: boolean) => void;
-  openDrawer: () => void;
-  navigate: (screenName: string) => void;
-}
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/src/Navigation/types';
 
 enum FeedTypes {
   All = 'All',
@@ -64,14 +60,39 @@ type feedOptions = {
 };
 
 const feedTypes: FeedTypes[] = [FeedTypes.All, FeedTypes.News, FeedTypes.Social, FeedTypes.Blog];
+type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
 
-const Home = () => {
+const Home = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
 
   const [feedOptions, setFeedOptions] = useState<feedOptions>({
     type: feedTypes[0],
     page: 1,
   });
+
+  const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
+
+  const viewabilityConfig = {
+    itemVisiblePercentThreshold: 100,
+    // waitForInteraction: true,
+    minimumViewTime: 10,
+  };
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      setVisibleItemsIndex(viewableItems.map((item: any) => item.index));
+    }
+  }, []);
+
+  const viewabilityConfigCallbackPairs = useRef([
+    {
+      viewabilityConfig: {
+        minimumViewTime: 100,
+        itemVisiblePercentThreshold: 75,
+      },
+      onViewableItemsChanged: onViewableItemsChanged,
+    },
+  ]);
 
   const [feedData, setFeedData] = useState<any>();
   const [show, setShow] = useState<boolean>();
@@ -196,20 +217,27 @@ const Home = () => {
             </View>
           ) : (
             <FlatList
+              viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
               data={feedData}
               ref={listRef}
               keyExtractor={(item, index) => {
-                return `${item?.handler}-${item.id}-${index}`;
+                return `${item.id}-${index}`;
               }}
-              renderItem={({ item }) => {
-                if (item.type == 'social')
+              renderItem={({ item, index }) => {
+                if (item.type == 'social') {
                   return (
                     <SocialItem
-                      key={`social_${item.id}`}
+                      key={`social_${item.id}_${index}`}
                       item={item}
+                      visible={
+                        visibleItemsIndex && visibleItemsIndex.length > 0
+                          ? visibleItemsIndex?.indexOf(index) > -1
+                          : false
+                      }
                       socialPostviewStyle={{ backgroundColor: colors.card }}
                     />
                   );
+                }
 
                 if (item.type == 'tasteBreaker') {
                   return (
