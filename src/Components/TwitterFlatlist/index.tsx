@@ -27,7 +27,6 @@ const TwitterFlatlist = ({
 
   const getTwitterData = async (pageNumber: number) => {
     try {
-      console.log(currentUser);
       const res = await ApiCall({
         route: `user/get-social/twitter/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
         verb: 'get',

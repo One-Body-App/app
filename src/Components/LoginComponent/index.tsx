@@ -1,5 +1,13 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
-import { Text, View, TouchableOpacity, ScrollView, Linking, useColorScheme } from 'react-native';
+import {
+  Text,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  Linking,
+  useColorScheme,
+  Platform,
+} from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TextInput } from 'react-native-paper';
@@ -370,24 +378,27 @@ const LoginComponent: FC<Props> = ({
 
     //   // user is authenticated
     // }
+    try {
+      // Start the sign-in request
+      const appleAuthRequestResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+      });
 
-    // Start the sign-in request
-    const appleAuthRequestResponse = await appleAuth.performRequest({
-      requestedOperation: appleAuth.Operation.LOGIN,
-      requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-    });
+      // Ensure Apple returned a user identityToken
+      if (!appleAuthRequestResponse.identityToken) {
+        throw new Error('Apple Sign-In failed - no identify token returned');
+      }
 
-    // Ensure Apple returned a user identityToken
-    if (!appleAuthRequestResponse.identityToken) {
-      throw new Error('Apple Sign-In failed - no identify token returned');
+      // Create a Firebase credential from the response
+      const { identityToken, nonce } = appleAuthRequestResponse;
+      const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+
+      // Sign the user in with the credential
+      return auth().signInWithCredential(appleCredential);
+    } catch (error: any) {
+      if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
     }
-
-    // Create a Firebase credential from the response
-    const { identityToken, nonce } = appleAuthRequestResponse;
-    const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
-
-    // Sign the user in with the credential
-    return auth().signInWithCredential(appleCredential);
   }
 
   const googleSignIn = async () => {
@@ -494,7 +505,7 @@ const LoginComponent: FC<Props> = ({
 
       dispatch(setLoader(false));
     } catch (error: any) {
-      seterror(error.message.replace(`[${error.code}]`, ''));
+      if (error.message) seterror(error.message.replace(`[${error.code}]`, ''));
     }
   };
 
@@ -843,7 +854,8 @@ const LoginComponent: FC<Props> = ({
 
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('apple') &&
-        enabledLoginProviders?.includes('password') ? (
+        enabledLoginProviders?.includes('password') &&
+        Platform.OS == 'ios' ? (
           <ButtonPaper mode="outlined" onPress={() => onAppleButtonPress()} style={{ flex: 1 }}>
             <FontAwesome
               name="apple"
@@ -863,7 +875,9 @@ const LoginComponent: FC<Props> = ({
           //   </View>
           // </TouchableOpacity>
           <>
-            {enabledLoginProviders && enabledLoginProviders?.includes('apple') ? (
+            {enabledLoginProviders &&
+            enabledLoginProviders?.includes('apple') &&
+            Platform.OS == 'ios' ? (
               <Button
                 text={'Login with Apple'}
                 leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}

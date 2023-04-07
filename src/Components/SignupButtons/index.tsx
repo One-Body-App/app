@@ -73,32 +73,36 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
   }, [newUserCredentials]);
 
   const onAppleButtonPress = async () => {
-    // performs login request
-    const appleAuthRequestResponse = await appleAuth.performRequest({
-      requestedOperation: appleAuth.Operation.LOGIN,
-      requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-    });
+    try {
+      // performs login request
+      const appleAuthRequestResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+      });
 
-    // Ensure Apple returned a user identityToken
-    if (!appleAuthRequestResponse.identityToken) {
-      throw new Error('Apple Sign-In failed - no identify token returned');
-    }
+      // Ensure Apple returned a user identityToken
+      if (!appleAuthRequestResponse.identityToken) {
+        throw new Error('Apple Sign-In failed - no identify token returned');
+      }
 
-    // Create a Firebase credential from the response
-    const { identityToken, nonce } = appleAuthRequestResponse;
-    const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+      // Create a Firebase credential from the response
+      const { identityToken, nonce } = appleAuthRequestResponse;
+      const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
 
-    // get current authentication state for user
-    // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
-    const credentialState = await appleAuth.getCredentialStateForUser(
-      appleAuthRequestResponse.user
-    );
+      // get current authentication state for user
+      // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
+      const credentialState = await appleAuth.getCredentialStateForUser(
+        appleAuthRequestResponse.user
+      );
 
-    // use credentialState response to ensure the user is authenticated
-    if (credentialState === appleAuth.State.AUTHORIZED) {
-      const userCredentials = await auth().signInWithCredential(appleCredential);
+      // use credentialState response to ensure the user is authenticated
+      if (credentialState === appleAuth.State.AUTHORIZED) {
+        const userCredentials = await auth().signInWithCredential(appleCredential);
 
-      // processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+        // processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+      }
+    } catch (error: any) {
+      if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
     }
   };
 
@@ -165,7 +169,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
 
       processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
     } catch (error: any) {
-      seterror(error.message.replace(`[${error.code}]`, ''));
+      if (error.message) seterror(error.message.replace(`[${error.code}]`, ''));
     }
   };
 

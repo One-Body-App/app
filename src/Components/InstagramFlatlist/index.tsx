@@ -26,7 +26,6 @@ const InstagramFlatlist = ({
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
 
   const getInstagramData = async (pageNumber: number) => {
-    console.log('currentUser,currentUsercurrentUser');
     try {
       const res = await ApiCall({
         route: `user/get-social/instagram/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
@@ -38,10 +37,10 @@ const InstagramFlatlist = ({
         let instagramData = [];
 
         if (pageNumber == 1) {
-          instagramData = res?.response.content ?? [];
+          instagramData = res?.response ?? [];
           setIsEndOfList(false);
         } else {
-          instagramData = [...instagramPosts, ...(res?.response.content ?? [])];
+          instagramData = [...instagramPosts, ...(res?.response ?? [])];
           if (res?.response.hasMore < 1) {
             setIsEndOfList(true);
           }
