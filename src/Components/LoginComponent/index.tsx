@@ -753,13 +753,14 @@ const LoginComponent: FC<Props> = ({
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('google.com') &&
         enabledLoginProviders?.includes('password') ? (
-          <ButtonPaper
-            mode="outlined"
-            onPress={() => googleSignIn()}
-            style={{ marginRight: 10, flex: 1 }}
-          >
-            <Google style={{ alignSelf: 'center' }} />
-          </ButtonPaper>
+          <View style={{ paddingHorizontal: 10, flex: 1 }}>
+            <Button
+              onPress={() => googleSignIn()}
+              wrapperViewBtnStyle={{ flex: 1 }}
+              leftIcon={<Google style={{ alignSelf: 'center' }} fill={'#000'} />}
+              btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
+            />
+          </View>
         ) : (
           // <TouchableOpacity onPress={() => googleSignIn()} style={styles.socialContainer}>
           //   <Google style={{ alignSelf: 'center' }} />
@@ -783,13 +784,14 @@ const LoginComponent: FC<Props> = ({
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('facebook.com') &&
         enabledLoginProviders?.includes('password') ? (
-          <ButtonPaper
-            mode="outlined"
-            onPress={() => facebookLogin()}
-            style={{ marginRight: 10, flex: 1 }}
-          >
-            <Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />
-          </ButtonPaper>
+          <View style={{ paddingHorizontal: 10, flex: 1 }}>
+            <Button
+              onPress={() => facebookLogin()}
+              wrapperViewBtnStyle={{ flex: 1 }}
+              leftIcon={<Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />}
+              btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
+            />
+          </View>
         ) : (
           // <TouchableOpacity onPress={() => facebookLogin()} style={styles.socialContainer}>
           //   <Facebook style={{ alignSelf: 'center' }} fill="#1877f2" />
@@ -819,13 +821,20 @@ const LoginComponent: FC<Props> = ({
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('twitter.com') &&
         enabledLoginProviders?.includes('password') ? (
-          <ButtonPaper
-            mode="outlined"
-            onPress={() => onTwitterButtonPress()}
-            style={{ marginRight: 10, flex: 1 }}
-          >
-            <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
-          </ButtonPaper>
+          <View style={{ paddingHorizontal: 10, flex: 1 }}>
+            <Button
+              onPress={() => onTwitterButtonPress()}
+              wrapperViewBtnStyle={{ flex: 1 }}
+              leftIcon={<Twitter fill="#00acee" style={{ alignSelf: 'center' }} />}
+              btnStyle={[
+                getButtonContainer(),
+                {
+                  marginHorizontal: 0,
+                  flex: 1,
+                },
+              ]}
+            />
+          </View>
         ) : (
           // <TouchableOpacity onPress={() => onTwitterButtonPress()}>
           //   <View style={{ ...styles.socialContainer }}>
@@ -856,18 +865,25 @@ const LoginComponent: FC<Props> = ({
         enabledLoginProviders?.includes('apple') &&
         enabledLoginProviders?.includes('password') &&
         Platform.OS == 'ios' ? (
-          <ButtonPaper mode="outlined" onPress={() => onAppleButtonPress()} style={{ flex: 1 }}>
-            <FontAwesome
-              name="apple"
-              style={{
-                flex: 1,
-                // marginRight: getWidth(3),
-                // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
-                color: colors.text,
-              }}
-              size={22}
+          <View style={{ paddingHorizontal: 10, flex: 1 }}>
+            <Button
+              onPress={() => onAppleButtonPress()}
+              wrapperViewBtnStyle={{ flex: 1 }}
+              leftIcon={
+                <FontAwesome
+                  name="apple"
+                  style={{
+                    // flex: 1,
+                    // marginRight: getWidth(3),
+                    // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
+                    color: colors.text,
+                  }}
+                  size={22}
+                />
+              }
+              btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
             />
-          </ButtonPaper>
+          </View>
         ) : (
           // <TouchableOpacity onPress={() => onAppleButtonPress(>
           //   <View style={{ ...styles.socialContainer, marginRight: 0 }}>

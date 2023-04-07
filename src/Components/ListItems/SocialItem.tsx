@@ -127,6 +127,7 @@ const SocialItem = ({
           {item.mediaType == 'VIDEO' ? (
             <>
               <Video
+                ignoreSilentSwitch="ignore"
                 source={{
                   uri: item?.mediaUrl,
                 }}
