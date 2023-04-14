@@ -176,6 +176,7 @@ const Explore = () => {
       if (res?.status == 200) {
         // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
         await getFollowing();
+
         dispatch(getuserAll({ token: token }));
       } else {
         const result = following.filter((item) => item._id != id);
