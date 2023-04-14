@@ -283,7 +283,7 @@ const UserProfile = ({ navigation, route }: Props) => {
           fontSize: direction == 'down' ? 15 : 20,
         }}
       >
-        {user?.role == 'organization' && user?.profile?.companyName
+        {user?.accountType == 'organization' && user?.profile?.companyName
           ? user?.profile?.companyName
           : user?.name}
       </Text>
@@ -334,7 +334,7 @@ const UserProfile = ({ navigation, route }: Props) => {
           </View>
         </Animated.View>
       )}
-      {user?.isInfluencer == true || user?.role == 'organization' ? (
+      {user?.isInfluencer == true || user?.accountType == 'organization' ? (
         <>
           <Text numberOfLines={3} style={styles.bio}>
             {user?.bio}

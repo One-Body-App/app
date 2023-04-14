@@ -29,7 +29,7 @@ const ConversationScreen = ({ navigation, route }) => {
   const messages = useSelector((state) => state.general.allSms);
 
   const { reciver, reciverId } = route.params;
-  console.log('reciver profile image  ', reciver?.role);
+  console.log('reciver profile image  ', reciver?.accountType);
   const [sms, setSms] = useState(null);
 
   const smsSendDb = async (sms) => {

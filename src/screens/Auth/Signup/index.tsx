@@ -63,7 +63,7 @@ const Signup = ({ navigation, route }: Props) => {
         userId: newUserCredentials.user.uid,
         username,
 
-        role: accounType,
+        accountType,
         token,
       };
 

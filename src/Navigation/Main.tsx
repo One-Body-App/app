@@ -225,7 +225,8 @@ const Main = () => {
           {user &&
           token &&
           userProfile &&
-          (userProfile?.role == 'individual' || userProfile?.role == 'organization') &&
+          (userProfile?.accountType == 'individual' ||
+            userProfile?.accountType == 'organization') &&
           user?.emailVerified ? (
             <>
               {userProfile.isProfileCompleted ? (
@@ -278,7 +279,7 @@ const Main = () => {
                 </>
               ) : (
                 <>
-                  {userProfile?.role == 'individual' ? (
+                  {userProfile?.accountType == 'individual' ? (
                     <Stack.Screen name="IndividualSteps" component={IndividualSteps} />
                   ) : (
                     <Stack.Screen name="OrgnizationSteps" component={OrgnizationSteps} />

@@ -66,7 +66,7 @@ const AnimatedHeader = ({
     dispatch(setUserIntrest(arr));
     try {
       const res = await ApiCall({
-        route: `${user?.role}/remove-interest`,
+        route: `${user?.accountType}/remove-interest`,
         token: token,
         params: { interests: [id] },
         verb: 'patch',

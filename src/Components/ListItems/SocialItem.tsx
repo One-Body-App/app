@@ -41,7 +41,7 @@ const SocialItem = ({
       _id: string;
       name: string;
       username: string;
-      role: string;
+      accountType: 'individual' | 'organization';
       profileImage: string;
     };
     created: Date;
@@ -62,7 +62,7 @@ const SocialItem = ({
 
   useEffect(() => {
     setIsPlaying(visible ?? false);
-    setIsMuted(visible ?? false);
+    if (!visible && !isMuted) setIsMuted(true);
   }, [visible]);
 
   return (
@@ -126,6 +126,7 @@ const SocialItem = ({
         <>
           {item.mediaType == 'VIDEO' ? (
             <>
+              <Text>{isMuted ? 'true' : 'false'}</Text>
               <Video
                 ignoreSilentSwitch="ignore"
                 source={{

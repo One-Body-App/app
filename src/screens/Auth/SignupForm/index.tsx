@@ -99,7 +99,7 @@ const SignupForm = ({ navigation }: Props) => {
         const data = {
           email,
           name,
-          role: AccountType,
+          accountType: AccountType,
           userId: '',
           username,
         };

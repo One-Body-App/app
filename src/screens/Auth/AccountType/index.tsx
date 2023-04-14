@@ -50,7 +50,7 @@ const AccountType = ({ route, navigation }: Props) => {
       const res = await ApiCall({
         route: 'user/set-role',
         token: token,
-        params: { role: selected },
+        params: { accountType: selected },
         verb: 'patch',
       });
 

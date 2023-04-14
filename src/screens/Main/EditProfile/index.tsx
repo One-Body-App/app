@@ -245,7 +245,7 @@ const EditProfile = ({ navigation }: Props) => {
 
   useEffect(() => {
     if (user) {
-      if (user?.role == 'individual') {
+      if (user?.accountType == 'individual') {
         getWhatIDo();
       } else {
         getOrganizationTypes();
@@ -297,7 +297,7 @@ const EditProfile = ({ navigation }: Props) => {
         <View style={styles.content2}>
           <View style={styles.headLine} />
           <View style={styles.container}>
-            {user?.role == 'individual' ? (
+            {user?.accountType == 'individual' ? (
               <FlatList
                 data={whatIDoList}
                 keyExtractor={(item, index) => index.toString()}
@@ -434,13 +434,13 @@ const EditProfile = ({ navigation }: Props) => {
             <TextInput
               style={{ backgroundColor: colors.background }}
               label="Account type"
-              value={user?.role == 'individual' ? 'Individual' : 'Organization'}
+              value={user?.accountType == 'individual' ? 'Individual' : 'Organization'}
               editable={false}
               theme={{ roundness: 10 }}
               // placeholderTextColor={'red'}
             />
 
-            {user?.role == 'individual' ? (
+            {user?.accountType == 'individual' ? (
               <>
                 <TextInput
                   label="What type of church do you attend?"
@@ -538,7 +538,7 @@ const EditProfile = ({ navigation }: Props) => {
             />
 
             <View>
-              {user?.role == 'individual' ? (
+              {user?.accountType == 'individual' ? (
                 <TextInput
                   style={{ backgroundColor: colors.background }}
                   value={whatIDo?.name ? whatIDo?.name : ''}
@@ -653,10 +653,10 @@ const EditProfile = ({ navigation }: Props) => {
 
                 dispatch(setLoader(true));
 
-                if (user?.role == 'individual') {
-                  dispatch(profileUpdate({ data, token, role: 'individual', go }));
+                if (user?.accountType == 'individual') {
+                  dispatch(profileUpdate({ data, token, accountType: 'individual', go }));
                 } else {
-                  dispatch(profileUpdate({ data, token, role: 'organization', go }));
+                  dispatch(profileUpdate({ data, token, accountType: 'organization', go }));
                 }
               }}
               // btnStyle={{

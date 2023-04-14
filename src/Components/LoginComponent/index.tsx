@@ -180,7 +180,7 @@ const LoginComponent: FC<Props> = ({
           socialData: newUserCredentials?.additionalUserInfo,
           userId: newUserCredentials.user.uid,
           token,
-          role: accountType,
+          accountType: accountType,
         };
 
         dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));

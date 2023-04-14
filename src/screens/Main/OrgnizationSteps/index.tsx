@@ -990,7 +990,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                       },
                     };
 
-                    dispatch(orgprofileUpdate({ data, token, go, role: user?.role }));
+                    dispatch(orgprofileUpdate({ data, token, go, accountType: user?.accountType }));
                   }
                 }}
               >

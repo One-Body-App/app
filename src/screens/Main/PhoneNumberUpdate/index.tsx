@@ -40,7 +40,7 @@ const PhoneNumberUpdate = ({ navigation, route }) => {
       const data = {
         phoneNumber: state.phoneNumber,
       };
-      dispatch(profileUpdate({ data, token, role: user.role, go }));
+      dispatch(profileUpdate({ data, token, accountType: user.accountType, go }));
     } else {
       setState({ ...state, phoneNumberError });
     }

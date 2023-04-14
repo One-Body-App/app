@@ -913,7 +913,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                           address: location?.place_name,
                         },
                       };
-                      dispatch(profileUpdate({ data, token, role: user?.role }));
+                      dispatch(profileUpdate({ data, token, accountType: user?.accountType }));
                     } else {
                       showToast('Select at least 1 influencer/organization to continue');
                     }
