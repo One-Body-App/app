@@ -1,6 +1,5 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
 import {
-  Text,
   View,
   TouchableOpacity,
   ScrollView,
@@ -10,7 +9,7 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { TextInput } from 'react-native-paper';
+import { TextInput, Text } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -40,7 +39,7 @@ import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 
 import { RootStackParamList } from '@/src/Navigation/types';
 import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
-import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID } from '@/src/Services/constants';
+import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/Services/constants';
 import { useToast } from 'react-native-toast-notifications';
 import G from '@/assets/svg/G.svg';
 import { useTheme } from '@react-navigation/native';
@@ -352,7 +351,8 @@ const LoginComponent: FC<Props> = ({
       const urlToken = await getTwitterLoginToken(false, verifyAccount);
 
       if (urlToken) {
-        Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+        OpenURLButton(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+        // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       }
     } catch (e) {
       console.log(e);
@@ -530,8 +530,7 @@ const LoginComponent: FC<Props> = ({
           You’ll need to verify your email to complete your account activation.
         </Text>
 
-        <GradientButton
-          text={'Resend email'}
+        <Button
           onPress={async () => {
             try {
               const options = {
@@ -548,21 +547,18 @@ const LoginComponent: FC<Props> = ({
               console.log(e);
             }
           }}
+          paper
+          text={'Resend email'}
+          mode="contained"
           btnStyle={{
-            ...GeneralStyle.btn,
-            height: getHeight(7),
-
             backgroundColor: '#0C5C75',
           }}
-          btnTextStyle={GeneralStyle.btnText}
+          textColor="#fff"
         />
+
         <Button
           text={'Cancel'}
-          btnStyle={{
-            ...GeneralStyle.btn,
-            marginHorizontal: 20,
-            // backgroundColor: colors.background,
-          }}
+          paper
           btnTextStyle={{
             marginHorizontal: 20,
             color: '#70747D',

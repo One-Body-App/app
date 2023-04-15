@@ -10930,6 +10930,7 @@ __metadata:
     react-native-popup-menu: ^0.15.12
     react-native-qrcode-svg: ^6.1.2
     react-native-reanimated: 2.14.4
+    react-native-recaptcha-that-works: ^1.3.2
     react-native-render-html: ^6.3.4
     react-native-safe-area-context: ^3.4.1
     react-native-screens: ^3.13.1
@@ -10947,7 +10948,7 @@ __metadata:
     react-native-tracking-transparency: ^0.1.2
     react-native-vector-icons: ^9.2.0
     react-native-video: ^5.2.1
-    react-native-webview: ^11.22.2
+    react-native-webview: ^12.0.2
     react-redux: ^7.2.6
     react-test-renderer: 18.2.0
     redux: ^4.1.2
@@ -11969,6 +11970,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-recaptcha-that-works@npm:^1.3.2":
+  version: 1.3.2
+  resolution: "react-native-recaptcha-that-works@npm:1.3.2"
+  peerDependencies:
+    react: ">=16.9.0"
+    react-native: ">=0.60.0"
+    react-native-webview: ">=10.0.0"
+  checksum: 20d9f6a31f766a6ebb2bc94c17dcdd76f1953c241cf10b03f10f2427f4979aec87343d053d447dd081726ff7c3c36d5b7cf44acd4b09bb60e0cfb51e8e56a875
+  languageName: node
+  linkType: hard
+
 "react-native-render-html@npm:^6.3.4":
   version: 6.3.4
   resolution: "react-native-render-html@npm:6.3.4"
@@ -12181,16 +12193,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-webview@npm:^11.22.2":
-  version: 11.23.0
-  resolution: "react-native-webview@npm:11.23.0"
+"react-native-webview@npm:^12.0.2":
+  version: 12.0.2
+  resolution: "react-native-webview@npm:12.0.2"
   dependencies:
     escape-string-regexp: 2.0.0
     invariant: 2.2.4
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 2db9fabd79a604436e8cac22cd6ceb62a790e4db71bc65baa23f5e1499b4d781c867fec41c6d7983da46ed5689e2241360025c97522d191332092df08e384e12
+  checksum: f777dc48683ada530eb4c87ff85ab9bcdcb35156c319f226a220fd194c226fe136c240d020b6a835f2eba44cba3e08e42752cc6ee8d38ebb4408a31d2e2ab9c8
   languageName: node
   linkType: hard
 
