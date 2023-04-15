@@ -332,6 +332,8 @@ const SignupForm = ({ navigation }: Props) => {
               onSubmitEditing={() => inputRefs.username.current?.focus()}
               onChangeText={(username) => changeHandler('username', username)}
               blurOnSubmit={false}
+              autoCorrect={false}
+              autoComplete="username"
               keyboardType="default"
               autoCapitalize="none"
             />
