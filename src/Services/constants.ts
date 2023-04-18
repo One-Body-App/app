@@ -33,7 +33,12 @@ export const INSTAGRAM_LOGIN_REDIRECT = _INSTAGRAM_LOGIN_REDIRECT;
 export const INSTAGRAM_CONNECT_REDIRECT = _INSTAGRAM_CONNECT_REDIRECT;
 export const INSTAGRAM_RECONNECT_REDIRECT = _INSTAGRAM_RECONNECT_REDIRECT;
 
-export const OpenURLButton = async (url: string, externalBrowser?: boolean) => {
+export const OpenURLButton = async (
+  url: string,
+  externalBrowser?: boolean,
+  isAuthLogin?: boolean,
+  authRedirect?: string
+) => {
   try {
     if (await InAppBrowser.isAvailable()) {
       const canOpen = await Linking.canOpenURL(url);
@@ -43,29 +48,47 @@ export const OpenURLButton = async (url: string, externalBrowser?: boolean) => {
         if (externalBrowser) {
           Linking.openURL(urlToUse);
         } else {
-          await InAppBrowser.open(urlToUse, {
-            readerMode: false,
-            animated: true,
-            modalPresentationStyle: 'fullScreen',
-            modalTransitionStyle: 'coverVertical',
-            modalEnabled: true,
-            enableBarCollapsing: false,
+          console.log(isAuthLogin && authRedirect, isAuthLogin, authRedirect);
+          if (isAuthLogin && authRedirect) {
+            console.log('asdfasdf');
+            const result = await InAppBrowser.openAuth(urlToUse, authRedirect, {
+              // iOS Properties
+              ephemeralWebSession: false,
+              // Android Properties
+              showTitle: false,
+              enableUrlBarHiding: true,
+              enableDefaultShare: false,
+            });
+            console.log('90i09i0909');
+            if (result.type == 'success') {
+              Linking.openURL(result.url);
+            }
+          } else {
+            await InAppBrowser.open(urlToUse, {
+              readerMode: false,
+              animated: true,
+              modalPresentationStyle: 'fullScreen',
+              modalTransitionStyle: 'coverVertical',
+              modalEnabled: true,
+              enableBarCollapsing: false,
 
-            showTitle: true,
-            enableUrlBarHiding: true,
-            enableDefaultShare: true,
-            forceCloseOnRedirection: false,
-            animations: {
-              startEnter: 'slide_in_right',
-              startExit: 'slide_out_left',
-              endEnter: 'slide_in_left',
-              endExit: 'slide_out_right',
-            },
-          });
+              showTitle: true,
+              enableUrlBarHiding: true,
+              enableDefaultShare: true,
+              forceCloseOnRedirection: false,
+              animations: {
+                startEnter: 'slide_in_right',
+                startExit: 'slide_out_left',
+                endEnter: 'slide_in_left',
+                endExit: 'slide_out_right',
+              },
+            });
+          }
         }
       }
     }
   } catch (error: any) {
+    console.log(error);
     console.log(error.message);
   }
 };

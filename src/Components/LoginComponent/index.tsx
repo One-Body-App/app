@@ -221,8 +221,8 @@ const LoginComponent: FC<Props> = ({
               tokenData[0],
               tokenData[1]
             );
-
             const userCredentials = await auth().signInWithCredential(twitterCredential);
+            console.log(userCredentials, 'userCredentialsuserCredentialsuserCredentials');
 
             if (
               !!verifyAccount &&
@@ -352,7 +352,13 @@ const LoginComponent: FC<Props> = ({
       const urlToken = await getTwitterLoginToken(false, verifyAccount);
 
       if (urlToken) {
-        OpenURLButton(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+        OpenURLButton(
+          `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
+          false,
+          true,
+          'onebodyapp://app.onebodyapp.com/login/twitter'
+        );
+
         // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       }
     } catch (e) {
