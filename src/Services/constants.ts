@@ -48,9 +48,8 @@ export const OpenURLButton = async (
         if (externalBrowser) {
           Linking.openURL(urlToUse);
         } else {
-          console.log(isAuthLogin && authRedirect, isAuthLogin, authRedirect);
           if (isAuthLogin && authRedirect) {
-            console.log('asdfasdf');
+            console.log('asdfasdf', urlToUse, authRedirect, 'urlToUse, authRedirect');
             const result = await InAppBrowser.openAuth(urlToUse, authRedirect, {
               // iOS Properties
               ephemeralWebSession: false,
@@ -59,7 +58,7 @@ export const OpenURLButton = async (
               enableUrlBarHiding: true,
               enableDefaultShare: false,
             });
-            console.log('90i09i0909');
+
             if (result.type == 'success') {
               Linking.openURL(result.url);
             }
@@ -88,8 +87,8 @@ export const OpenURLButton = async (
       }
     }
   } catch (error: any) {
-    console.log(error);
-    console.log(error.message);
+    console.log(error, 'error');
+    console.log(error.message, 'hsd;jkha;jhk');
   }
 };
 

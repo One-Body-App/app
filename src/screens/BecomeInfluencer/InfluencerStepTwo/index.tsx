@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Text,
   View,
   ImageBackground,
   TouchableOpacity,
@@ -8,8 +7,9 @@ import {
   TextInput as TextInputNative,
   Linking,
   ScrollView,
+  useColorScheme,
 } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import { Text, TextInput } from 'react-native-paper';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -25,18 +25,27 @@ import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
-import { BASE_URL } from '@/src/Services/constants';
+import { BASE_URL, OpenURLButton } from '@/src/Services/constants';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import { getTwitterLoginToken } from '@/src/Services/login';
-
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import Facebook from '@/assets/svg/Facebook.svg';
 import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/src/Services/constants';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import InAppBrowser from 'react-native-inappbrowser-reborn';
+import Twitter from '@/assets/svg/Twitter.svg';
 
 type Props = StackScreenProps<RootStackParamList, 'InfluencerStepTwo'>;
 
 const InfluencerStepTwo = ({ navigation, route }: Props) => {
   const [token, setToken] = useState();
+
+  const userToken = useSelector((state: RootState) => state.auth.userToken);
 
   const inputRefs = {
     twitterUsername: useRef<TextInputNative>(null),
@@ -96,6 +105,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
       };
 
       const result = await axios.request(options);
+
       setState({
         ...state,
         instagramUsername: result.data.username,
@@ -117,17 +127,19 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
             method: 'POST',
             url: `${BASE_URL}/auth/instagram-token`,
             data: {
+              redirect_uri: INSTAGRAM_LOGIN_REDIRECT,
               code: route.params?.code,
             },
             headers: {
               'Content-Type': 'application/json',
-              authorization: `Bearer ${token}`,
+              authorization: `Bearer ${userToken}`,
             },
           };
 
           const result = await axios.request(options);
 
           if (result && result.data?.access_token) {
+            InAppBrowser.closeAuth();
             setToken(result.data?.access_token);
             getInstagramData(
               result.data?.access_token,
@@ -208,18 +220,105 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   const [modalVisible, setModalVisible] = useState(false);
 
   const { dark, colors } = useTheme();
+  const [error, seterror] = useState<string>();
+  const [isLoggedInFacebook, setIsLoggedInFacebook] = useState<boolean>(false);
+  const [isLoggedInTwitter, setIsLoggedInTwitter] = useState<boolean>(false);
+
+  const facebookLogin = async () => {
+    try {
+      seterror('');
+      dispatch(setLoader(true));
+
+      const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+
+      if (result.isCancelled) {
+        throw 'User cancelled the login process';
+      }
+
+      // Once signed in, get the users AccesToken
+      const data = await AccessToken.getCurrentAccessToken();
+
+      if (!data) {
+        throw 'Something went wrong obtaining access token';
+      }
+
+      let foundFacebook = false;
+
+      auth().currentUser?.providerData.forEach((provider) => {
+        if (provider.providerId == 'facebook.com') {
+          foundFacebook = true;
+        }
+      });
+
+      if (!foundFacebook) {
+        const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+
+        auth().currentUser?.linkWithCredential(facebookCredential);
+      }
+
+      setIsLoggedInFacebook(true);
+      dispatch(setLoader(false));
+    } catch (error: any) {
+      if (error.message) seterror(error.message.replace(`[${error.code}]`, ''));
+    }
+  };
 
   const onTwitterButtonPress = async () => {
     try {
       const urlToken = await getTwitterLoginToken(false, false, true);
 
       if (urlToken) {
-        Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+        OpenURLButton(
+          `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
+          false,
+          true,
+          'onebodyapp://app.onebodyapp.com/influencer/login/twitter'
+        );
+
+        // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       }
     } catch (e) {
       console.log(e);
     }
   };
+
+  const scheme = useColorScheme();
+
+  const getButtonTextStyle = () => {
+    return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : '#032F3C' };
+  };
+
+  const getButtonContainer = () => {
+    return { ...styles.buttonContainer, borderColor: colors.border };
+  };
+
+  const getDisabledButtonTextStyle = () => {
+    return {
+      ...styles.disabledBtnTextStyle,
+      color: scheme == 'dark' ? '#3a3a3a' : '#B3C1C5',
+      borderColor: colors.border,
+    };
+  };
+
+  const getDisabledButtonStyle = () => {
+    return { ...styles.disabledButtonContainer, borderColor: colors.border };
+  };
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    auth()
+      .currentUser?.getIdTokenResult()
+      .then((result) => {
+        if (result.signInProvider == 'facebook.com') {
+          setIsLoggedInFacebook(true);
+        }
+
+        if (result.signInProvider == 'twitter.com') {
+          setIsLoggedInTwitter(true);
+        }
+      });
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -598,12 +697,44 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
             {state.twitterUsername ? (
               <Text>Logged in as @{state.twitterUsername}</Text>
             ) : (
-              <TouchableOpacity
-                onPress={() => onTwitterButtonPress()}
-                style={{ ...styles.btn2, backgroundColor: colors.background }}
-              >
-                <Text style={{ color: colors.text }}>Authenticate with Twitter</Text>
-              </TouchableOpacity>
+              <>
+                {isLoggedInTwitter ? (
+                  <Button
+                    text={'Link Twitter Account'}
+                    btnStyle={getButtonContainer()}
+                    btnTextStyle={getButtonTextStyle()}
+                    onPress={() => {
+                      onTwitterButtonPress;
+                    }}
+                    disabledBtnStyle={getDisabledButtonStyle()}
+                    disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                    wrapperBtnStyle={{
+                      width: '100%',
+
+                      paddingVertical: 10,
+                    }}
+                  />
+                ) : (
+                  <Button
+                    text={'Login with Twitter'}
+                    leftIcon={
+                      <Twitter fill="#00acee" style={{ alignSelf: 'center', marginRight: 10 }} />
+                    }
+                    btnStyle={getButtonContainer()}
+                    btnTextStyle={getButtonTextStyle()}
+                    onPress={() => {
+                      facebookLogin();
+                    }}
+                    disabledBtnStyle={getDisabledButtonStyle()}
+                    disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                    wrapperBtnStyle={{
+                      width: '100%',
+
+                      paddingVertical: 10,
+                    }}
+                  />
+                )}
+              </>
             )}
 
             {/* <TextInput
@@ -699,16 +830,49 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
             {state.instagramUsername ? (
               <Text>Logged in as @{state.instagramUsername}</Text>
             ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  Linking.openURL(
-                    `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${INSTAGRAM_LOGIN_REDIRECT}&scope=user_profile,user_media&response_type=code`
-                  );
-                }}
-                style={{ ...styles.btn2, backgroundColor: colors.background }}
-              >
-                <Text style={{ color: colors.text }}>Authenticate with Instagram</Text>
-              </TouchableOpacity>
+              <>
+                {isLoggedInFacebook ? (
+                  <Button
+                    text={'Link Instagram Account'}
+                    btnStyle={getButtonContainer()}
+                    btnTextStyle={getButtonTextStyle()}
+                    onPress={() => {
+                      OpenURLButton(
+                        `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${INSTAGRAM_LOGIN_REDIRECT}&scope=user_profile,user_media&response_type=code`,
+                        false,
+                        true,
+                        INSTAGRAM_LOGIN_REDIRECT
+                      );
+                    }}
+                    disabledBtnStyle={getDisabledButtonStyle()}
+                    disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                    wrapperBtnStyle={{
+                      width: '100%',
+
+                      paddingVertical: 10,
+                    }}
+                  />
+                ) : (
+                  <Button
+                    text={'Login with Facebook'}
+                    leftIcon={
+                      <Facebook style={{ marginLeft: 5, marginRight: 10 }} fill="#1877f2" />
+                    }
+                    btnStyle={getButtonContainer()}
+                    btnTextStyle={getButtonTextStyle()}
+                    onPress={() => {
+                      facebookLogin();
+                    }}
+                    disabledBtnStyle={getDisabledButtonStyle()}
+                    disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                    wrapperBtnStyle={{
+                      width: '100%',
+
+                      paddingVertical: 10,
+                    }}
+                  />
+                )}
+              </>
             )}
 
             {/* <TextInput

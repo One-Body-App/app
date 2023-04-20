@@ -145,6 +145,7 @@ const IndividualSteps = ({ navigation }: Props) => {
 
       if (res?.status == 200) {
         setInfluencer(res.response?.data);
+
         setSearchInfluencer(res.response?.data);
       } else {
         console.log('error', res?.response);
@@ -712,8 +713,8 @@ const IndividualSteps = ({ navigation }: Props) => {
 
           <View style={{ ...styles.largeview, marginTop: 25 }}>
             <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
-              {searchInfluencer.length < 1 ? <Text>No Search Results</Text> : null}
-              {searchInfluencer.map((item, index) => {
+              {searchInfluencer?.length < 1 ? <Text>No Search Results</Text> : null}
+              {searchInfluencer?.map((item, index) => {
                 return (
                   <TouchableOpacity
                     activeOpacity={0.6}
@@ -754,7 +755,9 @@ const IndividualSteps = ({ navigation }: Props) => {
                     />
 
                     <View>
-                      <Text style={{ ...styles.textname, textAlign: 'center' }}>{item?.name}</Text>
+                      <Text style={{ ...styles.textname, textAlign: 'center' }} numberOfLines={2}>
+                        {item?.name}
+                      </Text>
                       <Text
                         numberOfLines={1}
                         style={{

@@ -9,7 +9,7 @@
 
 
 
-#import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKCoreKit/FBSDKCoreKit-swift.h>
 
 
 @implementation AppDelegate
@@ -27,7 +27,7 @@
 
 
   [[FBSDKApplicationDelegate sharedInstance] application:application
-                      didFinishLaunchingWithOptions:launchOptions];
+                         didFinishLaunchingWithOptions:launchOptions];
 
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }

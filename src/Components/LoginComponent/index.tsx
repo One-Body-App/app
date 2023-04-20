@@ -222,7 +222,6 @@ const LoginComponent: FC<Props> = ({
               tokenData[1]
             );
             const userCredentials = await auth().signInWithCredential(twitterCredential);
-            console.log(userCredentials, 'userCredentialsuserCredentialsuserCredentials');
 
             if (
               !!verifyAccount &&
@@ -284,7 +283,7 @@ const LoginComponent: FC<Props> = ({
         dispatch(setLoader(true));
 
         const emailCredential = await auth().signInWithEmailAndPassword(email, password);
-        console.log(emailCredential);
+
         if (verifyAccount) {
           setState({ ...state, password: '' });
 
@@ -318,7 +317,6 @@ const LoginComponent: FC<Props> = ({
         setState({ ...state, emailError, passwordError });
       }
     } catch (error: any) {
-      console.log(error);
       let message = 'User/password combination not found';
       if (
         error.message &&
@@ -356,7 +354,9 @@ const LoginComponent: FC<Props> = ({
           `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
           false,
           true,
-          'onebodyapp://app.onebodyapp.com/login/twitter'
+          verifyAccount
+            ? 'onebodyapp://app.onebodyapp.com/auth/confirmation'
+            : 'onebodyapp://app.onebodyapp.com/login/twitter'
         );
 
         // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
