@@ -16,7 +16,7 @@ import {
   NO_POST_IMAGE_URL as _NO_POST_IMAGE_URL,
 } from 'react-native-dotenv';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
-const IS_STAGING = true;
+const IS_STAGING = false;
 
 export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 // export const BASE_URL = 'https://192.168.4.134/api';
