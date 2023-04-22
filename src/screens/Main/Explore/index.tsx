@@ -90,7 +90,7 @@ const Explore = () => {
       const res = await ApiCall({
         route: 'user/add-interests',
         token: token,
-        params: { interests: selectedInterest },
+        params: { interests: newInterest },
         verb: 'patch',
       });
 
@@ -102,6 +102,33 @@ const Explore = () => {
               })
             )
           : setSelectedInterest([...selectedInterest, newInterest]);
+        dispatch(getuserAll({ token: token }));
+      } else {
+        dispatch(setLoader(false));
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const removeInterests = async (removeInterest: Interest) => {
+    dispatch(setLoader(true));
+
+    try {
+      const res = await ApiCall({
+        route: 'user/remove-interests',
+        token: token,
+        params: { interests: removeInterest._id },
+        verb: 'patch',
+      });
+
+      if (res?.status == 200) {
+        setSelectedInterest(
+          selectedInterest.filter(function (item2) {
+            return item2._id !== removeInterest?._id;
+          })
+        );
+
         dispatch(getuserAll({ token: token }));
       } else {
         dispatch(setLoader(false));
@@ -137,7 +164,7 @@ const Explore = () => {
         verb: 'get',
         token: token,
       });
-      console.log(res?.response, 'res?.responseres?.response');
+
       if (res?.status == 200) {
         setFollowing(res?.response?.data);
         setSearchChannels(res?.response?.data);
@@ -429,7 +456,14 @@ const Explore = () => {
                 <TouchableOpacity
                   key={index}
                   onPress={() => {
-                    addInterests(item);
+                    if (
+                      selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                        .length > 0
+                    ) {
+                      removeInterests(item);
+                    } else {
+                      addInterests(item);
+                    }
                   }}
                   style={
                     selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)

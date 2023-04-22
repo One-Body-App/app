@@ -76,7 +76,6 @@ const PrayersComponent = () => {
         params: params,
       });
       if (res?.status == '200') {
-        console.log('res == 200 ... ', res?.response);
         dispatch(
           getMyPrayer({
             pageno: 1,
