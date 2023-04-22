@@ -48,11 +48,10 @@ import PasswordChange from '../screens/Main/PasswordChange';
 import PhoneNumberUpdate from '../screens/Main/PhoneNumberUpdate';
 import PhoneValidate from '../screens/Main/PhoneValidate';
 import PhoneValidateOtp from '../screens/Main/PhoneValidateOtp';
-import Prayer from '../screens/Main/Prayer';
+
 import PrivacyPolicy from '../screens/Main/PrivacyPolicy';
 import Search from '../screens/Main/Search';
-import Notification from '../screens/Main/Notification';
-import UserProfile from '../screens/Main/UserProfile';
+
 import Drawer from './Drawer';
 import { RootStackParamList } from './types';
 import ConfirmLogin from '../screens/Auth/Login/ConfirmLogin';
@@ -217,7 +216,7 @@ const Main = () => {
   };
 
   const scheme = useColorScheme();
-
+  console.log(userProfile);
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       <AppProvider>

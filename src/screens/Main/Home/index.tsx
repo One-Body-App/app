@@ -1,43 +1,24 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
-  TouchableWithoutFeedback,
-  Animated,
   SafeAreaView,
   TouchableOpacity,
-  Dimensions,
-  ScaledSize,
-  StyleSheet,
   FlatList,
-  Platform,
   RefreshControl,
   ActivityIndicator,
-  Button,
 } from 'react-native';
 
-import LinearGradient from 'react-native-linear-gradient';
-import { Avatar, Caption, Text, Title } from 'react-native-paper';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Caption, Text } from 'react-native-paper';
 
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { TabView, SceneMap, SceneRendererProps, NavigationState } from 'react-native-tab-view';
+import { getHeight } from '@/utils/ResponsiveFun';
 import { styles } from './styles';
-import HomeAllComponent from '@/components/HomeAllComponent';
-import HomeNewsComponent from '@/components/HomeNewsComponent';
-import HomeSocialComponent from '@/components/HomeSocialComponent';
-import HomeBlogComponent from '@/components/HomeBlogComponent';
 
-import { setPrayersLive } from '@/redux//actions/GeneralActions';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
-import LogoHeader from '@/assets/svg/logo2.svg';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { useTheme } from '@react-navigation/native';
-import { Picker } from '@react-native-picker/picker';
 
-import { Tag } from '@/src/Components/Tag';
 import SocialItem from '@/src/Components/ListItems/SocialItem';
 import ArticleItem from '@/src/Components/ListItems/ArticleItem';
 import { ArticleType } from '@/utils/types';
@@ -211,7 +192,7 @@ const Home = ({ navigation }: Props) => {
             })}
           </View>
 
-          {isLoading && feedOptions.page == 1 && false ? (
+          {isLoading && feedOptions.page == 1 && !isRefreshing ? (
             <View style={{ marginTop: 10 }}>
               <ActivityIndicator />
             </View>
@@ -241,8 +222,7 @@ const Home = ({ navigation }: Props) => {
 
                 if (item.type == 'tasteBreaker') {
                   return (
-                    <View style={{ paddingHorizontal: 10, paddingVertical: 20, marginBottom: 10 }}>
-                      <Caption style={{ marginLeft: 10, marginBottom: 10 }}>Taste Breakers</Caption>
+                    <View style={{ paddingHorizontal: 10 }}>
                       <FlatList
                         nestedScrollEnabled
                         data={item.items}
@@ -252,13 +232,14 @@ const Home = ({ navigation }: Props) => {
                         keyExtractor={(item, index) => `${item.created}_${index}`}
                         renderItem={({ item }) => (
                           <ArticleItem
+                            pillText="Taste Breakers"
                             key={`article_${item.id}`}
                             item={item}
                             imageSizeType="cover"
                             blogPostStyle={{
                               ...globalStyle.blogpostview,
                               backgroundColor: cardSecondaryColor,
-                              width: 300,
+                              width: 325,
                             }}
                             blogPostImageStyle={globalStyle.newspostimage}
                             blogPostTitleStyle={{
@@ -275,9 +256,9 @@ const Home = ({ navigation }: Props) => {
 
                 if (item.type == 'relatedContent') {
                   return (
-                    <View style={{ paddingHorizontal: 10, paddingVertical: 20, marginBottom: 10 }}>
-                      <Caption style={{ marginLeft: 10 }}>Suggested</Caption>
+                    <View style={{ paddingHorizontal: 10 }}>
                       <ArticleItem
+                        pillText="Suggested"
                         key={`relatedContent_${item.id}`}
                         item={item.item}
                         imageSizeType="cover"
@@ -335,7 +316,9 @@ const Home = ({ navigation }: Props) => {
                 }
               }}
               ListFooterComponent={() => (
-                <View>{isLoading ? <ActivityIndicator size="small" /> : null}</View>
+                <View>
+                  {isLoading && !isRefreshing ? <ActivityIndicator size="small" /> : null}
+                </View>
               )}
             />
           )}

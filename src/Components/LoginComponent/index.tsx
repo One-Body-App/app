@@ -350,6 +350,7 @@ const LoginComponent: FC<Props> = ({
       const urlToken = await getTwitterLoginToken(false, verifyAccount);
 
       if (urlToken) {
+        // `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${}&redirect_uri=${}&scope=tweet.read%20users.read%20offline.access&state=state&code_challenge=challenge&code_challenge_method=plain`;
         OpenURLButton(
           `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
           false,

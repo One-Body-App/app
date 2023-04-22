@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { styles } from './style';
-import { OpenURLButton } from '@/src/Services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
 
 import FastImage from 'react-native-fast-image';
 import { RootStackParamList } from '@/src/Navigation/types';
@@ -64,7 +64,7 @@ const SocialItem = ({
     setIsPlaying(visible ?? false);
     if (!visible && !isMuted) setIsMuted(true);
   }, [visible]);
-
+  console.log(item?.mediaUrl, item.mediaType);
   return (
     <View
       style={[
@@ -92,7 +92,7 @@ const SocialItem = ({
               uri:
                 item?.userData?.profileImage && item?.userData?.profileImage != ''
                   ? item?.userData?.profileImage
-                  : 'https://cdn.onebodyapp.com/user/no-image.png',
+                  : NO_PROFILE_IMAGE,
             }}
             style={{
               width: 25,
@@ -149,8 +149,13 @@ const SocialItem = ({
             </>
           ) : (
             <FastImage
-              style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
-              source={{ uri: item?.mediaUrl }}
+              style={{
+                width: '100%',
+                height: 300,
+                borderRadius: 2,
+                marginVertical: 10,
+              }}
+              source={{ uri: item?.mediaUrl ?? NO_POST_IMAGE_URL }}
             />
           )}
         </>

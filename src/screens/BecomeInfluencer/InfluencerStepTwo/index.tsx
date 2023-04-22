@@ -181,6 +181,22 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
 
             const screenName = tokenData[3];
 
+            if (!isLoggedInTwitter) {
+              let foundTwitter = false;
+
+              auth().currentUser?.providerData.forEach((provider) => {
+                if (provider.providerId == 'twitter.com') {
+                  foundTwitter = true;
+                }
+              });
+
+              // if (!foundTwitter) {
+              //   const twitterCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+
+              //   auth().currentUser?.linkWithCredential(twitterCredential);
+              // }
+            }
+
             setState({
               ...state,
               twitterUsername: screenName,
@@ -697,44 +713,21 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
             {state.twitterUsername ? (
               <Text>Logged in as @{state.twitterUsername}</Text>
             ) : (
-              <>
-                {isLoggedInTwitter ? (
-                  <Button
-                    text={'Link Twitter Account'}
-                    btnStyle={getButtonContainer()}
-                    btnTextStyle={getButtonTextStyle()}
-                    onPress={() => {
-                      onTwitterButtonPress;
-                    }}
-                    disabledBtnStyle={getDisabledButtonStyle()}
-                    disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                    wrapperBtnStyle={{
-                      width: '100%',
+              <Button
+                text={isLoggedInTwitter ? 'Link Twitter Account' : 'Login with Twitter'}
+                btnStyle={getButtonContainer()}
+                btnTextStyle={getButtonTextStyle()}
+                onPress={() => {
+                  onTwitterButtonPress();
+                }}
+                disabledBtnStyle={getDisabledButtonStyle()}
+                disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                wrapperBtnStyle={{
+                  width: '100%',
 
-                      paddingVertical: 10,
-                    }}
-                  />
-                ) : (
-                  <Button
-                    text={'Login with Twitter'}
-                    leftIcon={
-                      <Twitter fill="#00acee" style={{ alignSelf: 'center', marginRight: 10 }} />
-                    }
-                    btnStyle={getButtonContainer()}
-                    btnTextStyle={getButtonTextStyle()}
-                    onPress={() => {
-                      facebookLogin();
-                    }}
-                    disabledBtnStyle={getDisabledButtonStyle()}
-                    disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                    wrapperBtnStyle={{
-                      width: '100%',
-
-                      paddingVertical: 10,
-                    }}
-                  />
-                )}
-              </>
+                  paddingVertical: 10,
+                }}
+              />
             )}
 
             {/* <TextInput

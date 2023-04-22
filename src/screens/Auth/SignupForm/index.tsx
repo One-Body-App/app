@@ -552,7 +552,7 @@ const SignupForm = ({ navigation }: Props) => {
 
             <Recaptcha
               ref={recaptcha}
-              siteKey="<your-recaptcha-public-key>"
+              siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
               baseUrl="http://www.onebodyapp.com"
               onVerify={onVerify}
               onExpire={onExpire}
