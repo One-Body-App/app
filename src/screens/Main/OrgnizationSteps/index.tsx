@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Text,
   View,
   FlatList,
   Image,
@@ -10,6 +9,8 @@ import {
   Platform,
   ScrollView,
   useColorScheme,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
@@ -18,7 +19,7 @@ import Button from '@/components/Button';
 import { styles } from './styles';
 import Toast from 'react-native-toast-message';
 import { TextInput as NativeTextInput } from 'react-native';
-import { Divider, Switch, TextInput } from 'react-native-paper';
+import { Divider, Switch, TextInput, Text } from 'react-native-paper';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 
 import ProgressBar from 'react-native-animated-progress';
@@ -332,6 +333,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               ...styles.heading,
               width: getWidth(80),
               margin: getHeight(0.5),
+              color: scheme == 'dark' ? colors.text : '#032F3C',
             }}
           >
             Let’s Get To Know You.
@@ -365,7 +367,9 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             }}
             style={{ marginVertical: 10, borderBottomWidth: 0 }}
           >
-            <Text style={{ ...styles.logouttext, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+            <Text
+              style={{ ...styles.logouttext, color: scheme == 'dark' ? colors.text : '#032F3C' }}
+            >
               Cancel
             </Text>
           </TouchableOpacity>
@@ -376,25 +380,18 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       id: 2,
       component: (
         <View style={styles.innerContainer} key={2}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
           <Text style={{ ...styles.text, color: '#888C93' }}>Step 1 of 7</Text>
           <Text
             style={{
               ...styles.heading,
-              color: scheme == 'dark' ? '#fff' : '#032F3C',
+              color: scheme == 'dark' ? colors.text : '#032F3C',
               width: getWidth(80),
             }}
           >
             Identify your Organization
           </Text>
-          <Text style={{ ...styles.heading, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+          <Text style={{ ...styles.heading, color: scheme == 'dark' ? colors.text : '#032F3C' }}>
             What type of Organization are you?
           </Text>
           <View>
@@ -407,7 +404,10 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             /> */}
             <Button
               text={organizationType == null ? 'Select One' : organizationType.name}
-              btnStyle={{ ...styles.btn3, backgroundColor: scheme == 'dark' ? '#fff' : '#E7F0F3' }}
+              btnStyle={{
+                ...styles.btn3,
+                backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
+              }}
               leftIcon={<View />}
               RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
@@ -425,17 +425,18 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       id: 3,
       component: (
         <View style={styles.innerContainer} key={4}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
 
           <Text style={{ ...styles.text, color: '#888C93' }}>Step 2 of 7</Text>
-          <Text style={{ ...styles.heading, width: getWidth(80) }}>Identify your Organization</Text>
+          <Text
+            style={{
+              ...styles.heading,
+              color: scheme == 'dark' ? colors.text : '#032F3C',
+              width: getWidth(80),
+            }}
+          >
+            Identify your Organization
+          </Text>
           <Text style={styles.text}>Where is your Organization located?</Text>
           <View>
             <TextInput
@@ -505,19 +506,19 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       id: 4,
       component: (
         <View style={styles.innerContainer} key={5}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
           <KeyboardAwareScrollView showsVerticalScrollIndicator={false}>
             <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
 
             <Text style={{ ...styles.text, color: '#888C93', alignSelf: 'center' }}>
               Step 3 of 7
             </Text>
-            <Text style={{ ...styles.heading, width: getWidth(80) }}>
+            <Text
+              style={{
+                ...styles.heading,
+                color: scheme == 'dark' ? colors.text : '#032F3C',
+                width: getWidth(80),
+              }}
+            >
               Identify your Organization
             </Text>
             <Text style={{ ...styles.text, alignSelf: 'center' }}>
@@ -604,6 +605,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 alignSelf: 'center',
                 color: '#888C93',
                 marginTop: 12,
+                marginBottom: 50,
               }}
             >
               Note: This person will serve as the representative for your account and will be
@@ -617,13 +619,6 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       id: 5,
       component: (
         <View style={styles.innerContainer} key={5}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
-
           <Text
             style={{
               ...styles.heading,
@@ -708,12 +703,6 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       id: 6,
       component: (
         <View style={styles.innerContainer} key={6}>
-          <GeneralStatusBar
-            backgroundColor="white"
-            barStyle="dark-content"
-            hidden={false}
-            translucent={true}
-          />
           <Text
             style={{
               ...styles.heading,
@@ -920,142 +909,164 @@ const OrgnizationSteps = ({ navigation }: Props) => {
     }
   };
   return (
-    <View>
-      <FlatList
-        data={data}
-        horizontal={true}
-        scrollEnabled={false}
-        ref={flatListRef}
-        keyExtractor={(item, index) => {
-          return item.id;
-        }}
-        pagingEnabled
-        renderItem={({ item }) => (
-          <View style={styles.componentview} key={item.id}>
-            {item?.component}
-          </View>
-        )}
-      />
-      {curentIndex == 0 ? null : (
-        <View style={styles.foter}>
-          <ImageBackground
-            resizeMode="stretch"
-            style={styles.bgimage}
-            source={require('@/assets/images/waveBG.png')}
-          >
-            {curentIndex == 0 ? (
-              <View style={{ width: getWidth(10) }} />
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  flatListRef.current?.scrollToIndex({ index: curentIndex - 1 });
-                  setCurrentIndex(curentIndex - 1);
-                }}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Ionicons name="chevron-back" size={getFontSize(3)} />
-                <Text style={styles.footerText}>Back</Text>
-              </TouchableOpacity>
-            )}
-            <View style={styles.progressBar}>
-              <ProgressBar
-                progress={curentIndex * 17}
-                height={7}
-                backgroundColor="#12D2D9"
-                trackColor="#032F3c"
-              />
-            </View>
+    <>
+      <SafeAreaView style={[styles.container]}>
+        <View>
+          <StatusBar
+            translucent={true}
+            backgroundColor={colors.background}
+            barStyle={scheme == 'dark' ? 'light-content' : 'dark-content'}
+            hidden={false}
+          />
 
-            {curentIndex == 5 ? (
-              <TouchableOpacity
-                onPress={async () => {
-                  if (Organization.length > 0) {
-                    await addFollowing();
-                    const { contactName, contactEmail, contactPhoneNumber, companyName } = state;
-
-                    const data = {
-                      typeOfOrganization: organizationType?._id,
-                      contactEmail: contactEmail,
-                      companyName: companyName,
-                      contactName: contactName,
-                      contactPhoneNumber: contactPhoneNumber,
-                      location: {
-                        longitude: longitude,
-                        latitude: latitude,
-                        address: location_label,
-                      },
-                    };
-
-                    dispatch(orgprofileUpdate({ data, token, go, role: user?.role }));
-                  }
-                }}
-              >
-                <Text style={styles.footerText}>Done</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  gonext();
-                }}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={styles.footerText}>Next</Text>
-                <Ionicons name="chevron-forward" size={getFontSize(3)} />
-              </TouchableOpacity>
-            )}
-          </ImageBackground>
-        </View>
-      )}
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={visible}
-        onBackdropPress={() => setVisible(false)}
-        onSwipeComplete={() => setVisible(false)}
-        style={styles.bottomView}
-        propagateSwipe={true}
-        swipeDirection="down"
-      >
-        <View style={{ ...styles.content2, backgroundColor: colors.card }}>
-          <View style={styles.headLine} />
-
-          <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-            {organizationTypes.map((item, index) => {
+          <FlatList
+            data={data}
+            horizontal={true}
+            scrollEnabled={false}
+            ref={flatListRef}
+            keyExtractor={(item, index) => {
+              return item.id;
+            }}
+            pagingEnabled
+            renderItem={({ item }) => {
               return (
-                <TouchableOpacity
-                  key={item._id}
-                  onPress={() => {
-                    // setWhatIDo(item);
-                    setOrganizationType(item);
-
-                    setVisible(false);
-                  }}
-                  style={styles.listItem2}
-                >
-                  <Text
-                    style={{
-                      color: '#81979E',
-                      fontSize: getFontSize(2.2),
-                      fontFamily: 'Rubik-Regular',
-                    }}
-                    numberOfLines={1}
-                  >
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
+                <View key={item.id} style={styles.componentview}>
+                  {item?.component}
+                </View>
               );
-            })}
-          </ScrollView>
+            }}
+          />
+          {curentIndex == 0 ? null : (
+            <View style={styles.footer}>
+              <ImageBackground
+                resizeMode="stretch"
+                style={styles.bgimage}
+                source={require('@/assets/images/waveBG.png')}
+              >
+                {curentIndex == 0 ? (
+                  <View style={{ width: getWidth(10) }} />
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => {
+                      flatListRef.current?.scrollToIndex({ index: curentIndex - 1 });
+                      setCurrentIndex(curentIndex - 1);
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Ionicons name="chevron-back" size={getFontSize(3)} />
+                    <Text style={styles.footerText}>Back</Text>
+                  </TouchableOpacity>
+                )}
+                <View style={styles.progressBar}>
+                  <ProgressBar
+                    progress={curentIndex * 17}
+                    height={7}
+                    backgroundColor="#12D2D9"
+                    trackColor="#032F3c"
+                  />
+                </View>
+
+                {curentIndex == 5 ? (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      if (Organization.length > 0) {
+                        await addFollowing();
+                        const { contactName, contactEmail, contactPhoneNumber, companyName } =
+                          state;
+
+                        const data = {
+                          typeOfOrganization: organizationType?._id,
+                          contactEmail: contactEmail,
+                          companyName: companyName,
+                          contactName: contactName,
+                          contactPhoneNumber: contactPhoneNumber,
+                          location: {
+                            longitude: longitude,
+                            latitude: latitude,
+                            address: location_label,
+                          },
+                        };
+
+                        dispatch(
+                          orgprofileUpdate({ data, token, go, accountType: user?.accountType })
+                        );
+                      }
+                    }}
+                  >
+                    <Text style={styles.footerText}>Done</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => {
+                      gonext();
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={styles.footerText}>Next</Text>
+                    <Ionicons name="chevron-forward" size={getFontSize(3)} />
+                  </TouchableOpacity>
+                )}
+              </ImageBackground>
+            </View>
+          )}
+          <Modal
+            backdropOpacity={0.3}
+            isVisible={visible}
+            onBackdropPress={() => setVisible(false)}
+            onSwipeComplete={() => setVisible(false)}
+            style={styles.bottomView}
+            propagateSwipe={true}
+            swipeDirection="down"
+          >
+            <View style={{ ...styles.content2, backgroundColor: colors.card }}>
+              <View style={styles.headLine} />
+
+              <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+                {organizationTypes.map((item, index) => {
+                  return (
+                    <TouchableOpacity
+                      key={item._id}
+                      onPress={() => {
+                        // setWhatIDo(item);
+                        setOrganizationType(item);
+
+                        setVisible(false);
+                      }}
+                      style={styles.listItem2}
+                    >
+                      <Text
+                        style={{
+                          color: '#81979E',
+                          fontSize: getFontSize(2.2),
+                          fontFamily: 'Rubik-Regular',
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </Modal>
         </View>
-      </Modal>
-    </View>
+      </SafeAreaView>
+      <SafeAreaView
+        style={{
+          flex: 0,
+          backgroundColor: curentIndex > 0 ? 'rgba(255,255,255,0.95)' : colors.background,
+        }}
+      />
+    </>
   );
 };
 export default OrgnizationSteps;

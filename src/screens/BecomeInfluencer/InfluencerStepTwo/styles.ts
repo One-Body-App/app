@@ -140,4 +140,33 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   btnText: { color: 'white', fontSize: getFontSize(2.5) },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    height: 50,
+    borderRadius: 10,
+
+    marginHorizontal: 20,
+  },
+  disabledButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    height: 50,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  disabledBtnTextStyle: {
+    fontSize: 18,
+    fontWeight: '500',
+    borderColor: '#F6F6F6',
+    color: '#B3C1C5',
+  },
+  btnTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
 });

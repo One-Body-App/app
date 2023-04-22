@@ -40,7 +40,6 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
   },
   paragraph: {
-    color: '#4F6D77',
     fontWeight: '400',
     fontFamily: 'Rubik-Regular',
     fontSize: 15.5,

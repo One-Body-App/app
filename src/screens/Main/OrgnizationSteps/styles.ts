@@ -39,7 +39,7 @@ export const styles = StyleSheet.create({
   },
   innerContainer: {
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 161,
   },
   content2: {
     backgroundColor: 'white',
@@ -113,7 +113,7 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   text: {
-    color: '#4F6D77',
+    color: '#888C93',
     width: getWidth(60),
     textAlign: 'center',
     marginBottom: getHeight(3),
@@ -170,7 +170,7 @@ export const styles = StyleSheet.create({
     margin: getHeight(3),
     textAlign: 'center',
     fontWeight: '500',
-    color: '#032F3C',
+
     fontFamily: 'Rubik-Regular',
   },
 
@@ -188,7 +188,7 @@ export const styles = StyleSheet.create({
 
     alignItems: 'center',
   },
-  foter: {
+  footer: {
     height: getHeight(10),
     left: 0,
     right: 0,

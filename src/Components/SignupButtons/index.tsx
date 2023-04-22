@@ -115,7 +115,13 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
       const urlToken = await getTwitterLoginToken(true);
 
       if (urlToken) {
-        Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+        // OpenURLButton(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+        OpenURLButton(
+          `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
+          false,
+          true,
+          'onebodyapp://app.onebodyapp.com/signup/twitter'
+        );
       }
     } catch (e) {
       console.log(e);
@@ -138,7 +144,6 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
 
       processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
     } catch (error: any) {
-      console.log(error);
       if (!error.message.includes('Code=-5')) {
         seterror(error.message.replace(`[${error.code}]`, ''));
       }

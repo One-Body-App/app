@@ -157,7 +157,7 @@ const MyProfile = ({ navigation }: Props) => {
         verb: 'patch',
       });
       if (res.status == 200) {
-        dispatch(getProfile({ token: token, role: user?.role }));
+        dispatch(getProfile({ token: token, accountType: user?.accountType }));
       } else {
         console.log('error', res);
       }
@@ -316,7 +316,7 @@ const MyProfile = ({ navigation }: Props) => {
           marginTop: direction == 'down' ? 10 : 0,
         }}
       >
-        {user?.role == 'organization' && user?.profile?.companyName
+        {user?.accountType == 'organization' && user?.profile?.companyName
           ? user?.profile?.companyName
           : user?.name}
       </Text>
@@ -333,7 +333,7 @@ const MyProfile = ({ navigation }: Props) => {
         {user?.username ? `@${user?.username}` : ''}
         {`${user?.whatIDo ? `• ${user?.whatIDo.name}` : ''}`}
       </Text>
-      {user?.role == 'individual' ? (
+      {user?.accountType == 'individual' ? (
         <View style={styles.manyimageview}>
           <View>
             <FlatList
@@ -363,7 +363,7 @@ const MyProfile = ({ navigation }: Props) => {
         </View>
       ) : null}
 
-      {user?.isInfluencer == true || user?.role == 'organization' ? (
+      {user?.isInfluencer == true || user?.accountType == 'organization' ? (
         <Text numberOfLines={3} style={styles.bio}>
           {user?.bio}
         </Text>
@@ -384,7 +384,7 @@ const MyProfile = ({ navigation }: Props) => {
 
       {direction == 'down' ? null : (
         <Animated.View>
-          {user?.isInfluencer == true && user?.role == 'individual' ? (
+          {user?.isInfluencer == true && user?.accountType == 'individual' ? (
             <View style={{ alignItems: 'center' }}>
               <Text
                 style={{

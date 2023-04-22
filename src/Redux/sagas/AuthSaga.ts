@@ -32,7 +32,7 @@ function* loginRequest(params) {
       yield put(
         getProfile({
           token: res?.response?.token,
-          role: res?.response.user.role,
+          accountType: res?.response.user.accountType,
         })
       );
     } else {
@@ -116,7 +116,7 @@ function* updateProfileRequest(params) {
     });
 
     if (res?.status == 200) {
-      yield put(getProfile({ token: params.data.token, role: params.data.role }));
+      yield put(getProfile({ token: params.data.token, accountType: params.data.accountType }));
 
       yield put(setLoader(false));
       if (params.data.go) {
@@ -144,14 +144,14 @@ export function* UpdateProfileSaga() {
 function* updateOrgProfileRequest(params) {
   try {
     const res = yield ApiCall({
-      params: { ...params.data.data, role: 'organization' },
+      params: { ...params.data.data, accountType: 'organization' },
       route: 'user/update-profile',
       token: params.data.token,
       verb: 'patch',
     });
 
     if (res?.status == '200') {
-      yield put(getProfile({ token: params.data.token, role: 'organization' }));
+      yield put(getProfile({ token: params.data.token, accountType: 'organization' }));
       yield put(setLoader(false));
       params?.data?.go();
     } else {

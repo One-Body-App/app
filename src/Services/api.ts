@@ -25,7 +25,7 @@ export const ApiCall = async ({
     if (token) {
       tokenToUse = (await firebase.auth().currentUser?.getIdToken()) ?? '';
     }
-
+    console.log(baseurl);
     let url = null;
     if (baseurl) {
       url = `${baseurl}/${route}`;

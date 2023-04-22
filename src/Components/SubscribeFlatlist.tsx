@@ -125,7 +125,7 @@ const SubscribeFlatlist = ({
             }}
           >
             <Text numberOfLines={2} style={styles.subscribetext}>
-              {item?.role == 'organization' && item?.profile?.companyName
+              {item?.accountType == 'organization' && item?.profile?.companyName
                 ? item?.profile?.companyName
                 : item?.name}
             </Text>

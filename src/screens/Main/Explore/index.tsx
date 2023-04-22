@@ -69,7 +69,11 @@ const Explore = () => {
   }, [searchChannelsToFollow]);
 
   useEffect(() => {
-    setSearchChannelsToFollow(allusers);
+    if (searchChannelsToFollowText) {
+      setFilteredUsers(allusers, searchChannelsToFollowText);
+    } else {
+      setSearchChannelsToFollow(allusers);
+    }
   }, [allusers]);
 
   useEffect(() => {
@@ -188,6 +192,18 @@ const Explore = () => {
     }
   };
 
+  const setFilteredUsers = (users: User[], text: string) => {
+    const newSearchChannels = [];
+    for (let i = 0; i < users.length; i++) {
+      if (users[i] && users[i].name) {
+        if (users[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+          newSearchChannels.push(users[i]);
+        }
+      }
+    }
+    setSearchChannelsToFollow(newSearchChannels);
+  };
+
   const renderListHeader = useMemo(() => {
     return (
       <>
@@ -215,15 +231,7 @@ const Explore = () => {
           onChangeText={(text) => {
             setSearchChannelsToFollowText(text);
 
-            const newSearchChannels = [];
-            for (let i = 0; i < following.length; i++) {
-              if (allusers[i] && allusers[i].name) {
-                if (allusers[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                  newSearchChannels.push(allusers[i]);
-                }
-              }
-            }
-            setSearchChannelsToFollow(newSearchChannels);
+            setFilteredUsers(allusers, text);
           }}
         />
 

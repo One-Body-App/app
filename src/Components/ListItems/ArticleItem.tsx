@@ -1,4 +1,4 @@
-import { OpenURLButton } from '@/src/Services/constants';
+import { NO_POST_IMAGE_URL, OpenURLButton } from '@/src/Services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { ArticleType } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
@@ -18,6 +18,7 @@ import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { styles } from './style';
 import { decode } from 'html-entities';
+import { Caption } from 'react-native-paper';
 
 const ArticleItem = ({
   item,
@@ -28,6 +29,7 @@ const ArticleItem = ({
   showModal,
   iconSize,
   hideProfileName,
+  pillText,
 }: {
   item: ArticleType;
   blogPostStyle?: StyleProp<ViewStyle>;
@@ -37,6 +39,7 @@ const ArticleItem = ({
   iconSize?: number;
   showModal: (item: ArticleType) => void;
   hideProfileName?: boolean;
+  pillText?: string;
 }) => {
   const { colors } = useTheme();
 
@@ -47,13 +50,27 @@ const ArticleItem = ({
       }}
       style={[styles.blogpostview, { width: Dimensions.get('window').width - 32 }, blogPostStyle]}
     >
-      {item?.image?.url ? (
-        <FastImage
-          style={[styles.blogpostimage, blogPostImageStyle]}
-          resizeMode={imageSizeType}
-          source={{ uri: item?.image?.url }}
-        />
+      {pillText ? (
+        <View
+          style={{
+            position: 'absolute',
+            zIndex: 9,
+            top: 10,
+            left: 10,
+            backgroundColor: colors.primary,
+            padding: 5,
+            borderRadius: 5,
+          }}
+        >
+          <Caption style={{ color: 'white' }}>{pillText}</Caption>
+        </View>
       ) : null}
+
+      <FastImage
+        style={[styles.blogpostimage, blogPostImageStyle]}
+        resizeMode={imageSizeType}
+        source={{ uri: item?.image?.url ?? NO_POST_IMAGE_URL }}
+      />
 
       <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, width: '100%' }}>
         <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'space-between' }}>

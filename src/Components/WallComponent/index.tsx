@@ -179,7 +179,7 @@ const WallComponent = () => {
                       <TouchableOpacity
                         onPress={() =>
                           navigation.navigate(, {
-                            role: item?.userProfile?.role,
+                            accountType: item?.userProfile?.accountType,
                             id: item?.userProfile?._id,
                           })
                         }
@@ -271,7 +271,7 @@ const WallComponent = () => {
                         <TouchableOpacity
                           onPress={() =>
                             navigation.navigate(, {
-                              role: item?.role,
+                              accountType: item?.accountType,
                               id: item?._id,
                             })
                           }
@@ -401,7 +401,7 @@ const WallComponent = () => {
                         <TouchableOpacity
                           onPress={() =>
                             navigation.navigate(, {
-                              role: item?.userProfile?.role,
+                              accountType: item?.userProfile?.accountType,
                               id: item?.userProfile?._id,
                             })
                           }

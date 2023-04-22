@@ -261,6 +261,7 @@ export const styles = StyleSheet.create({
     ...shadowPosts,
     borderRadius: 5,
     // padding: 0,
+    position: 'relative',
     flex: 1,
     marginHorizontal: 7,
 
@@ -269,7 +270,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     // height: getHeight(23),
 
-    marginVertical: 15,
+    marginVertical: 7,
   },
   blogpostimage: {
     // borderRadius: 16,

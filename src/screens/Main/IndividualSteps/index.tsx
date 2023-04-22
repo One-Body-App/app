@@ -145,6 +145,7 @@ const IndividualSteps = ({ navigation }: Props) => {
 
       if (res?.status == 200) {
         setInfluencer(res.response?.data);
+
         setSearchInfluencer(res.response?.data);
       } else {
         console.log('error', res?.response);
@@ -282,7 +283,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               ...styles.heading,
               width: getWidth(80),
               margin: getHeight(0.5),
-              color: scheme == 'dark' ? '#fff' : '#032F3C',
+              color: scheme == 'dark' ? colors.text : '#032F3C',
             }}
           >
             Let’s Get To Know You.
@@ -312,7 +313,9 @@ const IndividualSteps = ({ navigation }: Props) => {
             onPress={() => logoutAction()}
             style={{ marginVertical: 10, borderBottomWidth: 0 }}
           >
-            <Text style={{ ...styles.logouttext, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+            <Text
+              style={{ ...styles.logouttext, color: scheme == 'dark' ? colors.text : '#032F3C' }}
+            >
               Cancel
             </Text>
           </TouchableOpacity>
@@ -325,7 +328,7 @@ const IndividualSteps = ({ navigation }: Props) => {
         <View style={styles.innerContainer} key={2}>
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
           <Text style={styles.text}>Step 1 of 7</Text>
-          <Text style={{ ...styles.heading, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+          <Text style={{ ...styles.heading, color: scheme == 'dark' ? colors.text : '#032F3C' }}>
             What type of church do you attend?
           </Text>
 
@@ -336,7 +339,10 @@ const IndividualSteps = ({ navigation }: Props) => {
                   ? 'Select One'
                   : churchType.churchType
               }
-              btnStyle={{ ...styles.btn3, backgroundColor: scheme == 'dark' ? '#fff' : '#E7F0F3' }}
+              btnStyle={{
+                ...styles.btn3,
+                backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
+              }}
               leftIcon={<View />}
               RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
@@ -363,7 +369,7 @@ const IndividualSteps = ({ navigation }: Props) => {
           <Logo height={getHeight(14)} width={getWidth(40)} style={styles.logo} />
 
           <Text style={styles.text}>Step 2 of 7</Text>
-          <Text style={{ ...styles.heading, color: scheme == 'dark' ? '#fff' : '#032F3C' }}>
+          <Text style={{ ...styles.heading, color: scheme == 'dark' ? colors.text : '#032F3C' }}>
             How often do you attend church?
           </Text>
 
@@ -448,7 +454,7 @@ const IndividualSteps = ({ navigation }: Props) => {
           <Text
             style={{
               ...styles.heading,
-              color: scheme == 'dark' ? '#fff' : '#032F3C',
+              color: scheme == 'dark' ? colors.text : '#032F3C',
               width: getWidth(80),
             }}
           >
@@ -501,7 +507,7 @@ const IndividualSteps = ({ navigation }: Props) => {
           <Text
             style={{
               ...styles.heading,
-              color: scheme == 'dark' ? '#fff' : '#032F3C',
+              color: scheme == 'dark' ? colors.text : '#032F3C',
               width: '100%',
             }}
           >
@@ -707,8 +713,8 @@ const IndividualSteps = ({ navigation }: Props) => {
 
           <View style={{ ...styles.largeview, marginTop: 25 }}>
             <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
-              {searchInfluencer.length < 1 ? <Text>No Search Results</Text> : null}
-              {searchInfluencer.map((item, index) => {
+              {searchInfluencer?.length < 1 ? <Text>No Search Results</Text> : null}
+              {searchInfluencer?.map((item, index) => {
                 return (
                   <TouchableOpacity
                     activeOpacity={0.6}
@@ -749,7 +755,9 @@ const IndividualSteps = ({ navigation }: Props) => {
                     />
 
                     <View>
-                      <Text style={{ ...styles.textname, textAlign: 'center' }}>{item?.name}</Text>
+                      <Text style={{ ...styles.textname, textAlign: 'center' }} numberOfLines={2}>
+                        {item?.name}
+                      </Text>
                       <Text
                         numberOfLines={1}
                         style={{
@@ -832,198 +840,207 @@ const IndividualSteps = ({ navigation }: Props) => {
         console.log('Its defult');
     }
   };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View>
-        <StatusBar
-          translucent={true}
-          backgroundColor={colors.background}
-          barStyle={scheme == 'dark' ? 'light-content' : 'dark-content'}
-          hidden={false}
-        />
-        <FlatList
-          data={data}
-          horizontal={true}
-          scrollEnabled={false}
-          ref={flatListRef}
-          keyExtractor={(item, index) => {
-            return item.id;
-          }}
-          pagingEnabled
-          renderItem={({ item }) => {
-            return (
-              <View key={item.id} style={styles.componentview}>
-                {item?.component}
-              </View>
-            );
-          }}
-        />
-        {curentIndex == 0 ? null : (
-          <View style={styles.footer}>
-            <ImageBackground
-              resizeMode="stretch"
-              style={{
-                flex: 1,
-                justifyContent: 'space-around',
-                alignItems: 'center',
-                flexDirection: 'row',
-              }}
-              source={require('@/assets/images/waveBG.png')}
-            >
-              {curentIndex == 0 ? (
-                <View style={{ width: getWidth(10) }} />
-              ) : (
-                <TouchableOpacity
-                  onPress={() => {
-                    flatListRef.current?.scrollToIndex({ index: curentIndex - 1 });
-                    setCurrentIndex(curentIndex - 1);
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Ionicons name="chevron-back" size={getFontSize(3)} />
-                  <Text style={styles.footerText}>Back</Text>
-                </TouchableOpacity>
-              )}
-              <View style={styles.progressBar}>
-                <ProgressBar
-                  progress={curentIndex * 15}
-                  height={7}
-                  backgroundColor="#12D2D9"
-                  trackColor="#032F3c"
-                />
-              </View>
-
-              {curentIndex == 5 ? (
-                <TouchableOpacity
-                  onPress={async () => {
-                    if (Organization.length > 0) {
-                      await addFollowing();
-                      const data = {
-                        churchType: churchType?.churchType,
-                        churchSubType: churchSubType?.churchType,
-                        oftenChurch: churchAttend,
-                        dateOfBirth: date,
-                        location: {
-                          longitude: longitude,
-                          latitude: latitude,
-                          address: location?.place_name,
-                        },
-                      };
-                      dispatch(profileUpdate({ data, token, role: user?.role }));
-                    } else {
-                      showToast('Select at least 1 influencer/organization to continue');
-                    }
-                  }}
-                >
-                  <Text style={styles.footerText}>Done</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  onPress={() => {
-                    gonext();
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={styles.footerText}>Next</Text>
-                  <Ionicons name="chevron-forward" size={getFontSize(3)} />
-                </TouchableOpacity>
-              )}
-            </ImageBackground>
-          </View>
-        )}
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={churchTypeModalVisible}
-          onBackdropPress={() => setChurchTypeModalVisible(false)}
-          onSwipeComplete={() => setChurchTypeModalVisible(false)}
-          swipeDirection={['down']}
-          style={styles.bottomView}
-          propagateSwipe={true}
-        >
-          <View style={{ ...styles.content2, backgroundColor: colors.background }}>
-            <View style={styles.headLine} />
-
-            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-              {churchTypes.map((item, index) => {
-                return (
+    <>
+      <SafeAreaView style={[styles.container]}>
+        <View>
+          <StatusBar
+            translucent={true}
+            backgroundColor={colors.background}
+            barStyle={scheme == 'dark' ? 'light-content' : 'dark-content'}
+            hidden={false}
+          />
+          <FlatList
+            data={data}
+            horizontal={true}
+            scrollEnabled={false}
+            ref={flatListRef}
+            keyExtractor={(item, index) => {
+              return item.id;
+            }}
+            pagingEnabled
+            renderItem={({ item }) => {
+              return (
+                <View key={item.id} style={styles.componentview}>
+                  {item?.component}
+                </View>
+              );
+            }}
+          />
+          {curentIndex == 0 ? null : (
+            <View style={styles.footer}>
+              <ImageBackground
+                resizeMode="stretch"
+                style={{
+                  flex: 1,
+                  justifyContent: 'space-around',
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                }}
+                source={require('@/assets/images/waveBG.png')}
+              >
+                {curentIndex == 0 ? (
+                  <View style={{ width: getWidth(10) }} />
+                ) : (
                   <TouchableOpacity
                     onPress={() => {
-                      // setWhatIDo(item);
-                      setChurchType(item);
-                      setSubChurchType(null);
-
-                      setChurchTypeModalVisible(false);
+                      flatListRef.current?.scrollToIndex({ index: curentIndex - 1 });
+                      setCurrentIndex(curentIndex - 1);
                     }}
-                    style={styles.listItem2}
-                    key={index}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
                   >
-                    <Text
-                      style={{
-                        color: '#81979E',
-                        fontSize: getFontSize(2.2),
-                        fontFamily: 'Rubik-Regular',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.churchType}
-                    </Text>
+                    <Ionicons name="chevron-back" size={getFontSize(3)} />
+                    <Text style={styles.footerText}>Back</Text>
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </Modal>
+                )}
+                <View style={styles.progressBar}>
+                  <ProgressBar
+                    progress={curentIndex * 15}
+                    height={7}
+                    backgroundColor="#12D2D9"
+                    trackColor="#032F3c"
+                  />
+                </View>
 
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={churchSubTypeModalVisible}
-          onBackdropPress={() => setChurchSubTypeModalVisible(false)}
-          onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
-          swipeDirection={['down']}
-          style={styles.bottomView}
-          propagateSwipe={true}
-        >
-          <View style={styles.content2}>
-            <View style={styles.headLine} />
-
-            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-              {churchType?.children.map((item, index) => {
-                return (
+                {curentIndex == 5 ? (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      if (Organization.length > 0) {
+                        await addFollowing();
+                        const data = {
+                          churchType: churchType?.churchType,
+                          churchSubType: churchSubType?.churchType,
+                          oftenChurch: churchAttend,
+                          dateOfBirth: date,
+                          location: {
+                            longitude: longitude,
+                            latitude: latitude,
+                            address: location?.place_name,
+                          },
+                        };
+                        dispatch(profileUpdate({ data, token, accountType: user?.accountType }));
+                      } else {
+                        showToast('Select at least 1 influencer/organization to continue');
+                      }
+                    }}
+                  >
+                    <Text style={styles.footerText}>Done</Text>
+                  </TouchableOpacity>
+                ) : (
                   <TouchableOpacity
                     onPress={() => {
-                      // setWhatIDo(item);
-                      setSubChurchType(item);
-                      setChurchSubTypeModalVisible(false);
+                      gonext();
                     }}
-                    style={styles.listItem2}
-                    key={index}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
                   >
-                    <Text
-                      style={{
-                        color: '#81979E',
-                        fontSize: getFontSize(2.2),
-                        fontFamily: 'Rubik-Regular',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.churchType}
-                    </Text>
+                    <Text style={styles.footerText}>Next</Text>
+                    <Ionicons name="chevron-forward" size={getFontSize(3)} />
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </Modal>
-      </View>
-    </SafeAreaView>
+                )}
+              </ImageBackground>
+            </View>
+          )}
+          <Modal
+            backdropOpacity={0.3}
+            isVisible={churchTypeModalVisible}
+            onBackdropPress={() => setChurchTypeModalVisible(false)}
+            onSwipeComplete={() => setChurchTypeModalVisible(false)}
+            swipeDirection={['down']}
+            style={styles.bottomView}
+            propagateSwipe={true}
+          >
+            <View style={{ ...styles.content2, backgroundColor: colors.background }}>
+              <View style={styles.headLine} />
+
+              <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+                {churchTypes.map((item, index) => {
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        // setWhatIDo(item);
+                        setChurchType(item);
+                        setSubChurchType(null);
+
+                        setChurchTypeModalVisible(false);
+                      }}
+                      style={styles.listItem2}
+                      key={index}
+                    >
+                      <Text
+                        style={{
+                          color: '#81979E',
+                          fontSize: getFontSize(2.2),
+                          fontFamily: 'Rubik-Regular',
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item.churchType}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </Modal>
+
+          <Modal
+            backdropOpacity={0.3}
+            isVisible={churchSubTypeModalVisible}
+            onBackdropPress={() => setChurchSubTypeModalVisible(false)}
+            onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
+            swipeDirection={['down']}
+            style={styles.bottomView}
+            propagateSwipe={true}
+          >
+            <View style={styles.content2}>
+              <View style={styles.headLine} />
+
+              <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+                {churchType?.children.map((item, index) => {
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        // setWhatIDo(item);
+                        setSubChurchType(item);
+                        setChurchSubTypeModalVisible(false);
+                      }}
+                      style={styles.listItem2}
+                      key={index}
+                    >
+                      <Text
+                        style={{
+                          color: '#81979E',
+                          fontSize: getFontSize(2.2),
+                          fontFamily: 'Rubik-Regular',
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item.churchType}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </Modal>
+        </View>
+      </SafeAreaView>
+      <SafeAreaView
+        style={{
+          flex: 0,
+          backgroundColor: curentIndex > 0 ? 'rgba(255,255,255,0.95)' : colors.background,
+        }}
+      />
+    </>
   );
 };
 

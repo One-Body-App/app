@@ -2124,29 +2124,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@expo/config-plugins@npm:^4.1.5":
-  version: 4.1.5
-  resolution: "@expo/config-plugins@npm:4.1.5"
-  dependencies:
-    "@expo/config-types": ^45.0.0
-    "@expo/json-file": 8.2.36
-    "@expo/plist": 0.0.18
-    "@expo/sdk-runtime-versions": ^1.0.0
-    "@react-native/normalize-color": ^2.0.0
-    chalk: ^4.1.2
-    debug: ^4.3.1
-    find-up: ~5.0.0
-    getenv: ^1.0.0
-    glob: 7.1.6
-    resolve-from: ^5.0.0
-    semver: ^7.3.5
-    slash: ^3.0.0
-    xcode: ^3.0.1
-    xml2js: 0.4.23
-  checksum: f631217251281b1e25949adbec175ef1362dd08d837ce676ed8350c1401b5764091ba100f76f42adb623e4cdcde5b270be77ad6606f978d419c07fd8c81b701c
-  languageName: node
-  linkType: hard
-
 "@expo/config-plugins@npm:^5.0.1":
   version: 5.0.1
   resolution: "@expo/config-plugins@npm:5.0.1"
@@ -2167,13 +2144,6 @@ __metadata:
     xcode: ^3.0.1
     xml2js: 0.4.23
   checksum: bd7139ba8728e7117aaa1ae056190ed69bfde707286d13ef2fe26201381753e6d2066a223eb69547825ab1469c253a75f2e73fad82021b2a7589bb98fd8bf8bb
-  languageName: node
-  linkType: hard
-
-"@expo/config-types@npm:^45.0.0":
-  version: 45.0.0
-  resolution: "@expo/config-types@npm:45.0.0"
-  checksum: 9b4866540654da61af0985ebfc975b3cb690625acf7742443a7e56263bf134b261e22719720982223407f8957d08a3646178c79f482861218882f0956d804021
   languageName: node
   linkType: hard
 
@@ -10909,7 +10879,7 @@ __metadata:
     react-native-device-info: ^10.4.0
     react-native-dotenv: ^3.3.1
     react-native-fast-image: ^8.5.11
-    react-native-fbsdk-next: ^10.0.0
+    react-native-fbsdk-next: ^11.2.1
     react-native-floating-action: ^1.22.0
     react-native-geolocation-service: ^5.3.0
     react-native-gesture-handler: ^2.9.0
@@ -10930,6 +10900,7 @@ __metadata:
     react-native-popup-menu: ^0.15.12
     react-native-qrcode-svg: ^6.1.2
     react-native-reanimated: 2.14.4
+    react-native-recaptcha-that-works: ^1.3.2
     react-native-render-html: ^6.3.4
     react-native-safe-area-context: ^3.4.1
     react-native-screens: ^3.13.1
@@ -10947,7 +10918,7 @@ __metadata:
     react-native-tracking-transparency: ^0.1.2
     react-native-vector-icons: ^9.2.0
     react-native-video: ^5.2.1
-    react-native-webview: ^11.22.2
+    react-native-webview: ^12.0.2
     react-redux: ^7.2.6
     react-test-renderer: 18.2.0
     redux: ^4.1.2
@@ -11665,15 +11636,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-fbsdk-next@npm:^10.0.0":
-  version: 10.0.0
-  resolution: "react-native-fbsdk-next@npm:10.0.0"
+"react-native-fbsdk-next@npm:^11.2.1":
+  version: 11.2.1
+  resolution: "react-native-fbsdk-next@npm:11.2.1"
   dependencies:
-    "@expo/config-plugins": ^4.1.5
     xml2js: ^0.4.23
   peerDependencies:
+    expo: ">=47.0.0"
     react-native: ">=0.63.3"
-  checksum: e34a091fd71cce2564982b0e911cd7db49eee1858810bc4246c6b6123a63c0e25a5a303b5669c31446902824f92360afe80e0a996b38dffe062b3888c35dc063
+  peerDependenciesMeta:
+    expo:
+      optional: true
+  checksum: e9e27f67212df7c717239d02037bf48ab7f178adfe938b3366d596f32b068326ae0bc4705e4c767d626e85fdbcbd6e1e6861d8979123a5d7f0c01fe5097e6adc
   languageName: node
   linkType: hard
 
@@ -11969,6 +11943,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-recaptcha-that-works@npm:^1.3.2":
+  version: 1.3.2
+  resolution: "react-native-recaptcha-that-works@npm:1.3.2"
+  peerDependencies:
+    react: ">=16.9.0"
+    react-native: ">=0.60.0"
+    react-native-webview: ">=10.0.0"
+  checksum: 20d9f6a31f766a6ebb2bc94c17dcdd76f1953c241cf10b03f10f2427f4979aec87343d053d447dd081726ff7c3c36d5b7cf44acd4b09bb60e0cfb51e8e56a875
+  languageName: node
+  linkType: hard
+
 "react-native-render-html@npm:^6.3.4":
   version: 6.3.4
   resolution: "react-native-render-html@npm:6.3.4"
@@ -12181,16 +12166,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-webview@npm:^11.22.2":
-  version: 11.23.0
-  resolution: "react-native-webview@npm:11.23.0"
+"react-native-webview@npm:^12.0.2":
+  version: 12.0.2
+  resolution: "react-native-webview@npm:12.0.2"
   dependencies:
     escape-string-regexp: 2.0.0
     invariant: 2.2.4
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 2db9fabd79a604436e8cac22cd6ceb62a790e4db71bc65baa23f5e1499b4d781c867fec41c6d7983da46ed5689e2241360025c97522d191332092df08e384e12
+  checksum: f777dc48683ada530eb4c87ff85ab9bcdcb35156c319f226a220fd194c226fe136c240d020b6a835f2eba44cba3e08e42752cc6ee8d38ebb4408a31d2e2ab9c8
   languageName: node
   linkType: hard
 

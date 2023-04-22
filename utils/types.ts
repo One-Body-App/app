@@ -66,7 +66,7 @@ export type User = {
   isProfileCompleted: boolean;
   name: string;
   profileImage: string;
-  role: string;
+  accountType: 'individual' | 'organization';
   updatedAt: string;
   username: string;
   bio?: string;
@@ -107,7 +107,7 @@ type InfluencerProfile = {
 };
 
 export type ArticleType = {
-  id?: stringl;
+  id?: string;
   link?: string;
   created: Date;
   image: { url: string };
@@ -116,7 +116,7 @@ export type ArticleType = {
     _id: string;
     name: string;
     username: string;
-    role: string;
+    accountType: 'individual' | 'organization';
     profileImage: string;
   };
 };

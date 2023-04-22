@@ -36,6 +36,8 @@ import { useTheme } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faUsers } from '@fortawesome/free-solid-svg-icons/faUsers';
+import Recaptcha, { RecaptchaHandles } from 'react-native-recaptcha-that-works';
+
 const { width: wWidth } = Dimensions.get('window');
 
 type Props = StackScreenProps<RootStackParamList, 'SignupForm'>;
@@ -56,6 +58,7 @@ const showFullBar = (isShow = true) => {
 };
 
 const SignupForm = ({ navigation }: Props) => {
+  const recaptcha = useRef<RecaptchaHandles | null>(null);
   const barWidth = widthByPercent(70);
   const AccountType = useSelector((state: RootState) => state.general.accountType);
   const dispatch = useDispatch();
@@ -96,55 +99,7 @@ const SignupForm = ({ navigation }: Props) => {
 
     if (!emailError && !passwordError && !nameError && !cPasswordError && !usernameError) {
       if (password == cPassword) {
-        const data = {
-          email,
-          name,
-          role: AccountType,
-          userId: '',
-          username,
-        };
-        auth()
-          .createUserWithEmailAndPassword(email, password)
-          .then(async (user) => {
-            // await user.user.sendEmailVerification();
-            // const token = await user.user.getIdToken();
-            // user.user.updatePhoneNumber()
-            data.userId = user.user.uid;
-
-            // dispatch(setLoginData({ token: await user.user.getIdToken() }));
-            dispatch(
-              signUpRequest({
-                data,
-                seterror,
-                go: () =>
-                  // navigation.pop()
-                  navigation.replace('Login', { showConfirmationEmailMessage: true }),
-
-                // navigation.reset({
-                //   index: 1,
-                //   routes: [
-                //     { name: 'SignUp' },
-                //     { name: 'Login', params: { showConfirmationEmailMessage: true } },
-                //   ],
-                // }),
-              })
-            );
-            setIsloading(false);
-          })
-          .catch((error) => {
-            setIsloading(false);
-            if (error.code === 'auth/email-already-in-use') {
-              seterror('That email address is already in use!');
-              console.log('That email address is already in use!');
-            }
-
-            if (error.code === 'auth/invalid-email') {
-              seterror('That email address is invalid!');
-              console.log('That email address is invalid!');
-            }
-
-            console.error(error);
-          });
+        recaptcha.current?.open();
 
         //
       } else {
@@ -182,6 +137,64 @@ const SignupForm = ({ navigation }: Props) => {
     } else {
       return { ...styles.btn, borderColor: colors.border };
     }
+  };
+
+  const onVerify = (token: string) => {
+    const { email, password, name, cPassword, username } = state;
+    console.log(token);
+    const data = {
+      email,
+      name,
+      accountType: AccountType,
+      userId: '',
+      username,
+    };
+    // auth()
+    //   .createUserWithEmailAndPassword(email, password)
+    //   .then(async (user) => {
+    //     // await user.user.sendEmailVerification();
+    //     // const token = await user.user.getIdToken();
+    //     // user.user.updatePhoneNumber()
+    //     data.userId = user.user.uid;
+
+    //     // dispatch(setLoginData({ token: await user.user.getIdToken() }));
+    //     dispatch(
+    //       signUpRequest({
+    //         data,
+    //         seterror,
+    //         go: () =>
+    //           // navigation.pop()
+    //           navigation.replace('Login', { showConfirmationEmailMessage: true }),
+
+    //         // navigation.reset({
+    //         //   index: 1,
+    //         //   routes: [
+    //         //     { name: 'SignUp' },
+    //         //     { name: 'Login', params: { showConfirmationEmailMessage: true } },
+    //         //   ],
+    //         // }),
+    //       })
+    //     );
+    //     setIsloading(false);
+    //   })
+    //   .catch((error) => {
+    //     setIsloading(false);
+    //     if (error.code === 'auth/email-already-in-use') {
+    //       seterror('That email address is already in use!');
+    //       console.log('That email address is already in use!');
+    //     }
+
+    //     if (error.code === 'auth/invalid-email') {
+    //       seterror('That email address is invalid!');
+    //       console.log('That email address is invalid!');
+    //     }
+
+    //     console.error(error);
+    //   });
+  };
+
+  const onExpire = () => {
+    console.warn('expired!');
   };
 
   const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/g;
@@ -319,6 +332,8 @@ const SignupForm = ({ navigation }: Props) => {
               onSubmitEditing={() => inputRefs.username.current?.focus()}
               onChangeText={(username) => changeHandler('username', username)}
               blurOnSubmit={false}
+              autoCorrect={false}
+              autoComplete="username"
               keyboardType="default"
               autoCapitalize="none"
             />
@@ -535,6 +550,15 @@ const SignupForm = ({ navigation }: Props) => {
               {state.cPasswordError}
             </Text>
 
+            <Recaptcha
+              ref={recaptcha}
+              siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
+              baseUrl="http://www.onebodyapp.com"
+              onVerify={onVerify}
+              onExpire={onExpire}
+              size="invisible"
+            />
+
             <View style={{ ...styles.center, paddingBottom: 20 }}>
               <Text style={{ color: dark ? colors.text : '#032F3C' }}>
                 By signing up, you agree to our
@@ -566,7 +590,9 @@ const SignupForm = ({ navigation }: Props) => {
             <Button
               text={'SIGN UP'}
               disabled={loading}
-              onPress={() => signUpUser()}
+              onPress={() => {
+                signUpUser();
+              }}
               // btnTextStyle={[GeneralStyle.btnText, { color: dark ? colors.text : '#E6EAEC' }]}
               // disabledBtnStyle={{
               //   ...GeneralStyle.btn,

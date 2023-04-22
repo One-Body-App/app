@@ -4,6 +4,7 @@ import { Linking } from 'react-native';
 import {
   PROD_BASE_URL,
   DEV_BASE_URL,
+  STAGING_BASE_URL,
   PRIVACY_POLICY_URL as _PRIVACY_POLICY_URL,
   TERMS_CONDITIONS_URL as _TERMS_CONDITIONS_URL,
   GOOGLE_LOGIN_CLIENT_ID as _GOOGLE_LOGIN_CLIENT_ID,
@@ -12,12 +13,14 @@ import {
   INSTAGRAM_CONNECT_REDIRECT as _INSTAGRAM_CONNECT_REDIRECT,
   INSTAGRAM_RECONNECT_REDIRECT as _INSTAGRAM_RECONNECT_REDIRECT,
   NO_PROFILE_IMAGE as _NO_PROFILE_IMAGE,
+  NO_POST_IMAGE_URL as _NO_POST_IMAGE_URL,
 } from 'react-native-dotenv';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
+const IS_STAGING = true;
 
-// export const BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
+export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 // export const BASE_URL = 'https://192.168.4.134/api';
-export const BASE_URL = PROD_BASE_URL;
+// export const BASE_URL = PROD_BASE_URL;
 // console.log(BASE_URL, 'BASE_URLBASE_URL');
 
 export const PRIVACY_POLICY_URL = _PRIVACY_POLICY_URL;
@@ -27,13 +30,19 @@ export const TERMS_CONDITIONS_URL = _TERMS_CONDITIONS_URL;
 export const GOOGLE_LOGIN_CLIENT_ID = _GOOGLE_LOGIN_CLIENT_ID;
 
 export const NO_PROFILE_IMAGE = _NO_PROFILE_IMAGE;
+export const NO_POST_IMAGE_URL = _NO_POST_IMAGE_URL;
 
 export const INSTAGRAM_APP_ID = _INSTAGRAM_APP_ID;
 export const INSTAGRAM_LOGIN_REDIRECT = _INSTAGRAM_LOGIN_REDIRECT;
 export const INSTAGRAM_CONNECT_REDIRECT = _INSTAGRAM_CONNECT_REDIRECT;
 export const INSTAGRAM_RECONNECT_REDIRECT = _INSTAGRAM_RECONNECT_REDIRECT;
 
-export const OpenURLButton = async (url: string, externalBrowser?: boolean) => {
+export const OpenURLButton = async (
+  url: string,
+  externalBrowser?: boolean,
+  isAuthLogin?: boolean,
+  authRedirect?: string
+) => {
   try {
     if (await InAppBrowser.isAvailable()) {
       const canOpen = await Linking.canOpenURL(url);
@@ -43,30 +52,47 @@ export const OpenURLButton = async (url: string, externalBrowser?: boolean) => {
         if (externalBrowser) {
           Linking.openURL(urlToUse);
         } else {
-          await InAppBrowser.open(urlToUse, {
-            readerMode: false,
-            animated: true,
-            modalPresentationStyle: 'fullScreen',
-            modalTransitionStyle: 'coverVertical',
-            modalEnabled: true,
-            enableBarCollapsing: false,
+          if (isAuthLogin && authRedirect) {
+            console.log('asdfasdf', urlToUse, authRedirect, 'urlToUse, authRedirect');
+            const result = await InAppBrowser.openAuth(urlToUse, authRedirect, {
+              // iOS Properties
+              ephemeralWebSession: false,
+              // Android Properties
+              showTitle: false,
+              enableUrlBarHiding: true,
+              enableDefaultShare: false,
+            });
 
-            showTitle: true,
-            enableUrlBarHiding: true,
-            enableDefaultShare: true,
-            forceCloseOnRedirection: false,
-            animations: {
-              startEnter: 'slide_in_right',
-              startExit: 'slide_out_left',
-              endEnter: 'slide_in_left',
-              endExit: 'slide_out_right',
-            },
-          });
+            if (result.type == 'success') {
+              Linking.openURL(result.url);
+            }
+          } else {
+            await InAppBrowser.open(urlToUse, {
+              readerMode: false,
+              animated: true,
+              modalPresentationStyle: 'fullScreen',
+              modalTransitionStyle: 'coverVertical',
+              modalEnabled: true,
+              enableBarCollapsing: false,
+
+              showTitle: true,
+              enableUrlBarHiding: true,
+              enableDefaultShare: true,
+              forceCloseOnRedirection: false,
+              animations: {
+                startEnter: 'slide_in_right',
+                startExit: 'slide_out_left',
+                endEnter: 'slide_in_left',
+                endExit: 'slide_out_right',
+              },
+            });
+          }
         }
       }
     }
   } catch (error: any) {
-    console.log(error.message);
+    console.log(error, 'error');
+    console.log(error.message, 'hsd;jkha;jhk');
   }
 };
 
