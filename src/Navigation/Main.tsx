@@ -216,7 +216,7 @@ const Main = () => {
   };
 
   const scheme = useColorScheme();
-  console.log(userProfile);
+
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       <AppProvider>

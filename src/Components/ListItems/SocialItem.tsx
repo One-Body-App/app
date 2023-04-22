@@ -64,7 +64,7 @@ const SocialItem = ({
     setIsPlaying(visible ?? false);
     if (!visible && !isMuted) setIsMuted(true);
   }, [visible]);
-  console.log(item?.mediaUrl, item.mediaType);
+
   return (
     <View
       style={[

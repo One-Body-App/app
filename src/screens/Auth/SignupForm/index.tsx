@@ -141,7 +141,7 @@ const SignupForm = ({ navigation }: Props) => {
 
   const onVerify = (token: string) => {
     const { email, password, name, cPassword, username } = state;
-    console.log(token);
+
     const data = {
       email,
       name,
@@ -149,48 +149,48 @@ const SignupForm = ({ navigation }: Props) => {
       userId: '',
       username,
     };
-    // auth()
-    //   .createUserWithEmailAndPassword(email, password)
-    //   .then(async (user) => {
-    //     // await user.user.sendEmailVerification();
-    //     // const token = await user.user.getIdToken();
-    //     // user.user.updatePhoneNumber()
-    //     data.userId = user.user.uid;
+    auth()
+      .createUserWithEmailAndPassword(email, password)
+      .then(async (user) => {
+        // await user.user.sendEmailVerification();
+        // const token = await user.user.getIdToken();
+        // user.user.updatePhoneNumber()
+        data.userId = user.user.uid;
 
-    //     // dispatch(setLoginData({ token: await user.user.getIdToken() }));
-    //     dispatch(
-    //       signUpRequest({
-    //         data,
-    //         seterror,
-    //         go: () =>
-    //           // navigation.pop()
-    //           navigation.replace('Login', { showConfirmationEmailMessage: true }),
+        // dispatch(setLoginData({ token: await user.user.getIdToken() }));
+        dispatch(
+          signUpRequest({
+            data,
+            seterror,
+            go: () =>
+              // navigation.pop()
+              navigation.replace('Login', { showConfirmationEmailMessage: true }),
 
-    //         // navigation.reset({
-    //         //   index: 1,
-    //         //   routes: [
-    //         //     { name: 'SignUp' },
-    //         //     { name: 'Login', params: { showConfirmationEmailMessage: true } },
-    //         //   ],
-    //         // }),
-    //       })
-    //     );
-    //     setIsloading(false);
-    //   })
-    //   .catch((error) => {
-    //     setIsloading(false);
-    //     if (error.code === 'auth/email-already-in-use') {
-    //       seterror('That email address is already in use!');
-    //       console.log('That email address is already in use!');
-    //     }
+            // navigation.reset({
+            //   index: 1,
+            //   routes: [
+            //     { name: 'SignUp' },
+            //     { name: 'Login', params: { showConfirmationEmailMessage: true } },
+            //   ],
+            // }),
+          })
+        );
+        setIsloading(false);
+      })
+      .catch((error) => {
+        setIsloading(false);
+        if (error.code === 'auth/email-already-in-use') {
+          seterror('That email address is already in use!');
+          console.log('That email address is already in use!');
+        }
 
-    //     if (error.code === 'auth/invalid-email') {
-    //       seterror('That email address is invalid!');
-    //       console.log('That email address is invalid!');
-    //     }
+        if (error.code === 'auth/invalid-email') {
+          seterror('That email address is invalid!');
+          console.log('That email address is invalid!');
+        }
 
-    //     console.error(error);
-    //   });
+        console.error(error);
+      });
   };
 
   const onExpire = () => {
