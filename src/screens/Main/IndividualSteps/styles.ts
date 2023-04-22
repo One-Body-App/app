@@ -40,14 +40,13 @@ export const styles = StyleSheet.create<Styles>({
     alignItems: 'center',
   },
   flatlistview: {
-    // flex: 1,
     alignSelf: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     marginHorizontal: 10,
     paddingBottom: 240,
-    // paddingTop: 10,
+    marginTop: 35,
   },
   componentview: {
     width: getWidth(100),

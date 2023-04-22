@@ -712,7 +712,7 @@ const IndividualSteps = ({ navigation }: Props) => {
           />
 
           <View style={{ ...styles.largeview, marginTop: 25 }}>
-            <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
+            <ScrollView contentContainerStyle={[styles.flatlistview, { justifyContent: 'center' }]}>
               {searchInfluencer?.length < 1 ? <Text>No Search Results</Text> : null}
               {searchInfluencer?.map((item, index) => {
                 return (

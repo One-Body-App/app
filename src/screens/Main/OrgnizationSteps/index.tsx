@@ -665,7 +665,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
             }}
           />
 
-          <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
+          <ScrollView contentContainerStyle={styles.flatlistview}>
             {searchInterest.length < 1 ? <Text>No Search Results</Text> : null}
             {searchInterest.map((item, index) => (
               <TouchableOpacity
@@ -751,7 +751,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
           />
 
           <View style={{ ...styles.largeview, marginTop: 25 }}>
-            <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
+            <ScrollView contentContainerStyle={[styles.flatlistview, { justifyContent: 'center' }]}>
               {searchInfluencer.length < 1 ? <Text>No Search Results</Text> : null}
               {searchInfluencer.map((item, index) => {
                 return (
@@ -793,7 +793,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                       }}
                     />
                     <View>
-                      <Text numberOfLines={1} style={{ ...styles.textname, textAlign: 'center' }}>
+                      <Text style={{ ...styles.textname, textAlign: 'center' }} numberOfLines={2}>
                         {item?.name}
                       </Text>
                       <Text

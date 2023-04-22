@@ -36,6 +36,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 10,
     paddingBottom: 240,
+    marginTop: 35,
   },
   innerContainer: {
     alignItems: 'center',
@@ -182,11 +183,10 @@ export const styles = StyleSheet.create({
     color: '#032F3C',
     fontFamily: 'Rubik-Regular',
   },
-  img: { width: 110, height: 110, alignSelf: 'center', borderRadius: 55 },
+  img: { width: 80, height: 80, alignSelf: 'center', borderRadius: 40 },
   box: {
     width: getWidth(30),
-    height: getHeight(21),
-
+    height: getHeight(20),
     alignItems: 'center',
   },
   footer: {
