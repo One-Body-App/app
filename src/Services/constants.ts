@@ -53,7 +53,6 @@ export const OpenURLButton = async (
           Linking.openURL(urlToUse);
         } else {
           if (isAuthLogin && authRedirect) {
-            console.log('asdfasdf', urlToUse, authRedirect, 'urlToUse, authRedirect');
             const result = await InAppBrowser.openAuth(urlToUse, authRedirect, {
               // iOS Properties
               ephemeralWebSession: false,

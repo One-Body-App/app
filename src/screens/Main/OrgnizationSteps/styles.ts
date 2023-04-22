@@ -40,6 +40,7 @@ export const styles = StyleSheet.create({
   innerContainer: {
     alignItems: 'center',
     marginBottom: 161,
+    flex: 1,
   },
   content2: {
     backgroundColor: 'white',

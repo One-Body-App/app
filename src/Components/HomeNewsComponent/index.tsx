@@ -113,7 +113,6 @@ const HomeNewsComponent = () => {
             enabled={true}
             refreshing={refreshing}
             onRefresh={() => {
-              console.log('asdf');
               setRefreshing(true);
             }}
           />

@@ -49,6 +49,7 @@ import { Interest, Tag, User } from '@/utils/types';
 import { useToast } from 'react-native-toast-notifications';
 import { profile } from 'console';
 import { useTheme } from '@react-navigation/native';
+import { NO_PROFILE_IMAGE } from '@/src/Services/constants';
 
 type Props = NativeStackScreenProps<any, 'OrgnizationSteps'>;
 
@@ -219,6 +220,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
       if (res?.status == 200) {
         // setorg(res?.response?.data);
         setInfluencer(res.response?.data);
+
         setSearchInfluencer(res.response?.data);
       } else {
         console.log('error', res);
@@ -751,60 +753,62 @@ const OrgnizationSteps = ({ navigation }: Props) => {
           <View style={{ ...styles.largeview, marginTop: 25 }}>
             <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
               {searchInfluencer.length < 1 ? <Text>No Search Results</Text> : null}
-              {searchInfluencer.map((item, index) => (
-                <TouchableOpacity
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    if (Organization.includes(item._id)) {
-                      setOrganization(
-                        Organization.filter((organizationId) => {
-                          return organizationId !== item._id;
-                        })
-                      );
-                    } else {
-                      setOrganization([...Organization, item._id]);
-                    }
-                  }}
-                  style={styles.box}
-                  key={index}
-                >
-                  <Image
-                    style={
-                      Organization.includes(item._id)
-                        ? {
-                            ...styles.img,
-                            borderWidth: 2.5,
-                            borderColor:
-                              item?.profileImage && item?.profileImage != ''
-                                ? '#032F3C'
-                                : '#09aadb',
-                          }
-                        : styles.img
-                    }
-                    resizeMode="contain"
-                    source={{
-                      uri:
-                        item?.profileImage && item?.profileImage != ''
-                          ? item?.profileImage
-                          : 'https://cdn.onebodyapp.com/user/no-image.png',
+              {searchInfluencer.map((item, index) => {
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.6}
+                    onPress={() => {
+                      if (Organization.includes(item._id)) {
+                        setOrganization(
+                          Organization.filter((organizationId) => {
+                            return organizationId !== item._id;
+                          })
+                        );
+                      } else {
+                        setOrganization([...Organization, item._id]);
+                      }
                     }}
-                  />
-                  <View>
-                    <Text numberOfLines={1} style={{ ...styles.textname, textAlign: 'center' }}>
-                      {item?.name}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        color: '#757575',
-                        alignSelf: 'center',
+                    style={styles.box}
+                    key={index}
+                  >
+                    <Image
+                      style={
+                        Organization.includes(item._id)
+                          ? {
+                              ...styles.img,
+                              borderWidth: 2.5,
+                              borderColor:
+                                item?.profileImage && item?.profileImage != ''
+                                  ? '#032F3C'
+                                  : '#09aadb',
+                            }
+                          : styles.img
+                      }
+                      resizeMode="contain"
+                      source={{
+                        uri:
+                          item?.profileImage && item?.profileImage != ''
+                            ? item?.profileImage
+                            : NO_PROFILE_IMAGE,
                       }}
-                    >
-                      {item?.whatIDo?.name}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                    />
+                    <View>
+                      <Text numberOfLines={1} style={{ ...styles.textname, textAlign: 'center' }}>
+                        {item?.name}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          color: '#757575',
+                          alignSelf: 'center',
+                        }}
+                      >
+                        {item?.whatIDo?.name}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
         </View>
