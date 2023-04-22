@@ -822,7 +822,7 @@ const LoginComponent: FC<Props> = ({
           </>
         )}
 
-        {enabledLoginProviders &&
+        {/* {enabledLoginProviders &&
         enabledLoginProviders?.includes('twitter.com') &&
         enabledLoginProviders?.includes('password') ? (
           <View style={{ paddingHorizontal: 10, flex: 1 }}>
@@ -840,11 +840,7 @@ const LoginComponent: FC<Props> = ({
             />
           </View>
         ) : (
-          // <TouchableOpacity onPress={() => onTwitterButtonPress()}>
-          //   <View style={{ ...styles.socialContainer }}>
-          //     <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
-          //   </View>
-          // </TouchableOpacity>
+
           <>
             {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
               <Button
@@ -863,7 +859,7 @@ const LoginComponent: FC<Props> = ({
               />
             ) : null}
           </>
-        )}
+        )} */}
 
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('apple') &&
