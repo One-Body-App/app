@@ -4,7 +4,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    // backgroundColor: '#FFF',
   },
   align: { marginHorizontal: 20, marginTop: '10%' },
   singerrorview1: { padding: 5, flexDirection: 'row' },

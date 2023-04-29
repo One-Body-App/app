@@ -7,9 +7,13 @@ import {
   useColorScheme,
   Animated,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  Keyboard,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
 import { TextInput as NativeTextInput } from 'react-native';
 
 import { validateFields } from '@/utils/validation/validate-fields';
@@ -37,6 +41,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faUsers } from '@fortawesome/free-solid-svg-icons/faUsers';
 import Recaptcha, { RecaptchaHandles } from 'react-native-recaptcha-that-works';
+import { ScrollView } from 'react-native';
 
 const { width: wWidth } = Dimensions.get('window');
 
@@ -59,7 +64,8 @@ const showFullBar = (isShow = true) => {
 
 const SignupForm = ({ navigation }: Props) => {
   const recaptcha = useRef<RecaptchaHandles | null>(null);
-  const barWidth = widthByPercent(70);
+  const scrollView = useRef<ScrollView | null>(null);
+
   const AccountType = useSelector((state: RootState) => state.general.accountType);
   const dispatch = useDispatch();
 
@@ -107,12 +113,23 @@ const SignupForm = ({ navigation }: Props) => {
       }
     } else {
       setIsloading(false);
+      if (usernameError) {
+        scrollView.current?.scrollTo({ y: 130 });
+      } else if (nameError) {
+        scrollView.current?.scrollTo({ y: 190 });
+      } else if (emailError) {
+        scrollView.current?.scrollTo({ y: 250 });
+      } else if (cPasswordError) {
+        scrollView.current?.scrollTo({ y: 310 });
+      }
+      Keyboard.dismiss();
       setState({
         ...state,
         emailError,
         passwordError,
         cPasswordError,
         nameError,
+        usernameError,
       });
     }
   };
@@ -215,237 +232,244 @@ const SignupForm = ({ navigation }: Props) => {
   const passwordStrength = Object.values(passwordTracker).filter((value) => value).length;
 
   return (
-    <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor={appColor.StatusBarColor}
-        barStyle="light-content"
-        hidden={false}
-        translucent={true}
-      />
+    <>
+      <SafeAreaView style={{ flex: 0, backgroundColor: '#126B87' }} />
 
-      <GradientHeader
-        left={
-          <GoBackIcon
-            color={'#FFF'}
-            style={{ width: '100%', paddingHorizontal: 20, marginTop: 20 }}
-          />
-        }
-      />
-      <KeyboardAwareScrollView showsVerticalScrollIndicator={false}>
-        <LinearGradient
-          colors={[colors.background, colors.background, dark ? colors.background : '#E0EEF3']}
-          style={{ flex: 1, paddingBottom: 110 }}
+      <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS == 'android' ? 30 : 0 }}>
+        <GradientHeader
+          left={<GoBackIcon color={'#FFF'} style={{ width: '100%', paddingHorizontal: 20 }} />}
+        />
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          // contentContainerStyle={{
+          //   marginTop: 615,
+          // }}
+          keyboardVerticalOffset={60}
         >
-          <View style={{ paddingHorizontal: 25, flex: 1 }}>
-            <Text
-              style={{
-                marginTop: 24,
-                marginBottom: 16,
-                textAlign: 'center',
-                color: scheme == 'dark' ? colors.text : '#4F6D77',
-                fontWeight: '500',
-                fontFamily: 'Rubik-Regular',
-                fontSize: 16,
-                maxWidth: 250,
-                width: '100%',
-                alignSelf: 'center',
-              }}
+          <ScrollView style={{ flex: 1 }} ref={scrollView}>
+            <LinearGradient
+              colors={[colors.background, colors.background, dark ? colors.background : '#E0EEF3']}
+              style={{ flex: 1, paddingBottom: 110 }}
             >
-              What type of profile would you like?
-            </Text>
-            <View
-              style={{
-                flex: 1,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Button
-                text={'Individual'}
-                btnStyle={getButtonContainer(AccountType == 'individual')}
-                RightIcon={null}
-                leftIcon={
-                  <FontAwesomeIcon
-                    icon={faUser}
-                    style={{ margin: 5 }}
-                    size={getFontSize(1.8)}
-                    color={
-                      AccountType == 'individual'
-                        ? scheme == 'dark'
-                          ? colors.text
-                          : '#032F3C'
-                        : scheme == 'dark'
-                        ? '#838383'
-                        : '#B3C1C5'
+              <View style={{ paddingHorizontal: 25, flex: 1 }}>
+                <Text
+                  style={{
+                    marginTop: 24,
+                    marginBottom: 16,
+                    textAlign: 'center',
+                    color: scheme == 'dark' ? colors.text : '#4F6D77',
+                    fontWeight: '500',
+                    fontFamily: 'Rubik-Regular',
+                    fontSize: 16,
+                    maxWidth: 250,
+                    width: '100%',
+                    alignSelf: 'center',
+                  }}
+                >
+                  What type of profile would you like?
+                </Text>
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Button
+                    text={'Individual'}
+                    btnStyle={getButtonContainer(AccountType == 'individual')}
+                    RightIcon={null}
+                    leftIcon={
+                      <FontAwesomeIcon
+                        icon={faUser}
+                        style={{ margin: 5 }}
+                        size={getFontSize(1.8)}
+                        color={
+                          AccountType == 'individual'
+                            ? scheme == 'dark'
+                              ? colors.text
+                              : '#032F3C'
+                            : scheme == 'dark'
+                            ? '#838383'
+                            : '#B3C1C5'
+                        }
+                      />
                     }
+                    btnTextStyle={getButtonTextStyle(AccountType == 'individual')}
+                    onPress={() => {
+                      dispatch(setAccountType('individual'));
+                    }}
                   />
-                }
-                btnTextStyle={getButtonTextStyle(AccountType == 'individual')}
-                onPress={() => {
-                  dispatch(setAccountType('individual'));
-                }}
-              />
-              <Button
-                text={'Organization'}
-                RightIcon={null}
-                btnStyle={getButtonContainer(AccountType == 'organization')}
-                leftIcon={
-                  <FontAwesomeIcon
-                    icon={faUsers}
-                    style={{ margin: 5 }}
-                    size={getFontSize(3)}
-                    color={
-                      AccountType == 'organization'
-                        ? scheme == 'dark'
-                          ? colors.text
-                          : '#032F3C'
-                        : scheme == 'dark'
-                        ? '#838383'
-                        : '#B3C1C5'
+                  <Button
+                    text={'Organization'}
+                    RightIcon={null}
+                    btnStyle={getButtonContainer(AccountType == 'organization')}
+                    leftIcon={
+                      <FontAwesomeIcon
+                        icon={faUsers}
+                        style={{ margin: 5 }}
+                        size={getFontSize(3)}
+                        color={
+                          AccountType == 'organization'
+                            ? scheme == 'dark'
+                              ? colors.text
+                              : '#032F3C'
+                            : scheme == 'dark'
+                            ? '#838383'
+                            : '#B3C1C5'
+                        }
+                      />
                     }
+                    btnTextStyle={getButtonTextStyle(AccountType == 'organization')}
+                    onPress={() => {
+                      dispatch(setAccountType('organization'));
+                    }}
                   />
-                }
-                btnTextStyle={getButtonTextStyle(AccountType == 'organization')}
-                onPress={() => {
-                  dispatch(setAccountType('organization'));
-                }}
-              />
-            </View>
-          </View>
-          <View style={{ paddingHorizontal: 25, paddingBottom: 15, flex: 1 }}>
-            <TextInput
-              style={{ ...GeneralStyle.input, marginTop: 15 }}
-              theme={{ roundness: 10 }}
-              ref={inputRefs.username}
-              value={state.username}
-              returnKeyType={'next'}
-              mode="outlined"
-              activeOutlineColor={appColor.InstructionColor}
-              outlineColor={'#888C93'}
-              label={'Username'}
-              onFocus={() => setState({ ...state, nameError: '' })}
-              onBlur={() =>
-                validateFields(state.username, 'username', (error) =>
-                  setState({ ...state, usernameError: error })
-                )
-              }
-              onSubmitEditing={() => inputRefs.username.current?.focus()}
-              onChangeText={(username) => changeHandler('username', username)}
-              blurOnSubmit={false}
-              autoCorrect={false}
-              autoComplete="username"
-              keyboardType="default"
-              autoCapitalize="none"
-            />
-            {state.usernameError ? (
-              <Text
-                style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}
-              >
-                {state.usernameError}
-              </Text>
-            ) : null}
+                </View>
+              </View>
 
-            <TextInput
-              style={{ ...GeneralStyle.input, marginTop: 15 }}
-              theme={{ roundness: 10 }}
-              ref={inputRefs.name}
-              value={state.name}
-              returnKeyType={'next'}
-              mode="outlined"
-              activeOutlineColor={appColor.InstructionColor}
-              outlineColor={'#888C93'}
-              label={'Your Name'}
-              onFocus={() => setState({ ...state, nameError: '' })}
-              onBlur={() =>
-                validateFields(state.name, 'name', (error) =>
-                  setState({ ...state, nameError: error })
-                )
-              }
-              onSubmitEditing={() => inputRefs.email.current?.focus()}
-              onChangeText={(name) => changeHandler('name', name)}
-              blurOnSubmit={false}
-              keyboardType="default"
-              autoCapitalize="words"
-            />
-            {state.nameError ? (
-              <Text
-                style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}
-              >
-                {state.nameError}
-              </Text>
-            ) : null}
-
-            <TextInput
-              style={{ ...GeneralStyle.input, marginTop: 15 }}
-              theme={{ roundness: 10 }}
-              ref={inputRefs.email}
-              value={state.email}
-              returnKeyType={'next'}
-              keyboardType="email-address"
-              mode="outlined"
-              activeOutlineColor={appColor.InstructionColor}
-              outlineColor={'#888C93'}
-              label={'Your email'}
-              autoCorrect={false}
-              onFocus={() => setState({ ...state, emailError: '' })}
-              onBlur={() =>
-                validateFields(state.email, 'email', (error) =>
-                  setState({ ...state, emailError: error })
-                )
-              }
-              onSubmitEditing={() => inputRefs.password.current?.focus()}
-              onChangeText={(email) => changeHandler('email', email.trim())}
-              blurOnSubmit={false}
-              autoCapitalize="none"
-            />
-            {state.emailError ? (
-              <Text
-                style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5), marginBottom: 10 }}
-              >
-                {state.emailError}
-              </Text>
-            ) : null}
-
-            <TextInput
-              theme={{ roundness: 10 }}
-              activeOutlineColor={appColor.InstructionColor}
-              outlineColor={'#888C93'}
-              ref={inputRefs.password}
-              value={state.password}
-              returnKeyType={'next'}
-              label={'Password'}
-              mode="outlined"
-              secureTextEntry={hidePass ? true : false}
-              right={
-                <TextInput.Icon
-                  icon={() => (
-                    <MaterialCommunityIcons
-                      name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color={'#5B7279'}
-                      style={{
-                        alignSelf: 'center',
-
-                        marginTop: getHeight(1),
-                      }}
-                      onPress={() => setHidePass(!hidePass)}
-                    />
-                  )}
+              <View style={{ paddingHorizontal: 25, paddingBottom: 15, flex: 1 }}>
+                <TextInput
+                  style={{ ...GeneralStyle.input, marginTop: 15 }}
+                  theme={{ roundness: 10 }}
+                  ref={inputRefs.username}
+                  value={state.username}
+                  returnKeyType={'next'}
+                  mode="outlined"
+                  activeOutlineColor={appColor.InstructionColor}
+                  outlineColor={'#888C93'}
+                  label={'Username'}
+                  onFocus={() => setState({ ...state, usernameError: '' })}
+                  onBlur={
+                    () => {}
+                    // validateFields(state.username, 'username', (error) =>
+                    //   setState({ ...state, usernameError: error })
+                    // )
+                  }
+                  onSubmitEditing={() => inputRefs.name.current?.focus()}
+                  onChangeText={(username) => changeHandler('username', username)}
+                  blurOnSubmit={false}
+                  autoCorrect={false}
+                  autoComplete="username"
+                  keyboardType="default"
+                  autoCapitalize="none"
+                  textContentType="username"
                 />
-              }
-              style={{ ...GeneralStyle.input, marginTop: 15 }}
-              onFocus={() => setState({ ...state, passwordError: '' })}
-              onBlur={() =>
-                validateFields(state.password, 'password', (error) =>
-                  setState({ ...state, passwordError: error })
-                )
-              }
-              onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
-              onChangeText={(password) => changeHandler('password', password)}
-              blurOnSubmit={false}
-            />
 
-            {/* <View style={[styles.passwordStrengthWrapper]}>
+                {state.usernameError ? (
+                  <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
+                    {state.usernameError}
+                  </Text>
+                ) : null}
+
+                <TextInput
+                  style={{ ...GeneralStyle.input, marginTop: 15 }}
+                  theme={{ roundness: 10 }}
+                  ref={inputRefs.name}
+                  value={state.name}
+                  returnKeyType={'next'}
+                  mode="outlined"
+                  activeOutlineColor={appColor.InstructionColor}
+                  outlineColor={'#888C93'}
+                  label={'Your Name'}
+                  onFocus={() => setState({ ...state, nameError: '' })}
+                  onBlur={
+                    () => {}
+                    // validateFields(state.name, 'name', (error) =>
+                    //   setState({ ...state, nameError: error })
+                    // )
+                  }
+                  onSubmitEditing={() => inputRefs.email.current?.focus()}
+                  onChangeText={(name) => changeHandler('name', name)}
+                  blurOnSubmit={false}
+                  keyboardType="default"
+                  autoCapitalize="words"
+                />
+
+                {state.nameError ? (
+                  <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
+                    {state.nameError}
+                  </Text>
+                ) : null}
+
+                <TextInput
+                  style={{ ...GeneralStyle.input, marginTop: 15 }}
+                  theme={{ roundness: 10 }}
+                  ref={inputRefs.email}
+                  value={state.email}
+                  returnKeyType={'next'}
+                  keyboardType="email-address"
+                  mode="outlined"
+                  activeOutlineColor={appColor.InstructionColor}
+                  outlineColor={'#888C93'}
+                  label={'Your email'}
+                  autoCorrect={false}
+                  onFocus={() => setState({ ...state, emailError: '' })}
+                  onBlur={
+                    () => {}
+                    // validateFields(state.email, 'email', (error) =>
+                    //   setState({ ...state, emailError: error })
+                    // )
+                  }
+                  onSubmitEditing={() => inputRefs.password.current?.focus()}
+                  onChangeText={(email) => changeHandler('email', email.trim())}
+                  blurOnSubmit={false}
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                />
+
+                {state.emailError ? (
+                  <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
+                    {state.emailError}
+                  </Text>
+                ) : null}
+
+                <TextInput
+                  theme={{ roundness: 10 }}
+                  activeOutlineColor={appColor.InstructionColor}
+                  outlineColor={'#888C93'}
+                  ref={inputRefs.password}
+                  value={state.password}
+                  returnKeyType={'next'}
+                  label={'Password'}
+                  mode="outlined"
+                  secureTextEntry={hidePass ? true : false}
+                  textContentType={'newPassword'}
+                  passwordRules="minlength: 6; required: digit; required: special; allowed: upper,lower;"
+                  autoComplete="password-new"
+                  right={
+                    <TextInput.Icon
+                      icon={() => (
+                        <MaterialCommunityIcons
+                          name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                          size={20}
+                          color={'#5B7279'}
+                          style={{
+                            alignSelf: 'center',
+
+                            marginTop: getHeight(1),
+                          }}
+                          onPress={() => setHidePass(!hidePass)}
+                        />
+                      )}
+                    />
+                  }
+                  autoCorrect={false}
+                  style={{ ...GeneralStyle.input, marginTop: 15 }}
+                  onFocus={() => setState({ ...state, passwordError: '' })}
+                  onBlur={() =>
+                    validateFields(state.password, 'password', (error) =>
+                      setState({ ...state, passwordError: error })
+                    )
+                  }
+                  onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
+                  onChangeText={(password) => changeHandler('password', password)}
+                  blurOnSubmit={false}
+                />
+
+                {/* <View style={[styles.passwordStrengthWrapper]}>
               <Animated.View
                 style={[
                   styles.passwordStrengthBar,
@@ -459,178 +483,180 @@ const SignupForm = ({ navigation }: Props) => {
               </Animated.View>
             </View> */}
 
-            {state.password.length > 0 ? (
-              <View style={{ marginVertical: 10 }}>
-                {passwordStrength < 5 ? (
-                  <View style={{ flexDirection: 'row' }}>
-                    <MaterialCommunityIcons
-                      name={!passwordTracker.sixCharsOrMore ? 'close' : 'check'}
-                      size={20}
-                      color={!passwordTracker.sixCharsOrMore ? 'red' : 'green'}
-                      style={
-                        {
-                          // alignSelf: 'center',
-                          // justifyContent: 'center',
-                          // marginTop: getHeight(1),
-                        }
-                      }
-                    />
-                    <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : 'green' }}>
-                      At least 6 characters
-                    </Text>
+                {state.password.length > 0 ? (
+                  <View style={{ marginVertical: 10 }}>
+                    {passwordStrength < 5 ? (
+                      <View style={{ flexDirection: 'row' }}>
+                        <MaterialCommunityIcons
+                          name={!passwordTracker.sixCharsOrMore ? 'close' : 'check'}
+                          size={20}
+                          color={!passwordTracker.sixCharsOrMore ? 'red' : 'green'}
+                          style={
+                            {
+                              // alignSelf: 'center',
+                              // justifyContent: 'center',
+                              // marginTop: getHeight(1),
+                            }
+                          }
+                        />
+                        <Text style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : 'green' }}>
+                          At least 6 characters
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    <View style={{ flexDirection: 'row' }}>
+                      <MaterialCommunityIcons
+                        name={!passwordTracker.specialChar ? 'close' : 'check'}
+                        size={20}
+                        color={!passwordTracker.specialChar ? 'red' : 'green'}
+                      />
+                      <Text style={{ color: !passwordTracker.specialChar ? 'red' : 'green' }}>
+                        At least 1 special character
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row' }}>
+                      <MaterialCommunityIcons
+                        name={!passwordTracker.number ? 'close' : 'check'}
+                        size={20}
+                        color={!passwordTracker.number ? 'red' : 'green'}
+                      />
+                      <Text style={{ color: !passwordTracker.number ? 'red' : 'green' }}>
+                        Contains at least 1 number
+                      </Text>
+                    </View>
                   </View>
                 ) : null}
 
-                <View style={{ flexDirection: 'row' }}>
-                  <MaterialCommunityIcons
-                    name={!passwordTracker.specialChar ? 'close' : 'check'}
-                    size={20}
-                    color={!passwordTracker.specialChar ? 'red' : 'green'}
-                  />
-                  <Text style={{ color: !passwordTracker.specialChar ? 'red' : 'green' }}>
-                    At least 1 special character
-                  </Text>
-                </View>
+                <TextInput
+                  theme={{ roundness: 10 }}
+                  activeOutlineColor={appColor.InstructionColor}
+                  outlineColor={'#888C93'}
+                  ref={inputRefs.cPassword}
+                  value={state.cPassword}
+                  returnKeyType={'done'}
+                  label={'Confirm Password'}
+                  mode="outlined"
+                  secureTextEntry={chidePass ? true : false}
+                  right={
+                    <TextInput.Icon
+                      icon={() => (
+                        <MaterialCommunityIcons
+                          name={chidePass ? 'eye-outline' : 'eye-off-outline'}
+                          size={20}
+                          color={'#5B7279'}
+                          style={{
+                            alignSelf: 'center',
 
-                <View style={{ flexDirection: 'row' }}>
-                  <MaterialCommunityIcons
-                    name={!passwordTracker.number ? 'close' : 'check'}
-                    size={20}
-                    color={!passwordTracker.number ? 'red' : 'green'}
-                  />
-                  <Text style={{ color: !passwordTracker.number ? 'red' : 'green' }}>
-                    Contains at least 1 number
-                  </Text>
-                </View>
-              </View>
-            ) : null}
-
-            <TextInput
-              theme={{ roundness: 10 }}
-              activeOutlineColor={appColor.InstructionColor}
-              outlineColor={'#888C93'}
-              ref={inputRefs.cPassword}
-              value={state.cPassword}
-              returnKeyType={'done'}
-              label={'Confirm Password'}
-              mode="outlined"
-              secureTextEntry={chidePass ? true : false}
-              right={
-                <TextInput.Icon
-                  icon={() => (
-                    <MaterialCommunityIcons
-                      name={chidePass ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color={'#5B7279'}
-                      style={{
-                        alignSelf: 'center',
-
-                        marginTop: getHeight(1),
-                      }}
-                      onPress={() => setcHidePass(!chidePass)}
+                            marginTop: getHeight(1),
+                          }}
+                          onPress={() => setcHidePass(!chidePass)}
+                        />
+                      )}
                     />
-                  )}
+                  }
+                  style={{ ...GeneralStyle.input, marginTop: 15 }}
+                  onFocus={() => setState({ ...state, cPasswordError: '' })}
+                  onBlur={() =>
+                    validateFields(
+                      state.cPassword,
+                      'cPassword',
+                      (error) => setState({ ...state, cPasswordError: error }),
+                      { password: state.password }
+                    )
+                  }
+                  onSubmitEditing={() => signUpUser()}
+                  onChangeText={(cPassword) => changeHandler('cPassword', cPassword)}
+                  blurOnSubmit={false}
                 />
-              }
-              style={{ ...GeneralStyle.input, marginTop: 15 }}
-              onFocus={() => setState({ ...state, cPasswordError: '' })}
-              onBlur={() =>
-                validateFields(
-                  state.cPassword,
-                  'cPassword',
-                  (error) => setState({ ...state, cPasswordError: error }),
-                  { password: state.password }
-                )
-              }
-              onSubmitEditing={() => signUpUser()}
-              onChangeText={(cPassword) => changeHandler('cPassword', cPassword)}
-              blurOnSubmit={false}
-            />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
-              {state.cPasswordError}
-            </Text>
-
-            <Recaptcha
-              ref={recaptcha}
-              siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
-              baseUrl="http://www.onebodyapp.com"
-              onVerify={onVerify}
-              onExpire={onExpire}
-              size="invisible"
-            />
-
-            <View style={{ ...styles.center, paddingBottom: 20 }}>
-              <Text style={{ color: dark ? colors.text : '#032F3C' }}>
-                By signing up, you agree to our
-              </Text>
-              <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
-                  <Text style={[styles.text, { color: dark ? colors.text : '#81979E' }]}>
-                    User Agreements
-                  </Text>
-                </TouchableOpacity>
-                <Text style={[styles.simpleText, { color: dark ? colors.text : '#81979E' }]}>
-                  {' '}
-                  &{' '}
+                <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(5) }}>
+                  {state.cPasswordError}
                 </Text>
-                <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
-                  <Text style={[styles.text, { color: dark ? colors.text : '#81979E' }]}>
-                    Privacy Policy
+
+                <Recaptcha
+                  ref={recaptcha}
+                  siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
+                  baseUrl="http://www.onebodyapp.com"
+                  onVerify={onVerify}
+                  onExpire={onExpire}
+                  size="invisible"
+                />
+
+                <View style={{ ...styles.center, paddingBottom: 20 }}>
+                  <Text style={{ color: dark ? colors.text : '#032F3C' }}>
+                    By signing up, you agree to our
                   </Text>
-                </TouchableOpacity>
+                  <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
+                      <Text style={[styles.text, { color: dark ? colors.text : '#81979E' }]}>
+                        User Agreements
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={[styles.simpleText, { color: dark ? colors.text : '#81979E' }]}>
+                      {' '}
+                      &{' '}
+                    </Text>
+                    <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
+                      <Text style={[styles.text, { color: dark ? colors.text : '#81979E' }]}>
+                        Privacy Policy
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {error != null ? (
+                  <View style={styles.singerrorview1}>
+                    <Text style={styles.singerrortext}>{error}</Text>
+                  </View>
+                ) : null}
+
+                <Button
+                  text={'SIGN UP'}
+                  disabled={loading}
+                  onPress={() => {
+                    signUpUser();
+                  }}
+                  // btnTextStyle={[GeneralStyle.btnText, { color: dark ? colors.text : '#E6EAEC' }]}
+                  // disabledBtnStyle={{
+                  //   ...GeneralStyle.btn,
+                  //   marginTop: getHeight(2),
+                  // }}
+                  // disabledBtnTextStyle={GeneralStyle.btnText}
+                  // btnStyle={{
+                  //   ...GeneralStyle.btn,
+                  //   marginTop: getHeight(2),
+                  //   backgroundColor: scheme == 'dark' ? colors.card : '#0C5C75',
+                  // }}
+                  mode="contained"
+                  paper
+                  btnStyle={{ marginHorizontal: 0 }}
+                />
+              </View>
+            </LinearGradient>
+
+            <View>
+              <Image
+                style={styles.footer}
+                resizeMode="stretch"
+                source={require('@/assets/images/waveBG.png')}
+              />
+              <View
+                style={{
+                  ...styles.footer,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: getHeight(9),
+                }}
+              >
+                <Text style={styles.helight}>Unify the Body</Text>
+                <Text style={{ color: 'gray', marginTop: 2 }}>1 Cor. 12:12</Text>
               </View>
             </View>
-
-            {error != null ? (
-              <View style={styles.singerrorview1}>
-                <Text style={styles.singerrortext}>{error}</Text>
-              </View>
-            ) : null}
-
-            <Button
-              text={'SIGN UP'}
-              disabled={loading}
-              onPress={() => {
-                signUpUser();
-              }}
-              // btnTextStyle={[GeneralStyle.btnText, { color: dark ? colors.text : '#E6EAEC' }]}
-              // disabledBtnStyle={{
-              //   ...GeneralStyle.btn,
-              //   marginTop: getHeight(2),
-              // }}
-              // disabledBtnTextStyle={GeneralStyle.btnText}
-              // btnStyle={{
-              //   ...GeneralStyle.btn,
-              //   marginTop: getHeight(2),
-              //   backgroundColor: scheme == 'dark' ? colors.card : '#0C5C75',
-              // }}
-              mode="contained"
-              paper
-              btnStyle={{ marginHorizontal: 0 }}
-            />
-          </View>
-        </LinearGradient>
-
-        <View>
-          <Image
-            style={styles.footer}
-            resizeMode="stretch"
-            source={require('@/assets/images/waveBG.png')}
-          />
-          <View
-            style={{
-              ...styles.footer,
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: getHeight(9),
-            }}
-          >
-            <Text style={styles.helight}>Unify the Body</Text>
-            <Text style={{ color: 'gray', marginTop: 2 }}>1 Cor. 12:12</Text>
-          </View>
-        </View>
-      </KeyboardAwareScrollView>
-    </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </>
   );
 };
 

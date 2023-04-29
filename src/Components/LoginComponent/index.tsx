@@ -350,7 +350,6 @@ const LoginComponent: FC<Props> = ({
       const urlToken = await getTwitterLoginToken(false, verifyAccount);
 
       if (urlToken) {
-        // `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${}&redirect_uri=${}&scope=tweet.read%20users.read%20offline.access&state=state&code_challenge=challenge&code_challenge_method=plain`;
         OpenURLButton(
           `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
           false,
@@ -822,7 +821,7 @@ const LoginComponent: FC<Props> = ({
           </>
         )}
 
-        {/* {enabledLoginProviders &&
+        {enabledLoginProviders &&
         enabledLoginProviders?.includes('twitter.com') &&
         enabledLoginProviders?.includes('password') ? (
           <View style={{ paddingHorizontal: 10, flex: 1 }}>
@@ -840,7 +839,11 @@ const LoginComponent: FC<Props> = ({
             />
           </View>
         ) : (
-
+          // <TouchableOpacity onPress={() => onTwitterButtonPress()}>
+          //   <View style={{ ...styles.socialContainer }}>
+          //     <Twitter fill="#00acee" style={{ alignSelf: 'center' }} />
+          //   </View>
+          // </TouchableOpacity>
           <>
             {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
               <Button
@@ -859,7 +862,7 @@ const LoginComponent: FC<Props> = ({
               />
             ) : null}
           </>
-        )} */}
+        )}
 
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('apple') &&

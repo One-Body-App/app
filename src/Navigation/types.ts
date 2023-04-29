@@ -5,6 +5,8 @@ export type RootStackParamList = {
   Explore: undefined;
   Channel: undefined;
   Login: {
+    state?: string;
+    code?: string;
     oauth_token?: string;
     oauth_verifier?: string;
     showConfirmationEmailMessage?: boolean;
@@ -15,6 +17,7 @@ export type RootStackParamList = {
   InfluencerStepTwo: {
     code?: string;
     action?: string;
+    state?: string;
     oauth_token?: string;
     oauth_verifier?: string;
   };

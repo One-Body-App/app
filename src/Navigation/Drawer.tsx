@@ -423,7 +423,7 @@ function DrawerContent(props: DrawerContentComponentProps) {
           <DrawerItem
             label="Help"
             onPress={() => {
-              OpenURLButton('https://forms.gle/KGVE9oDoQjeFH1d36');
+              OpenURLButton('https://usersuccess.onebodyapp.com/portal/en/kb/one-body-inc');
             }}
           />
         </Drawer.Section>

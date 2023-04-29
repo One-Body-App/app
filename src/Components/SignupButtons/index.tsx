@@ -244,7 +244,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           }}
         />
 
-        {/* <Button
+        <Button
           disabled={disabled}
           text={'Sign up with Twitter'}
           leftIcon={<Twitter style={{ marginRight: 7 }} height={getHeight(5)} fill="#00acee" />}
@@ -256,7 +256,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           disabledBtnStyle={getDisabledButtonStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
           wrapperBtnStyle={{ width: '100%' }}
-        /> */}
+        />
 
         {Platform.OS == 'ios' ? (
           <Button

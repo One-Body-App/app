@@ -113,11 +113,16 @@ export const enValidation = {
 
   username: {
     presence: {
-      message: '^Please enter a user name',
+      message: '^Please enter a username',
     },
     length: {
       minimum: 4,
       message: '^Your username must be at least 4 characters',
+    },
+  },
+  name: {
+    presence: {
+      message: '^Please enter a name',
     },
   },
   confirmpass: {
@@ -159,11 +164,7 @@ export const enValidation = {
       message: '^Please enter your Instagram Title',
     },
   },
-  comments: {
-    presence: {
-      message: '^This filed Required!',
-    },
-  },
+
   bio: {
     presence: {
       message: '^This filed Required!',

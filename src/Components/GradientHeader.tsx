@@ -13,6 +13,7 @@ const GradientHeader = ({ title, left }: Props) => {
   return (
     <View
       style={{
+        backgroundColor: 'red',
         shadowColor: '#126BB7',
         shadowOffset: {
           width: 0,

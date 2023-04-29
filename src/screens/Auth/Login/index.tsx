@@ -15,7 +15,8 @@ type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 const Login = ({ route, navigation }: Props) => {
   const loginProviders = ['password', 'google.com', 'facebook.com', 'twitter.com', 'apple'];
-  const { colors } = useTheme();
+
+  console.log(route.params.state);
   return (
     <View style={styles.container}>
       <GeneralStatusBar

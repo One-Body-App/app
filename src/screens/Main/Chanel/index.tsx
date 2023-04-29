@@ -230,6 +230,7 @@ const Chanel = ({ navigation }: Props) => {
         </Modal>
         <FlatList
           data={selectedInterest}
+          style={{ width: '100%' }}
           ListFooterComponent={<SubscribeFlatlists />}
           ListHeaderComponent={<Text style={styles.myinterest}>My Interests</Text>}
           keyExtractor={(item, index) => index.toString()}

@@ -14,9 +14,13 @@ import {
   INSTAGRAM_RECONNECT_REDIRECT as _INSTAGRAM_RECONNECT_REDIRECT,
   NO_PROFILE_IMAGE as _NO_PROFILE_IMAGE,
   NO_POST_IMAGE_URL as _NO_POST_IMAGE_URL,
+  TWITTER_CLIENT_ID as _TWITTER_CLIENT_ID,
 } from 'react-native-dotenv';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
-const IS_STAGING = false;
+import { sha256 } from 'react-native-sha256';
+import { Buffer } from 'buffer';
+
+const IS_STAGING = true;
 
 export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 // export const BASE_URL = 'https://192.168.4.134/api';
@@ -36,6 +40,7 @@ export const INSTAGRAM_APP_ID = _INSTAGRAM_APP_ID;
 export const INSTAGRAM_LOGIN_REDIRECT = _INSTAGRAM_LOGIN_REDIRECT;
 export const INSTAGRAM_CONNECT_REDIRECT = _INSTAGRAM_CONNECT_REDIRECT;
 export const INSTAGRAM_RECONNECT_REDIRECT = _INSTAGRAM_RECONNECT_REDIRECT;
+export const TWITTER_CLIENT_ID = _TWITTER_CLIENT_ID;
 
 export const OpenURLButton = async (
   url: string,
@@ -46,14 +51,13 @@ export const OpenURLButton = async (
   try {
     if (await InAppBrowser.isAvailable()) {
       const canOpen = await Linking.canOpenURL(url);
-      const urlToUse = unescape(decodeURI(decodeHTMLEntities(url)));
-
+      console.log(url);
       if (canOpen) {
         if (externalBrowser) {
-          Linking.openURL(urlToUse);
+          Linking.openURL(url);
         } else {
           if (isAuthLogin && authRedirect) {
-            const result = await InAppBrowser.openAuth(urlToUse, authRedirect, {
+            const result = await InAppBrowser.openAuth(url, authRedirect, {
               // iOS Properties
               ephemeralWebSession: false,
               // Android Properties
@@ -66,6 +70,7 @@ export const OpenURLButton = async (
               Linking.openURL(result.url);
             }
           } else {
+            const urlToUse = unescape(decodeURI(decodeHTMLEntities(url)));
             await InAppBrowser.open(urlToUse, {
               readerMode: false,
               animated: true,
@@ -104,4 +109,12 @@ export const decodeHTMLEntities = (str: string) => {
   }
 
   return str;
+};
+
+export const codeChallenge = async () => {
+  const hash = await sha256(new Date().getTime().toString());
+  const bufferObj = Buffer.from(hash, 'utf8');
+
+  return bufferObj.toString('base64');
+  // return '';
 };

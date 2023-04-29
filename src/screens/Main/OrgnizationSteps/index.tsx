@@ -456,7 +456,10 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               //     setState({ ...state, companyNameError: error })
               //   )
               // }
-              onSubmitEditing={() => inputRefs.location_label.current?.focus()}
+              onSubmitEditing={() => {
+                inputRefs.location_label.current?.focus();
+                setCheckIn(true);
+              }}
               onChangeText={(companyName) => changeHandler('companyName', companyName)}
               blurOnSubmit={false}
             />

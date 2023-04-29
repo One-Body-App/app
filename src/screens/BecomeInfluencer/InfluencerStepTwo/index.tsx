@@ -25,7 +25,12 @@ import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
-import { BASE_URL, OpenURLButton } from '@/src/Services/constants';
+import {
+  BASE_URL,
+  OpenURLButton,
+  TWITTER_CLIENT_ID,
+  codeChallenge,
+} from '@/src/Services/constants';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
@@ -39,13 +44,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import Twitter from '@/assets/svg/Twitter.svg';
+import qs from 'qs';
+const twitterRedirectUrl = 'onebodyapp://influencer/login/twitter';
 
 type Props = StackScreenProps<RootStackParamList, 'InfluencerStepTwo'>;
 
 const InfluencerStepTwo = ({ navigation, route }: Props) => {
-  const [token, setToken] = useState();
-
   const userToken = useSelector((state: RootState) => state.auth.userToken);
+  const [twitterStateConfirmation] = useState(Math.random().toString(36).substring(2, 30));
+  const [twitterCodeConfirmation, setTwitterCodeConfirmation] = useState<string>('');
 
   const inputRefs = {
     twitterUsername: useRef<TextInputNative>(null),
@@ -63,17 +70,20 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
   const [state, setState] = useState({
     twitterUsername: '',
     twitterUsernameError: '',
+    twitterId: '',
+    twitterIdError: '',
+    twitterToken: '',
+    twitterTokenExpiresAtReal: '',
+    twitterTokenExpiresAt: '',
+
     instagramUsername: '',
     instagramUsernameError: '',
     instagramId: '',
     instagramToken: '',
+    twitterRefreshToken: '',
     instagramTokenExpiresAtReal: '',
     instagramTokenExpiresAt: '',
     instagramIdError: '',
-    twitterTitle: '',
-    twitterTitleError: '',
-    instagramTitle: '',
-    instagramTitleError: '',
     comments: '',
     commentsError: '',
     bio: '',
@@ -119,6 +129,37 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     }
   };
 
+  const getTwitterData = async (
+    accessToken: string,
+    twitterRefreshToken: string,
+    accessTokenExpiresAt: string,
+    accessTokenExpiresAtReal: string
+  ) => {
+    try {
+      const options = {
+        method: 'GET',
+        url: `https://api.twitter.com/2/users/me`,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      };
+
+      const result = await axios.request(options);
+
+      setState({
+        ...state,
+        twitterUsername: result.data.data.username,
+        twitterId: result.data.data.id,
+        twitterToken: accessToken,
+        twitterRefreshToken: twitterRefreshToken,
+        twitterTokenExpiresAt: accessTokenExpiresAt,
+        twitterTokenExpiresAtReal: accessTokenExpiresAtReal,
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   useEffect(() => {
     if (route.params?.action == 'instagram' && route.params?.code) {
       const getInstagramAuthToken = async () => {
@@ -140,7 +181,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
 
           if (result && result.data?.access_token) {
             InAppBrowser.closeAuth();
-            setToken(result.data?.access_token);
+
             getInstagramData(
               result.data?.access_token,
               result.data?.expiresAt,
@@ -156,79 +197,78 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
 
     if (
       route.params?.action == 'twitter' &&
-      route.params?.oauth_token &&
-      route.params?.oauth_verifier
+      route.params?.state &&
+      route.params?.code &&
+      route.params?.state == twitterStateConfirmation
     ) {
       const getTwitterAuthToken = async () => {
         try {
           const options = {
             method: 'POST',
-            url: 'https://api.twitter.com/oauth/access_token',
-            params: {
-              oauth_token: route.params?.oauth_token,
-              oauth_verifier: route.params?.oauth_verifier,
+            url: `${BASE_URL}/auth/twitter-token-oauth-2`,
+            data: {
+              redirect_uri: twitterRedirectUrl,
+              code: route.params?.code,
+              codeVerifier: twitterCodeConfirmation,
             },
             headers: {
               'Content-Type': 'application/json',
+              authorization: `Bearer ${userToken}`,
             },
           };
+
           const result = await axios.request(options);
 
           if (result.data) {
-            const tokenData = result.data.split('&')?.map((item: string) => {
-              return item.split('=')[1];
-            });
+            InAppBrowser.closeAuth();
 
-            const screenName = tokenData[3];
-
-            if (!isLoggedInTwitter) {
-              let foundTwitter = false;
-
-              auth().currentUser?.providerData.forEach((provider) => {
-                if (provider.providerId == 'twitter.com') {
-                  foundTwitter = true;
-                }
-              });
-
-              // if (!foundTwitter) {
-              //   const twitterCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-
-              //   auth().currentUser?.linkWithCredential(twitterCredential);
-              // }
-            }
-
-            setState({
-              ...state,
-              twitterUsername: screenName,
-            });
+            getTwitterData(
+              result.data?.access_token,
+              result.data?.refresh_token,
+              result.data?.expiresAt,
+              result.data?.expiresAtReal
+            );
           }
-        } catch (error: any) {}
+        } catch (error: any) {
+          console.log(error.text);
+          if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.log(error.response.data);
+            console.log(error.response.status);
+            console.log(error.response.headers);
+          } else if (error.request) {
+            // The request was made but no response was received
+            // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+            // http.ClientRequest in node.js
+            console.log(error.request);
+          } else {
+            // Something happened in setting up the request that triggered an Error
+            console.log('Error', error.message);
+          }
+          console.log(error.config);
+        }
       };
       getTwitterAuthToken();
     }
   }, [route.params]);
 
   const onNext = async () => {
-    const { twitterUsername, instagramId, instagramTitle, comments, instagramToken } = state;
-    const twitterUsernameError = await validator('twitterUsername', twitterUsername);
+    const { twitterId, instagramId } = state;
+    const twitterIdError = await validator('twitterId', twitterId);
 
     const instagramIdError = await validator('instagramId', instagramId);
 
-    const instagramTitleError = await validator('instagramTitle', instagramTitle);
-    const commentsError = await validator('comments', comments);
+    const dataSourcesError = instagramIdError && twitterIdError;
 
-    const dataSourcesError = instagramIdError && twitterUsernameError;
-
-    if (!dataSourcesError && !commentsError) {
+    if (!dataSourcesError) {
       setModalVisible(true);
       //navigation.navigate('InfluencerStepThree',{data:{twitterUsername, instagramUsername,twitterHandler,instagramHandler,twitterTitle,instagramTitle,comments}})
     } else {
       setState({
         ...state,
-        twitterUsernameError,
+        twitterIdError,
         instagramIdError,
-        instagramTitleError,
-        commentsError,
       });
     }
   };
@@ -281,18 +321,19 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
 
   const onTwitterButtonPress = async () => {
     try {
-      const urlToken = await getTwitterLoginToken(false, false, true);
+      OpenURLButton(
+        `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${TWITTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(
+          twitterRedirectUrl
+        )}&scope=${encodeURIComponent(
+          'tweet.read users.read offline.access'
+        )}&state=${twitterStateConfirmation}&code_challenge=${twitterCodeConfirmation}&code_challenge_method=plain`,
+        false,
+        true,
+        twitterRedirectUrl
+      );
 
-      if (urlToken) {
-        OpenURLButton(
-          `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
-          false,
-          true,
-          'onebodyapp://app.onebodyapp.com/influencer/login/twitter'
-        );
-
-        // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
-      }
+      // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+      // }
     } catch (e) {
       console.log(e);
     }
@@ -334,6 +375,10 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
           setIsLoggedInTwitter(true);
         }
       });
+
+    codeChallenge().then((code) => {
+      setTwitterCodeConfirmation(code);
+    });
   }, []);
 
   return (
@@ -401,28 +446,33 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 </>
               ) : null}
 
-              <Text
-                style={{
-                  color: '#4f6d77',
-                  fontWeight: '700',
-                  fontSize: getFontSize(2.3),
-                  marginTop: getHeight(5),
-                  marginBottom: 10,
-                  fontFamily: 'Rubik-Regular',
-                }}
-              >
-                <Ionicons name="logo-instagram" color={'#032F3C'} size={20} /> Instagram handle
-              </Text>
-              <Text
-                style={{
-                  marginTop: 20,
-                  color: '#032F3C',
-                  fontWeight: '400',
-                  fontFamily: 'Rubik-Regular',
-                }}
-              >
-                {state.instagramUsername}
-              </Text>
+              {state.instagramUsername ? (
+                <>
+                  <Text
+                    style={{
+                      color: '#4f6d77',
+                      fontWeight: '700',
+                      fontSize: getFontSize(2.3),
+                      marginTop: getHeight(5),
+                      marginBottom: 10,
+                      fontFamily: 'Rubik-Regular',
+                    }}
+                  >
+                    <Ionicons name="logo-instagram" color={'#032F3C'} size={20} /> Instagram handle
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 20,
+                      color: '#032F3C',
+                      fontWeight: '400',
+                      fontFamily: 'Rubik-Regular',
+                    }}
+                  >
+                    {state.instagramUsername}
+                  </Text>
+                </>
+              ) : null}
+
               {state.rssFeed1 ? (
                 <>
                   <Text
@@ -499,40 +549,51 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 {state.bio}
               </Text>
 
-              <Text
-                style={{
-                  color: '#4f6d77',
-                  fontWeight: '700',
-                  fontSize: getFontSize(2.3),
-                  marginTop: getHeight(5),
-                  marginBottom: 10,
-                  fontFamily: 'Rubik-Regular',
-                }}
-              >
-                Comments
-              </Text>
-              <Text
-                style={{
-                  marginTop: 20,
-                  color: '#032F3C',
-                  fontWeight: '400',
-                  fontFamily: 'Rubik-Regular',
-                }}
-              >
-                {state.comments}
-              </Text>
+              {state.comments ? (
+                <>
+                  <Text
+                    style={{
+                      color: '#4f6d77',
+                      fontWeight: '700',
+                      fontSize: getFontSize(2.3),
+                      marginTop: getHeight(5),
+                      marginBottom: 10,
+                      fontFamily: 'Rubik-Regular',
+                    }}
+                  >
+                    Comments
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 20,
+                      color: '#032F3C',
+                      fontWeight: '400',
+                      fontFamily: 'Rubik-Regular',
+                    }}
+                  >
+                    {state.comments}
+                  </Text>
+                </>
+              ) : null}
             </View>
             <Button
               text={'DONE'}
-              btnStyle={{ ...GeneralStyle.btn, backgroundColor: '#032F3C' }}
-              btnTextStyle={GeneralStyle.btnText}
+              paper
+              btnStyle={{ backgroundColor: '#032F3C' }}
+              textColor="#fff"
               onPress={() => {
                 setModalVisible(false);
                 const {
                   twitterUsername,
+                  twitterToken,
+                  twitterId,
+                  twitterTokenExpiresAt,
+                  twitterTokenExpiresAtReal,
+
                   instagramUsername,
                   instagramId,
                   instagramToken,
+                  twitterRefreshToken,
                   instagramTokenExpiresAt,
                   instagramTokenExpiresAtReal,
                   bio,
@@ -548,6 +609,12 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 navigation.navigate('InfluencerStepThree', {
                   data: {
                     twitterUsername,
+                    twitterToken,
+                    twitterRefreshToken,
+                    twitterId,
+                    twitterTokenExpiresAt,
+                    twitterTokenExpiresAtReal,
+
                     instagramUsername,
                     instagramToken,
                     instagramId,
