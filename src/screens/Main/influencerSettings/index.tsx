@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
-import { Switch } from 'react-native-paper';
+import { View, Linking } from 'react-native';
+import { Text } from 'react-native-paper';
 import Button from '../../../Components/Button';
 import auth from '@react-native-firebase/auth';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -12,61 +12,61 @@ import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
-import { ApiCall } from '@/src/Services/api';
-import { getUserProfile, setUserDataNotifications } from '@/src/Redux/actions/UserAction';
-import { useToast } from 'react-native-toast-notifications';
-import { setProfile } from '@/src/Redux/actions/AuthActions';
+
+import { getUserProfile } from '@/src/Redux/actions/UserAction';
+
 import { useTheme } from '@react-navigation/native';
 import GoBackIcon from '@/src/Components/GoBackIcon';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
+
 import {
   INSTAGRAM_APP_ID,
   INSTAGRAM_CONNECT_REDIRECT,
   INSTAGRAM_RECONNECT_REDIRECT,
   BASE_URL,
+  OpenURLButton,
+  TWITTER_CLIENT_ID,
+  codeChallenge,
+  getInstagramAuthToken,
+  getTwitterAuthToken,
 } from '@/src/Services/constants';
 import axios from 'axios';
+import { removeSocialAccountRequest } from '@/src/Redux/actions/AuthActions';
 
 type Props = StackScreenProps<RootStackParamList, 'InfluencerSettings'>;
+const twitterRedirectUrl = 'onebodyapp://influencer-settings/connect/twitter';
+const instagramRedirectUrl = 'onebodyapp://influencer-settings/connect/instagram';
 
 const InfluencerSettings = ({ navigation, route }: Props) => {
+  const userToken = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.userProfile);
-  const token = useSelector((state: RootState) => state.auth.userToken);
-  const time = new Date().getTime() / 1000;
-  const { colors } = useTheme();
   const dispatch = useDispatch();
 
-  const showTwitterWarning = false;
+  const time = new Date().getTime() / 1000;
+  const { colors } = useTheme();
 
-  const [instagramUsername, setInstagramUsername] = useState<string>();
-  const [instagramId, setInstagramId] = useState<string>();
-  const [instagramToken, setInstagramToken] = useState<string>();
-  const [instagramTokenExpiresAt, setInstagramTokenExpiresAt] = useState<number>();
+  const [isLoggedInFacebook, setIsLoggedInFacebook] = useState<boolean>(false);
   const [instagramTokenExpiresAtReal, setInstagramTokenExpiresAtReal] = useState<number>();
 
-  const [twitterUsername, setTwitterUsername] = useState<string>();
+  const [twitterTokenExpiresAtReal, setTwitterTokenExpiresAtReal] = useState<number>();
 
-  const getInstagramData = async (
-    accessToken: string,
-    accessTokenExpiresAt: string,
-    accessTokenExpiresAtReal: string
-  ) => {
+  const [twitterStateConfirmation] = useState(Math.random().toString(36).substring(2, 30));
+  const [twitterCodeConfirmation, setTwitterCodeConfirmation] = useState<string>('');
+  console.log(userProfile, 'userProfile');
+  const onTwitterButtonPress = async () => {
     try {
-      const options = {
-        method: 'GET',
-        url: `https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
+      OpenURLButton(
+        `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${TWITTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(
+          twitterRedirectUrl
+        )}&scope=${encodeURIComponent(
+          'tweet.read users.read offline.access'
+        )}&state=${twitterStateConfirmation}&code_challenge=${twitterCodeConfirmation}&code_challenge_method=plain`,
+        false,
+        true,
+        twitterRedirectUrl
+      );
 
-      const result = await axios.request(options);
-
-      setInstagramUsername(result.data.username);
-      setInstagramId(result.data.id);
-      setInstagramToken(accessToken);
-      setInstagramTokenExpiresAt(parseInt(accessTokenExpiresAt));
-      setInstagramTokenExpiresAtReal(parseInt(accessTokenExpiresAtReal));
+      // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
+      // }
     } catch (e) {
       console.log(e);
     }
@@ -74,73 +74,123 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
 
   useEffect(() => {
     if (route.params?.service == 'instagram' && route.params?.code) {
-      const getInstagramAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: `${BASE_URL}/auth/instagram-token`,
-            data: {
-              code: route.params?.code,
-              updateUser: true,
-              redirect_uri:
-                route.params?.action == 'reconnect'
-                  ? INSTAGRAM_RECONNECT_REDIRECT
-                  : INSTAGRAM_CONNECT_REDIRECT,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-              authorization: `Bearer ${token}`,
-            },
-          };
-
-          const result = await axios.request(options);
-
-          if (result && result.data?.access_token) {
-            setInstagramTokenExpiresAt(parseInt(result.data?.expiresAt));
-            setInstagramTokenExpiresAtReal(parseInt(result.data?.expiresAtReal));
-            dispatch(getUserProfile({ token: token }));
-          }
-        } catch (error: any) {
-          console.log(error);
+      getInstagramAuthToken(
+        route.params?.code,
+        userToken,
+        route.params?.action == 'reconnect'
+          ? INSTAGRAM_RECONNECT_REDIRECT
+          : INSTAGRAM_CONNECT_REDIRECT
+      ).then((result) => {
+        if (result && result.instagramTokenExpiresAtReal) {
+          setInstagramTokenExpiresAtReal(parseInt(result.instagramTokenExpiresAtReal));
+          dispatch(getUserProfile({ token: userToken }));
         }
-      };
-      getInstagramAuthToken();
+      });
     }
 
     if (
-      route.params?.action == 'twitter' &&
-      route.params?.oauth_token &&
-      route.params?.oauth_verifier
+      route.params?.service == 'twitter' &&
+      route.params?.state &&
+      route.params?.code &&
+      route.params?.state == twitterStateConfirmation
     ) {
-      const getTwitterAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: 'https://api.twitter.com/oauth/access_token',
-            params: {
-              oauth_token: route.params?.oauth_token,
-              oauth_verifier: route.params?.oauth_verifier,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          };
-          const result = await axios.request(options);
-
-          if (result.data) {
-            const tokenData = result.data.split('&')?.map((item: string) => {
-              return item.split('=')[1];
-            });
-
-            const screenName = tokenData[3];
-
-            setTwitterUsername(screenName);
-          }
-        } catch (error: any) {}
-      };
-      getTwitterAuthToken();
+      getTwitterAuthToken(
+        route.params?.code,
+        twitterCodeConfirmation,
+        userToken,
+        twitterRedirectUrl
+      ).then((result) => {
+        console.log(result, 'result');
+        if (result && result.twitterTokenExpiresAtReal) {
+          setTwitterTokenExpiresAtReal(parseInt(result.twitterTokenExpiresAtReal));
+          dispatch(getUserProfile({ token: userToken }));
+        }
+      });
     }
   }, [route.params]);
+
+  useEffect(() => {
+    auth()
+      .currentUser?.getIdTokenResult()
+      .then((result) => {
+        if (result.signInProvider == 'facebook.com') {
+          setIsLoggedInFacebook(true);
+        }
+      });
+
+    codeChallenge().then((code) => {
+      setTwitterCodeConfirmation(code);
+    });
+  }, []);
+
+  // useEffect(() => {
+  //   if (route.params?.service == 'instagram' && route.params?.code) {
+  //     const getInstagramAuthToken = async () => {
+  //       try {
+  //         const options = {
+  //           method: 'POST',
+  //           url: `${BASE_URL}/auth/instagram-token`,
+  //           data: {
+  //             code: route.params?.code,
+  //             updateUser: true,
+  //             redirect_uri:
+  //               route.params?.action == 'reconnect'
+  //                 ? INSTAGRAM_RECONNECT_REDIRECT
+  //                 : INSTAGRAM_CONNECT_REDIRECT,
+  //           },
+  //           headers: {
+  //             'Content-Type': 'application/json',
+  //             authorization: `Bearer ${token}`,
+  //           },
+  //         };
+
+  //         const result = await axios.request(options);
+
+  //         if (result && result.data?.access_token) {
+  //           setInstagramTokenExpiresAtReal(parseInt(result.data?.expiresAtReal));
+  //           dispatch(getUserProfile({ token: token }));
+  //         }
+  //       } catch (error: any) {
+  //         console.log(error);
+  //       }
+  //     };
+  //     getInstagramAuthToken();
+  //   }
+
+  //   if (
+  //     route.params?.action == 'twitter' &&
+  //     route.params?.oauth_token &&
+  //     route.params?.oauth_verifier
+  //   ) {
+  //     // const getTwitterAuthToken = async () => {
+  //     //   try {
+  //     //     const options = {
+  //     //       method: 'POST',
+  //     //       url: 'https://api.twitter.com/oauth/access_token',
+  //     //       params: {
+  //     //         oauth_token: route.params?.oauth_token,
+  //     //         oauth_verifier: route.params?.oauth_verifier,
+  //     //       },
+  //     //       headers: {
+  //     //         'Content-Type': 'application/json',
+  //     //       },
+  //     //     };
+  //     //     const result = await axios.request(options);
+
+  //     //     if (result.data) {
+  //     //       const tokenData = result.data.split('&')?.map((item: string) => {
+  //     //         return item.split('=')[1];
+  //     //       });
+
+  //     //       const screenName = tokenData[3];
+
+  //     //       setTwitterUsername(screenName);
+  //     //     }
+  //     //   } catch (error: any) {}
+  //     // };
+  //     getTwitterAuthToken();
+  //   }
+  // }, [route.params]);
 
   let currentInstagramTokenExpiresAtReal =
     userProfile?.influencerProfile?.instagramTokenExpirationReal || 0;
@@ -148,8 +198,24 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
     currentInstagramTokenExpiresAtReal = instagramTokenExpiresAtReal;
   }
 
-  const showInstagramWarning = currentInstagramTokenExpiresAtReal < time;
+  let currentTwitterTokenExpiresAtReal =
+    userProfile?.influencerProfile?.twitterTokenExpirationReal || 0;
+  if (twitterTokenExpiresAtReal) {
+    currentTwitterTokenExpiresAtReal = twitterTokenExpiresAtReal;
+  }
 
+  const showInstagramWarning =
+    userProfile?.influencerProfile?.instagramId && currentInstagramTokenExpiresAtReal < time;
+
+  const showTwitterWarning =
+    userProfile?.influencerProfile?.twitterId && currentTwitterTokenExpiresAtReal < time;
+
+  const btnTextStyle = {
+    paddingVertical: 7,
+    fontSize: getFontSize(1.5),
+    // fontFamily: 'Rubik-Medium',
+    letterSpacing: 1.25,
+  };
   return (
     <View style={{ ...styles.container, backgroundColor: colors.background }}>
       <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
@@ -160,8 +226,16 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <View style={styles.innerContainer}>
-        <View style={{ paddingHorizontal: 25 }}>
-          <View style={{ flexDirection: 'row', marginTop: getHeight(5), marginBottom: 5 }}>
+        <View style={{ paddingHorizontal: 25, paddingTop: 25 }}>
+          {userProfile?.influencerProfile?.influencerStatus != 'approved' ? (
+            <View style={{ backgroundColor: 'yellow', padding: 10, marginBottom: 10 }}>
+              <Text style={{ color: '#000' }}>
+                No Changes can be made while the account status is not approved
+              </Text>
+            </View>
+          ) : null}
+          <Text>Disclamer: Any changes on this form will trigger an approval process</Text>
+          <View style={{ flexDirection: 'row', marginTop: getHeight(5), marginBottom: 10 }}>
             <Ionicons name="logo-instagram" color={'#032F3C'} size={20} />
             <Text
               style={{
@@ -194,44 +268,46 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
                 {showInstagramWarning ? (
                   <Button
                     text="Reconnect Account"
-                    btnStyle={{
-                      ...GeneralStyle.btn,
-
-                      backgroundColor: 'blue',
-                      borderRadius: 10,
-                      // flex: 1,
-                      marginHorizontal: 10,
-                      padding: 10,
-                    }}
-                    btnTextStyle={{
-                      marginHorizontal: 20,
-                      color: 'white',
-                      fontSize: 14,
-                    }}
+                    mode="contained"
+                    paper
+                    btnTextStyle={btnTextStyle}
                     onPress={() => {
                       Linking.openURL(
                         `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${INSTAGRAM_RECONNECT_REDIRECT}&scope=user_profile,user_media&response_type=code`
                       );
                     }}
+                    disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
                   />
                 ) : (
                   <Button
                     text="Remove Account"
-                    btnStyle={{
-                      ...GeneralStyle.btn,
+                    mode="contained"
+                    buttonColor="red"
+                    paper
+                    btnTextStyle={btnTextStyle}
+                    // btnStyle={{
+                    //   ...GeneralStyle.btn,
 
-                      backgroundColor: 'red',
-                      borderRadius: 10,
-                      // flex: 1,
-                      marginHorizontal: 10,
-                      padding: 10,
+                    //   backgroundColor: 'red',
+                    //   borderRadius: 10,
+                    //   // flex: 1,
+                    //   marginHorizontal: 10,
+                    //   padding: 10,
+                    // }}
+                    // btnTextStyle={{
+                    //   marginHorizontal: 20,
+                    //   color: 'white',
+                    //   fontSize: 14,
+                    // }}
+                    disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
+                    onPress={async () => {
+                      dispatch(
+                        removeSocialAccountRequest({
+                          type: 'instagram',
+                          token: userToken,
+                        })
+                      );
                     }}
-                    btnTextStyle={{
-                      marginHorizontal: 20,
-                      color: 'white',
-                      fontSize: 14,
-                    }}
-                    onPress={async () => {}}
                   />
                 )}
               </>
@@ -239,23 +315,16 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
               <>
                 <Button
                   text="Connect Account"
-                  btnStyle={{
-                    ...GeneralStyle.btn,
-
-                    backgroundColor: 'blue',
-                    borderRadius: 10,
-                    // flex: 1,
-                    marginHorizontal: 10,
-                    padding: 10,
-                  }}
-                  btnTextStyle={{
-                    marginHorizontal: 20,
-                    color: 'white',
-                    fontSize: 14,
-                  }}
+                  btnTextStyle={btnTextStyle}
+                  mode="contained"
+                  paper
+                  disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
                   onPress={() => {
-                    Linking.openURL(
-                      `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${INSTAGRAM_CONNECT_REDIRECT}&scope=user_profile,user_media&response_type=code`
+                    OpenURLButton(
+                      `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${INSTAGRAM_CONNECT_REDIRECT}&scope=user_profile,user_media&response_type=code`,
+                      false,
+                      true,
+                      INSTAGRAM_CONNECT_REDIRECT
                     );
                   }}
                 />
@@ -265,7 +334,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
         </View>
 
         <View style={{ paddingHorizontal: 25 }}>
-          <View style={{ flexDirection: 'row', marginTop: getHeight(5), marginBottom: 5 }}>
+          <View style={{ flexDirection: 'row', marginTop: getHeight(5), marginBottom: 10 }}>
             <Ionicons name="logo-twitter" color={'#032F3C'} size={20} />
             <Text
               style={{
@@ -281,7 +350,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
           </View>
 
           {showTwitterWarning ? (
-            <View style={{ backgroundColor: '#E90202', padding: 10 }}>
+            <View style={{ backgroundColor: '#E90202', padding: 10, marginBottom: 10 }}>
               <Text style={{ color: 'white' }}>Please Reconnect your Twitter Account</Text>
             </View>
           ) : null}
@@ -299,40 +368,28 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
                 {showTwitterWarning ? (
                   <Button
                     text="Reconnect Account"
-                    btnStyle={{
-                      ...GeneralStyle.btn,
-
-                      backgroundColor: 'blue',
-                      borderRadius: 10,
-                      // flex: 1,
-                      marginHorizontal: 10,
-                      padding: 10,
-                    }}
-                    btnTextStyle={{
-                      marginHorizontal: 20,
-                      color: 'white',
-                      fontSize: 14,
-                    }}
-                    onPress={async () => {}}
+                    mode="contained"
+                    paper
+                    onPress={onTwitterButtonPress}
+                    btnTextStyle={btnTextStyle}
+                    disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
                   />
                 ) : (
                   <Button
                     text="Remove Account"
-                    btnStyle={{
-                      ...GeneralStyle.btn,
-
-                      backgroundColor: 'red',
-                      borderRadius: 10,
-                      // flex: 1,
-                      marginHorizontal: 10,
-                      padding: 10,
+                    mode="contained"
+                    buttonColor="red"
+                    paper
+                    btnTextStyle={btnTextStyle}
+                    disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
+                    onPress={async () => {
+                      dispatch(
+                        removeSocialAccountRequest({
+                          type: 'twitter',
+                          token: userToken,
+                        })
+                      );
                     }}
-                    btnTextStyle={{
-                      marginHorizontal: 20,
-                      color: 'white',
-                      fontSize: 14,
-                    }}
-                    onPress={async () => {}}
                   />
                 )}
               </>
@@ -340,21 +397,14 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
               <>
                 <Button
                   text="Connect Account"
+                  mode="contained"
+                  paper
+                  disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
                   btnStyle={{
-                    ...GeneralStyle.btn,
-
-                    backgroundColor: 'blue',
-                    borderRadius: 10,
-                    // flex: 1,
-                    marginHorizontal: 10,
-                    padding: 10,
+                    margin: 0,
                   }}
-                  btnTextStyle={{
-                    marginHorizontal: 20,
-                    color: 'white',
-                    fontSize: 14,
-                  }}
-                  onPress={async () => {}}
+                  btnTextStyle={btnTextStyle}
+                  onPress={onTwitterButtonPress}
                 />
               </>
             )}
