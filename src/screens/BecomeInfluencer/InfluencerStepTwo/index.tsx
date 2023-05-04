@@ -30,6 +30,8 @@ import {
   OpenURLButton,
   TWITTER_CLIENT_ID,
   codeChallenge,
+  getInstagramAuthToken,
+  getTwitterAuthToken,
 } from '@/src/Services/constants';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
@@ -160,39 +162,109 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     }
   };
 
+  // useEffect(() => {
+  //   if (route.params?.action == 'instagram' && route.params?.code) {
+  //     const getInstagramAuthToken = async () => {
+  //       try {
+  //         const options = {
+  //           method: 'POST',
+  //           url: `${BASE_URL}/auth/instagram-token`,
+  //           data: {
+  //             redirect_uri: INSTAGRAM_LOGIN_REDIRECT,
+  //             code: route.params?.code,
+  //           },
+  //           headers: {
+  //             'Content-Type': 'application/json',
+  //             authorization: `Bearer ${userToken}`,
+  //           },
+  //         };
+
+  //         const result = await axios.request(options);
+
+  //         if (result && result.data?.access_token) {
+  //           InAppBrowser.closeAuth();
+
+  //           getInstagramData(
+  //             result.data?.access_token,
+  //             result.data?.expiresAt,
+  //             result.data?.expiresAtReal
+  //           );
+  //         }
+  //       } catch (error: any) {
+  //         console.log(error);
+  //       }
+  //     };
+  //     getInstagramAuthToken();
+  //   }
+
+  //   if (
+  //     route.params?.action == 'twitter' &&
+  //     route.params?.state &&
+  //     route.params?.code &&
+  //     route.params?.state == twitterStateConfirmation
+  //   ) {
+  //     const getTwitterAuthToken = async () => {
+  //       try {
+  //         const options = {
+  //           method: 'POST',
+  //           url: `${BASE_URL}/auth/twitter-token-oauth-2`,
+  //           data: {
+  //             redirect_uri: twitterRedirectUrl,
+  //             code: route.params?.code,
+  //             codeVerifier: twitterCodeConfirmation,
+  //           },
+  //           headers: {
+  //             'Content-Type': 'application/json',
+  //             authorization: `Bearer ${userToken}`,
+  //           },
+  //         };
+
+  //         const result = await axios.request(options);
+
+  //         if (result.data) {
+  //           InAppBrowser.closeAuth();
+
+  //           getTwitterData(
+  //             result.data?.access_token,
+  //             result.data?.refresh_token,
+  //             result.data?.expiresAt,
+  //             result.data?.expiresAtReal
+  //           );
+  //         }
+  //       } catch (error: any) {
+  //         console.log(error.text);
+  //         if (error.response) {
+  //           // The request was made and the server responded with a status code
+  //           // that falls out of the range of 2xx
+  //           console.log(error.response.data);
+  //           console.log(error.response.status);
+  //           console.log(error.response.headers);
+  //         } else if (error.request) {
+  //           // The request was made but no response was received
+  //           // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+  //           // http.ClientRequest in node.js
+  //           console.log(error.request);
+  //         } else {
+  //           // Something happened in setting up the request that triggered an Error
+  //           console.log('Error', error.message);
+  //         }
+  //         console.log(error.config);
+  //       }
+  //     };
+  //     getTwitterAuthToken();
+  //   }
+  // }, [route.params]);
+
   useEffect(() => {
     if (route.params?.action == 'instagram' && route.params?.code) {
-      const getInstagramAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: `${BASE_URL}/auth/instagram-token`,
-            data: {
-              redirect_uri: INSTAGRAM_LOGIN_REDIRECT,
-              code: route.params?.code,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-              authorization: `Bearer ${userToken}`,
-            },
-          };
-
-          const result = await axios.request(options);
-
-          if (result && result.data?.access_token) {
-            InAppBrowser.closeAuth();
-
-            getInstagramData(
-              result.data?.access_token,
-              result.data?.expiresAt,
-              result.data?.expiresAtReal
-            );
-          }
-        } catch (error: any) {
-          console.log(error);
+      getInstagramAuthToken(route.params?.code, userToken, INSTAGRAM_LOGIN_REDIRECT).then(
+        (result) => {
+          setState({
+            ...state,
+            ...result,
+          });
         }
-      };
-      getInstagramAuthToken();
+      );
     }
 
     if (
@@ -201,67 +273,28 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
       route.params?.code &&
       route.params?.state == twitterStateConfirmation
     ) {
-      const getTwitterAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: `${BASE_URL}/auth/twitter-token-oauth-2`,
-            data: {
-              redirect_uri: twitterRedirectUrl,
-              code: route.params?.code,
-              codeVerifier: twitterCodeConfirmation,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-              authorization: `Bearer ${userToken}`,
-            },
-          };
-
-          const result = await axios.request(options);
-
-          if (result.data) {
-            InAppBrowser.closeAuth();
-
-            getTwitterData(
-              result.data?.access_token,
-              result.data?.refresh_token,
-              result.data?.expiresAt,
-              result.data?.expiresAtReal
-            );
-          }
-        } catch (error: any) {
-          console.log(error.text);
-          if (error.response) {
-            // The request was made and the server responded with a status code
-            // that falls out of the range of 2xx
-            console.log(error.response.data);
-            console.log(error.response.status);
-            console.log(error.response.headers);
-          } else if (error.request) {
-            // The request was made but no response was received
-            // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-            // http.ClientRequest in node.js
-            console.log(error.request);
-          } else {
-            // Something happened in setting up the request that triggered an Error
-            console.log('Error', error.message);
-          }
-          console.log(error.config);
-        }
-      };
-      getTwitterAuthToken();
+      getTwitterAuthToken(
+        route.params?.code,
+        twitterCodeConfirmation,
+        userToken,
+        twitterRedirectUrl
+      ).then((result) => {
+        setState({
+          ...state,
+          ...result,
+        });
+      });
     }
   }, [route.params]);
 
   const onNext = async () => {
-    const { twitterId, instagramId } = state;
+    const { twitterId, instagramId, bio } = state;
     const twitterIdError = await validator('twitterId', twitterId);
-
     const instagramIdError = await validator('instagramId', instagramId);
+    const bioError = await validator('bio', bio);
 
-    const dataSourcesError = instagramIdError && twitterIdError;
-
-    if (!dataSourcesError) {
+    console.log(instagramIdError, twitterIdError);
+    if (!bioError) {
       setModalVisible(true);
       //navigation.navigate('InfluencerStepThree',{data:{twitterUsername, instagramUsername,twitterHandler,instagramHandler,twitterTitle,instagramTitle,comments}})
     } else {
@@ -269,6 +302,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         ...state,
         twitterIdError,
         instagramIdError,
+        bioError,
       });
     }
   };
@@ -325,7 +359,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${TWITTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(
           twitterRedirectUrl
         )}&scope=${encodeURIComponent(
-          'tweet.read users.read offline.access'
+          'tweet.read users.read offline.access follows.read'
         )}&state=${twitterStateConfirmation}&code_challenge=${twitterCodeConfirmation}&code_challenge_method=plain`,
         false,
         true,
