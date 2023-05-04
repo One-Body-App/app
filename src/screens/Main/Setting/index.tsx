@@ -62,9 +62,23 @@ const Settings = ({ navigation }: Props) => {
   const time = new Date().getTime() / 1000;
   let showInfluencerNotification = false;
 
-  if (userProfile?.influencerProfile?.instagramTokenExpirationReal && !showInfluencerNotification) {
+  if (
+    userProfile?.influencerProfile?.instagramId &&
+    userProfile?.influencerProfile?.instagramTokenExpirationReal &&
+    userProfile?.influencerProfile?.instagramTokenExpirationReal < time &&
+    !showInfluencerNotification
+  ) {
     showInfluencerNotification =
       userProfile?.influencerProfile?.instagramTokenExpirationReal < time;
+  }
+
+  if (
+    userProfile?.influencerProfile?.twitterId &&
+    userProfile?.influencerProfile?.twitterTokenExpirationReal &&
+    userProfile?.influencerProfile?.twitterTokenExpirationReal < time &&
+    !showInfluencerNotification
+  ) {
+    showInfluencerNotification = userProfile?.influencerProfile?.twitterTokenExpirationReal < time;
   }
 
   const { colors, dark } = useTheme();
@@ -132,7 +146,8 @@ const Settings = ({ navigation }: Props) => {
           <AntDesign name="right" size={20} color={'#70747D'} />
         </TouchableOpacity>
 
-        {userProfile?.isInfluencer == true ? (
+        {userProfile?.influencerProfile?.influencerStatus == 'approved' ||
+        userProfile?.influencerProfile?.influencerStatus == 'pending' ? (
           <TouchableOpacity
             onPress={() => {
               navigation.navigate('InfluencerSettings');

@@ -19,12 +19,14 @@ import {
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { sha256 } from 'react-native-sha256';
 import { Buffer } from 'buffer';
+import axios from 'axios';
 
 const IS_STAGING = true;
 
-//export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
+export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
+// export const BASE_URL = IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 // export const BASE_URL = 'https://192.168.4.134/api';
-export const BASE_URL = PROD_BASE_URL;
+//export const BASE_URL = PROD_BASE_URL;
 //console.log(BASE_URL, 'BASE_URLBASE_URL');
 
 export const PRIVACY_POLICY_URL = _PRIVACY_POLICY_URL;
@@ -51,7 +53,7 @@ export const OpenURLButton = async (
   try {
     if (await InAppBrowser.isAvailable()) {
       const canOpen = await Linking.canOpenURL(url);
-      console.log(url);
+
       if (canOpen) {
         if (externalBrowser) {
           Linking.openURL(url);
@@ -117,4 +119,99 @@ export const codeChallenge = async () => {
 
   return bufferObj.toString('base64');
   // return '';
+};
+
+export const getInstagramAuthToken = async (
+  code: string,
+  userToken: string,
+  redirectUrl: string
+) => {
+  try {
+    const options = {
+      method: 'POST',
+      url: `${BASE_URL}/auth/instagram-token`,
+      data: {
+        redirect_uri: redirectUrl,
+        code: code,
+        updateUser: true,
+      },
+      headers: {
+        'Content-Type': 'application/json',
+        authorization: `Bearer ${userToken}`,
+      },
+    };
+
+    const result = await axios.request(options);
+
+    if (result && result.data?.access_token) {
+      InAppBrowser.closeAuth();
+      console.log(result.data);
+      return {
+        instagramTokenExpiresAt: result.data?.expiresAt,
+        instagramTokenExpiresAtReal: result.data?.expiresAtReal,
+        instagramUsername: result.data?.instagramHandler,
+        instagramId: result.data?.instagramId,
+        instagramToken: result.data?.instagramToken,
+      };
+    }
+  } catch (error: any) {
+    console.log(error);
+  }
+};
+
+export const getTwitterAuthToken = async (
+  code: string,
+  codeConfirmation: string,
+  userToken: string,
+  redirectUrl: string
+) => {
+  try {
+    const options = {
+      method: 'POST',
+      url: `${BASE_URL}/auth/twitter-token-oauth-2`,
+      data: {
+        redirect_uri: redirectUrl,
+        code: code,
+        codeVerifier: codeConfirmation,
+        updateUser: true,
+      },
+      headers: {
+        'Content-Type': 'application/json',
+        authorization: `Bearer ${userToken}`,
+      },
+    };
+
+    const result = await axios.request(options);
+
+    if (result.data) {
+      InAppBrowser.closeAuth();
+
+      return {
+        twitterTokenExpires: result.data?.expiresAt,
+        twitterTokenExpiresAtReal: result.data?.expiresAtReal,
+        twitterUsername: result.data?.twitterHandler,
+        twitterId: result.data?.twitterId,
+        twitterToken: result.data?.twitterToken,
+        twitterRefreshToken: result.data?.twitterRefreshToken,
+      };
+    }
+  } catch (error: any) {
+    console.log(error.text);
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.log(error.response.data);
+      console.log(error.response.status);
+      console.log(error.response.headers);
+    } else if (error.request) {
+      // The request was made but no response was received
+      // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+      // http.ClientRequest in node.js
+      console.log(error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.log('Error', error.message);
+    }
+    console.log(error.config);
+  }
 };

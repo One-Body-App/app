@@ -84,3 +84,8 @@ export const fitstLounch = (data) => ({
   type: ACTIONS.FIRST_LUNCH,
   data,
 });
+
+export const removeSocialAccountRequest = (data) => ({
+  type: ACTIONS.REMOVE_SOCIAL_ACCOUNT,
+  data,
+});
