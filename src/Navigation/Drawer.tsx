@@ -271,6 +271,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '../Services/constants';
 import Setting from '../screens/Main/Setting';
+import HomeStack from './HomeStack';
 
 const DrawerNavigation = createDrawerNavigator();
 
@@ -384,7 +385,7 @@ function DrawerContent(props: DrawerContentComponentProps) {
           <DrawerItem
             label="Home"
             onPress={() => {
-              props.navigation.navigate('Home');
+              props.navigation.navigate('Home', { screen: 'HomeTab' });
             }}
           />
           <DrawerItem

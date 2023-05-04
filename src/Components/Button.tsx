@@ -44,7 +44,6 @@ const Button = ({
   mode?: 'text' | 'outlined' | 'contained' | 'elevated' | 'contained-tonal';
   textColor?: string;
 }) => {
-  console.log('button text style', btnTextStyle);
   return paper ? (
     <>
       <ButtonPaper
