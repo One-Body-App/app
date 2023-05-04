@@ -59,7 +59,6 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     width: getWidth(70),
     height: getHeight(6),
-    // backgroundColor: '#F6F6F6',
     borderRadius: 7,
   },
   sharetouch: {
@@ -68,7 +67,6 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     height: getHeight(6),
-    backgroundColor: '#F6F6F6',
     borderRadius: 7,
   },
   savetuch: {
@@ -77,7 +75,6 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     height: getHeight(6),
-    backgroundColor: '#F6F6F6',
     borderRadius: 7,
   },
   saveview: {
@@ -357,7 +354,6 @@ export const styles = StyleSheet.create({
   },
 
   content2: {
-    backgroundColor: 'white',
     alignItems: 'center',
     padding: 13,
     borderTopRightRadius: 17,
@@ -367,7 +363,6 @@ export const styles = StyleSheet.create({
     height: 6,
     width: 55,
     borderRadius: 5,
-    backgroundColor: '#EAEAEA',
     marginBottom: 5,
   },
   tabBar: {
