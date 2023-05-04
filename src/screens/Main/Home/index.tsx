@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  View,
-  SafeAreaView,
-  TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
+import { View, SafeAreaView, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
 
 import { Caption, Text } from 'react-native-paper';
 
@@ -21,6 +14,7 @@ import { useTheme } from '@react-navigation/native';
 
 import SocialItem from '@/src/Components/ListItems/SocialItem';
 import ArticleItem from '@/src/Components/ListItems/ArticleItem';
+import ActivityIndicatorContent from '@/src/Components/ActivityIndicatorContent';
 import { ArticleType } from '@/utils/types';
 import OptionsModal from '@/src/Components/ListItems/OptionsModal';
 import { styles as globalStyle } from '@/src/Components/ListItems/style';
@@ -194,7 +188,7 @@ const Home = ({ navigation }: Props) => {
 
           {isLoading && feedOptions.page == 1 && !isRefreshing ? (
             <View style={{ marginTop: 10 }}>
-              <ActivityIndicator />
+              <ActivityIndicatorContent size="small" />
             </View>
           ) : (
             <FlatList
@@ -301,6 +295,12 @@ const Home = ({ navigation }: Props) => {
                 <RefreshControl
                   enabled={true}
                   refreshing={isRefreshing}
+                  colors={
+                    dark
+                      ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
+                      : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
+                  }
+                  tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
                   onRefresh={() => {
                     setIsRefreshing(true);
                   }}
@@ -317,7 +317,7 @@ const Home = ({ navigation }: Props) => {
               }}
               ListFooterComponent={() => (
                 <View>
-                  {isLoading && !isRefreshing ? <ActivityIndicator size="small" /> : null}
+                  {isLoading && !isRefreshing ? <ActivityIndicatorContent size="small" /> : null}
                 </View>
               )}
             />
