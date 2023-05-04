@@ -103,7 +103,7 @@ const Home = ({ navigation }: Props) => {
 
         if (pageNumber == 1) {
           newFeedData = res?.response ?? [];
-          console.log(newFeedData);
+
           setIsEndOfList(false);
         } else {
           newFeedData = [...feedData, ...(res?.response ?? [])];

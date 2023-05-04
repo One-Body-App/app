@@ -359,7 +359,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${TWITTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(
           twitterRedirectUrl
         )}&scope=${encodeURIComponent(
-          'tweet.read users.read offline.access'
+          'tweet.read users.read offline.access follows.read'
         )}&state=${twitterStateConfirmation}&code_challenge=${twitterCodeConfirmation}&code_challenge_method=plain`,
         false,
         true,

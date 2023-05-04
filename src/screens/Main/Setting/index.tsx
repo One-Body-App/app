@@ -146,7 +146,8 @@ const Settings = ({ navigation }: Props) => {
           <AntDesign name="right" size={20} color={'#70747D'} />
         </TouchableOpacity>
 
-        {userProfile?.influencerProfile?.influencerStatus == 'approved' ? (
+        {userProfile?.influencerProfile?.influencerStatus == 'approved' ||
+        userProfile?.influencerProfile?.influencerStatus == 'pending' ? (
           <TouchableOpacity
             onPress={() => {
               navigation.navigate('InfluencerSettings');

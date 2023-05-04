@@ -58,7 +58,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
         `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${TWITTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(
           twitterRedirectUrl
         )}&scope=${encodeURIComponent(
-          'tweet.read users.read offline.access'
+          'tweet.read users.read offline.access follows.read'
         )}&state=${twitterStateConfirmation}&code_challenge=${twitterCodeConfirmation}&code_challenge_method=plain`,
         false,
         true,
@@ -230,7 +230,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
           {userProfile?.influencerProfile?.influencerStatus != 'approved' ? (
             <View style={{ backgroundColor: 'yellow', padding: 10, marginBottom: 10 }}>
               <Text style={{ color: '#000' }}>
-                No Changes can be made while the account status is not approved
+                All changes made on this view needs to go through the account approval process
               </Text>
             </View>
           ) : null}

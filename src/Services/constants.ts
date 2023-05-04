@@ -52,7 +52,7 @@ export const OpenURLButton = async (
   try {
     if (await InAppBrowser.isAvailable()) {
       const canOpen = await Linking.canOpenURL(url);
-      console.log(url);
+
       if (canOpen) {
         if (externalBrowser) {
           Linking.openURL(url);
