@@ -23,7 +23,8 @@ import axios from 'axios';
 
 const IS_STAGING = true;
 
-export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
+export const BASE_URL = IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
+// export const BASE_URL = IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 // export const BASE_URL = 'https://192.168.4.134/api';
 // export const BASE_URL = PROD_BASE_URL;
 // console.log(BASE_URL, 'BASE_URLBASE_URL');
@@ -144,10 +145,13 @@ export const getInstagramAuthToken = async (
 
     if (result && result.data?.access_token) {
       InAppBrowser.closeAuth();
-
+      console.log(result.data);
       return {
         instagramTokenExpiresAt: result.data?.expiresAt,
         instagramTokenExpiresAtReal: result.data?.expiresAtReal,
+        instagramUsername: result.data?.instagramHandler,
+        instagramId: result.data?.instagramId,
+        instagramToken: result.data?.instagramToken,
       };
     }
   } catch (error: any) {
@@ -185,6 +189,10 @@ export const getTwitterAuthToken = async (
       return {
         twitterTokenExpires: result.data?.expiresAt,
         twitterTokenExpiresAtReal: result.data?.expiresAtReal,
+        twitterUsername: result.data?.twitterHandler,
+        twitterId: result.data?.twitterId,
+        twitterToken: result.data?.twitterToken,
+        twitterRefreshToken: result.data?.twitterRefreshToken,
       };
     }
   } catch (error: any) {
