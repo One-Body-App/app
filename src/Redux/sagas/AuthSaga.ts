@@ -221,3 +221,30 @@ function* getUserProfileRequest(params) {
 export function* GetUserProfileSaga() {
   yield takeLatest(ACTIONS.USER_PROFILE, getUserProfileRequest);
 }
+
+function* removeSocialAccountRequest(params) {
+  try {
+    const res = yield ApiCall({
+      route: `auth/remove-influencer-social-account/${params.data.type}`,
+      token: params.data.token,
+      verb: 'delete',
+    });
+
+    console.log(res);
+    if (res?.status == 200) {
+      yield put(getProfile({ token: params.data.token }));
+      yield put(setLoader(false));
+    } else {
+      console.log('error', res?.response);
+      yield put(setLoader(false));
+    }
+  } catch (e) {
+    yield put(setLoader(false));
+
+    console.log('saga sign up err --- ', e);
+    // yield put(setLoader(false));
+  }
+}
+export function* RemoveSocialAccountSaga() {
+  yield takeLatest(ACTIONS.REMOVE_SOCIAL_ACCOUNT, removeSocialAccountRequest);
+}
