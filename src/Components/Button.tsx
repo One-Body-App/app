@@ -27,6 +27,7 @@ const Button = ({
   paper,
   mode,
   textColor,
+  buttonColor,
 }: {
   text?: string;
   content?: ReactNode;
@@ -43,6 +44,7 @@ const Button = ({
   paper?: boolean;
   mode?: 'text' | 'outlined' | 'contained' | 'elevated' | 'contained-tonal';
   textColor?: string;
+  buttonColor?: string;
 }) => {
   return paper ? (
     <>
@@ -52,6 +54,7 @@ const Button = ({
         disabled={disabled}
         style={btnStyle ?? { marginVertical: 15, marginHorizontal: 13 }}
         textColor={textColor}
+        buttonColor={buttonColor}
         labelStyle={
           btnTextStyle ?? {
             paddingVertical: 7,

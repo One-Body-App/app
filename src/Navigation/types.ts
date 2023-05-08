@@ -57,6 +57,7 @@ export type RootStackParamList = {
   NotificationSettings: undefined;
   InfluencerSettings: {
     code?: string;
+    state?: string;
     action?: string;
     service?: string;
     oauth_token?: string;
