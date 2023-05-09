@@ -51,7 +51,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
 
   const [twitterStateConfirmation] = useState(Math.random().toString(36).substring(2, 30));
   const [twitterCodeConfirmation, setTwitterCodeConfirmation] = useState<string>('');
-  console.log(userProfile, 'userProfile');
+
   const onTwitterButtonPress = async () => {
     try {
       OpenURLButton(
@@ -100,7 +100,6 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
         userToken,
         twitterRedirectUrl
       ).then((result) => {
-        console.log(result, 'result');
         if (result && result.twitterTokenExpiresAtReal) {
           setTwitterTokenExpiresAtReal(parseInt(result.twitterTokenExpiresAtReal));
           dispatch(getUserProfile({ token: userToken }));

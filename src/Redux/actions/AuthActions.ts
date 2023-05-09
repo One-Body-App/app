@@ -72,13 +72,10 @@ export const changePasswordRequest = (data) => ({
   data,
 });
 
-export const forgetPasswordRequest = (data) => (
-  console.log('in action'),
-  {
-    type: ACTIONS.UPDATE_PASSWORD,
-    data,
-  }
-);
+export const forgetPasswordRequest = (data) => ({
+  type: ACTIONS.UPDATE_PASSWORD,
+  data,
+});
 
 export const fitstLounch = (data) => ({
   type: ACTIONS.FIRST_LUNCH,

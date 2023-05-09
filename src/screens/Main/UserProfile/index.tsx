@@ -77,12 +77,6 @@ const UserProfile = ({ navigation, route }: Props) => {
     }
   }, [user]);
 
-  useEffect(() => {
-    console.log('RELATED USERS', relatedUsers);
-    console.log('USERS', user);
-    console.log('CURRENT USER', currentUser);
-  }, [user, relatedUsers]);
-
   const renderScene = ({
     route,
     jumpTo,

@@ -107,7 +107,6 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     if (route.params?.action == 'instagram' && route.params?.code) {
       getInstagramAuthToken(route.params?.code, userToken, INSTAGRAM_LOGIN_REDIRECT).then(
         (result) => {
-          console.log(result);
           setState({
             ...state,
             ...result,
@@ -142,7 +141,6 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     const instagramIdError = await validator('instagramId', instagramId);
     const bioError = await validator('bio', bio);
 
-    console.log(instagramIdError, twitterIdError);
     if (!bioError) {
       setModalVisible(true);
       //navigation.navigate('InfluencerStepThree',{data:{twitterUsername, instagramUsername,twitterHandler,instagramHandler,twitterTitle,instagramTitle,comments}})

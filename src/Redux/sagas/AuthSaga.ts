@@ -180,7 +180,7 @@ function* getProfileRequest(params) {
       token: params.data.token,
       verb: 'get',
     });
-    console.log(res, 'res');
+
     if (res?.status == '200') {
       yield put(setProfile({ token: params.data.token, ...res.response }));
       // params?.data?.go();
@@ -230,7 +230,6 @@ function* removeSocialAccountRequest(params) {
       verb: 'delete',
     });
 
-    console.log(res);
     if (res?.status == 200) {
       yield put(getProfile({ token: params.data.token }));
       yield put(setLoader(false));
