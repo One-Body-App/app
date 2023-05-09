@@ -341,25 +341,47 @@ const MyProfile = ({ navigation }: Props) => {
               numColumns={3}
               showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => (
-                <FastImage
-                  style={styles.firstimage}
-                  source={{
-                    uri: item.badge,
-                  }}
-                  resizeMode={FastImage.resizeMode.stretch}
-                />
+                <>
+                  {user?.badgesData?.length < 3 ? (
+                    <FastImage
+                      style={styles.firstimage}
+                      source={{
+                        uri: item.badge,
+                      }}
+                      resizeMode={FastImage.resizeMode.stretch}
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      style={{ marginHorizontal: getWidth(1) }}
+                      onPress={() => {
+                        getBadge();
+                        setRequestModel(true);
+                      }}
+                    >
+                      <FastImage
+                        style={styles.firstimage}
+                        source={{
+                          uri: item.badge,
+                        }}
+                        resizeMode={FastImage.resizeMode.stretch}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             />
           </View>
-          <TouchableOpacity
-            style={{ marginHorizontal: getWidth(1) }}
-            onPress={() => {
-              getBadge();
-              setRequestModel(true);
-            }}
-          >
-            <Add_badges />
-          </TouchableOpacity>
+          {user?.badgesData?.length < 3 && (
+            <TouchableOpacity
+              style={{ marginHorizontal: getWidth(1) }}
+              onPress={() => {
+                getBadge();
+                setRequestModel(true);
+              }}
+            >
+              <Add_badges />
+            </TouchableOpacity>
+          )}
         </View>
       ) : null}
 
