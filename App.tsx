@@ -26,10 +26,10 @@ Sentry.init({
 
 const colorsLight = {
   primary: 'rgb(0, 103, 129)',
-  onPrimary: 'rgb(255, 255, 255)',
+  onPrimary: '#F6F6F6',
   primaryContainer: 'rgb(185, 234, 255)',
   onPrimaryContainer: 'rgb(0, 31, 41)',
-  secondary: 'rgb(76, 98, 107)',
+  secondary: '#032F3C',
   onSecondary: 'rgb(255, 255, 255)',
   secondaryContainer: 'rgb(207, 230, 241)',
   onSecondaryContainer: 'rgb(7, 30, 38)',

@@ -46,6 +46,7 @@ const Button = ({
   textColor?: string;
   buttonColor?: string;
 }) => {
+  console.log('button text style', btnTextStyle);
   return paper ? (
     <>
       <ButtonPaper

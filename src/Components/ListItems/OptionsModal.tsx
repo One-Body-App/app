@@ -1,4 +1,5 @@
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { useTheme } from 'react-native-paper';
 import React from 'react';
 import { View, Share, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -32,7 +33,7 @@ const OptionsModal = ({
   hideChannelSection?: boolean;
   height?: number;
 }) => {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const navigation = useNavigation<ScreenNavigationProp>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.userProfile);
@@ -110,18 +111,28 @@ const OptionsModal = ({
       swipeDirection={['down']}
       style={styles.bottomView}
     >
-      <View style={[styles.content2, { height: height ?? getHeight(35) }]}>
-        <View style={styles.headLine} />
+      <View
+        style={[
+          styles.content2,
+          { height: height ?? getHeight(35), backgroundColor: colors.background },
+        ]}
+      >
+        <View style={[styles.headLine, { backgroundColor: dark ? '#000000' : '#EAEAEA' }]} />
         <View style={styles.contview}>
           <View style={styles.saveview}>
             <View style={{ flex: 1, paddingRight: 5 }}>
               <Button
-                btnStyle={styles.savetuch}
+                btnStyle={[styles.savetuch, { backgroundColor: colors.onPrimary }]}
                 text={isThisPostSaved ? 'Remove' : 'Save'}
                 leftIcon={
-                  <Feather style={{ marginRight: 3 }} name="bookmark" size={17} color="#032F3C" />
+                  <Feather
+                    style={{ marginRight: 3 }}
+                    name="bookmark"
+                    size={17}
+                    color={colors.secondary}
+                  />
                 }
-                btnTextStyle={{ color: '#032F3C' }}
+                btnTextStyle={{ color: colors.secondary }}
                 onPress={() => {
                   if (isThisPostSaved) {
                     if (currentPopupItem?.link) removePost(currentPopupItem?.link);
@@ -146,17 +157,17 @@ const OptionsModal = ({
               </TouchableOpacity> */}
             <View style={{ flex: 1, paddingLeft: 5 }}>
               <Button
-                btnStyle={styles.sharetouch}
+                btnStyle={[styles.sharetouch, { backgroundColor: colors.onPrimary }]}
                 text="Share"
                 leftIcon={
                   <MaterialCommunityIcons
                     style={{ marginRight: 3 }}
                     name="share-outline"
                     size={18}
-                    color="#032F3C"
+                    color={colors.secondary}
                   />
                 }
-                btnTextStyle={{ color: '#032F3C' }}
+                btnTextStyle={{ color: colors.secondary }}
                 onPress={async () => {
                   await Share.share({
                     title: `${currentPopupItem?.title}`,
@@ -201,13 +212,13 @@ const OptionsModal = ({
               <Button
                 btnStyle={{
                   ...GeneralStyle.btn,
-                  backgroundColor: '#f6f6f6',
+                  backgroundColor: colors.onPrimary,
                   flexDirection: 'row',
                   flexGrow: 1,
                   marginHorizontal: 0,
                 }}
                 text="View Channel"
-                btnTextStyle={{ color: '#032F3C' }}
+                btnTextStyle={{ color: colors.secondary }}
                 onPress={() => {
                   setShow(false);
                   if (currentPopupItem)
@@ -234,12 +245,10 @@ const OptionsModal = ({
             text={'CLOSE'}
             btnStyle={{
               ...GeneralStyle.btn,
-              // backgroundColor: 'red',
-              // backgroundColor: '#e6eaec',
               flexDirection: 'row',
               flexGrow: 1,
             }}
-            btnTextStyle={{ ...GeneralStyle.btnText, color: '#032f3c' }}
+            btnTextStyle={{ ...GeneralStyle.btnText, color: colors.secondary }}
             onPress={() => {
               setShow(false);
             }}
