@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, TouchableOpacity, SafeAreaView, ScrollView, FlatList } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { Divider, Provider, TextInput, Text } from 'react-native-paper';
 import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -359,13 +367,18 @@ const EditProfile = ({ navigation }: Props) => {
           </View>
         </View>
       </Modal>
-      <ScrollView>
-        <View style={styles.topContainer}>
-          <TouchableOpacity
-            onPress={() => setPickerModalVisibile(true)}
-            style={styles.imageContainer}
-          >
-            {/* <Avatar.Image
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={120}
+      >
+        <ScrollView>
+          <View style={styles.topContainer}>
+            <TouchableOpacity
+              onPress={() => setPickerModalVisibile(true)}
+              style={styles.imageContainer}
+            >
+              {/* <Avatar.Image
                 size={getFontSize(14)}
                 resizeMode={'stretch'}
                 source={
@@ -374,191 +387,176 @@ const EditProfile = ({ navigation }: Props) => {
                     : {uri: user?.profileImage}
                 }
               /> */}
-            <View
-              style={{
-                flexDirection: 'row',
-                width: '50%',
-                justifyContent: 'center',
-                alignContent: 'center',
-              }}
-            >
-              <FastImage
-                style={{ width: 90, height: 90, borderRadius: 45 }}
-                source={
-                  imageToUpload
-                    ? { uri: imageToUpload }
-                    : {
-                        uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
-                      }
-                }
-                resizeMode={FastImage.resizeMode.stretch}
-              />
-              <Text
+              <View
                 style={{
-                  color: '#757575',
-                  fontSize: 12,
-                  // marginTop: getHeight(1),
-                  fontFamily: 'Rubik-Regular',
-                  textAlign: 'center',
-                  width: '40%',
-                  alignSelf: 'center',
+                  flexDirection: 'row',
+                  width: '50%',
+                  justifyContent: 'center',
+                  alignContent: 'center',
                 }}
               >
-                Change Photo
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.InputsContainer}>
-            <TextInput
-              style={{ backgroundColor: colors.background }}
-              onChangeText={(e) => setUsername(e)}
-              value={username}
-              label="Username"
-              activeOutlineColor={'#12D2D9'}
-              activeUnderlineColor={'#12D2D9'}
-              placeholder="username"
-              theme={{ roundness: 10 }}
-            />
-
-            <TextInput
-              style={{ backgroundColor: colors.background }}
-              onChangeText={(e) => setFullName(e)}
-              value={fullname}
-              label="Name"
-              activeOutlineColor={'#12D2D9'}
-              activeUnderlineColor={'#12D2D9'}
-              placeholder="Name"
-              theme={{ roundness: 10 }}
-            />
-
-            <TextInput
-              style={{ backgroundColor: colors.background }}
-              label="Account type"
-              value={user?.accountType == 'individual' ? 'Individual' : 'Organization'}
-              editable={false}
-              theme={{ roundness: 10 }}
-              // placeholderTextColor={'red'}
-            />
-
-            {user?.accountType == 'individual' ? (
-              <>
-                <TextInput
-                  label="What type of church do you attend?"
-                  activeOutlineColor={'#12D2D9'}
-                  activeUnderlineColor={'#12D2D9'}
-                  style={{ backgroundColor: colors.background }}
-                  theme={{ roundness: 10 }}
-                  showSoftInputOnFocus={false}
-                  onPressIn={() => setChurchTypeModalVisible(true)}
-                  value={churchType}
+                <FastImage
+                  style={{ width: 90, height: 90, borderRadius: 45 }}
+                  source={
+                    imageToUpload
+                      ? { uri: imageToUpload }
+                      : {
+                          uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                        }
+                  }
+                  resizeMode={FastImage.resizeMode.stretch}
                 />
+                <Text
+                  style={{
+                    color: '#757575',
+                    fontSize: 12,
+                    // marginTop: getHeight(1),
+                    fontFamily: 'Rubik-Regular',
+                    textAlign: 'center',
+                    width: '40%',
+                    alignSelf: 'center',
+                  }}
+                >
+                  Change Photo
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <View style={styles.InputsContainer}>
+              <TextInput
+                style={{ backgroundColor: colors.background }}
+                onChangeText={(e) => setUsername(e)}
+                value={username}
+                label="Username"
+                activeOutlineColor={'#12D2D9'}
+                activeUnderlineColor={'#12D2D9'}
+                placeholder="username"
+                theme={{ roundness: 10 }}
+              />
 
-                {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
+              <TextInput
+                style={{ backgroundColor: colors.background }}
+                onChangeText={(e) => setFullName(e)}
+                value={fullname}
+                label="Name"
+                activeOutlineColor={'#12D2D9'}
+                activeUnderlineColor={'#12D2D9'}
+                placeholder="Name"
+                theme={{ roundness: 10 }}
+              />
+
+              <TextInput
+                style={{ backgroundColor: colors.background }}
+                label="Account type"
+                value={user?.accountType == 'individual' ? 'Individual' : 'Organization'}
+                editable={false}
+                theme={{ roundness: 10 }}
+                // placeholderTextColor={'red'}
+              />
+
+              {user?.accountType == 'individual' ? (
+                <>
                   <TextInput
-                    label="What subtype of the church that you attend?"
+                    label="What type of church do you attend?"
                     activeOutlineColor={'#12D2D9'}
                     activeUnderlineColor={'#12D2D9'}
                     style={{ backgroundColor: colors.background }}
                     theme={{ roundness: 10 }}
                     showSoftInputOnFocus={false}
-                    onPressIn={() => setChurchSubTypeModalVisible(true)}
-                    value={churchSubType}
+                    onPressIn={() => setChurchTypeModalVisible(true)}
+                    value={churchType}
                   />
-                ) : null}
 
-                <TextInput
-                  label="How often do you attend church?"
-                  activeOutlineColor={'#12D2D9'}
-                  activeUnderlineColor={'#12D2D9'}
-                  style={{ backgroundColor: colors.background }}
-                  theme={{ roundness: 10 }}
-                  showSoftInputOnFocus={false}
-                  onPressIn={() => setOftenChurchVisible(true)}
-                  value={oftenChurch}
-                />
-
-                <TextInput
-                  label="What City are you in?"
-                  activeOutlineColor={'#12D2D9'}
-                  activeUnderlineColor={'#12D2D9'}
-                  style={{ backgroundColor: colors.background }}
-                  theme={{ roundness: 10 }}
-                  showSoftInputOnFocus={false}
-                  onPressIn={() => setCitySelector(true)}
-                  value={location?.address}
-                />
-
-                <MapBox
-                  location={newLocation}
-                  setLongitude={setLongitude}
-                  setLatitude={setLatitude}
-                  CheckIn={citySelector}
-                  setCheckIn={setCitySelector}
-                  setLocation={setNewLocation}
-                />
-
-                <TextInput
-                  label="Date of Birth"
-                  activeOutlineColor={'#12D2D9'}
-                  activeUnderlineColor={'#12D2D9'}
-                  style={{ backgroundColor: colors.background }}
-                  theme={{ roundness: 10 }}
-                  showSoftInputOnFocus={false}
-                  onFocus={() => setOpen(true)}
-                  onChangeText={(value) => setDate(value)}
-                  onPressIn={() => setOpen(true)}
-                  value={date}
-                  right={
-                    <TextInput.Icon
-                      icon="calendar"
-                      onPress={() => setOpen(true)}
-                      style={{ paddingTop: 6 }}
-                      color={'#032f3c'}
+                  {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
+                    <TextInput
+                      label="What subtype of the church that you attend?"
+                      activeOutlineColor={'#12D2D9'}
+                      activeUnderlineColor={'#12D2D9'}
+                      style={{ backgroundColor: colors.background }}
+                      theme={{ roundness: 10 }}
+                      showSoftInputOnFocus={false}
+                      onPressIn={() => setChurchSubTypeModalVisible(true)}
+                      value={churchSubType}
                     />
-                  }
-                />
-              </>
-            ) : null}
+                  ) : null}
 
-            <DatePicker
-              modal
-              minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
-              maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
-              mode="date"
-              androidVariant="nativeAndroid"
-              open={open}
-              date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
-              onConfirm={(date) => {
-                setOpen(false);
-                setDate(format(date, 'MM/dd/yyyy'));
-              }}
-              onCancel={() => {
-                setOpen(false);
-              }}
-            />
+                  <TextInput
+                    label="How often do you attend church?"
+                    activeOutlineColor={'#12D2D9'}
+                    activeUnderlineColor={'#12D2D9'}
+                    style={{ backgroundColor: colors.background }}
+                    theme={{ roundness: 10 }}
+                    showSoftInputOnFocus={false}
+                    onPressIn={() => setOftenChurchVisible(true)}
+                    value={oftenChurch}
+                  />
 
-            <View>
-              {user?.accountType == 'individual' ? (
-                <TextInput
-                  style={{ backgroundColor: colors.background }}
-                  value={whatIDo?.name ? whatIDo?.name : ''}
-                  editable={false}
-                  label="What I do"
-                  onPressIn={() => {
-                    getWhatIDo();
-                    setVisible(true);
-                  }}
-                  activeOutlineColor={'#12D2D9'}
-                  activeUnderlineColor={'#12D2D9'}
-                  // onChangeText={e => setWhatIDo(e)}
-                />
-              ) : (
-                <>
+                  <TextInput
+                    label="What City are you in?"
+                    activeOutlineColor={'#12D2D9'}
+                    activeUnderlineColor={'#12D2D9'}
+                    style={{ backgroundColor: colors.background }}
+                    theme={{ roundness: 10 }}
+                    showSoftInputOnFocus={false}
+                    onPressIn={() => setCitySelector(true)}
+                    value={location?.address}
+                  />
+
+                  <MapBox
+                    location={newLocation}
+                    setLongitude={setLongitude}
+                    setLatitude={setLatitude}
+                    CheckIn={citySelector}
+                    setCheckIn={setCitySelector}
+                    setLocation={setNewLocation}
+                  />
+
+                  <TextInput
+                    label="Date of Birth"
+                    activeOutlineColor={'#12D2D9'}
+                    activeUnderlineColor={'#12D2D9'}
+                    style={{ backgroundColor: colors.background }}
+                    theme={{ roundness: 10 }}
+                    showSoftInputOnFocus={false}
+                    onFocus={() => setOpen(true)}
+                    onChangeText={(value) => setDate(value)}
+                    onPressIn={() => setOpen(true)}
+                    value={date}
+                    right={
+                      <TextInput.Icon
+                        icon="calendar"
+                        onPress={() => setOpen(true)}
+                        style={{ paddingTop: 6 }}
+                        color={'#032f3c'}
+                      />
+                    }
+                  />
+                </>
+              ) : null}
+
+              <DatePicker
+                modal
+                minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
+                maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+                mode="date"
+                androidVariant="nativeAndroid"
+                open={open}
+                date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
+                onConfirm={(date) => {
+                  setOpen(false);
+                  setDate(format(date, 'MM/dd/yyyy'));
+                }}
+                onCancel={() => {
+                  setOpen(false);
+                }}
+              />
+
+              <View>
+                {user?.accountType == 'individual' ? (
                   <TextInput
                     style={{ backgroundColor: colors.background }}
-                    value={organizationType?.name ? organizationType?.name : ''}
+                    value={whatIDo?.name ? whatIDo?.name : ''}
                     editable={false}
-                    label="Who We Are?"
+                    label="What I do"
                     onPressIn={() => {
                       getWhatIDo();
                       setVisible(true);
@@ -567,63 +565,78 @@ const EditProfile = ({ navigation }: Props) => {
                     activeUnderlineColor={'#12D2D9'}
                     // onChangeText={e => setWhatIDo(e)}
                   />
-                  {user?.isInfluencer == true ? (
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        paddingVertical: 10,
+                ) : (
+                  <>
+                    <TextInput
+                      style={{ backgroundColor: colors.background }}
+                      value={organizationType?.name ? organizationType?.name : ''}
+                      editable={false}
+                      label="Who We Are?"
+                      onPressIn={() => {
+                        getWhatIDo();
+                        setVisible(true);
                       }}
-                    >
-                      <TextInput
-                        multiline={true}
-                        numberOfLines={5}
-                        label="Bio"
-                        value={user?.bio}
-                        returnKeyType={'next'}
-                        mode="outlined"
-                        activeOutlineColor={'#12D2D9'}
-                        activeUnderlineColor={'#12D2D9'}
-                        outlineColor={colors.border}
-                        maxLength={150}
+                      activeOutlineColor={'#12D2D9'}
+                      activeUnderlineColor={'#12D2D9'}
+                      // onChangeText={e => setWhatIDo(e)}
+                    />
+                    {user?.isInfluencer == true ? (
+                      <View
                         style={{
-                          flex: 4,
+                          flexDirection: 'row',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          paddingVertical: 10,
                         }}
-                        theme={{
-                          dark: dark,
-                          colors: {
-                            text: colors.text,
-                            placeholder: colors.primary,
-                            background: colors.background,
-                          },
-                        }}
-                        onChangeText={(e) => setBio(e)}
-                        blurOnSubmit={false}
-                      />
-                      <Text style={{ flex: 1, textAlign: 'center' }}>{bio.length}/150</Text>
-                    </View>
-                  ) : null}
-                </>
-              )}
+                      >
+                        <TextInput
+                          multiline={true}
+                          numberOfLines={5}
+                          label="Bio"
+                          value={user?.bio}
+                          returnKeyType={'next'}
+                          mode="outlined"
+                          activeOutlineColor={'#12D2D9'}
+                          activeUnderlineColor={'#12D2D9'}
+                          outlineColor={colors.border}
+                          maxLength={150}
+                          style={{
+                            flex: 4,
+                          }}
+                          theme={{
+                            dark: dark,
+                            colors: {
+                              text: colors.text,
+                              placeholder: colors.primary,
+                              background: colors.background,
+                            },
+                          }}
+                          onChangeText={(e) => setBio(e)}
+                          blurOnSubmit={false}
+                        />
+                        <Text style={{ flex: 1, textAlign: 'center' }}>{bio.length}/150</Text>
+                      </View>
+                    ) : null}
+                  </>
+                )}
 
-              <TextInput
-                style={{ backgroundColor: colors.background }}
-                value={website}
-                label="Website"
-                keyboardType="url"
-                autoCorrect={false}
-                autoCapitalize="none"
-                placeholder="https://www.website.com"
-                activeOutlineColor={'#12D2D9'}
-                activeUnderlineColor={'#12D2D9'}
-                onChangeText={(e) => setWebsite(e)}
-              />
+                <TextInput
+                  style={{ backgroundColor: colors.background }}
+                  value={website}
+                  label="Website"
+                  keyboardType="url"
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  placeholder="https://www.website.com"
+                  activeOutlineColor={'#12D2D9'}
+                  activeUnderlineColor={'#12D2D9'}
+                  onChangeText={(e) => setWebsite(e)}
+                />
+              </View>
             </View>
           </View>
-        </View>
-        <View style={styles.bottomContainer}>
-          {/* {user?.isInfluencer == true ? (
+          <View style={styles.bottomContainer}>
+            {/* {user?.isInfluencer == true ? (
               <View style={{ ...styles.center, marginTop: getHeight(2) }}>
                 <Text style={styles.SocialText}>Link Social Media Account</Text>
                 <View style={styles.socialIcon}>
@@ -633,122 +646,82 @@ const EditProfile = ({ navigation }: Props) => {
                 </View>
               </View>
             ) : null} */}
-          <View style={{ marginHorizontal: 25, width: '100%' }}>
-            <Button
-              text={'DONE'}
-              onPress={() => {
-                const data = new FormData();
+            <View style={{ marginHorizontal: 25, width: '100%' }}>
+              <Button
+                text={'DONE'}
+                onPress={() => {
+                  const data = new FormData();
 
-                if (fullname) data.append('name', fullname);
-                if (gender) data.append('gender', gender);
-                if (whatIDo) data.append('whatIDo', whatIDo?._id);
-                if (organizationType) data.append('typeOfOrganization', organizationType?._id);
-                if (website) data.append('website', website);
-                if (imageObject) data.append('photo', imageObject);
-                if (bio) data.append('bio', bio);
-                if (username) data.append('username', username);
-                if (churchType) data.append('churchType', churchType);
-                if (churchSubType) data.append('churchSubType', churchSubType);
-                if (oftenChurch) data.append('oftenChurch', oftenChurch);
+                  if (fullname) data.append('name', fullname);
+                  if (gender) data.append('gender', gender);
+                  if (whatIDo) data.append('whatIDo', whatIDo?._id);
+                  if (organizationType) data.append('typeOfOrganization', organizationType?._id);
+                  if (website) data.append('website', website);
+                  if (imageObject) data.append('photo', imageObject);
+                  if (bio) data.append('bio', bio);
+                  if (username) data.append('username', username);
+                  if (churchType) data.append('churchType', churchType);
+                  if (churchSubType) data.append('churchSubType', churchSubType);
+                  if (oftenChurch) data.append('oftenChurch', oftenChurch);
 
-                dispatch(setLoader(true));
+                  dispatch(setLoader(true));
 
-                if (user?.accountType == 'individual') {
-                  dispatch(profileUpdate({ data, token, accountType: 'individual', go }));
-                } else {
-                  dispatch(profileUpdate({ data, token, accountType: 'organization', go }));
-                }
-              }}
-              // btnStyle={{
-              //   ...GeneralStyle.btn,
-              //   height: getHeight(7),
+                  if (user?.accountType == 'individual') {
+                    dispatch(profileUpdate({ data, token, accountType: 'individual', go }));
+                  } else {
+                    dispatch(profileUpdate({ data, token, accountType: 'organization', go }));
+                  }
+                }}
+                // btnStyle={{
+                //   ...GeneralStyle.btn,
+                //   height: getHeight(7),
 
-              //   backgroundColor: '#0C5C75',
-              // }}
-              // btnTextStyle={GeneralStyle.btnText}
-              mode="contained"
-              paper
-              btnStyle={{ marginHorizontal: 10 }}
-            />
+                //   backgroundColor: '#0C5C75',
+                // }}
+                // btnTextStyle={GeneralStyle.btnText}
+                mode="contained"
+                paper
+                btnStyle={{ marginHorizontal: 10 }}
+              />
 
-            <Button
-              text={'Cancel'}
-              mode="text"
-              textColor="#70747D"
-              paper
-              btnStyle={{ marginHorizontal: 0 }}
-              // btnStyle={{
-              //   ...GeneralStyle.btn,
-              //   backgroundColor: 'white',
-              //   marginTop: getHeight(2),
-              // }}
-              onPress={() => navigation.goBack()}
-              // btnTextStyle={{ ...GeneralStyle.btnText, color: '#707470' }}
-            />
+              <Button
+                text={'Cancel'}
+                mode="text"
+                textColor="#70747D"
+                paper
+                btnStyle={{ marginHorizontal: 0 }}
+                // btnStyle={{
+                //   ...GeneralStyle.btn,
+                //   backgroundColor: 'white',
+                //   marginTop: getHeight(2),
+                // }}
+                onPress={() => navigation.goBack()}
+                // btnTextStyle={{ ...GeneralStyle.btnText, color: '#707470' }}
+              />
+            </View>
           </View>
-        </View>
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={churchTypeModalVisible}
-          onBackdropPress={() => setChurchTypeModalVisible(false)}
-          onSwipeComplete={() => setChurchTypeModalVisible(false)}
-          swipeDirection={['down']}
-          style={styles.bottomView}
-          propagateSwipe={true}
-        >
-          <View style={{ ...styles.content2, backgroundColor: colors.background }}>
-            <View style={styles.headLine} />
+          <Modal
+            backdropOpacity={0.3}
+            isVisible={churchTypeModalVisible}
+            onBackdropPress={() => setChurchTypeModalVisible(false)}
+            onSwipeComplete={() => setChurchTypeModalVisible(false)}
+            swipeDirection={['down']}
+            style={styles.bottomView}
+            propagateSwipe={true}
+          >
+            <View style={{ ...styles.content2, backgroundColor: colors.background }}>
+              <View style={styles.headLine} />
 
-            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-              {churchTypes?.map((item, index) => {
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      // setWhatIDo(item);
-                      setChurchType(item.churchType);
-                      setSubChurchType('');
-
-                      setChurchTypeModalVisible(false);
-                    }}
-                    style={styles.listItem2}
-                    key={index}
-                  >
-                    <Text
-                      style={{
-                        color: '#81979E',
-                        fontSize: getFontSize(2.2),
-                        fontFamily: 'Rubik-Regular',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.churchType}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </Modal>
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={churchSubTypeModalVisible}
-          onBackdropPress={() => setChurchSubTypeModalVisible(false)}
-          onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
-          swipeDirection={['down']}
-          style={styles.bottomView}
-          propagateSwipe={true}
-        >
-          <View style={styles.content2}>
-            <View style={styles.headLine} />
-            {selectedChurchType.length > 0 ? (
               <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-                {selectedChurchType[0].children.map((item, index) => {
+                {churchTypes?.map((item, index) => {
                   return (
                     <TouchableOpacity
                       onPress={() => {
                         // setWhatIDo(item);
-                        setSubChurchType(item.churchType);
-                        setChurchSubTypeModalVisible(false);
+                        setChurchType(item.churchType);
+                        setSubChurchType('');
+
+                        setChurchTypeModalVisible(false);
                       }}
                       style={styles.listItem2}
                       key={index}
@@ -767,51 +740,92 @@ const EditProfile = ({ navigation }: Props) => {
                   );
                 })}
               </ScrollView>
-            ) : null}
-          </View>
-        </Modal>
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={oftenChurchVisible}
-          onBackdropPress={() => setOftenChurchVisible(false)}
-          onSwipeComplete={() => setOftenChurchVisible(false)}
-          swipeDirection={['down']}
-          style={styles.bottomView}
-          propagateSwipe={true}
-        >
-          <View style={styles.content2}>
-            <View style={styles.headLine} />
-            {oftenChurchOptions.length > 0 ? (
-              <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-                {oftenChurchOptions.map((item, index) => {
-                  return (
-                    <TouchableOpacity
-                      onPress={() => {
-                        // setWhatIDo(item);
-                        setOftenChurch(item);
-                        setOftenChurchVisible(false);
-                      }}
-                      style={styles.listItem2}
-                      key={index}
-                    >
-                      <Text
-                        style={{
-                          color: '#81979E',
-                          fontSize: getFontSize(2.2),
-                          fontFamily: 'Rubik-Regular',
+            </View>
+          </Modal>
+          <Modal
+            backdropOpacity={0.3}
+            isVisible={churchSubTypeModalVisible}
+            onBackdropPress={() => setChurchSubTypeModalVisible(false)}
+            onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
+            swipeDirection={['down']}
+            style={styles.bottomView}
+            propagateSwipe={true}
+          >
+            <View style={styles.content2}>
+              <View style={styles.headLine} />
+              {selectedChurchType.length > 0 ? (
+                <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+                  {selectedChurchType[0].children.map((item, index) => {
+                    return (
+                      <TouchableOpacity
+                        onPress={() => {
+                          // setWhatIDo(item);
+                          setSubChurchType(item.churchType);
+                          setChurchSubTypeModalVisible(false);
                         }}
-                        numberOfLines={1}
+                        style={styles.listItem2}
+                        key={index}
                       >
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            ) : null}
-          </View>
-        </Modal>
-      </ScrollView>
+                        <Text
+                          style={{
+                            color: '#81979E',
+                            fontSize: getFontSize(2.2),
+                            fontFamily: 'Rubik-Regular',
+                          }}
+                          numberOfLines={1}
+                        >
+                          {item.churchType}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              ) : null}
+            </View>
+          </Modal>
+          <Modal
+            backdropOpacity={0.3}
+            isVisible={oftenChurchVisible}
+            onBackdropPress={() => setOftenChurchVisible(false)}
+            onSwipeComplete={() => setOftenChurchVisible(false)}
+            swipeDirection={['down']}
+            style={styles.bottomView}
+            propagateSwipe={true}
+          >
+            <View style={styles.content2}>
+              <View style={styles.headLine} />
+              {oftenChurchOptions.length > 0 ? (
+                <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+                  {oftenChurchOptions.map((item, index) => {
+                    return (
+                      <TouchableOpacity
+                        onPress={() => {
+                          // setWhatIDo(item);
+                          setOftenChurch(item);
+                          setOftenChurchVisible(false);
+                        }}
+                        style={styles.listItem2}
+                        key={index}
+                      >
+                        <Text
+                          style={{
+                            color: '#81979E',
+                            fontSize: getFontSize(2.2),
+                            fontFamily: 'Rubik-Regular',
+                          }}
+                          numberOfLines={1}
+                        >
+                          {item}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              ) : null}
+            </View>
+          </Modal>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
