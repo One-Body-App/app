@@ -5,7 +5,15 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { Linking, StyleSheet, useColorScheme } from 'react-native';
+import {
+  ImageBackground,
+  Linking,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -65,9 +73,11 @@ const Main = () => {
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
   const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const userToken = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
+  // const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');
 
@@ -83,12 +93,17 @@ const Main = () => {
     }
   }, [loader]);
 
+  useEffect(() => {
+    if (initializing && userProfile) setInitializing(false);
+  }, [userToken, userProfile]);
+
   const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
     const firebaseToken = await firebaseUser?.getIdToken();
 
     if (!isEqual(firebaseUser, user)) {
       // if (firebaseUser?.email && firebaseUser?.emailVerified) {
       setUser(firebaseUser);
+
       dispatch(
         setUserData({
           ...firebaseUser?.toJSON(),
@@ -99,7 +114,7 @@ const Main = () => {
     }
 
     if (!isEqual(firebaseToken, token)) {
-      setToken(firebaseToken ?? '');
+      setToken(firebaseToken ?? 'unauthorized');
     }
   };
 
@@ -124,11 +139,9 @@ const Main = () => {
       );
     }
 
-    if (initializing != true) {
-      dispatch(setLoader(false));
+    if (token == 'unauthorized') {
+      if (initializing) setInitializing(false);
     }
-
-    if (initializing) setInitializing(false);
   }, [token, user, initializing]);
 
   const linking: LinkingOptions<RootStackParamList> = {
@@ -217,6 +230,21 @@ const Main = () => {
 
   const scheme = useColorScheme();
 
+  if (initializing) {
+    return (
+      <ImageBackground
+        resizeMode="cover"
+        style={{
+          width: '100%',
+          height: '100%',
+
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+        source={require('@/assets/images/Loading.gif')}
+      ></ImageBackground>
+    );
+  }
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       <AppProvider>

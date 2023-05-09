@@ -52,6 +52,8 @@ const SocialItem = ({
       username: string;
       accountType: 'individual' | 'organization';
       profileImage: string;
+      twitterHandler?: string;
+      instagramHandler?: string;
     };
     created: Date;
     id: string;
@@ -285,7 +287,9 @@ const SocialItem = ({
               marginBottom: 5,
             }}
           >
-            {item?.source == 'twitter' ? 'View on Twitter' : 'View on Instagram'}
+            {item?.source == 'twitter'
+              ? `View @${item?.userData?.twitterHandler} on Twitter`
+              : `View @${item?.userData?.instagramHandler} on Instagram`}
           </Text>
         </TouchableOpacity>
       ) : null}

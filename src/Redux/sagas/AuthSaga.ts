@@ -180,7 +180,7 @@ function* getProfileRequest(params) {
       token: params.data.token,
       verb: 'get',
     });
-
+    console.log(res, 'res');
     if (res?.status == '200') {
       yield put(setProfile({ token: params.data.token, ...res.response }));
       // params?.data?.go();
@@ -200,7 +200,7 @@ export function* UpdateOrgProfileSaga() {
 function* getUserProfileRequest(params) {
   try {
     const res = yield ApiCall({
-      route: `user/my-profile`,
+      route: `auth/my-profile`,
       token: params.data.token,
       verb: 'get',
     });
