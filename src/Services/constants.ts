@@ -22,6 +22,7 @@ import { Buffer } from 'buffer';
 import axios from 'axios';
 
 const IS_STAGING = true;
+
 export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 // export const BASE_URL = IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 // export const BASE_URL = 'https://192.168.4.134/api';
