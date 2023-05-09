@@ -8,6 +8,7 @@ import {
   Linking,
   ScrollView,
   useColorScheme,
+  Alert,
 } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -30,6 +31,8 @@ import {
   OpenURLButton,
   TWITTER_CLIENT_ID,
   codeChallenge,
+  getInstagramAuthToken,
+  getTwitterAuthToken,
 } from '@/src/Services/constants';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
@@ -100,99 +103,17 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     rssFeed2Error: '',
   });
 
-  const getInstagramData = async (
-    accessToken: string,
-    accessTokenExpiresAt: string,
-    accessTokenExpiresAtReal: string
-  ) => {
-    try {
-      const options = {
-        method: 'GET',
-        url: `https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-
-      const result = await axios.request(options);
-
-      setState({
-        ...state,
-        instagramUsername: result.data.username,
-        instagramId: result.data.id,
-        instagramToken: accessToken,
-        instagramTokenExpiresAt: accessTokenExpiresAt,
-        instagramTokenExpiresAtReal: accessTokenExpiresAtReal,
-      });
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
-  const getTwitterData = async (
-    accessToken: string,
-    twitterRefreshToken: string,
-    accessTokenExpiresAt: string,
-    accessTokenExpiresAtReal: string
-  ) => {
-    try {
-      const options = {
-        method: 'GET',
-        url: `https://api.twitter.com/2/users/me`,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      };
-
-      const result = await axios.request(options);
-
-      setState({
-        ...state,
-        twitterUsername: result.data.data.username,
-        twitterId: result.data.data.id,
-        twitterToken: accessToken,
-        twitterRefreshToken: twitterRefreshToken,
-        twitterTokenExpiresAt: accessTokenExpiresAt,
-        twitterTokenExpiresAtReal: accessTokenExpiresAtReal,
-      });
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
   useEffect(() => {
     if (route.params?.action == 'instagram' && route.params?.code) {
-      const getInstagramAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: `${BASE_URL}/auth/instagram-token`,
-            data: {
-              redirect_uri: INSTAGRAM_LOGIN_REDIRECT,
-              code: route.params?.code,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-              authorization: `Bearer ${userToken}`,
-            },
-          };
-
-          const result = await axios.request(options);
-
-          if (result && result.data?.access_token) {
-            InAppBrowser.closeAuth();
-
-            getInstagramData(
-              result.data?.access_token,
-              result.data?.expiresAt,
-              result.data?.expiresAtReal
-            );
-          }
-        } catch (error: any) {
-          console.log(error);
+      getInstagramAuthToken(route.params?.code, userToken, INSTAGRAM_LOGIN_REDIRECT).then(
+        (result) => {
+          console.log(result);
+          setState({
+            ...state,
+            ...result,
+          });
         }
-      };
-      getInstagramAuthToken();
+      );
     }
 
     if (
@@ -201,67 +122,28 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
       route.params?.code &&
       route.params?.state == twitterStateConfirmation
     ) {
-      const getTwitterAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: `${BASE_URL}/auth/twitter-token-oauth-2`,
-            data: {
-              redirect_uri: twitterRedirectUrl,
-              code: route.params?.code,
-              codeVerifier: twitterCodeConfirmation,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-              authorization: `Bearer ${userToken}`,
-            },
-          };
-
-          const result = await axios.request(options);
-
-          if (result.data) {
-            InAppBrowser.closeAuth();
-
-            getTwitterData(
-              result.data?.access_token,
-              result.data?.refresh_token,
-              result.data?.expiresAt,
-              result.data?.expiresAtReal
-            );
-          }
-        } catch (error: any) {
-          console.log(error.text);
-          if (error.response) {
-            // The request was made and the server responded with a status code
-            // that falls out of the range of 2xx
-            console.log(error.response.data);
-            console.log(error.response.status);
-            console.log(error.response.headers);
-          } else if (error.request) {
-            // The request was made but no response was received
-            // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-            // http.ClientRequest in node.js
-            console.log(error.request);
-          } else {
-            // Something happened in setting up the request that triggered an Error
-            console.log('Error', error.message);
-          }
-          console.log(error.config);
-        }
-      };
-      getTwitterAuthToken();
+      getTwitterAuthToken(
+        route.params?.code,
+        twitterCodeConfirmation,
+        userToken,
+        twitterRedirectUrl
+      ).then((result) => {
+        setState({
+          ...state,
+          ...result,
+        });
+      });
     }
   }, [route.params]);
 
   const onNext = async () => {
-    const { twitterId, instagramId } = state;
+    const { twitterId, instagramId, bio } = state;
     const twitterIdError = await validator('twitterId', twitterId);
-
     const instagramIdError = await validator('instagramId', instagramId);
+    const bioError = await validator('bio', bio);
 
-    const dataSourcesError = instagramIdError && twitterIdError;
-
-    if (!dataSourcesError) {
+    console.log(instagramIdError, twitterIdError);
+    if (!bioError) {
       setModalVisible(true);
       //navigation.navigate('InfluencerStepThree',{data:{twitterUsername, instagramUsername,twitterHandler,instagramHandler,twitterTitle,instagramTitle,comments}})
     } else {
@@ -269,6 +151,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         ...state,
         twitterIdError,
         instagramIdError,
+        bioError,
       });
     }
   };
@@ -309,7 +192,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
       if (!foundFacebook) {
         const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
 
-        auth().currentUser?.linkWithCredential(facebookCredential);
+        // await auth().currentUser?.linkWithCredential(facebookCredential);
       }
 
       setIsLoggedInFacebook(true);
@@ -325,7 +208,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${TWITTER_CLIENT_ID}&redirect_uri=${encodeURIComponent(
           twitterRedirectUrl
         )}&scope=${encodeURIComponent(
-          'tweet.read users.read offline.access'
+          'tweet.read users.read offline.access follows.read'
         )}&state=${twitterStateConfirmation}&code_challenge=${twitterCodeConfirmation}&code_challenge_method=plain`,
         false,
         true,
@@ -796,84 +679,6 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 }}
               />
             )}
-
-            {/* <TextInput
-              style={{
-                ...GeneralStyle.input,
-                backgroundColor: colors.background,
-              }}
-              ref={inputRefs.twitterUsername}
-              value={state.twitterUsername}
-              returnKeyType={'next'}
-              mode="outlined"
-              activeOutlineColor={colors.primary}
-              outlineColor={'#9EA1A2'}
-              theme={{
-                roundness: 10,
-                dark: dark,
-                colors: { text: colors.text, placeholder: colors.primary },
-              }}
-              label={'@Username'}
-              onFocus={() => setState({ ...state, twitterUsernameError: '' })}
-              onSubmitEditing={() => inputRefs.twitterUsername.current?.focus()}
-              onChangeText={(twitterUsername) => {
-                if (twitterUsername)
-                  changeHandler(
-                    'twitterUsername',
-                    twitterUsername[0] != '@'
-                      ? `@${twitterUsername.toLowerCase().trim()}`
-                      : twitterUsername.toLowerCase().trim()
-                  );
-              }}
-              blurOnSubmit={false}
-            />
-            <Text style={GeneralStyle.InputError}>{state.twitterUsernameError}</Text> */}
-            {/* <TextInput
-              style={GeneralStyle.input}
-              ref={inputRefs.twitterHandler}
-              value={state.twitterHandler}
-              returnKeyType={'next'}
-              mode="outlined"
-              activeOutlineColor={'#5B7279'}
-              theme={{ roundness: 10 }}
-              outlineColor={'#9EA1A2'}
-              label={'Twitter link'}
-              onFocus={() => setState({ ...state, twitterHandlerError: '' })}
-              onBlur={() =>
-                validateFields(state.twitterHandler, 'twitterHandler', (error) =>
-                  setState({ ...state, twitterHandlerError: error })
-                )
-              }
-              onSubmitEditing={() => inputRefs.twitterTitle.current?.focus()}
-              onChangeText={(twitterHandler) =>
-                changeHandler('twitterHandler', twitterHandler.trim())
-              }
-              blurOnSubmit={false}
-            />
-            <Text style={GeneralStyle.InputError}>{state.twitterHandlerError}</Text>
-
-            <TextInput
-              style={GeneralStyle.input}
-              ref={inputRefs.twitterTitle}
-              value={state.twitterTitle}
-              returnKeyType={'next'}
-              mode="outlined"
-              activeOutlineColor={'#5B7279'}
-              theme={{ roundness: 10 }}
-              outlineColor={'#9EA1A2'}
-              label={'Title/Description'}
-              onFocus={() => setState({ ...state, twitterTitleError: '' })}
-              onBlur={() =>
-                validateFields(state.twitterTitle, 'twitterTitle', (error) =>
-                  setState({ ...state, twitterTitleError: error })
-                )
-              }
-              onSubmitEditing={() => inputRefs.instagramUsername.current?.focus()}
-              onChangeText={(twitterTitle) => changeHandler('twitterTitle', twitterTitle.trim())}
-              blurOnSubmit={false}
-            />
-            <Text style={GeneralStyle.InputError}>{state.twitterTitleError}</Text>
-            <Text style={styles.twetertext}>Add twitter handle</Text> */}
 
             <Text
               style={{
