@@ -25,6 +25,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import Animated from 'react-native-reanimated';
 import SubscribeFlatlist from '@/src/Components/SubscribeFlatlist';
+import { getuserAll, getuserGet } from '../../../Redux/actions/UserAction';
 
 type Props = StackScreenProps<RootStackParamList, 'UserProfile'>;
 
@@ -34,7 +35,7 @@ const UserProfile = ({ navigation, route }: Props) => {
   const [user, setUser] = useState<User>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const isLoading = useSelector((state: RootState) => state.general.loader);
-
+  const currentUser = useSelector((state: RootState) => state.auth.userProfile);
   const [index, setIndex] = React.useState(0);
   const [routes, setRoutes] = React.useState<{ key: string; title: string }[]>([]);
   const [scrollPosition, setScrollPosition] = React.useState(0);
@@ -75,6 +76,12 @@ const UserProfile = ({ navigation, route }: Props) => {
       setRoutes(routes);
     }
   }, [user]);
+
+  useEffect(() => {
+    console.log('RELATED USERS', relatedUsers);
+    console.log('USERS', user);
+    console.log('CURRENT USER', currentUser);
+  }, [user, relatedUsers]);
 
   const renderScene = ({
     route,
@@ -204,6 +211,45 @@ const UserProfile = ({ navigation, route }: Props) => {
       }
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const handleUnSubscribe = async (id: string) => {
+    try {
+      const res = await ApiCall({
+        route: `user/unsubscribe/${id}`,
+        token: token,
+        verb: 'patch',
+      });
+      if (res?.status == 200) {
+        Toast.show('unfollowed successfully.');
+        dispatch(getuserAll({ token: token }));
+        dispatch(getuserGet({ token: token }));
+      } else {
+        Toast.show('Error unfollowing, please try again later.');
+      }
+    } catch (e) {
+      Toast.show('Error unfollowing, please try again later.');
+    }
+  };
+
+  const handleSubscribe = async (id: string) => {
+    try {
+      const res = await ApiCall({
+        route: `user/subscribe/${id}`,
+        token: token,
+        verb: 'patch',
+      });
+      if (res?.status == 200) {
+        dispatch(getuserAll({ token: token }));
+        dispatch(getuserGet({ token: token }));
+        Toast.show('Followed successfully.');
+      } else {
+        Toast.show('Error following, please try again later.');
+      }
+    } catch (e) {
+      Toast.show('Error following, please try again later.');
+      console.log('Error subscribing --- ', e);
     }
   };
   // const OpenConversation = async (id) => {
@@ -364,7 +410,7 @@ const UserProfile = ({ navigation, route }: Props) => {
       )}
       {direction == 'down' ? null : (
         <View style={styles.bottomView}>
-          {/* {currentUser?.following.some((following) => following == currentUser._id) ? (
+          {currentUser?.following.includes(user?._id) ? (
             <Button
               text={'Unfollow'}
               btnStyle={{
@@ -377,7 +423,9 @@ const UserProfile = ({ navigation, route }: Props) => {
                 color: '#595959',
                 letterSpacing: 0,
               }}
-              onPress={() => {}}
+              onPress={() => {
+                handleUnSubscribe(user?._id);
+              }}
             />
           ) : (
             <Button
@@ -392,9 +440,11 @@ const UserProfile = ({ navigation, route }: Props) => {
                 color: '#595959',
                 letterSpacing: 0,
               }}
-              onPress={() => {}}
+              onPress={() => {
+                handleSubscribe(user?._id);
+              }}
             />
-          )} */}
+          )}
 
           {/* <Button
             text={'Message'}
