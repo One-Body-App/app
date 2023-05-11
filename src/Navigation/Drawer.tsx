@@ -13,6 +13,7 @@
 import Notification from '../screens/Main/Notification';
 import Saved from '../screens/Main/Saved/Index';
 import Chanel from '../screens/Main/Chanel';
+import Prayer from '../screens/Main/Prayer';
 
 import Help from '../screens/Main/Help';
 import InviteFriend from '../screens/Main/InviteFriend';
@@ -286,6 +287,16 @@ export default function DrawerElem(props: DrawerContentComponentProps) {
         component={Bottom}
       />
       <DrawerNavigation.Screen
+        name="PrayerWall"
+        options={{
+          headerShown: false,
+          // drawerInactiveTintColor: '#4F6D77',
+          // drawerActiveTintColor: '#032F3C',
+          // headerTintColor: '#24BFF0',
+        }}
+        component={Prayer}
+      />
+      <DrawerNavigation.Screen
         name="Notifications"
         options={{
           headerShown: false,
@@ -386,6 +397,12 @@ function DrawerContent(props: DrawerContentComponentProps) {
             label="Home"
             onPress={() => {
               props.navigation.navigate('Home', { screen: 'HomeTab' });
+            }}
+          />
+          <DrawerItem
+            label="Prayer Wall"
+            onPress={() => {
+              props.navigation.navigate('PrayerWall');
             }}
           />
           <DrawerItem
