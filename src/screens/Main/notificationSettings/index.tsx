@@ -46,7 +46,7 @@ const NotificationSettings = ({ navigation }: Props) => {
     });
     try {
       const res = await ApiCall({
-        route: 'auth/my-profile',
+        route: 'user/my-profile',
         token: token,
         verb: 'get',
       });

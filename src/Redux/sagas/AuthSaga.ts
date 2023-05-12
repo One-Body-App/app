@@ -176,7 +176,7 @@ export function* GetProfileSaga() {
 function* getProfileRequest(params) {
   try {
     const res = yield ApiCall({
-      route: 'auth/my-profile',
+      route: 'user/my-profile',
       token: params.data.token,
       verb: 'get',
     });
@@ -200,7 +200,7 @@ export function* UpdateOrgProfileSaga() {
 function* getUserProfileRequest(params) {
   try {
     const res = yield ApiCall({
-      route: `auth/my-profile`,
+      route: `user/my-profile`,
       token: params.data.token,
       verb: 'get',
     });

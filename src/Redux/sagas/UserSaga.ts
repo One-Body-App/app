@@ -15,7 +15,7 @@ function* UserGetRequest(params) {
   try {
     const res = yield ApiCall({
       token: params.data.token,
-      route: 'auth/my-profile',
+      route: 'user/my-profile',
       verb: 'get',
     });
 

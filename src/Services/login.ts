@@ -20,7 +20,7 @@ export const processLogin = async (
   } else {
     userProfileResult = await ApiCall({
       token: token,
-      route: 'auth/my-profile',
+      route: 'user/my-profile',
       verb: 'get',
     });
 
