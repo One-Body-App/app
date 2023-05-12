@@ -180,7 +180,7 @@ function* getProfileRequest(params) {
       token: params.data.token,
       verb: 'get',
     });
-
+    console.log(params.data.token);
     if (res?.status == '200') {
       yield put(setProfile({ token: params.data.token, ...res.response }));
       // params?.data?.go();

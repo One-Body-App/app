@@ -95,6 +95,7 @@ const SignupForm = ({ navigation }: Props) => {
   const scheme = useColorScheme();
 
   const signUpUser = async () => {
+    console.log('signUpUser');
     setIsloading(true);
     const { email, password, name, cPassword, username } = state;
     const emailError = await validator('email', email);
@@ -105,6 +106,7 @@ const SignupForm = ({ navigation }: Props) => {
 
     if (!emailError && !passwordError && !nameError && !cPasswordError && !usernameError) {
       if (password == cPassword) {
+        console.log('recaptcha.current?.open');
         recaptcha.current?.open();
 
         //
