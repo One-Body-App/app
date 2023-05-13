@@ -82,7 +82,7 @@ function* signUpRequest(params) {
   try {
     const res = yield ApiCall({
       params: params.data.data,
-      route: 'auth/register',
+      route: 'user/register',
       verb: 'post',
       token: params.token,
     });
