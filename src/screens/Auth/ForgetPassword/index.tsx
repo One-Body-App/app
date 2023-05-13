@@ -133,16 +133,9 @@ const ForgotPassword = ({ navigation }: Props) => {
               onPress={() => forget()}
             />
           ) : (
-            <Button
-              text={'GO BACK'}
-              btnStyle={{
-                ...GeneralStyle.btn,
-                marginTop: getHeight(5),
-                backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
-              }}
-              btnTextStyle={GeneralStyle.btnText}
-              onPress={() => navigation.goBack()}
-            />
+            <View style={{ marginTop: 10 }}>
+              <Button text={'GO BACK'} paper mode="contained" onPress={() => navigation.goBack()} />
+            </View>
           )}
         </KeyboardAwareScrollView>
       </SafeAreaView>
