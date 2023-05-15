@@ -286,7 +286,7 @@ export default function DrawerElem(props: DrawerContentComponentProps) {
         }}
         component={Bottom}
       />
-      <DrawerNavigation.Screen
+      {/* <DrawerNavigation.Screen
         name="PrayerWall"
         options={{
           headerShown: false,
@@ -295,7 +295,7 @@ export default function DrawerElem(props: DrawerContentComponentProps) {
           // headerTintColor: '#24BFF0',
         }}
         component={Prayer}
-      />
+      /> */}
       <DrawerNavigation.Screen
         name="Notifications"
         options={{
@@ -399,12 +399,12 @@ function DrawerContent(props: DrawerContentComponentProps) {
               props.navigation.navigate('Home', { screen: 'HomeTab' });
             }}
           />
-          <DrawerItem
+          {/* <DrawerItem
             label="Prayer Wall"
             onPress={() => {
               props.navigation.navigate('PrayerWall');
             }}
-          />
+          /> */}
           <DrawerItem
             label="Notifications"
             onPress={() => {
