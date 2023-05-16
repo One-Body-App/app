@@ -14,6 +14,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { setLoginVerificationBackPage } from '@/src/Redux/actions/GeneralActions';
 import auth from '@react-native-firebase/auth';
 import { useTheme } from '@react-navigation/native';
+import NewPassword from '../NewPassword';
 
 type Props = StackScreenProps<RootStackParamList, 'ConfirmLogin'>;
 
@@ -41,6 +42,10 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
       getSignInMethods();
     }
   }, []);
+
+  if (route?.params?.mode == 'resetPassword') {
+    return <NewPassword navigation={navigation} route={route} {...route.params} />;
+  }
 
   return (
     <View style={styles.container}>

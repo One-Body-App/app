@@ -36,7 +36,7 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
         params: { reason },
         token: token,
         route: 'user/remove-account',
-        verb: 'patch',
+        verb: 'delete',
       });
 
       if (res?.status == 200) {

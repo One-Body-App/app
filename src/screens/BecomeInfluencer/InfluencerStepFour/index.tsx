@@ -50,7 +50,7 @@ const InfluencerStepFour = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         params: data,
         token: token,
-        route: 'user/influencer',
+        route: 'influencer/apply-for-influencer',
         verb: 'post',
       });
 

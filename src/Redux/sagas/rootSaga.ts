@@ -7,6 +7,7 @@ import {
   UpdateOrgProfileSaga,
   UpdateProfileSaga,
   GetProfileSaga,
+  RemoveSocialAccountSaga,
 } from './AuthSaga';
 import {
   GetAllPrayerLiveSaga,
@@ -23,6 +24,7 @@ export function* rootSaga() {
     signUpSaga(),
     UpdateProfileSaga(),
     GetUserProfileSaga(),
+    RemoveSocialAccountSaga(),
     UpdateOrgProfileSaga(),
     UserGetSaga(),
     GetAllUserSaga(),

@@ -1,15 +1,7 @@
-import { getHeight, timeSince } from '@/utils/ResponsiveFun';
+import { getHeight } from '@/utils/ResponsiveFun';
 import React, { useEffect, useState } from 'react';
-import {
-  Dimensions,
-  Image,
-  ImageBackground,
-  StyleProp,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { Dimensions, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { Text } from 'react-native-paper';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { styles } from './style';
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
@@ -20,7 +12,13 @@ import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
-
+type LinkData = {
+  description?: string;
+  image?: { height: string; type: string; url: string; width: string };
+  siteName?: string;
+  title?: string;
+  url?: string;
+};
 const SocialItem = ({
   item,
   socialPostviewStyle,
@@ -36,6 +34,17 @@ const SocialItem = ({
     link: string;
     title: string;
     mediaUrl?: string;
+    attachments?: [
+      {
+        media_key: string;
+        type: string;
+        url: string;
+        title?: string;
+        siteName?: string;
+        image?: { height: string; type: string; url: string; width: string };
+        description?: string;
+      }
+    ];
     mediaType?: string;
     permalink?: string;
     userData: {
@@ -44,6 +53,8 @@ const SocialItem = ({
       username: string;
       accountType: 'individual' | 'organization';
       profileImage: string;
+      twitterHandler?: string;
+      instagramHandler?: string;
     };
     created: Date;
     id: string;
@@ -61,10 +72,57 @@ const SocialItem = ({
     url = item?.permalink || '';
   }
 
+  const getDomainName = (url: string) => {
+    const domainText = url.replace('https://', '').replace('http://', '').replace('www.', '');
+
+    const domainParts = domainText.split('/');
+
+    if (domainParts.length > 0) {
+      return domainParts[0];
+    }
+
+    return domainText;
+  };
+
   useEffect(() => {
     setIsPlaying(visible ?? false);
     if (!visible && !isMuted) setIsMuted(true);
   }, [visible]);
+
+  let media = null;
+  if (item?.mediaUrl) {
+    media = {
+      type: item.mediaType,
+      url: item.mediaUrl,
+    };
+  } else if (item.attachments && item.attachments.length > 0) {
+    item.attachments.forEach((attachment) => {
+      if (attachment.type == 'photo' || attachment.type == 'video') {
+        media = {
+          type: attachment.type,
+          url: attachment.url,
+        };
+      }
+    });
+  }
+
+  let linkData: LinkData;
+  let hasLink = false;
+
+  if (item.attachments && item.attachments.length > 0) {
+    item.attachments.forEach((attachment) => {
+      if (attachment.type == 'link') {
+        hasLink = true;
+        linkData = {
+          description: attachment.description,
+          image: attachment.image,
+          siteName: attachment.siteName,
+          title: attachment.title,
+          url: attachment.url,
+        };
+      }
+    });
+  }
 
   return (
     <View
@@ -140,15 +198,14 @@ const SocialItem = ({
         </View>
       ) : null}
 
-      {item?.mediaUrl ? (
+      {media ? (
         <>
-          {item.mediaType == 'VIDEO' ? (
+          {media.type == 'VIDEO' ? (
             <>
-              <Text>{isMuted ? 'true' : 'false'}</Text>
               <Video
                 ignoreSilentSwitch="ignore"
                 source={{
-                  uri: item?.mediaUrl,
+                  uri: media.url,
                 }}
                 style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
                 controls={false}
@@ -173,11 +230,12 @@ const SocialItem = ({
                 borderRadius: 2,
                 marginVertical: 10,
               }}
-              source={{ uri: item?.mediaUrl ?? NO_POST_IMAGE_URL }}
+              source={{ uri: media?.url ?? NO_POST_IMAGE_URL }}
             />
           )}
         </>
       ) : null}
+
       <View style={{ flexDirection: 'row', padding: 5 }}>
         <Text
           style={{
@@ -191,6 +249,45 @@ const SocialItem = ({
           {item?.content}
         </Text>
       </View>
+
+      {hasLink ? (
+        <TouchableOpacity
+          onPress={() => {
+            if (linkData!.url) OpenURLButton(linkData!.url);
+          }}
+          style={[
+            { width: Dimensions.get('window').width - 70 },
+            {
+              borderRadius: 8,
+              marginVertical: 10,
+              borderColor: '#808080',
+              borderWidth: 1,
+            },
+          ]}
+        >
+          <FastImage
+            style={{
+              width: '100%',
+              height: 200,
+              // borderRadiusTop: 2,
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+            }}
+            source={{ uri: linkData!.image?.url ?? NO_POST_IMAGE_URL }}
+          />
+          <View style={{ padding: 10 }}>
+            {linkData!.siteName ? (
+              <Text numberOfLines={1} style={{ color: '#979797' }}>
+                {getDomainName(linkData!.url || '')}
+              </Text>
+            ) : null}
+            <Text numberOfLines={1} style={{ fontWeight: 'bold' }}>
+              {linkData!.title}
+            </Text>
+            <Text numberOfLines={2}>{linkData!.description}</Text>
+          </View>
+        </TouchableOpacity>
+      ) : null}
 
       {url ? (
         <TouchableOpacity
@@ -212,7 +309,9 @@ const SocialItem = ({
               marginBottom: 5,
             }}
           >
-            {item?.source == 'twitter' ? 'View on Twitter' : 'View on Instagram'}
+            {item?.source == 'twitter'
+              ? `View @${item?.userData?.twitterHandler} on Twitter`
+              : `View @${item?.userData?.instagramHandler} on Instagram`}
           </Text>
         </TouchableOpacity>
       ) : null}

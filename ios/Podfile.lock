@@ -657,23 +657,23 @@ PODS:
     - React-Core
     - SDWebImage (~> 5.11.1)
     - SDWebImageWebPCoder (~> 0.8.4)
-  - RNFBAnalytics (15.6.0):
+  - RNFBAnalytics (15.7.0):
     - Firebase/Analytics (= 9.6.0)
     - React-Core
     - RNFBApp
-  - RNFBApp (15.6.0):
+  - RNFBApp (15.7.0):
     - Firebase/CoreOnly (= 9.6.0)
     - React-Core
-  - RNFBAuth (15.6.0):
+  - RNFBAuth (15.7.0):
     - Firebase/Auth (= 9.6.0)
     - React-Core
     - RNFBApp
-  - RNFBDynamicLinks (15.6.0):
+  - RNFBDynamicLinks (15.7.0):
     - Firebase/DynamicLinks (= 9.6.0)
     - GoogleUtilities/AppDelegateSwizzler
     - React-Core
     - RNFBApp
-  - RNFBMessaging (15.6.0):
+  - RNFBMessaging (15.7.0):
     - Firebase/Messaging (= 9.6.0)
     - FirebaseCoreExtension (= 9.6.0)
     - React-Core
@@ -726,9 +726,9 @@ PODS:
   - RNScreens (3.20.0):
     - React-Core
     - React-RCTImage
-  - RNSentry (5.3.0):
+  - RNSentry (5.4.1):
     - React-Core
-    - Sentry/HybridSDK (= 8.3.3)
+    - Sentry/HybridSDK (= 8.6.0)
   - RNSha256 (1.4.9):
     - React-Core
   - RNShare (7.9.1):
@@ -741,9 +741,9 @@ PODS:
   - SDWebImageWebPCoder (0.8.5):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.10)
-  - Sentry/HybridSDK (8.3.3):
-    - SentryPrivate (= 8.3.3)
-  - SentryPrivate (8.3.3)
+  - Sentry/HybridSDK (8.6.0):
+    - SentryPrivate (= 8.6.0)
+  - SentryPrivate (8.6.0)
   - SocketRocket (0.6.0)
   - Toast (4.0.0)
   - TOCropViewController (2.6.1)
@@ -1162,11 +1162,11 @@ SPEC CHECKSUMS:
   RNCPicker: 0bc2f0a29abcca7b7ed44a2d036aac9ab6d25700
   RNDeviceInfo: 475a4c447168d0ad4c807e48ef5e0963a0f4eb1b
   RNFastImage: 5c9c9fed9c076e521b3f509fe79e790418a544e8
-  RNFBAnalytics: 0c7c1378e1eef64920df02fa620a3780fec014bb
-  RNFBApp: c14c5e27a6b0bf026fc1c60702603ae94eba6fb1
-  RNFBAuth: ca6d82cb4cf17243d9d654e5206770e4f172ebdc
-  RNFBDynamicLinks: 9e51e3ceb97bebfe445fe99fdf95c7330f847fbf
-  RNFBMessaging: a57c9c22d2e0a535e5090fecaa68381f0cb2e784
+  RNFBAnalytics: 93aa843ae9fcd86ee30267d04c25f56aa518cace
+  RNFBApp: ad6ad2dd37ccf10e737ec8688208761026331d64
+  RNFBAuth: 26fb3495911fcb6c201a4a18fb7bede51d1d0199
+  RNFBDynamicLinks: ceddbfe29b52c4c2a1705571c5bf11e6d42130d6
+  RNFBMessaging: f75d2d54bbf6ddc29304e2f45152bc397a8b5b3f
   RNGestureHandler: 071d7a9ad81e8b83fe7663b303d132406a7d8f39
   RNGoogleSignin: 81521697b2c8f97f9a586ac7257b1a1d9b51b115
   RNImageCropPicker: 44e2807bc410741f35d4c45b6586aedfe3da39d2
@@ -1174,14 +1174,14 @@ SPEC CHECKSUMS:
   RNPermissions: 215c54462104b3925b412b0fb3c9c497b21c358b
   RNReanimated: cc5e3aa479cb9170bcccf8204291a6950a3be128
   RNScreens: 218801c16a2782546d30bd2026bb625c0302d70f
-  RNSentry: 8363f1eff1c685a502e15080b5e2f447969897c5
+  RNSentry: 60f2359d2859591cae2d6731ae9a7ac1595ff8c2
   RNSha256: a6bc3640a34eb41907e363828b9ec742c274298d
   RNShare: a5dc3b9c53ddc73e155b8cd9a94c70c91913c43c
   RNSVG: 53c661b76829783cdaf9b7a57258f3d3b4c28315
   SDWebImage: a7f831e1a65eb5e285e3fb046a23fcfbf08e696d
   SDWebImageWebPCoder: 908b83b6adda48effe7667cd2b7f78c897e5111d
-  Sentry: 8ffc397d98fe58d693e73959b26ed0eaee55646a
-  SentryPrivate: bf776a47a131648f5023097215987b40fbd47025
+  Sentry: d80553ff85ea72def75b792aaa5a71c158e51595
+  SentryPrivate: ef1c5b3dfe44ec0c70e2eb343a5be2689164c021
   SocketRocket: fccef3f9c5cedea1353a9ef6ada904fde10d6608
   Toast: 91b396c56ee72a5790816f40d3a94dd357abc196
   TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
@@ -1190,4 +1190,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 639719544beebc60749e621257134b86806f620b
 
-COCOAPODS: 1.12.1
+COCOAPODS: 1.12.0

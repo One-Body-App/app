@@ -28,7 +28,7 @@ const InfluencerStepOne = ({ navigation }: Props) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
-  const getInfluencerProfile = async () => {
+  const getHasInfluencerProfile = async () => {
     try {
       const res = await ApiCall({
         route: `influencer/has-pending-request`,
@@ -51,7 +51,7 @@ const InfluencerStepOne = ({ navigation }: Props) => {
   };
 
   useEffect(() => {
-    getInfluencerProfile();
+    getHasInfluencerProfile();
   }, []);
 
   return (

@@ -178,7 +178,16 @@ const NewPassword = ({ navigation, route }) => {
           }}
           mode="contained"
           paper
-          btnStyle={{ marginHorizontal: 0 }}
+          btnStyle={{ marginHorizontal: 30 }}
+        />
+        <Button
+          text={'Cancel'}
+          onPress={() => {
+            navigation.goBack();
+          }}
+          paper
+          mode="text"
+          btnStyle={{ marginHorizontal: 30, marginTop: 10 }}
         />
 
         <GoBackIcon color={'white'} />

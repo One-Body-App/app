@@ -94,6 +94,10 @@ type InfluencerProfile = {
   userID?: string;
   twitterId?: string;
   twitterHandler?: string;
+
+  twitterTokenExpirationReal?: number;
+  twitterTokenExpiration?: number;
+
   instagramId?: string;
   instagramHandler?: string;
   instagramTokenExpirationReal?: number;
