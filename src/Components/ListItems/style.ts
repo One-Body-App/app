@@ -208,9 +208,9 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   socialpostview: {
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
+    //alignSelf: 'center',
+    //justifyContent: 'center',
+    //alignItems: 'center',
     width: '90%',
     borderRadius: 5,
     padding: 8,

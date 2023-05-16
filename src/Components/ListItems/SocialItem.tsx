@@ -5,10 +5,11 @@ import { Text } from 'react-native-paper';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { styles } from './style';
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
-
 import FastImage from 'react-native-fast-image';
 import { RootStackParamList } from '@/src/Navigation/types';
 import Video from 'react-native-video';
+import Twitter from '@/assets/svg/Twitter.svg';
+import Instagram from '@/assets/svg/Instagram.svg';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type LinkData = {
@@ -132,52 +133,69 @@ const SocialItem = ({
       ]}
     >
       {item.userData ? (
-        <TouchableOpacity
-          onPress={() => {
-            navigation.navigate('UserProfile', {
-              id: item?.userData?._id,
-            });
-          }}
-          style={{
-            flexDirection: 'row',
-            padding: 5,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <FastImage
-            source={{
-              uri:
-                item?.userData?.profileImage && item?.userData?.profileImage != ''
-                  ? item?.userData?.profileImage
-                  : NO_PROFILE_IMAGE,
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('UserProfile', {
+                id: item?.userData?._id,
+              });
             }}
             style={{
-              width: 25,
-              height: 25,
-              borderRadius: 25,
-              // marginBottom: 5,
-              borderColor:
-                item?.userData?.profileImage && item?.userData?.profileImage != ''
-                  ? '#032F3C'
-                  : '#09aadb',
-              borderWidth: 1,
-            }}
-            resizeMode={'contain'}
-          />
-          <Text
-            style={{
-              marginLeft: 5,
-              fontFamily: 'Rubik',
-              color: '#68828A',
+              flexDirection: 'row',
+              justifyContent: 'flex-start',
               alignItems: 'center',
-              maxWidth: 200,
             }}
-            numberOfLines={2}
           >
-            {item?.userData?.name}
-          </Text>
-        </TouchableOpacity>
+            <FastImage
+              source={{
+                uri:
+                  item?.userData?.profileImage && item?.userData?.profileImage != ''
+                    ? item?.userData?.profileImage
+                    : NO_PROFILE_IMAGE,
+              }}
+              style={{
+                width: 25,
+                height: 25,
+                borderRadius: 25,
+                // marginBottom: 5,
+                borderColor:
+                  item?.userData?.profileImage && item?.userData?.profileImage != ''
+                    ? '#032F3C'
+                    : '#09aadb',
+                borderWidth: 1,
+              }}
+              resizeMode={'contain'}
+            />
+            <Text
+              style={{
+                marginLeft: 5,
+                fontFamily: 'Rubik',
+                color: '#68828A',
+                alignItems: 'center',
+                maxWidth: 200,
+              }}
+              numberOfLines={2}
+            >
+              {item?.userData?.name}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Text>
+              {item?.source == 'instagram' ? (
+                <Instagram height={getHeight(2.5)} fill="#00acee" />
+              ) : (
+                <Twitter height={getHeight(2.5)} fill="#00acee" />
+              )}
+            </Text>
+          </TouchableOpacity>
+        </View>
       ) : null}
 
       {media ? (
@@ -276,7 +294,11 @@ const SocialItem = ({
           onPress={() => {
             if (url) OpenURLButton(url);
           }}
-          style={{ marginTop: 10 }}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
         >
           <Text
             style={{

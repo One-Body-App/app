@@ -22,15 +22,16 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import Love from '@/assets/svg/redlove.svg';
 import Love2 from '@/assets/svg/Love.svg';
 import { useNavigation } from '@react-navigation/native';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
-const WallComponent = () => {
+const WallComponent = ({ navigation }: any) => {
   const dispatch = useDispatch();
-  const navigation = useNavigation();
-  const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userProfile);
-  const prayers = useSelector((state) => state.prayer.prayers);
-  const currentPage = useSelector((state) => state.prayer.ALLPrayerCurrentPage);
-  const totalPage = useSelector((state) => state.prayer.ALLPrayerTotalPage);
+  //const navigation = useNavigation();
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const prayers: any = useSelector((state: RootState) => state.prayer.prayers);
+  const currentPage = useSelector((state: RootState) => state.prayer.ALLPrayerCurrentPage);
+  const totalPage = useSelector((state: RootState) => state.prayer.ALLPrayerTotalPage);
   const [isKeyboardVisible, setKeyboardVisible] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,7 +61,7 @@ const WallComponent = () => {
     }
   };
 
-  const handelLike = async (id, type) => {
+  const handelLike = async (id: number) => {
     // updatelocalLike(id);
     try {
       const res = await ApiCall({
@@ -68,7 +69,7 @@ const WallComponent = () => {
         token: token,
         verb: 'patch',
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         updateList(id, res?.response?.data);
       } else {
         console.log('error', res?.response);
@@ -77,7 +78,7 @@ const WallComponent = () => {
       console.log('saga sign up err --- ', e);
     }
   };
-  const updateList = (id, prayitem) => {
+  const updateList = (id: number, prayitem: number) => {
     // const arr = prayers;
     var index = prayers.findIndex((p) => p?.post?._id == id);
     prayers[index] = prayitem;
@@ -87,17 +88,17 @@ const WallComponent = () => {
     dispatch(setPrayers(arr));
   };
 
-  const OpenConversation = async (id) => {
+  const OpenConversation = async (id: number) => {
     dispatch(setLoader(true));
     try {
       const res = await ApiCall({
         params: { receiver: id },
         token: token,
         route: 'chat/new-chat-room',
-        verbb: 'post',
+        verb: 'post',
       });
 
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(setLoader(false));
 
         navigation.navigate('conversation', {
@@ -178,7 +179,7 @@ const WallComponent = () => {
                     ) : (
                       <TouchableOpacity
                         onPress={() =>
-                          navigation.navigate(, {
+                          navigation.navigate('profile', {
                             accountType: item?.userProfile?.accountType,
                             id: item?.userProfile?._id,
                           })
@@ -270,7 +271,7 @@ const WallComponent = () => {
                       <View style={{ flexDirection: 'row', width: '95%' }}>
                         <TouchableOpacity
                           onPress={() =>
-                            navigation.navigate(, {
+                            navigation.navigate('profile', {
                               accountType: item?.accountType,
                               id: item?._id,
                             })
@@ -400,7 +401,7 @@ const WallComponent = () => {
                       <View style={{ flexDirection: 'row', width: '90%' }}>
                         <TouchableOpacity
                           onPress={() =>
-                            navigation.navigate(, {
+                            navigation.navigate('profile', {
                               accountType: item?.userProfile?.accountType,
                               id: item?.userProfile?._id,
                             })
@@ -433,7 +434,6 @@ const WallComponent = () => {
                           {item?.post?.answer}
                         </Text>
                       </View>
-
                       <View
                         style={{
                           flexDirection: 'row',
@@ -455,11 +455,11 @@ const WallComponent = () => {
                           <Text style={{ color: '#4F6D77' }}>Love</Text>
                         </TouchableOpacity>
                         {/* <PrayerSocials
-                          item={item}
-                          color={'#126B87'}
-                          setPrayers={setPrayers}
-                          prayers={prayers}
-                        /> */}
+          item={item}
+          color={'#126B87'}
+          setPrayers={setPrayers}
+          prayers={prayers}
+        /> */}
                       </View>
                     </View>
                   )}
