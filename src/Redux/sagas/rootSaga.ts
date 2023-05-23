@@ -8,6 +8,8 @@ import {
   UpdateProfileSaga,
   GetProfileSaga,
   RemoveSocialAccountSaga,
+  GetBadgesSaga,
+  SetUserBadgesSaga,
 } from './AuthSaga';
 import {
   GetAllPrayerLiveSaga,
@@ -15,7 +17,7 @@ import {
   GetMyPrayerSaga,
   GetTestomniesPrayerSaga,
 } from './PrayerSaga';
-import { GetAllUserSaga, GetChatSaga, UserGetSaga } from './UserSaga';
+import { GetAllUserSaga, GetChatSaga, UserGetSaga, GetInterestsSaga } from './UserSaga';
 
 export function* rootSaga() {
   yield all([
@@ -34,5 +36,8 @@ export function* rootSaga() {
     GetAllPrayerLiveSaga(),
     GetChatSaga(),
     GetProfileSaga(),
+    GetBadgesSaga(),
+    SetUserBadgesSaga(),
+    GetInterestsSaga(),
   ]);
 }

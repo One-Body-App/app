@@ -1,7 +1,15 @@
-import { ApiCall } from '@/services/api';
-import { ACTIONS } from '../action-types';
-import Toast from 'react-native-simple-toast';
+// --------------- LIBRARIES ---------------
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
+import { setAccountType, setLoader } from '../actions/GeneralActions';
+import { Alert } from 'react-native';
+
+// --------------- ASSETS ---------------
+import { ApiCall } from '@/services/api';
+// --------------- TYPES ---------------
+import { ACTIONS, GetBadges, SetUserBadges, GetProfile } from '../action-types';
+import Toast from 'react-native-simple-toast';
+
+// --------------- ACTIONS ---------------
 import {
   setSignUpData,
   setLoginData,
@@ -9,9 +17,9 @@ import {
   getProfile,
   setProfile,
   profileUpdate,
+  getBadges,
+  setUserBadges,
 } from '../actions/AuthActions';
-import { setAccountType, setLoader } from '../actions/GeneralActions';
-import { Alert } from 'react-native';
 
 function* loginRequest(params) {
   try {
@@ -170,30 +178,30 @@ function* updateOrgProfileRequest(params) {
   }
 }
 
-export function* GetProfileSaga() {
-  yield takeLatest(ACTIONS.GET_FETCH_PROFILE, getProfileRequest);
-}
-function* getProfileRequest(params) {
-  try {
-    const res = yield ApiCall({
-      route: 'user/my-profile',
-      token: params.data.token,
-      verb: 'get',
-    });
-    console.log(params.data.token);
-    if (res?.status == '200') {
-      yield put(setProfile({ token: params.data.token, ...res.response }));
-      // params?.data?.go();
-      yield put(setLoader(false));
-    } else {
-      yield put(setLoader(false));
-    }
-  } catch (e) {
-    console.log(e);
-    yield put(setLoader(false));
-    // yield put(setLoader(false));
-  }
-}
+// export function* GetProfileSaga() {
+//   yield takeLatest(ACTIONS.GET_FETCH_PROFILE, getProfileRequest);
+// }
+// function* getProfileRequest(params) {
+//   try {
+//     const res = yield ApiCall({
+//       route: 'user/my-profile',
+//       token: params.data.token,
+//       verb: 'get',
+//     });
+//     console.log(params.data.token);
+//     if (res?.status == '200') {
+//       yield put(setProfile({ token: params.data.token, ...res.response }));
+//       // params?.data?.go();
+//       yield put(setLoader(false));
+//     } else {
+//       yield put(setLoader(false));
+//     }
+//   } catch (e) {
+//     console.log(e);
+//     yield put(setLoader(false));
+//     // yield put(setLoader(false));
+//   }
+// }
 export function* UpdateOrgProfileSaga() {
   yield takeLatest(ACTIONS.ORGProfile_Update, updateOrgProfileRequest);
 }
@@ -246,4 +254,64 @@ function* removeSocialAccountRequest(params) {
 }
 export function* RemoveSocialAccountSaga() {
   yield takeLatest(ACTIONS.REMOVE_SOCIAL_ACCOUNT, removeSocialAccountRequest);
+}
+
+function* getBadgesSaga({ params }) {
+  try {
+    const res = yield ApiCall({
+      route: 'user/badges',
+      verb: 'get',
+      token: params.token,
+    });
+    if (res?.status == 200) {
+      yield put(getBadges.Success(res?.response?.data));
+    } else yield put(getBadges.Failed(res?.response));
+  } catch (e) {
+    yield put(getBadges.Failed(e));
+  }
+}
+
+export function* GetBadgesSaga() {
+  yield takeEvery(GetBadges.REQUEST, getBadgesSaga);
+}
+
+function* setUserBadgesSaga({ params }) {
+  try {
+    const res = yield ApiCall({
+      route: 'user/assign-badge',
+      token: params.token,
+      params: { badges: params.badges },
+      verb: 'patch',
+    });
+    if (res?.status == 200) {
+      yield put(setUserBadges.Success(res?.response?.data));
+    } else yield put(setUserBadges.Failed(res?.response));
+  } catch (e) {
+    yield put(setUserBadges.Failed(e));
+  }
+}
+
+export function* SetUserBadgesSaga() {
+  yield takeEvery(SetUserBadges.REQUEST, setUserBadgesSaga);
+}
+
+function* getProfileSaga({ params }) {
+  try {
+    const res = yield ApiCall({
+      route: 'user/my-profile',
+      token: params.token,
+      verb: 'get',
+    });
+    if (res?.status == 200) {
+      yield put(getProfile.Success({ token: params.token, ...res?.response }));
+    } else {
+      yield put(getProfile.Failed(res?.response));
+    }
+  } catch (e) {
+    yield put(getProfile.Failed(e));
+  }
+}
+
+export function* GetProfileSaga() {
+  yield takeLatest(GetProfile.REQUEST, getProfileSaga);
 }

@@ -11,62 +11,95 @@ import {
 import Modal from 'react-native-modal';
 
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import Button from './Button';
-import { getuserAll, getuserGet } from '../Redux/actions/UserAction';
+import { getuserAll, getuserGet, getInterests, addUserInterest } from '../Redux/actions/UserAction';
 import GradientButton from './GradientButton';
+import { RootStackParamList } from '@/src/Navigation/types';
+import { StackScreenProps } from '@react-navigation/stack';
+import Toast from 'react-native-simple-toast';
+
+type Route = {
+  key: string;
+  title: string;
+};
 
 const AddIntrestsModel = (props) => {
   const { setShow, show } = props;
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userProfile);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const userState = useSelector((state: RootState) => state.user);
+  const authState = useSelector((state: RootState) => state.auth);
 
-  const [intrest, setIntrest] = useState([]);
-  const [selectedIntrest, setSelectedIntrest] = useState([]);
+  const [intrest, setIntrest] = React.useState<Route[]>([]);
+  const [selectedIntrest, setSelectedIntrest] = React.useState<Route[]>([]);
 
   useEffect(() => {
-    getIntrest();
+    dispatch(getInterests.Request({ token: token }));
   }, []);
-  const getIntrest = async () => {
-    try {
-      const res = await ApiCall({
-        route: 'interests',
-        verb: 'get',
-        token: token,
-      });
 
-      if (res?.status == '200') {
-        setIntrest(res?.response);
-      } else {
-        console.log('error', res?.response);
-      }
-    } catch (e) {
-      console.log('saga error -- ', e.toString());
+  useEffect(() => {
+    console.log('INTERESTS DATA', userState?.getInterestsData);
+    if (userState?.getInterestsSuccess == true) {
+      console.log('INTERESTS DATA', userState?.getInterestsData);
+    } else if (userState?.getInterestsSuccess == false) {
+      console.log('INTERESTS DATA FAILED', userState?.getInterestsSuccess);
+      Toast.show('Unable to fetch interests!');
     }
-  };
-  const addIntrest = async () => {
-    try {
-      const res = await ApiCall({
-        route: 'user/add-interests',
-        token: token,
-        verb: 'patch',
-        params: { interests: selectedIntrest },
-      });
-      if (res?.status == '200') {
-        // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
-        setShow(false);
-        setSelectedIntrest([]);
-        dispatch(getuserAll({ token: token }));
-      } else {
-        console.log('error', res?.response);
-      }
-    } catch (e) {
-      console.log('saga error -- ', e.toString());
+  }, [userState?.getInterestsSuccess]);
+
+  // const getIntrest = async () => {
+  //   try {
+  //     const res = await ApiCall({
+  //       route: 'interests',
+  //       verb: 'get',
+  //       token: token,
+  //     });
+
+  //     if (res?.status == '200') {
+  //       setIntrest(res?.response);
+  //     } else {
+  //       console.log('error', res?.response);
+  //     }
+  //   } catch (e) {
+  //     console.log('saga error -- ', e.toString());
+  //   }
+  // };
+
+  // const addIntrest = async () => {
+  //   try {
+  //     const res = await ApiCall({
+  //       route: 'user/add-interests',
+  //       token: token,
+  //       verb: 'patch',
+  //       params: { interests: selectedIntrest },
+  //     });
+  //     if (res?.status == '200') {
+  //       // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
+  //       setShow(false);
+  //       setSelectedIntrest([]);
+  //       dispatch(getuserAll({ token: token }));
+  //     } else {
+  //       console.log('error', res?.response);
+  //     }
+  //   } catch (e) {
+  //     console.log('saga error -- ', e.toString());
+  //   }
+  // };
+
+  useEffect(() => {
+    if (userState?.addUserInterestSuccess == true) {
+      setShow(false);
+      setSelectedIntrest([]);
+      dispatch(getuserAll({ token: token }));
+    } else if (userState?.addUserInterestSuccess == false) {
+      Toast.show('Unable to add interests!');
     }
-  };
+  }, [userState?.addUserInterestSuccess]);
+
   return (
     <Modal
       backdropOpacity={0.3}
@@ -87,42 +120,46 @@ const AddIntrestsModel = (props) => {
                 flexWrap: 'wrap',
               }}
             >
-              {intrest.map((item) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    selectedIntrest.includes(item?._id)
-                      ? setSelectedIntrest(
-                          selectedIntrest.filter(function (item2) {
-                            return item2 !== item?._id;
-                          })
-                        )
-                      : setSelectedIntrest([...selectedIntrest, item?._id]);
-                  }}
-                  style={
-                    selectedIntrest.includes(item?._id)
-                      ? [styles.listItem, { backgroundColor: '#032F3C' }]
-                      : styles.listItem
-                  }
-                >
-                  <Text
-                    numberOfLines={1}
+              {authState?.getProfileData?.interests?.length > 0 &&
+                authState?.getProfileData?.interests?.map((item: any) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      selectedIntrest.includes(item?._id)
+                        ? setSelectedIntrest(
+                            selectedIntrest.filter(function (item2) {
+                              return item2 !== item?._id;
+                            })
+                          )
+                        : setSelectedIntrest([...selectedIntrest, item?._id]);
+                    }}
                     style={
                       selectedIntrest.includes(item?._id)
-                        ? { color: 'white', maxWidth: getWidth(19) }
-                        : { color: '#757575', maxWidth: getWidth(19) }
+                        ? [styles.listItem, { backgroundColor: '#032F3C' }]
+                        : styles.listItem
                     }
+                    key={item?._id}
                   >
-                    {item?.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      numberOfLines={1}
+                      style={
+                        selectedIntrest.includes(item?._id)
+                          ? { color: 'white', maxWidth: getWidth(19) }
+                          : { color: '#757575', maxWidth: getWidth(19) }
+                      }
+                    >
+                      {item?.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
             </View>
           </ScrollView>
           <GradientButton
             text={'ADD INTERESTS'}
             btnStyle={styles.btn2}
             btnTextStyle={styles.btnText2}
-            onPress={() => addIntrest()}
+            onPress={() =>
+              dispatch(addUserInterest.Request({ token: token, interests: selectedIntrest }))
+            }
           />
         </View>
       </View>

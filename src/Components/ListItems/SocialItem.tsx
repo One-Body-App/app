@@ -154,8 +154,8 @@ const SocialItem = ({
                     : NO_PROFILE_IMAGE,
               }}
               style={{
-                width: 25,
-                height: 25,
+                width: 35,
+                height: 35,
                 borderRadius: 25,
                 // marginBottom: 5,
                 borderColor:
@@ -166,18 +166,36 @@ const SocialItem = ({
               }}
               resizeMode={'contain'}
             />
-            <Text
-              style={{
-                marginLeft: 5,
-                fontFamily: 'Rubik',
-                color: '#68828A',
-                alignItems: 'center',
-                maxWidth: 200,
-              }}
-              numberOfLines={2}
-            >
-              {item?.userData?.name}
-            </Text>
+            <View style={{ flexDirection: 'column' }}>
+              <Text
+                style={{
+                  marginLeft: 5,
+                  fontFamily: 'Rubik',
+                  color: '#68828A',
+                  alignItems: 'center',
+                  fontSize: 13,
+                  maxWidth: 200,
+                }}
+                numberOfLines={2}
+              >
+                {item?.userData?.name}
+              </Text>
+              <Text
+                style={{
+                  marginLeft: 5,
+                  fontFamily: 'Rubik',
+                  color: '#68828A',
+                  alignItems: 'center',
+                  fontSize: 13,
+                  maxWidth: 200,
+                }}
+              >
+                @
+                {item?.source == 'twitter'
+                  ? item?.userData?.twitterHandler
+                  : item?.userData?.instagramHandler}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -309,9 +327,7 @@ const SocialItem = ({
               marginBottom: 5,
             }}
           >
-            {item?.source == 'twitter'
-              ? `View @${item?.userData?.twitterHandler} on Twitter`
-              : `View @${item?.userData?.instagramHandler} on Instagram`}
+            {item?.source == 'twitter' ? `View on Twitter` : `View on Instagram`}
           </Text>
         </TouchableOpacity>
       ) : null}

@@ -24,7 +24,7 @@ import { useToast } from 'react-native-toast-notifications';
 
 import { RootState } from '../Redux/reducers/rootReducer';
 import { getUserProfile } from '../Redux/actions/UserAction';
-import { setLoginData, setUserData } from '../Redux/actions/AuthActions';
+import { setLoginData, setUserData, getProfile } from '../Redux/actions/AuthActions';
 import { isEqual } from 'lodash';
 import { setLoader } from '../Redux/actions/GeneralActions';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -72,8 +72,9 @@ const Stack = createNativeStackNavigator();
 const Main = () => {
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
-  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
-  const userToken = useSelector((state: RootState) => state.auth.userToken);
+  //const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  //const userToken = useSelector((state: RootState) => state.auth.userToken);
+  const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
@@ -94,8 +95,8 @@ const Main = () => {
   }, [loader]);
 
   useEffect(() => {
-    if (initializing && userProfile) setInitializing(false);
-  }, [userToken, userProfile]);
+    if (initializing && authState.getProfileSuccess) setInitializing(false);
+  }, [authState.getProfileSuccess]);
 
   const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
     const firebaseToken = await firebaseUser?.getIdToken();
@@ -133,7 +134,7 @@ const Main = () => {
 
     if (token) {
       dispatch(
-        getUserProfile({
+        getProfile.Request({
           token,
         })
       );
@@ -143,6 +144,12 @@ const Main = () => {
       if (initializing) setInitializing(false);
     }
   }, [token, user, initializing]);
+
+  useEffect(() => {
+    if (authState.getProfileSuccess) {
+      console.log('USER PROFILE', authState.getProfileData);
+    }
+  }, [authState.getProfileSuccess]);
 
   const linking: LinkingOptions<RootStackParamList> = {
     prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
@@ -251,12 +258,12 @@ const Main = () => {
         <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="SignUp">
           {user &&
           token &&
-          userProfile &&
-          (userProfile?.accountType == 'individual' ||
-            userProfile?.accountType == 'organization') &&
+          authState.getProfileData &&
+          (authState.getProfileData?.accountType == 'individual' ||
+            authState.getProfileData?.accountType == 'organization') &&
           user?.emailVerified ? (
             <>
-              {userProfile.isProfileCompleted ? (
+              {authState.getProfileData.isProfileCompleted ? (
                 <>
                   <Stack.Screen name="LoadingPage" component={LoadingPage} />
                   <Stack.Screen name="Bottombar" component={Drawer} />
@@ -306,7 +313,7 @@ const Main = () => {
                 </>
               ) : (
                 <>
-                  {userProfile?.accountType == 'individual' ? (
+                  {authState.getProfileData?.accountType == 'individual' ? (
                     <Stack.Screen name="IndividualSteps" component={IndividualSteps} />
                   ) : (
                     <Stack.Screen name="OrgnizationSteps" component={OrgnizationSteps} />
