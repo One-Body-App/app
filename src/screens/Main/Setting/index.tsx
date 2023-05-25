@@ -5,7 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { styles } from './styles';
 import Header from '@/components/Header';
-import { logout } from '@/redux//actions/AuthActions';
+import { logout } from '@/redux/actions/AuthActions';
 import { useDispatch, useSelector } from 'react-redux';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { LoginManager } from 'react-native-fbsdk-next';
@@ -209,7 +209,6 @@ const Settings = ({ navigation }: Props) => {
           onPress={async () => {
             LoginManager.logOut();
             dispatch(logout());
-
             await auth().signOut();
           }}
           style={{

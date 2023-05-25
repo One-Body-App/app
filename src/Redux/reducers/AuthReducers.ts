@@ -97,6 +97,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         otpToken: '',
         loginErrors: [],
         userData: null,
+        getProfileData: null,
       };
 
     case ACTIONS.SET_USER_NOTIFICATIONS:
@@ -121,6 +122,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         ...state,
         signUpSuccess: true,
         signUpData: action.payload,
+        userProfile: action.data,
       };
     case SignUp.FAILED:
       return {

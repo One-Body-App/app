@@ -3,7 +3,7 @@ import {
   GetUserProfileSaga,
   loginSaga,
   loginSocialSaga,
-  signUpSaga,
+  SignUpSaga,
   UpdateOrgProfileSaga,
   UpdateProfileSaga,
   GetProfileSaga,
@@ -23,7 +23,7 @@ export function* rootSaga() {
   yield all([
     loginSaga(),
     loginSocialSaga(),
-    signUpSaga(),
+    SignUpSaga(),
     UpdateProfileSaga(),
     GetUserProfileSaga(),
     RemoveSocialAccountSaga(),

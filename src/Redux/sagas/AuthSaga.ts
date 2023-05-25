@@ -87,34 +87,34 @@ export function* loginSocialSaga() {
   yield takeLatest(ACTIONS.LOGIN_SOCIAL, loginSocialRequest);
 }
 
-//REMOVE THIS
-function* signUpRequest(params) {
-  try {
-    const res = yield ApiCall({
-      params: params.data.data,
-      route: 'user/register',
-      verb: 'post',
-      token: params.token,
-    });
+// //REMOVE THIS
+// function* signUpRequest(params) {
+//   try {
+//     const res = yield ApiCall({
+//       params: params.data.data,
+//       route: 'user/register',
+//       verb: 'post',
+//       token: params.token,
+//     });
 
-    if (res?.status == '200') {
-      yield put(setSignUpData(res?.response));
-      params.data.go();
-      yield put(setLoader(false));
-      yield put(setAccountType(null));
-    } else {
-      params.data.seterror(res?.response?.message);
-      yield put(setLoader(false));
-    }
-  } catch (e) {
-    console.log('saga sign up err --- ', e);
-    // yield put(setLoader(false));
-  }
-}
-export function* signUpSaga() {
-  yield takeLatest(ACTIONS.SIGN_UP, signUpRequest);
-}
-//REMOVE THIS END
+//     if (res?.status == '200') {
+//       yield put(setSignUpData(res?.response));
+//       params.data.go();
+//       yield put(setLoader(false));
+//       yield put(setAccountType(null));
+//     } else {
+//       params.data.seterror(res?.response?.message);
+//       yield put(setLoader(false));
+//     }
+//   } catch (e) {
+//     console.log('saga sign up err --- ', e);
+//     // yield put(setLoader(false));
+//   }
+// }
+// export function* signUpSaga() {
+//   yield takeLatest(ACTIONS.SIGN_UP, signUpRequest);
+// }
+// //REMOVE THIS END
 
 function* updateProfileRequest(params) {
   try {
@@ -262,27 +262,29 @@ export function* RemoveSocialAccountSaga() {
   yield takeLatest(ACTIONS.REMOVE_SOCIAL_ACCOUNT, removeSocialAccountRequest);
 }
 
-// function* signUpSaga(params) {
-//   try {
-//     const res = yield ApiCall({
-//       params: params.data.data,
-//       route: 'user/register',
-//       verb: 'post',
-//       token: params.token,
-//     });
+function* signUpSaga(params) {
+  try {
+    const res = yield ApiCall({
+      params: params.data,
+      route: 'user/register',
+      verb: 'post',
+      token: params.token,
+    });
 
-//     if (res?.status == '200') {
-//       yield put(signUp.Success(res?.response));
-//     } else {
-//       yield put(signUp.Failed(res?.response));
-//     }
-//   } catch (e) {
-//     yield put(signUp.Failed(e));
-//   }
-// }
-// export function* SignUpSaga() {
-//   yield takeLatest(SignUp.REQUEST, signUpSaga);
-// }
+    console.log('register response', res);
+    if (res?.status == 200) {
+      yield put(setAccountType(null));
+      yield put(signUp.Success(res?.response));
+    } else {
+      yield put(signUp.Failed(res?.response));
+    }
+  } catch (e) {
+    yield put(signUp.Failed(e));
+  }
+}
+export function* SignUpSaga() {
+  yield takeLatest(SignUp.REQUEST, signUpSaga);
+}
 
 function* getBadgesSaga({ params }) {
   try {
