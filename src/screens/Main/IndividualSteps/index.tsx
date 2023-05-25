@@ -51,6 +51,7 @@ import { useTheme } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
 
@@ -84,6 +85,10 @@ const IndividualSteps = ({ navigation }: Props) => {
   const toast = useToast();
   const scheme = useColorScheme();
   const { colors } = useTheme();
+
+  //Navigation bar height
+  const insets = useSafeAreaInsets();
+  const navigationBarHeight = insets.top;
 
   const requestNotificationPermission = async () => {
     await messaging().requestPermission();
@@ -298,7 +303,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               btnStyle={{
                 ...GeneralStyle.btn,
                 marginTop: getHeight(4),
-                height: getHeight(7),
+                height: getHeight(9),
                 width: getWidth(80),
                 flex: 0,
               }}
@@ -843,7 +848,7 @@ const IndividualSteps = ({ navigation }: Props) => {
 
   return (
     <>
-      <SafeAreaView style={[styles.container]}>
+      <SafeAreaView style={[styles.container, { marginTop: navigationBarHeight }]}>
         <View>
           <StatusBar
             translucent={true}

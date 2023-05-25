@@ -25,24 +25,28 @@ export function timeSince(date: Date) {
 
   var interval = seconds / 31536000;
 
+  const addPlural = (interval: number) => {
+    return interval >= 2 ? 's' : '';
+  };
+
   if (interval > 1) {
     return Math.floor(interval) + ' years';
   }
   interval = seconds / 2592000;
   if (interval > 1) {
-    return Math.floor(interval) + ' months';
+    return Math.floor(interval) + ' month' + addPlural(interval);
   }
   interval = seconds / 86400;
   if (interval > 1) {
-    return Math.floor(interval) + ' days';
+    return Math.floor(interval) + ' day' + addPlural(interval);
   }
   interval = seconds / 3600;
   if (interval > 1) {
-    return Math.floor(interval) + ' hours';
+    return Math.floor(interval) + ' hour' + addPlural(interval);
   }
   interval = seconds / 60;
   if (interval > 1) {
-    return Math.floor(interval) + ' minutes';
+    return Math.floor(interval) + ' minute' + addPlural(interval);
   }
-  return Math.floor(seconds) + ' seconds';
+  return Math.floor(seconds) + ' second' + addPlural(interval);
 }

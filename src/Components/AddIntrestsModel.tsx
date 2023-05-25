@@ -42,7 +42,7 @@ const AddIntrestsModel = (props) => {
   }, []);
 
   useEffect(() => {
-    console.log('INTERESTS DATA', userState?.getInterestsData);
+    console.log('INTERESTS DATA', userState?.getInterestsData, userState?.getInterestsSuccess);
     if (userState?.getInterestsSuccess == true) {
       console.log('INTERESTS DATA', userState?.getInterestsData);
     } else if (userState?.getInterestsSuccess == false) {

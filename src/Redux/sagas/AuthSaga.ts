@@ -6,7 +6,7 @@ import { Alert } from 'react-native';
 // --------------- ASSETS ---------------
 import { ApiCall } from '@/services/api';
 // --------------- TYPES ---------------
-import { ACTIONS, GetBadges, SetUserBadges, GetProfile } from '../action-types';
+import { ACTIONS, GetBadges, SetUserBadges, GetProfile, SignUp } from '../action-types';
 import Toast from 'react-native-simple-toast';
 
 // --------------- ACTIONS ---------------
@@ -19,6 +19,7 @@ import {
   profileUpdate,
   getBadges,
   setUserBadges,
+  signUp,
 } from '../actions/AuthActions';
 
 function* loginRequest(params) {
@@ -86,6 +87,7 @@ export function* loginSocialSaga() {
   yield takeLatest(ACTIONS.LOGIN_SOCIAL, loginSocialRequest);
 }
 
+//REMOVE THIS
 function* signUpRequest(params) {
   try {
     const res = yield ApiCall({
@@ -112,6 +114,8 @@ function* signUpRequest(params) {
 export function* signUpSaga() {
   yield takeLatest(ACTIONS.SIGN_UP, signUpRequest);
 }
+//REMOVE THIS END
+
 function* updateProfileRequest(params) {
   try {
     const res = yield ApiCall({
@@ -124,7 +128,9 @@ function* updateProfileRequest(params) {
     });
 
     if (res?.status == 200) {
-      yield put(getProfile({ token: params.data.token, accountType: params.data.accountType }));
+      yield put(
+        getProfile.Request({ token: params.data.token, accountType: params.data.accountType })
+      );
 
       yield put(setLoader(false));
       if (params.data.go) {
@@ -255,6 +261,28 @@ function* removeSocialAccountRequest(params) {
 export function* RemoveSocialAccountSaga() {
   yield takeLatest(ACTIONS.REMOVE_SOCIAL_ACCOUNT, removeSocialAccountRequest);
 }
+
+// function* signUpSaga(params) {
+//   try {
+//     const res = yield ApiCall({
+//       params: params.data.data,
+//       route: 'user/register',
+//       verb: 'post',
+//       token: params.token,
+//     });
+
+//     if (res?.status == '200') {
+//       yield put(signUp.Success(res?.response));
+//     } else {
+//       yield put(signUp.Failed(res?.response));
+//     }
+//   } catch (e) {
+//     yield put(signUp.Failed(e));
+//   }
+// }
+// export function* SignUpSaga() {
+//   yield takeLatest(SignUp.REQUEST, signUpSaga);
+// }
 
 function* getBadgesSaga({ params }) {
   try {

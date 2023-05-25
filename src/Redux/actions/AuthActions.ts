@@ -1,5 +1,5 @@
 // --------------- TYPES ---------------
-import { ACTIONS, GetBadges, SetUserBadges, GetProfile } from '../action-types';
+import { ACTIONS, GetBadges, SetUserBadges, GetProfile, SignUp } from '../action-types';
 
 // --------------- ACTIONS ---------------
 export const loginRequest = (data) => ({
@@ -88,6 +88,22 @@ export const removeSocialAccountRequest = (data) => ({
   type: ACTIONS.REMOVE_SOCIAL_ACCOUNT,
   data,
 });
+
+// Sign Up Actions
+export const signUp = {
+  Request: (params: any) => ({
+    type: SignUp.REQUEST,
+    params,
+  }),
+  Success: (data: any) => ({
+    type: SignUp.SUCCESS,
+    payload: data,
+  }),
+  Failed: (error: any) => ({
+    type: SignUp.FAILED,
+    payload: error,
+  }),
+};
 
 //Badge Actions
 export const getBadges = {

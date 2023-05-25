@@ -362,7 +362,7 @@ export default function DrawerElem(props: DrawerContentComponentProps) {
 }
 
 function DrawerContent(props: DrawerContentComponentProps) {
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
 
   return (
     <DrawerContentScrollView {...props}>

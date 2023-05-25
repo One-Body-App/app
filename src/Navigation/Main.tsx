@@ -146,8 +146,8 @@ const Main = () => {
   }, [token, user, initializing]);
 
   useEffect(() => {
-    if (authState.getProfileSuccess) {
-      console.log('USER PROFILE', authState.getProfileData);
+    if (authState.getProfileSuccess == false) {
+      setInitializing(false);
     }
   }, [authState.getProfileSuccess]);
 

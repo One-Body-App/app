@@ -66,6 +66,13 @@ export const ACTIONS = {
   REMOVE_SOCIAL_ACCOUNT: 'REMOVE_SOCIAL_ACCOUNT',
 };
 
+//SignUp Types
+export const SignUp = {
+  REQUEST: 'sign_up_request',
+  SUCCESS: 'sign_up_success',
+  FAILED: 'sign_up_failed',
+};
+
 //Badge Types
 export const GetBadges = {
   REQUEST: 'get_badges_request',

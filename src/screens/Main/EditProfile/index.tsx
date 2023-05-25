@@ -46,7 +46,7 @@ import MapBox, { MapSuggestion } from '@/src/Components/MapBox';
 type Props = StackScreenProps<RootStackParamList, 'EditProfile'>;
 
 const EditProfile = ({ navigation }: Props) => {
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [gender, setGender] = useState(user?.gender);
@@ -552,34 +552,43 @@ const EditProfile = ({ navigation }: Props) => {
 
               <View>
                 {user?.accountType == 'individual' ? (
-                  <TextInput
-                    style={{ backgroundColor: colors.background }}
-                    value={whatIDo?.name ? whatIDo?.name : ''}
-                    editable={false}
-                    label="What I do"
-                    onPressIn={() => {
+                  <TouchableOpacity
+                    onPress={() => {
                       getWhatIDo();
                       setVisible(true);
                     }}
-                    activeOutlineColor={'#12D2D9'}
-                    activeUnderlineColor={'#12D2D9'}
-                    // onChangeText={e => setWhatIDo(e)}
-                  />
-                ) : (
-                  <>
+                    style={{ width: '100%' }}
+                  >
                     <TextInput
                       style={{ backgroundColor: colors.background }}
-                      value={organizationType?.name ? organizationType?.name : ''}
+                      value={whatIDo?.name ? whatIDo?.name : ''}
                       editable={false}
-                      label="Who We Are?"
-                      onPressIn={() => {
+                      pointerEvents="none"
+                      label="What I do"
+                      activeOutlineColor={'#12D2D9'}
+                      activeUnderlineColor={'#12D2D9'}
+                    />
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => {
                         getWhatIDo();
                         setVisible(true);
                       }}
-                      activeOutlineColor={'#12D2D9'}
-                      activeUnderlineColor={'#12D2D9'}
-                      // onChangeText={e => setWhatIDo(e)}
-                    />
+                      style={{ width: '100%' }}
+                    >
+                      <TextInput
+                        style={{ backgroundColor: colors.background }}
+                        value={organizationType?.name ? organizationType?.name : ''}
+                        editable={false}
+                        pointerEvents="none"
+                        label="Who We Are?"
+                        activeOutlineColor={'#12D2D9'}
+                        activeUnderlineColor={'#12D2D9'}
+                        // onChangeText={e => setWhatIDo(e)}
+                      />
+                    </TouchableOpacity>
                     {user?.isInfluencer == true ? (
                       <View
                         style={{
@@ -663,6 +672,7 @@ const EditProfile = ({ navigation }: Props) => {
                   if (churchType) data.append('churchType', churchType);
                   if (churchSubType) data.append('churchSubType', churchSubType);
                   if (oftenChurch) data.append('oftenChurch', oftenChurch);
+                  if (location) data.append('location', location?.address);
 
                   dispatch(setLoader(true));
 

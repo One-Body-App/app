@@ -1,13 +1,15 @@
 import { User } from '@/utils/types';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AnyAction, Reducer } from 'redux';
-import { ACTIONS, GetBadges, SetUserBadges, GetProfile } from '../action-types';
+import { ACTIONS, GetBadges, SetUserBadges, GetProfile, SignUp } from '../action-types';
 
 interface UserData extends FirebaseAuthTypes.User {
   tokenResult: FirebaseAuthTypes.IdTokenResult;
 }
 
 type AuthReducer = {
+  signUpSuccess: boolean;
+  signUpData: ArrayLike<any> | null | undefined;
   getBadgesSuccess: boolean;
   setUserBadgesSuccess: boolean;
   getProfileSuccess: boolean;
@@ -105,6 +107,26 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
           ...state.userProfile,
           ...action.data.notifications,
         },
+      };
+
+    //SignUp
+    case SignUp.REQUEST:
+      return {
+        ...state,
+        signUpSuccess: null,
+        error: null,
+      };
+    case SignUp.SUCCESS:
+      return {
+        ...state,
+        signUpSuccess: true,
+        signUpData: action.payload,
+      };
+    case SignUp.FAILED:
+      return {
+        ...state,
+        signUpSuccess: false,
+        error: action.payload,
       };
 
     //Badges
