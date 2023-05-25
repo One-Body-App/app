@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Text,
   View,
@@ -20,7 +20,7 @@ import { validateFields } from '@/utils/validation/validate-fields';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GoBackIcon from '@/components/GoBackIcon';
-import { setLoginData, signUpRequest } from '@/redux//actions/AuthActions';
+import { setLoginData, signUp } from '@/redux//actions/AuthActions';
 import GradientHeader from '@/components/GradientHeader';
 import validator from '@/utils/validation/validator';
 import { setAccountType, setLoader } from '@/redux//actions/GeneralActions';
@@ -67,6 +67,7 @@ const SignupForm = ({ navigation }: Props) => {
   const scrollView = useRef<ScrollView | null>(null);
 
   const AccountType = useSelector((state: RootState) => state.general.accountType);
+  const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
 
   const inputRefs = {
@@ -172,29 +173,12 @@ const SignupForm = ({ navigation }: Props) => {
       .createUserWithEmailAndPassword(email, password)
       .then(async (user) => {
         // await user.user.sendEmailVerification();
-        // const token = await user.user.getIdToken();
+        const token = await user.user.getIdToken();
         // user.user.updatePhoneNumber()
         data.userId = user.user.uid;
 
         // dispatch(setLoginData({ token: await user.user.getIdToken() }));
-        dispatch(
-          signUpRequest({
-            data,
-            seterror,
-            go: () =>
-              // navigation.pop()
-              navigation.replace('Login', { showConfirmationEmailMessage: true }),
-
-            // navigation.reset({
-            //   index: 1,
-            //   routes: [
-            //     { name: 'SignUp' },
-            //     { name: 'Login', params: { showConfirmationEmailMessage: true } },
-            //   ],
-            // }),
-          })
-        );
-        setIsloading(false);
+        dispatch(signUp.Request({ data: data, token: token }));
       })
       .catch((error) => {
         setIsloading(false);
@@ -208,9 +192,20 @@ const SignupForm = ({ navigation }: Props) => {
           console.log('That email address is invalid!');
         }
 
-        console.error(error);
+        console.log('Firebase login error', error);
       });
   };
+
+  useEffect(() => {
+    if (authState.signUpSuccess) {
+      setIsloading(false);
+      navigation.replace('Login', { showConfirmationEmailMessage: true });
+    } else if (authState.signUpSuccess == false) {
+      setIsloading(false);
+      console.log('Register Error', authState?.error);
+      seterror(authState?.error?.message);
+    }
+  }, [authState.signUpSuccess]);
 
   const onExpire = () => {
     console.warn('expired!');
