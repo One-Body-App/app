@@ -1,13 +1,20 @@
 import { User } from '@/utils/types';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AnyAction, Reducer } from 'redux';
-import { ACTIONS } from '../action-types';
+import { ACTIONS, GetBadges, SetUserBadges, GetProfile, SignUp } from '../action-types';
 
 interface UserData extends FirebaseAuthTypes.User {
   tokenResult: FirebaseAuthTypes.IdTokenResult;
 }
 
 type AuthReducer = {
+  signUpSuccess: boolean;
+  signUpData: ArrayLike<any> | null | undefined;
+  getBadgesSuccess: boolean;
+  setUserBadgesSuccess: boolean;
+  getProfileSuccess: boolean;
+  getBadgesData: ArrayLike<any> | null | undefined;
+  getProfileData: ArrayLike<any> | null | undefined;
   userToken: string;
   userProfile: User | null;
   userData: UserData | null;
@@ -16,6 +23,7 @@ type AuthReducer = {
   loginErrors: string[];
   firsrLaunch: boolean;
   FcmToken: string;
+  error: string[] | null;
 };
 
 const initialState: AuthReducer = {
@@ -27,6 +35,7 @@ const initialState: AuthReducer = {
   loginErrors: [],
   firsrLaunch: true,
   FcmToken: '',
+  error: null,
 };
 
 const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyAction) => {
@@ -88,6 +97,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         otpToken: '',
         loginErrors: [],
         userData: null,
+        getProfileData: null,
       };
 
     case ACTIONS.SET_USER_NOTIFICATIONS:
@@ -98,6 +108,86 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
           ...state.userProfile,
           ...action.data.notifications,
         },
+      };
+
+    //SignUp
+    case SignUp.REQUEST:
+      return {
+        ...state,
+        signUpSuccess: null,
+        error: null,
+      };
+    case SignUp.SUCCESS:
+      return {
+        ...state,
+        signUpSuccess: true,
+        signUpData: action.payload,
+        userProfile: action.data,
+      };
+    case SignUp.FAILED:
+      return {
+        ...state,
+        signUpSuccess: false,
+        error: action.payload,
+      };
+
+    //Badges
+    case GetBadges.REQUEST:
+      return {
+        ...state,
+        getBadgesSuccess: null,
+        error: null,
+      };
+    case GetBadges.SUCCESS:
+      return {
+        ...state,
+        getBadgesSuccess: true,
+        getBadgesData: action.payload,
+      };
+    case GetBadges.FAILED:
+      return {
+        ...state,
+        getBadgesSuccess: false,
+        error: action.payload,
+      };
+
+    case SetUserBadges.REQUEST:
+      return {
+        ...state,
+        setUserBadgesSuccess: null,
+        error: null,
+      };
+    case SetUserBadges.SUCCESS:
+      return {
+        ...state,
+        setUserBadgesSuccess: true,
+        setUserBadgesData: action.payload,
+      };
+    case SetUserBadges.FAILED:
+      return {
+        ...state,
+        setUserBadgesSuccess: false,
+        error: action.payload,
+      };
+
+    //Profile
+    case GetProfile.REQUEST:
+      return {
+        ...state,
+        getProfileSuccess: null,
+        error: null,
+      };
+    case GetProfile.SUCCESS:
+      return {
+        ...state,
+        getProfileSuccess: true,
+        getProfileData: action.payload,
+      };
+    case GetProfile.FAILED:
+      return {
+        ...state,
+        getProfileSuccess: false,
+        error: action.payload,
       };
 
     default:

@@ -3,11 +3,13 @@ import {
   GetUserProfileSaga,
   loginSaga,
   loginSocialSaga,
-  signUpSaga,
+  SignUpSaga,
   UpdateOrgProfileSaga,
   UpdateProfileSaga,
   GetProfileSaga,
   RemoveSocialAccountSaga,
+  GetBadgesSaga,
+  SetUserBadgesSaga,
 } from './AuthSaga';
 import {
   GetAllPrayerLiveSaga,
@@ -15,13 +17,13 @@ import {
   GetMyPrayerSaga,
   GetTestomniesPrayerSaga,
 } from './PrayerSaga';
-import { GetAllUserSaga, GetChatSaga, UserGetSaga } from './UserSaga';
+import { GetAllUserSaga, GetChatSaga, UserGetSaga, GetInterestsSaga } from './UserSaga';
 
 export function* rootSaga() {
   yield all([
     loginSaga(),
     loginSocialSaga(),
-    signUpSaga(),
+    SignUpSaga(),
     UpdateProfileSaga(),
     GetUserProfileSaga(),
     RemoveSocialAccountSaga(),
@@ -34,5 +36,8 @@ export function* rootSaga() {
     GetAllPrayerLiveSaga(),
     GetChatSaga(),
     GetProfileSaga(),
+    GetBadgesSaga(),
+    SetUserBadgesSaga(),
+    GetInterestsSaga(),
   ]);
 }

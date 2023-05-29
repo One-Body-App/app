@@ -65,3 +65,44 @@ export const ACTIONS = {
   SET_LOGIN_VERIFICATION_BACK_PAGE: 'SET_LOGIN_VERIFICATION_BACK_PAGE',
   REMOVE_SOCIAL_ACCOUNT: 'REMOVE_SOCIAL_ACCOUNT',
 };
+
+//SignUp Types
+export const SignUp = {
+  REQUEST: 'sign_up_request',
+  SUCCESS: 'sign_up_success',
+  FAILED: 'sign_up_failed',
+};
+
+//Badge Types
+export const GetBadges = {
+  REQUEST: 'get_badges_request',
+  SUCCESS: 'get_badges_success',
+  FAILED: 'get_badges_failed',
+};
+
+export const SetUserBadges = {
+  REQUEST: 'set_user_badges_request',
+  SUCCESS: 'set_user_badges_success',
+  FAILED: 'set_user_badges_failed',
+};
+
+//Profile Types
+export const GetProfile = {
+  REQUEST: 'get_profile_request',
+  SUCCESS: 'get_profile_success',
+  FAILED: 'get_profile_failed',
+};
+
+//Interest Types
+
+export const GetInterests = {
+  REQUEST: 'get_interests_request',
+  SUCCESS: 'get_interests_success',
+  FAILED: 'get_interests_failed',
+};
+
+export const AddUserInterest = {
+  REQUEST: 'add_user_interest_request',
+  SUCCESS: 'add_user_interest_success',
+  FAILED: 'add_user_interest_failed',
+};

@@ -1,8 +1,12 @@
 import { User } from '@/utils/types';
 import { AnyAction, Reducer } from 'redux';
-import { ACTIONS } from '../action-types';
+import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 
 type UserReducers = {
+  addUserInterestSuccess?: boolean;
+  addUserInterestData?: any;
+  getInterestsSuccess?: boolean;
+  getInterestsData?: any;
   userInrest: string[];
   userSubscribes: string[];
   allUser: User[];
@@ -38,6 +42,45 @@ const userReducers: Reducer<UserReducers> = (state = initialState, action: AnyAc
       return {
         ...state,
         allUser: action.data,
+      };
+
+    //Interests
+    case AddUserInterest.REQUEST:
+      return {
+        ...state,
+        addUserInterestSuccess: null,
+        error: null,
+      };
+    case AddUserInterest.SUCCESS:
+      return {
+        ...state,
+        addUserInterestSuccess: true,
+        addUserInterestData: action.payload,
+      };
+    case AddUserInterest.FAILED:
+      return {
+        ...state,
+        addUserInterestSuccess: false,
+        error: action.payload,
+      };
+
+    case GetInterests.REQUEST:
+      return {
+        ...state,
+        getInterestsSuccess: null,
+        error: null,
+      };
+    case GetInterests.SUCCESS:
+      return {
+        ...state,
+        getInterestsSuccess: true,
+        getInterestsData: action.payload,
+      };
+    case GetInterests.FAILED:
+      return {
+        ...state,
+        getInterestsSuccess: false,
+        error: action.payload,
       };
 
     default:

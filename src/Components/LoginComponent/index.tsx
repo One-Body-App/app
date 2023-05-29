@@ -226,7 +226,7 @@ const LoginComponent: FC<Props> = ({
             if (
               !!verifyAccount &&
               !!onlyPassword &&
-              userCredentials.user.email != currentUserEmail
+              userCredentials.user.email !== currentUserEmail
             ) {
               navigation.goBack();
               toast.show(`Please login with the current user's email`, {
@@ -275,7 +275,7 @@ const LoginComponent: FC<Props> = ({
       const passwordError = await validator('password', password);
       seterror('');
 
-      if (!!verifyAccount && !!onlyPassword && email != currentUserEmail) {
+      if (!!verifyAccount && !!onlyPassword && email !== currentUserEmail) {
         throw { message: "Please login with the current user's email" };
       }
 
@@ -421,7 +421,7 @@ const LoginComponent: FC<Props> = ({
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
       const userCredentials = await auth().signInWithCredential(googleCredential);
 
-      if (!!verifyAccount && !!onlyPassword && userCredentials.user.email != currentUserEmail) {
+      if (!!verifyAccount && !!onlyPassword && userCredentials.user.email !== currentUserEmail) {
         navigation.goBack();
         toast.show(`Please login with the current user's email`, {
           type: 'error',
@@ -481,7 +481,7 @@ const LoginComponent: FC<Props> = ({
 
       const userCredentials = await auth().signInWithCredential(facebookCredential);
 
-      if (!!verifyAccount && !!onlyPassword && userCredentials.user.email != currentUserEmail) {
+      if (!!verifyAccount && !!onlyPassword && userCredentials.user.email !== currentUserEmail) {
         navigation.goBack();
         toast.show(`Please login with the current user's email`, {
           type: 'error',

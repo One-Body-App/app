@@ -50,6 +50,7 @@ import { useToast } from 'react-native-toast-notifications';
 import { profile } from 'console';
 import { useTheme } from '@react-navigation/native';
 import { NO_PROFILE_IMAGE } from '@/src/Services/constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<any, 'OrgnizationSteps'>;
 
@@ -92,6 +93,10 @@ const OrgnizationSteps = ({ navigation }: Props) => {
     contactPhoneNumberError: '',
     location_labelError: '',
   });
+
+  //Navigation bar height
+  const insets = useSafeAreaInsets();
+  const navigationBarHeight = insets.top;
 
   const requestNotificationPermission = async () => {
     await messaging().requestPermission();
@@ -917,7 +922,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
   };
   return (
     <>
-      <SafeAreaView style={[styles.container]}>
+      <SafeAreaView style={[styles.container, { marginTop: navigationBarHeight }]}>
         <View>
           <StatusBar
             translucent={true}

@@ -1,34 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Text, View, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { Animated, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
-import { TabView, SceneMap, SceneRendererProps } from 'react-native-tab-view';
+import { TabView, SceneRendererProps } from 'react-native-tab-view';
 import Add_badges from '@/assets/svg/Add_badges.svg';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '@/components/Button';
 import { styles } from './styles';
 import FastImage from 'react-native-fast-image';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import TwitterFlatlist from '@/components/TwitterFlatlist';
 import BlogFlatlist from '@/components/BlogFlatlist';
 import InstagramFlatlist from '@/components/InstagramFlatlist';
-import Icon from 'react-native-vector-icons/Ionicons';
 import Selected from '@/assets/svg/Selected.svg';
-import { ApiCall } from '@/services/api';
-import { getProfile } from '@/redux//actions/AuthActions';
+import { getProfile, getBadges, setUserBadges } from '@/redux//actions/AuthActions';
 import ImageModal from 'react-native-image-modal';
 import { useTheme } from '@react-navigation/native';
-import Header from '@/src/Components/Header';
-import GoBackIcon from '@/src/Components/GoBackIcon';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from '@/src/Navigation/types';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
-import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
-
 import { StackScreenProps } from '@react-navigation/stack';
 import { Badge } from '@/utils/types';
 import { OpenURLButton } from '@/src/Services/constants';
@@ -40,10 +30,10 @@ type Route = {
 type Props = StackScreenProps<RootStackParamList, 'MyProfile'>;
 
 const MyProfile = ({ navigation }: Props) => {
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const [badgesList, setBadgesList] = useState<Badge[]>([]);
   const [requestModel, setRequestModel] = useState<boolean>(false);
   const [index, setIndex] = React.useState(0);
   const [routes, setRoutes] = React.useState<Route[]>([]);
@@ -130,45 +120,23 @@ const MyProfile = ({ navigation }: Props) => {
     setSelectedBadges(array);
   };
 
-  const getBadge = async () => {
-    try {
-      const res = await ApiCall({
-        route: 'user/badges',
-        verb: 'get',
-        token: token,
-      });
-
-      if (res?.status == 200) {
-        setBadgesList(res?.response.data);
-      } else {
-        console.log('error', res?.response);
-      }
-    } catch (e: any) {
-      console.log('saga error on what i Do -- ', e.toString());
-    }
-  };
-
-  const setBadges = async () => {
-    try {
-      const res = await ApiCall({
-        route: 'user/assign-badge',
-        token: token,
-        params: { badges: selectedBadges },
-        verb: 'patch',
-      });
-      if (res.status == 200) {
-        dispatch(getProfile({ token: token, accountType: user?.accountType }));
-      } else {
-        console.log('error', res);
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-    }
-  };
+  useEffect(() => {
+    dispatch(getBadges.Request({ token: token }));
+  }, []);
 
   useEffect(() => {
-    getBadge();
-  }, []);
+    if (authState?.getBadgesSuccess == false) {
+      Toast.show('Unable to get badges at this time!');
+    }
+  }, [authState?.getBadgesSuccess]);
+
+  useEffect(() => {
+    if (authState?.setUserBadgesSuccess == true) {
+      dispatch(getProfile.Request({ token: token, accountType: user?.accountType }));
+    } else if (authState?.setUserBadgesSuccess == false) {
+      Toast.show('Unable to set badges at this time!');
+    }
+  }, [authState?.setUserBadgesSuccess]);
 
   const { colors } = useTheme();
 
@@ -199,7 +167,7 @@ const MyProfile = ({ navigation }: Props) => {
           <View style={styles.profileview}>
             <View style={{ marginVertical: 15 }}>
               <FlatList
-                data={badgesList}
+                data={authState?.getBadgesData}
                 numColumns={3}
                 showsHorizontalScrollIndicator={false}
                 // ListFooterComponent={() => <View style={{ padding: 7 }} />}
@@ -266,7 +234,7 @@ const MyProfile = ({ navigation }: Props) => {
           <View style={{ width: '100%' }}>
             <TouchableOpacity
               onPress={() => {
-                setBadges();
+                dispatch(setUserBadges.Request({ token: token, badges: selectedBadges }));
                 setRequestModel(false);
               }}
               style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}
@@ -354,7 +322,8 @@ const MyProfile = ({ navigation }: Props) => {
                     <TouchableOpacity
                       style={{ marginHorizontal: getWidth(1) }}
                       onPress={() => {
-                        getBadge();
+                        dispatch(getBadges.Request({ token: token }));
+                        //getBadge();
                         setRequestModel(true);
                       }}
                     >
@@ -375,7 +344,8 @@ const MyProfile = ({ navigation }: Props) => {
             <TouchableOpacity
               style={{ marginHorizontal: getWidth(1) }}
               onPress={() => {
-                getBadge();
+                //getBadge();
+                dispatch(getBadges.Request({ token: token }));
                 setRequestModel(true);
               }}
             >

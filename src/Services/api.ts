@@ -34,7 +34,6 @@ export const ApiCall = async ({
       // url = `${!external ? `${BASE_URL}/` : ''}${route}`;
       url = `${!external ? `${BASE_URL}/` : ''}${route}`;
     }
-    console.log(url);
     let response: AxiosResponse<any, any> | null = null;
     switch (verb) {
       case 'get':
@@ -79,7 +78,7 @@ export const ApiCall = async ({
 
     return { status: 200, response: response?.data };
   } catch (e: any) {
-    console.log(e);
+    //console.log(e);
     // handle error
     return { status: 400, response: e.response.data };
   }

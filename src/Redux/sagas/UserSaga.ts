@@ -1,5 +1,5 @@
 import { ApiCall } from '@/services/api';
-import { ACTIONS } from '../action-types';
+import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 import Toast from 'react-native-simple-toast';
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
 import { setChats, setLoader } from '../actions/GeneralActions';
@@ -9,6 +9,8 @@ import {
   setUserIntrest,
   setUserSubscribe,
   setUserDataNotifications,
+  addUserInterest,
+  getInterests,
 } from '../actions/UserAction';
 
 function* UserGetRequest(params) {
@@ -86,4 +88,45 @@ function* GetChatRequest(params) {
 }
 export function* GetChatSaga() {
   yield takeLatest(ACTIONS.GET_CHATS, GetChatRequest);
+}
+
+//Interests
+function* addUserInterestSaga({ params }) {
+  try {
+    const res = yield ApiCall({
+      route: 'user/add-interests',
+      token: params?.token,
+      verb: 'patch',
+      params: { interests: params?.interests },
+    });
+    if (res?.status == 200) {
+      yield put(addUserInterest.Success(res?.response?.data));
+    } else yield put(addUserInterest.Failed(res?.response));
+  } catch (e) {
+    yield put(addUserInterest.Failed(e));
+  }
+}
+
+export function* AddUserInterestSaga() {
+  yield takeEvery(AddUserInterest.REQUEST, addUserInterestSaga);
+}
+
+function* getInterestsSaga({ params }) {
+  try {
+    const res = yield ApiCall({
+      route: 'tags/interest',
+      verb: 'get',
+      token: params?.token,
+    });
+    if (res?.status == 200) {
+      console.log('INTEREST DATA FROM API', res);
+      yield put(getInterests.Success(res));
+    } else yield put(getInterests.Failed(res?.response));
+  } catch (e) {
+    yield put(getInterests.Failed(e));
+  }
+}
+
+export function* GetInterestsSaga() {
+  yield takeEvery(GetInterests.REQUEST, getInterestsSaga);
 }

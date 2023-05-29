@@ -1,4 +1,4 @@
-import { ACTIONS } from '../action-types';
+import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 
 export const getuserAll = (data) => ({
   type: ACTIONS.Get_ALLUSER,
@@ -38,3 +38,33 @@ export const setUserDataNotifications = (data) => ({
   type: ACTIONS.SET_USER_NOTIFICATIONS,
   data,
 });
+
+export const addUserInterest = {
+  Request: (params: any) => ({
+    type: AddUserInterest.REQUEST,
+    params,
+  }),
+  Success: (data: any) => ({
+    type: AddUserInterest.SUCCESS,
+    payload: data,
+  }),
+  Failed: (error: any) => ({
+    type: AddUserInterest.FAILED,
+    payload: error,
+  }),
+};
+
+export const getInterests = {
+  Request: (params: any) => ({
+    type: GetInterests.REQUEST,
+    params,
+  }),
+  Success: (data: any) => ({
+    type: GetInterests.SUCCESS,
+    payload: data,
+  }),
+  Failed: (error: any) => ({
+    type: GetInterests.FAILED,
+    payload: error,
+  }),
+};
