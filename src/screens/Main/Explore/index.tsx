@@ -262,7 +262,7 @@ const Explore = () => {
           }}
         />
 
-        <View style={{ flexDirection: 'row', height: getHeight(10) }}>
+        <View style={{ flexDirection: 'row' }}>
           <Button
             text={'+Add Interests'}
             onPress={(): void => {

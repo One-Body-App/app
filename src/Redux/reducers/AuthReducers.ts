@@ -1,7 +1,14 @@
 import { User } from '@/utils/types';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AnyAction, Reducer } from 'redux';
-import { ACTIONS, GetBadges, SetUserBadges, GetProfile, SignUp } from '../action-types';
+import {
+  ACTIONS,
+  GetBadges,
+  SetUserBadges,
+  GetProfile,
+  SignUp,
+  SendVerificationEmail,
+} from '../action-types';
 
 interface UserData extends FirebaseAuthTypes.User {
   tokenResult: FirebaseAuthTypes.IdTokenResult;
@@ -10,6 +17,8 @@ interface UserData extends FirebaseAuthTypes.User {
 type AuthReducer = {
   signUpSuccess: boolean;
   signUpData: ArrayLike<any> | null | undefined;
+  sendVerificationEmailSuccess: boolean;
+  sendVerificationEmailData: ArrayLike<any> | null | undefined;
   getBadgesSuccess: boolean;
   setUserBadgesSuccess: boolean;
   getProfileSuccess: boolean;
@@ -122,12 +131,32 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         ...state,
         signUpSuccess: true,
         signUpData: action.payload,
-        userProfile: action.data,
+        userProfile: action.payload,
       };
     case SignUp.FAILED:
       return {
         ...state,
         signUpSuccess: false,
+        error: action.payload,
+      };
+
+    //Send Verification Email
+    case SendVerificationEmail.REQUEST:
+      return {
+        ...state,
+        sendVerificationEmailSuccess: null,
+        error: null,
+      };
+    case SendVerificationEmail.SUCCESS:
+      return {
+        ...state,
+        sendVerificationEmailSuccess: true,
+        sendVerificationEmailData: action.payload,
+      };
+    case SendVerificationEmail.FAILED:
+      return {
+        ...state,
+        sendVerificationEmailSuccess: false,
         error: action.payload,
       };
 

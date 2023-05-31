@@ -73,6 +73,13 @@ export const SignUp = {
   FAILED: 'sign_up_failed',
 };
 
+//Send Verification Email
+export const SendVerificationEmail = {
+  REQUEST: 'send_verification_email_request',
+  SUCCESS: 'send_verification_email_success',
+  FAILED: 'send_verification_email_failed',
+};
+
 //Badge Types
 export const GetBadges = {
   REQUEST: 'get_badges_request',

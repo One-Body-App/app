@@ -10,6 +10,7 @@ import {
   RemoveSocialAccountSaga,
   GetBadgesSaga,
   SetUserBadgesSaga,
+  SendVerificationEmailSaga,
 } from './AuthSaga';
 import {
   GetAllPrayerLiveSaga,
@@ -36,6 +37,7 @@ export function* rootSaga() {
     GetAllPrayerLiveSaga(),
     GetChatSaga(),
     GetProfileSaga(),
+    SendVerificationEmailSaga(),
     GetBadgesSaga(),
     SetUserBadgesSaga(),
     GetInterestsSaga(),

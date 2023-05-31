@@ -1,5 +1,12 @@
 // --------------- TYPES ---------------
-import { ACTIONS, GetBadges, SetUserBadges, GetProfile, SignUp } from '../action-types';
+import {
+  ACTIONS,
+  GetBadges,
+  SetUserBadges,
+  GetProfile,
+  SignUp,
+  SendVerificationEmail,
+} from '../action-types';
 
 // --------------- ACTIONS ---------------
 export const loginRequest = (data) => ({
@@ -101,6 +108,22 @@ export const signUp = {
   }),
   Failed: (error: any) => ({
     type: SignUp.FAILED,
+    payload: error,
+  }),
+};
+
+//Send Verification Email Actions
+export const sendVerificationEmail = {
+  Request: (params: any) => ({
+    type: SendVerificationEmail.REQUEST,
+    params,
+  }),
+  Success: (data: any) => ({
+    type: SendVerificationEmail.SUCCESS,
+    payload: data,
+  }),
+  Failed: (error: any) => ({
+    type: SendVerificationEmail.FAILED,
     payload: error,
   }),
 };

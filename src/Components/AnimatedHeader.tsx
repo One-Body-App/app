@@ -37,7 +37,7 @@ const AnimatedHeader = ({
   const navigation = useNavigation();
   const token = useSelector((state) => state.auth.userToken);
   const intrest = useSelector((state) => state.user.userInrest);
-  const user = useSelector((state) => state.auth.userProfile);
+  const user = useSelector((state) => state.auth.getProfileData);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [show, setShow] = useState(false);
