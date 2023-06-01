@@ -1,24 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import {
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Modal from 'react-native-modal';
-
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/services/api';
-import Button from './Button';
-import { getuserAll, getuserGet, getInterests, addUserInterest } from '../Redux/actions/UserAction';
+import { getuserAll, getInterests, addUserInterest } from '../Redux/actions/UserAction';
 import GradientButton from './GradientButton';
-import { RootStackParamList } from '@/src/Navigation/types';
-import { StackScreenProps } from '@react-navigation/stack';
 import Toast from 'react-native-simple-toast';
 
 type Route = {
@@ -26,15 +13,12 @@ type Route = {
   title: string;
 };
 
-const AddIntrestsModel = (props) => {
+const AddIntrestsModel = (props: any) => {
   const { setShow, show } = props;
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const user = useSelector((state: RootState) => state.auth.userProfile);
   const userState = useSelector((state: RootState) => state.user);
   const authState = useSelector((state: RootState) => state.auth);
-
-  const [intrest, setIntrest] = React.useState<Route[]>([]);
   const [selectedIntrest, setSelectedIntrest] = React.useState<Route[]>([]);
 
   useEffect(() => {
@@ -42,53 +26,10 @@ const AddIntrestsModel = (props) => {
   }, []);
 
   useEffect(() => {
-    console.log('INTERESTS DATA', userState?.getInterestsData, userState?.getInterestsSuccess);
-    if (userState?.getInterestsSuccess == true) {
-      console.log('INTERESTS DATA', userState?.getInterestsData);
-    } else if (userState?.getInterestsSuccess == false) {
-      console.log('INTERESTS DATA FAILED', userState?.getInterestsSuccess);
+    if (userState?.getInterestsSuccess == false) {
       Toast.show('Unable to fetch interests!');
     }
   }, [userState?.getInterestsSuccess]);
-
-  // const getIntrest = async () => {
-  //   try {
-  //     const res = await ApiCall({
-  //       route: 'interests',
-  //       verb: 'get',
-  //       token: token,
-  //     });
-
-  //     if (res?.status == '200') {
-  //       setIntrest(res?.response);
-  //     } else {
-  //       console.log('error', res?.response);
-  //     }
-  //   } catch (e) {
-  //     console.log('saga error -- ', e.toString());
-  //   }
-  // };
-
-  // const addIntrest = async () => {
-  //   try {
-  //     const res = await ApiCall({
-  //       route: 'user/add-interests',
-  //       token: token,
-  //       verb: 'patch',
-  //       params: { interests: selectedIntrest },
-  //     });
-  //     if (res?.status == '200') {
-  //       // dispatch(getuserGet({ token: token, get: 'interests', role: user?.role }));
-  //       setShow(false);
-  //       setSelectedIntrest([]);
-  //       dispatch(getuserAll({ token: token }));
-  //     } else {
-  //       console.log('error', res?.response);
-  //     }
-  //   } catch (e) {
-  //     console.log('saga error -- ', e.toString());
-  //   }
-  // };
 
   useEffect(() => {
     if (userState?.addUserInterestSuccess == true) {

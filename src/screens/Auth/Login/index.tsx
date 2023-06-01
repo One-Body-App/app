@@ -31,7 +31,7 @@ const Login = ({ route, navigation }: Props) => {
       />
 
       <LoginComponent
-        showConfirmationEmailMessage={route.params?.showConfirmationEmailMessage ?? false}
+        showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
         navigation={navigation}
         route={route}
         enabledLoginProviders={loginProviders}

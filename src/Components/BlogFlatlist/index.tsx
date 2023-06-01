@@ -30,7 +30,7 @@ const BlogFlatlist = ({
   setScrollPosition,
 }: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) => {
   // const offset = useRef(new Animated.Value(0)).current;
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [page, setPage] = useState<number>(1);
   const [blogs, setBlogs] = useState<any>([]);

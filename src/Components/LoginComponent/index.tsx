@@ -33,7 +33,7 @@ import { appColor } from '../../constants';
 import { requestUserPermission } from '../../Services/Notification/notificationServices';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import GradientButton from '../GradientButton';
-import { loginSocialRequest, logout } from '@/src/Redux/actions/AuthActions';
+import { loginSocialRequest, logout, sendVerificationEmail } from '@/src/Redux/actions/AuthActions';
 
 import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 
@@ -84,7 +84,8 @@ const LoginComponent: FC<Props> = ({
 }) => {
   const dispatch = useDispatch();
 
-  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const authState = useSelector((state: RootState) => state.auth);
+  const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const toScreen = useSelector((state: RootState) => state.general.loginVerficationBackPage);
   const toScreenParams = useSelector(
     (state: RootState) => state.general.loginVerficationBackPageParams
@@ -267,6 +268,15 @@ const LoginComponent: FC<Props> = ({
       getTwitterAuthToken();
     }
   }, [oauth_token]);
+
+  useEffect(() => {
+    if (authState?.sendVerificationEmailSuccess == true) {
+      toast.show(`Verification email successfully sent. Check your inbox.`, {
+        type: 'success',
+        placement: 'top',
+      });
+    }
+  }, [authState?.sendVerificationEmailSuccess]);
 
   const signInUser = async () => {
     try {
@@ -536,23 +546,9 @@ const LoginComponent: FC<Props> = ({
         <Text style={{ ...styles.paragraph, textAlign: 'center', marginTop: 10, marginBottom: 30 }}>
           You’ll need to verify your email to complete your account activation.
         </Text>
-
         <Button
-          onPress={async () => {
-            try {
-              const options = {
-                method: 'POST',
-                url: `${BASE_URL}/auth/sendVerificationEmail`,
-
-                headers: {
-                  'Content-Type': 'application/json',
-                  authorization: `Bearer ${userProfile?.token}`,
-                },
-              };
-              const result = await axios.request(options);
-            } catch (e) {
-              console.log(e);
-            }
+          onPress={() => {
+            dispatch(sendVerificationEmail.Request({ token: userProfile?.token }));
           }}
           paper
           text={'Resend email'}

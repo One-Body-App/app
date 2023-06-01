@@ -36,7 +36,7 @@ const OptionsModal = ({
   const { colors, dark } = useTheme();
   const navigation = useNavigation<ScreenNavigationProp>();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
 
   const removePost = async (link: string) => {
