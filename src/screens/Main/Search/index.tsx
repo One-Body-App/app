@@ -30,7 +30,7 @@ const Search = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [show, setShow] = useState<boolean>();
   const dispatch = useDispatch();
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
 
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState([

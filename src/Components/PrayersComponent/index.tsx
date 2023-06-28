@@ -35,7 +35,7 @@ const PrayersComponent = () => {
   const currentPage = useSelector((state) => state.prayer.MyPrayerCurrentPage);
   const totalPage = useSelector((state) => state.prayer.MyPrayerTotalPage);
 
-  const user = useSelector((state) => state.auth.userProfile);
+  const user = useSelector((state) => state.auth.getProfileData);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [curentIndex, setCurrentIndex] = useState(null);

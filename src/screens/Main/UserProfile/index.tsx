@@ -35,7 +35,7 @@ const UserProfile = ({ navigation, route }: Props) => {
   const [user, setUser] = useState<User>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const isLoading = useSelector((state: RootState) => state.general.loader);
-  const currentUser = useSelector((state: RootState) => state.auth.userProfile);
+  const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [index, setIndex] = React.useState(0);
   const [routes, setRoutes] = React.useState<{ key: string; title: string }[]>([]);
   const [scrollPosition, setScrollPosition] = React.useState(0);

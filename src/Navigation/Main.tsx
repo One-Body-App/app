@@ -72,7 +72,7 @@ const Stack = createNativeStackNavigator();
 const Main = () => {
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
-  //const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  //const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   //const userToken = useSelector((state: RootState) => state.auth.userToken);
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
@@ -145,12 +145,12 @@ const Main = () => {
     }
   }, [token, user, initializing]);
 
-  useEffect(() => {
-    if (authState.getProfileSuccess == false) {
-      setInitializing(false);
-    }
-  }, [authState.getProfileSuccess]);
-
+  // useEffect(() => {
+  //   if (authState.getProfileSuccess == false) {
+  //     setInitializing(false);
+  //   }
+  // }, [authState.getProfileSuccess]);
+  console.log(authState);
   const linking: LinkingOptions<RootStackParamList> = {
     prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
     config: {
@@ -252,6 +252,7 @@ const Main = () => {
       ></ImageBackground>
     );
   }
+
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       <AppProvider>

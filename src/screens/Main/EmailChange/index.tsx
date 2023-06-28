@@ -27,7 +27,7 @@ type Props = StackScreenProps<RootStackParamList, 'EmailChange'>;
 const EmailChange = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
 
-  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
 
   const inputRefs = {
     passwordN: useRef<TextInputNative>(null),

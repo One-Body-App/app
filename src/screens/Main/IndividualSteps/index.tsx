@@ -57,7 +57,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
 
 const IndividualSteps = ({ navigation }: Props) => {
   const flatListRef = useRef<FlatList>(null);
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
 
   const dispatch = useDispatch();
   const [churchAttend, setChurchAttend] = useState<string | null>(null);

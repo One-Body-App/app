@@ -17,7 +17,7 @@ import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const PhoneValidateOtp = ({ navigation }) => {
-  const user = useSelector((state) => state.auth.userProfile);
+  const user = useSelector((state) => state.auth.getProfileData);
   const token = useSelector((state) => state.auth.userToken);
   const [error, seterror] = React.useState();
   const [code, setCode] = useState(1234);

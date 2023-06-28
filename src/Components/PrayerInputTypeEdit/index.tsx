@@ -12,7 +12,7 @@ import Toast from 'react-native-simple-toast';
 const PrayerInputTypeEdit = ({ color, id, pray, praytype, setCurrentIndex, setIsediting }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userProfile);
+  const user = useSelector((state) => state.auth.getProfileData);
   const userPrayers = useSelector((state) => state.general.userPrayers);
   const prayers = useSelector((state) => state.general.prayers);
   const [prayerTypeShow, setPrayerTypeShow] = useState(true);

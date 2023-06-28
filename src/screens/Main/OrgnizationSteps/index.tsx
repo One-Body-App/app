@@ -56,7 +56,7 @@ type Props = NativeStackScreenProps<any, 'OrgnizationSteps'>;
 
 const OrgnizationSteps = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
   const flatListRef = useRef<FlatList>(null);
 

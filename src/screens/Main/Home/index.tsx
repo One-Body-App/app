@@ -23,10 +23,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 
 enum FeedTypes {
-  All = 'All',
-  News = 'News',
-  Social = 'Social',
-  Blog = 'Blog',
+  All = 'all',
+  News = 'news',
+  Social = 'social',
+  Blog = 'blog',
 }
 
 type feedOptions = {
@@ -85,6 +85,7 @@ const Home = ({ navigation }: Props) => {
   const getFeedData = async (type: FeedTypes, pageNumber: number) => {
     setIsLoading(true);
     try {
+      console.log(`user/get-following-feed/${type}/${pageNumber}`);
       const res = await ApiCall({
         route: `user/get-following-feed/${type}/${pageNumber}`,
         token,

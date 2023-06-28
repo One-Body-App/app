@@ -25,7 +25,7 @@ const Settings = ({ navigation }: Props) => {
 
   const dispatch = useDispatch();
 
-  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const userData = useSelector((state: RootState) => state.auth.userData);
   const startRatingCounter = () => {
     Alert.alert(
@@ -82,7 +82,7 @@ const Settings = ({ navigation }: Props) => {
   }
 
   const { colors, dark } = useTheme();
-
+  console.log(userProfile);
   return (
     <View style={styles.container}>
       <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />

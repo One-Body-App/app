@@ -175,7 +175,7 @@ const SignupForm = ({ navigation }: Props) => {
         const token = await user.user.getIdToken();
         // user.user.updatePhoneNumber()
         data.userId = user.user.uid;
-        console.log('SIGN UP PARAMS ON SCREEN', data, token);
+
         // dispatch(setLoginData({ token: await user.user.getIdToken() }));
         dispatch(signUp.Request({ data: data, token: token }));
       })

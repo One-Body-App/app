@@ -30,7 +30,7 @@ import {
   getTwitterAuthToken,
 } from '@/src/Services/constants';
 import axios from 'axios';
-import { removeSocialAccountRequest } from '@/src/Redux/actions/AuthActions';
+import { getProfile, removeSocialAccountRequest } from '@/src/Redux/actions/AuthActions';
 
 type Props = StackScreenProps<RootStackParamList, 'InfluencerSettings'>;
 const twitterRedirectUrl = 'onebodyapp://influencer-settings/connect/twitter';
@@ -38,7 +38,7 @@ const instagramRedirectUrl = 'onebodyapp://influencer-settings/connect/instagram
 
 const InfluencerSettings = ({ navigation, route }: Props) => {
   const userToken = useSelector((state: RootState) => state.auth.userToken);
-  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
 
   const time = new Date().getTime() / 1000;
@@ -83,7 +83,11 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
       ).then((result) => {
         if (result && result.instagramTokenExpiresAtReal) {
           setInstagramTokenExpiresAtReal(parseInt(result.instagramTokenExpiresAtReal));
-          dispatch(getUserProfile({ token: userToken }));
+          dispatch(
+            getProfile.Request({
+              token: userToken,
+            })
+          );
         }
       });
     }
@@ -102,7 +106,11 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
       ).then((result) => {
         if (result && result.twitterTokenExpiresAtReal) {
           setTwitterTokenExpiresAtReal(parseInt(result.twitterTokenExpiresAtReal));
-          dispatch(getUserProfile({ token: userToken }));
+          dispatch(
+            getProfile.Request({
+              token: userToken,
+            })
+          );
         }
       });
     }

@@ -26,7 +26,7 @@ const TestimoniesComponent = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userProfile);
+  const user = useSelector((state) => state.auth.getProfileData);
   const testimonies = useSelector((state) => state.prayer.Testomnies);
   const currentPage = useSelector((state) => state.prayer.TestomniesPrayerCurrentPage);
   const totalPage = useSelector((state) => state.prayer.TestomniesPrayerTotalPage);

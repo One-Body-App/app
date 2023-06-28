@@ -15,22 +15,21 @@ interface UserData extends FirebaseAuthTypes.User {
 }
 
 type AuthReducer = {
-  signUpSuccess: boolean;
+  signUpSuccess?: boolean;
   signUpData: ArrayLike<any> | null | undefined;
-  sendVerificationEmailSuccess: boolean;
+  sendVerificationEmailSuccess?: boolean;
   sendVerificationEmailData: ArrayLike<any> | null | undefined;
-  getBadgesSuccess: boolean;
-  setUserBadgesSuccess: boolean;
-  getProfileSuccess: boolean;
+  getBadgesSuccess?: boolean;
+  setUserBadgesSuccess?: boolean;
+  getProfileSuccess?: boolean;
   getBadgesData: ArrayLike<any> | null | undefined;
-  getProfileData: ArrayLike<any> | null | undefined;
+  getProfileData: User | null | undefined;
   userToken: string;
   userProfile: User | null;
   userData: UserData | null;
   errorText: string;
   otpToken: string;
   loginErrors: string[];
-  firsrLaunch: boolean;
   FcmToken: string;
   error: string[] | null;
 };
@@ -42,9 +41,12 @@ const initialState: AuthReducer = {
   errorText: '',
   otpToken: '',
   loginErrors: [],
-  firsrLaunch: true,
   FcmToken: '',
   error: null,
+  signUpData: null,
+  sendVerificationEmailData: null,
+  getBadgesData: null,
+  getProfileData: null,
 };
 
 const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyAction) => {
@@ -95,7 +97,6 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case ACTIONS.FIRST_LUNCH:
       return {
         ...state,
-        firsrLaunch: action.data,
       };
     case ACTIONS.LOGOUT:
       return {
@@ -123,7 +124,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case SignUp.REQUEST:
       return {
         ...state,
-        signUpSuccess: null,
+        signUpSuccess: undefined,
         error: null,
       };
     case SignUp.SUCCESS:
@@ -144,7 +145,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case SendVerificationEmail.REQUEST:
       return {
         ...state,
-        sendVerificationEmailSuccess: null,
+        sendVerificationEmailSuccess: undefined,
         error: null,
       };
     case SendVerificationEmail.SUCCESS:
@@ -164,7 +165,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case GetBadges.REQUEST:
       return {
         ...state,
-        getBadgesSuccess: null,
+        getBadgesSuccess: undefined,
         error: null,
       };
     case GetBadges.SUCCESS:
@@ -183,7 +184,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case SetUserBadges.REQUEST:
       return {
         ...state,
-        setUserBadgesSuccess: null,
+        setUserBadgesSuccess: undefined,
         error: null,
       };
     case SetUserBadges.SUCCESS:
@@ -203,7 +204,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case GetProfile.REQUEST:
       return {
         ...state,
-        getProfileSuccess: null,
+        getProfileSuccess: undefined,
         error: null,
       };
     case GetProfile.SUCCESS:

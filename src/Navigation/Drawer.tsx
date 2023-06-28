@@ -28,7 +28,7 @@ import InviteFriend from '../screens/Main/InviteFriend';
 
 // const Drawer = createDrawerNavigator();
 // function NavHeader(props: DrawerContentComponentProps) {
-//   const user = useSelector((state: RootState) => state.auth.userProfile);
+//   const user = useSelector((state: RootState) => state.auth.getProfileData);
 //   const { dark } = useTheme();
 
 //   return (

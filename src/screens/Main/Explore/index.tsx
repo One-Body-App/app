@@ -48,7 +48,7 @@ const Explore = () => {
 
   const offset = useRef(new Animated.Value(0)).current;
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const allusers = useSelector((state: RootState) => state.user.allUser);
 
   // const [subscribe, setSubscibe] = useState<string[]>(user?.following ?? []);

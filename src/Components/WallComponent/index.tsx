@@ -28,7 +28,7 @@ const WallComponent = ({ navigation }: any) => {
   const dispatch = useDispatch();
   //const navigation = useNavigation();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const prayers: any = useSelector((state: RootState) => state.prayer.prayers);
   const currentPage = useSelector((state: RootState) => state.prayer.ALLPrayerCurrentPage);
   const totalPage = useSelector((state: RootState) => state.prayer.ALLPrayerTotalPage);

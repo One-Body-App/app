@@ -20,7 +20,7 @@ import Toast from 'react-native-simple-toast';
 const PrayerSocialsHome = ({ item, color }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.userProfile);
+  const user = useSelector((state) => state.auth.getProfileData);
   const prayers = useSelector((state) => state.prayer.prayersLive);
 
   const handelLike = async (id, type) => {

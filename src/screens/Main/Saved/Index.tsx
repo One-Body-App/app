@@ -22,7 +22,7 @@ import { DrawerScreenProps } from '@react-navigation/drawer';
 type Props = DrawerScreenProps<RootStackParamList, 'Saved'>;
 
 const Saved = ({ navigation }: Props) => {
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const dispatch = useDispatch();
 

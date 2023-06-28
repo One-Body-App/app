@@ -23,8 +23,8 @@ import axios from 'axios';
 
 const IS_STAGING = true;
 
-//export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
-export const BASE_URL = IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
+export const BASE_URL = __DEV__ ? DEV_BASE_URL : IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
+// export const BASE_URL = IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 
 export const PRIVACY_POLICY_URL = _PRIVACY_POLICY_URL;
 
@@ -142,7 +142,7 @@ export const getInstagramAuthToken = async (
 
     if (result && result.data?.access_token) {
       InAppBrowser.closeAuth();
-      console.log(result.data);
+
       return {
         instagramTokenExpiresAt: result.data?.expiresAt,
         instagramTokenExpiresAtReal: result.data?.expiresAtReal,
@@ -193,7 +193,6 @@ export const getTwitterAuthToken = async (
       };
     }
   } catch (error: any) {
-    console.log(error.text);
     if (error.response) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx

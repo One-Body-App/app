@@ -31,7 +31,7 @@ type Props = DrawerScreenProps<RootStackParamList, 'Channel'>;
 const Chanel = ({ navigation }: Props) => {
   const subscribes = useSelector((state: RootState) => state.user.userSubscribes);
   const [show, setShow] = useState(false);
-  const user = useSelector((state: RootState) => state.auth.userProfile);
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const [showSubscription, setShowSubscription] = useState(false);
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);

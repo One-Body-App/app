@@ -25,7 +25,7 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
   const { reason } = route.params;
 
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
   const toast = useToast();
   const { colors } = useTheme();
