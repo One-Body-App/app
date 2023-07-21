@@ -119,7 +119,6 @@ function* getInterestsSaga({ params }) {
       token: params?.token,
     });
     if (res?.status == 200) {
-      console.log('INTEREST DATA FROM API', res);
       yield put(getInterests.Success(res));
     } else yield put(getInterests.Failed(res?.response));
   } catch (e) {

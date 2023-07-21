@@ -160,6 +160,7 @@ const App = () => {
     //   'ny6aLGLinweALR8qvzeoql7EAo1YpFW8',
     //   '6im7AfpfISANDuQOXekDDaEEMBMrhDxPgZPTkfHJ'
     // );
+
     SplashScreen.hide();
 
     const event = Linking.addEventListener('url', ({ url }) => handleDynamicLink(url));

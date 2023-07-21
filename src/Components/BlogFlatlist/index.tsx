@@ -69,7 +69,6 @@ const BlogFlatlist = ({
 
       setRefreshing(false);
     } catch (e: any) {
-      console.log(e, 'err', 'donedone');
       setLoadingMore(false);
       setRefreshing(false);
     }

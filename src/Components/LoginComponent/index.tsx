@@ -411,8 +411,15 @@ const LoginComponent: FC<Props> = ({
       const { identityToken, nonce } = appleAuthRequestResponse;
       const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
 
-      // Sign the user in with the credential
-      return auth().signInWithCredential(appleCredential);
+      const credentialState = await appleAuth.getCredentialStateForUser(
+        appleAuthRequestResponse.user
+      );
+
+      if (credentialState === appleAuth.State.AUTHORIZED) {
+        const userCredentials = await auth().signInWithCredential(appleCredential);
+
+        processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+      }
     } catch (error: any) {
       if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
     }
@@ -780,7 +787,7 @@ const LoginComponent: FC<Props> = ({
           </>
         )}
 
-        {enabledLoginProviders &&
+        {/* {enabledLoginProviders &&
         enabledLoginProviders?.includes('facebook.com') &&
         enabledLoginProviders?.includes('password') ? (
           <View style={{ paddingHorizontal: 10, flex: 1 }}>
@@ -815,7 +822,7 @@ const LoginComponent: FC<Props> = ({
               />
             ) : null}
           </>
-        )}
+        )} */}
 
         {enabledLoginProviders &&
         enabledLoginProviders?.includes('twitter.com') &&

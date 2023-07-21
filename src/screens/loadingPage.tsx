@@ -102,7 +102,7 @@ const LoadingPage = ({ navigation }: Props) => {
       navigation.replace('Bottombar', { tabs: 'Home' });
     }
   }, [isLoadedRecentBlog]);
-
+  console.log('er');
   useEffect(() => {
     if (token) {
       // getSocialPosts();

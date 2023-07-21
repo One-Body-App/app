@@ -2,6 +2,8 @@ import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { ApiCall } from '@/src/Services/api';
 import { BASE_URL } from './constants';
 import axios from 'axios';
+import { loginSocialRequest } from '../Redux/actions/AuthActions';
+import { Dispatch } from '@reduxjs/toolkit';
 
 export const processLogin = async (
   userCredentials: FirebaseAuthTypes.UserCredential,
@@ -74,4 +76,45 @@ export const getTwitterLoginToken = async (
   const token = result.data?.oAuthToken;
 
   return token;
+};
+
+export const socialLogin = (
+  newUserCredentials: FirebaseAuthTypes.UserCredential | null,
+  dispatch: Dispatch<any>,
+  data: {
+    accountType?: string | null;
+    token: string;
+    seterror: React.Dispatch<any>;
+    gotoSignup: Function;
+    sendFcm: Function;
+  }
+) => {
+  if (newUserCredentials) {
+    const emailParts = newUserCredentials?.user.email?.split('@');
+    let username = newUserCredentials?.user.email?.replace('@', '');
+
+    if (emailParts && emailParts[0]) {
+      username = emailParts[0] + new Date().getTime();
+    }
+
+    const dataToSend = {
+      email: newUserCredentials?.user.email,
+      name: newUserCredentials?.user.displayName,
+      socialData: newUserCredentials?.additionalUserInfo,
+      userId: newUserCredentials.user.uid,
+      username,
+
+      accountType: data.accountType,
+      token: data.token,
+    };
+
+    dispatch(
+      loginSocialRequest({
+        dataToSend,
+        seterror: data.seterror,
+        gotoSignup: data.gotoSignup,
+        sendFcm: data.sendFcm,
+      })
+    );
+  }
 };
