@@ -95,7 +95,7 @@ const Main = () => {
   }, [loader]);
 
   useEffect(() => {
-    if (initializing && authState.getProfileSuccess) setInitializing(false);
+    if (initializing && authState.getProfileSuccess != undefined) setInitializing(false);
   }, [authState.getProfileSuccess]);
 
   const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
@@ -150,7 +150,7 @@ const Main = () => {
   //     setInitializing(false);
   //   }
   // }, [authState.getProfileSuccess]);
-  console.log(authState);
+
   const linking: LinkingOptions<RootStackParamList> = {
     prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
     config: {

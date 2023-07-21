@@ -12,7 +12,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { ApiCall } from '@/src/Services/api';
-import { getUserProfile, setUserDataNotifications } from '@/src/Redux/actions/UserAction';
+import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
 import { setProfile } from '@/src/Redux/actions/AuthActions';
 import { useTheme } from '@react-navigation/native';
@@ -36,41 +36,7 @@ const NotificationSettings = ({ navigation }: Props) => {
   });
   const { colors } = useTheme();
 
-  // const getUserProfile = async () => {
-  // const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
-  //   id: 'loadig',
-  //   placement: 'top',
-  //   style: {
-  //     backgroundColor: colors.background,
-  //   },
-  // });
-  //   try {
-  //     const res = await ApiCall({
-  //       route: 'user/my-profile',
-  //       token: token,
-  //       verb: 'get',
-  //     });
-
-  //     if (res?.status == 200) {
-  //       dispatch(setProfile({ token, ...res.response }));
-  //       setNotificationSwitch({
-  //         pushNotificationsEnabled: res.response?.pushNotificationsEnabled ?? false,
-  //         emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
-  //         subscribedToNewsletter: res.response?.subscribedToNewsletter ?? false,
-  //       });
-
-  //       setIsLoaded(true);
-  //     } else {
-  //       toast.hide(toastId);
-  //     }
-  //   } catch (e) {
-  //     toast.hide(toastId);
-
-  //     console.log(e);
-  //   }
-  // };
-
-  useEffect(() => {
+  const getUserProfile = async () => {
     const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
       id: 'loadig',
       placement: 'top',
@@ -78,9 +44,35 @@ const NotificationSettings = ({ navigation }: Props) => {
         backgroundColor: colors.background,
       },
     });
+    try {
+      const res = await ApiCall({
+        route: 'user/my-profile',
+        token: token,
+        verb: 'get',
+      });
 
-    dispatch(getUserProfile({ token }));
-    toast.hide(toastId);
+      if (res?.status == 200) {
+        dispatch(setProfile({ token, ...res.response }));
+        setNotificationSwitch({
+          pushNotificationsEnabled: res.response?.pushNotificationsEnabled ?? false,
+          emailNotificationsEnabled: res.response?.emailNotificationsEnabled ?? false,
+          subscribedToNewsletter: res.response?.subscribedToNewsletter ?? false,
+        });
+
+        setIsLoaded(true);
+        toast.hide(toastId);
+      } else {
+        toast.hide(toastId);
+      }
+    } catch (e) {
+      toast.hide(toastId);
+
+      console.log(e);
+    }
+  };
+
+  useEffect(() => {
+    getUserProfile();
   }, []);
 
   useEffect(() => {
@@ -93,6 +85,7 @@ const NotificationSettings = ({ navigation }: Props) => {
     toast.hide('loading');
     const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
       id: 'loadingB',
+      placement: 'top',
       style: {
         backgroundColor: colors.background,
       },

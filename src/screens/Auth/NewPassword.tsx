@@ -17,6 +17,8 @@ import { useDispatch } from 'react-redux';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import Toast from 'react-native-simple-toast';
 import GoBackIcon from '@/src/Components/GoBackIcon';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 const NewPassword = ({ navigation, route }) => {
   const { email } = route.params;
@@ -32,7 +34,7 @@ const NewPassword = ({ navigation, route }) => {
     passwordErrorC: '',
   });
 
-  const [error, seterror] = React.useState();
+  const [error, seterror] = React.useState<string>();
   const [hidePassN, setHidePassN] = useState(true);
   const [hidePassC, setHidePassC] = useState(true);
   const changeHandler = (type, value) => setState({ ...state, [type]: value });
@@ -45,23 +47,27 @@ const NewPassword = ({ navigation, route }) => {
 
     if (!passwordErrorC && !passwordErrorN) {
       dispatch(setLoader(true));
+      console.log(route.params.oobCode);
 
       if (passwordC == passwordN) {
         try {
-          const res = await ApiCall({
-            route: 'auth/reset-password',
-            params: { email: email, password: passwordN },
-            verb: 'patch',
-          });
-          if (res?.status == '200') {
+          const result = await auth().checkActionCode(route.params.oobCode);
+
+          if (result.operation == 'PASSWORD_RESET') {
+            await auth().confirmPasswordReset(route.params.oobCode, passwordN);
+
+            const res = await ApiCall({
+              route: 'auth/sendPasswordChangeConfirmation',
+              params: { email: result.data.email },
+              verb: 'post',
+            });
+
             navigation.navigate('Login');
             Toast.show('Password Reset Sucessfuly');
             dispatch(setLoader(false));
-          } else {
-            seterror(res?.data?.message);
-            dispatch(setLoader(false));
           }
         } catch (e) {
+          seterror('Expired code, please try again.');
           console.log('saga error -- ', e.toString());
         }
       } else {
@@ -73,7 +79,10 @@ const NewPassword = ({ navigation, route }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <GeneralStatusBar
         backgroundColor="white"
         barStyle="dark-content"
@@ -192,11 +201,11 @@ const NewPassword = ({ navigation, route }) => {
 
         <GoBackIcon color={'white'} />
       </LinearGradient>
-    </View>
+    </KeyboardAwareScrollView>
   );
 };
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
+  container: {},
   options: {
     justifyContent: 'center',
     alignItems: 'center',

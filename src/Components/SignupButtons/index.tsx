@@ -99,7 +99,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
       if (credentialState === appleAuth.State.AUTHORIZED) {
         const userCredentials = await auth().signInWithCredential(appleCredential);
 
-        // processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+        processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
       }
     } catch (error: any) {
       if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
@@ -226,7 +226,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
           wrapperBtnStyle={{ width: '100%' }}
         />
-        <Button
+        {/* <Button
           disabled={disabled}
           text={'Sign up with Facebook'}
           leftIcon={<Facebook style={{ marginLeft: 5, marginRight: 10 }} fill="#1877f2" />}
@@ -242,7 +242,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
 
             paddingVertical: 10,
           }}
-        />
+        /> */}
 
         <Button
           disabled={disabled}
