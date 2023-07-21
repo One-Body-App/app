@@ -675,7 +675,7 @@ const EditProfile = ({ navigation }: Props) => {
                   if (location) data.append('location', location?.address);
 
                   dispatch(setLoader(true));
-                  console.log(data);
+
                   if (user?.accountType == 'individual') {
                     dispatch(profileUpdate({ data, token, accountType: 'individual', go }));
                   } else {
