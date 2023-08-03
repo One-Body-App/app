@@ -10,7 +10,7 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
-import moment from 'moment';
+
 import Modal from 'react-native-modal';
 import { Divider, RadioButton } from 'react-native-paper';
 import Foundation from 'react-native-vector-icons/Foundation';
@@ -182,7 +182,7 @@ const Notification = ({ navigation }) => {
                     <Text numberOfLines={2} style={styles.paragraph}>
                       {item?.description}
                     </Text>
-                    <Text style={styles.Time}>{moment(item?.createdAt).format('YYYY-MM-DD')}</Text>
+                    {/* <Text style={styles.Time}>{moment(item?.createdAt).format('YYYY-MM-DD')}</Text> */}
                   </View>
                   <View style={styles.active} />
                 </View>
