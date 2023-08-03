@@ -83,3 +83,6 @@ android/app/release/*
 .metro-health-check*
 
 .env
+
+# testing
+/coverage

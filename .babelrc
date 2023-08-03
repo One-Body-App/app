@@ -29,6 +29,7 @@
           "@/components": "./src/Components",
           "@/constants": "./src/constants",
           "@/navigation": "./src/Navigation",
+          "@/navigator": "./src/navigator",
           "@/redux": "./src/Redux",
           "@/screens": "./src/screens",
           "@/services": "./src/Services"

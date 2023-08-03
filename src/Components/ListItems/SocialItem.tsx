@@ -193,7 +193,9 @@ const SocialItem = ({
                 @
                 {item?.source == 'twitter'
                   ? item?.userData?.twitterHandler
-                  : item?.userData?.instagramHandler}
+                  : item?.source == 'instagram'
+                  ? item?.userData?.instagramHandler
+                  : item?.userData?.username}
               </Text>
             </View>
           </TouchableOpacity>
@@ -208,9 +210,11 @@ const SocialItem = ({
             <Text>
               {item?.source == 'instagram' ? (
                 <Instagram height={getHeight(2.5)} fill="#00acee" />
-              ) : (
+              ) : null}
+
+              {item?.source == 'twitter' ? (
                 <Twitter height={getHeight(2.5)} fill="#00acee" />
-              )}
+              ) : null}
             </Text>
           </TouchableOpacity>
         </View>
