@@ -16,18 +16,31 @@ import InstagramFlatlist from '@/components/InstagramFlatlist';
 import Selected from '@/assets/svg/Selected.svg';
 import { getProfile, getBadges, setUserBadges } from '@/redux//actions/AuthActions';
 import ImageModal from 'react-native-image-modal';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { Badge } from '@/utils/types';
 import { OpenURLButton } from '@/src/Services/constants';
+import {
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+  MyProfileStackParamsList,
+} from '@/src/navigator/types';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
 type Route = {
   key: string;
   title: string;
 };
-type Props = StackScreenProps<RootStackParamList, 'MyProfile'>;
+type Props = CompositeScreenProps<
+  StackScreenProps<MyProfileStackParamsList, 'MyProfile'>,
+  CompositeScreenProps<
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
+    BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
+  >
+>;
 
 const MyProfile = ({ navigation }: Props) => {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -126,7 +139,7 @@ const MyProfile = ({ navigation }: Props) => {
 
   useEffect(() => {
     if (authState?.getBadgesSuccess == false) {
-      Toast.show('Unable to get badges at this time!');
+      Toast.show('Unable to get badges at this time!', Toast.LONG);
     }
   }, [authState?.getBadgesSuccess]);
 
@@ -134,7 +147,7 @@ const MyProfile = ({ navigation }: Props) => {
     if (authState?.setUserBadgesSuccess == true) {
       dispatch(getProfile.Request({ token: token, accountType: user?.accountType }));
     } else if (authState?.setUserBadgesSuccess == false) {
-      Toast.show('Unable to set badges at this time!');
+      Toast.show('Unable to set badges at this time!', Toast.LONG);
     }
   }, [authState?.setUserBadgesSuccess]);
 
@@ -191,7 +204,7 @@ const MyProfile = ({ navigation }: Props) => {
                           if (selectedBadges.length < 3) {
                             setSelectedBadges([...selectedBadges, item]);
                           } else {
-                            Toast.show('You cannot select more then 3 badges!');
+                            Toast.show('You cannot select more then 3 badges!', Toast.LONG);
                           }
                         }
                       }

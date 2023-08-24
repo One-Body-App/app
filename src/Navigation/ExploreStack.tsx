@@ -1,8 +1,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import Explore from '../screens/Main/Explore';
+import Explore from '../screens/main/explore';
 
-import UserProfile from '../screens/Main/UserProfile';
+import UserProfile from '../screens/main/userProfile';
 
 const Stack = createNativeStackNavigator();
 const ExploreStack = () => {

@@ -13,15 +13,16 @@ export const button: Record<ButtonType, ViewStyle> = {
     padding: Spacing.spacing.x10,
     borderRadius: Outlines.borderRadius.button,
     backgroundColor: Colors.primarySapphire.brand,
+    paddingVertical: 15,
   },
   outline: {
     alignItems: 'center',
-    alignSelf: 'center',
     justifyContent: 'center',
     padding: Spacing.spacing.x10,
     borderRadius: Outlines.borderRadius.button,
-    borderColor: Colors.primarySapphire.brand,
+    borderColor: Colors.neutral[800],
     borderWidth: 1,
+    paddingVertical: 15,
   },
 };
 

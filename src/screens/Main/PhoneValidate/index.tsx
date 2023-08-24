@@ -33,7 +33,7 @@ const PhoneValidate = ({ navigation }) => {
       });
       if (res.status == '200') {
         dispatch(setLoader(false));
-        Toast.show('Phone number Verified Sucessfuly');
+        Toast.show('Phone number Verified Sucessfuly', Toast.LONG);
         // dispatch(getProfile({ token, role: user?.role }));
         navigation.navigate('Bootombar');
       } else {

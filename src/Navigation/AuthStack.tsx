@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import ConfirmPassword from '../screens/Auth/ConfirmPassword';
 
 import NewPassword from '../screens/Auth/NewPassword';
-import PhoneValidateOtp from '../screens/Main/PhoneValidateOtp';
+import PhoneValidateOtp from '../screens/main/PhoneValidateOtp';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import PasswordResetOtp from '../screens/Auth/PasswordResetOtp';
 
-import PrivacyPolicy from '../screens/Main/PrivacyPolicy';
-import EndUserAgrement from '../screens/Main/EndUserAgrement';
-import Login from '../screens/Auth/Login';
-import Signup from '../screens/Auth/Signup';
+import PrivacyPolicy from '../screens/main/PrivacyPolicy';
+import EndUserAgrement from '../screens/main/EndUserAgrement';
+import Login from '../screens/login';
+import Signup from '../screens/signup';
 import AccountType from '../screens/Auth/AccountType';
-import SignupForm from '../screens/Auth/SignupForm';
-import ForgotPassword from '../screens/Auth/ForgetPassword';
+import SignupForm from '../screens/signupForm';
+import ForgotPassword from '../screens/forgotPassword';
 
 const Stack = createNativeStackNavigator();
 

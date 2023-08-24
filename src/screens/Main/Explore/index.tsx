@@ -1,4 +1,9 @@
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import {
+  CompositeScreenProps,
+  NavigationProp,
+  useNavigation,
+  useTheme,
+} from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   StyleSheet,
@@ -39,12 +44,29 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import Modal from 'react-native-modal';
 import { Interest, User } from '@/utils/types';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { StackScreenProps } from '@react-navigation/stack';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import {
+  ExploreStackParamsList,
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+} from '@/src/navigator/types';
 
-type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
+// type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
-const Explore = () => {
+type Props = CompositeScreenProps<
+  StackScreenProps<ExploreStackParamsList, 'Explore'>,
+  CompositeScreenProps<
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
+    BottomTabScreenProps<MainBottomStackParamsList, 'ExploreTab'>
+  >
+>;
+
+const Explore = ({ navigation }: Props) => {
   const dispatch = useDispatch();
-  const navigation = useNavigation<ScreenNavigationProp>();
+
+  // const navigation = useNavigation<ScreenNavigationProp>();
 
   const offset = useRef(new Animated.Value(0)).current;
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -190,7 +212,7 @@ const Explore = () => {
       } else {
         const result = following.filter((item) => item._id != id);
         // setSubscibe(result);
-        Toast.show(' ' + res?.response);
+        Toast.show(' ' + res?.response, Toast.LONG);
       }
     } catch (e) {
       console.log('saga sign up err --- ', e);
@@ -212,7 +234,7 @@ const Explore = () => {
       } else {
         const result = following.filter((item) => item._id != id);
         // setSubscibe(result);
-        Toast.show(' ' + res?.response);
+        Toast.show(' ' + res?.response, Toast.LONG);
       }
     } catch (e) {
       console.log('saga sign up err --- ', e);

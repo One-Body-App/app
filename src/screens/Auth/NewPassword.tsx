@@ -19,9 +19,12 @@ import Toast from 'react-native-simple-toast';
 import GoBackIcon from '@/src/Components/GoBackIcon';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { StackScreenProps } from '@react-navigation/stack';
 
-const NewPassword = ({ navigation, route }) => {
-  const { email } = route.params;
+type Props = StackScreenProps<RootNonUserStackParamList, 'NewPassword'>;
+
+const NewPassword = ({ navigation, route }: Props) => {
   const dispatch = useDispatch();
   const inputRefs = {
     passwordN: useRef(null),
@@ -63,7 +66,7 @@ const NewPassword = ({ navigation, route }) => {
             });
 
             navigation.navigate('Login');
-            Toast.show('Password Reset Sucessfuly');
+            Toast.show('Password Reset Sucessfuly', Toast.LONG);
             dispatch(setLoader(false));
           }
         } catch (e) {

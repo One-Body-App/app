@@ -10,6 +10,7 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import Video from 'react-native-video';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
+import { AccountType } from '@/utils/types';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type LinkData = {
@@ -43,7 +44,7 @@ const SocialItem = ({
         siteName?: string;
         image?: { height: string; type: string; url: string; width: string };
         description?: string;
-      }
+      },
     ];
     mediaType?: string;
     permalink?: string;
@@ -51,7 +52,7 @@ const SocialItem = ({
       _id: string;
       name: string;
       username: string;
-      accountType: 'individual' | 'organization';
+      accountType: AccountType;
       profileImage: string;
       twitterHandler?: string;
       instagramHandler?: string;

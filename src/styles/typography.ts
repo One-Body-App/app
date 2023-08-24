@@ -53,6 +53,13 @@ const caroFontFamily = Platform.select({
   android: 'caro',
 });
 
+const poppingsFontFamily = Platform.select({
+  ios: 'poppings',
+  android: 'poppings',
+});
+
+const defaultFontFamily = poppingsFontFamily;
+
 type LineHeight = 'x1' | 'x2' | 'x3' | 'x4' | 'x5' | 'x6' | 'x7';
 export const lineHeight: Record<LineHeight, TextStyle> = {
   x1: {
@@ -81,28 +88,28 @@ export const lineHeight: Record<LineHeight, TextStyle> = {
 type Header = 'h1' | 'h2' | 'h3' | 'h4';
 export const header: Record<Header, TextStyle> = {
   h1: {
-    ...fontSize.x7,
-    ...lineHeight.x7,
-    ...fontWeight.semibold,
-    fontFamily: caroFontFamily,
-  },
-  h2: {
     ...fontSize.x6,
     ...lineHeight.x6,
-    ...fontWeight.semibold,
-    fontFamily: caroFontFamily,
+    ...fontWeight.medium,
+    fontFamily: defaultFontFamily,
   },
-  h3: {
+  h2: {
     ...fontSize.x5,
     ...lineHeight.x5,
-    ...fontWeight.semibold,
-    fontFamily: caroFontFamily,
+    ...fontWeight.medium,
+    fontFamily: defaultFontFamily,
   },
-  h4: {
+  h3: {
     ...fontSize.x4,
     ...lineHeight.x4,
-    ...fontWeight.semibold,
-    fontFamily: caroFontFamily,
+    ...fontWeight.medium,
+    fontFamily: defaultFontFamily,
+  },
+  h4: {
+    ...fontSize.x3,
+    ...lineHeight.x3,
+    ...fontWeight.medium,
+    fontFamily: defaultFontFamily,
   },
 };
 
@@ -112,13 +119,13 @@ export const subheader: Record<Subheader, TextStyle> = {
     ...fontSize.x2,
     ...lineHeight.x2,
     ...fontWeight.regular,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
   M: {
     ...fontSize.x2,
     ...lineHeight.x2,
     ...fontWeight.medium,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
 };
 
@@ -128,48 +135,55 @@ export const body: Record<Body, TextStyle> = {
     ...fontSize.x1,
     ...lineHeight.x1,
     ...fontWeight.regular,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
   x1M: {
     ...fontSize.x1,
     ...lineHeight.x1,
     ...fontWeight.medium,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
   x2: {
     ...fontSize.x2,
     ...lineHeight.x2,
     ...fontWeight.regular,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
   x2M: {
     ...fontSize.x2,
     ...lineHeight.x2,
     ...fontWeight.medium,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
   x3: {
     ...fontSize.x3,
     ...lineHeight.x3,
     ...fontWeight.regular,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
   x3M: {
     ...fontSize.x3,
     ...lineHeight.x3,
     ...fontWeight.medium,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
   x4: {
     ...fontSize.x4,
     ...lineHeight.x4,
     ...fontWeight.regular,
-    fontFamily: caroFontFamily,
+    fontFamily: defaultFontFamily,
   },
 };
 type Caro = 'base';
 export const caro: Record<Caro, TextStyle> = {
   base: {
     fontFamily: caroFontFamily,
+  },
+};
+
+type Poppings = 'base';
+export const poppings: Record<Poppings, TextStyle> = {
+  base: {
+    fontFamily: poppingsFontFamily,
   },
 };

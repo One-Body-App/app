@@ -68,7 +68,7 @@ const SubscribeFlatlist = ({
       } else {
         const result = subscribe.filter((item) => item != id);
         setSubscibe(result);
-        Toast.show(' ' + res?.response?.message);
+        Toast.show(' ' + res?.response?.message, Toast.LONG);
       }
     } catch (e) {
       console.log('saga sign up err --- ', e);

@@ -66,7 +66,7 @@ export type User = {
   isProfileCompleted: boolean;
   name: string;
   profileImage: string;
-  accountType: 'individual' | 'organization';
+  accountType: AccountType;
   updatedAt: string;
   username: string;
   bio?: string;
@@ -120,7 +120,12 @@ export type ArticleType = {
     _id: string;
     name: string;
     username: string;
-    accountType: 'individual' | 'organization';
+    accountType: AccountType;
     profileImage: string;
   };
 };
+
+export enum AccountType {
+  individual = 'individual',
+  organization = 'organization',
+}

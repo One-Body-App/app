@@ -10,7 +10,7 @@ import { useSelector } from 'react-redux';
 
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
 import SocialItem from '@/src/Components/ListItems/SocialItem';
 import ArticleItem from '@/src/Components/ListItems/ArticleItem';
@@ -21,6 +21,14 @@ import { styles as globalStyle } from '@/src/Components/ListItems/style';
 import { useScrollToTop } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/Navigation/types';
+import { StackScreenProps } from '@react-navigation/stack';
+import {
+  HomeStackParamsList,
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+} from '@/src/navigator/types';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
 enum FeedTypes {
   All = 'all',
@@ -35,7 +43,14 @@ type feedOptions = {
 };
 
 const feedTypes: FeedTypes[] = [FeedTypes.All, FeedTypes.News, FeedTypes.Social, FeedTypes.Blog];
-type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
+
+type Props = CompositeScreenProps<
+  StackScreenProps<HomeStackParamsList, 'Home'>,
+  CompositeScreenProps<
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
+    BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
+  >
+>;
 
 const Home = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -85,7 +100,6 @@ const Home = ({ navigation }: Props) => {
   const getFeedData = async (type: FeedTypes, pageNumber: number) => {
     setIsLoading(true);
     try {
-      console.log(`user/get-following-feed/${type}/${pageNumber}`);
       const res = await ApiCall({
         route: `user/get-following-feed/${type}/${pageNumber}`,
         token,

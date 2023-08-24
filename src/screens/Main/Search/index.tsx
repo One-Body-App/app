@@ -15,14 +15,28 @@ import { BASE_URL } from '@/src/Services/constants';
 import { ApiCall } from '@/src/Services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import ArticleItem from '@/src/Components/ListItems/ArticleItem';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import OptionsModal from '@/src/Components/ListItems/OptionsModal';
 import { ArticleType } from '@/utils/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  HomeStackParamsList,
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+} from '@/src/navigator/types';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { StackScreenProps } from '@react-navigation/stack';
 
-type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;
+// type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;
+type Props = CompositeScreenProps<
+  StackScreenProps<HomeStackParamsList, 'Search'>,
+  CompositeScreenProps<
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
+    BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
+  >
+>;
 
 const Search = ({ navigation }: Props) => {
   const [input, setInput] = useState('');
@@ -166,7 +180,7 @@ const Search = ({ navigation }: Props) => {
             />
             // </View>
           )}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id ?? Date.now().toString()}
         />
       </View>
       {/* <TabView

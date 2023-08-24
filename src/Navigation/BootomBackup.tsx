@@ -4,15 +4,15 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import Home from '../screens/Main/Home';
-import Explore from '../screens/Main/Explore';
-import Message from '../screens/Main/Message';
+import Home from '../screens/main/home';
+import Explore from '../screens/main/explore';
+import Message from '../screens/main/Message';
 
 import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MessageScreens from './messageStack';
 
-import MyProfile from '../screens/Main/MyProfile';
+import MyProfile from '../screens/main/MyProfile';
 
 const Tab = createBottomTabNavigator();
 function Bottom({ navigation }) {

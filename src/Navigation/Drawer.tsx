@@ -10,13 +10,13 @@
 // import { View, Image, Text, TouchableOpacity } from 'react-native';
 // import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-import Notification from '../screens/Main/Notification';
-import Saved from '../screens/Main/Saved/Index';
-import Chanel from '../screens/Main/Chanel';
-import Prayer from '../screens/Main/Prayer';
+import Notification from '../screens/main/notifications';
+import Saved from '../screens/main/saved/Index';
+import Chanel from '../screens/main/connections';
+import Prayer from '../screens/main/Prayer';
 
-import Help from '../screens/Main/Help';
-import InviteFriend from '../screens/Main/InviteFriend';
+import Help from '../screens/main/Help';
+import InviteFriend from '../screens/main/InviteFriend';
 // import ImageModal from 'react-native-image-modal';
 // import { useSelector } from 'react-redux';
 // import ZendeskChat from 'react-native-zendesk-chat';
@@ -271,7 +271,7 @@ import Bottom from './Bottom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '../Services/constants';
-import Setting from '../screens/Main/Setting';
+import Setting from '../screens/main/settings';
 import HomeStack from './HomeStack';
 
 const DrawerNavigation = createDrawerNavigator();

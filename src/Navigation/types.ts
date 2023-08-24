@@ -3,7 +3,7 @@ export type RootStackParamList = {
     tabs?: string;
   };
   Explore: undefined;
-  Channel: undefined;
+  Connections: undefined;
   Login: {
     state?: string;
     code?: string;
@@ -13,6 +13,7 @@ export type RootStackParamList = {
   };
   Bootombar: undefined;
   LoadingPage: undefined;
+
   InfluencerStepOne: undefined;
   InfluencerStepTwo: {
     code?: string;

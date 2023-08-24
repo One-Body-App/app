@@ -26,8 +26,22 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import Animated from 'react-native-reanimated';
 import SubscribeFlatlist from '@/src/Components/SubscribeFlatlist';
 import { getuserAll, getuserGet } from '../../../Redux/actions/UserAction';
+import { CompositeScreenProps } from '@react-navigation/native';
+import {
+  ExploreStackParamsList,
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+} from '@/src/navigator/types';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
-type Props = StackScreenProps<RootStackParamList, 'UserProfile'>;
+type Props = CompositeScreenProps<
+  StackScreenProps<ExploreStackParamsList, 'UserProfile'>,
+  CompositeScreenProps<
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
+    BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
+  >
+>;
 
 const UserProfile = ({ navigation, route }: Props) => {
   const { id } = route.params;
@@ -216,14 +230,14 @@ const UserProfile = ({ navigation, route }: Props) => {
         verb: 'patch',
       });
       if (res?.status == 200) {
-        Toast.show('unfollowed successfully.');
+        Toast.show('unfollowed successfully.', Toast.LONG);
         dispatch(getuserAll({ token: token }));
         dispatch(getuserGet({ token: token }));
       } else {
-        Toast.show('Error unfollowing, please try again later.');
+        Toast.show('Error unfollowing, please try again later.', Toast.LONG);
       }
     } catch (e) {
-      Toast.show('Error unfollowing, please try again later.');
+      Toast.show('Error unfollowing, please try again later.', Toast.LONG);
     }
   };
 
@@ -237,12 +251,12 @@ const UserProfile = ({ navigation, route }: Props) => {
       if (res?.status == 200) {
         dispatch(getuserAll({ token: token }));
         dispatch(getuserGet({ token: token }));
-        Toast.show('Followed successfully.');
+        Toast.show('Followed successfully.', Toast.LONG);
       } else {
-        Toast.show('Error following, please try again later.');
+        Toast.show('Error following, please try again later.', Toast.LONG);
       }
     } catch (e) {
-      Toast.show('Error following, please try again later.');
+      Toast.show('Error following, please try again later.', Toast.LONG);
       console.log('Error subscribing --- ', e);
     }
   };
@@ -404,7 +418,7 @@ const UserProfile = ({ navigation, route }: Props) => {
       )}
       {direction == 'down' ? null : (
         <View style={styles.bottomView}>
-          {currentUser?.following.includes(user?._id) ? (
+          {user?._id && currentUser?.following.includes(user?._id) ? (
             <Button
               text={'Unfollow'}
               btnStyle={{
@@ -435,7 +449,7 @@ const UserProfile = ({ navigation, route }: Props) => {
                 letterSpacing: 0,
               }}
               onPress={() => {
-                handleSubscribe(user?._id);
+                if (user?._id) handleSubscribe(user?._id);
               }}
             />
           )}
