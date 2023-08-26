@@ -1,36 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View } from 'react-native';
 
-import LoginComponent from '@/components/LoginComponent';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
-import GradientHeader from '@/components/GradientHeader';
-import { appColor } from '../../constants';
+import LoginComponent from '@/src/components/LoginComponent';
+
 import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
-import GoBackIcon from '@/src/Components/GoBackIcon';
 
-import { useTheme } from '@react-navigation/native';
 import { RootNonUserStackParamList } from '@/src/navigator/types';
+import UserStepsLayout from '../layout/UserStepsLayout';
+import { useTheme } from '@react-navigation/native';
+import { Colors } from '@/src/styles';
 
 type Props = StackScreenProps<RootNonUserStackParamList, 'Login'>;
 
 const Login = ({ route, navigation }: Props) => {
   const loginProviders = ['password', 'google.com', 'facebook.com', 'twitter.com', 'apple'];
+  const { dark, colors } = useTheme();
 
   return (
-    <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor={appColor.StatusBarColor}
-        barStyle="light-content"
-        hidden={false}
-        translucent={true}
-      />
-
-      <GradientHeader
-        title="Log In"
-        left={<GoBackIcon color={'#FFF'} style={{ width: '100%', paddingHorizontal: 20 }} />}
-      />
-
+    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[600]}>
       <LoginComponent
         showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
         navigation={navigation}
@@ -38,7 +26,7 @@ const Login = ({ route, navigation }: Props) => {
         enabledLoginProviders={loginProviders}
         {...route.params}
       />
-    </View>
+    </UserStepsLayout>
   );
 };
 

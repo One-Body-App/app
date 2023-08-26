@@ -23,7 +23,7 @@ import ArticleItem from '../ListItems/ArticleItem';
 import { useTheme } from '@react-navigation/native';
 import { color } from 'react-native-reanimated';
 import OptionsModal from '../ListItems/OptionsModal';
-import { styles as globalStyle } from '@/src/Components/ListItems/style';
+import { styles as globalStyle } from '@/src/components/ListItems/style';
 
 const BlogFlatlist = ({
   currentUser,

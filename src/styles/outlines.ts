@@ -1,12 +1,13 @@
 import { ViewStyle, StyleSheet } from 'react-native';
 
-type BorderRadius = 'small' | 'base' | 'large' | 'max' | 'button';
+type BorderRadius = 'small' | 'base' | 'large' | 'max' | 'button' | 'card';
 export const borderRadius: Record<BorderRadius, number> = {
   small: 5,
-  base: 10,
+  base: 16,
   large: 20,
   max: 9999,
   button: 60,
+  card: 40,
 };
 
 type BorderWidth = 'hairline' | 'thin' | 'base' | 'thick';

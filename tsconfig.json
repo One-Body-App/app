@@ -14,7 +14,7 @@
       "@/utils/*": ["utils/*"],
       "@/src/*": ["src/*"],
       "@/assets/*": ["src/assets/*"],
-      "@/components/*": ["src/Components/*"],
+      "@/components/*": ["src/components/*"],
       "@/constants/*": ["src/constants/*"],
       "@/navigation/*": ["src/Navigation/*"],
       "@/navigator/*": ["src/navigator/*"],

@@ -3,15 +3,15 @@ import { Text, View, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 import { styles } from './styles';
-import Header from '@/components/Header';
-import Button from '@/components/Button';
+import Header from '@/src/components/Header';
+import Button from '@/src/components/Button';
 import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProfile } from '@/redux//actions/AuthActions';
 import Toast from 'react-native-simple-toast';
 import { getWidth } from '@/utils/ResponsiveFun';
 import { setLoader } from '@/redux//actions/GeneralActions';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 
 const PhoneValidate = ({ navigation }) => {

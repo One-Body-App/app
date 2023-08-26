@@ -12,7 +12,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import GoBackIcon from '@/src/Components/GoBackIcon';
+import GoBackIcon from '@/src/components/GoBackIcon';
 import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';

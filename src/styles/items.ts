@@ -7,5 +7,4 @@ export const card: ViewStyle = {
   padding: 22,
   borderRadius: 14,
   borderWidth: 1,
-  borderColor: Colors.neutral[700],
 };

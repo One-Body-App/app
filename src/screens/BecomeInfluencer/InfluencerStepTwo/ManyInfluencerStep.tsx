@@ -16,8 +16,8 @@ import SelectDropdown from 'react-native-select-dropdown';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/components/Header';
-import Button from '@/components/Button';
+import Header from '@/src/components/Header';
+import Button from '@/src/components/Button';
 import { styles } from './styles';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
@@ -25,7 +25,7 @@ import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const InfluencerStepTwo = ({ navigation }) => {

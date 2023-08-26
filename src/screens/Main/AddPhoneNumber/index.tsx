@@ -1,21 +1,21 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity, ImageBackground } from 'react-native';
 import React, { useRef, useState } from 'react';
 import { appColor, COLORS, THEME } from '../../constants';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import Button from '@/components/Button';
+import Button from '@/src/components/Button';
 import { TextInput } from 'react-native-paper';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { styles } from './styles';
-import Header from '@/components/Header';
+import Header from '@/src/components/Header';
 import { profileUpdate } from '@/redux//actions/AuthActions';
 
 const AddPhoneNumber = ({ navigation, route }) => {

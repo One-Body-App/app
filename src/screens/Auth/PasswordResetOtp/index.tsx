@@ -3,18 +3,18 @@ import { Text, View, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 import { styles } from './styles';
-import Header from '@/components/Header';
+import Header from '@/src/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/src/Services/api';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { setLoader } from '@/redux/actions/GeneralActions';
-import Button from '@/components/Button';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import Button from '@/src/components/Button';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import Logo from '@/src/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import GoBackIcon from '@/components/GoBackIcon';
+import GoBackIcon from '@/src/components/GoBackIcon';
 
 const PasswordResetOtp = ({ navigation, route }) => {
   const [error, seterror] = React.useState();

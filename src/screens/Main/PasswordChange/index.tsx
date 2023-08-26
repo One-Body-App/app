@@ -4,8 +4,8 @@ import { TextInput } from 'react-native-paper';
 
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Header from '@/components/Header';
-import Button from '@/components/Button';
+import Header from '@/src/components/Header';
+import Button from '@/src/components/Button';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,7 +15,7 @@ import { setLoader } from '@/redux//actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 import { useToast } from 'react-native-toast-notifications';
 
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { RootState } from '@/src/Redux/reducers/rootReducer';

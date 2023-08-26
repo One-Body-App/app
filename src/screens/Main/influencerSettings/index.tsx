@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Linking } from 'react-native';
 import { Text } from 'react-native-paper';
-import Button from '../../../Components/Button';
+import Button from '../../../components/Button';
 import auth from '@react-native-firebase/auth';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
-import Header from '@/components/Header';
+import Header from '@/src/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
@@ -16,7 +16,7 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { getUserProfile } from '@/src/Redux/actions/UserAction';
 
 import { useTheme } from '@react-navigation/native';
-import GoBackIcon from '@/src/Components/GoBackIcon';
+import GoBackIcon from '@/src/components/GoBackIcon';
 
 import {
   INSTAGRAM_APP_ID,

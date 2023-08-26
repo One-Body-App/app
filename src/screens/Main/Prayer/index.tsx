@@ -6,10 +6,10 @@ import { styles } from './styles';
 import LinearGradient from 'react-native-linear-gradient';
 import { SceneMap, TabView } from 'react-native-tab-view';
 
-import WallComponent from '@/components/WallComponent';
-import PrayersComponent from '@/components/PrayersComponent';
-import TestimoniesComponent from '@/components/TestimoniesComponent';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import WallComponent from '@/src/components/WallComponent';
+import PrayersComponent from '@/src/components/PrayersComponent';
+import TestimoniesComponent from '@/src/components/TestimoniesComponent';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import LogoHeader from '@/assets/svg/logo2.svg';
 
 const Prayer = ({ navigation }) => {

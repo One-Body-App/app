@@ -25,9 +25,9 @@ import Toast from 'react-native-simple-toast';
 import Icon from 'react-native-vector-icons/Entypo';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import AnimatedHeader from '@/components/AnimatedHeader';
-import Button from '@/components/Button';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import AnimatedHeader from '@/src/components/AnimatedHeader';
+import Button from '@/src/components/Button';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import {
   getuserAll,
   getuserGet,

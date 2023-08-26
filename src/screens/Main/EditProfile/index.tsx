@@ -11,7 +11,7 @@ import {
 import { Divider, Provider, TextInput, Text } from 'react-native-paper';
 import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Button from '@/components/Button';
+import Button from '@/src/components/Button';
 
 import {
   CameraOptions,
@@ -22,7 +22,7 @@ import {
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { profileUpdate } from '@/redux/actions/AuthActions';
-import ImagePickerModal from '@/components/ImagePickerModal';
+import ImagePickerModal from '@/src/components/ImagePickerModal';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import FastImage from 'react-native-fast-image';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
@@ -31,7 +31,7 @@ import Blog from '@/assets/svg/Blog.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 import { ApiCall } from '@/services/api';
 import ImagePicker from 'react-native-image-crop-picker';
-import GradientButton from '@/components/GradientButton';
+import GradientButton from '@/src/components/GradientButton';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -41,7 +41,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { getuserGet, getUserProfile } from '@/src/Redux/actions/UserAction';
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
-import MapBox, { MapSuggestion } from '@/src/Components/MapBox';
+import MapBox, { MapSuggestion } from '@/src/components/MapBox';
 
 type Props = StackScreenProps<RootStackParamList, 'EditProfile'>;
 

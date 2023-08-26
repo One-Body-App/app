@@ -12,12 +12,12 @@ import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
-import SocialItem from '@/src/Components/ListItems/SocialItem';
-import ArticleItem from '@/src/Components/ListItems/ArticleItem';
-import ActivityIndicatorContent from '@/src/Components/ActivityIndicatorContent';
+import SocialItem from '@/src/components/ListItems/SocialItem';
+import ArticleItem from '@/src/components/ListItems/ArticleItem';
+import ActivityIndicatorContent from '@/src/components/ActivityIndicatorContent';
 import { ArticleType } from '@/utils/types';
-import OptionsModal from '@/src/Components/ListItems/OptionsModal';
-import { styles as globalStyle } from '@/src/Components/ListItems/style';
+import OptionsModal from '@/src/components/ListItems/OptionsModal';
+import { styles as globalStyle } from '@/src/components/ListItems/style';
 import { useScrollToTop } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/Navigation/types';

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import LoginComponent from '@/components/LoginComponent';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
-import GradientHeader from '@/components/GradientHeader';
+import LoginComponent from '@/src/components/LoginComponent';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+import GradientHeader from '@/src/components/GradientHeader';
 import { appColor } from '../../constants';
 import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
-import GoBackIcon from '@/src/Components/GoBackIcon';
+import GoBackIcon from '@/src/components/GoBackIcon';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';

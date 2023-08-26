@@ -14,7 +14,7 @@ import { Text, TextInput } from 'react-native-paper';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import Button from '@/components/Button';
+import Button from '@/src/components/Button';
 import { styles } from './styles';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
@@ -22,7 +22,7 @@ import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';

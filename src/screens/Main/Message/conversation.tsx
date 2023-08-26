@@ -12,11 +12,11 @@ import {
   Button,
 } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Header from '@/components/Header';
+import Header from '@/src/components/Header';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';

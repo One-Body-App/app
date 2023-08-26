@@ -29,7 +29,6 @@ import ForgotPassword from '../screens/forgotPassword';
 import Login from '../screens/login';
 import NewPassword from '../screens/Auth/NewPassword';
 import Signup from '../screens/signup';
-import SignupForm from '../screens/signupForm';
 
 import Help from '../screens/main/Help';
 import IndividualSteps from '../screens/main/IndividualSteps';
@@ -60,6 +59,8 @@ import { spacing } from '../styles/spacing';
 import { Colors } from '../styles';
 import AccountType from '../screens/accountType';
 import FastImage from 'react-native-fast-image';
+import PasswordChange from '../screens/main/PasswordChange';
+import EmailChange from '../screens/main/EmailChange';
 
 const NonUserStack = createNativeStackNavigator<RootNonUserStackParamList>();
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
@@ -241,6 +242,7 @@ const Main = () => {
   const headerOptions: NativeStackNavigationOptions = {
     headerShadowVisible: false,
     headerTransparent: true,
+    headerBackTitleVisible: false,
     headerTitle() {
       return (
         <FastImage
@@ -321,13 +323,22 @@ const Main = () => {
         <NonUserStack.Navigator initialRouteName="Intro">
           <NonUserStack.Screen name="Intro" component={Intro} options={{ headerShown: false }} />
           <NonUserStack.Screen name="AccountType" component={AccountType} options={headerOptions} />
-          <NonUserStack.Screen name="Login" component={Login} options={{ headerShown: false }} />
-          <NonUserStack.Screen name="SignUp" component={Signup} options={{ headerShown: false }} />
+          <NonUserStack.Screen name="Login" component={Login} options={headerOptions} />
+          <NonUserStack.Screen name="SignUp" component={Signup} options={headerOptions} />
 
-          <NonUserStack.Screen name="SignupForm" component={SignupForm} />
-          <NonUserStack.Screen name="ForgotPassword" component={ForgotPassword} />
+          <NonUserStack.Screen
+            name="ForgotPassword"
+            component={ForgotPassword}
+            options={headerOptions}
+          />
+          <NonUserStack.Screen
+            name="PasswordChange"
+            component={PasswordChange}
+            options={headerOptions}
+          />
+          <NonUserStack.Screen name="EmailChange" component={EmailChange} options={headerOptions} />
 
-          <NonUserStack.Screen name="NewPassword" component={NewPassword} />
+          <NonUserStack.Screen name="NewPassword" component={NewPassword} options={headerOptions} />
 
           <NonUserStack.Screen
             name="ConfirmLogin"

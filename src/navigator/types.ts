@@ -155,6 +155,12 @@ export type OnboardingStackParamList = {
 export type RootNonUserStackParamList = {
   Intro: undefined;
   AccountType: undefined;
+  PasswordChange: {
+    setError: (errorText: string) => void;
+  };
+  EmailChange: {
+    setError: (errorText: string) => void;
+  };
   Login?: {
     state?: string;
     code?: string;
@@ -166,9 +172,9 @@ export type RootNonUserStackParamList = {
     oauth_token?: string;
     oauth_verifier?: string;
     showConfirmationEmailMessage?: boolean;
-    accountType: AccountType;
+    accountType?: AccountType;
   };
-  SignupForm: undefined;
+
   ForgotPassword: undefined;
 
   NewPassword: undefined;

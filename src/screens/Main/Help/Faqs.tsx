@@ -19,11 +19,11 @@ import DropDown from 'react-native-paper-dropdown';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/components/Header';
-import Button from '@/components/Button';
+import Header from '@/src/components/Header';
+import Button from '@/src/components/Button';
 import { styles } from './styles';
 import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 // import ZendeskChat from 'react-native-zendesk-chat';
 import { useSelector } from 'react-redux';
 

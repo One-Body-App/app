@@ -21,12 +21,12 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 
 import styles from './styles';
 
-import Button from '@/components/Button';
-import Header from '@/components/Header';
+import Button from '@/src/components/Button';
+import Header from '@/src/components/Header';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { ApiCall } from '@/services/api';
 import { useSelector } from 'react-redux';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { useTheme } from '@react-navigation/native';
 // create a component
 const Notification = ({ navigation }) => {

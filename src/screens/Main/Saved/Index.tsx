@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Text, View, Touchable, StatusBar, Image, FlatList, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
-import Header from '@/components/Header';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+import Header from '@/src/components/Header';
 
 import Save from '@/assets/svg/Save.svg';
 import { styles } from './styles';

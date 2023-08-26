@@ -35,7 +35,7 @@ import Login from '../screens/login';
 import NewPassword from '../screens/Auth/NewPassword';
 import PasswordResetOtp from '../screens/Auth/PasswordResetOtp';
 import Signup from '../screens/signup';
-import SignupForm from '../screens/signupForm';
+import SignupForm from '../screens/signup';
 import InfluencerStepOne from '../screens/BecomeInfluencer/InfluencerStepOne';
 import InfluencerSettings from '../screens/main/influencerSettings';
 import InfluencerStepThree from '../screens/BecomeInfluencer/InfluencerStepThree';

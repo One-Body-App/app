@@ -10,10 +10,10 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Button as ButtonPaper } from 'react-native-paper';
+import { StyledText } from './styled/Text';
 
 const Button = ({
   text,
-  content,
   leftIcon,
   RightIcon,
   btnTextStyle,
@@ -24,10 +24,6 @@ const Button = ({
   disabledBtnTextStyle,
   wrapperViewBtnStyle,
   wrapperBtnStyle,
-  paper,
-  mode,
-  textColor,
-  buttonColor,
 }: {
   text?: string;
   content?: ReactNode;
@@ -41,33 +37,8 @@ const Button = ({
   disabledBtnTextStyle?: StyleProp<TextStyle>;
   onPress: (event: GestureResponderEvent) => void;
   disabled?: boolean;
-  paper?: boolean;
-  mode?: 'text' | 'outlined' | 'contained' | 'elevated' | 'contained-tonal';
-  textColor?: string;
-  buttonColor?: string;
 }) => {
-  return paper ? (
-    <>
-      <ButtonPaper
-        mode={mode}
-        onPress={(event) => (onPress ? onPress(event) : null)}
-        disabled={disabled}
-        style={btnStyle ?? { marginVertical: 15, marginHorizontal: 13 }}
-        textColor={textColor}
-        buttonColor={buttonColor}
-        labelStyle={
-          btnTextStyle ?? {
-            paddingVertical: 7,
-            fontSize: getFontSize(2.1),
-            // fontFamily: 'Rubik-Medium',
-            letterSpacing: 1.25,
-          }
-        }
-      >
-        {text || content}
-      </ButtonPaper>
-    </>
-  ) : (
+  return (
     <View style={[{ flexDirection: 'row' }, wrapperViewBtnStyle]}>
       <TouchableOpacity
         activeOpacity={0.7}
@@ -77,13 +48,22 @@ const Button = ({
       >
         <View
           style={[
-            { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+            {
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
 
             wrapperBtnStyle,
           ]}
         >
           {leftIcon}
-          <Text style={disabled ? [disabledBtnTextStyle] : [btnTextStyle]}>{text}</Text>
+          {text ? (
+            <StyledText style={disabled ? [disabledBtnTextStyle] : [btnTextStyle]}>
+              {text}
+            </StyledText>
+          ) : null}
+
           {RightIcon}
         </View>
       </TouchableOpacity>

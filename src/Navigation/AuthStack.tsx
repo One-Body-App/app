@@ -11,7 +11,7 @@ import EndUserAgrement from '../screens/main/EndUserAgrement';
 import Login from '../screens/login';
 import Signup from '../screens/signup';
 import AccountType from '../screens/Auth/AccountType';
-import SignupForm from '../screens/signupForm';
+import SignupForm from '../screens/signup';
 import ForgotPassword from '../screens/forgotPassword';
 
 const Stack = createNativeStackNavigator();

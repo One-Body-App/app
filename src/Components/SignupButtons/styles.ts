@@ -5,24 +5,24 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  buttonsWrapper: {
+    flex: 1,
+    flexGrow: 1,
+
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
+    flex: 1,
     height: 50,
     borderRadius: 10,
-    marginVertical: 10,
+    margin: 10,
   },
-  disabledButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    height: 50,
-    borderRadius: 10,
-    marginVertical: 10,
-  },
+  disabledButtonContainer: {},
   btnIcon: {
     width: 24,
     height: 24,
@@ -39,9 +39,9 @@ export const styles = StyleSheet.create({
     color: '#B3C1C5',
   },
   buttonList: {
-    marginHorizontal: 20,
     marginTop: 16,
     flex: 1,
+    flexDirection: 'row',
   },
   footer: {
     position: 'absolute',
