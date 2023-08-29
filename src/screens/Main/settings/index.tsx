@@ -16,8 +16,9 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { useTheme } from '@react-navigation/native';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { DrawerScreenProps } from '@react-navigation/drawer';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;
+type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
 
 const Settings = ({ navigation }: Props) => {
   const GOOGLE_PACKAGE_NAME = '';
@@ -82,20 +83,9 @@ const Settings = ({ navigation }: Props) => {
   }
 
   const { colors, dark } = useTheme();
-  console.log(userProfile);
+
   return (
     <View style={styles.container}>
-      <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
-
-      <Header
-        title={'Settings'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu" size={24} color={colors.text} />
-          </TouchableOpacity>
-        }
-        RightView={<View style={{ width: getWidth(5) }} />}
-      />
       <ScrollView style={styles.innerContainer}>
         {userData?.tokenResult.signInProvider == 'password' ? (
           <TouchableOpacity

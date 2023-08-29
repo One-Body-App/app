@@ -48,9 +48,10 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import Twitter from '@/assets/svg/Twitter.svg';
 import qs from 'qs';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 const twitterRedirectUrl = 'onebodyapp://influencer/login/twitter';
 
-type Props = StackScreenProps<RootStackParamList, 'InfluencerStepTwo'>;
+type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepTwo'>;
 
 const InfluencerStepTwo = ({ navigation, route }: Props) => {
   const userToken = useSelector((state: RootState) => state.auth.userToken);

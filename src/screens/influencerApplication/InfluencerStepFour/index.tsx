@@ -34,8 +34,9 @@ import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<RootStackParamList, 'InfluencerStepFour'>;
+type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepFour'>;
 
 const InfluencerStepFour = ({ navigation, route }: Props) => {
   const { data } = route.params;

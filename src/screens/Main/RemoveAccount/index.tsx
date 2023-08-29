@@ -12,9 +12,9 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import { useTheme } from '@react-navigation/native';
-import { setLoginVerificationBackPage } from '@/src/Redux/actions/GeneralActions';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'RemoveAccount'>;
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccount'>;
 
 const RemoveAccount = ({ navigation }: Props) => {
   const [reason, setReason] = useState<string>('');
@@ -24,20 +24,6 @@ const RemoveAccount = ({ navigation }: Props) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <GeneralStatusBar backgroundColor={colors.background} hidden={false} />
-
-      <Header
-        title={'Remove account'}
-        leftView={
-          <Ionicons
-            onPress={() => navigation.goBack()}
-            name="chevron-back-outline"
-            color={colors.primary}
-            size={20}
-          />
-        }
-        RightView={<View style={{ width: getWidth(5) }} />}
-      />
       <View style={styles.innerContainer}>
         <Text style={{ ...styles.heading, color: colors.text }}>You will be missed</Text>
         <Text style={styles.text}>
@@ -146,7 +132,7 @@ const RemoveAccount = ({ navigation }: Props) => {
             disabledBtnTextStyle={{ ...GeneralStyle.btnText, color: '#81979E' }}
             onPress={() => {
               navigation.navigate('ConfirmLogin', {
-                toScreen: 'RemoveAccountConfirmation' as keyof RootStackParamList,
+                toScreen: 'RemoveAccountConfirmation' as keyof SettingsStackParamsList,
 
                 toScreenRouteParams: {
                   reason,

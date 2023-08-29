@@ -37,8 +37,9 @@ import { Interest } from '@/utils/types';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import { useToast } from 'react-native-toast-notifications';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<RootStackParamList, 'InfluencerStepThree'>;
+type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepThree'>;
 
 const InfluencerStepThree = ({ navigation, route }: Props) => {
   const { data } = route.params;

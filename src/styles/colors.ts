@@ -61,13 +61,13 @@ export const errorFeedback: Record<FeedBackColor, string> = {
 };
 
 export const successFeedback: Record<FeedBackColor, string> = {
-  background: '#008359',
+  background: '#EDFFF9',
 
   200: '#12AC7B',
   300: '#2DD59F',
   400: '#8FFFDB',
 
-  text: '#EDFFF9',
+  text: '#008359',
 };
 
 export const warningFeedback: Record<FeedBackColor, string> = {

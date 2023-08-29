@@ -17,9 +17,11 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/Navigation/types';
 import auth from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
-import { useTheme } from 'react-native-paper';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'DeactivateAccountConfirm'>;
+import { SettingsStackParamsList } from '@/src/navigator/types';
+import { useTheme } from '@react-navigation/native';
+
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccountConfirmation'>;
 
 const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
   const { reason } = route.params;

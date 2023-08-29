@@ -1,12 +1,12 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { appColor } from '../../constants';
+import { Colors } from '@/src/styles';
+import { borderRadius } from '@/src/styles/outlines';
 
 export const styles = StyleSheet.create({
   contanier: {
     flex: 1,
-    paddingTop: getHeight(5),
-    width: getWidth(100),
 
     alignSelf: 'center',
   },
@@ -72,26 +72,19 @@ export const styles = StyleSheet.create({
     letterSpacing: 1,
     fontFamily: 'Rubik-Medium',
   },
-  icon: {
-    alignSelf: 'center',
-    marginTop: getHeight(1),
+
+  Errorview: {
+    marginBottom: 25,
+    flexDirection: 'row',
+    padding: 11,
+    borderRadius: borderRadius.base,
   },
-  forgetStyle: {
-    color: appColor.StatusBarColor,
-  },
-  forgotPassword: {
-    alignSelf: 'center',
-    marginTop: getHeight(1),
-  },
-  Errorview: { padding: 5, marginHorizontal: 25, flexDirection: 'row' },
   errortext: {
     color: 'red',
-
-    fontSize: getFontSize(2),
   },
   successtext: {
-    color: 'green',
-    fontSize: getFontSize(2),
+    color: Colors.successFeedback.text,
+    flex: 1,
   },
   orView: {
     flexDirection: 'row',
@@ -108,11 +101,7 @@ export const styles = StyleSheet.create({
     width: '40%',
   },
   text: { fontSize: getFontSize(2.5), color: '#126B87', margin: 3 },
-  SocialView: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    justifyContent: 'space-between',
-  },
+
   socialContainer: {
     // marginTop: getHeight(5),
     justifyContent: 'center',

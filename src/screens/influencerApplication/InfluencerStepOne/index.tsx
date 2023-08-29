@@ -19,8 +19,9 @@ import { RootStackParamList } from '@/src/Navigation/types';
 import { ApiCall } from '@/src/Services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { useSelector } from 'react-redux';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<RootStackParamList, 'InfluencerStepOne'>;
+type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepOne'>;
 
 const InfluencerStepOne = ({ navigation }: Props) => {
   const { colors } = useTheme();

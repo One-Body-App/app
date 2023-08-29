@@ -31,8 +31,9 @@ import {
 } from '@/src/Services/constants';
 import axios from 'axios';
 import { getProfile, removeSocialAccountRequest } from '@/src/Redux/actions/AuthActions';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<RootStackParamList, 'InfluencerSettings'>;
+type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerSettings'>;
 const twitterRedirectUrl = 'onebodyapp://influencer-settings/connect/twitter';
 const instagramRedirectUrl = 'onebodyapp://influencer-settings/connect/instagram';
 
@@ -225,13 +226,6 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
   };
   return (
     <View style={{ ...styles.container, backgroundColor: colors.background }}>
-      <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
-
-      <Header
-        title={'Influencer settings'}
-        leftView={<GoBackIcon color={colors.text} />}
-        RightView={<View style={{ width: getWidth(5) }} />}
-      />
       <View style={styles.innerContainer}>
         <View style={{ paddingHorizontal: 25, paddingTop: 25 }}>
           {userProfile?.influencerProfile?.influencerStatus != 'approved' ? (

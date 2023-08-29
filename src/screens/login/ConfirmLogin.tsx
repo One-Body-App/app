@@ -14,10 +14,10 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { setLoginVerificationBackPage } from '@/src/Redux/actions/GeneralActions';
 import auth from '@react-native-firebase/auth';
 import { useTheme } from '@react-navigation/native';
-import NewPassword from '../Auth/NewPassword';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import NewPassword from '../newPassword/NewPassword';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<RootNonUserStackParamList, 'ConfirmLogin'>;
+type Props = StackScreenProps<SettingsStackParamsList, 'ConfirmLogin'>;
 
 const ConfirmLogin = ({ route, navigation }: Props) => {
   const [enabledLoginProviders, setEnabledLoginProviders] = useState<string[]>();
@@ -50,22 +50,6 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
 
   return (
     <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor={appColor.StatusBarColor}
-        barStyle="light-content"
-        hidden={false}
-        translucent={true}
-      />
-
-      <GradientHeader
-        title="Verify your info"
-        left={
-          <View style={{ width: '100%', padding: 10 }}>
-            <GoBackIcon color={'white'} />
-          </View>
-        }
-      />
-
       <LoginComponent
         showConfirmationEmailMessage={false}
         navigation={navigation}

@@ -31,7 +31,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
   }
   return (
     <View style={wrapperStyle}>
-      <StyledText style={{ marginBottom: 15 }}>{label}</StyledText>
+      <StyledText style={{ marginBottom: 15, color: Colors.neutral.brand }}>{label}</StyledText>
       <View
         style={{
           flexDirection: 'row',
@@ -40,6 +40,8 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
           paddingHorizontal: 14,
           paddingVertical: 12,
           borderRadius: borderRadius.small,
+          borderWidth: 1,
+          borderColor: Colors.neutral[700],
         }}
       >
         {leftIcon ? leftIcon : null}
@@ -56,8 +58,6 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
 
 const styles = StyleSheet.create({
   input: {
-    borderWidth: 1,
-    borderColor: Colors.neutral[700],
     flex: 1,
   },
 });

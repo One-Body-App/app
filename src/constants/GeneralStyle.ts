@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { borderRadius } from '../styles/outlines';
+import { Colors } from '../styles';
 
 export const GeneralStyle = StyleSheet.create({
   continer: {
@@ -34,10 +36,17 @@ export const GeneralStyle = StyleSheet.create({
   },
   InputError: {
     color: 'red',
-    marginTop: 2,
     marginBottom: 3,
-    // marginHorizontal: 15,
-    alignSelf: 'stretch',
-    height: getHeight(2),
+    marginTop: 10,
+  },
+  MessageView: {
+    marginBottom: 25,
+    flexDirection: 'row',
+    padding: 11,
+    borderRadius: borderRadius.base,
+  },
+  successtext: {
+    color: Colors.successFeedback.text,
+    flex: 1,
   },
 });

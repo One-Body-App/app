@@ -43,7 +43,6 @@ export type RootStackParamList = {
     setError: (errorText: string) => void;
   };
 
-  RemoveAccount: undefined;
   DeactivateAccountConfirm: { reason: string };
   ConfirmLogin: {
     toScreen: keyof RootStackParamList;
@@ -55,7 +54,7 @@ export type RootStackParamList = {
   EmailChange: {
     setError: (errorText: string) => void;
   };
-  NotificationSettings: undefined;
+
   InfluencerSettings: {
     code?: string;
     state?: string;

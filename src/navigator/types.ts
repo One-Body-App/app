@@ -122,6 +122,49 @@ export type ExploreStackParamsList = {
   };
 };
 
+export type SettingsStackParamsList = {
+  RemoveAccount: undefined;
+  SettingsMain: undefined;
+  NotificationSettings: undefined;
+  InfluencerSettings?: {
+    code?: string;
+    state?: string;
+    action?: string;
+    service?: string;
+    oauth_token?: string;
+    oauth_verifier?: string;
+  };
+  ConfirmLogin: {
+    toScreen: keyof SettingsStackParamsList;
+    error?: string;
+    onlyPassword?: boolean;
+    mode?: string;
+    toScreenRouteParams?: Record<string, string>;
+  };
+  EmailChange: {
+    setError: (errorText: string) => void;
+  };
+  PasswordChange: {
+    setError: (errorText: string) => void;
+  };
+  InfluencerStepOne: undefined;
+  InfluencerStepTwo?: {
+    code?: string;
+    action?: string;
+    state?: string;
+    oauth_token?: string;
+    oauth_verifier?: string;
+  };
+  InfluencerStepThree: {
+    data: any;
+  };
+  InfluencerStepFour: {
+    data: any;
+  };
+  NewPassword: undefined;
+  RemoveAccountConfirmation: { reason: string };
+};
+
 export type SearchStackParamsList = {
   Search: undefined;
 };
@@ -177,7 +220,6 @@ export type RootNonUserStackParamList = {
 
   ForgotPassword: undefined;
 
-  NewPassword: undefined;
   ConfirmLogin: {
     toScreen: keyof RootNonUserStackParamList;
     error?: string;

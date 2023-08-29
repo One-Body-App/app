@@ -27,7 +27,6 @@ import {
 } from '@react-navigation/native-stack';
 import ForgotPassword from '../screens/forgotPassword';
 import Login from '../screens/login';
-import NewPassword from '../screens/Auth/NewPassword';
 import Signup from '../screens/signup';
 
 import Help from '../screens/main/Help';
@@ -40,13 +39,11 @@ import {
   OnboardingStackParamList,
   RootNonUserStackParamList,
 } from './types';
-import ConfirmLogin from '../screens/login/ConfirmLogin';
 import messaging from '@react-native-firebase/messaging';
 
 import Notifications from '../screens/main/notifications';
 import Connections from '../screens/main/connections';
 import Saved from '../screens/main/saved';
-import Settings from '../screens/main/settings';
 import Intro from '../screens/intro';
 
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -59,8 +56,7 @@ import { spacing } from '../styles/spacing';
 import { Colors } from '../styles';
 import AccountType from '../screens/accountType';
 import FastImage from 'react-native-fast-image';
-import PasswordChange from '../screens/main/PasswordChange';
-import EmailChange from '../screens/main/EmailChange';
+import SettingsStack from './SettingsStack';
 
 const NonUserStack = createNativeStackNavigator<RootNonUserStackParamList>();
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
@@ -306,7 +302,7 @@ const Main = () => {
 
               <DrawerStack.Screen name="Saved" component={Saved} />
 
-              <DrawerStack.Screen name="Settings" component={Settings} />
+              <DrawerStack.Screen name="Settings" component={SettingsStack} />
               <DrawerStack.Screen name="Help" component={Help} />
             </DrawerStack.Navigator>
           ) : (
@@ -330,20 +326,6 @@ const Main = () => {
             name="ForgotPassword"
             component={ForgotPassword}
             options={headerOptions}
-          />
-          <NonUserStack.Screen
-            name="PasswordChange"
-            component={PasswordChange}
-            options={headerOptions}
-          />
-          <NonUserStack.Screen name="EmailChange" component={EmailChange} options={headerOptions} />
-
-          <NonUserStack.Screen name="NewPassword" component={NewPassword} options={headerOptions} />
-
-          <NonUserStack.Screen
-            name="ConfirmLogin"
-            component={ConfirmLogin}
-            options={{ presentation: 'modal' }}
           />
         </NonUserStack.Navigator>
       )}

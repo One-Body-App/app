@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { TextInput, Text } from 'react-native-paper';
+
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -154,7 +154,7 @@ const LoginComponent: FC<Props> = ({
           if (result.operation == 'VERIFY_EMAIL') {
             await auth().applyActionCode(oobCode);
 
-            setSuccess('Email verification successful. Please login');
+            setSuccess('Email verification successful. Please Sign in to your account');
           }
         } catch (e: any) {
           console.log(e);
@@ -170,7 +170,7 @@ const LoginComponent: FC<Props> = ({
           const result = await auth().checkActionCode(oobCode);
           await auth().applyActionCode(oobCode);
 
-          setSuccess('Email changed successful. Please login again');
+          setSuccess('Email changed successful. Please Sign in to your account');
           setState({ ...state, email: result.data.email ?? '' });
         } catch (e: any) {
           navigation.goBack();
@@ -617,12 +617,12 @@ const LoginComponent: FC<Props> = ({
   };
 
   return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={styles.contanier}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={{ marginVertical: spacing.x48, marginHorizontal: spacing.x16 }}>
-        <StyledText style={[Typography.header.h1]}>Welcome back</StyledText>
+    <View style={{ flex: 1, marginHorizontal: spacing.x16 }}>
+      <View style={{ marginVertical: spacing.x16 }}>
+        <StyledText style={[Typography.header.h1]}>
+          {verifyAccount ? 'Verify your account information' : 'Welcome back'}
+        </StyledText>
+
         <StyledText
           style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
         >
@@ -631,163 +631,166 @@ const LoginComponent: FC<Props> = ({
       </View>
       <View
         style={{
-          marginHorizontal: spacing.x16,
           paddingHorizontal: spacing.x16,
           paddingVertical: spacing.x24,
-          flex: 1,
-          backgroundColor: '#FFF',
+
+          backgroundColor: colors.background,
           borderRadius: borderRadius.base,
           marginBottom: spacing.x64,
         }}
       >
-        <TouchableOpacity
-          style={{ flexDirection: 'row', marginBottom: spacing.x24 }}
-          onPress={() => {
-            navigation.replace('Login');
-          }}
-        >
-          <StyledText>New to OneBody? </StyledText>
-          <StyledText style={{ color: Colors.primarySapphire.brand }}>Create an account</StyledText>
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          {/* <SignupButtons
-            socialLogin={socialLogin}
-            navigation={navigation}
-            route={route}
-            errorFromLogin={error}
-            disabled={!!!accountType}
-          /> */}
+        <View>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', marginBottom: spacing.x24, flex: 1 }}
+            onPress={() => {
+              navigation.replace('AccountType');
+            }}
+          >
+            <StyledText style={{ color: Colors.neutral[200] }}>New to OneBody? </StyledText>
+            <StyledText style={{ color: Colors.primarySapphire.brand }}>
+              Create an account
+            </StyledText>
+          </TouchableOpacity>
         </View>
+        <View style={{ flex: 1 }}>
+          {enabledLoginProviders && enabledLoginProviders?.indexOf('password') > -1 ? (
+            <View style={{ flex: 2, flexGrow: 1, flexShrink: 0 }}>
+              {success ? (
+                <View
+                  style={[
+                    GeneralStyle.MessageView,
+                    { backgroundColor: Colors.successFeedback.background },
+                  ]}
+                >
+                  <StyledText style={styles.successtext}>{success}</StyledText>
+                </View>
+              ) : null}
+              <StyledTextInput
+                wrapperStyle={{ flex: 1 }}
+                ref={inputRefs.email}
+                value={state.email}
+                returnKeyType={'next'}
+                keyboardType="email-address"
+                label={'Email'}
+                placeholder="Email address"
+                autoComplete="email"
+                autoCapitalize="none"
+                onFocus={() => setState({ ...state, emailError: '' })}
+                onBlur={() =>
+                  validateFields(state.email, 'email', (error: string) =>
+                    setState({ ...state, emailError: error })
+                  )
+                }
+                onSubmitEditing={() => inputRefs.password?.current.focus()}
+                onChangeText={(email) => changeHandler('email', email.trim())}
+                blurOnSubmit={false}
+              />
+              {state.emailError ? (
+                <StyledText style={{ ...GeneralStyle.InputError }}>{state.emailError}</StyledText>
+              ) : null}
 
-        {enabledLoginProviders && enabledLoginProviders?.indexOf('password') > -1 ? (
-          <View>
-            {success ? (
-              <View style={styles.Errorview}>
-                <Text style={styles.successtext}>{success}</Text>
+              <StyledTextInput
+                wrapperStyle={{ marginTop: 15, flex: 1 }}
+                ref={inputRefs.password}
+                value={state.password}
+                returnKeyType={'send'}
+                label={'Password'}
+                placeholder="Password"
+                secureTextEntry={hidePass ? true : false}
+                rightIcon={
+                  <MaterialCommunityIcons
+                    name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                    size={15}
+                    color={'#5B7279'}
+                    onPress={() => setHidePass(!hidePass)}
+                  />
+                }
+                onFocus={() => setState({ ...state, passwordError: '' })}
+                onSubmitEditing={() => signInUser()}
+                onChangeText={(password) => changeHandler('password', password.trim())}
+                blurOnSubmit={false}
+              />
+              {state.passwordError ? (
+                <StyledText style={{ ...GeneralStyle.InputError }}>
+                  {state.passwordError}
+                </StyledText>
+              ) : null}
+            </View>
+          ) : null}
+
+          <View style={{ flex: 1 }}>
+            {enabledLoginProviders &&
+            enabledLoginProviders?.includes('password') &&
+            ((enabledLoginProviders && enabledLoginProviders?.includes('google.com')) ||
+              (enabledLoginProviders && enabledLoginProviders?.includes('facebook.com')) ||
+              (enabledLoginProviders && enabledLoginProviders?.includes('twitter.com'))) ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flex: 1,
+                  marginTop: 20,
+                }}
+              >
+                <View
+                  style={{
+                    borderBottomColor: Colors.neutral[700],
+                    borderBottomWidth: borderWidth.thin,
+                    flex: 1,
+                  }}
+                />
+
+                <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[200] }}>
+                  Or
+                </StyledText>
+                <View
+                  style={{
+                    borderBottomColor: Colors.neutral[700],
+                    borderBottomWidth: borderWidth.thin,
+                    flex: 1,
+                  }}
+                />
               </View>
             ) : null}
 
-            <TextInput
-              style={GeneralStyle.input}
-              theme={{ roundness: 10 }}
-              ref={inputRefs.email}
-              value={state.email}
-              returnKeyType={'next'}
-              keyboardType="email-address"
-              mode="outlined"
-              outlineColor={appColor.InputOutlineColor}
-              activeOutlineColor={appColor.InstructionColor}
-              label={'E-mail'}
-              autoComplete="email"
-              autoCapitalize="none"
-              onFocus={() => setState({ ...state, emailError: '' })}
-              onBlur={() =>
-                validateFields(state.email, 'email', (error: string) =>
-                  setState({ ...state, emailError: error })
-                )
-              }
-              onSubmitEditing={() => inputRefs.password?.current.focus()}
-              onChangeText={(email) => changeHandler('email', email.trim())}
-              blurOnSubmit={false}
-            />
-            <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(10) }}>
-              {state.emailError}
-            </Text>
-
-            <TextInput
-              theme={{ roundness: 10 }}
-              activeOutlineColor={appColor.InstructionColor}
-              outlineColor={appColor.InputOutlineColor}
-              ref={inputRefs.password}
-              value={state.password}
-              returnKeyType={'send'}
-              label={'Password'}
-              mode="outlined"
-              secureTextEntry={hidePass ? true : false}
-              right={
-                <TextInput.Icon
-                  icon={() => (
-                    <MaterialCommunityIcons
-                      name={hidePass ? 'eye-off-outline' : 'eye-outline'}
-                      size={getFontSize(3)}
-                      color={'#5B7279'}
-                      style={styles.icon}
-                      onPress={() => setHidePass(!hidePass)}
+            <View
+              style={{
+                marginVertical: 20,
+                flex: 1,
+                flexDirection: 'column',
+              }}
+            >
+              <View style={{ flexDirection: 'row', flex: 1 }}>
+                {enabledLoginProviders &&
+                enabledLoginProviders?.includes('google.com') &&
+                enabledLoginProviders?.includes('password') ? (
+                  <View style={{ paddingHorizontal: 10, flex: 1 }}>
+                    <Button
+                      onPress={() => googleSignIn()}
+                      wrapperViewBtnStyle={{ flex: 1 }}
+                      leftIcon={<Google style={{ alignSelf: 'center' }} fill={'#000'} />}
+                      btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
                     />
-                  )}
-                />
-              }
-              style={GeneralStyle.input}
-              onFocus={() => setState({ ...state, passwordError: '' })}
-              onSubmitEditing={() => signInUser()}
-              onChangeText={(password) => changeHandler('password', password.trim())}
-              blurOnSubmit={false}
-            />
-            {state.passwordError ? (
-              <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(10) }}>
-                {state.passwordError}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
+                  </View>
+                ) : (
+                  <>
+                    {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
+                      <Button
+                        text={'Log in with Google'}
+                        leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
+                        btnStyle={getButtonContainer()}
+                        btnTextStyle={getButtonTextStyle()}
+                        onPress={() => googleSignIn()}
+                        disabledBtnStyle={getDisabledButtonStyle()}
+                        disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                        wrapperBtnStyle={{ width: '100%' }}
+                      />
+                    ) : null}
+                  </>
+                )}
 
-        {enabledLoginProviders &&
-        enabledLoginProviders?.includes('password') &&
-        ((enabledLoginProviders && enabledLoginProviders?.includes('google.com')) ||
-          (enabledLoginProviders && enabledLoginProviders?.includes('facebook.com')) ||
-          (enabledLoginProviders && enabledLoginProviders?.includes('twitter.com'))) ? (
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-            <View
-              style={{
-                borderBottomColor: Colors.neutral[700],
-                borderBottomWidth: borderWidth.thin,
-                flex: 1,
-              }}
-            />
-
-            <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[200] }}>
-              Or
-            </StyledText>
-            <View
-              style={{
-                borderBottomColor: Colors.neutral[700],
-                borderBottomWidth: borderWidth.thin,
-                flex: 1,
-              }}
-            />
-          </View>
-        ) : null}
-
-        <View style={{ ...styles.SocialView, marginTop: 20, height: 40, marginHorizontal: 23 }}>
-          {enabledLoginProviders &&
-          enabledLoginProviders?.includes('google.com') &&
-          enabledLoginProviders?.includes('password') ? (
-            <View style={{ paddingHorizontal: 10, flex: 1 }}>
-              <Button
-                onPress={() => googleSignIn()}
-                wrapperViewBtnStyle={{ flex: 1 }}
-                leftIcon={<Google style={{ alignSelf: 'center' }} fill={'#000'} />}
-                btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
-              />
-            </View>
-          ) : (
-            <>
-              {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
-                <Button
-                  text={'Log in with Google'}
-                  leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
-                  btnStyle={getButtonContainer()}
-                  btnTextStyle={getButtonTextStyle()}
-                  onPress={() => googleSignIn()}
-                  disabledBtnStyle={getDisabledButtonStyle()}
-                  disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                  wrapperBtnStyle={{ width: '100%' }}
-                />
-              ) : null}
-            </>
-          )}
-
-          {/* {enabledLoginProviders &&
+                {/* {enabledLoginProviders &&
         enabledLoginProviders?.includes('facebook.com') &&
         enabledLoginProviders?.includes('password') ? (
           <View style={{ paddingHorizontal: 10, flex: 1 }}>
@@ -824,254 +827,198 @@ const LoginComponent: FC<Props> = ({
           </>
         )} */}
 
-          {enabledLoginProviders &&
-          enabledLoginProviders?.includes('twitter.com') &&
-          enabledLoginProviders?.includes('password') ? (
-            <View style={{ paddingHorizontal: 10, flex: 1 }}>
-              <Button
-                onPress={() => onTwitterButtonPress()}
-                wrapperViewBtnStyle={{ flex: 1 }}
-                leftIcon={<Twitter fill="#00acee" style={{ alignSelf: 'center' }} />}
-                btnStyle={[
-                  getButtonContainer(),
-                  {
-                    marginHorizontal: 0,
-                    flex: 1,
-                  },
-                ]}
-              />
-            </View>
-          ) : (
-            <>
-              {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
-                <Button
-                  text={'Login with Twitter'}
-                  leftIcon={
-                    <Twitter style={{ marginRight: 7 }} height={getHeight(5)} fill="#00acee" />
-                  }
-                  btnStyle={getButtonContainer()}
-                  btnTextStyle={getButtonTextStyle()}
-                  onPress={() => {
-                    onTwitterButtonPress();
-                  }}
-                  disabledBtnStyle={getDisabledButtonStyle()}
-                  disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                  wrapperBtnStyle={{ width: '100%' }}
-                />
+                {enabledLoginProviders &&
+                enabledLoginProviders?.includes('twitter.com') &&
+                enabledLoginProviders?.includes('password') ? (
+                  <View style={{ paddingHorizontal: 10, flex: 1 }}>
+                    <Button
+                      onPress={() => onTwitterButtonPress()}
+                      wrapperViewBtnStyle={{ flex: 1 }}
+                      leftIcon={<Twitter fill="#00acee" style={{ alignSelf: 'center' }} />}
+                      btnStyle={[
+                        getButtonContainer(),
+                        {
+                          marginHorizontal: 0,
+                          flex: 1,
+                        },
+                      ]}
+                    />
+                  </View>
+                ) : (
+                  <>
+                    {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
+                      <Button
+                        text={'Login with Twitter'}
+                        leftIcon={
+                          <Twitter
+                            style={{ marginRight: 7 }}
+                            height={getHeight(5)}
+                            fill="#00acee"
+                          />
+                        }
+                        btnStyle={getButtonContainer()}
+                        btnTextStyle={getButtonTextStyle()}
+                        onPress={() => {
+                          onTwitterButtonPress();
+                        }}
+                        disabledBtnStyle={getDisabledButtonStyle()}
+                        disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                        wrapperBtnStyle={{ width: '100%' }}
+                      />
+                    ) : null}
+                  </>
+                )}
+
+                {enabledLoginProviders &&
+                enabledLoginProviders?.includes('apple') &&
+                enabledLoginProviders?.includes('password') &&
+                Platform.OS == 'ios' ? (
+                  <View style={{ paddingHorizontal: 10, flex: 1 }}>
+                    <Button
+                      onPress={() => onAppleButtonPress()}
+                      wrapperViewBtnStyle={{ flex: 1 }}
+                      leftIcon={
+                        <FontAwesome
+                          name="apple"
+                          style={{
+                            // flex: 1,
+                            // marginRight: getWidth(3),
+                            // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
+                            color: colors.text,
+                          }}
+                          size={22}
+                        />
+                      }
+                      btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
+                    />
+                  </View>
+                ) : (
+                  <>
+                    {enabledLoginProviders &&
+                    enabledLoginProviders?.includes('apple') &&
+                    Platform.OS == 'ios' ? (
+                      <Button
+                        text={'Login with Apple'}
+                        leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}
+                        btnStyle={getButtonContainer()}
+                        btnTextStyle={getButtonTextStyle()}
+                        onPress={() => {
+                          onAppleButtonPress();
+                        }}
+                        disabledBtnStyle={getDisabledButtonStyle()}
+                        disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                        wrapperBtnStyle={{ width: '100%' }}
+                      />
+                    ) : null}
+                  </>
+                )}
+              </View>
+              {!verifyAccount &&
+              enabledLoginProviders &&
+              enabledLoginProviders?.includes('password') ? (
+                <View style={{ alignItems: 'flex-end', flex: 1, marginTop: 15 }}>
+                  <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                    <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                      Forgot Password?
+                    </StyledText>
+                  </TouchableOpacity>
+                </View>
               ) : null}
-            </>
-          )}
-
-          {enabledLoginProviders &&
-          enabledLoginProviders?.includes('apple') &&
-          enabledLoginProviders?.includes('password') &&
-          Platform.OS == 'ios' ? (
-            <View style={{ paddingHorizontal: 10, flex: 1 }}>
-              <Button
-                onPress={() => onAppleButtonPress()}
-                wrapperViewBtnStyle={{ flex: 1 }}
-                leftIcon={
-                  <FontAwesome
-                    name="apple"
-                    style={{
-                      // flex: 1,
-                      // marginRight: getWidth(3),
-                      // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
-                      color: colors.text,
-                    }}
-                    size={22}
-                  />
-                }
-                btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
-              />
             </View>
-          ) : (
-            <>
-              {enabledLoginProviders &&
-              enabledLoginProviders?.includes('apple') &&
-              Platform.OS == 'ios' ? (
+            {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
+              <View style={{ marginHorizontal: 10 }}>
                 <Button
-                  text={'Login with Apple'}
-                  leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}
-                  btnStyle={getButtonContainer()}
-                  btnTextStyle={getButtonTextStyle()}
-                  onPress={() => {
-                    onAppleButtonPress();
-                  }}
-                  disabledBtnStyle={getDisabledButtonStyle()}
-                  disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                  wrapperBtnStyle={{ width: '100%' }}
-                />
-              ) : null}
-            </>
-          )}
-        </View>
-        <StyledTextInput
-          wrapperStyle={{ marginTop: 15 }}
-          // ref={inputRefs.username}
-          // value={state.username}
-          returnKeyType={'next'}
-          label="E-mail"
-          // onFocus={() => setState({ ...state, usernameError: '' })}
-          placeholder="Enter email"
-          onBlur={
-            () => {}
-            // validateFields(state.username, 'username', (error) =>
-            //   setState({ ...state, usernameError: error })
-            // )
-          }
-          // onSubmitEditing={() => inputRefs.name.current?.focus()}
-          onChangeText={(username) => changeHandler('username', username)}
-          blurOnSubmit={false}
-          autoCorrect={false}
-          autoComplete="username"
-          keyboardType="default"
-          autoCapitalize="none"
-          textContentType="username"
-        />
-
-        {/* {state.usernameError ? (
-          <StyledText style={{ ...GeneralStyle.InputError }}>{state.usernameError}</StyledText>
-        ) : null} */}
-
-        <StyledTextInput
-          wrapperStyle={{ marginTop: 15 }}
-          // ref={inputRefs.name}
-          label="Full Name"
-          placeholder="Enter your full name"
-          // value={state.name}
-          returnKeyType={'next'}
-          // onFocus={() => setState({ ...state, nameError: '' })}
-          onBlur={
-            () => {}
-            // validateFields(state.name, 'name', (error) =>
-            //   setState({ ...state, nameError: error })
-            // )
-          }
-          onSubmitEditing={() => inputRefs.email.current?.focus()}
-          onChangeText={(name) => changeHandler('name', name)}
-          blurOnSubmit={false}
-          keyboardType="default"
-          autoCapitalize="words"
-        />
-      </View>
-
-      {!verifyAccount && enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('ForgotPassword')}
-          style={styles.forgotPassword}
-        >
-          <Text style={styles.forgetStyle}>Forgot Password?</Text>
-        </TouchableOpacity>
-      ) : null}
-
-      {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
-        <View style={{ marginHorizontal: 10 }}>
-          {/* <Button
-            text={'LOG IN'}
-            disabled={!state.password || !state.email}
-            btnStyle={{
-              ...GeneralStyle.btn,
-              flex: 1,
-              marginTop: getHeight(2),
-              marginHorizontal: 14,
-              backgroundColor: scheme == 'dark' ? '#fff' : '#0C5C75',
-            }}
-            disabledBtnStyle={{
-              ...GeneralStyle.btn,
-              marginTop: getHeight(2),
-              flex: 1,
-
-              marginHorizontal: 14,
-              backgroundColor: scheme == 'dark' ? '#ccc' : 'rgba(3, 47, 60, 0.35)',
-            }}
-            btnTextStyle={GeneralStyle.btnText}
-            disabledBtnTextStyle={{
-              ...GeneralStyle.btnText,
-              color: '#FFF',
-            }}
-            onPress={() => signInUser()}
-          /> */}
-          {/* <ButtonPaper
-            mode="contained"
-            onPress={() => signInUser()}
-            disabled={!state.password || !state.email}
-            style={{ marginVertical: 15, marginHorizontal: 13 }}
-            labelStyle={{
-              paddingVertical: 7,
-              fontSize: getFontSize(2.1),
-              // fontFamily: 'Rubik-Medium',
-              letterSpacing: 1.25,
-            }}
-          >
-            LOG IN
-          </ButtonPaper> */}
-        </View>
-      ) : null}
-
-      {error ? (
-        <View style={{ ...styles.Errorview, marginTop: 20 }}>
-          <Text style={styles.errortext}>{error}</Text>
-        </View>
-      ) : null}
-
-      {!verifyAccount ? (
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={showConfirmEmail}
-          onBackdropPress={() => setShowConfirmEmail(false)}
-          onSwipeComplete={() => setShowConfirmEmail(false)}
-          swipeDirection={['down']}
-          style={styles.bottomView}
-        >
-          <View style={styles.content2}>
-            <View style={{ ...styles.contanier, paddingHorizontal: 15 }}>
-              <View>
-                <Button
-                  text="Cancel"
-                  onPress={async () => {
-                    const FBToken = await AccessToken.getCurrentAccessToken();
-                    if (FBToken) {
-                      LoginManager.logOut();
-                      await auth().signOut();
-                      await auth().currentUser?.reload();
-                    }
-                    setShowConfirmEmail(false);
-                    setNewUserCredentials(null);
-                  }}
+                  text="Sign in"
+                  disabled={!state.password || !state.email}
+                  btnStyle={[
+                    button.primary,
+                    {
+                      flex: 1,
+                    },
+                  ]}
+                  disabledBtnStyle={[
+                    button.primary,
+                    {
+                      backgroundColor: Colors.primarySapphire[200],
+                      flex: 1,
+                      opacity: 0.4,
+                    },
+                  ]}
+                  onPress={() => signInUser()}
+                  btnTextStyle={{ color: '#FFF' }}
+                  disabledBtnTextStyle={{ color: Colors.primarySapphire[600] }}
                 />
               </View>
+            ) : null}
 
-              <ScrollView>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'stretch',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Text>Please Confirm email</Text>
-                </View>
-              </ScrollView>
-
-              {showSendEmailConfirmation ? (
-                <GradientButton
-                  text={'SEND EMAIL CONFIRMATION'}
-                  btnStyle={styles.btn2}
-                  btnTextStyle={styles.btnText2}
-                  onPress={() => {
-                    setShowSendEmailConfirmation(false);
-                    auth().currentUser?.sendEmailVerification();
-                  }}
-                />
-              ) : (
-                <Text>Confirmation email sent</Text>
-              )}
-            </View>
+            {error ? (
+              <View style={{ ...styles.Errorview, marginTop: 20 }}>
+                <StyledText style={styles.errortext}>{error}</StyledText>
+              </View>
+            ) : null}
           </View>
-        </Modal>
-      ) : null}
-    </KeyboardAwareScrollView>
+        </View>
+
+        <View>
+          {!verifyAccount ? (
+            <Modal
+              backdropOpacity={0.3}
+              isVisible={showConfirmEmail}
+              onBackdropPress={() => setShowConfirmEmail(false)}
+              onSwipeComplete={() => setShowConfirmEmail(false)}
+              swipeDirection={['down']}
+              style={styles.bottomView}
+            >
+              <View style={styles.content2}>
+                <View style={{ ...styles.contanier, paddingHorizontal: 15 }}>
+                  <View>
+                    <Button
+                      text="Cancel"
+                      onPress={async () => {
+                        const FBToken = await AccessToken.getCurrentAccessToken();
+                        if (FBToken) {
+                          LoginManager.logOut();
+                          await auth().signOut();
+                          await auth().currentUser?.reload();
+                        }
+                        setShowConfirmEmail(false);
+                        setNewUserCredentials(null);
+                      }}
+                    />
+                  </View>
+
+                  <ScrollView>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'stretch',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <StyledText>Please Confirm email</StyledText>
+                    </View>
+                  </ScrollView>
+
+                  {showSendEmailConfirmation ? (
+                    <GradientButton
+                      text={'SEND EMAIL CONFIRMATION'}
+                      btnStyle={styles.btn2}
+                      btnTextStyle={styles.btnText2}
+                      onPress={() => {
+                        setShowSendEmailConfirmation(false);
+                        auth().currentUser?.sendEmailVerification();
+                      }}
+                    />
+                  ) : (
+                    <StyledText>Confirmation email sent</StyledText>
+                  )}
+                </View>
+              </View>
+            </Modal>
+          ) : null}
+        </View>
+      </View>
+    </View>
   );
 };
 

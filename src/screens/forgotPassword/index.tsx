@@ -1,5 +1,15 @@
 import React from 'react';
-import { SafeAreaView, Text, useColorScheme, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from 'react-native';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { setLoader } from '@/redux//actions/GeneralActions';
@@ -17,6 +27,13 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootNonUserStackParamList } from '@/src/navigator/types';
+import UserStepsLayout from '../layout/UserStepsLayout';
+import { Colors, Typography } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
+import { StyledText } from '@/src/components/styled/Text';
+import { borderRadius } from '@/src/styles/outlines';
+import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { button } from '@/src/styles/buttons';
 
 type Props = StackScreenProps<RootNonUserStackParamList, 'ForgotPassword'>;
 
@@ -66,37 +83,114 @@ const ForgotPassword = ({ navigation }: Props) => {
       seterror('Email not valid!!');
     }
   };
+  const { dark } = useTheme();
   return (
-    <LinearGradient
-      colors={[colors.background, colors.background, '#E0EEF3']}
-      style={styles.container}
-    >
-      <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
-      <SafeAreaView>
-        <KeyboardAwareScrollView>
-          <View style={styles.headview}>
-            <GoBackIcon color={colors.text} />
-          </View>
+    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[600]}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // contentContainerStyle={{
+        //   marginTop: 615,
+        // }}
+        keyboardVerticalOffset={60}
+      >
+        <ScrollView style={{ flex: 1 }}>
+          <View style={{ flex: 1, marginHorizontal: spacing.x16 }}>
+            <View style={{ marginVertical: spacing.x16 }}>
+              <StyledText style={[Typography.header.h1]}>Forgot your password?</StyledText>
 
-          <View style={styles.topView}>
-            <Logo height={getHeight(17)} width={getWidth(50)} />
-          </View>
-          <View style={styles.options}>
-            <Text style={styles.title}>Forgot Password</Text>
-            <Text style={styles.subTitle}>
-              Enter your email and we will email you a link to reset your password
-            </Text>
-          </View>
-
-          {showSuccess ? (
-            <View style={styles.emailsuccessview}>
-              <Text style={styles.emailSuccesssText}>
-                If you have an account with us you will get an email with the instructions to reset
-                your password.
-              </Text>
+              <StyledText
+                style={[
+                  Typography.subheader.R,
+                  { color: Colors.neutral[200], marginTop: spacing.x8 },
+                ]}
+              >
+                No problem! Enter the email address that you signed up with to reset it.
+              </StyledText>
             </View>
-          ) : (
-            <>
+            <View
+              style={{
+                paddingHorizontal: spacing.x16,
+                paddingVertical: spacing.x24,
+
+                backgroundColor: colors.background,
+                borderRadius: borderRadius.base,
+                marginBottom: spacing.x64,
+                marginTop: spacing.x32,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                {showSuccess ? (
+                  <View
+                    style={[
+                      GeneralStyle.MessageView,
+                      { backgroundColor: Colors.successFeedback.background },
+                    ]}
+                  >
+                    <StyledText style={GeneralStyle.successtext}>
+                      If you have an account with us, You will get an email with the instructions to
+                      reset your password
+                    </StyledText>
+                  </View>
+                ) : null}
+                <StyledTextInput
+                  wrapperStyle={{ flex: 1 }}
+                  value={email}
+                  keyboardType="email-address"
+                  label={'Email'}
+                  placeholder="Email address"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  onChangeText={(e) => {
+                    setEmail(e), setEmailError(false);
+                  }}
+                  blurOnSubmit={false}
+                />
+                {error != null ? (
+                  <StyledText style={{ ...GeneralStyle.InputError }}>{error}</StyledText>
+                ) : null}
+              </View>
+              <Button
+                text="Send Reset Link"
+                btnStyle={[
+                  button.primary,
+                  {
+                    flex: 1,
+                  },
+                ]}
+                disabled={!email}
+                disabledBtnStyle={[
+                  button.primary,
+                  {
+                    backgroundColor: Colors.primarySapphire[200],
+                    flex: 1,
+                    opacity: 0.4,
+                  },
+                ]}
+                onPress={() => forget()}
+                btnTextStyle={{ color: '#FFF' }}
+                disabledBtnTextStyle={{ color: Colors.primarySapphire[600] }}
+              />
+            </View>
+
+            <View style={{ alignItems: 'flex-start' }}>
+              <Button
+                onPress={() => {
+                  Linking.openURL('mailto:support@onebodyapp.com');
+                }}
+                text={'Still having issues? '}
+                wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'flex-end' }}
+                btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[200] }]}
+                RightIcon={
+                  <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                    Contact us
+                  </StyledText>
+                }
+              />
+            </View>
+          </View>
+
+          {/* <>
               <TextInput
                 style={{ ...GeneralStyle.input, marginTop: getHeight(3) }}
                 theme={{ roundness: 10 }}
@@ -117,13 +211,11 @@ const ForgotPassword = ({ navigation }: Props) => {
                 </View>
               ) : null}
             </>
-          )}
+
 
           {!showSuccess ? (
             <Button
               text={'SEND RESET LINK'}
-              mode="contained"
-              paper
               btnStyle={{ marginHorizontal: 24 }}
               // btnStyle={{
               //   ...GeneralStyle.btn,
@@ -135,12 +227,12 @@ const ForgotPassword = ({ navigation }: Props) => {
             />
           ) : (
             <View style={{ marginTop: 10 }}>
-              <Button text={'GO BACK'} paper mode="contained" onPress={() => navigation.goBack()} />
+              <Button text={'GO BACK'} onPress={() => navigation.goBack()} />
             </View>
-          )}
-        </KeyboardAwareScrollView>
-      </SafeAreaView>
-    </LinearGradient>
+          )} */}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </UserStepsLayout>
   );
 };
 
