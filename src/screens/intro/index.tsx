@@ -21,11 +21,11 @@ const IntroScreen = ({ route, navigation }: Props) => {
   return (
     <UserStepsLayout>
       <>
-        <View style={{ flex: 4 }}>
+        <View style={{ flex: 3, marginTop: 40 }}>
           <FastImage
-            resizeMode="cover"
+            resizeMode="contain"
             style={{ height: '100%', width: '100%' }}
-            source={require('@/assets/images/introImage.jpg')}
+            source={require('@/assets/images/introImage.png')}
           />
         </View>
         <View style={{ flex: 5 }}>
@@ -40,8 +40,14 @@ const IntroScreen = ({ route, navigation }: Props) => {
             <View style={{ flex: 1, paddingBottom: 40 }}>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-                  <Text style={[header.h2, { color: Colors.neutral.brand }]}>Welcome to </Text>
-                  <Text style={[header.h2, { color: Colors.primarySapphire.brand }]}>OneBody</Text>
+                  <Text style={[header.h2, { color: Colors.neutral.brand, fontWeight: 'bold' }]}>
+                    Welcome to{' '}
+                  </Text>
+                  <Text
+                    style={[header.h2, { color: Colors.primarySapphire.brand, fontWeight: 'bold' }]}
+                  >
+                    OneBody
+                  </Text>
                 </View>
 
                 <View style={{ marginHorizontal: 50 }}>

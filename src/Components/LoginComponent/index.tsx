@@ -42,10 +42,10 @@ import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
 import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/Services/constants';
 import { useToast } from 'react-native-toast-notifications';
 import G from '@/assets/svg/G.svg';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useNavigation, useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { RootNonUserStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
 import { StyledText } from '../styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
@@ -53,8 +53,14 @@ import { openInbox } from 'react-native-email-link';
 import { button } from '@/src/styles/buttons';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { StyledTextInput } from '../styled/TextInput';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-interface Props extends StackScreenProps<RootNonUserStackParamList, 'Login'> {
+type ProfileScreenNavigationProp = NativeStackNavigationProp<
+  RootNonUserStackParamList,
+  'ConfirmLogin'
+>;
+
+interface Props {
   showConfirmationEmailMessage: boolean;
   verifyAccount?: boolean;
   oauth_token?: string;
@@ -78,7 +84,6 @@ const LoginComponent: FC<Props> = ({
   showConfirmationEmailMessage,
   oauth_token,
   oauth_verifier,
-  navigation,
   oobCode,
   mode,
   action,
@@ -89,9 +94,9 @@ const LoginComponent: FC<Props> = ({
   onlyPassword,
   toScreenRouteParams,
   enabledLoginProviders,
-  route,
 }) => {
   const dispatch = useDispatch();
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
 
   const authState = useSelector((state: RootState) => state.auth);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);

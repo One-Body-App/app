@@ -3,27 +3,17 @@ import {
   KeyboardAvoidingView,
   Linking,
   Platform,
-  SafeAreaView,
   ScrollView,
-  Text,
-  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
-import GoBackIcon from '@/src/components/GoBackIcon';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { GeneralStyle } from '../../constants/GeneralStyle';
-import LinearGradient from 'react-native-linear-gradient';
-import Logo from '@/assets/svg/LogoBlue.svg';
 import { ApiCall } from '@/services/api';
 import Button from '@/src/components/Button';
-import { TextInput } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { styles } from './styles';
 import { useTheme } from '@react-navigation/native';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootNonUserStackParamList } from '@/src/navigator/types';
@@ -67,6 +57,7 @@ const ForgotPassword = ({ navigation }: Props) => {
           verb: 'patch',
         });
         if (res?.status == 200) {
+          setEmail('');
           dispatch(setLoader(false));
           setShowSuccess(true);
         } else {

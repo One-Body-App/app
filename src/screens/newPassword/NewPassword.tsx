@@ -1,4 +1,13 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, ImageBackground } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  ImageBackground,
+  TextInput,
+  Linking,
+} from 'react-native';
 import React, { useRef, useState } from 'react';
 import { appColor, COLORS, THEME } from '../../constants';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
@@ -8,7 +17,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Button from '../../components/Button';
-import { TextInput } from 'react-native-paper';
+
 import { validateFields } from '@/utils/validation/validate-fields';
 import LinearGradient from 'react-native-linear-gradient';
 import { ApiCall } from '@/services/api';
@@ -19,16 +28,37 @@ import Toast from 'react-native-simple-toast';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { RootNonUserStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
 import { StackScreenProps } from '@react-navigation/stack';
+import {
+  CompositeScreenProps,
+  RouteProp,
+  useNavigation,
+  useRoute,
+  useTheme,
+} from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { StyledText } from '@/src/components/styled/Text';
+import { Colors, Typography } from '@/src/styles';
+import { button } from '@/src/styles/buttons';
+import { spacing } from '@/src/styles/spacing';
+import { borderRadius } from '@/src/styles/outlines';
+import { useToast } from 'react-native-toast-notifications';
 
-type Props = StackScreenProps<RootNonUserStackParamList, 'NewPassword'>;
+type NewPasswordScreenRouteProp = RouteProp<RootNonUserStackParamList, 'NewPassword'>;
+type ProfileScreenNavigationProp = NativeStackNavigationProp<
+  RootNonUserStackParamList,
+  'NewPassword'
+>;
 
-const NewPassword = ({ navigation, route }: Props) => {
+type Props = RootNonUserStackParamList['ConfirmLogin'];
+
+const NewPassword = ({ oobCode, ...props }: Props) => {
   const dispatch = useDispatch();
   const inputRefs = {
-    passwordN: useRef(null),
-    passwordC: useRef(null),
+    passwordN: useRef<TextInput>(null),
+    passwordC: useRef<TextInput>(null),
   };
   const [state, setState] = useState({
     passwordN: '',
@@ -38,9 +68,13 @@ const NewPassword = ({ navigation, route }: Props) => {
   });
 
   const [error, seterror] = React.useState<string>();
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
+
   const [hidePassN, setHidePassN] = useState(true);
   const [hidePassC, setHidePassC] = useState(true);
-  const changeHandler = (type, value) => setState({ ...state, [type]: value });
+  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
+  const { colors } = useTheme();
+  const toast = useToast();
 
   const PasswordUpdate = async () => {
     const { passwordC, passwordN } = state;
@@ -48,16 +82,15 @@ const NewPassword = ({ navigation, route }: Props) => {
     const passwordErrorC = await validator('passwordC', passwordC);
     const passwordErrorN = await validator('passwordN', passwordN);
 
-    if (!passwordErrorC && !passwordErrorN) {
+    if (!passwordErrorC && !passwordErrorN && oobCode) {
       dispatch(setLoader(true));
-      console.log(route.params.oobCode);
 
       if (passwordC == passwordN) {
         try {
-          const result = await auth().checkActionCode(route.params.oobCode);
+          const result = await auth().checkActionCode(oobCode);
 
           if (result.operation == 'PASSWORD_RESET') {
-            await auth().confirmPasswordReset(route.params.oobCode, passwordN);
+            await auth().confirmPasswordReset(oobCode, passwordN);
 
             const res = await ApiCall({
               route: 'auth/sendPasswordChangeConfirmation',
@@ -66,10 +99,13 @@ const NewPassword = ({ navigation, route }: Props) => {
             });
 
             navigation.navigate('Login');
-            Toast.show('Password Reset Sucessfuly', Toast.LONG);
+            toast.show('Password Reset Sucessfuly', {
+              type: 'success',
+              duration: 3500,
+            });
             dispatch(setLoader(false));
           }
-        } catch (e) {
+        } catch (e: any) {
           seterror('Expired code, please try again.');
           console.log('saga error -- ', e.toString());
         }
@@ -82,57 +118,61 @@ const NewPassword = ({ navigation, route }: Props) => {
   };
 
   return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
+    <View style={{ flex: 1, marginHorizontal: spacing.x16 }}>
+      <View style={{ marginVertical: spacing.x16 }}>
+        <StyledText style={[Typography.header.h1]}>Reset your password?</StyledText>
 
-      <LinearGradient style={{ flex: 1 }} colors={['#fff', '#fff', '#E0EEF3']}>
-        <Logo
-          height={getHeight(17)}
-          width={getWidth(50)}
-          style={{ marginTop: 20, alignSelf: 'center' }}
-        />
-        <View style={styles.options}>
-          <Text style={styles.title}>New Password</Text>
-          <Text style={styles.subTitle}>Create your new passsword</Text>
-        </View>
+        <StyledText
+          style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+        >
+          Set a new password for your account. Ensure it is secured and easy for you to remember
+        </StyledText>
+      </View>
+      <View
+        style={{
+          paddingHorizontal: spacing.x16,
+          paddingVertical: spacing.x24,
 
-        <View style={{ margin: getHeight(5) }}>
-          <TextInput
-            theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+          backgroundColor: colors.background,
+          borderRadius: borderRadius.base,
+          marginBottom: spacing.x64,
+          marginTop: spacing.x32,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          {/* {showSuccess ? (
+            <View
+              style={[
+                GeneralStyle.MessageView,
+                { backgroundColor: Colors.successFeedback.background },
+              ]}
+            >
+              <StyledText style={GeneralStyle.successtext}>
+                If you have an account with us, You will get an email with the instructions to reset
+                your password
+              </StyledText>
+            </View>
+          ) : null} */}
+          <StyledTextInput
+            wrapperStyle={{ flex: 1 }}
             ref={inputRefs.passwordN}
             value={state.passwordN}
             returnKeyType={'next'}
             label={'New Password'}
-            mode="outlined"
             secureTextEntry={hidePassN ? true : false}
-            right={
-              <TextInput.Icon
-                icon={() => (
-                  <MaterialCommunityIcons
-                    name={hidePassN ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color={'#5B7279'}
-                    style={{
-                      alignSelf: 'center',
-
-                      marginTop: getHeight(1),
-                    }}
-                    onPress={() => setHidePassN(!hidePassN)}
-                  />
-                )}
+            rightIcon={
+              <MaterialCommunityIcons
+                name={hidePassN ? 'eye-outline' : 'eye-off-outline'}
+                size={20}
+                color={'#5B7279'}
+                style={{
+                  alignSelf: 'center',
+                }}
+                onPress={() => setHidePassN(!hidePassN)}
               />
             }
             // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-            style={GeneralStyle.input}
+
             placeholder="New Password"
             onFocus={() => setState({ ...state, passwordErrorN: '' })}
             onBlur={() =>
@@ -140,36 +180,38 @@ const NewPassword = ({ navigation, route }: Props) => {
                 setState({ ...state, passwordErrorN: error })
               )
             }
-            onSubmitEditing={() => inputRefs.passwordC.current.focus()}
+            onSubmitEditing={() => {
+              if (inputRefs.passwordC.current) {
+                inputRefs.passwordC.current.focus();
+              }
+            }}
             onChangeText={(passwordN) => changeHandler('passwordN', passwordN.trim())}
             blurOnSubmit={false}
           />
-          <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>{state.passwordErrorN}</Text>
 
-          <TextInput
-            theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+          {state.passwordErrorN != null ? (
+            <StyledText style={{ ...GeneralStyle.InputError }}>{state.passwordErrorN}</StyledText>
+          ) : null}
+          <StyledTextInput
+            wrapperStyle={{ flex: 1 }}
             ref={inputRefs.passwordC}
             value={state.passwordC}
             returnKeyType={'done'}
             label={'Confirm Password'}
-            mode="outlined"
             secureTextEntry={hidePassC ? true : false}
-            right={
-              <TextInput.Icon
-                icon={() => (
-                  <MaterialCommunityIcons
-                    name={hidePassC ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color={'#5B7279'}
-                    style={styles.hidepicc}
-                    onPress={() => setHidePassC(!hidePassC)}
-                  />
-                )}
+            rightIcon={
+              <MaterialCommunityIcons
+                name={hidePassN ? 'eye-outline' : 'eye-off-outline'}
+                size={20}
+                color={'#5B7279'}
+                style={{
+                  alignSelf: 'center',
+                }}
+                onPress={() => setHidePassN(!hidePassN)}
               />
             }
             // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-            style={GeneralStyle.input}
+
             placeholder="Confirm Password"
             onFocus={() => setState({ ...state, passwordErrorC: '' })}
             onBlur={() =>
@@ -181,75 +223,141 @@ const NewPassword = ({ navigation, route }: Props) => {
             onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
             blurOnSubmit={false}
           />
-          <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>{state.passwordErrorC}</Text>
+          {state.passwordErrorC != null ? (
+            <StyledText style={{ ...GeneralStyle.InputError }}>{state.passwordErrorC}</StyledText>
+          ) : null}
         </View>
         <Button
-          text={'CHANGE PASSWORD'}
+          text="Change Password"
+          btnStyle={[
+            button.primary,
+            {
+              flex: 1,
+            },
+          ]}
+          disabledBtnStyle={[
+            button.primary,
+            {
+              backgroundColor: Colors.primarySapphire[200],
+              flex: 1,
+              opacity: 0.4,
+            },
+          ]}
           onPress={() => {
             PasswordUpdate();
           }}
-          mode="contained"
-          paper
-          btnStyle={{ marginHorizontal: 30 }}
+          btnTextStyle={{ color: '#FFF' }}
+          disabledBtnTextStyle={{ color: Colors.primarySapphire[600] }}
         />
-        <Button
-          text={'Cancel'}
-          onPress={() => {
-            navigation.goBack();
-          }}
-          paper
-          mode="text"
-          btnStyle={{ marginHorizontal: 30, marginTop: 10 }}
-        />
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
 
-        <GoBackIcon color={'white'} />
-      </LinearGradient>
-    </KeyboardAwareScrollView>
+            alignItems: 'center',
+            marginTop: 10,
+          }}
+        >
+          <Button
+            text={'Cancel'}
+            onPress={() => {
+              navigation.goBack();
+            }}
+          />
+        </View>
+      </View>
+    </View>
+    // <>
+    //   <View style={styles.options}>
+    //     <Text style={styles.title}>New Password</Text>
+    //     <Text style={styles.subTitle}>Create your new passsword</Text>
+    //   </View>
+
+    //   <View style={{ margin: getHeight(5) }}>
+    //     <StyledTextInput
+    //       ref={inputRefs.passwordN}
+    //       value={state.passwordN}
+    //       returnKeyType={'next'}
+    //       label={'New Password'}
+    //       secureTextEntry={hidePassN ? true : false}
+    //       rightIcon={
+    //         <MaterialCommunityIcons
+    //           name={hidePassN ? 'eye-off-outline' : 'eye-outline'}
+    //           size={20}
+    //           color={'#5B7279'}
+    //           style={{
+    //             alignSelf: 'center',
+
+    //             marginTop: getHeight(1),
+    //           }}
+    //           onPress={() => setHidePassN(!hidePassN)}
+    //         />
+    //       }
+    //       // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
+    //       style={GeneralStyle.input}
+    //       placeholder="New Password"
+    //       onFocus={() => setState({ ...state, passwordErrorN: '' })}
+    //       onBlur={() =>
+    //         validateFields(state.passwordN, 'passwordN', (error) =>
+    //           setState({ ...state, passwordErrorN: error })
+    //         )
+    //       }
+    //       onSubmitEditing={() => {
+    //         if (inputRefs.passwordC.current) {
+    //           inputRefs.passwordC.current.focus();
+    //         }
+    //       }}
+    //       onChangeText={(passwordN) => changeHandler('passwordN', passwordN.trim())}
+    //       blurOnSubmit={false}
+    //     />
+    //     <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>{state.passwordErrorN}</Text>
+
+    //     <StyledTextInput
+    //       ref={inputRefs.passwordC}
+    //       value={state.passwordC}
+    //       returnKeyType={'done'}
+    //       label={'Confirm Password'}
+    //       secureTextEntry={hidePassC ? true : false}
+    //       rightIcon={
+    //         <MaterialCommunityIcons
+    //           name={hidePassC ? 'eye-off-outline' : 'eye-outline'}
+    //           size={20}
+    //           color={'#5B7279'}
+    //           style={styles.hidepicc}
+    //           onPress={() => setHidePassC(!hidePassC)}
+    //         />
+    //       }
+    //       // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
+    //       style={GeneralStyle.input}
+    //       placeholder="Confirm Password"
+    //       onFocus={() => setState({ ...state, passwordErrorC: '' })}
+    //       onBlur={() =>
+    //         validateFields(state.passwordC, 'passwordC', (error) =>
+    //           setState({ ...state, passwordErrorC: error })
+    //         )
+    //       }
+    //       onSubmitEditing={() => PasswordUpdate()}
+    //       onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
+    //       blurOnSubmit={false}
+    //     />
+    //     <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>{state.passwordErrorC}</Text>
+    //   </View>
+    //   <Button
+    //     text={'CHANGE PASSWORD'}
+    //     onPress={() => {
+    //       PasswordUpdate();
+    //     }}
+    //     btnStyle={{ marginHorizontal: 30 }}
+    //   />
+    //   <Button
+    //     text={'Cancel'}
+    //     onPress={() => {
+    //       navigation.goBack();
+    //     }}
+    //     btnStyle={{ marginHorizontal: 30, marginTop: 10 }}
+    //   />
+    // </>
   );
 };
-const styles = StyleSheet.create({
-  container: {},
-  options: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: getHeight(8),
-  },
-  title: {
-    color: appColor.PrimaryColor,
-    fontSize: getFontSize(3.2),
-    fontFamily: 'Rubik-Medium',
-    textAlign: 'justify',
-  },
-  subTitle: {
-    color: appColor.InstructionColor,
-    fontSize: 16,
-    marginTop: 10,
-    marginHorizontal: 40,
-    lineHeight: 19,
-    textAlign: 'center',
-  },
-  borderStyleHighLighted: {
-    borderColor: '#03DAC6',
-    color: appColor.PrimaryColor,
-  },
-  header: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-  },
-  underlineStyleBase: {
-    borderWidth: 1,
-    width: 70,
-    height: 50,
-    borderRadius: 10,
-    borderColor: '#032F3C',
-  },
-
-  underlineStyleHighLighted: {
-    borderColor: 'red',
-    // borderColor: '#03DAC6',
-  },
-});
 
 export default NewPassword;

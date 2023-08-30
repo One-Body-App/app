@@ -134,13 +134,7 @@ export type SettingsStackParamsList = {
     oauth_token?: string;
     oauth_verifier?: string;
   };
-  ConfirmLogin: {
-    toScreen: keyof SettingsStackParamsList;
-    error?: string;
-    onlyPassword?: boolean;
-    mode?: string;
-    toScreenRouteParams?: Record<string, string>;
-  };
+
   EmailChange: {
     setError: (errorText: string) => void;
   };
@@ -161,7 +155,7 @@ export type SettingsStackParamsList = {
   InfluencerStepFour: {
     data: any;
   };
-  NewPassword: undefined;
+
   RemoveAccountConfirmation: { reason: string };
 };
 
@@ -191,11 +185,20 @@ export type MainDrawerParamsList = {
 };
 
 export type OnboardingStackParamList = {
-  OrgnizationSteps: undefined;
-  IndividualSteps: undefined;
+  OnboardingIntro: undefined;
+  OnboardingChurchAttend: undefined;
+  OnboardingChurchType: undefined;
+  OnboardingDateOfBirth: undefined;
+  OnboardingInfluencers: undefined;
+  OnboardingInterests: undefined;
+  OnboardingLocation: undefined;
+  OnboardingOrganizationContact: undefined;
+  OnboardingOrganizationInfo: undefined;
+  OnboardingOrganizationType: undefined;
 };
 
 export type RootNonUserStackParamList = {
+  NewPassword: undefined;
   Intro: undefined;
   AccountType: undefined;
   PasswordChange: {
@@ -221,10 +224,15 @@ export type RootNonUserStackParamList = {
   ForgotPassword: undefined;
 
   ConfirmLogin: {
-    toScreen: keyof RootNonUserStackParamList;
+    toScreen?: keyof RootNonUserStackParamList;
     error?: string;
     onlyPassword?: boolean;
     mode?: string;
     toScreenRouteParams?: Record<string, string>;
+    oobCode?: string;
+
+    action?: string;
+    apiKey?: string;
+    lang?: string;
   };
 };

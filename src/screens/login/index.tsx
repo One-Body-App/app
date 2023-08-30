@@ -30,8 +30,6 @@ const Login = ({ route, navigation }: Props) => {
         <ScrollView style={{ flex: 1 }}>
           <LoginComponent
             showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
-            navigation={navigation}
-            route={route}
             enabledLoginProviders={loginProviders}
             {...route.params}
           />

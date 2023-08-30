@@ -57,10 +57,27 @@ import { Colors } from '../styles';
 import AccountType from '../screens/accountType';
 import FastImage from 'react-native-fast-image';
 import SettingsStack from './SettingsStack';
+import NewPassword from '../screens/newPassword/NewPassword';
+import ConfirmLogin from '../screens/login/ConfirmLogin';
+import OnboardingStack from './OnboardingStack';
 
 const NonUserStack = createNativeStackNavigator<RootNonUserStackParamList>();
-const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
+
+export const headerOptions: NativeStackNavigationOptions = {
+  headerShadowVisible: false,
+  headerTransparent: true,
+  headerBackTitleVisible: false,
+  headerTitle() {
+    return (
+      <FastImage
+        style={{ width: 100, height: 28 }}
+        resizeMode={FastImage.resizeMode.contain}
+        source={require('@/assets/images/logo_header.png')}
+      />
+    );
+  },
+};
 
 const Main = () => {
   const toast = useToast();
@@ -235,21 +252,6 @@ const Main = () => {
     );
   }
 
-  const headerOptions: NativeStackNavigationOptions = {
-    headerShadowVisible: false,
-    headerTransparent: true,
-    headerBackTitleVisible: false,
-    headerTitle() {
-      return (
-        <FastImage
-          style={{ width: 100, height: 28 }}
-          resizeMode={FastImage.resizeMode.contain}
-          source={require('@/assets/images/logo_header.png')}
-        />
-      );
-    },
-  };
-
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       {/* <AppProvider> */}
@@ -261,7 +263,7 @@ const Main = () => {
         authState.getProfileData?.accountType == 'organization') &&
       user?.emailVerified ? (
         <>
-          {authState.getProfileData.isProfileCompleted ? (
+          {!authState.getProfileData.isProfileCompleted ? (
             <DrawerStack.Navigator
               screenOptions={{
                 headerTintColor: Colors.primary.brand,
@@ -306,13 +308,7 @@ const Main = () => {
               <DrawerStack.Screen name="Help" component={Help} />
             </DrawerStack.Navigator>
           ) : (
-            <OnboardingStack.Navigator screenOptions={{ headerShown: false }}>
-              {authState.getProfileData?.accountType == 'individual' ? (
-                <OnboardingStack.Screen name="IndividualSteps" component={IndividualSteps} />
-              ) : (
-                <OnboardingStack.Screen name="OrgnizationSteps" component={OrgnizationSteps} />
-              )}
-            </OnboardingStack.Navigator>
+            <OnboardingStack />
           )}
         </>
       ) : (
@@ -326,6 +322,11 @@ const Main = () => {
             name="ForgotPassword"
             component={ForgotPassword}
             options={headerOptions}
+          />
+          <NonUserStack.Screen
+            name="ConfirmLogin"
+            component={ConfirmLogin}
+            options={{ presentation: 'modal', ...headerOptions }}
           />
         </NonUserStack.Navigator>
       )}
