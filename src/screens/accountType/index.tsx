@@ -25,6 +25,7 @@ import { useTheme } from '@react-navigation/native';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { StyledText } from '@/src/components/styled/Text';
+import { GeneralStyle } from '@/src/constants/GeneralStyle';
 
 type Props = StackScreenProps<RootNonUserStackParamList, 'AccountType'>;
 
@@ -79,7 +80,7 @@ const AccountType = ({ route, navigation }: Props) => {
             </View>
             <View
               style={[
-                styles.radioButton,
+                GeneralStyle.radioButton,
                 {
                   borderColor:
                     accountType == AccountTypeType.individual
@@ -89,7 +90,7 @@ const AccountType = ({ route, navigation }: Props) => {
               ]}
             >
               {accountType == AccountTypeType.individual ? (
-                <View style={styles.radioButtonIcon} />
+                <View style={GeneralStyle.radioButtonIcon} />
               ) : null}
             </View>
           </TouchableOpacity>
@@ -126,7 +127,7 @@ const AccountType = ({ route, navigation }: Props) => {
             </View>
             <View
               style={[
-                styles.radioButton,
+                GeneralStyle.radioButton,
                 {
                   borderColor:
                     accountType == AccountTypeType.organization
@@ -136,7 +137,7 @@ const AccountType = ({ route, navigation }: Props) => {
               ]}
             >
               {accountType == AccountTypeType.organization ? (
-                <View style={styles.radioButtonIcon} />
+                <View style={GeneralStyle.radioButtonIcon} />
               ) : null}
             </View>
           </TouchableOpacity>
@@ -172,29 +173,3 @@ const AccountType = ({ route, navigation }: Props) => {
   );
 };
 export default AccountType;
-
-const styles = StyleSheet.create({
-  radioButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 45,
-  },
-  radioButton: {
-    height: 20,
-    width: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioButtonIcon: {
-    height: 14,
-    width: 14,
-    borderRadius: 7,
-    backgroundColor: Colors.primarySapphire.brand,
-  },
-  radioButtonText: {
-    fontSize: 16,
-    marginLeft: 16,
-  },
-});

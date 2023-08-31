@@ -49,4 +49,28 @@ export const GeneralStyle = StyleSheet.create({
     color: Colors.successFeedback.text,
     flex: 1,
   },
+
+  radioButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 45,
+  },
+  radioButton: {
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioButtonIcon: {
+    height: 14,
+    width: 14,
+    borderRadius: 7,
+    backgroundColor: Colors.primarySapphire.brand,
+  },
+  radioButtonText: {
+    fontSize: 16,
+    marginLeft: 16,
+  },
 });

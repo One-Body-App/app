@@ -1,4 +1,4 @@
-type ColorVariants = 'brand' | '200' | '300' | '400' | '500' | '600' | '700' | '800';
+type ColorVariants = 'brand' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
 
 export const primary: Record<ColorVariants, string> = {
   brand: '#032F3C',
@@ -10,6 +10,7 @@ export const primary: Record<ColorVariants, string> = {
   600: '#9AACB1',
   700: '#B3C1C5',
   800: '#CDD5D8',
+  900: '#E6EAEC',
 };
 
 export const primarySapphire: Record<ColorVariants, string> = {
@@ -22,6 +23,7 @@ export const primarySapphire: Record<ColorVariants, string> = {
   600: '#A0C4CF',
   700: '#B8D3DB',
   800: '#D0E1E7',
+  900: '#E7F0F3',
 };
 
 export const secondary: Record<ColorVariants, string> = {
@@ -33,7 +35,8 @@ export const secondary: Record<ColorVariants, string> = {
   500: '#89E9EC',
   600: '#A0EDF0',
   700: '#B8F2F4',
-  800: '#FFFFFF',
+  800: '#D0F6F7',
+  900: '#E7FBFB',
 };
 
 export const neutral: Record<ColorVariants, string> = {
@@ -46,6 +49,7 @@ export const neutral: Record<ColorVariants, string> = {
   600: '#F7F7F7',
   700: '#F2F3F3',
   800: '#F1F1F1',
+  900: '#FFFFFF',
 };
 
 type FeedBackColor = 'background' | '200' | '300' | '400' | 'text';

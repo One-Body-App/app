@@ -6,7 +6,7 @@ import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 
 interface Props extends TextInputProps {
-  label: string;
+  label?: string;
   inputStyle?: TextStyle;
   wrapperStyle?: ViewStyle;
   rightIcon?: ReactElement;
@@ -31,7 +31,9 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
   }
   return (
     <View style={wrapperStyle}>
-      <StyledText style={{ marginBottom: 15, color: Colors.neutral.brand }}>{label}</StyledText>
+      {label && label != '' ? (
+        <StyledText style={{ marginBottom: 15, color: Colors.neutral.brand }}>{label}</StyledText>
+      ) : null}
       <View
         style={{
           flexDirection: 'row',

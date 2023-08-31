@@ -186,9 +186,17 @@ export type MainDrawerParamsList = {
 
 export type OnboardingStackParamList = {
   OnboardingIntro: undefined;
-  OnboardingChurchAttend: undefined;
+  OnboardingChurchAttend: {
+    selectedChurchType: string;
+    selectedChurchSubType?: string;
+  };
   OnboardingChurchType: undefined;
-  OnboardingDateOfBirth: undefined;
+  OnboardingDateOfBirth: {
+    selectedChurchType: string;
+    selectedChurchSubType?: string;
+
+    selectedChurchAttendence: string;
+  };
   OnboardingInfluencers: undefined;
   OnboardingInterests: undefined;
   OnboardingLocation: undefined;

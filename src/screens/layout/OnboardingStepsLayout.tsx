@@ -13,6 +13,7 @@ type Props = {
   buttonText: string;
   onboardingType: AccountType;
   activeStep: number;
+  disabled?: boolean;
 };
 
 const indicatorStyle: ViewStyle = {
@@ -30,6 +31,7 @@ const OnboardingStepsLayout = ({
   buttonText,
   onboardingType,
   activeStep,
+  disabled,
 }: Props) => {
   return (
     <SafeAreaView style={{ flex: 1, marginHorizontal: spacing.x24 }}>
@@ -40,21 +42,21 @@ const OnboardingStepsLayout = ({
               style={[
                 indicatorStyle,
                 { marginHorizontal: 0 },
-                activeStep == 1 ? { opacity: 1 } : null,
+                activeStep >= 1 ? { opacity: 1 } : null,
               ]}
             ></View>
-            <View style={[indicatorStyle, activeStep == 2 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep == 3 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep == 4 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep == 5 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]}></View>
           </View>
         ) : (
           <View style={{ flexDirection: 'row' }}>
-            <View style={[indicatorStyle, activeStep == 1 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep == 2 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep == 3 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep == 4 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep == 5 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 1 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]}></View>
           </View>
         )}
       </View>
@@ -64,16 +66,25 @@ const OnboardingStepsLayout = ({
       <View style={{ justifyContent: 'center' }}>
         <Button
           text={buttonText}
+          disabled={disabled}
           btnStyle={[
             button.primary,
             {
               flex: 1,
             },
           ]}
+          disabledBtnStyle={[
+            button.primary,
+            {
+              flex: 1,
+              opacity: 0.4,
+            },
+          ]}
           onPress={() => {
             onPress();
           }}
           btnTextStyle={{ color: '#FFF' }}
+          disabledBtnTextStyle={{ color: '#FFF' }}
         />
       </View>
     </SafeAreaView>
