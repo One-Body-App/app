@@ -38,8 +38,6 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled }: Props) => {
     passwordError: '',
   });
 
-  const [token, setToken] = useState('');
-
   const dispatch = useDispatch();
   const accounType = useSelector((state: RootState) => state.general.accountType);
 
@@ -89,7 +87,7 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled }: Props) => {
       if (credentialState === appleAuth.State.AUTHORIZED) {
         const userCredentials = await auth().signInWithCredential(appleCredential);
 
-        processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+        processLogin(userCredentials, setNewUserCredentials);
       }
     } catch (error: any) {
       if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
@@ -132,7 +130,7 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled }: Props) => {
 
       const userCredentials = await auth().signInWithCredential(googleCredential);
 
-      processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+      processLogin(userCredentials, setNewUserCredentials);
     } catch (error: any) {
       if (!error.message.includes('Code=-5')) {
         seterror(error.message.replace(`[${error.code}]`, ''));
@@ -162,7 +160,7 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled }: Props) => {
       const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
       const userCredentials = await auth().signInWithCredential(facebookCredential);
 
-      processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+      processLogin(userCredentials, setNewUserCredentials);
     } catch (error: any) {
       if (error.message) seterror(error.message.replace(`[${error.code}]`, ''));
     }

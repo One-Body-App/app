@@ -110,6 +110,9 @@ export const signUp = {
     type: SignUp.FAILED,
     payload: error,
   }),
+  Reset: () => ({
+    type: SignUp.RESET,
+  }),
 };
 
 //Send Verification Email Actions

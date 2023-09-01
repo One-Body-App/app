@@ -72,6 +72,7 @@ export const SignUp = {
   REQUEST: 'sign_up_request',
   SUCCESS: 'sign_up_success',
   FAILED: 'sign_up_failed',
+  RESET: 'sign_up_reset',
 };
 
 //Send Verification Email

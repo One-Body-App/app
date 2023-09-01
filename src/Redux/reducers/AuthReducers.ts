@@ -143,6 +143,13 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         error: action.payload,
       };
 
+    case SignUp.RESET:
+      return {
+        ...state,
+        signUpSuccess: false,
+        error: '',
+      };
+
     //Send Verification Email
     case SendVerificationEmail.REQUEST:
       return {

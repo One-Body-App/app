@@ -38,6 +38,7 @@ import axios from 'axios';
 import { processLogin } from '@/src/Services/login';
 import SignupButtons from '@/src/components/SignupButtons';
 import Button from '@/src/components/Button';
+import { ApiCall } from '@/src/Services/api';
 
 const { width: wWidth } = Dimensions.get('window');
 
@@ -87,13 +88,15 @@ const SignupForm = ({ navigation, route }: Props) => {
     username: '',
     usernameError: '',
   });
-  const [error, seterror] = React.useState<string>();
+  const [error, setError] = React.useState<string>();
+  const [socialError, setSocialError] = React.useState<string>();
   const [hidePass, setHidePass] = useState(true);
   const [chidePass, setcHidePass] = useState(true);
   const [loading, setIsloading] = useState(false);
 
   const signUpUser = async () => {
     setIsloading(true);
+    setError('');
     const { email, password, name, cPassword, username } = state;
     const emailError = await validator('email', email);
     const nameError = await validator('name', name);
@@ -103,12 +106,32 @@ const SignupForm = ({ navigation, route }: Props) => {
 
     if (!emailError && !passwordError && !nameError && !cPasswordError && !usernameError) {
       if (password == cPassword) {
-        console.log('recaptcha.current?.open');
-        recaptcha.current?.open();
+        const { email, password, name, cPassword, username } = state;
+
+        const data = {
+          email,
+          name,
+          accountType,
+          userId: '',
+          username,
+        };
+
+        const userValidation = await ApiCall({
+          route: 'user/validateUserInfo',
+          params: data,
+          verb: 'post',
+        });
+
+        if (userValidation.status == 200) {
+          recaptcha.current?.open();
+        } else {
+          setIsloading(false);
+          setError(userValidation.response.message);
+        }
 
         //
       } else {
-        seterror('Both passwords MUST match!');
+        setError('Both passwords must match. Please make sure they are identical.');
       }
     } else {
       setIsloading(false);
@@ -160,16 +183,16 @@ const SignupForm = ({ navigation, route }: Props) => {
       .catch((error) => {
         setIsloading(false);
         if (error.code === 'auth/email-already-in-use') {
-          seterror('That email address is already in use!');
-          console.log('That email address is already in use!');
+          setError(
+            'A user already exists with this email address. Please use another email address'
+          );
         }
 
         if (error.code === 'auth/invalid-email') {
-          seterror('That email address is invalid!');
-          console.log('That email address is invalid!');
+          setError(
+            'The email address you provided is not valid. Please enter a valid email address.'
+          );
         }
-
-        console.log('Firebase login error', error);
       });
   };
 
@@ -180,8 +203,12 @@ const SignupForm = ({ navigation, route }: Props) => {
     } else if (authState.signUpSuccess == false) {
       setIsloading(false);
       console.log('Register Error', authState?.error);
-      seterror(authState?.error ? authState?.error[0] : '');
+      setError(authState?.error ? authState?.error[0] : '');
     }
+
+    return () => {
+      dispatch(signUp.Reset());
+    };
   }, [authState.signUpSuccess]);
 
   const onExpire = () => {
@@ -238,7 +265,7 @@ const SignupForm = ({ navigation, route }: Props) => {
         token,
       };
 
-      dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));
+      dispatch(loginSocialRequest({ data, setSocialError, gotoSignup, sendFcm }));
     }
   };
 
@@ -275,16 +302,10 @@ const SignupForm = ({ navigation, route }: Props) => {
 
             const userCredentials = await auth().signInWithCredential(twitterCredential);
 
-            await processLogin(
-              userCredentials,
-              setToken,
-              dispatch,
-              setAccountType,
-              setNewUserCredentials
-            );
+            await processLogin(userCredentials, setNewUserCredentials, setToken);
           }
         } catch (error: any) {
-          seterror(error.nativeErrorMessage);
+          setSocialError(error.nativeErrorMessage);
         }
       };
       getTwitterAuthToken();
@@ -345,7 +366,7 @@ const SignupForm = ({ navigation, route }: Props) => {
                 socialLogin={socialLogin}
                 navigation={navigation}
                 route={route}
-                errorFromLogin={error}
+                errorFromLogin={socialError}
                 disabled={!!!accountType}
               />
             </View>
@@ -610,8 +631,8 @@ const SignupForm = ({ navigation, route }: Props) => {
               </TouchableOpacity>
             </View>
 
-            {error != null ? (
-              <View style={{ padding: 5, flexDirection: 'row' }}>
+            {error && error != '' ? (
+              <View style={{ padding: 5, flexDirection: 'row', marginBottom: 10 }}>
                 <StyledText
                   style={{
                     color: 'red',
@@ -646,7 +667,14 @@ const SignupForm = ({ navigation, route }: Props) => {
               btnTextStyle={{ color: '#FFF' }}
               disabledBtnTextStyle={{ color: '#FFF' }}
               wrapperBtnStyle={{ flex: 1 }}
-              disabled={loading}
+              disabled={
+                loading ||
+                !state.cPassword ||
+                !state.password ||
+                !state.email ||
+                !state.name ||
+                !state.username
+              }
             />
           </View>
         </ScrollView>

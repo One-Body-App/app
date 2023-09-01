@@ -7,13 +7,13 @@ import { Dispatch } from '@reduxjs/toolkit';
 
 export const processLogin = async (
   userCredentials: FirebaseAuthTypes.UserCredential,
-  setToken: Function,
-  dispatch: Function,
-  setAccountType: Function,
-  setNewUserCredentials: Function
+  setNewUserCredentials: Function,
+  setToken?: Function
 ) => {
   const token = await userCredentials.user.getIdToken();
-  setToken(token);
+  if (setToken) {
+    setToken(token);
+  }
 
   let userProfileResult;
 

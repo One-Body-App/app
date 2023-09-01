@@ -14,7 +14,7 @@ export const ApiCall = async ({
 {
   params?: Record<string, any>;
   route: string;
-  verb: string;
+  verb: 'post' | 'get' | 'delete' | 'patch';
   token?: string;
   baseurl?: string;
   external?: boolean;

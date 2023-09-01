@@ -33,7 +33,12 @@ import { appColor } from '../../constants';
 import { requestUserPermission } from '../../Services/Notification/notificationServices';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import GradientButton from '../GradientButton';
-import { loginSocialRequest, logout, sendVerificationEmail } from '@/src/Redux/actions/AuthActions';
+import {
+  loginSocialRequest,
+  logout,
+  sendVerificationEmail,
+  signUp,
+} from '@/src/Redux/actions/AuthActions';
 
 import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 
@@ -271,13 +276,7 @@ const LoginComponent: FC<Props> = ({
                   navigation.goBack();
                 }
               } else {
-                processLogin(
-                  userCredentials,
-                  setToken,
-                  dispatch,
-                  setAccountType,
-                  setNewUserCredentials
-                );
+                processLogin(userCredentials, setToken, setNewUserCredentials);
               }
             }
           }
@@ -321,27 +320,25 @@ const LoginComponent: FC<Props> = ({
         if (verifyAccount) {
           setState({ ...state, password: '' });
 
-          if (toScreen) {
-            navigation.goBack();
-            navigation.push(toScreen as keyof RootNonUserStackParamList, {
-              setError: seterror,
-              ...toScreenRouteParams,
-            });
+          if (mode == 'verifyEmail') {
+            await processLogin(emailCredential, setToken, setNewUserCredentials);
           } else {
-            navigation.goBack();
+            if (toScreen) {
+              navigation.goBack();
+              navigation.push(toScreen as keyof RootNonUserStackParamList, {
+                setError: seterror,
+                ...toScreenRouteParams,
+              });
+            } else {
+              navigation.goBack();
+            }
           }
         } else {
           if (emailCredential.user.emailVerified) {
-            await processLogin(
-              emailCredential,
-              setToken,
-              dispatch,
-              setAccountType,
-              setNewUserCredentials
-            );
             dispatch(setLoader(false));
           } else {
             setIsVerificationNeeded(true);
+            await processLogin(emailCredential, setToken, setNewUserCredentials);
 
             dispatch(setLoader(false));
           }
@@ -352,6 +349,7 @@ const LoginComponent: FC<Props> = ({
         setState({ ...state, emailError, passwordError });
       }
     } catch (error: any) {
+      console.log(error);
       let message = 'User/password combination not found';
       if (
         error.message &&
@@ -443,7 +441,7 @@ const LoginComponent: FC<Props> = ({
       if (credentialState === appleAuth.State.AUTHORIZED) {
         const userCredentials = await auth().signInWithCredential(appleCredential);
 
-        processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+        processLogin(userCredentials, setToken, setNewUserCredentials);
       }
     } catch (error: any) {
       if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
@@ -482,13 +480,7 @@ const LoginComponent: FC<Props> = ({
             navigation.goBack();
           }
         } else {
-          await processLogin(
-            userCredentials,
-            setToken,
-            dispatch,
-            setAccountType,
-            setNewUserCredentials
-          );
+          await processLogin(userCredentials, setToken, setNewUserCredentials);
         }
       }
       dispatch(setLoader(false));
@@ -542,13 +534,7 @@ const LoginComponent: FC<Props> = ({
             navigation.goBack();
           }
         } else {
-          await processLogin(
-            userCredentials,
-            setToken,
-            dispatch,
-            setAccountType,
-            setNewUserCredentials
-          );
+          await processLogin(userCredentials, setToken, setNewUserCredentials);
         }
       }
 
@@ -628,11 +614,13 @@ const LoginComponent: FC<Props> = ({
           {verifyAccount ? 'Verify your account information' : 'Welcome back'}
         </StyledText>
 
-        <StyledText
-          style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
-        >
-          Sign in to your account
-        </StyledText>
+        {!verifyAccount ? (
+          <StyledText
+            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+          >
+            Sign in to your account
+          </StyledText>
+        ) : null}
       </View>
       <View
         style={{
@@ -644,19 +632,26 @@ const LoginComponent: FC<Props> = ({
           marginBottom: spacing.x64,
         }}
       >
-        <View>
-          <TouchableOpacity
-            style={{ flexDirection: 'row', marginBottom: spacing.x24, flex: 1 }}
-            onPress={() => {
-              navigation.replace('AccountType');
-            }}
-          >
-            <StyledText style={{ color: Colors.neutral[200] }}>New to OneBody? </StyledText>
-            <StyledText style={{ color: Colors.primarySapphire.brand }}>
-              Create an account
-            </StyledText>
-          </TouchableOpacity>
-        </View>
+        {verifyAccount && error ? (
+          <View style={{ ...styles.Errorview }}>
+            <StyledText style={styles.errortext}>{error}</StyledText>
+          </View>
+        ) : null}
+        {!verifyAccount ? (
+          <View>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', marginBottom: spacing.x24, flex: 1 }}
+              onPress={() => {
+                navigation.replace('AccountType');
+              }}
+            >
+              <StyledText style={{ color: Colors.neutral[200] }}>New to OneBody? </StyledText>
+              <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                Create an account
+              </StyledText>
+            </TouchableOpacity>
+          </View>
+        ) : null}
         <View style={{ flex: 1 }}>
           {enabledLoginProviders && enabledLoginProviders?.indexOf('password') > -1 ? (
             <View style={{ flex: 2, flexGrow: 1, flexShrink: 0 }}>
@@ -759,43 +754,44 @@ const LoginComponent: FC<Props> = ({
               </View>
             ) : null}
 
-            <View
-              style={{
-                marginVertical: 20,
-                flex: 1,
-                flexDirection: 'column',
-              }}
-            >
-              <View style={{ flexDirection: 'row', flex: 1 }}>
-                {enabledLoginProviders &&
-                enabledLoginProviders?.includes('google.com') &&
-                enabledLoginProviders?.includes('password') ? (
-                  <View style={{ paddingHorizontal: 10, flex: 1 }}>
-                    <Button
-                      onPress={() => googleSignIn()}
-                      wrapperViewBtnStyle={{ flex: 1 }}
-                      leftIcon={<Google style={{ alignSelf: 'center' }} fill={'#000'} />}
-                      btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
-                    />
-                  </View>
-                ) : (
-                  <>
-                    {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
+            {enabledLoginProviders ? (
+              <View
+                style={{
+                  marginVertical: 20,
+                  flex: 1,
+                  flexDirection: 'column',
+                }}
+              >
+                <View style={{ flexDirection: 'row', flex: 1 }}>
+                  {enabledLoginProviders &&
+                  enabledLoginProviders?.includes('google.com') &&
+                  enabledLoginProviders?.includes('password') ? (
+                    <View style={{ paddingHorizontal: 10, flex: 1 }}>
                       <Button
-                        text={'Log in with Google'}
-                        leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
-                        btnStyle={getButtonContainer()}
-                        btnTextStyle={getButtonTextStyle()}
                         onPress={() => googleSignIn()}
-                        disabledBtnStyle={getDisabledButtonStyle()}
-                        disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                        wrapperBtnStyle={{ width: '100%' }}
+                        wrapperViewBtnStyle={{ flex: 1 }}
+                        leftIcon={<Google style={{ alignSelf: 'center' }} fill={'#000'} />}
+                        btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
                       />
-                    ) : null}
-                  </>
-                )}
+                    </View>
+                  ) : (
+                    <>
+                      {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
+                        <Button
+                          text={'Log in with Google'}
+                          leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
+                          btnStyle={getButtonContainer()}
+                          btnTextStyle={getButtonTextStyle()}
+                          onPress={() => googleSignIn()}
+                          disabledBtnStyle={getDisabledButtonStyle()}
+                          disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                          wrapperBtnStyle={{ width: '100%' }}
+                        />
+                      ) : null}
+                    </>
+                  )}
 
-                {/* {enabledLoginProviders &&
+                  {/* {enabledLoginProviders &&
         enabledLoginProviders?.includes('facebook.com') &&
         enabledLoginProviders?.includes('password') ? (
           <View style={{ paddingHorizontal: 10, flex: 1 }}>
@@ -832,104 +828,105 @@ const LoginComponent: FC<Props> = ({
           </>
         )} */}
 
-                {enabledLoginProviders &&
-                enabledLoginProviders?.includes('twitter.com') &&
-                enabledLoginProviders?.includes('password') ? (
-                  <View style={{ paddingHorizontal: 10, flex: 1 }}>
-                    <Button
-                      onPress={() => onTwitterButtonPress()}
-                      wrapperViewBtnStyle={{ flex: 1 }}
-                      leftIcon={<Twitter fill="#00acee" style={{ alignSelf: 'center' }} />}
-                      btnStyle={[
-                        getButtonContainer(),
-                        {
-                          marginHorizontal: 0,
-                          flex: 1,
-                        },
-                      ]}
-                    />
-                  </View>
-                ) : (
-                  <>
-                    {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
+                  {enabledLoginProviders &&
+                  enabledLoginProviders?.includes('twitter.com') &&
+                  enabledLoginProviders?.includes('password') ? (
+                    <View style={{ paddingHorizontal: 10, flex: 1 }}>
                       <Button
-                        text={'Login with Twitter'}
+                        onPress={() => onTwitterButtonPress()}
+                        wrapperViewBtnStyle={{ flex: 1 }}
+                        leftIcon={<Twitter fill="#00acee" style={{ alignSelf: 'center' }} />}
+                        btnStyle={[
+                          getButtonContainer(),
+                          {
+                            marginHorizontal: 0,
+                            flex: 1,
+                          },
+                        ]}
+                      />
+                    </View>
+                  ) : (
+                    <>
+                      {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
+                        <Button
+                          text={'Login with Twitter'}
+                          leftIcon={
+                            <Twitter
+                              style={{ marginRight: 7 }}
+                              height={getHeight(5)}
+                              fill="#00acee"
+                            />
+                          }
+                          btnStyle={getButtonContainer()}
+                          btnTextStyle={getButtonTextStyle()}
+                          onPress={() => {
+                            onTwitterButtonPress();
+                          }}
+                          disabledBtnStyle={getDisabledButtonStyle()}
+                          disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                          wrapperBtnStyle={{ width: '100%' }}
+                        />
+                      ) : null}
+                    </>
+                  )}
+
+                  {enabledLoginProviders &&
+                  enabledLoginProviders?.includes('apple') &&
+                  enabledLoginProviders?.includes('password') &&
+                  Platform.OS == 'ios' ? (
+                    <View style={{ paddingHorizontal: 10, flex: 1 }}>
+                      <Button
+                        onPress={() => onAppleButtonPress()}
+                        wrapperViewBtnStyle={{ flex: 1 }}
                         leftIcon={
-                          <Twitter
-                            style={{ marginRight: 7 }}
-                            height={getHeight(5)}
-                            fill="#00acee"
+                          <FontAwesome
+                            name="apple"
+                            style={{
+                              // flex: 1,
+                              // marginRight: getWidth(3),
+                              // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
+                              color: colors.text,
+                            }}
+                            size={22}
                           />
                         }
-                        btnStyle={getButtonContainer()}
-                        btnTextStyle={getButtonTextStyle()}
-                        onPress={() => {
-                          onTwitterButtonPress();
-                        }}
-                        disabledBtnStyle={getDisabledButtonStyle()}
-                        disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                        wrapperBtnStyle={{ width: '100%' }}
+                        btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
                       />
-                    ) : null}
-                  </>
-                )}
-
-                {enabledLoginProviders &&
-                enabledLoginProviders?.includes('apple') &&
-                enabledLoginProviders?.includes('password') &&
-                Platform.OS == 'ios' ? (
-                  <View style={{ paddingHorizontal: 10, flex: 1 }}>
-                    <Button
-                      onPress={() => onAppleButtonPress()}
-                      wrapperViewBtnStyle={{ flex: 1 }}
-                      leftIcon={
-                        <FontAwesome
-                          name="apple"
-                          style={{
-                            // flex: 1,
-                            // marginRight: getWidth(3),
-                            // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
-                            color: colors.text,
+                    </View>
+                  ) : (
+                    <>
+                      {enabledLoginProviders &&
+                      enabledLoginProviders?.includes('apple') &&
+                      Platform.OS == 'ios' ? (
+                        <Button
+                          text={'Login with Apple'}
+                          leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}
+                          btnStyle={getButtonContainer()}
+                          btnTextStyle={getButtonTextStyle()}
+                          onPress={() => {
+                            onAppleButtonPress();
                           }}
-                          size={22}
+                          disabledBtnStyle={getDisabledButtonStyle()}
+                          disabledBtnTextStyle={getDisabledButtonTextStyle()}
+                          wrapperBtnStyle={{ width: '100%' }}
                         />
-                      }
-                      btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
-                    />
-                  </View>
-                ) : (
-                  <>
-                    {enabledLoginProviders &&
-                    enabledLoginProviders?.includes('apple') &&
-                    Platform.OS == 'ios' ? (
-                      <Button
-                        text={'Login with Apple'}
-                        leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}
-                        btnStyle={getButtonContainer()}
-                        btnTextStyle={getButtonTextStyle()}
-                        onPress={() => {
-                          onAppleButtonPress();
-                        }}
-                        disabledBtnStyle={getDisabledButtonStyle()}
-                        disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                        wrapperBtnStyle={{ width: '100%' }}
-                      />
-                    ) : null}
-                  </>
-                )}
-              </View>
-              {!verifyAccount &&
-              enabledLoginProviders &&
-              enabledLoginProviders?.includes('password') ? (
-                <View style={{ alignItems: 'flex-end', flex: 1, marginTop: 15 }}>
-                  <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                    <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                      Forgot Password?
-                    </StyledText>
-                  </TouchableOpacity>
+                      ) : null}
+                    </>
+                  )}
                 </View>
-              ) : null}
-            </View>
+                {!verifyAccount &&
+                enabledLoginProviders &&
+                enabledLoginProviders?.includes('password') ? (
+                  <View style={{ alignItems: 'flex-end', flex: 1, marginTop: 15 }}>
+                    <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                      <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                        Forgot Password?
+                      </StyledText>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
             {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
               <View style={{ marginHorizontal: 10 }}>
                 <Button
@@ -956,7 +953,25 @@ const LoginComponent: FC<Props> = ({
               </View>
             ) : null}
 
-            {error ? (
+            {verifyAccount ? (
+              <View style={{ marginTop: enabledLoginProviders ? 20 : 0 }}>
+                <Button
+                  text="Cancel"
+                  btnStyle={[
+                    {
+                      flex: 1,
+                    },
+                  ]}
+                  onPress={() => {
+                    dispatch(signUp.Reset());
+                    navigation.goBack();
+                  }}
+                  btnTextStyle={{ color: Colors.neutral[200] }}
+                />
+              </View>
+            ) : null}
+
+            {!verifyAccount && error ? (
               <View style={{ ...styles.Errorview, marginTop: 20 }}>
                 <StyledText style={styles.errortext}>{error}</StyledText>
               </View>
