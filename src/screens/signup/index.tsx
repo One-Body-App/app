@@ -631,13 +631,20 @@ const SignupForm = ({ navigation, route }: Props) => {
                 button.primary,
                 {
                   flex: 1,
-                  opacity: loading ? 0.4 : 1,
+                },
+              ]}
+              disabledBtnStyle={[
+                button.primary,
+                {
+                  flex: 1,
+                  opacity: 0.4,
                 },
               ]}
               onPress={() => {
                 signUpUser();
               }}
               btnTextStyle={{ color: '#FFF' }}
+              disabledBtnTextStyle={{ color: '#FFF' }}
               wrapperBtnStyle={{ flex: 1 }}
               disabled={loading}
             />

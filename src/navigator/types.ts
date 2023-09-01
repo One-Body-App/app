@@ -197,12 +197,58 @@ export type OnboardingStackParamList = {
 
     selectedChurchAttendence: string;
   };
-  OnboardingInfluencers: undefined;
-  OnboardingInterests: undefined;
-  OnboardingLocation: undefined;
-  OnboardingOrganizationContact: undefined;
-  OnboardingOrganizationInfo: undefined;
+  OnboardingLocation: {
+    selectedChurchType: string;
+    selectedChurchSubType?: string;
+    selectedChurchAttendence: string;
+
+    dateOfBirth: string;
+  };
+  OnboardingInterests: {
+    selectedChurchType?: string;
+    selectedChurchSubType?: string;
+    selectedChurchAttendence?: string;
+    dateOfBirth?: string;
+
+    longitude?: number;
+    latitude?: number;
+    address?: string;
+
+    profileType: AccountType;
+
+    selectedOrganizationType?: string;
+    organizationName?: string;
+    organizationContactName?: string;
+    organizationContactEmail?: string;
+    organizationContactPhoneNumber?: string;
+  };
+  OnboardingInfluencers: {
+    selectedChurchType?: string;
+    selectedChurchSubType?: string;
+    selectedChurchAttendence?: string;
+    dateOfBirth?: string;
+    longitude?: number;
+    latitude?: number;
+    address?: string;
+    profileType: AccountType;
+
+    selectedOrganizationType?: string;
+    organizationName?: string;
+    organizationContactName?: string;
+    organizationContactEmail?: string;
+    organizationContactPhoneNumber?: string;
+  };
   OnboardingOrganizationType: undefined;
+  OnboardingOrganizationInfo: {
+    selectedOrganizationType: string;
+  };
+  OnboardingOrganizationContact: {
+    selectedOrganizationType: string;
+    organizationName: string;
+    longitude: number;
+    latitude: number;
+    address: string;
+  };
 };
 
 export type RootNonUserStackParamList = {

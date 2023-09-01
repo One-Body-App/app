@@ -1,25 +1,23 @@
 import React, { useState, useEffect, SetStateAction, Dispatch } from 'react';
 import {
   FlatList,
-  StyleSheet,
-  Text,
   Platform,
   TouchableOpacity,
   View,
-  Image,
   PermissionsAndroid,
   ActivityIndicator,
 } from 'react-native';
-import { TextInput } from 'react-native-paper';
 import Modal from 'react-native-modal';
-import Icon from 'react-native-vector-icons/AntDesign';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 import Geolocation from '@react-native-community/geolocation';
-import { useDispatch } from 'react-redux';
-import { setLoader } from '@/redux/actions/GeneralActions';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
 import { useTheme } from '@react-navigation/native';
+import { borderRadius } from '../styles/outlines';
+import { StyledText } from './styled/Text';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Gps, GpsSlash } from 'iconsax-react-native';
+import { Colors, Typography } from '../styles';
+import { StyledTextInput } from './styled/TextInput';
 
 const access_token =
   'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
@@ -40,12 +38,13 @@ type MapBoxProps = {
   location: MapSuggestion | null;
   setLongitude: Dispatch<SetStateAction<number | undefined>>;
   setLatitude: Dispatch<SetStateAction<number | undefined>>;
-  CheckIn: boolean;
-  setCheckIn: Dispatch<SetStateAction<boolean>>;
+  modalVisible: boolean;
+  setModalVisible: Dispatch<SetStateAction<boolean>>;
   setLocation: Dispatch<SetStateAction<MapSuggestion | null>>;
   types?: MapBoxTypes[];
   countries?: string[];
   hideSearchMyLocation?: boolean;
+  modalTitle: string;
 };
 
 export type MapSuggestion = {
@@ -64,7 +63,7 @@ export type MapSuggestion = {
 let timer: NodeJS.Timeout | null = null;
 
 const MapBox = (props: MapBoxProps) => {
-  const { setLocation, location, setCheckIn, CheckIn, setLongitude, setLatitude } = props;
+  const { setLocation, location, setModalVisible, modalVisible, setLongitude, setLatitude } = props;
   const { colors, dark } = useTheme();
 
   const [show, setshown] = useState<boolean>(false);
@@ -73,6 +72,7 @@ const MapBox = (props: MapBoxProps) => {
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
 
   const getSuggestion = async (val: string) => {
+    setLoading(true);
     if (timer) clearTimeout(timer);
     setsearchLocation(val);
     if (val) {
@@ -86,8 +86,12 @@ const MapBox = (props: MapBoxProps) => {
           .then((data) => {
             data?.features == undefined ? setshown(false) : setshown(true);
             setSuggetions(data?.features);
+            setLoading(false);
           });
       }, 400);
+    } else {
+      setSuggetions([]);
+      setLoading(false);
     }
   };
   const onclose = () => {
@@ -136,79 +140,106 @@ const MapBox = (props: MapBoxProps) => {
         setLongitude(longitude);
         // dispatch(setLoader(false));
         setLoading(false);
-        setCheckIn(false);
+        setModalVisible(false);
       });
   };
 
   return (
     <Modal
-      backdropOpacity={0.3}
-      isVisible={CheckIn}
-      onBackdropPress={() => setCheckIn(false)}
-      onSwipeComplete={() => setCheckIn(false)}
       swipeDirection={['down']}
-      style={styles.bottomView}
       avoidKeyboard={true}
+      backdropOpacity={0.3}
+      isVisible={modalVisible}
+      onBackdropPress={() => setModalVisible(false)}
+      onSwipeComplete={() => setModalVisible(false)}
+      // style={styles.bottomView}
+      style={{
+        justifyContent: 'flex-end',
+        margin: 0,
+      }}
+      propagateSwipe={true}
     >
-      <View style={{ ...styles.content2, backgroundColor: colors.card }}>
-        <View style={styles.headLine} />
-        <View style={styles.container}>
-          <View style={styles.inputView}>
-            <TextInput
+      <View
+        style={{
+          paddingVertical: 18,
+          borderTopRightRadius: borderRadius.large,
+          borderTopLeftRadius: borderRadius.large,
+          height: '50%',
+          backgroundColor: colors.background,
+        }}
+      >
+        <View style={{ flex: 1.2, paddingHorizontal: 18 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              flex: 1,
+              paddingBottom: 10,
+            }}
+          >
+            <StyledText style={{ fontSize: 18 }}>{props.modalTitle}</StyledText>
+            <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
+          </View>
+          <View style={{ flex: 2 }}>
+            <StyledTextInput
+              autoFocus
+              wrapperStyle={{ flex: 1 }}
               value={searchLocation}
-              style={[styles.input, { backgroundColor: colors.card }]}
-              placeholder="Where are you?"
+              returnKeyType={'search'}
+              placeholder="Search"
               onChangeText={(val) => getSuggestion(val)}
-              autoFocus={true}
-              clearButtonMode="never"
-              activeOutlineColor={colors.card}
-              outlineColor={colors.card}
-              selectionColor={colors.text}
-              placeholderTextColor={dark ? '#5e5e5e' : '#dbdbdb'}
-              mode="outlined"
-              theme={{ roundness: 20 }}
-            />
-            {!props.hideSearchMyLocation ? (
-              <>
-                {location != null && searchLocation ? (
-                  <TouchableOpacity onPress={() => onclose()} style={styles.iconTouch}>
-                    <Icon name="closecircleo" size={23} color="red" />
-                  </TouchableOpacity>
-                ) : (
+              leftIcon={
+                <MaterialCommunityIcons
+                  name="magnify"
+                  size={20}
+                  style={{ marginRight: 10 }}
+                  color={Colors.neutral.brand}
+                />
+              }
+              rightIcon={
+                !props.hideSearchMyLocation ? (
                   <>
-                    {loading ? (
-                      <ActivityIndicator
-                        animating={loading}
-                        size="small"
-                        color={colors.text}
-                        style={{ marginTop: 8, marginRight: 15 }}
-                      />
-                    ) : (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setLoading(true);
-                          getlocationPermison();
-                        }}
-                        style={styles.iconTouch}
-                      >
-                        <MaterialIcons
-                          name={'my-location'}
-                          color="#126B87"
-                          size={getFontSize(3.5)}
-                        />
+                    {location != null && searchLocation ? (
+                      <TouchableOpacity onPress={() => onclose()}>
+                        <GpsSlash size={20} color="red" />
                       </TouchableOpacity>
+                    ) : (
+                      <>
+                        {loading ? (
+                          <ActivityIndicator animating={true} size="small" color={colors.text} />
+                        ) : (
+                          <TouchableOpacity
+                            onPress={() => {
+                              setLoading(true);
+                              getlocationPermison();
+                            }}
+                          >
+                            <Gps size={20} color={Colors.primarySapphire.brand} />
+                          </TouchableOpacity>
+                        )}
+                      </>
                     )}
                   </>
-                )}
-              </>
-            ) : null}
+                ) : undefined
+              }
+            />
           </View>
-
+        </View>
+        <View style={{ flex: 5 }}>
           {show == true ? (
             <FlatList
-              style={{ flex: 1 }}
+              style={{ flex: 1, paddingVertical: 10 }}
               nestedScrollEnabled
               data={suggetions}
+              ListEmptyComponent={
+                <>
+                  {searchLocation && !loading ? (
+                    <StyledText style={[Typography.body.x2M, { padding: 18, textAlign: 'center' }]}>
+                      No results found
+                    </StyledText>
+                  ) : null}
+                </>
+              }
               renderItem={({ item }) => {
                 return (
                   <TouchableOpacity
@@ -218,11 +249,15 @@ const MapBox = (props: MapBoxProps) => {
                       setshown(false);
                       setLocation(item);
                       setsearchLocation(item.place_name);
-                      setCheckIn(false);
+                      setModalVisible(false);
                     }}
                   >
-                    <View style={[styles.placeItemView]}>
-                      <Text style={{ color: colors.text }}>{item.place_name}</Text>
+                    <View>
+                      <StyledText
+                        style={{ color: colors.text, marginHorizontal: 18, marginVertical: 10 }}
+                      >
+                        {item.place_name}
+                      </StyledText>
                     </View>
                   </TouchableOpacity>
                 );
@@ -234,68 +269,5 @@ const MapBox = (props: MapBoxProps) => {
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  imageThumbnail: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 100,
-  },
-  placeItemView: { paddingVertical: 10, paddingHorizontal: 20 },
-  input: {
-    height: 36,
-
-    width: getWidth(80),
-  },
-  inputView: {
-    height: 40,
-
-    margin: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingBottom: 6,
-    // paddingLeft: 1,
-  },
-  bottomView: {
-    justifyContent: 'flex-end',
-    margin: 0,
-  },
-  iconTouch: {
-    justifyContent: 'center',
-    alignSelf: 'center',
-    paddingRight: getWidth(2),
-    paddingTop: 3,
-    color: 'red',
-  },
-  mapImage: {
-    width: '100%',
-    alignSelf: 'center',
-    resizeMode: 'stretch',
-    height: 300,
-    //margin: 10,
-    marginVertical: 10,
-  },
-  content2: {
-    alignItems: 'center',
-    padding: 13,
-    borderTopRightRadius: 17,
-    borderTopLeftRadius: 17,
-    height: getHeight(38),
-  },
-  headLine: {
-    height: 6,
-    width: 55,
-    borderRadius: 5,
-
-    marginBottom: 5,
-  },
-});
 
 export default MapBox;

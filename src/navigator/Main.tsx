@@ -83,6 +83,7 @@ const Main = () => {
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
   const authState = useSelector((state: RootState) => state.auth);
+  // console.log(authState);
   const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
@@ -102,7 +103,11 @@ const Main = () => {
   }, [loader]);
 
   useEffect(() => {
-    if (initializing && authState.getProfileSuccess != undefined) setInitializing(false);
+    if (initializing && authState.getProfileSuccess != undefined) {
+      setInitializing(false);
+    } else if (!initializing && authState.getProfileSuccess == undefined && !authState.isLoading) {
+      setInitializing(true);
+    }
   }, [authState.getProfileSuccess]);
 
   const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
@@ -251,7 +256,7 @@ const Main = () => {
       ></ImageBackground>
     );
   }
-
+  // console.log(!!user, !!token, !!authState.getProfileData, 'asdfhasjdkfhajksdhfkjashd');
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       {/* <AppProvider> */}
@@ -263,7 +268,7 @@ const Main = () => {
         authState.getProfileData?.accountType == 'organization') &&
       user?.emailVerified ? (
         <>
-          {!authState.getProfileData.isProfileCompleted ? (
+          {authState.getProfileData.isProfileCompleted ? (
             <DrawerStack.Navigator
               screenOptions={{
                 headerTintColor: Colors.primary.brand,

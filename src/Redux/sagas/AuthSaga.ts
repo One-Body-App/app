@@ -136,6 +136,7 @@ export function* UpdateProfileSaga() {
 }
 function* updateOrgProfileRequest(params) {
   try {
+    console.log(params);
     const res = yield ApiCall({
       params: { ...params.data.data, accountType: 'organization' },
       route: 'user/update-profile',
@@ -146,7 +147,9 @@ function* updateOrgProfileRequest(params) {
     if (res?.status == '200') {
       yield put(getProfile.Request({ token: params.data.token, accountType: 'organization' }));
       yield put(setLoader(false));
-      params?.data?.go();
+      if (params?.data?.go) {
+        params?.data?.go();
+      }
     } else {
       yield put(setLoader(false));
       Alert.alert('Error', 'An error accoured during profile Update', [
@@ -334,6 +337,7 @@ function* getProfileSaga({ params }) {
       token: params.token,
       verb: 'get',
     });
+    // console.log(res);
     if (res?.status == 200) {
       yield put(getProfile.Success({ token: params.token, ...res?.response }));
     } else {

@@ -1,75 +1,134 @@
 import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  ScrollView,
-} from 'react-native';
-import { Avatar, Checkbox, Provider } from 'react-native-paper';
-import SelectDropdown from 'react-native-select-dropdown';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
+import { TextInput, View } from 'react-native';
 import Button from '@/src/components/Button';
-import { styles } from './styles';
+import { OnboardingStackParamList } from '@/src/navigator/types';
+import { StackScreenProps } from '@react-navigation/stack';
+import { AccountType } from '@/utils/types';
+import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
+import { spacing } from '@/src/styles/spacing';
+import { StyledText } from '@/src/components/styled/Text';
+import { Colors, Typography } from '@/src/styles';
+import MapBox, { MapSuggestion } from '@/src/components/MapBox';
+import { ArrowDown2 } from 'iconsax-react-native';
+import { borderRadius } from '@/src/styles/outlines';
+import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { useToast } from 'react-native-toast-notifications';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
-const BordingStepFour = ({ navigation }) => {
+type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationContact'>;
+
+const OnboardingLocation = ({ navigation, route }: Props) => {
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const [contactName, setContactName] = useState<string>(user?.name ?? '');
+  const [contactEmail, setContactEmail] = useState<string>(user?.email ?? '');
+  const [contactPhoneNumber, setContactPhoneNumber] = useState<string>('');
+  const toast = useToast();
+
+  const inputRefContactName = useRef<TextInput>(null);
+  const inputRefContactEmail = useRef<TextInput>(null);
+  const inputRefContactPhoneNumber = useRef<TextInput>(null);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.innerContainer}>
-        <View
-          style={{
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            height: getHeight(30),
-          }}
-        >
-          <Image source={require('@/assets/images/LogoMain.png')} />
-          <Text style={styles.text}>Step 4 of 4</Text>
-          <Text style={styles.heading}>Use location</Text>
-        </View>
-        <Text style={{ marginTop: 20, fontFamily: 'Rubik-Regular' }}>
-          Allow OneBody to use your location for the best possible experience while your Body finds
-          peace. Amen!
-        </Text>
+    <OnboardingStepsLayout
+      buttonText={'Next'}
+      onPress={() => {
+        if (contactName != '' && contactEmail != '' && contactPhoneNumber != '') {
+          navigation.navigate('OnboardingInterests', {
+            ...route.params,
 
-        <View />
-      </View>
-      <View style={styles.foter}>
-        <ImageBackground
-          resizeMode="stretch"
-          style={{
-            flex: 1,
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            flexDirection: 'row',
-          }}
-          source={require('@/assets/images/waveBG.png')}
-        >
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.footerText}>
-              <Ionicons name="chevron-back" size={getFontSize(3)} /> Back
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.progressBar}>
-            <View style={styles.progressBarStatus} />
+            organizationContactName: contactName,
+            organizationContactEmail: contactEmail,
+            organizationContactPhoneNumber: contactPhoneNumber,
+
+            profileType: AccountType.organization,
+          });
+        } else {
+          let message = '';
+
+          if (!contactName || contactName == '') {
+            message = 'Organization contact name is required';
+          } else if (!contactEmail || contactEmail == '') {
+            message = 'Organization contact email is required';
+          } else if (!contactPhoneNumber || contactPhoneNumber == '') {
+            message = 'Organization contact phone number is required';
+          }
+
+          toast.show(message, {
+            type: 'danger',
+          });
+        }
+      }}
+      onboardingType={AccountType.organization}
+      activeStep={3}
+      disabled={contactName == '' || contactEmail == '' || contactPhoneNumber == ''}
+    >
+      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+        <View style={{ flex: 1, paddingBottom: 40 }}>
+          <StyledText style={[Typography.header.h1]}>
+            Set your Organization primary Contact
+          </StyledText>
+          <StyledText
+            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+          >
+            Note: This person will serve as the representative for your account and will be
+            responsible for all account related communications.
+          </StyledText>
+        </View>
+
+        <View style={{ flex: 3, paddingBottom: 70 }}>
+          <View style={{ flex: 1, paddingBottom: 30 }}>
+            <StyledTextInput
+              label="Full Name"
+              autoFocus
+              wrapperStyle={{ flex: 1 }}
+              value={contactName}
+              placeholder="Enter Name"
+              onChangeText={(text) => {
+                setContactName(text);
+              }}
+              ref={inputRefContactName}
+              returnKeyType={'next'}
+              onSubmitEditing={() => inputRefContactEmail.current?.focus()}
+              blurOnSubmit={false}
+            />
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('AccountType')}>
-            <Text style={styles.footerText}>
-              Next <Ionicons name="chevron-forward" size={getFontSize(3)} />
-            </Text>
-          </TouchableOpacity>
-        </ImageBackground>
+
+          <View style={{ flex: 1, paddingBottom: 30 }}>
+            <StyledTextInput
+              label="Email"
+              wrapperStyle={{ flex: 1 }}
+              value={contactEmail}
+              placeholder="Enter Email"
+              onChangeText={(text) => {
+                setContactEmail(text);
+              }}
+              ref={inputRefContactEmail}
+              returnKeyType={'next'}
+              onSubmitEditing={() => inputRefContactPhoneNumber.current?.focus()}
+              blurOnSubmit={false}
+              keyboardType="email-address"
+            />
+          </View>
+
+          <View style={{ flex: 1, paddingBottom: 30 }}>
+            <StyledTextInput
+              label="Phone Number"
+              wrapperStyle={{ flex: 1 }}
+              value={contactPhoneNumber}
+              placeholder="Enter phone number"
+              onChangeText={(text) => {
+                setContactPhoneNumber(text);
+              }}
+              ref={inputRefContactPhoneNumber}
+              returnKeyType={'done'}
+              blurOnSubmit={false}
+              keyboardType="phone-pad"
+            />
+          </View>
+        </View>
       </View>
-    </SafeAreaView>
+    </OnboardingStepsLayout>
   );
 };
-export default BordingStepFour;
+export default OnboardingLocation;

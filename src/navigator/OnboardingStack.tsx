@@ -26,11 +26,6 @@ const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 const OnboardingStack = () => {
   return (
     <Stack.Navigator initialRouteName="OnboardingIntro">
-      {/* {authState.getProfileData?.accountType == 'individual' ? (
-                <Stack.Screen name="IndividualSteps" component={IndividualSteps} />
-              ) : (
-                <Stack.Screen name="OrgnizationSteps" component={OrgnizationSteps} />
-              )} */}
       <Stack.Screen name="OnboardingIntro" component={OnboardingIntro} options={headerOptions} />
       <Stack.Screen
         name="OnboardingChurchAttend"

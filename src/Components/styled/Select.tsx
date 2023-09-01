@@ -75,7 +75,7 @@ export const StyledSelect: FC<Props> = ({
           paddingVertical: 16,
         }}
         btnTextStyle={{
-          color: Colors.neutral[300],
+          color: selectedItem ? Colors.neutral.brand : Colors.neutral[300],
         }}
         RightIcon={<Ionicons name="chevron-down" color={Colors.neutral[200]} />}
         // btnTextStyle={styles.btnText3}
@@ -117,6 +117,7 @@ export const StyledSelect: FC<Props> = ({
             </View>
             <View style={{ flex: 1 }}>
               <StyledTextInput
+                clearButtonMode="always"
                 wrapperStyle={{ flex: 1 }}
                 value={searchText}
                 returnKeyType={'search'}

@@ -49,6 +49,7 @@ const OnboardingStepsLayout = ({
             <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]}></View>
             <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]}></View>
             <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 6 ? { opacity: 1 } : null]}></View>
           </View>
         ) : (
           <View style={{ flexDirection: 'row' }}>

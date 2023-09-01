@@ -1,75 +1,107 @@
-import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  ScrollView,
-} from 'react-native';
-import { Avatar, Checkbox, Provider } from 'react-native-paper';
-import SelectDropdown from 'react-native-select-dropdown';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
-import { styles } from './styles';
+import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
 
-const BordingStepFour = ({ navigation }) => {
+import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
+import { spacing } from '@/src/styles/spacing';
+import { StyledText } from '@/src/components/styled/Text';
+import { Colors, Typography } from '@/src/styles';
+import { AccountType, Tag } from '@/utils/types';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ApiCall } from '@/src/Services/api';
+
+import { StyledSelect } from '@/src/components/styled/Select';
+import { StackScreenProps } from '@react-navigation/stack';
+import { OnboardingStackParamList } from '@/src/navigator/types';
+import { useToast } from 'react-native-toast-notifications';
+
+type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationType'>;
+
+const OnboardingOrganizationType = ({ navigation }: Props) => {
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
+
+  const [selectedOrganizationType, setSelectedOrganizationType] = useState<Tag['_id']>('');
+
+  const toast = useToast();
+  const getOrganizationTypes = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'tags/organization-types',
+        verb: 'get',
+        token: token,
+      });
+
+      if (res?.status == 200) {
+        setOrganizationTypes(res?.response);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      getOrganizationTypes();
+    }
+  }, [token]);
+
+  const selectedOrganizationTypeFiltered = organizationTypes.filter((item) => {
+    return item._id == selectedOrganizationType;
+  });
+
+  const selectedOrganizationTypeName =
+    selectedOrganizationTypeFiltered.length > 0 ? selectedOrganizationTypeFiltered[0].name : '';
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.innerContainer}>
-        <View
-          style={{
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            height: getHeight(30),
-          }}
-        >
-          <Image source={require('@/assets/images/LogoMain.png')} />
-          <Text style={styles.text}>Step 4 of 4</Text>
-          <Text style={styles.heading}>Use location</Text>
+    <OnboardingStepsLayout
+      buttonText="Next"
+      onPress={() => {
+        if (selectedOrganizationType) {
+          navigation.navigate('OnboardingOrganizationInfo', {
+            selectedOrganizationType: selectedOrganizationType,
+          });
+        } else {
+          toast.show('Organization type is required', {
+            type: 'danger',
+          });
+        }
+      }}
+      onboardingType={AccountType.organization}
+      activeStep={1}
+      disabled={selectedOrganizationTypeFiltered.length == 0}
+    >
+      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+        <View style={{ flex: 1 }}>
+          <StyledText style={[Typography.header.h1]}>What type of Organization are you?</StyledText>
+          <StyledText
+            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+          >
+            Identify your organization type
+          </StyledText>
         </View>
-        <Text style={{ marginTop: 20, fontFamily: 'Rubik-Regular' }}>
-          Allow OneBody to use your location for the best possible experience while your Body finds
-          peace. Amen!
-        </Text>
 
-        <View />
+        <View style={{ flex: 4 }}>
+          <StyledSelect
+            items={organizationTypes.map((item) => {
+              return {
+                text: item.name,
+                value: item._id,
+              };
+            })}
+            label="Organization Type"
+            selectedItem={selectedOrganizationType}
+            btnText={selectedOrganizationType == '' ? 'Select' : selectedOrganizationTypeName}
+            modalTitle="Select organization Type"
+            onChange={(item) => {
+              setSelectedOrganizationType(item);
+            }}
+          />
+        </View>
       </View>
-      <View style={styles.foter}>
-        <ImageBackground
-          resizeMode="stretch"
-          style={{
-            flex: 1,
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            flexDirection: 'row',
-          }}
-          source={require('@/assets/images/waveBG.png')}
-        >
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.footerText}>
-              <Ionicons name="chevron-back" size={getFontSize(3)} /> Back
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.progressBar}>
-            <View style={styles.progressBarStatus} />
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('AccountType')}>
-            <Text style={styles.footerText}>
-              Next <Ionicons name="chevron-forward" size={getFontSize(3)} />
-            </Text>
-          </TouchableOpacity>
-        </ImageBackground>
-      </View>
-    </SafeAreaView>
+    </OnboardingStepsLayout>
   );
 };
-export default BordingStepFour;
+export default OnboardingOrganizationType;

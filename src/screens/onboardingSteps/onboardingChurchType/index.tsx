@@ -68,15 +68,15 @@ const OnboardingChurchType = ({ navigation }: Props) => {
 
   return (
     <OnboardingStepsLayout
-      buttonText="Continue"
+      buttonText="Next"
       onPress={() => {
         if (selectedChurchType) {
           navigation.navigate('OnboardingChurchAttend', {
-            selectedChurchType,
-            selectedChurchSubType,
+            selectedChurchType: selectedChurchTypeName,
+            selectedChurchSubType: selectedChurchSubTypeName,
           });
         } else {
-          toast.show('Church Type required!', {
+          toast.show('Church type required', {
             type: 'danger',
           });
         }

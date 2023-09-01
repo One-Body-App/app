@@ -1,53 +1,107 @@
 import React, { useRef, useState } from 'react';
-import { Text, View, Image, ImageBackground, TouchableOpacity, SafeAreaView } from 'react-native';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { styles } from './styles';
+import { View, Platform } from 'react-native';
 
-const BordingStepThree = ({ navigation }) => {
+import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
+import { StackScreenProps } from '@react-navigation/stack';
+import { OnboardingStackParamList } from '@/src/navigator/types';
+import { AccountType } from '@/utils/types';
+import { StyledText } from '@/src/components/styled/Text';
+import { spacing } from '@/src/styles/spacing';
+import { Colors, Typography } from '@/src/styles';
+import Button from '@/src/components/Button';
+import { borderRadius } from '@/src/styles/outlines';
+import DatePicker from 'react-native-date-picker';
+import { format, parse } from 'date-fns';
+import { Calendar } from 'iconsax-react-native';
+import { useToast } from 'react-native-toast-notifications';
+
+type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
+
+const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState<string>();
+  const toast = useToast();
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.innerContainer}>
-        <View style={styles.logomainimg}>
-          <Image source={require('@/assets/images/LogoMain.png')} />
-          <Text style={{ fontFamily: 'Rubik-Regular' }}>Step 3 of 4</Text>
-          <Text style={styles.heading}>Allow notifications</Text>
+    <OnboardingStepsLayout
+      buttonText="Next"
+      onPress={() => {
+        if (date) {
+          navigation.navigate('OnboardingLocation', {
+            ...route.params,
+            dateOfBirth: date,
+          });
+        } else {
+          toast.show('Date of birth is required', {
+            type: 'danger',
+          });
+        }
+      }}
+      onboardingType={AccountType.individual}
+      activeStep={3}
+      disabled={!date}
+    >
+      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+        <View style={{ flex: 1 }}>
+          <StyledText style={[Typography.header.h1]}>What is your date of birth?</StyledText>
+          <StyledText
+            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+          >
+            Select your date of birth
+          </StyledText>
         </View>
-        <Text style={{ marginTop: getHeight(5), fontFamily: 'Rubik-Regular' }}>
-          Reminders help you break your tenced routine and get your body back where it really needs
-          to be. Amen!
-        </Text>
-        <View style={styles.box}>
-          <View>
-            <Text style={{ fontFamily: 'Rubik-Regular' }}>Notifications</Text>
-            <Text style={{ fontFamily: 'Rubik-Regular' }}>Off</Text>
-          </View>
-          <Ionicons name="exit-outline" style={{ transform: [{ rotate: '-90deg' }] }} size={20} />
+
+        <View style={{ flex: 4 }}>
+          <StyledText style={{ marginBottom: 10 }}>Date of birth</StyledText>
+          <Button
+            text={date ? date : 'Select'}
+            btnStyle={{
+              flex: 1,
+              backgroundColor: Colors.neutral[600],
+              borderColor: Colors.neutral[700],
+              borderRadius: borderRadius.small,
+            }}
+            wrapperBtnStyle={{
+              justifyContent: 'space-between',
+              paddingHorizontal: 14,
+              paddingVertical: 16,
+            }}
+            btnTextStyle={{
+              color: date ? Colors.neutral.brand : Colors.neutral[300],
+            }}
+            onPress={() => setOpen(true)}
+            RightIcon={
+              <Calendar
+                onPress={() => setOpen(true)}
+                style={{ paddingTop: 6 }}
+                size={20}
+                color={Colors.neutral[200]}
+              />
+            }
+          />
+
+          <DatePicker
+            modal
+            minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
+            maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+            mode="date"
+            androidVariant="nativeAndroid"
+            open={open}
+            date={
+              date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date(new Date().setFullYear(2000))
+            }
+            onConfirm={(date) => {
+              setOpen(false);
+              setDate(format(date, 'MM/dd/yyyy'));
+            }}
+            onCancel={() => {
+              setOpen(false);
+            }}
+            textColor={Platform.OS === 'android' ? 'black' : ''}
+          />
         </View>
-        <View />
       </View>
-      <View style={styles.foter}>
-        <ImageBackground
-          resizeMode="stretch"
-          style={styles.waveimg}
-          source={require('@/assets/images/waveBG.png')}
-        >
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.footerText}>
-              <Ionicons name="chevron-back" size={getFontSize(3)} /> Back
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.progressBar}>
-            <View style={styles.progressBarStatus} />
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('BordingStepFour')}>
-            <Text style={styles.footerText}>
-              Next <Ionicons name="chevron-forward" size={getFontSize(3)} />
-            </Text>
-          </TouchableOpacity>
-        </ImageBackground>
-      </View>
-    </SafeAreaView>
+    </OnboardingStepsLayout>
   );
 };
-export default BordingStepThree;
+export default OnboardingDateOfBirth;

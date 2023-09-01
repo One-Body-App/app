@@ -1,75 +1,93 @@
-import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  ScrollView,
-} from 'react-native';
-import { Avatar, Checkbox, Provider } from 'react-native-paper';
-import SelectDropdown from 'react-native-select-dropdown';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
+import React, { useState } from 'react';
+import { View } from 'react-native';
 import Button from '@/src/components/Button';
-import { styles } from './styles';
+import { OnboardingStackParamList } from '@/src/navigator/types';
+import { StackScreenProps } from '@react-navigation/stack';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { AccountType } from '@/utils/types';
+import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
+import { spacing } from '@/src/styles/spacing';
+import { StyledText } from '@/src/components/styled/Text';
+import { Colors, Typography } from '@/src/styles';
+import MapBox, { MapSuggestion } from '@/src/components/MapBox';
+import { ArrowDown2 } from 'iconsax-react-native';
+import { borderRadius } from '@/src/styles/outlines';
 
-const BordingStepFour = ({ navigation }) => {
+type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
+
+const OnboardingLocation = ({ navigation, route }: Props) => {
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [longitude, setLongitude] = useState<number>();
+  const [latitude, setLatitude] = useState<number>();
+  const [locationData, setLocationData] = useState<MapSuggestion | null>(null);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.innerContainer}>
-        <View
-          style={{
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            height: getHeight(30),
-          }}
-        >
-          <Image source={require('@/assets/images/LogoMain.png')} />
-          <Text style={styles.text}>Step 4 of 4</Text>
-          <Text style={styles.heading}>Use location</Text>
+    <OnboardingStepsLayout
+      buttonText={locationData ? 'Next' : 'Skip'}
+      onPress={() => {
+        navigation.navigate('OnboardingInterests', {
+          ...route.params,
+          longitude,
+          latitude,
+          address: locationData?.place_name,
+          profileType: AccountType.individual,
+        });
+      }}
+      onboardingType={AccountType.individual}
+      activeStep={4}
+    >
+      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+        <View style={{ flex: 1 }}>
+          <StyledText style={[Typography.header.h1]}>Where are you Located?</StyledText>
+          <StyledText
+            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+          >
+            Enter your present location
+          </StyledText>
         </View>
-        <Text style={{ marginTop: 20, fontFamily: 'Rubik-Regular' }}>
-          Allow OneBody to use your location for the best possible experience while your Body finds
-          peace. Amen!
-        </Text>
 
-        <View />
+        <View style={{ flex: 4 }}>
+          <StyledText style={{ marginBottom: 10 }}>Location</StyledText>
+          <Button
+            text={locationData ? locationData?.place_name : 'Select'}
+            btnStyle={{
+              flex: 1,
+              backgroundColor: Colors.neutral[600],
+              borderColor: Colors.neutral[700],
+              borderRadius: borderRadius.small,
+            }}
+            wrapperBtnStyle={{
+              justifyContent: 'space-between',
+              paddingHorizontal: 14,
+              paddingVertical: 16,
+            }}
+            btnTextStyle={{
+              color: locationData ? Colors.neutral.brand : Colors.neutral[300],
+            }}
+            onPress={() => setModalVisible(true)}
+            RightIcon={
+              <ArrowDown2
+                onPress={() => setModalVisible(true)}
+                style={{ paddingTop: 6 }}
+                size={15}
+                color={Colors.neutral[200]}
+              />
+            }
+          />
+
+          <MapBox
+            location={locationData}
+            setLongitude={setLongitude}
+            setLatitude={setLatitude}
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            setLocation={setLocationData}
+            modalTitle="Find Location"
+          />
+        </View>
       </View>
-      <View style={styles.foter}>
-        <ImageBackground
-          resizeMode="stretch"
-          style={{
-            flex: 1,
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            flexDirection: 'row',
-          }}
-          source={require('@/assets/images/waveBG.png')}
-        >
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.footerText}>
-              <Ionicons name="chevron-back" size={getFontSize(3)} /> Back
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.progressBar}>
-            <View style={styles.progressBarStatus} />
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('AccountType')}>
-            <Text style={styles.footerText}>
-              Next <Ionicons name="chevron-forward" size={getFontSize(3)} />
-            </Text>
-          </TouchableOpacity>
-        </ImageBackground>
-      </View>
-    </SafeAreaView>
+    </OnboardingStepsLayout>
   );
 };
-export default BordingStepFour;
+export default OnboardingLocation;

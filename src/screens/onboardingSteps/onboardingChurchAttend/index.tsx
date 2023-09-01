@@ -1,24 +1,5 @@
-import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  ScrollView,
-} from 'react-native';
-import { Avatar, Checkbox, Provider } from 'react-native-paper';
-import SelectDropdown from 'react-native-select-dropdown';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
+import React, { useState } from 'react';
+import { Text, View, TouchableOpacity } from 'react-native';
 
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -28,26 +9,33 @@ import { StyledText } from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { card } from '@/src/styles/items';
-import { borderRadius } from '@/src/styles/outlines';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import { useToast } from 'react-native-toast-notifications';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchAttend'>;
 
 const OnboardingChurchAttend = ({ navigation, route }: Props) => {
   const [churchAttend, setChurchAttend] = useState<string>('');
+  const toast = useToast();
 
   return (
     <OnboardingStepsLayout
-      buttonText="Continue"
+      buttonText="Next"
       onPress={() => {
-        navigation.push('OnboardingDateOfBirth', {
-          ...route.params,
-          selectedChurchAttendence: churchAttend,
-        });
+        if (churchAttend) {
+          navigation.push('OnboardingDateOfBirth', {
+            ...route.params,
+            selectedChurchAttendence: churchAttend,
+          });
+        } else {
+          toast.show('Frequency of church attendance is required', {
+            type: 'danger',
+          });
+        }
       }}
       onboardingType={AccountType.individual}
       activeStep={2}
-      disabled={false}
+      disabled={!churchAttend}
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
@@ -55,7 +43,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
           >
-            Select the rate at which you go to church
+            Select the frequency at which you go to church
           </StyledText>
         </View>
 
