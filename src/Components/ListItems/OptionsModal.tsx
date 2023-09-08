@@ -7,7 +7,7 @@ import Modal from 'react-native-modal';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import Button from '../Button';
 import Feather from 'react-native-vector-icons/Feather';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { styles } from './style';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';

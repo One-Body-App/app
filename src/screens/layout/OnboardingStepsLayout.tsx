@@ -5,7 +5,14 @@ import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { AccountType } from '@/utils/types';
 import { ReactElement } from 'react';
-import { SafeAreaView, View, ViewStyle } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 type Props = {
   children: ReactElement;
@@ -61,9 +68,12 @@ const OnboardingStepsLayout = ({
           </View>
         )}
       </View>
-
-      <View style={{ flex: 1 }}>{children}</View>
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView style={{ flex: 1 }}>{children}</ScrollView>
+      </KeyboardAvoidingView>
       <View style={{ justifyContent: 'center' }}>
         <Button
           text={buttonText}

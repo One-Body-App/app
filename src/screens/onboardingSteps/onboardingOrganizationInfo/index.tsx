@@ -70,7 +70,6 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
           <View style={{ flex: 1, paddingBottom: 30 }}>
             <StyledTextInput
               label="Organization Name"
-              autoFocus
               wrapperStyle={{ flex: 1 }}
               value={organizationName}
               placeholder="Name"

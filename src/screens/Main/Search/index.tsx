@@ -30,7 +30,7 @@ import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import OptionsModal from '@/src/components/ListItems/OptionsModal';
 import { ArticleType } from '@/utils/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   HomeStackParamsList,
@@ -203,18 +203,15 @@ const Search = () => {
     setCurrentPopupItem(item);
     setShow(true);
   };
-  console.log(recentSearches, recentSearches.length);
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={60}
     >
-      <View style={{ margin: 20 }}>
+      <View style={{ margin: spacing.x24 }}>
         <StyledTextInput
-          wrapperStyle={{ height: 45 }}
           value={input}
-          autoFocus
           returnKeyType="search"
           placeholder="Search"
           clearButtonMode="always"
@@ -231,7 +228,7 @@ const Search = () => {
               });
             }
 
-            if (addItem) {
+            if (addItem && input != '') {
               setRecentSearches([{ item: input, type: SearchType.search }, ...recentSearches]);
             }
           }}
@@ -242,11 +239,11 @@ const Search = () => {
                   animating={isLoading}
                   size="small"
                   color={Colors.neutral[200]}
-                  style={{ marginRight: 10 }}
+                  style={{ marginRight: spacing.x10 }}
                 />
               ) : (
                 <SearchIcon
-                  style={{ height: 20, width: 20, marginRight: 10 }}
+                  style={{ height: 20, width: 20, marginRight: spacing.x10 }}
                   stroke={Colors.neutral[200]}
                 />
               )}
@@ -310,7 +307,7 @@ const Search = () => {
             </View> */}
 
             <FlatList
-              contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20 }}
+              contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.x24 }}
               data={results}
               renderItem={({ item }) => (
                 <ArticleItem
@@ -322,14 +319,14 @@ const Search = () => {
                     width: 'auto',
                     flexGrow: 1,
                     backgroundColor: colors.card,
-                    marginVertical: 7,
+                    marginVertical: spacing.x8,
                   }}
                   blogPostImageStyle={{
                     height: getHeight(22),
                     width: '100%',
-                    borderTopLeftRadius: 10,
-                    borderTopRightRadius: 10,
-                    marginBottom: 5,
+                    borderTopLeftRadius: spacing.x10,
+                    borderTopRightRadius: spacing.x10,
+                    marginBottom: spacing.x8 / 2,
                   }}
                   blogPostTitleStyle={{
                     flexDirection: 'row',
@@ -349,37 +346,39 @@ const Search = () => {
           </>
         ) : (
           <>
-            {!input && recentSearches.length > 0 ? (
+            {!input ? (
               <>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingHorizontal: 20,
-                  }}
-                >
-                  <StyledText style={Typography.body.x3}>Recent Searches</StyledText>
-
-                  <Button
-                    onPress={() => {
-                      setRecentSearches([]);
-                      storeAsyncData([]);
+                {recentSearches.length > 0 ? (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingHorizontal: spacing.x24,
                     }}
-                    btnTextStyle={{ color: Colors.primarySapphire.brand }}
-                    text="Clear all"
-                  />
-                </View>
+                  >
+                    <StyledText style={Typography.body.x3}>Recent Searches</StyledText>
+
+                    <Button
+                      onPress={() => {
+                        setRecentSearches([]);
+                        storeAsyncData([]);
+                      }}
+                      btnTextStyle={{ color: Colors.primarySapphire.brand }}
+                      text="Clear all"
+                    />
+                  </View>
+                ) : null}
                 <FlatList
                   data={recentSearches}
-                  contentContainerStyle={{ flex: 1, paddingHorizontal: 20 }}
+                  contentContainerStyle={{ flex: 1, paddingHorizontal: spacing.x24 }}
                   renderItem={({ item }) => (
                     <View
                       style={{
                         flexDirection: 'row',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        paddingVertical: 10,
+                        paddingVertical: spacing.x10,
                       }}
                     >
                       <TouchableOpacity
@@ -393,8 +392,8 @@ const Search = () => {
                             borderColor: Colors.neutral[500],
                             borderWidth: 1,
                             borderRadius: borderRadius.max,
-                            padding: 8,
-                            marginRight: 10,
+                            padding: spacing.x8,
+                            marginRight: spacing.x10,
                           }}
                         >
                           {item.itemMeta?.image ? (
@@ -457,7 +456,7 @@ const Search = () => {
                             {
                               color: Colors.neutral[300],
                               textAlign: 'center',
-                              paddingHorizontal: 40,
+                              paddingHorizontal: spacing.x48,
                             },
                           ]}
                         >
@@ -471,7 +470,7 @@ const Search = () => {
             ) : (
               <>
                 {!isLoading ? (
-                  <StyledText style={{ textAlign: 'center' }}>No Results</StyledText>
+                  <StyledText style={{ textAlign: 'center' }}>No search results</StyledText>
                 ) : null}
               </>
             )}

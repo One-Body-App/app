@@ -158,6 +158,8 @@ export type SettingsStackParamsList = {
   };
 
   RemoveAccountConfirmation: { reason: string };
+  ConfirmLogin: ConfirmLoginScreen;
+  NewPassword: undefined;
 };
 
 export type SearchStackParamsList = {
@@ -278,16 +280,18 @@ export type RootNonUserStackParamList = {
 
   ForgotPassword: undefined;
 
-  ConfirmLogin: {
-    toScreen?: keyof RootNonUserStackParamList;
-    error?: string;
-    onlyPassword?: boolean;
-    mode?: string;
-    toScreenRouteParams?: Record<string, string>;
-    oobCode?: string;
+  ConfirmLogin: ConfirmLoginScreen;
+};
 
-    action?: string;
-    apiKey?: string;
-    lang?: string;
-  };
+type ConfirmLoginScreen = {
+  toScreen?: keyof RootNonUserStackParamList;
+  error?: string;
+  onlyPassword?: boolean;
+  mode?: string;
+  toScreenRouteParams?: Record<string, string>;
+  oobCode?: string;
+
+  action?: string;
+  apiKey?: string;
+  lang?: string;
 };

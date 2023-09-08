@@ -6,7 +6,7 @@ import { NavigationProp, useNavigation, useTheme } from '@react-navigation/nativ
 import { styles } from './style';
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
 import FastImage from 'react-native-fast-image';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import Video from 'react-native-video';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';

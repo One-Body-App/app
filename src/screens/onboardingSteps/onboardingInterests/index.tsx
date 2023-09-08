@@ -16,6 +16,7 @@ import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import SearchIcon from '@/assets/icons/search.svg';
+import { iterestListItem } from '@/src/styles/items';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
 
@@ -91,19 +92,18 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
       disabled={selectedInterest.length == 0}
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
-        <View style={{ flex: 1 }}>
+        <View style={{ marginBottom: spacing.x16 }}>
           <StyledText style={[Typography.header.h1]}>
             Select a minimum of 3 interests to personalize your feeds
           </StyledText>
         </View>
 
         <View style={{ flex: 6 }}>
-          <View style={{ flex: 1 }}>
+          <View>
             <StyledTextInput
               // style={{ ...GeneralStyle.input, width: getWidth(80) }}
               // mode="outlined"
-              autoFocus
-              wrapperStyle={{ flex: 1 }}
+
               clearButtonMode="always"
               onChangeText={(text) => {
                 const newSearchInterest = [];
@@ -117,7 +117,7 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
               leftIcon={
                 <View>
                   <SearchIcon
-                    style={{ height: 20, width: 20, marginRight: 10 }}
+                    style={{ height: 20, width: 20, marginRight: spacing.x10 }}
                     stroke={Colors.neutral[300]}
                   />
                 </View>
@@ -134,14 +134,16 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
           <View style={{ flex: 10 }}>
             <ScrollView
               contentContainerStyle={{
-                marginTop: 25,
-                paddingBottom: 45,
+                marginTop: spacing.x24,
+                paddingBottom: spacing.x48,
                 flexDirection: searchInterest.length < 1 ? 'column' : 'row',
                 flexWrap: searchInterest.length < 1 ? 'nowrap' : 'wrap',
               }}
             >
               {searchInterest.length < 1 ? (
-                <StyledText style={[Typography.body.x2M, { padding: 18, textAlign: 'center' }]}>
+                <StyledText
+                  style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}
+                >
                   No Search Results
                 </StyledText>
               ) : null}
@@ -161,13 +163,13 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
                     style={
                       selectedInterest.includes(item?._id)
                         ? [
-                            styles.listItem,
+                            iterestListItem,
                             {
                               backgroundColor: Colors.primary.brand,
                               borderColor: Colors.primary.brand,
                             },
                           ]
-                        : styles.listItem
+                        : iterestListItem
                     }
                   >
                     <Text

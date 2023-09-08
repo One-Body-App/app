@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { ApiCall } from '@/src/Services/api';
 import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';

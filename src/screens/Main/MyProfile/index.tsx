@@ -18,7 +18,7 @@ import { getProfile, getBadges, setUserBadges } from '@/redux//actions/AuthActio
 import ImageModal from 'react-native-image-modal';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { Badge } from '@/utils/types';
 import { OpenURLButton } from '@/src/Services/constants';

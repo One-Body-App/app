@@ -25,7 +25,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import {
   BASE_URL,
   OpenURLButton,

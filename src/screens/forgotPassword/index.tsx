@@ -83,7 +83,6 @@ const ForgotPassword = ({ navigation }: Props) => {
         // contentContainerStyle={{
         //   marginTop: 615,
         // }}
-        keyboardVerticalOffset={60}
       >
         <ScrollView style={{ flex: 1 }}>
           <View style={{ flex: 1, marginHorizontal: spacing.x16 }}>
@@ -135,7 +134,6 @@ const ForgotPassword = ({ navigation }: Props) => {
                   onChangeText={(e) => {
                     setEmail(e), setEmailError(false);
                   }}
-                  blurOnSubmit={false}
                 />
                 {error != null ? (
                   <StyledText style={{ ...GeneralStyle.InputError }}>{error}</StyledText>

@@ -73,4 +73,14 @@ export const GeneralStyle = StyleSheet.create({
     fontSize: 16,
     marginLeft: 16,
   },
+
+  profileImageList: {
+    width: 60,
+    height: 60,
+    borderRadius: borderRadius.max,
+    marginBottom: 5,
+    borderColor: Colors.neutral[800],
+    borderWidth: 1,
+    marginRight: 10,
+  },
 });

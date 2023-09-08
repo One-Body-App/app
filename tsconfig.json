@@ -16,7 +16,7 @@
       "@/assets/*": ["src/assets/*"],
       "@/components/*": ["src/components/*"],
       "@/constants/*": ["src/constants/*"],
-      "@/navigation/*": ["src/Navigation/*"],
+      "@/navigation/*": ["src/_Navigation/*"],
       "@/navigator/*": ["src/navigator/*"],
       "@/redux/*": ["src/Redux/*"],
       "@/screens/*": ["src/screens/*"],

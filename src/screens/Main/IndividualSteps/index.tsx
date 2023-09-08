@@ -45,7 +45,7 @@ import Geolocation from 'react-native-geolocation-service';
 import { LoginManager } from 'react-native-fbsdk-next';
 import messaging from '@react-native-firebase/messaging';
 import { useToast } from 'react-native-toast-notifications';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { ChurchType, Interest, User } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';

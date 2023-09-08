@@ -118,27 +118,10 @@ const OnboardingChurchType = ({ navigation }: Props) => {
             }}
           />
 
-          {/* <Button
-            text={
-              selectedChurchType == null || selectedChurchType.churchType == 'Non-Denomination'
-                ? 'Select One'
-                : selectedChurchType.churchType
-            }
-            btnStyle={
-              {
-                // ...styles.btn3,
-                // backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
-              }
-            }
-            RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} />}
-            // btnTextStyle={styles.btnText3}
-            onPress={() => setChurchTypeModalVisible(true)}
-          /> */}
-
           {selectedChurchTypeFiltered.length > 0 &&
           selectedChurchTypeFiltered[0]?.children?.length > 0 ? (
             <StyledSelect
-              wrapperStyle={{ marginTop: 20 }}
+              wrapperStyle={{ marginTop: spacing.x24 }}
               items={selectedChurchTypeFiltered[0].children.map((item) => {
                 return {
                   text: item.churchType,
@@ -154,94 +137,6 @@ const OnboardingChurchType = ({ navigation }: Props) => {
             />
           ) : null}
         </View>
-
-        {/* <Modal
-          backdropOpacity={0.3}
-          isVisible={churchTypeModalVisible}
-          onBackdropPress={() => setChurchTypeModalVisible(false)}
-          onSwipeComplete={() => setChurchTypeModalVisible(false)}
-          swipeDirection={['down']}
-          // style={styles.bottomView}
-          propagateSwipe={true}
-        >
-          <View
-          // style={{ ...styles.content2, backgroundColor: colors.background }}
-          >
-            <View
-            // style={styles.headLine}
-            />
-
-            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-              {churchTypes.map((item, index) => {
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      // setWhatIDo(item);
-                      setSelectedChurchType(item);
-                      setSelectedChurchSubType(null);
-
-                      setChurchTypeModalVisible(false);
-                    }}
-                    // style={styles.listItem2}
-                    key={index}
-                  >
-                    <StyledText
-                      style={{
-                        color: Colors.primary[500],
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.churchType}
-                    </StyledText>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </Modal> */}
-
-        {/* <Modal
-          backdropOpacity={0.3}
-          isVisible={churchSubTypeModalVisible}
-          onBackdropPress={() => setChurchSubTypeModalVisible(false)}
-          onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
-          swipeDirection={['down']}
-          // style={styles.bottomView}
-          propagateSwipe={true}
-        >
-          <View
-          // style={styles.content2}
-          >
-            <View
-            // style={styles.headLine}
-            />
-
-            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-              {selectedChurchType?.children.map((item, index) => {
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      // setWhatIDo(item);
-                      setSelectedChurchSubType(item);
-                      setChurchSubTypeModalVisible(false);
-                    }}
-                    // style={styles.listItem2}
-                    key={index}
-                  >
-                    <StyledText
-                      style={{
-                        color: Colors.primary[500],
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.churchType}
-                    </StyledText>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </Modal> */}
       </View>
     </OnboardingStepsLayout>
   );

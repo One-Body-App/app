@@ -37,7 +37,6 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
       <View
         style={{
           flexDirection: 'row',
-          flex: 1,
           backgroundColor: backgroundColorWrapper,
           paddingHorizontal: 14,
           paddingVertical: 12,

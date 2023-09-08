@@ -14,7 +14,7 @@ import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import auth from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
 

@@ -12,10 +12,10 @@ import Settings from '../screens/main/settings';
 import ConfirmLogin from '../screens/login/ConfirmLogin';
 import EmailChange from '../screens/main/EmailChange';
 import PasswordChange from '../screens/main/PasswordChange';
-import InfluencerStepOne from '../screens/influencerApplication/InfluencerStepOne';
-import InfluencerStepTwo from '../screens/influencerApplication/InfluencerStepTwo';
-import InfluencerStepThree from '../screens/influencerApplication/InfluencerStepThree';
-import InfluencerStepFour from '../screens/influencerApplication/InfluencerStepFour';
+import InfluencerStepOne from '../screens/InfluencerApplication/InfluencerStepOne';
+import InfluencerStepTwo from '../screens/InfluencerApplication/InfluencerStepTwo';
+import InfluencerStepThree from '../screens/InfluencerApplication/InfluencerStepThree';
+import InfluencerStepFour from '../screens/InfluencerApplication/InfluencerStepFour';
 import NewPassword from '../screens/newPassword/NewPassword';
 import RemoveAccountConfirmation from '../screens/main/RemoveAccountConfirmation';
 

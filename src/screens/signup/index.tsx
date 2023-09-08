@@ -320,7 +320,6 @@ const SignupForm = ({ navigation, route }: Props) => {
         // contentContainerStyle={{
         //   marginTop: 615,
         // }}
-        keyboardVerticalOffset={60}
       >
         <ScrollView style={{ flex: 1 }} ref={scrollView}>
           <View style={{ marginVertical: spacing.x48, marginHorizontal: spacing.x16 }}>
@@ -406,7 +405,6 @@ const SignupForm = ({ navigation, route }: Props) => {
               }
               onSubmitEditing={() => inputRefs.name.current?.focus()}
               onChangeText={(username) => changeHandler('username', username)}
-              blurOnSubmit={false}
               autoCorrect={false}
               autoComplete="username"
               keyboardType="default"
@@ -434,7 +432,6 @@ const SignupForm = ({ navigation, route }: Props) => {
               }
               onSubmitEditing={() => inputRefs.email.current?.focus()}
               onChangeText={(name) => changeHandler('name', name)}
-              blurOnSubmit={false}
               keyboardType="default"
               autoCapitalize="words"
             />
@@ -461,7 +458,6 @@ const SignupForm = ({ navigation, route }: Props) => {
               }
               onSubmitEditing={() => inputRefs.password.current?.focus()}
               onChangeText={(email) => changeHandler('email', email.trim())}
-              blurOnSubmit={false}
               autoCapitalize="none"
               autoComplete="email"
               textContentType="emailAddress"
@@ -502,7 +498,6 @@ const SignupForm = ({ navigation, route }: Props) => {
               }
               onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
               onChangeText={(password) => changeHandler('password', password)}
-              blurOnSubmit={false}
             />
 
             {/* <View style={[styles.passwordStrengthWrapper]}>
@@ -597,7 +592,6 @@ const SignupForm = ({ navigation, route }: Props) => {
               }
               onSubmitEditing={() => signUpUser()}
               onChangeText={(cPassword) => changeHandler('cPassword', cPassword)}
-              blurOnSubmit={false}
             />
             <StyledText style={{ ...GeneralStyle.InputError }}>{state.cPasswordError}</StyledText>
 

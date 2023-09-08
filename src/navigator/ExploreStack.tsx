@@ -1,6 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import Explore from '../screens/main/explore';
+import Explore from '../screens/explore';
 
 import UserProfile from '../screens/main/userProfile';
 import { ExploreStackParamsList } from './types';

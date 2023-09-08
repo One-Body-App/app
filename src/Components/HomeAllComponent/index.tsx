@@ -32,7 +32,7 @@ import { ApiCall } from '@/services/api';
 import { SetRecentBlog } from '@/redux/actions/SocialActions';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { OpenURLButton } from '@/src/Services/constants';
 import { isObject } from 'lodash';
 import Twitter from '@/assets/svg/Twitter.svg';

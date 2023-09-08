@@ -1,7 +1,7 @@
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
-import LoginComponent from '@/src/components/LoginComponent';
+import LoginComponent from '@/src/components/loginComponent';
 
 import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -25,7 +25,6 @@ const Login = ({ route, navigation }: Props) => {
         // contentContainerStyle={{
         //   marginTop: 615,
         // }}
-        keyboardVerticalOffset={60}
       >
         <ScrollView style={{ flex: 1 }}>
           <LoginComponent

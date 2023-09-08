@@ -10,7 +10,7 @@ import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { useTheme } from '@react-navigation/native';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 

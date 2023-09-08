@@ -166,11 +166,11 @@ const MapBox = (props: MapBoxProps) => {
           paddingVertical: 18,
           borderTopRightRadius: borderRadius.large,
           borderTopLeftRadius: borderRadius.large,
-          height: '50%',
+          height: '60%',
           backgroundColor: colors.background,
         }}
       >
-        <View style={{ flex: 1.2, paddingHorizontal: 18 }}>
+        <View style={{ flex: 1.5, maxHeight: 80, paddingHorizontal: 18 }}>
           <View
             style={{
               flexDirection: 'row',
@@ -214,11 +214,7 @@ const MapBox = (props: MapBoxProps) => {
               rightIcon={
                 !props.hideSearchMyLocation ? (
                   <>
-                    {location != null && searchLocation ? (
-                      <TouchableOpacity onPress={() => onclose()}>
-                        <GpsSlash size={20} color="red" />
-                      </TouchableOpacity>
-                    ) : (
+                    {location != null && searchLocation ? null : (
                       <>
                         {loading ? (
                           <ActivityIndicator animating={true} size="small" color={colors.text} />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, Touchable, StatusBar, Image, FlatList, TouchableOpacity } from 'react-native';
+import { View, Touchable, StatusBar, Image, FlatList, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
@@ -12,12 +12,20 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import FastImage from 'react-native-fast-image';
 import { OpenURLButton } from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { ApiCall } from '@/src/Services/api';
 import { getuserGet } from '@/src/Redux/actions/UserAction';
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
+import { StyledText } from '@/src/components/styled/Text';
+import { Colors, Typography } from '@/src/styles';
+import { borderRadius } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { Bookmark, NotificationBing } from 'iconsax-react-native';
+import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faBookmark } from '@fortawesome/free-solid-svg-icons';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Saved'>;
 
@@ -50,34 +58,53 @@ const Saved = ({ navigation }: Props) => {
   const { colors, dark } = useTheme();
   return (
     <View style={styles.container}>
-      <GeneralStatusBar hidden={false} translucent={true} />
-
-      <Header
-        title={'Saved'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu" size={24} color={colors.text} />
-          </TouchableOpacity>
-        }
-        RightView={<View style={{ width: getWidth(5) }} />}
-      />
-
       <View
         style={{
-          marginTop: getHeight(4),
           flex: 1,
-          paddingHorizontal: 5,
+          paddingHorizontal: 20,
         }}
       >
         <FlatList
           data={user?.savedPost}
           numColumns={2}
-          columnWrapperStyle={{ alignItems: 'flex-start' }}
-          ItemSeparatorComponent={() => <View style={{ height: getHeight(3) }} />}
+          contentContainerStyle={{ flexGrow: 1 }}
           ListEmptyComponent={() => {
             return (
-              <View>
-                <Text>No saved posts</Text>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <View
+                  style={{
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: Colors.neutral[700],
+                      marginBottom: spacing.x32,
+                      borderRadius: borderRadius.max,
+                      padding: spacing.x32,
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faBookmark} size={100} color={Colors.neutral[500]} />
+                  </View>
+                </View>
+                <StyledText
+                  style={[Typography.body.x4, { textAlign: 'center', marginBottom: spacing.x16 }]}
+                >
+                  You have not saved any post
+                </StyledText>
+                <StyledText
+                  style={[
+                    Typography.body.x2,
+                    {
+                      color: Colors.neutral[300],
+                      textAlign: 'center',
+                      paddingHorizontal: 40,
+                    },
+                  ]}
+                >
+                  Post you saved will show up here
+                </StyledText>
               </View>
             );
           }}
@@ -112,18 +139,18 @@ const Saved = ({ navigation }: Props) => {
               >
                 <Save height={getHeight(3)} width={getWidth(3)} />
               </View>
-              <Text
+              <StyledText
                 numberOfLines={2}
                 style={[styles.blogpostpara, { color: dark ? colors.text : '#032F3C' }]}
               >
                 {item.title}
-              </Text>
+              </StyledText>
               <TouchableOpacity
                 onPress={() => {
                   removePost(item.link);
                 }}
               >
-                <Text>Remove</Text>
+                <StyledText>Remove</StyledText>
               </TouchableOpacity>
             </TouchableOpacity>
           )}

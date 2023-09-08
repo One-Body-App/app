@@ -22,7 +22,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { User } from '@/utils/types';
 import { OpenURLButton } from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import Animated from 'react-native-reanimated';
 import SubscribeFlatlist from '@/src/components/SubscribeFlatlist';
 import { getuserAll, getuserGet } from '../../../Redux/actions/UserAction';

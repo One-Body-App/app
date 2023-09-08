@@ -32,7 +32,7 @@ import Logo from '@/assets/svg/LogoBlue.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 

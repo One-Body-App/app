@@ -12,7 +12,7 @@ import { LoginManager } from 'react-native-fbsdk-next';
 import auth from '@react-native-firebase/auth';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { useTheme } from '@react-navigation/native';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { DrawerScreenProps } from '@react-navigation/drawer';

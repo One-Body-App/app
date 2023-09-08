@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, TextInput, View } from 'react-native';
 import Button from '@/src/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -28,37 +28,37 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
   const inputRefContactName = useRef<TextInput>(null);
   const inputRefContactEmail = useRef<TextInput>(null);
   const inputRefContactPhoneNumber = useRef<TextInput>(null);
+  const submit = () => {
+    if (contactName != '' && contactEmail != '' && contactPhoneNumber != '') {
+      navigation.navigate('OnboardingInterests', {
+        ...route.params,
 
+        organizationContactName: contactName,
+        organizationContactEmail: contactEmail,
+        organizationContactPhoneNumber: contactPhoneNumber,
+
+        profileType: AccountType.organization,
+      });
+    } else {
+      let message = '';
+
+      if (!contactName || contactName == '') {
+        message = 'Organization contact name is required';
+      } else if (!contactEmail || contactEmail == '') {
+        message = 'Organization contact email is required';
+      } else if (!contactPhoneNumber || contactPhoneNumber == '') {
+        message = 'Organization contact phone number is required';
+      }
+
+      toast.show(message, {
+        type: 'danger',
+      });
+    }
+  };
   return (
     <OnboardingStepsLayout
       buttonText={'Next'}
-      onPress={() => {
-        if (contactName != '' && contactEmail != '' && contactPhoneNumber != '') {
-          navigation.navigate('OnboardingInterests', {
-            ...route.params,
-
-            organizationContactName: contactName,
-            organizationContactEmail: contactEmail,
-            organizationContactPhoneNumber: contactPhoneNumber,
-
-            profileType: AccountType.organization,
-          });
-        } else {
-          let message = '';
-
-          if (!contactName || contactName == '') {
-            message = 'Organization contact name is required';
-          } else if (!contactEmail || contactEmail == '') {
-            message = 'Organization contact email is required';
-          } else if (!contactPhoneNumber || contactPhoneNumber == '') {
-            message = 'Organization contact phone number is required';
-          }
-
-          toast.show(message, {
-            type: 'danger',
-          });
-        }
-      }}
+      onPress={submit}
       onboardingType={AccountType.organization}
       activeStep={3}
       disabled={contactName == '' || contactEmail == '' || contactPhoneNumber == ''}
@@ -80,7 +80,6 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
           <View style={{ flex: 1, paddingBottom: 30 }}>
             <StyledTextInput
               label="Full Name"
-              autoFocus
               wrapperStyle={{ flex: 1 }}
               value={contactName}
               placeholder="Enter Name"
@@ -90,7 +89,6 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
               ref={inputRefContactName}
               returnKeyType={'next'}
               onSubmitEditing={() => inputRefContactEmail.current?.focus()}
-              blurOnSubmit={false}
             />
           </View>
 
@@ -106,7 +104,6 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
               ref={inputRefContactEmail}
               returnKeyType={'next'}
               onSubmitEditing={() => inputRefContactPhoneNumber.current?.focus()}
-              blurOnSubmit={false}
               keyboardType="email-address"
             />
           </View>
@@ -122,7 +119,6 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
               }}
               ref={inputRefContactPhoneNumber}
               returnKeyType={'done'}
-              blurOnSubmit={false}
               keyboardType="phone-pad"
             />
           </View>

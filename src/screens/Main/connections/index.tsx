@@ -1,42 +1,61 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
-import { Avatar, Divider } from 'react-native-paper';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+} from 'react-native';
+
 import Modal from 'react-native-modal';
 
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Header from '@/src/components/Header';
-import { styles } from './styles';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import Button from '@/src/components/Button';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { getuserAll } from '@/redux//actions/UserAction';
-import AddIntrestsModel from '@/src/components/AddIntrestsModel';
-import SubscribeFlatlist from '@/src/components/SubscribeFlatlist';
-import FastImage from 'react-native-fast-image';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import Entypo from 'react-native-vector-icons/Entypo';
+
 import ImageModal from 'react-native-image-modal';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest, User } from '@/utils/types';
-import { RootStackParamList } from '@/src/Navigation/types';
-import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
+import { Colors, Typography } from '@/src/styles';
+import { borderRadius } from '@/src/styles/outlines';
+import { StyledTextInput } from '@/src/components/styled/TextInput';
+import SearchIcon from '@/assets/icons/search.svg';
+import { StyledText } from '@/src/components/styled/Text';
+import { spacing } from '@/src/styles/spacing';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import { iterestListItem, profileImageList } from '@/src/styles/items';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Connections'>;
 
 const Connections = ({ navigation }: Props) => {
-  const subscribes = useSelector((state: RootState) => state.user.userSubscribes);
-  const [show, setShow] = useState(false);
+  const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
+
+  const [interests, setInterests] = useState<Interest[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const [showSubscription, setShowSubscription] = useState(false);
+
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+  const [filter, setFilter] = useState<'connectors' | 'connections'>('connectors');
+
+  const [searchChannelsText, setSearchChannelsText] = useState<string>('');
 
   const [following, setFollowing] = useState<User[]>([]);
+  const [searchResultsFollowing, setSearchResultsFollowing] = useState<User[]>([]);
+  const [followers, setFollowers] = useState<User[]>([]);
+  const [searchResultsFollowers, setSearchResultsFollowers] = useState<User[]>([]);
 
   const [selectedInterest, setSelectedInterest] = useState<Interest[]>(user?.interests ?? []);
 
@@ -99,6 +118,7 @@ const Connections = ({ navigation }: Props) => {
 
       if (res?.status == 200) {
         setFollowing(res?.response?.data);
+        setSearchResultsFollowing(res?.response?.data);
       } else {
         console.log('error', res?.response);
       }
@@ -107,48 +127,263 @@ const Connections = ({ navigation }: Props) => {
     }
   };
 
+  const getFollowers = async () => {
+    // try {
+    //   const res = await ApiCall({
+    //     route: 'user/get-following',
+    //     verb: 'get',
+    //     token: token,
+    //   });
+
+    //   if (res?.status == 200) {
+    //     setFollowing(res?.response?.data);
+    //   } else {
+    //     console.log('error', res?.response);
+    //   }
+    // } catch (e: any) {
+    //   console.log('saga error -- ', e.toString());
+    // }
+    setFollowers([]);
+    setSearchResultsFollowers([]);
+  };
+
+  const getInterests = async () => {
+    setIsLoading(true);
+    try {
+      const res = await ApiCall({
+        route: 'tags/interest',
+        verb: 'get',
+        token: token,
+      });
+
+      if (res?.status == 200) {
+        setInterests(res?.response);
+      } else {
+        console.log('error', res?.response);
+      }
+      setIsLoading(false);
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const addInterests = async (newInterest: Interest) => {
+    setIsLoading(true);
+
+    try {
+      const res = await ApiCall({
+        route: 'user/add-interests',
+        token: token,
+        params: { interests: newInterest },
+        verb: 'patch',
+      });
+
+      if (res?.status == 200) {
+        selectedInterest.filter((itemToFilter) => itemToFilter._id == newInterest?._id).length > 0
+          ? setSelectedInterest(
+              selectedInterest.filter(function (item2) {
+                return item2._id !== newInterest?._id;
+              })
+            )
+          : setSelectedInterest([...selectedInterest, newInterest]);
+        dispatch(getuserAll({ token: token }));
+      }
+      setIsLoading(false);
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const getFilteredUsers = (users: User[], text: string) => {
+    const newSearchChannels = [];
+    for (let i = 0; i < users.length; i++) {
+      if (users[i] && users[i].name) {
+        if (users[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+          newSearchChannels.push(users[i]);
+        }
+      }
+    }
+    return newSearchChannels;
+  };
+
   useEffect(() => {
     getFollowing();
-  }, []);
+    if (userProfile?.isInfluencer) {
+      getFollowers();
+    }
+
+    getInterests();
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (searchChannelsText) {
+      setSearchResultsFollowing(getFilteredUsers(searchResultsFollowing, searchChannelsText));
+    } else {
+      setSearchResultsFollowing(following);
+    }
+
+    if (userProfile?.isInfluencer) {
+      if (searchChannelsText) {
+        setSearchResultsFollowers(getFilteredUsers(searchResultsFollowers, searchChannelsText));
+      } else {
+        setSearchResultsFollowers(following);
+      }
+    }
+
+    setIsLoading(false);
+  }, [searchChannelsText, userProfile]);
 
   const { dark } = useTheme();
 
-  const SubscribeFlatlists = () => {
-    return (
-      <FlatList
-        data={following}
-        ListHeaderComponent={<Text style={styles.mysubscription}>My Subscriptions</Text>}
-        ItemSeparatorComponent={() => <Divider />}
-        renderItem={({ item, index }) => {
-          return (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('UserProfile', {
-                  id: item?._id,
-                })
-              }
-              style={styles.subscribeview}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flex: 1,
+  const { colors } = useTheme();
 
-                  justifyContent: 'space-between',
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
+        <View>
+          <Button
+            text={'My Interests'}
+            onPress={() => {
+              setShowInterestModal(true);
+            }}
+            btnTextStyle={{
+              color: Colors.neutral[200],
+            }}
+            btnStyle={{
+              backgroundColor: Colors.neutral[700],
+              paddingVertical: spacing.x10,
+              flex: 1,
+              borderRadius: borderRadius.button,
+            }}
+            wrapperViewBtnStyle={{ marginHorizontal: spacing.x24, marginVertical: spacing.x16 }}
+          />
+
+          <View style={{ marginBottom: spacing.x24 }}>
+            <StyledTextInput
+              wrapperStyle={{ marginHorizontal: spacing.x24 }}
+              value={searchChannelsText}
+              returnKeyType="search"
+              placeholder="Search"
+              clearButtonMode="always"
+              onChangeText={(text) => {
+                setSearchChannelsText(text);
+              }}
+              leftIcon={
+                <View>
+                  {isLoading ? (
+                    <ActivityIndicator
+                      animating={isLoading}
+                      size="small"
+                      color={Colors.neutral[200]}
+                      style={{ marginRight: spacing.x10 }}
+                    />
+                  ) : (
+                    <SearchIcon
+                      style={{ height: 20, width: 20, marginRight: spacing.x10 }}
+                      stroke={Colors.neutral[200]}
+                    />
+                  )}
+                </View>
+              }
+            />
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+
+              // paddingHorizontal: 10,
+              marginBottom: spacing.x24,
+              backgroundColor: Colors.neutral[700],
+
+              paddingHorizontal: spacing.x48,
+              paddingTop: spacing.x16,
+              // flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+
+                alignItems: 'center',
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  if (filter != 'connectors') setFilter('connectors');
                 }}
               >
                 <View
                   style={{
-                    ...styles.simpleview,
-                    flexDirection: 'row',
-
-                    alignItems: 'center',
+                    paddingBottom: spacing.x10,
+                    borderBottomColor: Colors.neutral.brand,
+                    borderBottomWidth: filter == 'connectors' ? 2 : 0,
+                    alignSelf: 'flex-start',
                   }}
                 >
-                  <View style={{ flex: 1 }}>
+                  <StyledText>{searchResultsFollowing.length} Connectors</StyledText>
+                </View>
+              </TouchableOpacity>
+            </View>
+            {userProfile?.isInfluencer ? (
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (filter != 'connections') setFilter('connections');
+                  }}
+                >
+                  <View
+                    style={{
+                      paddingBottom: spacing.x10,
+                      borderBottomColor: Colors.neutral.brand,
+                      borderBottomWidth: filter == 'connections' ? 2 : 0,
+                      alignSelf: 'flex-start',
+                    }}
+                  >
+                    <StyledText>{searchResultsFollowers.length} Connections</StyledText>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={filter == 'connectors' ? searchResultsFollowing : searchResultsFollowers}
+            contentContainerStyle={{ flexGrow: 1 }}
+            renderItem={({ item }) => {
+              return (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('UserProfile', {
+                      id: item?._id,
+                    })
+                  }
+                  style={{
+                    justifyContent: 'space-between',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+
+                    flex: 1,
+                    padding: spacing.x10,
+                    borderRadius: spacing.x10,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <ImageModal
                       resizeMode="contain"
-                      style={{ width: 70, height: 70, borderRadius: 35 }}
+                      style={profileImageList}
                       source={{
                         uri:
                           item?.profileImage && item?.profileImage != ''
@@ -156,105 +391,162 @@ const Connections = ({ navigation }: Props) => {
                             : 'https://cdn.onebodyapp.com/user/no-image.png',
                       }}
                     />
-                  </View>
-                  <View style={{ flex: 2.3 }}>
-                    <Text
-                      numberOfLines={2}
-                      style={[
-                        styles.subscribetext,
-                        { color: dark ? colors.text : '#032F3C', paddingLeft: 10 },
-                      ]}
-                    >
-                      {item?.name}
-                    </Text>
-                    <Text
-                      style={{
-                        color: '#757575',
-                        fontFamily: 'Rubik-Regular',
-                        paddingLeft: 10,
+
+                    <View style={{ flex: 2.3 }}>
+                      <StyledText
+                        style={{
+                          color: Colors.neutral.brand,
+                        }}
+                        numberOfLines={2}
+                      >
+                        {item?.name}
+                      </StyledText>
+                      {item.profile?.whatIDo || item.profile?.typeOfOrganization ? (
+                        <StyledText
+                          style={{
+                            color: Colors.neutral[300],
+                          }}
+                        >
+                          {item.profile.whatIDo
+                            ? item.profile.whatIDo?.name
+                            : item.profile.typeOfOrganization
+                            ? item.profile.typeOfOrganization?.name
+                            : ''}
+                        </StyledText>
+                      ) : null}
+                    </View>
+
+                    <Button
+                      btnStyle={{
+                        paddingVertical: spacing.x10,
+                        paddingHorizontal: spacing.x24,
+                        borderRadius: borderRadius.button,
+                        backgroundColor: Colors.neutral[800],
                       }}
-                    >
-                      {item?.profile?.whatIDo?.name ?? item?.profile?.typeOfOrganization?.name}
-                    </Text>
+                      btnTextStyle={{ color: Colors.neutral[200] }}
+                      text={'Remove'}
+                      onPress={() => {
+                        handleUnSubscribe(item?._id);
+                      }}
+                      wrapperViewBtnStyle={{ flex: 1.25, justifyContent: 'flex-end' }}
+                    />
                   </View>
-                </View>
-                <View style={{ justifyContent: 'center' }}>
-                  <Button
-                    btnStyle={[styles.subscribebutton]}
-                    btnTextStyle={styles.subtex}
-                    text={'Unfollow'}
-                    onPress={() => {
-                      handleUnSubscribe(item?._id);
-                    }}
-                  />
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-      />
-    );
-  };
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
 
-  const { colors } = useTheme();
-
-  return (
-    <View style={{ flex: 1 }}>
-      <GeneralStatusBar hidden={false} translucent={true} />
-
-      <Header
-        title={'Connections'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu" size={24} color={colors.text} />
-          </TouchableOpacity>
-        }
-        RightView={<View style={{ width: getWidth(5) }} />}
-      />
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <AddIntrestsModel setShow={setShow} show={show} />
         <Modal
           backdropOpacity={0.3}
-          isVisible={showSubscription}
-          onBackdropPress={() => setShowSubscription(false)}
-          onSwipeComplete={() => setShowSubscription(false)}
+          isVisible={showInterestModal}
+          onBackdropPress={() => setShowInterestModal(false)}
+          onSwipeComplete={() => setShowInterestModal(false)}
           swipeDirection={['down']}
-          style={styles.bottomView}
+          propagateSwipe={true}
+          style={{ margin: 0 }}
+          avoidKeyboard={true}
         >
-          <View style={styles.content3}>
-            <View style={styles.headLine} />
-            <View style={styles.container}>
-              <SubscribeFlatlist />
+          <SafeAreaView
+            style={{
+              backgroundColor: colors.background,
+
+              flex: 1,
+            }}
+          >
+            <View style={{ paddingHorizontal: spacing.x24, flex: 1 }}>
+              <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    flex: 1,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                    {isLoading ? (
+                      <ActivityIndicator
+                        animating={isLoading}
+                        size="small"
+                        color={Colors.neutral[200]}
+                        style={{ marginRight: spacing.x10 }}
+                      />
+                    ) : null}
+                    <StyledText style={Typography.fontSize.x4}>My Interests</StyledText>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      // setModalVisible(false);
+                      setShowInterestModal(false);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="window-close"
+                      size={18}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
+            <View style={{ flex: 30, justifyContent: 'space-around' }}>
+              <ScrollView
+                contentContainerStyle={{
+                  alignSelf: 'center',
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+
+                  marginHorizontal: spacing.x10,
+                  marginTop: spacing.x32,
+                }}
+              >
+                {interests.length < 1 ? <StyledText>No Search Results</StyledText> : null}
+                {interests.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      if (
+                        selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                          .length > 0
+                      ) {
+                        removeInterests(item);
+                      } else {
+                        addInterests(item);
+                      }
+                    }}
+                    style={
+                      selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                        .length > 0
+                        ? [
+                            iterestListItem,
+                            {
+                              backgroundColor: Colors.primary.brand,
+                              borderColor: Colors.primary[300],
+                            },
+                          ]
+                        : iterestListItem
+                    }
+                  >
+                    <StyledText
+                      numberOfLines={1}
+                      style={
+                        selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                          .length > 0
+                          ? { color: 'white' }
+                          : { color: Colors.neutral[400] }
+                      }
+                    >
+                      {item?.name}
+                    </StyledText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </SafeAreaView>
         </Modal>
-        <FlatList
-          data={selectedInterest}
-          style={{ width: '100%' }}
-          ListFooterComponent={<SubscribeFlatlists />}
-          ListHeaderComponent={<Text style={styles.myinterest}>My Interests</Text>}
-          keyExtractor={(item, index) => index.toString()}
-          numColumns={4}
-          renderItem={({ item, index }) => (
-            <TouchableOpacity
-              onPress={() => removeInterests(item)}
-              style={[styles.listItem, { backgroundColor: '#032F3C' }]}
-            >
-              <Text numberOfLines={1} style={{ color: 'white', maxWidth: getWidth(19) }}>
-                {item?.name}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
-        <Button
-          text="Add Interests & Subscribe"
-          leftIcon={<Entypo name="plus" color={'#032f3c'} style={{ marginRight: 5 }} />}
-          btnStyle={styles.batonstyle}
-          btnTextStyle={{ fontSize: getFontSize(2), color: '#032f3c' }}
-          onPress={() => navigation.navigate('Explore')}
-        />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 export default Connections;

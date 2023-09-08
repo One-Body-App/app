@@ -11,6 +11,7 @@ import { useTheme } from '@react-navigation/native';
 import { StyledTextInput } from './TextInput';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import SearchIcon from '@/assets/icons/search.svg';
+import { spacing } from '@/src/styles/spacing';
 
 type selectedItem = {
   text: string;
@@ -58,7 +59,7 @@ export const StyledSelect: FC<Props> = ({
 
   return (
     <View style={wrapperStyle}>
-      {label ? <StyledText style={{ marginBottom: 10 }}>{label}</StyledText> : null}
+      {label ? <StyledText style={{ marginBottom: spacing.x10 }}>{label}</StyledText> : null}
       <Button
         text={btnText}
         btnStyle={{
@@ -71,8 +72,8 @@ export const StyledSelect: FC<Props> = ({
         }}
         wrapperBtnStyle={{
           justifyContent: 'space-between',
-          paddingHorizontal: 14,
-          paddingVertical: 16,
+          paddingHorizontal: spacing.x10,
+          paddingVertical: spacing.x16,
         }}
         btnTextStyle={{
           color: selectedItem ? Colors.neutral[200] : Colors.neutral[300],
@@ -85,6 +86,7 @@ export const StyledSelect: FC<Props> = ({
       <Modal
         backdropOpacity={0.3}
         isVisible={modalVisible}
+        avoidKeyboard={true}
         onBackdropPress={() => setModalVisible(false)}
         onSwipeComplete={() => setModalVisible(false)}
         swipeDirection={['down']}
@@ -97,14 +99,14 @@ export const StyledSelect: FC<Props> = ({
       >
         <View
           style={{
-            paddingVertical: 18,
+            paddingVertical: spacing.x16,
             borderTopRightRadius: borderRadius.large,
             borderTopLeftRadius: borderRadius.large,
-            height: '50%',
+            height: '60%',
             backgroundColor: colors.background,
           }}
         >
-          <View style={{ flex: 1, paddingHorizontal: 18 }}>
+          <View style={{ flex: 1.5, maxHeight: 90, paddingHorizontal: spacing.x16 }}>
             <View
               style={{
                 flexDirection: 'row',
@@ -112,8 +114,20 @@ export const StyledSelect: FC<Props> = ({
                 flex: 1,
               }}
             >
-              <StyledText style={{ fontSize: 18 }}>{modalTitle}</StyledText>
-              <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
+              <StyledText style={Typography.fontSize.x4}>{modalTitle}</StyledText>
+
+              <TouchableOpacity
+                onPress={() => {
+                  // setModalVisible(false);
+                  setModalVisible(false);
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="window-close"
+                  size={18}
+                  color={Colors.primary.brand}
+                />
+              </TouchableOpacity>
             </View>
             <View style={{ flex: 1 }}>
               <StyledTextInput
@@ -125,7 +139,7 @@ export const StyledSelect: FC<Props> = ({
                 leftIcon={
                   <View>
                     <SearchIcon
-                      style={{ height: 15, width: 15, marginRight: 10 }}
+                      style={{ height: 15, width: 15, marginRight: spacing.x10 }}
                       stroke={Colors.neutral[200]}
                     />
                   </View>
@@ -147,7 +161,7 @@ export const StyledSelect: FC<Props> = ({
           <View style={{ flex: 4 }}>
             <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
               {searchedItems.length == 0 ? (
-                <StyledText style={[Typography.body.x2M, { padding: 18 }]}>
+                <StyledText style={[Typography.body.x2M, { padding: spacing.x16 }]}>
                   No results found
                 </StyledText>
               ) : null}
@@ -162,8 +176,7 @@ export const StyledSelect: FC<Props> = ({
                     // style={styles.listItem2}
                     key={index}
                     style={{
-                      paddingHorizontal: 18,
-                      paddingVertical: 17,
+                      padding: spacing.x16,
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       borderColor: Colors.primary[800],

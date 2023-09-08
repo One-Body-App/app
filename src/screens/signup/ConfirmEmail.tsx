@@ -17,13 +17,14 @@ import { useDispatch } from 'react-redux';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import Toast from 'react-native-simple-toast';
 import GoBackIcon from '@/src/components/GoBackIcon';
+import { TextInput } from 'react-native-gesture-handler';
 
 const ConfirmEmail = ({ navigation, route }) => {
   const { email } = route.params;
   const dispatch = useDispatch();
   const inputRefs = {
-    passwordN: useRef(null),
-    passwordC: useRef(null),
+    passwordN: useRef<typeof TextInput>(null),
+    passwordC: useRef<typeof TextInput>(null),
   };
   const [state, setState] = useState({
     passwordN: '',
@@ -128,9 +129,10 @@ const ConfirmEmail = ({ navigation, route }) => {
                 setState({ ...state, passwordErrorN: error })
               )
             }
-            onSubmitEditing={() => inputRefs.passwordC.current.focus()}
+            onSubmitEditing={() => {
+              if (inputRefs.passwordC.current) inputRefs.passwordC.current?.focus();
+            }}
             onChangeText={(passwordN) => changeHandler('passwordN', passwordN.trim())}
-            blurOnSubmit={false}
           />
           <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>{state.passwordErrorN}</Text>
 
@@ -167,7 +169,6 @@ const ConfirmEmail = ({ navigation, route }) => {
             }
             onSubmitEditing={() => PasswordUpdate()}
             onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
-            blurOnSubmit={false}
           />
           <Text style={{ ...GeneralStyle.InputError, marginLeft: 0 }}>{state.passwordErrorC}</Text>
         </View>

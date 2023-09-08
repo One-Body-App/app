@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
-import LoginComponent from '@/src/components/LoginComponent';
+import LoginComponent from '@/src/components/loginComponent';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import GradientHeader from '@/src/components/GradientHeader';
 import { appColor } from '../../constants';
 import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
 import GoBackIcon from '@/src/components/GoBackIcon';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { setLoginVerificationBackPage } from '@/src/Redux/actions/GeneralActions';
@@ -56,7 +56,6 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
         // contentContainerStyle={{
         //   marginTop: 615,
         // }}
-        keyboardVerticalOffset={60}
       >
         <ScrollView style={{ flex: 1 }}>
           {route?.params?.mode == 'resetPassword' ? (

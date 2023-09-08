@@ -20,7 +20,7 @@ import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 
 type Props = StackScreenProps<RootStackParamList, 'EmailChange'>;
 

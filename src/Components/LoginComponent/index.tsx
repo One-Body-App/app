@@ -42,7 +42,7 @@ import {
 
 import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
 import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/Services/constants';
 import { useToast } from 'react-native-toast-notifications';
@@ -683,7 +683,6 @@ const LoginComponent: FC<Props> = ({
                 }
                 onSubmitEditing={() => inputRefs.password?.current.focus()}
                 onChangeText={(email) => changeHandler('email', email.trim())}
-                blurOnSubmit={false}
               />
               {state.emailError ? (
                 <StyledText style={{ ...GeneralStyle.InputError }}>{state.emailError}</StyledText>
@@ -708,7 +707,6 @@ const LoginComponent: FC<Props> = ({
                 onFocus={() => setState({ ...state, passwordError: '' })}
                 onSubmitEditing={() => signInUser()}
                 onChangeText={(password) => changeHandler('password', password.trim())}
-                blurOnSubmit={false}
               />
               {state.passwordError ? (
                 <StyledText style={{ ...GeneralStyle.InputError }}>

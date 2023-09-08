@@ -20,7 +20,7 @@ import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 type Props = StackScreenProps<RootStackParamList, 'PasswordChange'>;
@@ -124,7 +124,6 @@ const PasswordChange = ({ navigation, route }: Props) => {
           }
           onSubmitEditing={() => inputRefs.passwordC.current?.focus()}
           onChangeText={(passwordN) => changeHandler('passwordN', passwordN.trim())}
-          blurOnSubmit={false}
         />
         <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(9) }}>
           {state.passwordErrorN}
@@ -162,7 +161,6 @@ const PasswordChange = ({ navigation, route }: Props) => {
           }
           onSubmitEditing={() => PasswordUpdate()}
           onChangeText={(passwordC) => changeHandler('passwordC', passwordC.trim())}
-          blurOnSubmit={false}
         />
         <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(9) }}>
           {state.passwordErrorC}

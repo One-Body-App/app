@@ -33,7 +33,7 @@ import { ApiCall } from '@/services/api';
 import ImagePicker from 'react-native-image-crop-picker';
 import GradientButton from '@/src/components/GradientButton';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { ChurchType, Location, Tag } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
