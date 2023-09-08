@@ -113,6 +113,7 @@ export type HomeStackParamsList = {
     data: any;
   };
   Search: undefined;
+  Notifications: undefined;
 };
 
 export type ExploreStackParamsList = {
@@ -177,7 +178,7 @@ export type MainBottomStackParamsList = {
 
 export type MainDrawerParamsList = {
   Main: NavigatorScreenParams<MainBottomStackParamsList>;
-  Notifications: undefined;
+
   Connections: undefined;
   Saved: undefined;
   Settings: undefined;

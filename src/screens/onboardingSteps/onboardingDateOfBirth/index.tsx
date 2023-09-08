@@ -45,7 +45,7 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
         <View style={{ flex: 1 }}>
           <StyledText style={[Typography.header.h1]}>What is your date of birth?</StyledText>
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
             Select your date of birth
           </StyledText>
@@ -57,8 +57,8 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
             text={date ? date : 'Select'}
             btnStyle={{
               flex: 1,
-              backgroundColor: Colors.neutral[600],
-              borderColor: Colors.neutral[700],
+              backgroundColor: Colors.neutral[700],
+              borderColor: Colors.neutral[800],
               borderRadius: borderRadius.small,
             }}
             wrapperBtnStyle={{
@@ -67,7 +67,7 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
               paddingVertical: 16,
             }}
             btnTextStyle={{
-              color: date ? Colors.neutral.brand : Colors.neutral[300],
+              color: date ? Colors.neutral[300] : Colors.neutral[400],
             }}
             onPress={() => setOpen(true)}
             RightIcon={
@@ -75,7 +75,7 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
                 onPress={() => setOpen(true)}
                 style={{ paddingTop: 6 }}
                 size={20}
-                color={Colors.neutral[200]}
+                color={Colors.neutral[300]}
               />
             }
           />

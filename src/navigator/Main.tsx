@@ -3,12 +3,20 @@ import {
   DefaultTheme,
   LinkingOptions,
   NavigationContainer,
+  Route,
+  useTheme,
 } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   ImageBackground,
   Linking,
+  Platform,
+  StyleProp,
+  StyleSheet,
+  TextProps,
+  TextStyle,
   TouchableOpacity,
   View,
   useColorScheme,
@@ -41,7 +49,6 @@ import {
 } from './types';
 import messaging from '@react-native-firebase/messaging';
 
-import Notifications from '../screens/main/notifications';
 import Connections from '../screens/main/connections';
 import Saved from '../screens/main/saved';
 import Intro from '../screens/intro';
@@ -60,9 +67,33 @@ import SettingsStack from './SettingsStack';
 import NewPassword from '../screens/newPassword/NewPassword';
 import ConfirmLogin from '../screens/login/ConfirmLogin';
 import OnboardingStack from './OnboardingStack';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 
 const NonUserStack = createNativeStackNavigator<RootNonUserStackParamList>();
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
+
+type HeaderProps = Omit<TextProps, 'style'> & {
+  tintColor?: string;
+  style?: Animated.WithAnimatedValue<StyleProp<TextStyle>>;
+};
+
+function getHeaderTitle(route: Partial<Route<string>>) {
+  // If the focused route is not found, we need to assume it's the initial screen
+  // This can happen during if there hasn't been any navigation inside the screen
+  // In our case, it's "Feed" as that's the first screen inside the navigator
+  const routeName = getFocusedRouteNameFromRoute(route) ?? 'HomeTab';
+
+  switch (routeName) {
+    case 'HomeTab':
+      return 'Home';
+    case 'SearchTab':
+      return 'Search';
+    case 'ExploreTab':
+      return 'Discover Accounts';
+    case 'MyProfileTab':
+      return 'My account';
+  }
+}
 
 export const headerOptions: NativeStackNavigationOptions = {
   headerShadowVisible: false,
@@ -257,6 +288,7 @@ const Main = () => {
     );
   }
   // console.log(!!user, !!token, !!authState.getProfileData, 'asdfhasjdkfhajksdhfkjashd');
+
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       {/* <AppProvider> */}
@@ -275,36 +307,72 @@ const Main = () => {
                 headerStyle: {
                   backgroundColor: 'white',
                 },
-                headerTitle: () => (
-                  <View style={{ height: 28, width: 28 }}>
-                    <Logo style={{ height: 28, width: 28 }} />
-                  </View>
-                ),
-                headerRight() {
-                  return (
-                    <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-                      <TouchableOpacity onPress={() => {}} style={{ paddingRight: spacing.x24 }}>
-                        <Notification
-                          style={{ height: 24, width: 24 }}
-                          stroke={Colors.primary.brand}
-                          strokeWidth={0.2}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => {}}>
-                        <Message
-                          style={{ height: 24, width: 24 }}
-                          stroke={Colors.primary.brand}
-                          strokeWidth={0.2}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                },
               }}
               drawerContent={(props) => <DrawerContent {...props} />}
             >
-              <DrawerStack.Screen name="Main" component={MainTabStack} />
-              <DrawerStack.Screen name="Notifications" component={Notifications} />
+              <DrawerStack.Screen
+                name="Main"
+                component={MainTabStack}
+                options={({ route, navigation }) => ({
+                  headerTitleAlign: getHeaderTitle(route) == 'Home' ? 'center' : 'left',
+                  headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
+                    const { colors } = useTheme();
+                    const title = getHeaderTitle(route);
+
+                    if (title == 'Home') {
+                      return (
+                        <View style={{ height: 28, width: 28 }}>
+                          <Logo style={{ height: 28, width: 28 }} />
+                        </View>
+                      );
+                    }
+                    return (
+                      <Animated.Text
+                        accessibilityRole="header"
+                        aria-level="1"
+                        numberOfLines={1}
+                        children={title}
+                        {...rest}
+                        style={[
+                          styles.title,
+                          { color: tintColor === undefined ? colors.text : tintColor },
+                          style,
+                        ]}
+                      />
+                    );
+                  },
+
+                  headerRight() {
+                    const routeName = getHeaderTitle(route);
+                    if (routeName == 'Home') {
+                      return (
+                        <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              navigation.navigate('Notifications');
+                            }}
+                            // style={{ paddingRight: spacing.x24 }}
+                          >
+                            <Notification
+                              style={{ height: 24, width: 24 }}
+                              stroke={Colors.primary.brand}
+                              strokeWidth={0.2}
+                            />
+                          </TouchableOpacity>
+                          {/* <TouchableOpacity onPress={() => {}}>
+                            <Message
+                              style={{ height: 24, width: 24 }}
+                              stroke={Colors.primary.brand}
+                              strokeWidth={0.2}
+                            />
+                          </TouchableOpacity> */}
+                        </View>
+                      );
+                    }
+                  },
+                })}
+              />
+
               <DrawerStack.Screen name="Connections" component={Connections} />
 
               <DrawerStack.Screen name="Saved" component={Saved} />
@@ -342,3 +410,21 @@ const Main = () => {
 };
 
 export default Main;
+
+const styles = StyleSheet.create({
+  title: Platform.select({
+    ios: {
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    android: {
+      fontSize: 20,
+      fontFamily: 'sans-serif-medium',
+      fontWeight: 'normal',
+    },
+    default: {
+      fontSize: 18,
+      fontWeight: '500',
+    },
+  }),
+});

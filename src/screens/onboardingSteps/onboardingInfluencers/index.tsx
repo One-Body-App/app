@@ -18,6 +18,7 @@ import { StyledTextInput } from '@/src/components/styled/TextInput';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fontSize } from '@/src/styles/typography';
 import { orgprofileUpdate, profileUpdate } from '@/src/Redux/actions/AuthActions';
+import SearchIcon from '@/assets/icons/search.svg';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
@@ -152,12 +153,18 @@ const OnboardingInfluencers = ({ route }: Props) => {
                 }
               }}
               leftIcon={
-                <MaterialCommunityIcons
-                  name="magnify"
-                  size={20}
-                  style={{ marginRight: 10 }}
-                  color={Colors.neutral.brand}
-                />
+                <View>
+                  <SearchIcon
+                    style={{ height: 20, width: 20, marginRight: 10 }}
+                    stroke={Colors.neutral[300]}
+                  />
+                </View>
+                // <MaterialCommunityIcons
+                //   name="magnify"
+                //   size={20}
+                //   style={{ marginRight: 10 }}
+                //   color={Colors.neutral[200]}
+                // />
               }
               placeholder="Search for Influencers & Organizations"
             />
@@ -234,7 +241,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
                         style={{
                           color: selectedInfluencers.includes(item._id)
                             ? Colors.infoFeedback[400]
-                            : Colors.neutral[200],
+                            : Colors.neutral[300],
                           alignSelf: 'center',
                           ...fontSize.x1,
                         }}

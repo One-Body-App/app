@@ -41,7 +41,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
         <View style={{ flex: 1 }}>
           <StyledText style={[Typography.header.h1]}>Where are you Located?</StyledText>
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
             Enter your present location
           </StyledText>
@@ -53,8 +53,8 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
             text={locationData ? locationData?.place_name : 'Select'}
             btnStyle={{
               flex: 1,
-              backgroundColor: Colors.neutral[600],
-              borderColor: Colors.neutral[700],
+              backgroundColor: Colors.neutral[700],
+              borderColor: Colors.neutral[800],
               borderRadius: borderRadius.small,
             }}
             wrapperBtnStyle={{
@@ -63,7 +63,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
               paddingVertical: 16,
             }}
             btnTextStyle={{
-              color: locationData ? Colors.neutral.brand : Colors.neutral[300],
+              color: locationData ? Colors.neutral[300] : Colors.neutral[400],
             }}
             onPress={() => setModalVisible(true)}
             RightIcon={
@@ -71,7 +71,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
                 onPress={() => setModalVisible(true)}
                 style={{ paddingTop: 6 }}
                 size={15}
-                color={Colors.neutral[200]}
+                color={Colors.neutral[300]}
               />
             }
           />

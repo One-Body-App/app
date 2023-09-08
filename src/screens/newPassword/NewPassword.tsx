@@ -123,7 +123,7 @@ const NewPassword = ({ oobCode, ...props }: Props) => {
         <StyledText style={[Typography.header.h1]}>Reset your password?</StyledText>
 
         <StyledText
-          style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+          style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
         >
           Set a new password for your account. Ensure it is secured and easy for you to remember
         </StyledText>

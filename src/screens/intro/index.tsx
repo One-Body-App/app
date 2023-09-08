@@ -54,7 +54,7 @@ const IntroScreen = ({ route, navigation }: Props) => {
                   <Text
                     style={[
                       subheader.M,
-                      { color: Colors.neutral[200], textAlign: 'center', marginTop: 15 },
+                      { color: Colors.neutral[300], textAlign: 'center', marginTop: 15 },
                     ]}
                   >
                     Connect with Christian leaders and social influencers from around the globe with

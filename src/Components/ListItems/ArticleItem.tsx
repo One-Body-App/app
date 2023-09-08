@@ -30,6 +30,7 @@ const ArticleItem = ({
   iconSize,
   hideProfileName,
   pillText,
+  onPress,
 }: {
   item: ArticleType;
   blogPostStyle?: StyleProp<ViewStyle>;
@@ -40,6 +41,7 @@ const ArticleItem = ({
   showModal: (item: ArticleType) => void;
   hideProfileName?: boolean;
   pillText?: string;
+  onPress?: (item: ArticleType) => void;
 }) => {
   const { colors } = useTheme();
 
@@ -47,8 +49,13 @@ const ArticleItem = ({
     <TouchableOpacity
       onPress={() => {
         if (item?.link) OpenURLButton(item?.link);
+        if (onPress) onPress(item);
       }}
-      style={[styles.blogpostview, { width: Dimensions.get('window').width - 32 }, blogPostStyle]}
+      style={[
+        styles.blogpostview,
+        { width: Dimensions.get('window').width - 32, backgroundColor: colors.background },
+        blogPostStyle,
+      ]}
     >
       {pillText ? (
         <View

@@ -260,14 +260,11 @@ export const styles = StyleSheet.create({
     // padding: 0,
     position: 'relative',
     flex: 1,
-    marginHorizontal: 7,
 
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
+    // alignSelf: 'center',
+    // justifyContent: 'center',
+    // alignItems: 'center',
     // height: getHeight(23),
-
-    marginVertical: 7,
   },
   blogpostimage: {
     // borderRadius: 16,

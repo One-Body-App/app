@@ -41,7 +41,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
         <View style={{ flex: 1 }}>
           <StyledText style={[Typography.header.h1]}>How often do you attend Church?</StyledText>
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
             Select the frequency at which you go to church
           </StyledText>
@@ -56,7 +56,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderColor:
-                  churchAttend == 'Weekly' ? Colors.primarySapphire.brand : Colors.neutral[700],
+                  churchAttend == 'Weekly' ? Colors.primarySapphire.brand : Colors.neutral[800],
               },
             ]}
             onPress={() => {
@@ -71,7 +71,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
                 GeneralStyle.radioButton,
                 {
                   borderColor:
-                    churchAttend == 'Weekly' ? Colors.primarySapphire.brand : Colors.neutral.brand,
+                    churchAttend == 'Weekly' ? Colors.primarySapphire.brand : Colors.neutral[200],
                 },
               ]}
             >
@@ -87,7 +87,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderColor:
-                  churchAttend == 'Bi-Weekly' ? Colors.primarySapphire.brand : Colors.neutral[700],
+                  churchAttend == 'Bi-Weekly' ? Colors.primarySapphire.brand : Colors.neutral[800],
               },
             ]}
             onPress={() => {
@@ -104,7 +104,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
                   borderColor:
                     churchAttend == 'Bi-Weekly'
                       ? Colors.primarySapphire.brand
-                      : Colors.neutral.brand,
+                      : Colors.neutral[200],
                 },
               ]}
             >
@@ -122,7 +122,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
                 borderColor:
                   churchAttend == 'Once a Month'
                     ? Colors.primarySapphire.brand
-                    : Colors.neutral[700],
+                    : Colors.neutral[800],
               },
             ]}
             onPress={() => {
@@ -139,7 +139,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
                   borderColor:
                     churchAttend == 'Once a Month'
                       ? Colors.primarySapphire.brand
-                      : Colors.neutral.brand,
+                      : Colors.neutral[200],
                 },
               ]}
             >
@@ -159,7 +159,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
                 borderColor:
                   churchAttend == 'I only Watch at Home'
                     ? Colors.primarySapphire.brand
-                    : Colors.neutral[700],
+                    : Colors.neutral[800],
               },
             ]}
             onPress={() => {
@@ -176,7 +176,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
                   borderColor:
                     churchAttend == 'I only Watch at Home'
                       ? Colors.primarySapphire.brand
-                      : Colors.neutral.brand,
+                      : Colors.neutral[200],
                 },
               ]}
             >

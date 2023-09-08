@@ -73,10 +73,21 @@ const OnboardingIntro = ({ navigation }: Props) => {
           style={{ width: '60%', height: 'auto', aspectRatio: 1, marginBottom: spacing.x32 }}
           source={require('@/assets/images/onboarding_intro.png')}
         />
-        <StyledText style={[Typography.header.h1, { marginVertical: spacing.x8 }]}>
+        <StyledText
+          style={[
+            Typography.header.h1,
+            { marginVertical: spacing.x8, color: Colors.neutral.brand },
+          ]}
+        >
           Let’s Get to Know You
         </StyledText>
-        <StyledText style={{ marginHorizontal: spacing.x16, textAlign: 'center' }}>
+        <StyledText
+          style={{
+            marginHorizontal: spacing.x16,
+            textAlign: 'center',
+            color: Colors.neutral[200],
+          }}
+        >
           This should only take about 2-3 minutes to complete.
         </StyledText>
       </View>
@@ -90,7 +101,7 @@ const OnboardingIntro = ({ navigation }: Props) => {
             },
           ]}
           onPress={() => {
-            if (authState.getProfileData?.accountType == 'individual') {
+            if (authState.getProfileData?.accountType !== 'individual') {
               navigation.push('OnboardingChurchType');
             } else {
               navigation.push('OnboardingOrganizationType');

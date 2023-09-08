@@ -405,12 +405,7 @@ function DrawerContent(props: DrawerContentComponentProps) {
               props.navigation.navigate('PrayerWall');
             }}
           /> */}
-          <DrawerItem
-            label="Notifications"
-            onPress={() => {
-              props.navigation.navigate('Notifications');
-            }}
-          />
+
           <DrawerItem
             label="Connections"
             onPress={() => {

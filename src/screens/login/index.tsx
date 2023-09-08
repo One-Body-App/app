@@ -18,7 +18,7 @@ const Login = ({ route, navigation }: Props) => {
   const { dark, colors } = useTheme();
 
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[600]}>
+    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

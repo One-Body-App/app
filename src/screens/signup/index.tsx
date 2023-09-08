@@ -313,7 +313,7 @@ const SignupForm = ({ navigation, route }: Props) => {
   }, [route.params]);
 
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[600]}>
+    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -335,7 +335,7 @@ const SignupForm = ({ navigation, route }: Props) => {
             <StyledText
               style={[
                 Typography.subheader.R,
-                { color: Colors.neutral[200], marginTop: spacing.x8 },
+                { color: Colors.neutral[300], marginTop: spacing.x8 },
               ]}
             >
               Enter your details to enable us setup your account
@@ -373,18 +373,18 @@ const SignupForm = ({ navigation, route }: Props) => {
             <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
               <View
                 style={{
-                  borderBottomColor: Colors.neutral[700],
+                  borderBottomColor: Colors.neutral[800],
                   borderBottomWidth: borderWidth.thin,
                   flex: 1,
                 }}
               />
 
-              <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[200] }}>
+              <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[300] }}>
                 Or
               </StyledText>
               <View
                 style={{
-                  borderBottomColor: Colors.neutral[700],
+                  borderBottomColor: Colors.neutral[800],
                   borderBottomWidth: borderWidth.thin,
                   flex: 1,
                 }}

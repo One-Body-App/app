@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { Colors } from '@/src/styles';
+import { borderRadius } from '@/src/styles/outlines';
 
 export const styles = StyleSheet.create({
   subscribeview: {
@@ -7,8 +9,6 @@ export const styles = StyleSheet.create({
     // margin: 6,
     // width: getWidth(45),
     flex: 1,
-
-    padding: 6,
   },
   bottomView: {
     justifyContent: 'flex-end',
@@ -68,13 +68,13 @@ export const styles = StyleSheet.create({
     width: getWidth(35),
     borderRadius: 10,
   },
-  subtex: {
-    fontWeight: 'bold',
-    color: '#F6F6F6',
-    letterSpacing: 0.5,
-  },
+  // subtex: {
+  //   fontWeight: 'bold',
+  //   color: '#F6F6F6',
+  //   letterSpacing: 0.5,
+  // },
   mainButton: { backgroundColor: '#F6F6F6', padding: 16, flex: 1, borderRadius: 10 },
-  mainButtonWrapper: { flex: 1, margin: 16 },
+  mainButtonWrapper: { flex: 1, marginVertical: 16 },
   flatlistview: {
     // flex: 1,
     alignSelf: 'center',
@@ -95,6 +95,14 @@ export const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: 'gray',
+  },
+
+  filterButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+
+    marginRight: 20,
+    borderRadius: borderRadius.small,
   },
   // subscribeview: {
   //   alignItems: 'center',

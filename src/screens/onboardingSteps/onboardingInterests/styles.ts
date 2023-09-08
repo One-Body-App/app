@@ -12,6 +12,6 @@ export const styles = StyleSheet.create({
     borderRadius: borderRadius.small,
     marginHorizontal: spacing.x8,
     marginVertical: spacing.x8,
-    backgroundColor: Colors.neutral[600],
+    backgroundColor: Colors.neutral[700],
   },
 });

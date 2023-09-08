@@ -28,12 +28,25 @@ import { ApiCall } from '@/services/api';
 import { useSelector } from 'react-redux';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { useTheme } from '@react-navigation/native';
+import { Colors, Typography } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
+import { borderRadius } from '@/src/styles/outlines';
+import { StyledText } from '@/src/components/styled/Text';
+import SearchIcon from '@/assets/icons/search.svg';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { HomeStackParamsList } from '@/src/navigator/types';
+import { NotificationType } from '@/utils/types';
+import { NotificationBing } from 'iconsax-react-native';
+import { StackScreenProps } from '@react-navigation/stack';
+
 // create a component
-const Notification = ({ navigation }) => {
-  const [DATA, SetDATA] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const token = useSelector((state) => state.auth.userToken);
-  const [selectedIndex, setSelectedIndex] = useState(false);
+type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
+
+const Notification = ({ navigation }: Props) => {
+  const [DATA, SetDATA] = useState<NotificationType[]>([]);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isModalVisible, setModal] = useState(false);
   const startValue = new Animated.Value(0);
   const endValue = 1;
@@ -58,12 +71,12 @@ const Notification = ({ navigation }) => {
         verb: 'get',
         token: token,
       });
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         SetDATA(res?.response?.data);
       } else {
         console.log('error', res?.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
@@ -75,18 +88,7 @@ const Notification = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <GeneralStatusBar hidden={false} translucent={true} />
-
-      <Header
-        title={'Notifications'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu" size={24} color={colors.text} />
-          </TouchableOpacity>
-        }
-        RightView={<View style={{ width: getWidth(5) }} />}
-      />
-      <View>
+      <View style={{ flex: 1 }}>
         <Modal
           backdropOpacity={0.3}
           isVisible={modalVisible}
@@ -94,7 +96,6 @@ const Notification = ({ navigation }) => {
           onSwipeComplete={() => setModalVisible(false)}
           swipeDirection={['down']}
           style={styles.bottomView}
-          onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.content2}>
             <View style={styles.view}>
@@ -137,16 +138,16 @@ const Notification = ({ navigation }) => {
             </View>
             <View style={styles.btnview}>
               <Button
-                title="Deny"
+                text="Deny"
                 onPress={toggleModal}
-                Style={styles.btn}
-                titleStyle={styles.btnText}
+                btnStyle={styles.btn}
+                btnTextStyle={styles.btnText}
               />
               <Button
                 onPress={toggleModal}
-                title="Ok"
-                Style={styles.mybtn}
-                titleStyle={styles.mybtnText}
+                text="Ok"
+                btnStyle={styles.mybtn}
+                btnTextStyle={styles.mybtnText}
               />
             </View>
           </View>
@@ -156,7 +157,8 @@ const Notification = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           useFlatList={true}
           data={DATA}
-          keyExtractor={(item, index) => index}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyExtractor={(item, index) => item._id}
           ItemSeparatorComponent={() => <Divider />}
           ListHeaderComponent={() => <View style={{ height: getHeight(5.5) }} />}
           ListFooterComponent={() => <View style={{ margin: getHeight(12) }} />}
@@ -187,9 +189,9 @@ const Notification = ({ navigation }) => {
                   <View style={styles.active} />
                 </View>
               </View>
-              {selectedIndex == index ? (
-                <Modal modalVisible={modalVisible} setModalVisible={setModalVisible} />
-              ) : null}
+              {/* {selectedIndex == index ? (
+                <Modal isVisible={modalVisible} />
+              ) : null} */}
             </TouchableOpacity>
           )}
           renderHiddenItem={
@@ -215,6 +217,46 @@ const Notification = ({ navigation }) => {
           rightOpenValue={-90}
           onRowOpen={(rowKey, rowMap) => {
             setTimeout(() => {}, 2000);
+          }}
+          ListEmptyComponent={() => {
+            return (
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <View
+                  style={{
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: Colors.neutral[700],
+                      marginBottom: spacing.x32,
+                      borderRadius: borderRadius.max,
+                      padding: spacing.x32,
+                    }}
+                  >
+                    <NotificationBing size={100} color={Colors.neutral[500]} />
+                  </View>
+                </View>
+                <StyledText
+                  style={[Typography.body.x4, { textAlign: 'center', marginBottom: spacing.x16 }]}
+                >
+                  No notifications yet
+                </StyledText>
+                <StyledText
+                  style={[
+                    Typography.body.x2,
+                    {
+                      color: Colors.neutral[300],
+                      textAlign: 'center',
+                      paddingHorizontal: 40,
+                    },
+                  ]}
+                >
+                  Your notifications on various activities on Onebody app will show here
+                </StyledText>
+              </View>
+            );
           }}
         />
       </View>

@@ -18,6 +18,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Gps, GpsSlash } from 'iconsax-react-native';
 import { Colors, Typography } from '../styles';
 import { StyledTextInput } from './styled/TextInput';
+import SearchIcon from '@/assets/icons/search.svg';
 
 const access_token =
   'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
@@ -97,7 +98,8 @@ const MapBox = (props: MapBoxProps) => {
   const onclose = () => {
     setLocation(null);
     setsearchLocation('');
-
+    setModalVisible(false);
+    setSuggetions([]);
     // setCheckIn(false);
   };
   const getlocationPermison = async () => {
@@ -150,8 +152,8 @@ const MapBox = (props: MapBoxProps) => {
       avoidKeyboard={true}
       backdropOpacity={0.3}
       isVisible={modalVisible}
-      onBackdropPress={() => setModalVisible(false)}
-      onSwipeComplete={() => setModalVisible(false)}
+      onBackdropPress={() => onclose()}
+      onSwipeComplete={() => onclose()}
       // style={styles.bottomView}
       style={{
         justifyContent: 'flex-end',
@@ -178,7 +180,14 @@ const MapBox = (props: MapBoxProps) => {
             }}
           >
             <StyledText style={{ fontSize: 18 }}>{props.modalTitle}</StyledText>
-            <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
+            <TouchableOpacity
+              onPress={() => {
+                // setModalVisible(false);
+                onclose();
+              }}
+            >
+              <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
+            </TouchableOpacity>
           </View>
           <View style={{ flex: 2 }}>
             <StyledTextInput
@@ -189,12 +198,18 @@ const MapBox = (props: MapBoxProps) => {
               placeholder="Search"
               onChangeText={(val) => getSuggestion(val)}
               leftIcon={
-                <MaterialCommunityIcons
-                  name="magnify"
-                  size={20}
-                  style={{ marginRight: 10 }}
-                  color={Colors.neutral.brand}
-                />
+                <View>
+                  <SearchIcon
+                    style={{ height: 20, width: 20, marginRight: 10 }}
+                    stroke={Colors.neutral[200]}
+                  />
+                </View>
+                // <MaterialCommunityIcons
+                //   name="magnify"
+                //   size={20}
+                //   style={{ marginRight: 10 }}
+                //   color={Colors.neutral[200]}
+                // />
               }
               rightIcon={
                 !props.hideSearchMyLocation ? (

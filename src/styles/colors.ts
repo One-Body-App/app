@@ -40,16 +40,16 @@ export const secondary: Record<ColorVariants, string> = {
 };
 
 export const neutral: Record<ColorVariants, string> = {
-  brand: '#313332',
+  brand: '#212121',
 
-  200: '#5A5C5B',
-  300: '#838584',
-  400: '#999DA1',
-  500: '#D6D6D6',
-  600: '#F7F7F7',
-  700: '#F2F3F3',
-  800: '#F1F1F1',
-  900: '#FFFFFF',
+  200: '#313332',
+  300: '#5A5C5B',
+  400: '#838584',
+  500: '#999DA1',
+  600: '#D6D6D6',
+  700: '#F7F7F7',
+  800: '#F2F3F3',
+  900: '#F1F1F1',
 };
 
 type FeedBackColor = 'background' | '200' | '300' | '400' | 'text';

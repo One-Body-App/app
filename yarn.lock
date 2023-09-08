@@ -3040,14 +3040,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-async-storage/async-storage@npm:^1.19.1":
-  version: 1.19.1
-  resolution: "@react-native-async-storage/async-storage@npm:1.19.1"
+"@react-native-async-storage/async-storage@npm:^1.19.3":
+  version: 1.19.3
+  resolution: "@react-native-async-storage/async-storage@npm:1.19.3"
   dependencies:
     merge-options: ^3.0.4
   peerDependencies:
     react-native: ^0.0.0-0 || 0.60 - 0.72 || 1000.0.0
-  checksum: 7367210e16f788999ca8ff96bd04bbd345f44c186cec7c50903d55637f572c73b8a79f9c948a549329ad489c08d77dd49367971691ed54dbc3839285e0194431
+  checksum: d849e5c8bb08d2130d95cc246749dae820cc1996b6b31defa063a1b67070524d72aed5a0e57ce2fafe3c3726712c09a5a3babaed1358182060ce7cfd8bd2c1a3
   languageName: node
   linkType: hard
 
@@ -10524,7 +10524,7 @@ __metadata:
     "@fortawesome/free-solid-svg-icons": ^6.4.2
     "@fortawesome/react-native-fontawesome": ^0.3.0
     "@invertase/react-native-apple-authentication": ^2.2.2
-    "@react-native-async-storage/async-storage": ^1.19.1
+    "@react-native-async-storage/async-storage": ^1.19.3
     "@react-native-community/geolocation": ^3.0.6
     "@react-native-firebase/analytics": ^18.3.0
     "@react-native-firebase/app": ^18.3.0

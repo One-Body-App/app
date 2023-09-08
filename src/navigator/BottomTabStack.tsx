@@ -44,7 +44,6 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
   //   if (tabs) setTab(tabs);
   // }, [tabs]);
 
-  console.log(navigation);
   // navigation.getParent()?.setOptions({
   //   screenOptions: {
   //       header
@@ -62,15 +61,15 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
         // tabBarActiveBackgroundColor: '#4d9eba',
 
         tabBarActiveTintColor: Colors.primarySapphire.brand,
-        tabBarInactiveTintColor: '#9AACB1',
-        tabBarShowLabel: true,
+        tabBarInactiveTintColor: Colors.neutral[400],
+        tabBarShowLabel: false,
         // tabBarInactiveBackgroundColor: '#126B87',
 
         tabBarLabelStyle: { paddingTop: 4 },
         tabBarStyle: {
           backgroundColor: '#ffffffe6',
           borderTopWidth: 1,
-          borderTopColor: Colors.neutral[700],
+          borderTopColor: Colors.neutral[800],
           paddingVertical: 10,
         },
 
@@ -84,7 +83,7 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
         options={{
           tabBarLabel: 'Home',
 
-          tabBarIcon: (props) => <Home style={{ height: 20, width: 20 }} stroke={props.color} />,
+          tabBarIcon: (props) => <Home style={{ height: 22, width: 22 }} fill={props.color} />,
         }}
       />
       <Tab.Screen
@@ -92,7 +91,11 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
         component={SearchStack}
         options={{
           tabBarLabel: 'Search',
-          tabBarIcon: (props) => <Search style={{ height: 20, width: 20 }} stroke={props.color} />,
+          tabBarIcon: (props) => (
+            <View>
+              <Search style={{ height: 20, width: 20 }} stroke={props.color} strokeWidth={2} />
+            </View>
+          ),
         }}
       />
       <Tab.Screen
@@ -100,7 +103,7 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
         component={ExploreStack}
         options={{
           tabBarLabel: 'Explore',
-          tabBarIcon: (props) => <Global style={{ height: 20, width: 20 }} stroke={props.color} />,
+          tabBarIcon: (props) => <Global style={{ height: 22, width: 22 }} fill={props.color} />,
         }}
       />
       <Tab.Screen

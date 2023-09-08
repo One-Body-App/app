@@ -554,7 +554,7 @@ const LoginComponent: FC<Props> = ({
         <StyledText
           style={[
             Typography.subheader.R,
-            { color: Colors.neutral[200], marginTop: spacing.x8, marginBottom: spacing.x48 },
+            { color: Colors.neutral[300], marginTop: spacing.x8, marginBottom: spacing.x48 },
           ]}
         >
           You’ll need to verify your email to complete your account activation.
@@ -578,7 +578,7 @@ const LoginComponent: FC<Props> = ({
           }}
           text={'Didn’t get mail? '}
           wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'flex-end' }}
-          btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[200] }]}
+          btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[300] }]}
           RightIcon={
             <StyledText style={{ color: Colors.primarySapphire.brand }}>Resend email</StyledText>
           }
@@ -588,7 +588,7 @@ const LoginComponent: FC<Props> = ({
   }
 
   const getButtonTextStyle = () => {
-    return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : '#032F3C' };
+    return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : Colors.primary.brand };
   };
 
   const getButtonContainer = () => {
@@ -616,7 +616,7 @@ const LoginComponent: FC<Props> = ({
 
         {!verifyAccount ? (
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
             Sign in to your account
           </StyledText>
@@ -645,7 +645,7 @@ const LoginComponent: FC<Props> = ({
                 navigation.replace('AccountType');
               }}
             >
-              <StyledText style={{ color: Colors.neutral[200] }}>New to OneBody? </StyledText>
+              <StyledText style={{ color: Colors.neutral[300] }}>New to OneBody? </StyledText>
               <StyledText style={{ color: Colors.primarySapphire.brand }}>
                 Create an account
               </StyledText>
@@ -735,18 +735,18 @@ const LoginComponent: FC<Props> = ({
               >
                 <View
                   style={{
-                    borderBottomColor: Colors.neutral[700],
+                    borderBottomColor: Colors.neutral[800],
                     borderBottomWidth: borderWidth.thin,
                     flex: 1,
                   }}
                 />
 
-                <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[200] }}>
+                <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[300] }}>
                   Or
                 </StyledText>
                 <View
                   style={{
-                    borderBottomColor: Colors.neutral[700],
+                    borderBottomColor: Colors.neutral[800],
                     borderBottomWidth: borderWidth.thin,
                     flex: 1,
                   }}
@@ -966,7 +966,7 @@ const LoginComponent: FC<Props> = ({
                     dispatch(signUp.Reset());
                     navigation.goBack();
                   }}
-                  btnTextStyle={{ color: Colors.neutral[200] }}
+                  btnTextStyle={{ color: Colors.neutral[300] }}
                 />
               </View>
             ) : null}

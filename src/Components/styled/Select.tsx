@@ -10,7 +10,7 @@ import { borderRadius } from '@/src/styles/outlines';
 import { useTheme } from '@react-navigation/native';
 import { StyledTextInput } from './TextInput';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { spacing } from '@/src/styles/spacing';
+import SearchIcon from '@/assets/icons/search.svg';
 
 type selectedItem = {
   text: string;
@@ -63,8 +63,8 @@ export const StyledSelect: FC<Props> = ({
         text={btnText}
         btnStyle={{
           flex: 1,
-          backgroundColor: Colors.neutral[600],
-          borderColor: Colors.neutral[700],
+          backgroundColor: Colors.neutral[700],
+          borderColor: Colors.neutral[800],
           borderRadius: borderRadius.small,
           // ...styles.btn3,
           // backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
@@ -75,7 +75,7 @@ export const StyledSelect: FC<Props> = ({
           paddingVertical: 16,
         }}
         btnTextStyle={{
-          color: selectedItem ? Colors.neutral.brand : Colors.neutral[300],
+          color: selectedItem ? Colors.neutral[200] : Colors.neutral[300],
         }}
         RightIcon={<Ionicons name="chevron-down" color={Colors.neutral[200]} />}
         // btnTextStyle={styles.btnText3}
@@ -123,12 +123,18 @@ export const StyledSelect: FC<Props> = ({
                 returnKeyType={'search'}
                 placeholder="Search"
                 leftIcon={
-                  <MaterialCommunityIcons
-                    name="magnify"
-                    size={15}
-                    style={{ marginRight: 10 }}
-                    color={Colors.neutral.brand}
-                  />
+                  <View>
+                    <SearchIcon
+                      style={{ height: 15, width: 15, marginRight: 10 }}
+                      stroke={Colors.neutral[200]}
+                    />
+                  </View>
+                  // <MaterialCommunityIcons
+                  //   name="magnify"
+                  //   size={15}
+                  //   style={{ marginRight: 10 }}
+                  //   color={Colors.neutral[200]}
+                  // />
                 }
                 onChangeText={(text) => {
                   setSearchText(text);
@@ -168,14 +174,14 @@ export const StyledSelect: FC<Props> = ({
                   >
                     <StyledText
                       style={{
-                        color: Colors.neutral.brand,
+                        color: Colors.neutral[200],
                       }}
                       numberOfLines={1}
                     >
                       {item.text}
                     </StyledText>
                     {selectedItem == item.value ? (
-                      <MaterialCommunityIcons name="check" size={15} color={Colors.neutral.brand} />
+                      <MaterialCommunityIcons name="check" size={15} color={Colors.neutral[200]} />
                     ) : null}
                   </TouchableOpacity>
                 );

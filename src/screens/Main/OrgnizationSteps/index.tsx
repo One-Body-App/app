@@ -811,7 +811,9 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                           alignSelf: 'center',
                         }}
                       >
-                        {item?.whatIDo?.name}
+                        {item?.profile?.whatIDo?.name ??
+                          item?.profile?.typeOfOrganization?.name ??
+                          item?.whatIDo?.name}
                       </Text>
                     </View>
                   </TouchableOpacity>

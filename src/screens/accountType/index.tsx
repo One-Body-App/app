@@ -34,16 +34,16 @@ const AccountType = ({ route, navigation }: Props) => {
   const { dark, colors } = useTheme();
 
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[600]}>
+    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
       <View style={{ flex: 1, paddingHorizontal: 30, justifyContent: 'space-between' }}>
         <View>
-          <Text style={[Typography.header.h1, { color: Colors.neutral.brand, marginTop: 45 }]}>
+          <Text style={[Typography.header.h1, { color: Colors.neutral[200], marginTop: 45 }]}>
             What account type best describes you?
           </Text>
           <Text
             style={[
               Typography.subheader.R,
-              { color: Colors.neutral[200], marginTop: 15, marginBottom: 25 },
+              { color: Colors.neutral[300], marginTop: 15, marginBottom: 25 },
             ]}
           >
             Get started on your experience in connecting with others. Let's setup your account
@@ -59,7 +59,7 @@ const AccountType = ({ route, navigation }: Props) => {
                 borderColor:
                   accountType == AccountTypeType.individual
                     ? Colors.primarySapphire.brand
-                    : Colors.neutral[700],
+                    : Colors.neutral[800],
               },
             ]}
             onPress={() => {
@@ -69,7 +69,7 @@ const AccountType = ({ route, navigation }: Props) => {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View
                 style={{
-                  backgroundColor: Colors.neutral[700],
+                  backgroundColor: Colors.neutral[800],
                   borderRadius: borderRadius.card,
                   padding: spacing.x10,
                 }}
@@ -85,7 +85,7 @@ const AccountType = ({ route, navigation }: Props) => {
                   borderColor:
                     accountType == AccountTypeType.individual
                       ? Colors.primarySapphire.brand
-                      : Colors.neutral.brand,
+                      : Colors.neutral[200],
                 },
               ]}
             >
@@ -105,7 +105,7 @@ const AccountType = ({ route, navigation }: Props) => {
                 borderColor:
                   accountType == AccountTypeType.organization
                     ? Colors.primarySapphire.brand
-                    : Colors.neutral[700],
+                    : Colors.neutral[800],
               },
             ]}
             onPress={() => {
@@ -115,7 +115,7 @@ const AccountType = ({ route, navigation }: Props) => {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View
                 style={{
-                  backgroundColor: Colors.neutral[700],
+                  backgroundColor: Colors.neutral[800],
                   borderRadius: borderRadius.card,
                   padding: 10,
                 }}
@@ -132,7 +132,7 @@ const AccountType = ({ route, navigation }: Props) => {
                   borderColor:
                     accountType == AccountTypeType.organization
                       ? Colors.primarySapphire.brand
-                      : Colors.neutral.brand,
+                      : Colors.neutral[200],
                 },
               ]}
             >

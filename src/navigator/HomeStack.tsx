@@ -5,12 +5,18 @@ import Home from '../screens/main/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Search from '../screens/main/search';
+import Notifications from '../screens/main/notifications';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
 const HomeStack = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home" component={Home} />
+    <Stack.Navigator>
+      <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="Notifications"
+        component={Notifications}
+        options={{ presentation: 'modal' }}
+      />
 
       {/* <Stack.Screen name="UserProfile" component={UserProfile} /> */}
 

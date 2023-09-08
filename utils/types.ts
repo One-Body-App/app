@@ -77,7 +77,8 @@ export type User = {
   gender: string;
   token: string;
   userId: string;
-  followers: number;
+  followers?: User[];
+  followerCount?: number;
   following: string[];
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
@@ -129,3 +130,10 @@ export enum AccountType {
   individual = 'individual',
   organization = 'organization',
 }
+
+export type NotificationType = {
+  _id: string;
+  userID?: string;
+  title: string;
+  description: string;
+};

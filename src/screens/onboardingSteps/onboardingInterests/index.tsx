@@ -15,6 +15,7 @@ import { useToast } from 'react-native-toast-notifications';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import SearchIcon from '@/assets/icons/search.svg';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
 
@@ -114,12 +115,18 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
                 }
               }}
               leftIcon={
-                <MaterialCommunityIcons
-                  name="magnify"
-                  size={20}
-                  style={{ marginRight: 10 }}
-                  color={Colors.neutral.brand}
-                />
+                <View>
+                  <SearchIcon
+                    style={{ height: 20, width: 20, marginRight: 10 }}
+                    stroke={Colors.neutral[300]}
+                  />
+                </View>
+                // <MaterialCommunityIcons
+                //   name="magnify"
+                //   size={20}
+                //   style={{ marginRight: 10 }}
+                //   color={Colors.neutral[200]}
+                // />
               }
               placeholder="Search for interest"
             />
@@ -153,7 +160,13 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
                     }
                     style={
                       selectedInterest.includes(item?._id)
-                        ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
+                        ? [
+                            styles.listItem,
+                            {
+                              backgroundColor: Colors.primary.brand,
+                              borderColor: Colors.primary.brand,
+                            },
+                          ]
                         : styles.listItem
                     }
                   >
@@ -162,7 +175,7 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
                       style={
                         selectedInterest.includes(item?._id)
                           ? { color: 'white' }
-                          : { color: '#757575' }
+                          : { color: Colors.neutral[200] }
                       }
                     >
                       {item?.name}

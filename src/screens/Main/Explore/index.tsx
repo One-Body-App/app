@@ -1,46 +1,31 @@
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  CompositeScreenProps,
-  NavigationProp,
-  useNavigation,
-  useTheme,
-} from '@react-navigation/native';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
   View,
   FlatList,
   Animated,
   Image,
-  ImageBackground,
   TouchableOpacity,
   SafeAreaView,
-  GestureResponderEvent,
   ScrollView,
   RefreshControl,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import { Avatar, TextInput } from 'react-native-paper';
+
 import Toast from 'react-native-simple-toast';
-import Icon from 'react-native-vector-icons/Entypo';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import AnimatedHeader from '@/src/components/AnimatedHeader';
 import Button from '@/src/components/Button';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import {
-  getuserAll,
-  getuserGet,
-  getUserProfile,
-  setUserSubscribe,
-} from '@/redux/actions/UserAction';
+
+import { getuserAll, getUserProfile } from '@/redux/actions/UserAction';
 import { ApiCall } from '@/services/api';
 import { styles } from './styles';
-import ImageModal from 'react-native-image-modal';
+
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
-import { RootStackParamList } from '@/src/Navigation/types';
+
 import Modal from 'react-native-modal';
 import { Interest, User } from '@/utils/types';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';
@@ -52,7 +37,13 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-
+import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { Colors } from '@/src/styles';
+import SearchIcon from '@/assets/icons/search.svg';
+import { borderRadius } from '@/src/styles/outlines';
+import { StyledText } from '@/src/components/styled/Text';
+import { spacing } from '@/src/styles/spacing';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 type Props = CompositeScreenProps<
@@ -65,6 +56,8 @@ type Props = CompositeScreenProps<
 
 const Explore = ({ navigation }: Props) => {
   const dispatch = useDispatch();
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // const navigation = useNavigation<ScreenNavigationProp>();
 
@@ -76,8 +69,11 @@ const Explore = ({ navigation }: Props) => {
   // const [subscribe, setSubscibe] = useState<string[]>(user?.following ?? []);
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
   const [showFollowingModal, setShowFollowingModal] = useState<boolean>(false);
+
+  const [showMyConnections, setShowMyConnections] = useState<boolean>(false);
   const [interest, setInterest] = useState<Interest[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
+  const [filter, setFilter] = useState<'alpha' | 'popular'>('alpha');
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
   const [searchChannels, setSearchChannels] = useState<User[]>([]);
   const [searchChannelsToFollow, setSearchChannelsToFollow] = useState<User[]>();
@@ -91,12 +87,79 @@ const Explore = ({ navigation }: Props) => {
   }, [searchChannelsToFollow]);
 
   useEffect(() => {
-    if (searchChannelsToFollowText) {
-      setFilteredUsers(allusers, searchChannelsToFollowText);
+    let items = searchChannelsToFollowText ? searchChannelsToFollow ?? [] : allusers;
+
+    if (filter == 'alpha') {
+      items = items.sort((a, b) => {
+        if (a.name.toLowerCase() < b.name.toLowerCase()) {
+          return -1;
+        }
+        if (a.name.toLowerCase() > b.name.toLowerCase()) {
+          return 1;
+        }
+
+        return 0;
+      });
     } else {
-      setSearchChannelsToFollow(allusers);
+      items = items.sort((a, b) => {
+        if (a.followerCount && b.followerCount) {
+          if (a.followerCount < b.followerCount) {
+            return -1;
+          }
+          if (a.followerCount > b.followerCount) {
+            return 1;
+          }
+        }
+
+        return 0;
+      });
     }
-  }, [allusers]);
+
+    if (searchChannelsToFollowText) {
+      setFilteredUsers(items, searchChannelsToFollowText);
+    } else {
+      setSearchChannelsToFollow(items);
+    }
+
+    setIsLoading(false);
+  }, [allusers, filter]);
+
+  // useEffect(() => {
+  //   let items = allusers;
+  //   if (searchChannelsToFollowText) {
+  //     items =
+  //       searchChannelsToFollow && searchChannelsToFollow?.length > 0 ? searchChannelsToFollow : [];
+  //   }
+  //   console.log(filter);
+  //   if (filter == 'alpha') {
+  //     items = allusers.sort((a, b) => {
+  //       if (a.name.toLowerCase() < b.name.toLowerCase()) {
+  //         return -1;
+  //       }
+  //       if (a.name.toLowerCase() > b.name.toLowerCase()) {
+  //         return 1;
+  //       }
+
+  //       return 0;
+  //     });
+  //   } else {
+  //     items = allusers.sort((a, b) => {
+  //       if (a.followers < b.followers) {
+  //         return -1;
+  //       }
+  //       if (a.followers > b.followers) {
+  //         return 1;
+  //       }
+
+  //       return 0;
+  //     });
+  //   }
+  //   if (searchChannelsToFollowText) {
+  //     setFilteredUsers(items, searchChannelsToFollowText);
+  //   } else {
+  //     setSearchChannelsToFollow(items);
+  //   }
+  // }, [filter]);
 
   useEffect(() => {
     dispatch(getuserAll({ token: token }));
@@ -106,7 +169,7 @@ const Explore = ({ navigation }: Props) => {
   }, []);
 
   const addInterests = async (newInterest: Interest) => {
-    dispatch(setLoader(true));
+    setIsLoading(true);
 
     try {
       const res = await ApiCall({
@@ -125,16 +188,15 @@ const Explore = ({ navigation }: Props) => {
             )
           : setSelectedInterest([...selectedInterest, newInterest]);
         dispatch(getuserAll({ token: token }));
-      } else {
-        dispatch(setLoader(false));
       }
+      setIsLoading(false);
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
 
   const removeInterests = async (removeInterest: Interest) => {
-    dispatch(setLoader(true));
+    setIsLoading(true);
 
     try {
       const res = await ApiCall({
@@ -152,15 +214,15 @@ const Explore = ({ navigation }: Props) => {
         );
 
         dispatch(getuserAll({ token: token }));
-      } else {
-        dispatch(setLoader(false));
       }
+      setIsLoading(false);
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
 
   const getInterest = async () => {
+    setIsLoading(true);
     try {
       const res = await ApiCall({
         route: 'tags/interest',
@@ -174,12 +236,14 @@ const Explore = ({ navigation }: Props) => {
       } else {
         console.log('error', res?.response);
       }
+      setIsLoading(false);
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
 
   const getFollowing = async () => {
+    setIsLoading(true);
     try {
       const res = await ApiCall({
         route: 'user/get-following',
@@ -193,12 +257,14 @@ const Explore = ({ navigation }: Props) => {
       } else {
         console.log('error', res?.response);
       }
+      setIsLoading(false);
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
     }
   };
 
   const handleSubscribe = async (id: string) => {
+    setIsLoading(true);
     try {
       const res = await ApiCall({
         route: `user/subscribe/${id}`,
@@ -214,12 +280,14 @@ const Explore = ({ navigation }: Props) => {
         // setSubscibe(result);
         Toast.show(' ' + res?.response, Toast.LONG);
       }
+      setIsLoading(false);
     } catch (e) {
       console.log('saga sign up err --- ', e);
     }
   };
 
   const handleUnSubscribe = async (id: string) => {
+    setIsLoading(true);
     try {
       const res = await ApiCall({
         route: `user/unsubscribe/${id}`,
@@ -236,6 +304,7 @@ const Explore = ({ navigation }: Props) => {
         // setSubscibe(result);
         Toast.show(' ' + res?.response, Toast.LONG);
       }
+      setIsLoading(false);
     } catch (e) {
       console.log('saga sign up err --- ', e);
     }
@@ -253,10 +322,47 @@ const Explore = ({ navigation }: Props) => {
     setSearchChannelsToFollow(newSearchChannels);
   };
 
-  const renderListHeader = useMemo(() => {
+  const renderListHeader = () => {
     return (
-      <>
-        <TextInput
+      <View style={{ flex: 3.5 }}>
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          <Button
+            text={'My Connections'}
+            onPress={() => {
+              setShowFollowingModal(true);
+            }}
+            btnTextStyle={{
+              color: Colors.neutral[200],
+            }}
+            btnStyle={{
+              backgroundColor: Colors.neutral[700],
+              paddingVertical: 12,
+              flex: 1,
+              borderRadius: borderRadius.button,
+            }}
+            wrapperBtnStyle={{ flex: 1 }}
+            wrapperViewBtnStyle={[styles.mainButtonWrapper, { marginRight: 10 }]}
+          />
+          <Button
+            text={'My Interests'}
+            onPress={() => {
+              setShowInterestModal(true);
+            }}
+            btnTextStyle={{
+              color: Colors.neutral[200],
+            }}
+            btnStyle={{
+              backgroundColor: Colors.neutral[700],
+              paddingVertical: 12,
+              flex: 1,
+              borderRadius: borderRadius.button,
+            }}
+            wrapperBtnStyle={{ flex: 1 }}
+            wrapperViewBtnStyle={[styles.mainButtonWrapper, { marginLeft: 10 }]}
+          />
+        </View>
+
+        {/* <TextInput
           style={{ ...GeneralStyle.input }}
           mode="outlined"
           value={searchChannelsToFollowText}
@@ -282,364 +388,442 @@ const Explore = ({ navigation }: Props) => {
 
             setFilteredUsers(allusers, text);
           }}
-        />
+        /> */}
 
-        <View style={{ flexDirection: 'row' }}>
-          <Button
-            text={'+Add Interests'}
-            onPress={(): void => {
-              setShowInterestModal(true);
+        <View style={{ marginBottom: 20 }}>
+          <StyledTextInput
+            wrapperStyle={{ height: 45 }}
+            value={input}
+            autoFocus
+            returnKeyType="search"
+            placeholder="Search"
+            clearButtonMode="always"
+            onChangeText={(text) => {
+              setInput(text);
             }}
-            btnTextStyle={{}}
-            btnStyle={styles.mainButton}
-            wrapperBtnStyle={{ flex: 1 }}
-            wrapperViewBtnStyle={styles.mainButtonWrapper}
-          />
-
-          <Button
-            text={'Connections'}
-            onPress={(): void => {
-              setShowFollowingModal(true);
-            }}
-            btnTextStyle={{}}
-            btnStyle={styles.mainButton}
-            wrapperBtnStyle={{ flex: 1 }}
-            wrapperViewBtnStyle={styles.mainButtonWrapper}
+            leftIcon={
+              <View>
+                {isLoading ? (
+                  <ActivityIndicator
+                    animating={isLoading}
+                    size="small"
+                    color={Colors.neutral[200]}
+                    style={{ marginRight: 10 }}
+                  />
+                ) : (
+                  <SearchIcon
+                    style={{ height: 20, width: 20, marginRight: 10 }}
+                    stroke={Colors.neutral[200]}
+                  />
+                )}
+              </View>
+            }
           />
         </View>
-      </>
+        <View style={{ marginBottom: 25, flexDirection: 'row' }}>
+          <Button
+            btnStyle={[
+              styles.filterButton,
+              {
+                backgroundColor:
+                  filter == 'alpha' ? Colors.primarySapphire.brand : Colors.neutral[800],
+              },
+            ]}
+            btnTextStyle={[{ color: filter == 'alpha' ? 'white' : Colors.neutral[200] }]}
+            text="A-Z"
+            onPress={() => {
+              if (filter != 'alpha') setFilter('alpha');
+            }}
+          />
+          <Button
+            btnStyle={[
+              styles.filterButton,
+              {
+                backgroundColor:
+                  filter == 'popular' ? Colors.primarySapphire.brand : Colors.neutral[800],
+              },
+            ]}
+            btnTextStyle={[{ color: filter == 'popular' ? 'white' : Colors.neutral[200] }]}
+            text="Popular"
+            onPress={() => {
+              if (filter != 'popular') setFilter('popular');
+            }}
+          />
+        </View>
+      </View>
     );
-  }, [searchChannelsToFollowText]);
+  };
   const { colors } = useTheme();
 
   return (
-    <View style={{ backgroundColor: colors.background, flex: 1 }}>
-      <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
-
-      <Text style={{ ...styles.title, color: colors.text }}>
-        Explore Influencers & Organizations
-      </Text>
-
-      <FlatList
-        ListHeaderComponent={renderListHeader}
-        data={searchChannelsToFollow}
-        numColumns={2}
-        contentContainerStyle={{
-          paddingBottom: 120,
-          marginHorizontal: getWidth(3),
-        }}
-        showsHorizontalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <View style={styles.askinterest}>
-            <Text style={{ margin: 15, color: '#7c7c7c' }}>
-              {searchChannelsToFollowText
-                ? 'No search results'
-                : 'Looks like you haven’t selected any interests'}
-            </Text>
-          </View>
-        )}
-        refreshing={isRefreshing}
-        refreshControl={
-          <RefreshControl
-            enabled={true}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={60}
+    >
+      <View style={{ backgroundColor: colors.background, flex: 1, marginHorizontal: 20 }}>
+        {renderListHeader()}
+        <View style={{ flex: 8 }}>
+          <FlatList
+            data={searchChannelsToFollow}
+            // contentContainerStyle={{
+            //   flex: 1,
+            // }}
+            ListEmptyComponent={() => (
+              <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                <StyledText style={{ margin: 15, color: '#7c7c7c' }}>
+                  {searchChannelsToFollowText
+                    ? 'No search results'
+                    : 'Looks like you haven’t selected any interests'}
+                </StyledText>
+              </View>
+            )}
             refreshing={isRefreshing}
-            onRefresh={() => {
-              setIsRefreshing(true);
-              setSearchChannelsToFollow([]);
-              dispatch(getuserAll({ token: token }));
-            }}
-          />
-        }
-        renderItem={({ item, index }) => {
-          return (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('UserProfile', {
-                  id: item?._id,
-                })
-              }
-              style={styles.subscribeview}
-            >
-              <View
-                style={{
-                  alignItems: 'center',
-                  alignContent: 'center',
-                  justifyContent: 'center',
-                  alignSelf: 'center',
-                  padding: 10,
-
-                  borderRadius: 120,
+            refreshControl={
+              <RefreshControl
+                enabled={true}
+                refreshing={isRefreshing}
+                onRefresh={() => {
+                  setIsRefreshing(true);
+                  setSearchChannelsToFollow([]);
+                  dispatch(getuserAll({ token: token }));
                 }}
-              >
-                <FastImage
-                  style={{
-                    width: 100,
-                    height: 100,
-                    borderRadius: 100,
-                    marginBottom: 5,
-                    borderColor:
-                      item?.profileImage && item?.profileImage != '' ? '#032F3C' : '#09aadb',
-                    borderWidth: 1,
-                  }}
-                  resizeMode="contain"
-                  source={{
-                    uri:
-                      item?.profileImage && item?.profileImage != ''
-                        ? item?.profileImage
-                        : 'https://cdn.onebodyapp.com/user/no-image.png',
-                  }}
-                />
-              </View>
-
-              <View
-                style={{
-                  height: getHeight(6),
-                  alignItems: 'center',
-                }}
-              >
-                <Text numberOfLines={2} style={styles.subscribetext}>
-                  {item?.name}
-                </Text>
-                <Text
-                  style={{
-                    color: '#757575',
-                    alignSelf: 'center',
-                  }}
-                >
-                  {item.whatIDo?.name}
-                </Text>
-              </View>
-
-              <Button
-                btnStyle={[
-                  styles.subscribebutton,
-                  following.some((user) => user._id == item?._id)
-                    ? { backgroundColor: 'gray' }
-                    : null,
-                ]}
-                btnTextStyle={styles.subtex}
-                text={following.some((user) => user._id == item?._id) ? 'Following' : 'Follow'}
-                onPress={() => {
-                  handleSubscribe(item?._id);
-                }}
-                wrapperViewBtnStyle={{ flex: 1, justifyContent: 'center' }}
               />
-            </TouchableOpacity>
-          );
-        }}
-      />
-
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={showInterestModal}
-        onBackdropPress={() => setShowInterestModal(false)}
-        onSwipeComplete={() => setShowInterestModal(false)}
-        swipeDirection={['down']}
-        style={styles.bottomView}
-        propagateSwipe={true}
-      >
-        <View style={styles.content2}>
-          <View style={styles.headLine} />
-          <View style={styles.contview}>
-            <TextInput
-              style={{ ...GeneralStyle.input, width: getWidth(80), marginBottom: 10 }}
-              mode="outlined"
-              clearButtonMode="always"
-              onChangeText={(text) => {
-                const newSearchInterest = [];
-                for (let i = 0; i < interest.length; i++) {
-                  if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                    newSearchInterest.push(interest[i]);
-                  }
-                  setSearchInterest(newSearchInterest);
-                }
-              }}
-              left={
-                <TextInput.Icon
-                  icon={() => (
-                    <EvilIcons
-                      name={'search'}
-                      size={getFontSize(4)}
-                      color={'#5B7279'}
-                      style={{ marginTop: 5 }}
-                    />
-                  )}
-                />
-              }
-              theme={{ roundness: 40 }}
-              activeOutlineColor={'#5B7279'}
-              outlineColor="#9EA1A2"
-              label={'Search Interests'}
-              placeholderTextColor={'black'}
-            />
-            <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
-              {searchInterest.length < 1 ? <Text>No Search Results</Text> : null}
-              {searchInterest.map((item, index) => (
+            }
+            renderItem={({ item }) => {
+              return (
                 <TouchableOpacity
-                  key={index}
-                  onPress={() => {
-                    if (
-                      selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
-                        .length > 0
-                    ) {
-                      removeInterests(item);
-                    } else {
-                      addInterests(item);
-                    }
-                  }}
-                  style={
-                    selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
-                      .length > 0
-                      ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
-                      : styles.listItem
+                  onPress={() =>
+                    navigation.navigate('UserProfile', {
+                      id: item?._id,
+                    })
                   }
+                  style={{ flex: 1, marginBottom: 20 }}
                 >
-                  <Text
-                    numberOfLines={1}
-                    style={
-                      selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
-                        .length > 0
-                        ? { color: 'white' }
-                        : { color: '#757575' }
-                    }
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
                   >
-                    {item?.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={showFollowingModal}
-        onBackdropPress={() => setShowFollowingModal(false)}
-        onSwipeComplete={() => setShowFollowingModal(false)}
-        swipeDirection={['down']}
-        style={styles.bottomView}
-        propagateSwipe={true}
-      >
-        <View style={styles.content2}>
-          <View style={styles.headLine} />
-          <View style={styles.contview}>
-            <TextInput
-              style={{ ...GeneralStyle.input, marginBottom: 10 }}
-              mode="outlined"
-              onChangeText={(text) => {
-                const newSearchChannels = [];
-                for (let i = 0; i < following.length; i++) {
-                  if (following[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                    newSearchChannels.push(following[i]);
-                  }
-                  setSearchChannels(newSearchChannels);
-                }
-              }}
-              left={
-                <TextInput.Icon
-                  icon={() => (
-                    <EvilIcons
-                      name={'search'}
-                      size={getFontSize(4)}
-                      color={'#757575'}
-                      style={{ marginTop: 5 }}
+                    <FastImage
+                      style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: borderRadius.max,
+                        marginBottom: 5,
+                        borderColor: Colors.neutral[800],
+                        borderWidth: 1,
+                        marginRight: 10,
+                      }}
+                      resizeMode="contain"
+                      source={{
+                        uri:
+                          item?.profileImage && item?.profileImage != ''
+                            ? item?.profileImage
+                            : 'https://cdn.onebodyapp.com/user/no-image.png',
+                      }}
                     />
-                  )}
-                />
-              }
-              theme={{ roundness: 40 }}
-              activeOutlineColor={'#126B87'}
-              outlineColor="#126B87"
-              label={'Search name'}
-              placeholderTextColor={'#032F3C'}
-            />
-            <FlatList
-              data={searchChannels}
-              contentContainerStyle={{
-                marginBottom: getHeight(120),
-                // marginHorizontal: getWidth(1),
-              }}
-              onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: offset } } }], {
-                useNativeDriver: false,
-              })}
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item, index }) => {
-                return (
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate('UserProfile', {
-                        id: item?._id,
-                      })
-                    }
-                    style={{ ...styles.subscribeview, flexDirection: 'row' }}
-                  >
-                    <View
-                      style={{
-                        alignItems: 'center',
-                        alignContent: 'center',
-                        justifyContent: 'center',
-                        alignSelf: 'center',
-                        padding: 5,
-                        flexDirection: 'row',
-                        borderRadius: 120,
-                        borderColor:
-                          item?.profileImage && item?.profileImage != '' ? '#032F3C' : '#09aadb',
-                      }}
-                    >
-                      <Image
-                        style={{
-                          width: 50,
-                          height: 50,
-                          borderRadius: 50,
-                          marginBottom: 5,
-                        }}
-                        resizeMode="contain"
-                        source={{
-                          uri:
-                            item?.profileImage && item?.profileImage != ''
-                              ? item?.profileImage
-                              : 'https://cdn.onebodyapp.com/user/no-image.png',
-                        }}
-                      />
-                    </View>
 
-                    <View
-                      style={{
-                        flex: 2,
-                        justifyContent: 'center',
-                        paddingHorizontal: 10,
-                      }}
-                    >
-                      <Text numberOfLines={2} style={[styles.subscribetext, { textAlign: 'left' }]}>
+                    <View style={{ flex: 2 }}>
+                      <StyledText
+                        style={{
+                          color: Colors.neutral.brand,
+                        }}
+                        numberOfLines={2}
+                      >
                         {item?.name}
-                      </Text>
+                      </StyledText>
+                      {item.profile?.whatIDo || item.profile?.typeOfOrganization ? (
+                        <StyledText
+                          style={{
+                            color: Colors.neutral[300],
+                          }}
+                        >
+                          {item.profile.whatIDo
+                            ? item.profile.whatIDo?.name
+                            : item.profile.typeOfOrganization
+                            ? item.profile.typeOfOrganization?.name
+                            : ''}
+                        </StyledText>
+                      ) : null}
                     </View>
 
                     <Button
                       btnStyle={[
-                        styles.subscribebutton,
                         {
-                          padding: 8,
-
-                          width: getWidth(23),
+                          paddingVertical: 10,
+                          paddingHorizontal: 20,
+                          borderRadius: borderRadius.button,
+                          backgroundColor: following.some((user) => user._id == item?._id)
+                            ? Colors.neutral[800]
+                            : Colors.primarySapphire.brand,
                         },
                       ]}
-                      btnTextStyle={styles.subtex}
-                      text="Unfollow"
+                      btnTextStyle={{ color: 'white' }}
+                      text={
+                        following.some((user) => user._id == item?._id) ? 'Connected' : 'Connect'
+                      }
                       onPress={() => {
-                        handleUnSubscribe(item?._id);
+                        handleSubscribe(item?._id);
                       }}
-                      wrapperViewBtnStyle={{ flex: 1, justifyContent: 'center' }}
+                      wrapperViewBtnStyle={{ flex: 1.25, justifyContent: 'flex-end' }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+
+        <Modal
+          backdropOpacity={0.3}
+          isVisible={showInterestModal}
+          onBackdropPress={() => setShowInterestModal(false)}
+          onSwipeComplete={() => setShowInterestModal(false)}
+          swipeDirection={['down']}
+          propagateSwipe={true}
+          style={{ margin: 0 }}
+          avoidKeyboard={true}
+        >
+          <SafeAreaView
+            style={{
+              backgroundColor: colors.background,
+
+              flex: 1,
+            }}
+          >
+            <View style={{ paddingHorizontal: spacing.x24, flex: 1 }}>
+              <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    flex: 1,
+                  }}
+                >
+                  <StyledText style={{ fontSize: 18 }}>My Interests</StyledText>
+                  <TouchableOpacity
+                    onPress={() => {
+                      // setModalVisible(false);
+                      setShowInterestModal(false);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="window-close"
+                      size={18}
+                      color={Colors.primary.brand}
                     />
                   </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
-    </View>
+                </View>
+              </View>
+            </View>
+            <View style={{ flex: 30, justifyContent: 'space-around' }}>
+              <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
+                {searchInterest.length < 1 ? <StyledText>No Search Results</StyledText> : null}
+                {searchInterest.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      if (
+                        selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                          .length > 0
+                      ) {
+                        removeInterests(item);
+                      } else {
+                        addInterests(item);
+                      }
+                    }}
+                    style={
+                      selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                        .length > 0
+                        ? [styles.listItem, { backgroundColor: '#032F3C', borderColor: '#032f3c' }]
+                        : styles.listItem
+                    }
+                  >
+                    <StyledText
+                      numberOfLines={1}
+                      style={
+                        selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                          .length > 0
+                          ? { color: 'white' }
+                          : { color: '#757575' }
+                      }
+                    >
+                      {item?.name}
+                    </StyledText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </SafeAreaView>
+        </Modal>
+
+        <Modal
+          backdropOpacity={0.3}
+          isVisible={showFollowingModal}
+          onBackdropPress={() => setShowFollowingModal(false)}
+          onSwipeComplete={() => setShowFollowingModal(false)}
+          swipeDirection={['down']}
+          style={{ margin: 0 }}
+          propagateSwipe={true}
+          avoidKeyboard={true}
+        >
+          <SafeAreaView
+            style={{
+              backgroundColor: colors.background,
+
+              flex: 1,
+            }}
+          >
+            <View style={{ paddingHorizontal: spacing.x24, flex: 1 }}>
+              <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    flex: 1,
+                  }}
+                >
+                  <StyledText style={{ fontSize: 18 }}>My Connections</StyledText>
+                  <TouchableOpacity
+                    onPress={() => {
+                      // setModalVisible(false);
+                      setShowFollowingModal(false);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="window-close"
+                      size={18}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flex: 1, marginBottom: 20 }}>
+                  <StyledTextInput
+                    autoFocus
+                    clearButtonMode="always"
+                    wrapperStyle={{ flex: 1 }}
+                    returnKeyType={'search'}
+                    placeholder="Search"
+                    onChangeText={(text) => {
+                      const newSearchChannels = [];
+                      for (let i = 0; i < following.length; i++) {
+                        if (following[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                          newSearchChannels.push(following[i]);
+                        }
+                        setSearchChannels(newSearchChannels);
+                      }
+                    }}
+                    leftIcon={
+                      <View>
+                        {isLoading ? (
+                          <ActivityIndicator
+                            animating={isLoading}
+                            size="small"
+                            color={Colors.neutral[200]}
+                            style={{ marginRight: 10 }}
+                          />
+                        ) : (
+                          <SearchIcon
+                            style={{ height: 20, width: 20, marginRight: 10 }}
+                            stroke={Colors.neutral[200]}
+                          />
+                        )}
+                      </View>
+                    }
+                  />
+                </View>
+              </View>
+              <View style={{ flex: 6, justifyContent: 'space-around' }}>
+                <FlatList
+                  data={searchChannels}
+                  contentContainerStyle={{
+                    marginBottom: getHeight(120),
+                    // marginHorizontal: getWidth(1),
+                  }}
+                  onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: offset } } }], {
+                    useNativeDriver: false,
+                  })}
+                  showsHorizontalScrollIndicator={false}
+                  renderItem={({ item, index }) => {
+                    return (
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate('UserProfile', {
+                            id: item?._id,
+                          })
+                        }
+                        style={{ marginBottom: 20, alignItems: 'center', flexDirection: 'row' }}
+                      >
+                        <Image
+                          style={{
+                            width: 50,
+                            height: 50,
+                            borderRadius: borderRadius.max,
+
+                            borderColor: Colors.neutral[800],
+                            borderWidth: 1,
+                          }}
+                          resizeMode="contain"
+                          source={{
+                            uri:
+                              item?.profileImage && item?.profileImage != ''
+                                ? item?.profileImage
+                                : 'https://cdn.onebodyapp.com/user/no-image.png',
+                          }}
+                        />
+
+                        <View
+                          style={{
+                            flex: 2,
+                            // justifyContent: 'center',
+                            paddingHorizontal: 10,
+                          }}
+                        >
+                          <StyledText
+                            numberOfLines={2}
+                            style={[styles.subscribetext, { textAlign: 'left' }]}
+                          >
+                            {item?.name}
+                          </StyledText>
+                        </View>
+
+                        <Button
+                          btnStyle={[
+                            {
+                              padding: 8,
+                            },
+                          ]}
+                          disabledBtnStyle={{
+                            padding: 8,
+                            opacity: 0.5,
+                          }}
+                          btnTextStyle={{ color: Colors.neutral[200] }}
+                          disabledBtnTextStyle={{ color: Colors.neutral[300] }}
+                          text="Unfollow"
+                          onPress={() => {
+                            handleUnSubscribe(item?._id);
+                          }}
+                          disabled={isLoading}
+                          wrapperViewBtnStyle={{
+                            flex: 1,
+                            justifyContent: 'center',
+                            backgroundColor: Colors.neutral[800],
+                            borderRadius: borderRadius.button,
+                          }}
+                        />
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              </View>
+            </View>
+          </SafeAreaView>
+        </Modal>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 export default Explore;

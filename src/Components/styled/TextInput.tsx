@@ -27,7 +27,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
   let backgroundColorWrapper = backgroundColor;
 
   if (!backgroundColor) {
-    backgroundColorWrapper = Colors.neutral[600];
+    backgroundColorWrapper = Colors.neutral[700];
   }
   return (
     <View style={wrapperStyle}>
