@@ -18,6 +18,7 @@ import InfluencerStepThree from '../screens/InfluencerApplication/InfluencerStep
 import InfluencerStepFour from '../screens/InfluencerApplication/InfluencerStepFour';
 import NewPassword from '../screens/newPassword/NewPassword';
 import RemoveAccountConfirmation from '../screens/main/RemoveAccountConfirmation';
+import { Colors } from '../styles';
 
 const Stack = createNativeStackNavigator<SettingsStackParamsList>();
 
@@ -28,7 +29,11 @@ const SettingsStack = () => {
   };
   return (
     <Stack.Navigator initialRouteName="SettingsMain">
-      <Stack.Screen name="SettingsMain" component={Settings} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="SettingsMain"
+        component={Settings}
+        options={{ headerShown: false, contentStyle: { backgroundColor: Colors.neutral[700] } }}
+      />
       <Stack.Screen name="ConfirmLogin" component={ConfirmLogin} options={headerOptions} />
       <Stack.Screen name="RemoveAccount" component={RemoveAccount} options={headerOptions} />
       <Stack.Screen

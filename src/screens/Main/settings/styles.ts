@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { spacing } from '@/src/styles/spacing';
+import { borderRadius } from '@/src/styles/outlines';
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -60,4 +62,14 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   btnText: { color: 'white', fontSize: getFontSize(2.5) },
+
+  settingsCard: {
+    padding: spacing.x24,
+    borderRadius: borderRadius.base,
+    flex: 1,
+
+    // justifyContent: 'center',
+    // alignItems: 'center',
+    marginVertical: spacing.x16,
+  },
 });

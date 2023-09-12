@@ -1,9 +1,21 @@
-import { DrawerContentComponentProps, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
-import { StyleSheet, View } from "react-native";
-import { Avatar, Button, Caption, Title } from "react-native-paper";
-import { useSelector } from "react-redux";
-import { RootState } from "../Redux/reducers/rootReducer";
-import { NO_PROFILE_IMAGE } from "../Services/constants";
+import {
+  DrawerContentComponentProps,
+  DrawerContentScrollView,
+  DrawerItemList,
+} from '@react-navigation/drawer';
+import { SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+import { useSelector } from 'react-redux';
+import { RootState } from '../Redux/reducers/rootReducer';
+import { NO_PROFILE_IMAGE } from '../Services/constants';
+import { StyledText } from '../components/styled/Text';
+import Button from '../components/Button';
+import FastImage from 'react-native-fast-image';
+import { spacing } from '../styles/spacing';
+import { profileImageList } from '../styles/items';
+import { Colors, Typography } from '../styles';
+import { borderRadius, borderWidth } from '../styles/outlines';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DrawerContent({
   descriptors,
@@ -11,44 +23,101 @@ export default function DrawerContent({
   ...rest
 }: DrawerContentComponentProps) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
- const focusedRoute = state.routes[state.index];
+  const focusedRoute = state.routes[state.index];
   const focusedDescriptor = descriptors[focusedRoute.key];
   const focusedOptions = focusedDescriptor.options;
 
   const { drawerContentStyle, drawerContentContainerStyle } = focusedOptions;
-
+  const insets = useSafeAreaInsets();
 
   return (
-    <DrawerContentScrollView  {...rest}
-      contentContainerStyle={drawerContentContainerStyle}
-      style={drawerContentStyle}>
+    <DrawerContentScrollView
+      {...rest}
+      contentContainerStyle={[
+        drawerContentContainerStyle,
+        { paddingBottom: insets.bottom, flexGrow: 1 },
+      ]}
+      style={drawerContentStyle}
+    >
       <View style={styles.drawerContent}>
-        <View style={styles.userInfoSection}>
-          <View style={{ flex: 1 }}>
-            <Avatar.Image
-              source={{
-                uri: user?.profileImage || NO_PROFILE_IMAGE,
-              }}
-              size={60}
+        <View>
+          <TouchableOpacity
+            style={{
+              paddingHorizontal: spacing.x16,
+              paddingVertical: spacing.x10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderColor: Colors.neutral[900],
+              borderWidth: borderWidth.thin,
+              margin: spacing.x16,
+              flex: 1,
+              borderRadius: borderRadius.base,
+            }}
+          >
+            <FastImage
+              resizeMode="contain"
+              style={[
+                profileImageList,
+                { height: 40, width: 40, marginBottom: 0, alignSelf: 'flex-start' },
+              ]}
+              source={{ uri: user?.profileImage || NO_PROFILE_IMAGE }}
             />
-          </View>
-          <View style={{ padding: 10, flex: 2 }}>
-            <Title style={styles.title} numberOfLines={1}>
-              {user?.name}
-            </Title>
-            <Caption style={styles.caption}>@{user?.username}</Caption>
-            <Button
-              onPress={() => rest.navigation.navigate('MyProfile')}
-              mode="text"
-              style={{ marginLeft: -5, alignItems: 'flex-start', marginTop: 3 }}
-              // contentStyle={{ marginLeft: -5 }}
-              labelStyle={{ paddingHorizontal: 0, marginHorizontal: 6, marginVertical: 4 }}
+
+            <View
+              style={{
+                flex: 1,
+
+                justifyContent: 'flex-start',
+                alignItems: 'flex-start',
+              }}
             >
-              View Profile
-            </Button>
-          </View>
+              <StyledText
+                numberOfLines={1}
+                style={[Typography.body.x2M, { color: Colors.neutral.brand }]}
+              >
+                {user?.name}
+              </StyledText>
+              <StyledText
+                numberOfLines={1}
+                style={[Typography.body.x1, { color: Colors.neutral[300] }]}
+              >
+                @{user?.username}
+              </StyledText>
+
+              <View>
+                <View style={{ flexDirection: 'row', marginTop: spacing.x8 }}>
+                  <StyledText style={[Typography.body.x1M, { color: Colors.neutral.brand }]}>
+                    {user?.following.length}{' '}
+                  </StyledText>
+                  <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
+                    Connectors
+                  </StyledText>
+                </View>
+                {user?.followerCount && user?.followerCount > 0 ? (
+                  <View style={{ flexDirection: 'row' }}>
+                    <StyledText style={[Typography.body.x1M, { color: Colors.neutral.brand }]}>
+                      200{' '}
+                    </StyledText>
+                    <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
+                      Connections
+                    </StyledText>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          </TouchableOpacity>
+          <DrawerItemList descriptors={descriptors} state={state} {...rest} />
         </View>
-        <DrawerItemList descriptors={descriptors} state={state} {...rest} />
+        <View
+          style={{
+            borderTopColor: Colors.neutral[800],
+            borderTopWidth: borderWidth.base,
+            paddingHorizontal: spacing.x16,
+          }}
+        >
+          <StyledText>test</StyledText>
+        </View>
       </View>
     </DrawerContentScrollView>
   );
@@ -57,7 +126,9 @@ export default function DrawerContent({
 const styles = StyleSheet.create({
   drawerContent: {
     flex: 1,
+    justifyContent: 'space-between',
   },
+
   userInfoSection: {
     paddingHorizontal: 20,
     flexDirection: 'row',
