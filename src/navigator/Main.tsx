@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
   useColorScheme,
+  useWindowDimensions,
 } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -68,6 +69,8 @@ import NewPassword from '../screens/newPassword/NewPassword';
 import ConfirmLogin from '../screens/login/ConfirmLogin';
 import OnboardingStack from './OnboardingStack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import Feather from 'react-native-vector-icons/Feather';
+import { Home3, Profile2User } from 'iconsax-react-native';
 
 const NonUserStack = createNativeStackNavigator<RootNonUserStackParamList>();
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
@@ -116,6 +119,7 @@ const Main = () => {
   const authState = useSelector((state: RootState) => state.auth);
   // console.log(authState);
   const dispatch = useDispatch();
+  const dimensions = useWindowDimensions();
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
@@ -303,7 +307,11 @@ const Main = () => {
           {authState.getProfileData.isProfileCompleted ? (
             <DrawerStack.Navigator
               screenOptions={{
+                drawerType:
+                  dimensions.width >= 768 ? 'permanent' : Platform.OS == 'ios' ? 'slide' : 'front',
                 headerTintColor: Colors.primary.brand,
+
+                drawerActiveBackgroundColor: Colors.neutral[600],
                 headerStyle: {
                   backgroundColor: 'white',
                 },
@@ -314,6 +322,11 @@ const Main = () => {
                 name="Main"
                 component={MainTabStack}
                 options={({ route, navigation }) => ({
+                  title: 'Home',
+                  drawerIcon: ({ color, size, focused }) => {
+                    return <Home3 size={size} color={color} />;
+                  },
+
                   headerTitleAlign: getHeaderTitle(route) == 'Home' ? 'center' : 'left',
                   headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
                     const { colors } = useTheme();
@@ -373,12 +386,36 @@ const Main = () => {
                 })}
               />
 
-              <DrawerStack.Screen name="Connections" component={Connections} />
+              <DrawerStack.Screen
+                name="Saved"
+                component={Saved}
+                options={{
+                  title: 'Saved Posts',
+                  drawerIcon: ({ color, size, focused }) => {
+                    return <Feather name="bookmark" size={size} color={color} />;
+                  },
+                }}
+              />
 
-              <DrawerStack.Screen name="Saved" component={Saved} />
+              <DrawerStack.Screen
+                name="Connections"
+                component={Connections}
+                options={{
+                  title: 'My Connections',
+                  drawerIcon: ({ color, size, focused }) => {
+                    return <Profile2User size={size} color={color} />;
+                  },
+                }}
+              />
 
-              <DrawerStack.Screen name="Settings" component={SettingsStack} />
-              <DrawerStack.Screen name="Help" component={Help} />
+              <DrawerStack.Screen
+                name="Settings"
+                component={SettingsStack}
+                options={{
+                  drawerItemStyle: { height: 0 },
+                }}
+              />
+              {/* <DrawerStack.Screen name="Help" component={Help} /> */}
             </DrawerStack.Navigator>
           ) : (
             <OnboardingStack />

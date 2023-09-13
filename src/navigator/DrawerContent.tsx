@@ -3,11 +3,11 @@ import {
   DrawerContentScrollView,
   DrawerItemList,
 } from '@react-navigation/drawer';
-import { SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
-
-import { useSelector } from 'react-redux';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import auth from '@react-native-firebase/auth';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
-import { NO_PROFILE_IMAGE } from '../Services/constants';
+import { NO_PROFILE_IMAGE, OpenURLButton } from '../Services/constants';
 import { StyledText } from '../components/styled/Text';
 import Button from '../components/Button';
 import FastImage from 'react-native-fast-image';
@@ -16,10 +16,15 @@ import { profileImageList } from '../styles/items';
 import { Colors, Typography } from '../styles';
 import { borderRadius, borderWidth } from '../styles/outlines';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Logout, LogoutCurve, Setting2 } from 'iconsax-react-native';
+import { LoginManager } from 'react-native-fbsdk-next';
+import { logout } from '../Redux/actions/AuthActions';
+import Icon from 'react-native-vector-icons/AntDesign';
 
 export default function DrawerContent({
   descriptors,
   state,
+  navigation,
   ...rest
 }: DrawerContentComponentProps) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -29,15 +34,16 @@ export default function DrawerContent({
 
   const { drawerContentStyle, drawerContentContainerStyle } = focusedOptions;
   const insets = useSafeAreaInsets();
+  const dispatch = useDispatch();
 
   return (
     <DrawerContentScrollView
       {...rest}
       contentContainerStyle={[
         drawerContentContainerStyle,
-        { paddingBottom: insets.bottom, flexGrow: 1 },
+        { paddingBottom: insets.bottom, flexGrow: 1, backgroundColor: 'white' },
       ]}
-      style={drawerContentStyle}
+      style={[{ backgroundColor: 'white' }, drawerContentStyle]}
     >
       <View style={styles.drawerContent}>
         <View>
@@ -97,7 +103,7 @@ export default function DrawerContent({
                 {user?.followerCount && user?.followerCount > 0 ? (
                   <View style={{ flexDirection: 'row' }}>
                     <StyledText style={[Typography.body.x1M, { color: Colors.neutral.brand }]}>
-                      200{' '}
+                      {user?.followerCount}{' '}
                     </StyledText>
                     <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
                       Connections
@@ -107,16 +113,73 @@ export default function DrawerContent({
               </View>
             </View>
           </TouchableOpacity>
-          <DrawerItemList descriptors={descriptors} state={state} {...rest} />
+          <DrawerItemList
+            descriptors={descriptors}
+            state={state}
+            navigation={navigation}
+            {...rest}
+          />
         </View>
         <View
           style={{
             borderTopColor: Colors.neutral[800],
             borderTopWidth: borderWidth.base,
             paddingHorizontal: spacing.x16,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            paddingVertical: spacing.x16,
           }}
         >
-          <StyledText>test</StyledText>
+          <Button
+            text=""
+            btnStyle={{
+              backgroundColor: Colors.neutral[700],
+              padding: spacing.x16,
+              borderRadius: borderRadius.base,
+            }}
+            leftIcon={<LogoutCurve color={Colors.primary.brand} />}
+            onPress={async () => {
+              LoginManager.logOut();
+              dispatch(logout());
+              await auth().signOut();
+            }}
+          />
+          <Button
+            text=""
+            btnStyle={{
+              backgroundColor:
+                state.routeNames[state.index] == 'Settings'
+                  ? focusedOptions.drawerActiveBackgroundColor
+                  : Colors.neutral[700],
+
+              padding: spacing.x16,
+              borderRadius: borderRadius.base,
+            }}
+            leftIcon={
+              <Setting2
+                color={
+                  state.routeNames[state.index] == 'Settings'
+                    ? Colors.primary.brand
+                    : Colors.neutral[200]
+                }
+              />
+            }
+            onPress={() => {
+              navigation.navigate('Settings');
+            }}
+          />
+          <Button
+            text=""
+            btnStyle={{
+              backgroundColor: Colors.neutral[700],
+              padding: spacing.x16,
+              borderRadius: borderRadius.base,
+            }}
+            leftIcon={<Icon name="customerservice" size={25} color={Colors.neutral[200]} />}
+            onPress={() => {
+              OpenURLButton('https://usersuccess.onebodyapp.com/portal/en/kb/one-body-inc');
+            }}
+          />
         </View>
       </View>
     </DrawerContentScrollView>

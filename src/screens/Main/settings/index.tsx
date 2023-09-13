@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Text,
   View,
@@ -8,6 +8,9 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Image,
+  Switch,
+  ActivityIndicator,
 } from 'react-native';
 import { getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -38,12 +41,19 @@ import {
   Note1,
   Notification,
   NotificationStatus,
+  Setting,
   Sms,
   SmsNotification,
   UserRemove,
 } from 'iconsax-react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Feather from 'react-native-vector-icons/Feather';
+import Icon from 'react-native-vector-icons/AntDesign';
+import FastImage from 'react-native-fast-image';
+import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/Services/constants';
+import { ApiCall } from '@/src/Services/api';
+import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
+import { useToast } from 'react-native-toast-notifications';
 
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
 
@@ -51,10 +61,102 @@ const Settings = ({ navigation }: Props) => {
   const GOOGLE_PACKAGE_NAME = '';
   const APPLE_STORE_ID = '';
 
-  const dispatch = useDispatch();
-
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const userData = useSelector((state: RootState) => state.auth.userData);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const [subscribedToNewsletter, setSubscribedToNewsletter] = React.useState(false);
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = React.useState(false);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(false);
+  const dispatch = useDispatch();
+  const toast = useToast();
+
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const getUserProfile = async () => {
+    // const toastId = toast.show(<ActivityIndicator color={colors.text} />, {
+    //   id: 'loadig',
+    //   placement: 'top',
+    //   style: {
+    //     backgroundColor: colors.background,
+    //   },
+    // });
+    try {
+      const res = await ApiCall({
+        route: 'user/my-profile',
+        token: token,
+        verb: 'get',
+      });
+
+      if (res?.status == 200) {
+        // dispatch(setProfile({ token, ...res.response }));
+        setEmailNotificationsEnabled(res.response?.emailNotificationsEnabled ?? false);
+        setPushNotificationsEnabled(res.response?.pushNotificationsEnabled ?? false);
+        setSubscribedToNewsletter(res.response?.subscribedToNewsletter ?? false);
+
+        // setIsLoaded(true);
+        // toast.hide(toastId);
+      } else {
+        // toast.hide(toastId);
+      }
+    } catch (e) {
+      // toast.hide(toastId);
+
+      console.log(e);
+    }
+  };
+
+  useEffect(() => {
+    getUserProfile();
+  }, []);
+
+  const updateNotifications = async (
+    pushNotificationsEnabled: boolean,
+    subscribedToNewsletter: boolean,
+    emailNotificationsEnabled: boolean
+  ) => {
+    const toastId = 'loading';
+    toast.hide(toastId);
+    toast.hide('successMessage');
+    toast.show(<ActivityIndicator color={colors.text} />, {
+      id: toastId,
+      placement: 'top',
+      style: {
+        backgroundColor: colors.background,
+      },
+    });
+    setIsLoading(true);
+    try {
+      const notifications = {
+        pushNotificationsEnabled,
+        subscribedToNewsletter,
+        emailNotificationsEnabled,
+      };
+
+      const res = await ApiCall({
+        params: notifications,
+        route: `user/set-notifications`,
+        token: token,
+        verb: 'patch',
+      });
+
+      if (res?.status == 200) {
+        dispatch(setUserDataNotifications({ notifications }));
+
+        toast.show('Notifications Settings Updated Successfully', {
+          id: 'successMessage',
+          type: 'success',
+          placement: 'top',
+        });
+      }
+      toast.hide(toastId);
+      setIsLoading(false);
+    } catch (e) {
+      toast.hide(toastId);
+      setIsLoading(false);
+      console.log(e);
+    }
+  };
+
   const startRatingCounter = () => {
     Alert.alert(
       'Rate us',
@@ -119,105 +221,164 @@ const Settings = ({ navigation }: Props) => {
         paddingVertical: spacing.x16,
       }}
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        {!userProfile?.isInfluencer ? (
-          <View
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+        {userProfile?.influencerProfile?.influencerStatus != 'approved' ? (
+          <TouchableOpacity
             style={[
               styles.settingsCard,
-
               {
+                padding: 0,
+                paddingTop: spacing.x24,
+                paddingBottom: spacing.x24,
+                paddingLeft: spacing.x24,
                 backgroundColor: '#D9D1FA',
                 flexDirection: 'row',
                 justifyContent: 'center',
                 alignItems: 'center',
               },
             ]}
+            onPress={() => {
+              navigation.navigate('InfluencerStepOne');
+            }}
           >
-            <StyledText style={[Typography.body.x4M, { flex: 1 }]}>
-              Get more from your account. Apply to become an individual influencer{' '}
-            </StyledText>
-            <View style={{ flex: 1 }}></View>
-          </View>
-        ) : null}
-        <View style={{ flex: 3 }}>
-          <View
-            style={[
-              styles.settingsCard,
-              {
-                backgroundColor: 'white',
-              },
-            ]}
-          >
-            <View>
-              <StyledText
-                style={[
-                  Typography.header.h3,
-                  { textTransform: 'uppercase', marginBottom: spacing.x16 },
-                ]}
-              >
-                Security
+            <View style={{ flex: 1 }}>
+              <StyledText style={[Typography.body.x4M, { flex: 1 }]}>
+                Get more from your account. Apply to become an influencer
               </StyledText>
             </View>
-
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
-            >
-              <View
-                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
-              >
+            <View style={{ flex: 1, flexDirection: 'column' }}>
+              <View style={{ flexDirection: 'row', flex: 1 }}>
+                <View style={{ flex: 1 }}></View>
                 <View
                   style={{
-                    borderRadius: borderRadius.max,
-                    backgroundColor: Colors.neutral[800],
-                    padding: 6,
+                    backgroundColor: Colors.primarySapphire.brand,
+                    paddingVertical: spacing.x5,
+                    flex: 1,
+                    borderStartStartRadius: borderRadius.base,
+                    borderBottomStartRadius: borderRadius.base,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'row',
                   }}
                 >
-                  <Sms color={Colors.primary.brand} size={18} />
+                  <StyledText style={[Typography.body.x2M, { color: 'white' }]}>Start</StyledText>
+                  <Icon name="right" style={{ marginLeft: 10 }} color="white" />
                 </View>
               </View>
-              <View>
-                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Update Email
-                </StyledText>
-                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Change to a new email
-                </StyledText>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ flexDirection: 'row' }}
-            >
-              <View
-                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
-              >
-                <View
+              <View style={{ flex: 1, paddingHorizontal: spacing.x24 }}>
+                <Image
+                  resizeMode="contain"
+                  resizeMethod="scale"
                   style={{
-                    borderRadius: borderRadius.max,
-                    backgroundColor: Colors.neutral[800],
-                    padding: 6,
+                    width: '100%',
+                    aspectRatio: 1.77,
+                    height: null,
                   }}
-                >
-                  <Key color={Colors.primary.brand} size={18} />
-                </View>
+                  source={require('@/assets/images/influencerIntro.png')}
+                />
               </View>
+            </View>
+          </TouchableOpacity>
+        ) : null}
+        <View style={{ flex: 3 }}>
+          {userData?.tokenResult.signInProvider == 'password' ? (
+            <View
+              style={[
+                styles.settingsCard,
+                {
+                  backgroundColor: 'white',
+                },
+              ]}
+            >
               <View>
-                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Update Password
-                </StyledText>
-                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Change your password
+                <StyledText
+                  style={[
+                    Typography.header.h3,
+                    { textTransform: 'uppercase', marginBottom: spacing.x16 },
+                  ]}
+                >
+                  Security
                 </StyledText>
               </View>
-            </TouchableOpacity>
-          </View>
-
+              {userData?.tokenResult.signInProvider == 'password' ? (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('ConfirmLogin', {
+                      toScreen: 'EmailChange',
+                      onlyPassword: true,
+                    })
+                  }
+                  style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
+                >
+                  <View
+                    style={{
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: spacing.x24,
+                    }}
+                  >
+                    <View
+                      style={{
+                        borderRadius: borderRadius.max,
+                        backgroundColor: Colors.neutral[800],
+                        padding: 6,
+                      }}
+                    >
+                      <Sms color={Colors.primary.brand} size={18} />
+                    </View>
+                  </View>
+                  <View>
+                    <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                      Update Email
+                    </StyledText>
+                    <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                      Change to a new email
+                    </StyledText>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
+              {userData?.tokenResult.signInProvider == 'password' ? (
+                <TouchableOpacity
+                  onPress={
+                    () => {
+                      navigation.navigate('ConfirmLogin', {
+                        toScreen: 'PasswordChange',
+                        onlyPassword: true,
+                      });
+                    }
+                    // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
+                  }
+                  style={{ flexDirection: 'row' }}
+                >
+                  <View
+                    style={{
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: spacing.x24,
+                    }}
+                  >
+                    <View
+                      style={{
+                        borderRadius: borderRadius.max,
+                        backgroundColor: Colors.neutral[800],
+                        padding: 6,
+                      }}
+                    >
+                      <Key color={Colors.primary.brand} size={18} />
+                    </View>
+                  </View>
+                  <View>
+                    <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                      Update Password
+                    </StyledText>
+                    <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                      Change your password
+                    </StyledText>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
           <View
             style={[
               styles.settingsCard,
@@ -238,8 +399,9 @@ const Settings = ({ navigation }: Props) => {
             </View>
 
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
+              onPress={
+                () => {}
+                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
               }
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -258,17 +420,34 @@ const Settings = ({ navigation }: Props) => {
               </View>
               <View>
                 <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Update Email
+                  Push Notifications
                 </StyledText>
                 <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Change to a new email
+                  Send notifications to phone
                 </StyledText>
+              </View>
+              <View
+                style={{
+                  paddingLeft: spacing.x10,
+                  flex: 1,
+                  alignItems: 'flex-end',
+                }}
+              >
+                <Switch
+                  disabled={isLoading}
+                  value={pushNotificationsEnabled}
+                  onValueChange={(value) => {
+                    setPushNotificationsEnabled(value);
+                    updateNotifications(value, subscribedToNewsletter, emailNotificationsEnabled);
+                  }}
+                />
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
+              onPress={
+                () => {}
+                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
               }
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
@@ -287,17 +466,34 @@ const Settings = ({ navigation }: Props) => {
               </View>
               <View>
                 <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Update Password
+                  Email Notifications
                 </StyledText>
                 <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Change your password
+                  Send notifications to email
                 </StyledText>
+              </View>
+              <View
+                style={{
+                  paddingLeft: spacing.x10,
+                  flex: 1,
+                  alignItems: 'flex-end',
+                }}
+              >
+                <Switch
+                  disabled={isLoading}
+                  value={emailNotificationsEnabled}
+                  onValueChange={(value) => {
+                    setEmailNotificationsEnabled(value);
+                    updateNotifications(pushNotificationsEnabled, value, emailNotificationsEnabled);
+                  }}
+                />
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
+              onPress={
+                () => {}
+                // navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
               }
               style={{ flexDirection: 'row' }}
             >
@@ -316,15 +512,85 @@ const Settings = ({ navigation }: Props) => {
               </View>
               <View>
                 <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Update Password
+                  Subscribe to Newsletter
                 </StyledText>
                 <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Change your password
+                  Be updated with One Body
                 </StyledText>
+              </View>
+              <View
+                style={{
+                  paddingLeft: spacing.x10,
+                  flex: 1,
+                  alignItems: 'flex-end',
+                }}
+              >
+                <Switch
+                  disabled={isLoading}
+                  value={subscribedToNewsletter}
+                  onValueChange={(value) => {
+                    setSubscribedToNewsletter(value);
+                    updateNotifications(pushNotificationsEnabled, subscribedToNewsletter, value);
+                  }}
+                />
               </View>
             </TouchableOpacity>
           </View>
+          {userProfile?.influencerProfile?.influencerStatus == 'approved' ||
+          userProfile?.influencerProfile?.influencerStatus == 'pending' ? (
+            <View
+              style={[
+                styles.settingsCard,
+                {
+                  backgroundColor: 'white',
+                },
+              ]}
+            >
+              <View>
+                <StyledText
+                  style={[
+                    Typography.header.h3,
+                    { textTransform: 'uppercase', marginBottom: spacing.x16 },
+                  ]}
+                >
+                  Influencer
+                </StyledText>
+              </View>
 
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('InfluencerSettings');
+                }}
+                style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
+              >
+                <View
+                  style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: spacing.x24,
+                  }}
+                >
+                  <View
+                    style={{
+                      borderRadius: borderRadius.max,
+                      backgroundColor: Colors.neutral[800],
+                      padding: 6,
+                    }}
+                  >
+                    <Setting color={Colors.primary.brand} size={18} />
+                  </View>
+                </View>
+                <View>
+                  <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                    Influencer Settings
+                  </StyledText>
+                  <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                    Update your influencer profile settings
+                  </StyledText>
+                </View>
+              </TouchableOpacity>
+            </View>
+          ) : null}
           <View
             style={[
               styles.settingsCard,
@@ -370,7 +636,6 @@ const Settings = ({ navigation }: Props) => {
               </View>
             </TouchableOpacity>
           </View>
-
           <View
             style={[
               styles.settingsCard,
@@ -391,9 +656,7 @@ const Settings = ({ navigation }: Props) => {
             </View>
 
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
+              onPress={() => OpenURLButton('https://onebodyapp.com')}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
               <View
@@ -420,9 +683,7 @@ const Settings = ({ navigation }: Props) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
+              onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
               <View
@@ -449,9 +710,7 @@ const Settings = ({ navigation }: Props) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
+              onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
               <View
@@ -469,7 +728,7 @@ const Settings = ({ navigation }: Props) => {
               </View>
               <View>
                 <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                  Terms of Service
+                  Terms of Use
                 </StyledText>
                 <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
                   Terms of using One Body
@@ -506,12 +765,7 @@ const Settings = ({ navigation }: Props) => {
               </View>
             </TouchableOpacity> */}
 
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ flexDirection: 'row' }}
-            >
+            <TouchableOpacity onPress={() => {}} style={{ flexDirection: 'row' }}>
               <View
                 style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
               >
@@ -535,133 +789,6 @@ const Settings = ({ navigation }: Props) => {
               </View>
             </TouchableOpacity>
           </View>
-          {userData?.tokenResult.signInProvider == 'password' ? (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
-              style={{ ...styles.list, backgroundColor: colors.background }}
-            >
-              <View>
-                <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
-                  Email
-                </Text>
-                <Text style={{ color: '#70747D' }}>Update email address</Text>
-              </View>
-              <AntDesign name="right" size={20} color={'#70747D'} />
-            </TouchableOpacity>
-          ) : null}
-
-          {userData?.tokenResult.signInProvider == 'password' ? (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', {
-                  toScreen: 'PasswordChange',
-                  onlyPassword: true,
-                })
-              }
-              style={{ ...styles.list, backgroundColor: colors.background }}
-            >
-              <View>
-                <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
-                  Password
-                </Text>
-                <Text style={{ color: '#70747D' }}>Change Password</Text>
-              </View>
-              <AntDesign name="right" size={20} color={'#70747D'} />
-            </TouchableOpacity>
-          ) : null}
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('NotificationSettings')}
-            style={{ ...styles.list, backgroundColor: colors.background }}
-          >
-            <View>
-              <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
-                Notifications Settings
-              </Text>
-            </View>
-            <AntDesign name="right" size={20} color={'#70747D'} />
-          </TouchableOpacity>
-
-          {userProfile?.influencerProfile?.influencerStatus == 'approved' ||
-          userProfile?.influencerProfile?.influencerStatus == 'pending' ? (
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate('InfluencerSettings');
-              }}
-              style={{ ...styles.list, backgroundColor: colors.background }}
-            >
-              <View
-                style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
-                  Influencer Settings
-                </Text>
-                {showInfluencerNotification ? (
-                  <View
-                    style={{
-                      backgroundColor: 'red',
-                      width: 8,
-                      height: 8,
-                      borderRadius: 8,
-                      marginLeft: 8,
-                    }}
-                  />
-                ) : null}
-              </View>
-
-              <AntDesign name="right" size={20} color={'#70747D'} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={() => {
-                userProfile?.isInfluencer == true
-                  ? Alert.alert('You Already a Influencer')
-                  : navigation.navigate('InfluencerStepOne');
-              }}
-              style={{ ...styles.list, backgroundColor: colors.background }}
-            >
-              <Text style={{ ...styles.heading, color: dark ? colors.text : '#032F3C' }}>
-                Become an influencer
-              </Text>
-
-              <AntDesign name="right" size={20} color={'#70747D'} />
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('RemoveAccount')}
-            style={{ ...styles.list, backgroundColor: colors.background }}
-          >
-            <Text
-              style={{
-                ...{ ...styles.heading, color: dark ? colors.text : '#032F3C' },
-                color: 'red',
-              }}
-            >
-              Remove account
-            </Text>
-
-            <AntDesign name="right" color={'red'} size={20} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={async () => {
-              LoginManager.logOut();
-              dispatch(logout());
-              await auth().signOut();
-            }}
-            style={{
-              ...styles.list,
-              backgroundColor: colors.background,
-              marginBottom: 10,
-              borderBottomWidth: 0,
-            }}
-          >
-            <Text style={{ ...styles.logouttext, color: dark ? colors.text : '#032F3C' }}>
-              Log out
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

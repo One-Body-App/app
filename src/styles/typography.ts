@@ -48,17 +48,12 @@ export const fontWeight: Record<FontWeight, TextStyle> = {
 //   x40: 3,
 // };
 
-const caroFontFamily = Platform.select({
-  ios: 'caro',
-  android: 'caro',
+const poppinsFontFamily = Platform.select({
+  ios: 'poppins',
+  android: 'poppins',
 });
 
-const poppingsFontFamily = Platform.select({
-  ios: 'poppings',
-  android: 'poppings',
-});
-
-const defaultFontFamily = poppingsFontFamily;
+const defaultFontFamily = poppinsFontFamily;
 
 type LineHeight = 'x1' | 'x2' | 'x3' | 'x4' | 'x5' | 'x6' | 'x7';
 export const lineHeight: Record<LineHeight, TextStyle> = {
@@ -230,16 +225,10 @@ export const body: Record<Body, TextStyle> = {
     fontFamily: defaultFontFamily,
   },
 };
-type Caro = 'base';
-export const caro: Record<Caro, TextStyle> = {
-  base: {
-    fontFamily: caroFontFamily,
-  },
-};
 
-type Poppings = 'base';
-export const poppings: Record<Poppings, TextStyle> = {
+type Poppins = 'base';
+export const poppins: Record<Poppins, TextStyle> = {
   base: {
-    fontFamily: poppingsFontFamily,
+    fontFamily: poppinsFontFamily,
   },
 };

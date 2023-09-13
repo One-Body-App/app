@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { persistor, store } from './src/Redux/store';
@@ -9,7 +10,6 @@ import SplashScreen from 'react-native-splash-screen';
 import dynamicLinks from '@react-native-firebase/dynamic-links';
 import { Alert, Linking, Platform } from 'react-native';
 import { ToastProvider } from 'react-native-toast-notifications';
-
 import {
   configureFonts,
   MD3LightTheme as DefaultTheme,

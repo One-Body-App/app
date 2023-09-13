@@ -1,4 +1,4 @@
-import { poppings } from '@/src/styles/typography';
+import { poppins } from '@/src/styles/typography';
 import { ReactElement, forwardRef } from 'react';
 import { StyleSheet, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
 import { StyledText } from './Text';
@@ -46,11 +46,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
         }}
       >
         {leftIcon ? leftIcon : null}
-        <TextInput
-          ref={ref}
-          style={[styles.input, inputStyle, poppings.base]}
-          {...textInputProps}
-        />
+        <TextInput ref={ref} style={[styles.input, inputStyle, poppins.base]} {...textInputProps} />
         {rightIcon ? rightIcon : null}
       </View>
     </View>

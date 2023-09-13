@@ -1,4 +1,3 @@
-import { poppings } from '@/src/styles/typography';
 import { FC, useEffect, useState } from 'react';
 import { ButtonProps, ScrollView, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Modal from 'react-native-modal';
