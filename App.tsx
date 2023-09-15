@@ -1,4 +1,6 @@
 import 'react-native-gesture-handler';
+import 'react-native-devsettings/withAsyncStorage';
+
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { persistor, store } from './src/Redux/store';

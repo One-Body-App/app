@@ -87,7 +87,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
 
   return (
     <OnboardingStepsLayout
-      buttonText={'Next'}
+      buttonText={'Done'}
       onPress={async () => {
         if (selectedInfluencers.length > 0) {
           await addFollowing();

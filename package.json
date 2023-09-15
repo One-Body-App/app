@@ -49,6 +49,7 @@
     "react-native-animated-progress": "^1.0.2",
     "react-native-date-picker": "^4.2.13",
     "react-native-device-info": "^10.8.0",
+    "react-native-devsettings": "^1.0.5",
     "react-native-dotenv": "^3.4.9",
     "react-native-email-link": "^1.14.6",
     "react-native-fast-image": "^8.6.3",

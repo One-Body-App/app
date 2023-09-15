@@ -11,7 +11,8 @@ export const processLogin = async (
   setToken?: Function
 ) => {
   const token = await userCredentials.user.getIdToken();
-  if (setToken) {
+
+  if (setToken && token) {
     setToken(token);
   }
 
@@ -25,7 +26,7 @@ export const processLogin = async (
       route: 'user/my-profile',
       verb: 'get',
     });
-
+    console.log(userProfileResult, 'userProfileResultuserProfileResultuserProfileResult');
     if (userProfileResult.status == 200) {
       if (userProfileResult.response == '') {
         setNewUserCredentials(userCredentials);

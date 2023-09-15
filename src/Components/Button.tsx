@@ -15,7 +15,7 @@ import { StyledText } from './styled/Text';
 const Button = ({
   text,
   leftIcon,
-  RightIcon,
+  rightIcon,
   btnTextStyle,
   btnStyle,
   onPress,
@@ -28,7 +28,7 @@ const Button = ({
   text?: string;
   content?: ReactNode;
   leftIcon?: ReactNode;
-  RightIcon?: ReactNode;
+  rightIcon?: ReactNode;
   btnTextStyle?: StyleProp<TextStyle>;
   btnStyle?: StyleProp<ViewStyle>;
   disabledBtnStyle?: StyleProp<ViewStyle>;
@@ -64,7 +64,7 @@ const Button = ({
             </StyledText>
           ) : null}
 
-          {RightIcon}
+          {rightIcon}
         </View>
       </TouchableOpacity>
     </View>

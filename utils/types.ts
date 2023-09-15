@@ -65,7 +65,8 @@ export type User = {
   isInfluencer: boolean;
   isProfileCompleted: boolean;
   name: string;
-  profileImage: string;
+  profileImage?: string;
+  profileHeader?: string;
   accountType: AccountType;
   updatedAt: string;
   username: string;

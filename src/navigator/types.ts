@@ -284,12 +284,13 @@ export type RootNonUserStackParamList = {
 };
 
 type ConfirmLoginScreen = {
-  toScreen?: keyof RootNonUserStackParamList;
+  toScreen?: keyof RootNonUserStackParamList | keyof SettingsStackParamsList;
   error?: string;
   onlyPassword?: boolean;
   mode?: string;
   toScreenRouteParams?: Record<string, string>;
   oobCode?: string;
+  updateParent?: Function;
 
   action?: string;
   apiKey?: string;

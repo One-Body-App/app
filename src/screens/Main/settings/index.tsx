@@ -611,9 +611,7 @@ const Settings = ({ navigation }: Props) => {
             </View>
 
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('ConfirmLogin', { toScreen: 'EmailChange', onlyPassword: true })
-              }
+              onPress={() => navigation.navigate('RemoveAccount')}
               style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
             >
               <View

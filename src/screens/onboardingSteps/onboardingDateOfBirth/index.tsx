@@ -51,7 +51,7 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
           </StyledText>
         </View>
 
-        <View style={{ flex: 4 }}>
+        <View style={{ flex: 4, marginTop: spacing.x32 }}>
           <StyledText style={{ marginBottom: 10 }}>Date of birth</StyledText>
           <Button
             text={date ? date : 'Select'}
@@ -70,7 +70,7 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
               color: date ? Colors.neutral[300] : Colors.neutral[400],
             }}
             onPress={() => setOpen(true)}
-            RightIcon={
+            rightIcon={
               <Calendar
                 onPress={() => setOpen(true)}
                 style={{ paddingTop: 6 }}

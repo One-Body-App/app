@@ -10585,6 +10585,7 @@ __metadata:
     react-native-asset: ^2.1.1
     react-native-date-picker: ^4.2.13
     react-native-device-info: ^10.8.0
+    react-native-devsettings: ^1.0.5
     react-native-dotenv: ^3.4.9
     react-native-email-link: ^1.14.6
     react-native-fast-image: ^8.6.3
@@ -11260,6 +11261,13 @@ __metadata:
   peerDependencies:
     react-native: "*"
   checksum: 9875ad17a8b73a418befd010c4a33a5a43d5c09c2f63a445c1cec35746014c392c35dee487e81e9ff7c0568ff08fbd51ccee33f3c7bc4f71a065e7d47c205b6b
+  languageName: node
+  linkType: hard
+
+"react-native-devsettings@npm:^1.0.5":
+  version: 1.0.5
+  resolution: "react-native-devsettings@npm:1.0.5"
+  checksum: a59be2a07a94d16e8cd6443636ef44ebad15a8ddf6dcb742b737949c9029a9ff295894198e81a5ffd89f5714708be4b02b54b544566656e466e87982ffc89166
   languageName: node
   linkType: hard
 

@@ -97,6 +97,7 @@ export function* loginSocialSaga() {
 
 function* updateProfileRequest(params) {
   try {
+    console.log(params);
     const res = yield ApiCall({
       params: params.data.data,
       route: `user/update-profile`,

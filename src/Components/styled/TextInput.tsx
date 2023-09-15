@@ -12,6 +12,9 @@ interface Props extends TextInputProps {
   rightIcon?: ReactElement;
   leftIcon?: ReactElement;
   backgroundColor?: string;
+  showCharCounter?: boolean;
+  counterContainerStyle?: ViewStyle;
+  counterTextStyleStyle?: TextStyle;
 }
 
 export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
@@ -22,6 +25,9 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
     leftIcon,
     wrapperStyle,
     backgroundColor,
+    showCharCounter,
+    counterContainerStyle,
+    counterTextStyleStyle,
     ...textInputProps
   } = props;
   let backgroundColorWrapper = backgroundColor;
@@ -49,6 +55,13 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
         <TextInput ref={ref} style={[styles.input, inputStyle, poppins.base]} {...textInputProps} />
         {rightIcon ? rightIcon : null}
       </View>
+      {showCharCounter && textInputProps.maxLength ? (
+        <View style={counterContainerStyle}>
+          <StyledText style={counterTextStyleStyle}>
+            {textInputProps.value?.length || '0'}/{textInputProps.maxLength}
+          </StyledText>
+        </View>
+      ) : null}
     </View>
   );
 });

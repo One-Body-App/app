@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Text, View, FlatList, TouchableOpacity } from 'react-native';
+import { Animated, View, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import Modal from 'react-native-modal';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
@@ -15,7 +15,7 @@ import BlogFlatlist from '@/src/components/BlogFlatlist';
 import InstagramFlatlist from '@/src/components/InstagramFlatlist';
 import Selected from '@/assets/svg/Selected.svg';
 import { getProfile, getBadges, setUserBadges } from '@/redux//actions/AuthActions';
-import ImageModal from 'react-native-image-modal';
+
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
@@ -29,6 +29,13 @@ import {
 } from '@/src/navigator/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { StyledText } from '@/src/components/styled/Text';
+import { Colors, Spacing, Typography } from '@/src/styles';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { Add } from 'iconsax-react-native';
+import { button } from '@/src/styles/buttons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type Route = {
   key: string;
@@ -152,6 +159,7 @@ const MyProfile = ({ navigation }: Props) => {
   }, [authState?.setUserBadgesSuccess]);
 
   const { colors } = useTheme();
+  const profileImagesize = 80;
 
   return (
     <View style={{ flex: 1 }}>
@@ -165,7 +173,7 @@ const MyProfile = ({ navigation }: Props) => {
         propagateSwipe
       >
         <View style={styles.content2}>
-          <Text
+          <StyledText
             style={{
               color: '#032F3C',
               marginLeft: 20,
@@ -174,9 +182,9 @@ const MyProfile = ({ navigation }: Props) => {
               letterSpacing: 0.25,
             }}
           >
-            <Text style={{ fontWeight: 'bold' }}>Select up to 3 badage</Text> you would like to
-            display on your profile
-          </Text>
+            <StyledText style={{ fontWeight: 'bold' }}>Select up to 3 badage</StyledText> you would
+            like to display on your profile
+          </StyledText>
           <View style={styles.profileview}>
             <View style={{ marginVertical: 15 }}>
               <FlatList
@@ -229,7 +237,7 @@ const MyProfile = ({ navigation }: Props) => {
                         <Selected />
                       </View>
                     ) : null}
-                    <Text
+                    <StyledText
                       style={{
                         color: '#032F3C',
                         fontFamily: 'Rubik-Medium',
@@ -237,7 +245,7 @@ const MyProfile = ({ navigation }: Props) => {
                       }}
                     >
                       {item?.title}
-                    </Text>
+                    </StyledText>
                   </TouchableOpacity>
                 )}
               />
@@ -252,7 +260,7 @@ const MyProfile = ({ navigation }: Props) => {
               }}
               style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}
             >
-              <Text
+              <StyledText
                 style={{
                   color: '#032F3C',
                   fontWeight: 'bold',
@@ -260,17 +268,169 @@ const MyProfile = ({ navigation }: Props) => {
                 }}
               >
                 DONE
-              </Text>
+              </StyledText>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {direction == 'down' ? null : (
+      <View>
+        <View style={{ width: '100%', height: 230 }}>
+          {user?.profileHeader ? (
+            <FastImage
+              style={{
+                height: 150,
+                width: '100%',
+              }}
+              source={{
+                uri: user?.profileHeader,
+              }}
+              resizeMode={'cover'}
+            />
+          ) : (
+            <View style={{ backgroundColor: Colors.neutral[800], height: 150, width: '100%' }} />
+          )}
+          {user?.accountType == 'individual' ? (
+            <View
+              style={{
+                alignSelf: 'flex-end',
+                backgroundColor: 'rgba(0,0,0,0.45)',
+                borderRadius: borderRadius.button,
+                padding: spacing.x10,
+                marginRight: spacing.x24,
+                position: 'absolute',
+                bottom: spacing.x16 + profileImagesize, // size of the profile image + margin space
+                right: 0,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                }}
+              >
+                {user?.badgesData?.length < 3 && (
+                  <TouchableOpacity
+                    style={{
+                      borderColor: 'white',
+                      borderWidth: borderWidth.thin,
+                      borderRadius: borderRadius.max,
+                      padding: spacing.x8,
+                      marginRight: spacing.x10,
+                    }}
+                    onPress={() => {
+                      //getBadge();
+                      dispatch(getBadges.Request({ token: token }));
+                      setRequestModel(true);
+                    }}
+                  >
+                    <Add color="white" size={20} />
+                  </TouchableOpacity>
+                )}
+
+                {user?.badgesData.map((item, index) => (
+                  <View key={index}>
+                    {user?.badgesData?.length < 3 ? (
+                      <FastImage
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: borderRadius.max,
+                          marginRight: index == user?.badgesData.length - 1 ? 0 : spacing.x10,
+                        }}
+                        source={{
+                          uri: item.badge,
+                        }}
+                        resizeMode={FastImage.resizeMode.stretch}
+                      />
+                    ) : (
+                      <TouchableOpacity
+                        style={{ marginHorizontal: spacing.x10 }}
+                        onPress={() => {
+                          dispatch(getBadges.Request({ token: token }));
+                          //getBadge();
+                          setRequestModel(true);
+                        }}
+                      >
+                        <FastImage
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: borderRadius.max,
+                          }}
+                          source={{
+                            uri: item.badge,
+                          }}
+                          resizeMode={FastImage.resizeMode.stretch}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          <View
+            style={{ position: 'absolute', bottom: profileImagesize / 2, marginLeft: spacing.x24 }}
+          >
+            <FastImage
+              style={{
+                width: profileImagesize,
+                height: profileImagesize,
+                borderRadius: borderRadius.max,
+                borderWidth: borderWidth.base,
+                borderColor: 'white',
+              }}
+              source={{
+                uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+              }}
+              resizeMode={'cover'}
+            />
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              marginTop: spacing.x16,
+              paddingHorizontal: spacing.x24,
+            }}
+          >
+            <Button
+              onPress={() => {}}
+              btnStyle={[
+                button.primary,
+                {
+                  backgroundColor: Colors.neutral[700],
+                  paddingVertical: spacing.x10,
+                  paddingHorizontal: spacing.x16,
+                  marginRight: spacing.x10,
+                },
+              ]}
+              text="Edit Profile"
+              btnTextStyle={{ color: Colors.neutral[200] }}
+            />
+            <Button
+              onPress={() => {}}
+              text="Share Profile"
+              btnStyle={[
+                button.primary,
+                {
+                  paddingVertical: spacing.x10,
+                  paddingHorizontal: spacing.x16,
+                },
+              ]}
+              btnTextStyle={{ color: '#FFF' }}
+            />
+          </View>
+        </View>
+      </View>
+
+      {direction == 'down' || true ? null : (
         <Animated.View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
           <View>
             <View style={{ alignSelf: 'center' }}>
-              <ImageModal
+              <FastImage
                 style={{
                   width: 80,
                   height: 80,
@@ -288,201 +448,162 @@ const MyProfile = ({ navigation }: Props) => {
           </View>
         </Animated.View>
       )}
-      <Text
-        style={{
-          fontWeight: '500',
-          color: '#032f3c',
-          textAlign: 'center',
-          fontSize: 20,
-          marginTop: direction == 'down' ? 10 : 0,
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: spacing.x24,
+          flexGrow: 1,
         }}
       >
-        {user?.accountType == 'organization' && user?.profile?.companyName
-          ? user?.profile?.companyName
-          : user?.name}
-      </Text>
-      <Text
-        style={[
-          {
-            textAlign: 'center',
-            marginBottom: 20,
-            color: '#5b7279',
-            marginTop: 5,
-          },
-        ]}
-      >
-        {user?.username ? `@${user?.username}` : ''}
-        {`${user?.whatIDo ? `• ${user?.whatIDo.name}` : ''}`}
-      </Text>
-      {user?.accountType == 'individual' ? (
-        <View style={styles.manyimageview}>
-          <View>
-            <FlatList
-              data={user?.badgesData}
-              numColumns={3}
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <>
-                  {user?.badgesData?.length < 3 ? (
-                    <FastImage
-                      style={styles.firstimage}
-                      source={{
-                        uri: item.badge,
-                      }}
-                      resizeMode={FastImage.resizeMode.stretch}
-                    />
-                  ) : (
-                    <TouchableOpacity
-                      style={{ marginHorizontal: getWidth(1) }}
-                      onPress={() => {
-                        dispatch(getBadges.Request({ token: token }));
-                        //getBadge();
-                        setRequestModel(true);
-                      }}
-                    >
-                      <FastImage
-                        style={styles.firstimage}
-                        source={{
-                          uri: item.badge,
-                        }}
-                        resizeMode={FastImage.resizeMode.stretch}
-                      />
-                    </TouchableOpacity>
-                  )}
-                </>
-              )}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <StyledText
+            style={[
+              Typography.header.h3,
+              {
+                marginTop: direction == 'down' ? 10 : 0,
+              },
+            ]}
+          >
+            {user?.accountType == 'organization' && user?.profile?.companyName
+              ? user?.profile?.companyName
+              : user?.name}
+          </StyledText>
+          {user?.influencerProfile?.influencerStatus == 'approved' ? (
+            <Icon
+              name="check-decagram"
+              size={20}
+              style={{ marginLeft: spacing.x8 }}
+              color={Colors.primarySapphire.brand}
             />
-          </View>
-          {user?.badgesData?.length < 3 && (
-            <TouchableOpacity
-              style={{ marginHorizontal: getWidth(1) }}
-              onPress={() => {
-                //getBadge();
-                dispatch(getBadges.Request({ token: token }));
-                setRequestModel(true);
-              }}
-            >
-              <Add_badges />
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : null}
-
-      {user?.isInfluencer == true || user?.accountType == 'organization' ? (
-        <Text numberOfLines={3} style={styles.bio}>
-          {user?.bio}
-        </Text>
-      ) : null}
-      {user?.website ? (
-        <TouchableOpacity
-          onPress={() =>
-            OpenURLButton(
-              `${
-                user?.website.indexOf('https://') == -1 ? `https://${user?.website}` : user?.website
-              }`
-            )
-          }
-        >
-          <Text style={styles.onebodytext}>{user?.website}</Text>
-        </TouchableOpacity>
-      ) : null}
-
-      {direction == 'down' ? null : (
-        <Animated.View>
-          {user?.isInfluencer == true && user?.accountType == 'individual' ? (
-            <View style={{ alignItems: 'center' }}>
-              <Text
-                style={{
-                  color: '#032f3c',
-                  fontFamily: 'Rubik-Regular',
-                  marginVertical: getHeight(1),
-                }}
-              >
-                Reaching:{' '}
-                {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
-              </Text>
-            </View>
           ) : null}
-        </Animated.View>
-      )}
-
-      <View
-        style={{
-          alignItems: 'center',
-          flex: 1,
-        }}
-      >
-        <View style={{ width: '100%' }}>
-          <Button
-            text={'Edit Profile'}
-            onPress={() => navigation.navigate('EditProfile')}
-            mode="outlined"
-            paper
-          />
         </View>
-      </View>
-      <View style={{ flex: 3 }}>
-        {user?.isInfluencer == true ? (
-          <TabView
-            navigationState={{ index, routes }}
-            renderScene={renderScene}
-            renderTabBar={(props) => {
-              const inputRange = props.navigationState.routes.map((x, i) => i);
-
-              return (
-                <View style={styles.tabBar}>
-                  {props.navigationState.routes
-                    .filter((route) => {
-                      if (user?.influencerProfile?.twitterId && route.key == 'Twitter') {
-                        return true;
-                      }
-
-                      if (user?.influencerProfile?.rssUrl && route.key == 'Blog') {
-                        return true;
-                      }
-
-                      if (user?.influencerProfile?.instagramId && route.key == 'Instagram') {
-                        return true;
-                      }
-
-                      return false;
-                    })
-                    .map((route, i) => {
-                      return (
-                        <TouchableOpacity
-                          style={styles.tabItem}
-                          onPress={() => setIndex(i)}
-                          key={i}
-                        >
-                          <Animated.Text
-                            style={
-                              props?.navigationState?.index == i
-                                ? {
-                                    color: '#032F3C',
-                                    fontFamily: 'Rubik-Medium',
-                                  }
-                                : {
-                                    color: '#032F3C',
-                                    fontFamily: 'Rubik-Regular',
-                                  }
-                            }
-                          >
-                            {route.title}
-                          </Animated.Text>
-                          {props?.navigationState?.index == i ? (
-                            <View style={styles.propview} />
-                          ) : null}
-                        </TouchableOpacity>
-                      );
-                    })}
-                </View>
-              );
-            }}
-            onIndexChange={setIndex}
-            initialLayout={{ width: getWidth(100) }}
-          />
+        <StyledText
+          style={[
+            {
+              // textAlign: 'center',
+              // marginBottom: 20,
+              // color: '#5b7279',
+              // marginTop: 5,
+            },
+          ]}
+        >
+          <StyledText style={{ color: Colors.neutral[300] }}>
+            {user?.username ? `@${user?.username}` : ''}
+          </StyledText>
+          {user?.whatIDo ? (
+            <StyledText style={{ color: Colors.neutral[300] }}>
+              {user?.username ? ` • ` : ''}
+            </StyledText>
+          ) : null}
+          {`${user?.whatIDo ? `${user?.whatIDo.name}` : ''}`}
+        </StyledText>
+        {user?.influencerProfile?.influencerStatus == 'approved' ||
+        user?.accountType == 'organization' ? (
+          <StyledText
+            numberOfLines={3}
+            style={{ color: Colors.neutral[200], marginVertical: spacing.x24 }}
+          >
+            {user?.bio}
+          </StyledText>
         ) : null}
-      </View>
+
+        {user?.website ? (
+          <TouchableOpacity
+            onPress={() =>
+              OpenURLButton(
+                `${
+                  user?.website.indexOf('https://') == -1
+                    ? `https://${user?.website}`
+                    : user?.website
+                }`
+              )
+            }
+          >
+            <StyledText style={styles.onebodytext}>{user?.website}</StyledText>
+          </TouchableOpacity>
+        ) : null}
+        {direction == 'down' ? null : (
+          <Animated.View>
+            {user?.isInfluencer == true && user?.accountType == 'individual' ? (
+              <View style={{ alignItems: 'center' }}>
+                <StyledText
+                  style={{
+                    color: '#032f3c',
+                    fontFamily: 'Rubik-Regular',
+                    marginVertical: getHeight(1),
+                  }}
+                >
+                  Reaching:{' '}
+                  {user.followerCount && user.followerCount > 999
+                    ? `${(user.followerCount / 1000).toFixed(2)}k`
+                    : user.followerCount}
+                </StyledText>
+              </View>
+            ) : null}
+          </Animated.View>
+        )}
+        <View style={{ flex: 3 }}>
+          {user?.isInfluencer == true ? (
+            <TabView
+              navigationState={{ index, routes }}
+              renderScene={renderScene}
+              renderTabBar={(props) => {
+                const inputRange = props.navigationState.routes.map((x, i) => i);
+
+                return (
+                  <View style={styles.tabBar}>
+                    {props.navigationState.routes
+                      .filter((route) => {
+                        if (user?.influencerProfile?.twitterId && route.key == 'Twitter') {
+                          return true;
+                        }
+
+                        if (user?.influencerProfile?.rssUrl && route.key == 'Blog') {
+                          return true;
+                        }
+
+                        if (user?.influencerProfile?.instagramId && route.key == 'Instagram') {
+                          return true;
+                        }
+
+                        return false;
+                      })
+                      .map((route, i) => {
+                        return (
+                          <TouchableOpacity
+                            style={styles.tabItem}
+                            onPress={() => setIndex(i)}
+                            key={i}
+                          >
+                            <Animated.Text
+                              style={
+                                props?.navigationState?.index == i
+                                  ? {
+                                      color: '#032F3C',
+                                      fontFamily: 'Rubik-Medium',
+                                    }
+                                  : {
+                                      color: '#032F3C',
+                                      fontFamily: 'Rubik-Regular',
+                                    }
+                              }
+                            >
+                              {route.title}
+                            </Animated.Text>
+                            {props?.navigationState?.index == i ? (
+                              <View style={styles.propview} />
+                            ) : null}
+                          </TouchableOpacity>
+                        );
+                      })}
+                  </View>
+                );
+              }}
+              onIndexChange={setIndex}
+              initialLayout={{ width: getWidth(100) }}
+            />
+          ) : null}
+        </View>
+      </ScrollView>
     </View>
   );
 };

@@ -416,7 +416,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
               }}
               leftIcon={<View />}
-              RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
+              rightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
               onPress={() => setVisible(true)}
             />

@@ -170,7 +170,7 @@ const ForgotPassword = ({ navigation }: Props) => {
                 text={'Still having issues? '}
                 wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'flex-end' }}
                 btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[200] }]}
-                RightIcon={
+                rightIcon={
                   <StyledText style={{ color: Colors.primarySapphire.brand }}>
                     Contact us
                   </StyledText>

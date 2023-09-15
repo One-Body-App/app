@@ -1,5 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { Colors, Typography } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
+import { borderWidth } from '@/src/styles/outlines';
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -35,19 +38,12 @@ export const styles = StyleSheet.create({
   },
 
   btn: {
-    width: '100%',
-    height: getHeight(5.5),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    marginVertical: 8,
+    padding: spacing.x16,
+
+    borderColor: Colors.neutral[600],
+
+    flexGrow: 1,
+    // flexDirection: 'row',
   },
-  btnText: { color: 'white', fontSize: getFontSize(2.5), textAlign: 'center' },
-  btntxt: {
-    color: 'white',
-    fontSize: getFontSize(2),
-    letterSpacing: 1.25,
-    fontFamily: 'Rubik-Medium',
-  },
+  btnText: { ...Typography.body.x2 },
 });

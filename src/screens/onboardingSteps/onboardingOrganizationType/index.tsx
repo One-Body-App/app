@@ -83,7 +83,7 @@ const OnboardingOrganizationType = ({ navigation }: Props) => {
           </StyledText>
         </View>
 
-        <View style={{ flex: 4 }}>
+        <View style={{ flex: 4, marginTop: spacing.x32 }}>
           <StyledSelect
             items={organizationTypes.map((item) => {
               return {

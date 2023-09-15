@@ -77,7 +77,7 @@ export const StyledSelect: FC<Props> = ({
         btnTextStyle={{
           color: selectedItem ? Colors.neutral[200] : Colors.neutral[300],
         }}
-        RightIcon={<Ionicons name="chevron-down" color={Colors.neutral[200]} />}
+        rightIcon={<Ionicons name="chevron-down" color={Colors.neutral[200]} />}
         // btnTextStyle={styles.btnText3}
         onPress={() => setModalVisible(true)}
       />

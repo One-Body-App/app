@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Text, View, TouchableOpacity, TextInput as TextInputNative } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import { Text, View, TextInput as TextInputNative } from 'react-native';
 
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -21,6 +20,11 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
+import { StyledText } from '@/src/components/styled/Text';
+import { button } from '@/src/styles/buttons';
+import { spacing } from '@/src/styles/spacing';
+import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { Colors } from '@/src/styles';
 
 type Props = StackScreenProps<RootStackParamList, 'EmailChange'>;
 
@@ -91,35 +95,16 @@ const EmailChange = ({ navigation, route }: Props) => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
-
-      <Header
-        title={'Change Email'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back-outline" size={20} />
-          </TouchableOpacity>
-        }
-        RightView={<View style={{ width: getWidth(5) }} />}
-      />
+    <View style={{ flex: 1, paddingHorizontal: spacing.x24 }}>
       <KeyboardAwareScrollView style={styles.innerContainer}>
-        <TextInput
-          theme={{ roundness: 10 }}
-          activeOutlineColor={'#5B7279'}
+        <StyledTextInput
           ref={inputRefs.passwordN}
           value={email}
           label={'New email'}
-          mode="outlined"
           autoComplete="email"
           autoCapitalize="none"
           // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-          style={GeneralStyle.input}
+
           returnKeyType={'next'}
           keyboardType="email-address"
           onSubmitEditing={() => inputRefs.passwordC.current?.focus()}
@@ -128,19 +113,16 @@ const EmailChange = ({ navigation, route }: Props) => {
         />
         <Text style={{ ...GeneralStyle.InputError, marginLeft: getWidth(9) }}>{emailError}</Text>
 
-        <TextInput
-          theme={{ roundness: 10 }}
-          activeOutlineColor={'#5B7279'}
+        <StyledTextInput
           ref={inputRefs.passwordC}
           value={emailConfirmation}
           returnKeyType={'done'}
           label={'Confirm new email'}
-          mode="outlined"
           autoComplete="email"
           autoCapitalize="none"
           keyboardType="email-address"
           // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
-          style={GeneralStyle.input}
+
           onSubmitEditing={() => emailUpdate()}
           onChangeText={(email) => setEmailConfirmation(email)}
           blurOnSubmit={false}
@@ -151,24 +133,32 @@ const EmailChange = ({ navigation, route }: Props) => {
 
         {error != null ? (
           <View style={{ padding: 5, flexDirection: 'row' }}>
-            <Text style={styles.errorview}>{error}</Text>
+            <StyledText style={{ ...GeneralStyle.InputError }}>{error}</StyledText>
           </View>
         ) : null}
 
         <Button
-          text={'SAVE'}
-          disabled={!emailConfirmation || !email}
-          btnStyle={{ ...GeneralStyle.btn, marginTop: getHeight(4) }}
-          disabledBtnStyle={{
-            ...GeneralStyle.btn,
-            marginTop: getHeight(4),
-            backgroundColor: '#E6EAEC',
-          }}
-          disabledBtnTextStyle={GeneralStyle.btnText}
-          btnTextStyle={GeneralStyle.btnText}
+          text="Update Email"
           onPress={() => {
             emailUpdate();
           }}
+          disabled={!emailConfirmation || !email}
+          wrapperViewBtnStyle={{ marginTop: spacing.x32 }}
+          disabledBtnStyle={[
+            button.primary,
+            {
+              flex: 1,
+              opacity: 0.5,
+            },
+          ]}
+          btnStyle={[
+            button.primary,
+            {
+              flex: 1,
+            },
+          ]}
+          btnTextStyle={{ color: '#FFF' }}
+          disabledBtnTextStyle={{ color: '#FFF' }}
         />
       </KeyboardAwareScrollView>
     </View>

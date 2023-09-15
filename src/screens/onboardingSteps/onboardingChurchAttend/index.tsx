@@ -47,7 +47,8 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
           </StyledText>
         </View>
 
-        <View style={{ flex: 4 }}>
+        <View style={{ flex: 4, marginTop: spacing.x32 }}>
+          <StyledText>Church Attendance</StyledText>
           <TouchableOpacity
             style={[
               card,

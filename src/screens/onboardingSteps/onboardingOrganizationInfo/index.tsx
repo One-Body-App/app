@@ -66,7 +66,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
           </StyledText>
         </View>
 
-        <View style={{ flex: 4 }}>
+        <View style={{ flex: 4, marginTop: spacing.x32 }}>
           <View style={{ flex: 1, paddingBottom: 30 }}>
             <StyledTextInput
               label="Organization Name"
@@ -97,7 +97,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
                 color: locationData ? Colors.neutral[300] : Colors.neutral[400],
               }}
               onPress={() => setModalVisible(true)}
-              RightIcon={
+              rightIcon={
                 <ArrowDown2
                   onPress={() => setModalVisible(true)}
                   style={{ paddingTop: 6 }}

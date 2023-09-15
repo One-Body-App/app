@@ -100,7 +100,7 @@ const OnboardingChurchType = ({ navigation }: Props) => {
           </StyledText>
         </View>
 
-        <View style={{ flex: 4 }}>
+        <View style={{ flex: 4, marginTop: spacing.x32 }}>
           <StyledSelect
             items={churchTypes.map((item) => {
               return {

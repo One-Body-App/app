@@ -59,7 +59,7 @@ export const ApiCall = async ({
           token
             ? {
                 headers: {
-                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                  // 'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
                   Authorization: `Bearer ${tokenToUse}`,
                 },
               }

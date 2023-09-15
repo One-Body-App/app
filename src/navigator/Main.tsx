@@ -47,6 +47,7 @@ import {
   MainDrawerParamsList,
   OnboardingStackParamList,
   RootNonUserStackParamList,
+  SettingsStackParamsList,
 } from './types';
 import messaging from '@react-native-firebase/messaging';
 
@@ -94,7 +95,7 @@ function getHeaderTitle(route: Partial<Route<string>>) {
     case 'ExploreTab':
       return 'Discover Accounts';
     case 'MyProfileTab':
-      return 'My account';
+      return 'My Account';
   }
 }
 
@@ -189,13 +190,17 @@ const Main = () => {
   }, [token, user, initializing]);
 
   const linking: LinkingOptions<
-    HomeStackParamsList & MainDrawerParamsList & RootNonUserStackParamList
+    HomeStackParamsList & MainDrawerParamsList & RootNonUserStackParamList & SettingsStackParamsList
   > = {
     prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
     config: {
       screens: {
-        ConfirmLogin: {
-          path: '/auth/:action/:provider?',
+        Settings: {
+          screens: {
+            ConfirmLogin: {
+              path: '/auth/:action/:provider?',
+            },
+          },
         },
         SignUp: {
           path: '/signup/:action',
@@ -415,6 +420,7 @@ const Main = () => {
                   drawerItemStyle: { height: 0 },
                 }}
               />
+
               {/* <DrawerStack.Screen name="Help" component={Help} /> */}
             </DrawerStack.Navigator>
           ) : (

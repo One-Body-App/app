@@ -81,6 +81,7 @@ interface Props {
   onlyPassword?: boolean;
   toScreenRouteParams?: Record<string, string>;
   errorFromLogin?: string;
+  updateParent?: Function;
 
   enabledLoginProviders?: string[];
 }
@@ -99,6 +100,7 @@ const LoginComponent: FC<Props> = ({
   onlyPassword,
   toScreenRouteParams,
   enabledLoginProviders,
+  updateParent,
 }) => {
   const dispatch = useDispatch();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
@@ -144,15 +146,15 @@ const LoginComponent: FC<Props> = ({
       forceCodeForRefreshToken: true,
     });
 
-    navigation.addListener('beforeRemove', (e) => {
-      LoginManager.logOut();
-      if (auth().currentUser?.uid) {
-        auth().signOut();
+    // navigation.addListener('beforeRemove', (e) => {
+    //   LoginManager.logOut();
+    //   if (auth().currentUser?.uid) {
+    //     auth().signOut();
 
-        auth().currentUser?.reload();
-      }
-      dispatch(logout());
-    });
+    //     auth().currentUser?.reload();
+    //   }
+    //   dispatch(logout());
+    // });
   }, []);
 
   useEffect(() => {
@@ -183,6 +185,9 @@ const LoginComponent: FC<Props> = ({
           setSuccess('Email changed successful. Please Sign in to your account');
           setState({ ...state, email: result.data.email ?? '' });
         } catch (e: any) {
+          if (updateParent) {
+            updateParent(false);
+          }
           navigation.goBack();
           toast.show('Invalid Verification code, please try again.', {
             placement: 'top',
@@ -222,7 +227,11 @@ const LoginComponent: FC<Props> = ({
         dispatch(logout());
       }
     };
-    checkNewUserCredentials();
+    console.log(newUserCredentials, 'asdf');
+    if (newUserCredentials) {
+      console.log('uahjksdf');
+      checkNewUserCredentials();
+    }
   }, [newUserCredentials]);
 
   useEffect(() => {
@@ -258,6 +267,9 @@ const LoginComponent: FC<Props> = ({
               !!onlyPassword &&
               userCredentials.user.email !== currentUserEmail
             ) {
+              if (updateParent) {
+                updateParent(false);
+              }
               navigation.goBack();
               toast.show(`Please login with the current user's email`, {
                 type: 'error',
@@ -273,10 +285,13 @@ const LoginComponent: FC<Props> = ({
                     ...toScreenParams,
                   });
                 } else {
+                  if (updateParent) {
+                    updateParent(true);
+                  }
                   navigation.goBack();
                 }
               } else {
-                processLogin(userCredentials, setToken, setNewUserCredentials);
+                processLogin(userCredentials, setNewUserCredentials, setToken);
               }
             }
           }
@@ -321,7 +336,7 @@ const LoginComponent: FC<Props> = ({
           setState({ ...state, password: '' });
 
           if (mode == 'verifyEmail') {
-            await processLogin(emailCredential, setToken, setNewUserCredentials);
+            await processLogin(emailCredential, setNewUserCredentials, setToken);
           } else {
             if (toScreen) {
               navigation.goBack();
@@ -330,6 +345,9 @@ const LoginComponent: FC<Props> = ({
                 ...toScreenRouteParams,
               });
             } else {
+              if (updateParent) {
+                updateParent(true);
+              }
               navigation.goBack();
             }
           }
@@ -338,7 +356,7 @@ const LoginComponent: FC<Props> = ({
             dispatch(setLoader(false));
           } else {
             setIsVerificationNeeded(true);
-            await processLogin(emailCredential, setToken, setNewUserCredentials);
+            await processLogin(emailCredential, setNewUserCredentials, setToken);
 
             dispatch(setLoader(false));
           }
@@ -441,7 +459,7 @@ const LoginComponent: FC<Props> = ({
       if (credentialState === appleAuth.State.AUTHORIZED) {
         const userCredentials = await auth().signInWithCredential(appleCredential);
 
-        processLogin(userCredentials, setToken, setNewUserCredentials);
+        processLogin(userCredentials, setNewUserCredentials, setToken);
       }
     } catch (error: any) {
       if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
@@ -477,10 +495,13 @@ const LoginComponent: FC<Props> = ({
               ...toScreenParams,
             });
           } else {
+            if (updateParent) {
+              updateParent(true);
+            }
             navigation.goBack();
           }
         } else {
-          await processLogin(userCredentials, setToken, setNewUserCredentials);
+          await processLogin(userCredentials, setNewUserCredentials, setToken);
         }
       }
       dispatch(setLoader(false));
@@ -531,10 +552,13 @@ const LoginComponent: FC<Props> = ({
               ...toScreenParams,
             });
           } else {
+            if (updateParent) {
+              updateParent(true);
+            }
             navigation.goBack();
           }
         } else {
-          await processLogin(userCredentials, setToken, setNewUserCredentials);
+          await processLogin(userCredentials, setNewUserCredentials, setToken);
         }
       }
 
@@ -579,7 +603,7 @@ const LoginComponent: FC<Props> = ({
           text={'Didn’t get mail? '}
           wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'flex-end' }}
           btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[300] }]}
-          RightIcon={
+          rightIcon={
             <StyledText style={{ color: Colors.primarySapphire.brand }}>Resend email</StyledText>
           }
         />
@@ -962,6 +986,9 @@ const LoginComponent: FC<Props> = ({
                   ]}
                   onPress={() => {
                     dispatch(signUp.Reset());
+                    if (updateParent) {
+                      updateParent(false);
+                    }
                     navigation.goBack();
                   }}
                   btnTextStyle={{ color: Colors.neutral[300] }}
