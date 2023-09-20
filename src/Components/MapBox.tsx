@@ -198,7 +198,7 @@ const MapBox = (props: MapBoxProps) => {
               placeholder="Search"
               onChangeText={(val) => getSuggestion(val)}
               leftIcon={
-                <View>
+                <View style={{ justifyContent: 'center' }}>
                   <SearchIcon
                     style={{ height: 20, width: 20, marginRight: 10 }}
                     stroke={Colors.neutral[200]}

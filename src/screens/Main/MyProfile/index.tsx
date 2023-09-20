@@ -33,9 +33,18 @@ import { StyledText } from '@/src/components/styled/Text';
 import { Colors, Spacing, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { Add } from 'iconsax-react-native';
+import {
+  Add,
+  Calendar,
+  HomeHashtag,
+  Link2,
+  Link21,
+  Location,
+  ShieldTick,
+} from 'iconsax-react-native';
 import { button } from '@/src/styles/buttons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { parse, format, parseISO } from 'date-fns';
 
 type Route = {
   key: string;
@@ -220,7 +229,7 @@ const MyProfile = ({ navigation }: Props) => {
                     style={styles.ideaterview}
                   >
                     <FastImage
-                      style={{ width: '33%', height: 40, borderRadius: 50 }}
+                      style={{ width: '33%', height: 40, borderRadius: borderRadius.max }}
                       source={{
                         uri: item?.badge,
                       }}
@@ -315,7 +324,7 @@ const MyProfile = ({ navigation }: Props) => {
                       borderWidth: borderWidth.thin,
                       borderRadius: borderRadius.max,
                       padding: spacing.x8,
-                      marginRight: spacing.x10,
+                      marginRight: user?.badgesData.length > 0 ? spacing.x10 : 0,
                     }}
                     onPress={() => {
                       //getBadge();
@@ -483,6 +492,7 @@ const MyProfile = ({ navigation }: Props) => {
               // marginBottom: 20,
               // color: '#5b7279',
               // marginTop: 5,
+              paddingBottom: spacing.x24,
             },
           ]}
         >
@@ -506,20 +516,78 @@ const MyProfile = ({ navigation }: Props) => {
           </StyledText>
         ) : null}
 
-        {user?.website ? (
-          <TouchableOpacity
-            onPress={() =>
-              OpenURLButton(
-                `${
-                  user?.website.indexOf('https://') == -1
-                    ? `https://${user?.website}`
-                    : user?.website
-                }`
-              )
-            }
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}>
+          <View style={{ justifyContent: 'space-between', flexDirection: 'row' }}>
+            <Location size={20} color={Colors.neutral.brand} />
+            <StyledText style={{ color: Colors.neutral[300], marginHorizontal: spacing.x10 }}>
+              {user?.profile.location.address}
+            </StyledText>
+          </View>
+          <View
+            style={{
+              justifyContent: 'space-between',
+              flexDirection: 'row',
+              marginLeft: spacing.x10,
+            }}
           >
-            <StyledText style={styles.onebodytext}>{user?.website}</StyledText>
-          </TouchableOpacity>
+            <Calendar size={20} color={Colors.neutral.brand} />
+            <StyledText style={{ marginHorizontal: spacing.x10 }}>
+              Joined{' '}
+              <StyledText style={{ color: Colors.neutral[300] }}>
+                {format(parseISO(user?.createdAt ?? ''), 'MMM yyyy')}
+              </StyledText>
+            </StyledText>
+          </View>
+        </View>
+
+        {user?.influencerProfile?.influencerStatus == 'approved' ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}>
+            <ShieldTick size={20} color={Colors.neutral.brand} />
+
+            <StyledText style={{ marginHorizontal: spacing.x10 }}>Profile</StyledText>
+            <StyledText style={{ color: Colors.neutral[300] }}>
+              {user?.username ? ` • ` : ''}
+            </StyledText>
+            <StyledText style={{ marginHorizontal: spacing.x10 }}>{user?.accountType}</StyledText>
+          </View>
+        ) : null}
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}>
+          <HomeHashtag size={20} color={Colors.neutral.brand} />
+
+          <StyledText style={{ marginLeft: spacing.x10 }}>Denomination</StyledText>
+          <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
+          <StyledText>{user?.profile.churchType}</StyledText>
+          {user?.profile.churchSubType ? (
+            <>
+              <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
+              <StyledText style={{ marginHorizontal: spacing.x10 }}>
+                {user?.profile.churchSubType}
+              </StyledText>
+            </>
+          ) : null}
+        </View>
+
+        {user?.website ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}>
+            <Link21 size={20} color={Colors.neutral.brand} />
+            <TouchableOpacity
+              onPress={() =>
+                OpenURLButton(
+                  `${
+                    user?.website.indexOf('https://') == -1
+                      ? `https://${user?.website}`
+                      : user?.website
+                  }`
+                )
+              }
+              style={{ justifyContent: 'center', marginLeft: spacing.x10 }}
+            >
+              <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                {user?.website}
+              </StyledText>
+            </TouchableOpacity>
+          </View>
         ) : null}
         {direction == 'down' ? null : (
           <Animated.View>

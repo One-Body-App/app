@@ -233,7 +233,7 @@ const Search = () => {
             }
           }}
           leftIcon={
-            <View>
+            <View style={{ justifyContent: 'center' }}>
               {isLoading ? (
                 <ActivityIndicator
                   animating={isLoading}
@@ -424,7 +424,6 @@ const Search = () => {
                       <View style={{ flex: 1, justifyContent: 'center' }}>
                         <View
                           style={{
-                            justifyContent: 'center',
                             alignItems: 'center',
                           }}
                         >

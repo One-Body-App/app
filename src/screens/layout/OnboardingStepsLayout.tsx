@@ -1,5 +1,5 @@
 import Button from '@/src/components/Button';
-import { Colors } from '@/src/styles';
+import { Colors, Spacing } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
@@ -41,7 +41,13 @@ const OnboardingStepsLayout = ({
   disabled,
 }: Props) => {
   return (
-    <SafeAreaView style={{ flex: 1, marginHorizontal: spacing.x24 }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        marginHorizontal: spacing.x24,
+        marginBottom: Platform.OS == 'android' ? spacing.x24 : 0,
+      }}
+    >
       <View style={{ marginTop: spacing.x10 }}>
         {onboardingType == AccountType.individual ? (
           <View style={{ flexDirection: 'row' }}>

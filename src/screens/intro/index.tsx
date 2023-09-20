@@ -1,23 +1,21 @@
 import React from 'react';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 import { header, subheader } from '@/src/styles/typography';
 import { StackScreenProps } from '@react-navigation/stack';
-import {
-  Image,
-  SafeAreaView,
-  Text,
-  TouchableHighlight,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { Colors, Typography } from '@/src/styles';
+import { View } from 'react-native';
+import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import FastImage from 'react-native-fast-image';
+import { StyledText } from '@/src/components/styled/Text';
+import Button from '@/src/components/Button';
+import { useTheme } from '@react-navigation/native';
 
-type Props = StackScreenProps<RootNonUserStackParamList, 'Intro'>;
+type Props = StackScreenProps<MainStackParamList, 'Intro'>;
 
 const IntroScreen = ({ route, navigation }: Props) => {
+  const { colors } = useTheme();
+
   return (
     <UserStepsLayout>
       <>
@@ -40,18 +38,20 @@ const IntroScreen = ({ route, navigation }: Props) => {
             <View style={{ flex: 1, paddingBottom: 40 }}>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-                  <Text style={[header.h2, { color: Colors.neutral.brand, fontWeight: 'bold' }]}>
+                  <StyledText
+                    style={[header.h2, { color: Colors.neutral.brand, fontWeight: 'bold' }]}
+                  >
                     Welcome to{' '}
-                  </Text>
-                  <Text
+                  </StyledText>
+                  <StyledText
                     style={[header.h2, { color: Colors.primarySapphire.brand, fontWeight: 'bold' }]}
                   >
                     OneBody
-                  </Text>
+                  </StyledText>
                 </View>
 
                 <View style={{ marginHorizontal: 50 }}>
-                  <Text
+                  <StyledText
                     style={[
                       subheader.M,
                       { color: Colors.neutral[300], textAlign: 'center', marginTop: 15 },
@@ -59,28 +59,28 @@ const IntroScreen = ({ route, navigation }: Props) => {
                   >
                     Connect with Christian leaders and social influencers from around the globe with
                     One Body Christian media and social platform
-                  </Text>
+                  </StyledText>
                 </View>
               </View>
 
               <View style={{ marginHorizontal: 20 }}>
-                <TouchableOpacity
-                  style={[button.primary, { marginBottom: 15 }]}
+                <Button
+                  btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
                   onPress={() => {
                     navigation.navigate('AccountType');
                   }}
-                >
-                  <Text style={{ color: '#FFF' }}>Create a free Account</Text>
-                </TouchableOpacity>
+                  text="Create a free Account"
+                  btnTextStyle={{ color: 'white' }}
+                />
 
-                <TouchableOpacity
-                  style={button.outline}
+                <Button
+                  btnStyle={[button.outline, { flex: 1 }]}
                   onPress={() => {
                     navigation.navigate('Login');
                   }}
-                >
-                  <Text>I have an account</Text>
-                </TouchableOpacity>
+                  text="I have an account"
+                  btnTextStyle={{ color: colors.text }}
+                />
               </View>
             </View>
           </View>

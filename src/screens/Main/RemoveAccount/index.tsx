@@ -146,9 +146,15 @@ const RemoveAccount = ({ navigation }: Props) => {
                               name="radio-button-on"
                               size={20}
                               color={Colors.primarySapphire.brand}
+                              style={{ marginRight: spacing.x10 }}
                             />
                           ) : (
-                            <Icon name="radio-button-off" size={20} color={Colors.neutral[200]} />
+                            <Icon
+                              name="radio-button-off"
+                              size={20}
+                              color={Colors.neutral[200]}
+                              style={{ marginRight: spacing.x10 }}
+                            />
                           )
                         ) : null
                       }

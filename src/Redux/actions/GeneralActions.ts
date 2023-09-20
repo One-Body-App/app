@@ -1,6 +1,6 @@
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { ACTIONS } from '../action-types';
-import { RootNonUserStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
+import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
 
 export const comback = (data: Record<string, any>) => ({
   type: ACTIONS.COMEBACK,
@@ -51,7 +51,7 @@ export const setFaqs = (data: Record<string, any>) => ({
 });
 
 export const setLoginVerificationBackPage = (
-  screen: keyof SettingsStackParamsList | keyof RootNonUserStackParamList,
+  screen: keyof SettingsStackParamsList | keyof MainStackParamList,
   params?: Record<string, string>
 ) => ({
   type: ACTIONS.SET_LOGIN_VERIFICATION_BACK_PAGE,

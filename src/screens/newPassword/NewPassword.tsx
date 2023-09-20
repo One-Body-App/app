@@ -28,7 +28,7 @@ import Toast from 'react-native-simple-toast';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { RootNonUserStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
+import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   CompositeScreenProps,
@@ -46,13 +46,10 @@ import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import { useToast } from 'react-native-toast-notifications';
 
-type NewPasswordScreenRouteProp = RouteProp<RootNonUserStackParamList, 'NewPassword'>;
-type ProfileScreenNavigationProp = NativeStackNavigationProp<
-  RootNonUserStackParamList,
-  'NewPassword'
->;
+type NewPasswordScreenRouteProp = RouteProp<MainStackParamList, 'NewPassword'>;
+type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'NewPassword'>;
 
-type Props = RootNonUserStackParamList['ConfirmLogin'];
+type Props = MainStackParamList['ConfirmLogin'];
 
 const NewPassword = ({ oobCode, ...props }: Props) => {
   const dispatch = useDispatch();

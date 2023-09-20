@@ -13,7 +13,7 @@ import Button from '@/src/components/Button';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { StackScreenProps } from '@react-navigation/stack';
 // import { ParamListBase } from '@react-navigation/native';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { fontWeight } from '@/src/styles/typography';
@@ -27,7 +27,7 @@ import { spacing } from '@/src/styles/spacing';
 import { StyledText } from '@/src/components/styled/Text';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 
-type Props = StackScreenProps<RootNonUserStackParamList, 'AccountType'>;
+type Props = StackScreenProps<MainStackParamList, 'AccountType'>;
 
 const AccountType = ({ route, navigation }: Props) => {
   const [accountType, setAccountType] = useState<AccountTypeType | null>(null);

@@ -59,6 +59,7 @@ const OnboardingIntro = ({ navigation }: Props) => {
       style={{
         flex: 1,
         marginHorizontal: spacing.x24,
+        marginBottom: Platform.OS == 'android' ? spacing.x24 : 0,
       }}
     >
       <View

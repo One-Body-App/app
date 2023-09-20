@@ -26,7 +26,7 @@ export const processLogin = async (
       route: 'user/my-profile',
       verb: 'get',
     });
-    console.log(userProfileResult, 'userProfileResultuserProfileResultuserProfileResult');
+
     if (userProfileResult.status == 200) {
       if (userProfileResult.response == '') {
         setNewUserCredentials(userCredentials);

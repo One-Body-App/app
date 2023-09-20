@@ -152,7 +152,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
                 }
               }}
               leftIcon={
-                <View>
+                <View style={{ justifyContent: 'center' }}>
                   <SearchIcon
                     style={{ height: 20, width: 20, marginRight: spacing.x10 }}
                     stroke={Colors.neutral[300]}

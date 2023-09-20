@@ -37,11 +37,11 @@ const SettingsStack = () => {
         component={Settings}
         options={{ headerShown: false, contentStyle: { backgroundColor: Colors.neutral[700] } }}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="ConfirmLogin"
         component={ConfirmLogin}
         options={{ ...headerOptions, presentation: 'modal' }}
-      />
+      /> */}
 
       <Stack.Screen
         name="NotificationSettings"

@@ -24,7 +24,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { useTheme } from '@react-navigation/native';
 import Recaptcha, { RecaptchaHandles } from 'react-native-recaptcha-that-works';
 import { ScrollView } from 'react-native';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { button } from '@/src/styles/buttons';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
@@ -42,7 +42,7 @@ import { ApiCall } from '@/src/Services/api';
 
 const { width: wWidth } = Dimensions.get('window');
 
-type Props = StackScreenProps<RootNonUserStackParamList, 'SignUp'>;
+type Props = StackScreenProps<MainStackParamList, 'SignUp'>;
 const animatedBarWidth = new Animated.Value(0);
 const animatedInnerBarWidth = new Animated.Value(0);
 const widthByPercent = (percentage: number, containerWidth = wWidth) => {

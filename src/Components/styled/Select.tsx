@@ -136,7 +136,7 @@ export const StyledSelect: FC<Props> = ({
                 returnKeyType={'search'}
                 placeholder="Search"
                 leftIcon={
-                  <View>
+                  <View style={{ justifyContent: 'center' }}>
                     <SearchIcon
                       style={{ height: 15, width: 15, marginRight: spacing.x10 }}
                       stroke={Colors.neutral[200]}

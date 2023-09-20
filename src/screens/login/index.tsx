@@ -6,12 +6,12 @@ import LoginComponent from '@/src/components/loginComponent';
 import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
 
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { useTheme } from '@react-navigation/native';
 import { Colors } from '@/src/styles';
 
-type Props = StackScreenProps<RootNonUserStackParamList, 'Login'>;
+type Props = StackScreenProps<MainStackParamList, 'Login'>;
 
 const Login = ({ route, navigation }: Props) => {
   const loginProviders = ['password', 'google.com', 'facebook.com', 'twitter.com', 'apple'];

@@ -19,9 +19,9 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 
-interface Props extends StackScreenProps<RootNonUserStackParamList, 'SignUp'> {
+interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
   errorFromLogin?: string;
 
   socialLogin: Function;

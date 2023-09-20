@@ -272,7 +272,7 @@ const Connections = ({ navigation }: Props) => {
                 setSearchChannelsText(text);
               }}
               leftIcon={
-                <View>
+                <View style={{ justifyContent: 'center' }}>
                   {isLoading ? (
                     <ActivityIndicator
                       animating={isLoading}
@@ -454,39 +454,37 @@ const Connections = ({ navigation }: Props) => {
               flex: 1,
             }}
           >
-            <View style={{ paddingHorizontal: spacing.x24, flex: 1 }}>
-              <View style={{ flex: 1 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    flex: 1,
+            <View style={{ paddingHorizontal: spacing.x24, justifyContent: 'center' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  paddingVertical: spacing.x16,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                  {isLoading ? (
+                    <ActivityIndicator
+                      animating={isLoading}
+                      size="small"
+                      color={Colors.neutral[200]}
+                      style={{ marginRight: spacing.x10 }}
+                    />
+                  ) : null}
+                  <StyledText style={Typography.fontSize.x4}>My Interests</StyledText>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    // setModalVisible(false);
+                    setShowInterestModal(false);
                   }}
                 >
-                  <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-                    {isLoading ? (
-                      <ActivityIndicator
-                        animating={isLoading}
-                        size="small"
-                        color={Colors.neutral[200]}
-                        style={{ marginRight: spacing.x10 }}
-                      />
-                    ) : null}
-                    <StyledText style={Typography.fontSize.x4}>My Interests</StyledText>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      // setModalVisible(false);
-                      setShowInterestModal(false);
-                    }}
-                  >
-                    <MaterialCommunityIcons
-                      name="window-close"
-                      size={18}
-                      color={Colors.primary.brand}
-                    />
-                  </TouchableOpacity>
-                </View>
+                  <MaterialCommunityIcons
+                    name="window-close"
+                    size={18}
+                    color={Colors.primary.brand}
+                  />
+                </TouchableOpacity>
               </View>
             </View>
             <View style={{ flex: 30, justifyContent: 'space-around' }}>

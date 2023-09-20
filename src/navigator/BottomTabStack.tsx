@@ -67,10 +67,10 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
 
         tabBarLabelStyle: { paddingTop: 4 },
         tabBarStyle: {
-          backgroundColor: '#ffffffe6',
+          backgroundColor: Platform.OS == 'ios' ? '#ffffffe6' : '#fff',
           borderTopWidth: 1,
           borderTopColor: Colors.neutral[800],
-          paddingVertical: 10,
+          paddingVertical: Platform.OS == 'ios' ? 10 : 0,
         },
 
         tabBarHideOnKeyboard: true,

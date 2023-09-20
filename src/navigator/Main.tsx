@@ -45,8 +45,8 @@ import OrgnizationSteps from '../screens/main/OrgnizationSteps';
 import {
   HomeStackParamsList,
   MainDrawerParamsList,
+  MainStackParamList,
   OnboardingStackParamList,
-  RootNonUserStackParamList,
   SettingsStackParamsList,
 } from './types';
 import messaging from '@react-native-firebase/messaging';
@@ -73,35 +73,13 @@ import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import { Home3, Profile2User } from 'iconsax-react-native';
 
-const NonUserStack = createNativeStackNavigator<RootNonUserStackParamList>();
-const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
+import DrawerNav from './DrawerStack';
 
-type HeaderProps = Omit<TextProps, 'style'> & {
-  tintColor?: string;
-  style?: Animated.WithAnimatedValue<StyleProp<TextStyle>>;
-};
-
-function getHeaderTitle(route: Partial<Route<string>>) {
-  // If the focused route is not found, we need to assume it's the initial screen
-  // This can happen during if there hasn't been any navigation inside the screen
-  // In our case, it's "Feed" as that's the first screen inside the navigator
-  const routeName = getFocusedRouteNameFromRoute(route) ?? 'HomeTab';
-
-  switch (routeName) {
-    case 'HomeTab':
-      return 'Home';
-    case 'SearchTab':
-      return 'Search';
-    case 'ExploreTab':
-      return 'Discover Accounts';
-    case 'MyProfileTab':
-      return 'My Account';
-  }
-}
+const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 export const headerOptions: NativeStackNavigationOptions = {
   headerShadowVisible: false,
-  headerTransparent: true,
+  headerTransparent: Platform.OS == 'ios' ? true : false,
   headerBackTitleVisible: false,
   headerTitle() {
     return (
@@ -189,31 +167,36 @@ const Main = () => {
     }
   }, [token, user, initializing]);
 
-  const linking: LinkingOptions<
-    HomeStackParamsList & MainDrawerParamsList & RootNonUserStackParamList & SettingsStackParamsList
-  > = {
+  const linking: LinkingOptions<MainStackParamList> = {
     prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
     config: {
       screens: {
-        Settings: {
-          screens: {
-            ConfirmLogin: {
-              path: '/auth/:action/:provider?',
-            },
-          },
+        ConfirmLogin: {
+          path: '/auth/:action/:provider?',
         },
+        // Settings: {
+        //   screens: {
+        //     ConfirmLogin: {
+        //       path: '/auth/:action/:provider?',
+        //     },
+        //   },
+        // },
         SignUp: {
           path: '/signup/:action',
         },
         Login: {
           path: '/login/:action',
         },
-        InfluencerStepTwo: {
-          path: '/influencer/login/:action',
-        },
+        MainRoot: {
+          screens: {
+            InfluencerStepTwo: {
+              path: '/influencer/login/:action',
+            },
 
-        InfluencerSettings: {
-          path: '/influencer-settings/:action/:service',
+            InfluencerSettings: {
+              path: '/influencer-settings/:action/:service',
+            },
+          },
         },
       },
     },
@@ -296,156 +279,43 @@ const Main = () => {
       ></ImageBackground>
     );
   }
-  // console.log(!!user, !!token, !!authState.getProfileData, 'asdfhasjdkfhajksdhfkjashd');
 
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
       {/* <AppProvider> */}
 
-      {user &&
-      token &&
-      authState.getProfileData &&
-      (authState.getProfileData?.accountType == 'individual' ||
-        authState.getProfileData?.accountType == 'organization') &&
-      user?.emailVerified ? (
-        <>
-          {authState.getProfileData.isProfileCompleted ? (
-            <DrawerStack.Navigator
-              screenOptions={{
-                drawerType:
-                  dimensions.width >= 768 ? 'permanent' : Platform.OS == 'ios' ? 'slide' : 'front',
-                headerTintColor: Colors.primary.brand,
-
-                drawerActiveBackgroundColor: Colors.neutral[600],
-                headerStyle: {
-                  backgroundColor: 'white',
-                },
-              }}
-              drawerContent={(props) => <DrawerContent {...props} />}
-            >
-              <DrawerStack.Screen
-                name="Main"
-                component={MainTabStack}
-                options={({ route, navigation }) => ({
-                  title: 'Home',
-                  drawerIcon: ({ color, size, focused }) => {
-                    return <Home3 size={size} color={color} />;
-                  },
-
-                  headerTitleAlign: getHeaderTitle(route) == 'Home' ? 'center' : 'left',
-                  headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
-                    const { colors } = useTheme();
-                    const title = getHeaderTitle(route);
-
-                    if (title == 'Home') {
-                      return (
-                        <View style={{ height: 28, width: 28 }}>
-                          <Logo style={{ height: 28, width: 28 }} />
-                        </View>
-                      );
-                    }
-                    return (
-                      <Animated.Text
-                        accessibilityRole="header"
-                        aria-level="1"
-                        numberOfLines={1}
-                        children={title}
-                        {...rest}
-                        style={[
-                          styles.title,
-                          { color: tintColor === undefined ? colors.text : tintColor },
-                          style,
-                        ]}
-                      />
-                    );
-                  },
-
-                  headerRight() {
-                    const routeName = getHeaderTitle(route);
-                    if (routeName == 'Home') {
-                      return (
-                        <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              navigation.navigate('Notifications');
-                            }}
-                            // style={{ paddingRight: spacing.x24 }}
-                          >
-                            <Notification
-                              style={{ height: 24, width: 24 }}
-                              stroke={Colors.primary.brand}
-                              strokeWidth={0.2}
-                            />
-                          </TouchableOpacity>
-                          {/* <TouchableOpacity onPress={() => {}}>
-                            <Message
-                              style={{ height: 24, width: 24 }}
-                              stroke={Colors.primary.brand}
-                              strokeWidth={0.2}
-                            />
-                          </TouchableOpacity> */}
-                        </View>
-                      );
-                    }
-                  },
-                })}
-              />
-
-              <DrawerStack.Screen
-                name="Saved"
-                component={Saved}
-                options={{
-                  title: 'Saved Posts',
-                  drawerIcon: ({ color, size, focused }) => {
-                    return <Feather name="bookmark" size={size} color={color} />;
-                  },
-                }}
-              />
-
-              <DrawerStack.Screen
-                name="Connections"
-                component={Connections}
-                options={{
-                  title: 'My Connections',
-                  drawerIcon: ({ color, size, focused }) => {
-                    return <Profile2User size={size} color={color} />;
-                  },
-                }}
-              />
-
-              <DrawerStack.Screen
-                name="Settings"
-                component={SettingsStack}
-                options={{
-                  drawerItemStyle: { height: 0 },
-                }}
-              />
-
-              {/* <DrawerStack.Screen name="Help" component={Help} /> */}
-            </DrawerStack.Navigator>
-          ) : (
-            <OnboardingStack />
-          )}
-        </>
-      ) : (
-        <NonUserStack.Navigator initialRouteName="Intro">
-          <NonUserStack.Screen name="Intro" component={Intro} options={{ headerShown: false }} />
-          <NonUserStack.Screen name="AccountType" component={AccountType} options={headerOptions} />
-          <NonUserStack.Screen name="Login" component={Login} options={headerOptions} />
-          <NonUserStack.Screen name="SignUp" component={Signup} options={headerOptions} />
-
-          <NonUserStack.Screen
-            name="ForgotPassword"
-            component={ForgotPassword}
-            options={headerOptions}
+      <MainStack.Navigator>
+        {user &&
+        token &&
+        authState.getProfileData &&
+        (authState.getProfileData?.accountType == 'individual' ||
+          authState.getProfileData?.accountType == 'organization') &&
+        user?.emailVerified ? (
+          <MainStack.Screen
+            name="MainRoot"
+            component={DrawerNav}
+            options={{ headerShown: false }}
           />
-          <NonUserStack.Screen
-            name="ConfirmLogin"
-            component={ConfirmLogin}
-            options={{ presentation: 'modal', ...headerOptions }}
-          />
-        </NonUserStack.Navigator>
-      )}
+        ) : (
+          <>
+            <MainStack.Screen name="Intro" component={Intro} options={{ headerShown: false }} />
+            <MainStack.Screen name="AccountType" component={AccountType} options={headerOptions} />
+            <MainStack.Screen name="Login" component={Login} options={headerOptions} />
+            <MainStack.Screen name="SignUp" component={Signup} options={headerOptions} />
+
+            <MainStack.Screen
+              name="ForgotPassword"
+              component={ForgotPassword}
+              options={headerOptions}
+            />
+          </>
+        )}
+        <MainStack.Screen
+          name="ConfirmLogin"
+          component={ConfirmLogin}
+          options={{ presentation: 'modal', ...headerOptions }}
+        />
+      </MainStack.Navigator>
 
       {/* </AppProvider> */}
     </NavigationContainer>
@@ -453,21 +323,3 @@ const Main = () => {
 };
 
 export default Main;
-
-const styles = StyleSheet.create({
-  title: Platform.select({
-    ios: {
-      fontSize: 17,
-      fontWeight: '600',
-    },
-    android: {
-      fontSize: 20,
-      fontFamily: 'sans-serif-medium',
-      fontWeight: 'normal',
-    },
-    default: {
-      fontSize: 18,
-      fontWeight: '500',
-    },
-  }),
-});

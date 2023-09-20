@@ -400,7 +400,7 @@ const Explore = ({ navigation }: Props) => {
               setSearchChannelsToFollowText(text);
             }}
             leftIcon={
-              <View>
+              <View style={{ justifyContent: 'center' }}>
                 {isLoading ? (
                   <ActivityIndicator
                     animating={isLoading}
@@ -589,29 +589,29 @@ const Explore = ({ navigation }: Props) => {
               flex: 1,
             }}
           >
-            <View style={{ paddingHorizontal: spacing.x24, flex: 1 }}>
-              <View style={{ flex: 1 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    flex: 1,
+            <View style={{ paddingHorizontal: spacing.x24, justifyContent: 'center' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignContent: 'center',
+                  paddingVertical: spacing.x16,
+                }}
+              >
+                <StyledText style={Typography.fontSize.x4}>My Interests</StyledText>
+                <TouchableOpacity
+                  style={{ justifyContent: 'center' }}
+                  onPress={() => {
+                    // setModalVisible(false);
+                    setShowInterestModal(false);
                   }}
                 >
-                  <StyledText style={Typography.fontSize.x4}>My Interests</StyledText>
-                  <TouchableOpacity
-                    onPress={() => {
-                      // setModalVisible(false);
-                      setShowInterestModal(false);
-                    }}
-                  >
-                    <MaterialCommunityIcons
-                      name="window-close"
-                      size={18}
-                      color={Colors.primary.brand}
-                    />
-                  </TouchableOpacity>
-                </View>
+                  <MaterialCommunityIcons
+                    name="window-close"
+                    size={18}
+                    color={Colors.primary.brand}
+                  />
+                </TouchableOpacity>
               </View>
             </View>
             <View style={{ flex: 30, justifyContent: 'space-around' }}>
@@ -688,17 +688,19 @@ const Explore = ({ navigation }: Props) => {
               flex: 1,
             }}
           >
-            <View style={{ paddingHorizontal: spacing.x24, flex: 1 }}>
-              <View>
+            <View style={{ paddingHorizontal: spacing.x24, flex: 1, justifyContent: 'center' }}>
+              <View style={{ justifyContent: 'center' }}>
                 <View
                   style={{
                     flexDirection: 'row',
                     justifyContent: 'space-between',
-                    marginBottom: spacing.x24,
+                    alignContent: 'center',
+                    paddingVertical: spacing.x16,
                   }}
                 >
                   <StyledText style={Typography.fontSize.x4}>My Connections</StyledText>
                   <TouchableOpacity
+                    style={{ justifyContent: 'center' }}
                     onPress={() => {
                       // setModalVisible(false);
                       setShowFollowingModal(false);
@@ -711,40 +713,41 @@ const Explore = ({ navigation }: Props) => {
                     />
                   </TouchableOpacity>
                 </View>
-                <View style={{ marginBottom: spacing.x24 }}>
-                  <StyledTextInput
-                    clearButtonMode="always"
-                    returnKeyType={'search'}
-                    placeholder="Search"
-                    onChangeText={(text) => {
-                      const newSearchChannels = [];
-                      for (let i = 0; i < following.length; i++) {
-                        if (following[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                          newSearchChannels.push(following[i]);
-                        }
-                        setSearchChannels(newSearchChannels);
-                      }
-                    }}
-                    leftIcon={
-                      <View>
-                        {isLoading ? (
-                          <ActivityIndicator
-                            animating={isLoading}
-                            size="small"
-                            color={Colors.neutral[200]}
-                            style={{ marginRight: spacing.x10 }}
-                          />
-                        ) : (
-                          <SearchIcon
-                            style={{ height: 20, width: 20, marginRight: spacing.x10 }}
-                            stroke={Colors.neutral[200]}
-                          />
-                        )}
-                      </View>
-                    }
-                  />
-                </View>
               </View>
+              <View style={{ marginBottom: spacing.x24 }}>
+                <StyledTextInput
+                  clearButtonMode="always"
+                  returnKeyType={'search'}
+                  placeholder="Search"
+                  onChangeText={(text) => {
+                    const newSearchChannels = [];
+                    for (let i = 0; i < following.length; i++) {
+                      if (following[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                        newSearchChannels.push(following[i]);
+                      }
+                      setSearchChannels(newSearchChannels);
+                    }
+                  }}
+                  leftIcon={
+                    <View style={{ justifyContent: 'center' }}>
+                      {isLoading ? (
+                        <ActivityIndicator
+                          animating={isLoading}
+                          size="small"
+                          color={Colors.neutral[200]}
+                          style={{ marginRight: spacing.x10 }}
+                        />
+                      ) : (
+                        <SearchIcon
+                          style={{ height: 20, width: 20, marginRight: spacing.x10 }}
+                          stroke={Colors.neutral[200]}
+                        />
+                      )}
+                    </View>
+                  }
+                />
+              </View>
+
               <View style={{ flex: 1, justifyContent: 'space-around' }}>
                 <FlatList
                   data={searchChannels}

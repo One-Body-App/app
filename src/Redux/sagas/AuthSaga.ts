@@ -338,7 +338,7 @@ function* getProfileSaga({ params }) {
       token: params.token,
       verb: 'get',
     });
-    // console.log(res);
+
     if (res?.status == 200) {
       yield put(getProfile.Success({ token: params.token, ...res?.response }));
     } else {

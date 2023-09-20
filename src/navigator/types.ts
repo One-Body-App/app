@@ -254,7 +254,8 @@ export type OnboardingStackParamList = {
   };
 };
 
-export type RootNonUserStackParamList = {
+export type MainStackParamList = {
+  MainRoot: undefined;
   NewPassword: undefined;
   Intro: undefined;
   AccountType: undefined;
@@ -284,7 +285,7 @@ export type RootNonUserStackParamList = {
 };
 
 type ConfirmLoginScreen = {
-  toScreen?: keyof RootNonUserStackParamList | keyof SettingsStackParamsList;
+  toScreen?: keyof MainStackParamList | keyof SettingsStackParamsList;
   error?: string;
   onlyPassword?: boolean;
   mode?: string;

@@ -1,6 +1,7 @@
 import { Colors, Typography } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
 import { ReactElement } from 'react';
-import { SafeAreaView, Text, View } from 'react-native';
+import { Platform, SafeAreaView, Text, View } from 'react-native';
 
 type Props = {
   children: ReactElement;
@@ -12,7 +13,13 @@ const UserStepsLayout = ({ children, backgroundColor }: Props) => {
     <SafeAreaView style={{ flex: 1, backgroundColor: backgroundColor ?? undefined }}>
       {children}
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          paddingBottom: Platform.OS == 'android' ? spacing.x10 : 0,
+        }}
+      >
         <Text style={[Typography.subheader.M, { color: Colors.primarySapphire.brand }]}>
           Unify the Body{' '}
         </Text>

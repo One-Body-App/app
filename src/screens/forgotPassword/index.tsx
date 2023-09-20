@@ -16,7 +16,7 @@ import { styles } from './styles';
 import { useTheme } from '@react-navigation/native';
 
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
@@ -25,7 +25,7 @@ import { borderRadius } from '@/src/styles/outlines';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
-type Props = StackScreenProps<RootNonUserStackParamList, 'ForgotPassword'>;
+type Props = StackScreenProps<MainStackParamList, 'ForgotPassword'>;
 
 const ForgotPassword = ({ navigation }: Props) => {
   const [email, setEmail] = React.useState<string>('');

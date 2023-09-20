@@ -1,7 +1,7 @@
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { AnyAction, Reducer } from 'redux';
 import { ACTIONS } from '../action-types';
-import { RootNonUserStackParamList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 
 type GeneralReducers = {
   comeBack: null;
@@ -10,7 +10,7 @@ type GeneralReducers = {
   allSms: [];
   chats: [];
   faqs: [];
-  loginVerficationBackPage?: keyof RootNonUserStackParamList;
+  loginVerficationBackPage?: keyof MainStackParamList;
   loginVerficationBackPageParams?: Record<string, any>;
 };
 

@@ -50,7 +50,7 @@ import G from '@/assets/svg/G.svg';
 import { CompositeScreenProps, useNavigation, useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { RootNonUserStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 import { StyledText } from '../styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
@@ -60,10 +60,7 @@ import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { StyledTextInput } from '../styled/TextInput';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-type ProfileScreenNavigationProp = NativeStackNavigationProp<
-  RootNonUserStackParamList,
-  'ConfirmLogin'
->;
+type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
 
 interface Props {
   showConfirmationEmailMessage: boolean;
@@ -227,9 +224,8 @@ const LoginComponent: FC<Props> = ({
         dispatch(logout());
       }
     };
-    console.log(newUserCredentials, 'asdf');
+
     if (newUserCredentials) {
-      console.log('uahjksdf');
       checkNewUserCredentials();
     }
   }, [newUserCredentials]);
@@ -280,7 +276,7 @@ const LoginComponent: FC<Props> = ({
                 if (toScreen) {
                   navigation.goBack();
 
-                  navigation.push(toScreen as keyof RootNonUserStackParamList, {
+                  navigation.push(toScreen as keyof MainStackParamList, {
                     setError: seterror,
                     ...toScreenParams,
                   });
@@ -340,7 +336,7 @@ const LoginComponent: FC<Props> = ({
           } else {
             if (toScreen) {
               navigation.goBack();
-              navigation.push(toScreen as keyof RootNonUserStackParamList, {
+              navigation.push(toScreen as keyof MainStackParamList, {
                 setError: seterror,
                 ...toScreenRouteParams,
               });
@@ -367,7 +363,6 @@ const LoginComponent: FC<Props> = ({
         setState({ ...state, emailError, passwordError });
       }
     } catch (error: any) {
-      console.log(error);
       let message = 'User/password combination not found';
       if (
         error.message &&
@@ -490,7 +485,7 @@ const LoginComponent: FC<Props> = ({
           if (toScreen) {
             navigation.goBack();
 
-            navigation.push(toScreen as keyof RootNonUserStackParamList, {
+            navigation.push(toScreen as keyof MainStackParamList, {
               setError: seterror,
               ...toScreenParams,
             });
@@ -547,7 +542,7 @@ const LoginComponent: FC<Props> = ({
           if (toScreen) {
             navigation.goBack();
 
-            navigation.push(toScreen as keyof RootNonUserStackParamList, {
+            navigation.push(toScreen as keyof MainStackParamList, {
               setError: seterror,
               ...toScreenParams,
             });
@@ -970,7 +965,6 @@ const LoginComponent: FC<Props> = ({
                   ]}
                   onPress={() => signInUser()}
                   btnTextStyle={{ color: '#FFF' }}
-                  disabledBtnTextStyle={{ color: Colors.primarySapphire[600] }}
                 />
               </View>
             ) : null}

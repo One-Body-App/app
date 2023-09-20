@@ -1,6 +1,14 @@
 import { poppins } from '@/src/styles/typography';
 import { ReactElement, forwardRef } from 'react';
-import { StyleSheet, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  TextInput,
+  TextInputProps,
+  TextStyle,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { StyledText } from './Text';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
@@ -45,7 +53,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
           flexDirection: 'row',
           backgroundColor: backgroundColorWrapper,
           paddingHorizontal: 14,
-          paddingVertical: 12,
+          paddingVertical: Platform.OS == 'ios' ? 12 : 0,
           borderRadius: borderRadius.small,
           borderWidth: 1,
           borderColor: Colors.neutral[700],

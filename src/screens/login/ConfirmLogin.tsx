@@ -15,11 +15,11 @@ import { setLoginVerificationBackPage } from '@/src/Redux/actions/GeneralActions
 import auth from '@react-native-firebase/auth';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import NewPassword from '../newPassword/NewPassword';
-import { RootNonUserStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
+import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors } from '@/src/styles';
 
-type Props = StackScreenProps<RootNonUserStackParamList, 'ConfirmLogin'>;
+type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
 const ConfirmLogin = ({ route, navigation }: Props) => {
   const [enabledLoginProviders, setEnabledLoginProviders] = useState<string[]>();
