@@ -350,7 +350,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   value={twiterState[0].twitterUsername}
                   returnKeyType={'next'}
                   mode="outlined"
-                  activeOutlineColor={'#5B7279'}
+                  activeOutlinecolor={Colors.primarySapphire[500]}
                   outlineColor={'#9EA1A2'}
                   theme={{ roundness: 10 }}
                   label={'@Username'}
@@ -373,7 +373,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   value={twiterState[0].twitterHandler}
                   returnKeyType={'next'}
                   mode="outlined"
-                  activeOutlineColor={'#5B7279'}
+                  activeOutlinecolor={Colors.primarySapphire[500]}
                   theme={{ roundness: 10 }}
                   outlineColor={'#9EA1A2'}
                   label={'Twitter link'}
@@ -397,7 +397,7 @@ const InfluencerStepTwo = ({ navigation }) => {
                   value={twiterState[0].twitterTitle}
                   returnKeyType={'next'}
                   mode="outlined"
-                  activeOutlineColor={'#5B7279'}
+                  activeOutlinecolor={Colors.primarySapphire[500]}
                   theme={{ roundness: 10 }}
                   outlineColor={'#9EA1A2'}
                   label={'Title/Description'}
@@ -437,7 +437,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               returnKeyType={'next'}
               theme={{ roundness: 10 }}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               outlineColor={'#9EA1A2'}
               label={'@Username'}
               onFocus={() => setState([{ ...state[0], instagramUsernameError: '' }])}
@@ -459,7 +459,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               value={state[0].instagramHandler}
               returnKeyType={'next'}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               theme={{ roundness: 10 }}
               outlineColor={'#9EA1A2'}
               label={'Twitter link'}
@@ -483,7 +483,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               value={state[0].instagramTitle}
               returnKeyType={'next'}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               theme={{ roundness: 10 }}
               outlineColor={'#9EA1A2'}
               label={'Title/Description'}
@@ -511,7 +511,7 @@ const InfluencerStepTwo = ({ navigation }) => {
               value={state[0].comments}
               returnKeyType={'done'}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               theme={{ roundness: 10 }}
               // label={'Write comment or any other information related to app...'}
               outlineColor={'#9EA1A2'}

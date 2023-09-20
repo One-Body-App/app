@@ -190,7 +190,7 @@ const ForgotPassword = ({ navigation }: Props) => {
                 }}
                 keyboardType="email-address"
                 mode="outlined"
-                activeOutlineColor={'#5B7279'}
+                activeOutlinecolor={Colors.primarySapphire[500]}
                 label={'E-mail'}
                 autoComplete="email"
               />

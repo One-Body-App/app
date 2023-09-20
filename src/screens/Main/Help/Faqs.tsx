@@ -92,9 +92,9 @@ const Faqs = ({ navigation }) => {
                   {item?.name}
                 </Text>
                 {selectedIndex == index ? (
-                  <AntDesign name="up" color={'#5B7279'} size={15} />
+                  <AntDesign name="up" color={Colors.primarySapphire[500]} size={15} />
                 ) : (
-                  <AntDesign name="down" color={'#5B7279'} size={15} />
+                  <AntDesign name="down" color={Colors.primarySapphire[500]} size={15} />
                 )}
               </TouchableOpacity>
               {selectedIndex == index ? (

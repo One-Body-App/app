@@ -746,7 +746,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               returnKeyType={'next'}
               theme={{ roundness: 10 }}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               outlineColor={'#9EA1A2'}
               label={'@Username'}
               onFocus={() => setState({ ...state, instagramUsernameError: '' })}
@@ -768,7 +768,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               value={state.instagramHandler}
               returnKeyType={'next'}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               theme={{ roundness: 10 }}
               outlineColor={'#9EA1A2'}
               label={'Twitter link'}
@@ -792,7 +792,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               value={state.instagramTitle}
               returnKeyType={'next'}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               theme={{ roundness: 10 }}
               outlineColor={'#9EA1A2'}
               label={'Title/Description'}

@@ -453,7 +453,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               value={state.companyName}
               returnKeyType={'next'}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               label={'Company Name'}
               onFocus={() => setStateError({ ...stateError, companyNameError: '' })}
               // onBlur={() =>
@@ -485,7 +485,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               returnKeyType={'done'}
               mode="outlined"
               value={location_label?.place_name}
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               showSoftInputOnFocus={false}
               onPressIn={() => setCheckIn(true)}
               label={'Company Address'}
@@ -543,7 +543,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 value={state.contactName}
                 returnKeyType={'next'}
                 mode="outlined"
-                activeOutlineColor={'#5B7279'}
+                activeOutlinecolor={Colors.primarySapphire[500]}
                 label={'Full Name'}
                 onFocus={() => setStateError({ ...stateError, contactNameError: '' })}
                 // onBlur={() => {
@@ -566,7 +566,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 ref={inputRefs.contactEmail}
                 value={state.contactEmail}
                 returnKeyType={'next'}
-                activeOutlineColor={'#5B7279'}
+                activeOutlinecolor={Colors.primarySapphire[500]}
                 label={'Email'}
                 onFocus={() => setStateError({ ...stateError, contactEmailError: '' })}
                 // onBlur={() =>
@@ -590,7 +590,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 returnKeyType={'done'}
                 mode="outlined"
                 keyboardType="number-pad"
-                activeOutlineColor={'#5B7279'}
+                activeOutlinecolor={Colors.primarySapphire[500]}
                 label={'Phone number'}
                 onFocus={() => setStateError({ ...stateError, contactPhoneNumberError: '' })}
                 // onBlur={() =>
@@ -651,14 +651,14 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Interests'}
             placeholderTextColor={'black'}
@@ -745,14 +745,14 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Name'}
             placeholderTextColor={'black'}

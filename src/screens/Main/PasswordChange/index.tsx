@@ -123,15 +123,17 @@ const PasswordChange = ({ navigation, route }: Props) => {
             label={'New Password'}
             secureTextEntry={hidePassN ? true : false}
             rightIcon={
-              <MaterialCommunityIcons
-                name={hidePassN ? 'eye-outline' : 'eye-off-outline'}
-                size={20}
-                color={'#5B7279'}
-                style={{
-                  alignSelf: 'center',
-                }}
-                onPress={() => setHidePassN(!hidePassN)}
-              />
+              <View style={{ justifyContent: 'center' }}>
+                <MaterialCommunityIcons
+                  name={hidePassN ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={Colors.primarySapphire[500]}
+                  style={{
+                    alignSelf: 'center',
+                  }}
+                  onPress={() => setHidePassN(!hidePassN)}
+                />
+              </View>
             }
             // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
 
@@ -207,15 +209,17 @@ const PasswordChange = ({ navigation, route }: Props) => {
             label={'Confirm Password'}
             secureTextEntry={hidePassC ? true : false}
             rightIcon={
-              <MaterialCommunityIcons
-                name={hidePassN ? 'eye-outline' : 'eye-off-outline'}
-                size={20}
-                color={'#5B7279'}
-                style={{
-                  alignSelf: 'center',
-                }}
-                onPress={() => setHidePassN(!hidePassN)}
-              />
+              <View style={{ justifyContent: 'center' }}>
+                <MaterialCommunityIcons
+                  name={hidePassN ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={Colors.primarySapphire[500]}
+                  style={{
+                    alignSelf: 'center',
+                  }}
+                  onPress={() => setHidePassN(!hidePassN)}
+                />
+              </View>
             }
             // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
 

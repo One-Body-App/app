@@ -96,7 +96,7 @@ const ConfirmEmail = ({ navigation, route }) => {
         <View style={{ margin: getHeight(5) }}>
           <TextInput
             theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             ref={inputRefs.passwordN}
             value={state.passwordN}
             returnKeyType={'next'}
@@ -109,7 +109,7 @@ const ConfirmEmail = ({ navigation, route }) => {
                   <MaterialCommunityIcons
                     name={hidePassN ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{
                       alignSelf: 'center',
 
@@ -138,7 +138,7 @@ const ConfirmEmail = ({ navigation, route }) => {
 
           <TextInput
             theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             ref={inputRefs.passwordC}
             value={state.passwordC}
             returnKeyType={'done'}
@@ -151,7 +151,7 @@ const ConfirmEmail = ({ navigation, route }) => {
                   <MaterialCommunityIcons
                     name={hidePassC ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={styles.hidepicc}
                     onPress={() => setHidePassC(!hidePassC)}
                   />

@@ -96,7 +96,7 @@ const AddPhoneNumber = ({ navigation, route }) => {
         <View style={{ margin: getHeight(5) }}>
           <TextInput
             theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             ref={inputRefs.phoneNumber}
             value={state.phoneNumber}
             returnKeyType={'done'}
@@ -110,7 +110,7 @@ const AddPhoneNumber = ({ navigation, route }) => {
             //       <AntDesign
             //         name={editPhone ? 'edit' : 'lock'}
             //         size={20}
-            //         color={'#5B7279'}
+            //         color={Colors.primarySapphire[500]}
             //         style={styles.hidepicc}
             //         onPress={() => setEditPhone(!editPhone)}
             //       />

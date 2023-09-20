@@ -470,7 +470,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               mode="outlined"
               label="Date"
               style={{ ...GeneralStyle.input, width: getWidth(80) }}
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               theme={{ roundness: 10 }}
               showSoftInputOnFocus={false}
               onFocus={() => setOpen(true)}
@@ -523,7 +523,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             mode="outlined"
             value={location?.place_name ?? ''}
             theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             showSoftInputOnFocus={false}
             onPressIn={(e) => {
               Keyboard.dismiss();
@@ -549,7 +549,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               location?.place_name.replace(`, ${location_country?.place_name ?? ''}`, '') ?? ''
             }
             theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             showSoftInputOnFocus={false}
             onPressIn={() => {
               if (location_country) setCheckIn(true);
@@ -615,14 +615,14 @@ const IndividualSteps = ({ navigation }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Interests'}
             placeholderTextColor={'black'}
@@ -703,14 +703,14 @@ const IndividualSteps = ({ navigation }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Name'}
             placeholderTextColor={'black'}

@@ -716,12 +716,14 @@ const LoginComponent: FC<Props> = ({
                 placeholder="Password"
                 secureTextEntry={hidePass ? true : false}
                 rightIcon={
-                  <MaterialCommunityIcons
-                    name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-                    size={15}
-                    color={'#5B7279'}
-                    onPress={() => setHidePass(!hidePass)}
-                  />
+                  <View style={{ justifyContent: 'center' }}>
+                    <MaterialCommunityIcons
+                      name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                      size={15}
+                      color={Colors.primarySapphire[500]}
+                      onPress={() => setHidePass(!hidePass)}
+                    />
+                  </View>
                 }
                 onFocus={() => setState({ ...state, passwordError: '' })}
                 onSubmitEditing={() => signInUser()}

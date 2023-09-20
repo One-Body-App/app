@@ -478,15 +478,17 @@ const SignupForm = ({ navigation, route }: Props) => {
               autoComplete="password-new"
               placeholder="Enter your password"
               rightIcon={
-                <MaterialCommunityIcons
-                  name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-                  size={20}
-                  color={'#5B7279'}
-                  style={{
-                    alignSelf: 'center',
-                  }}
-                  onPress={() => setHidePass(!hidePass)}
-                />
+                <View style={{ justifyContent: 'center' }}>
+                  <MaterialCommunityIcons
+                    name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                    size={20}
+                    color={Colors.primarySapphire[500]}
+                    style={{
+                      alignSelf: 'center',
+                    }}
+                    onPress={() => setHidePass(!hidePass)}
+                  />
+                </View>
               }
               autoCorrect={false}
               wrapperStyle={{ marginTop: 15 }}
@@ -570,15 +572,17 @@ const SignupForm = ({ navigation, route }: Props) => {
               placeholder="Confirm your password"
               secureTextEntry={chidePass ? true : false}
               rightIcon={
-                <MaterialCommunityIcons
-                  name={chidePass ? 'eye-outline' : 'eye-off-outline'}
-                  size={20}
-                  color={'#5B7279'}
-                  style={{
-                    alignSelf: 'center',
-                  }}
-                  onPress={() => setcHidePass(!chidePass)}
-                />
+                <View style={{ justifyContent: 'center' }}>
+                  <MaterialCommunityIcons
+                    name={chidePass ? 'eye-outline' : 'eye-off-outline'}
+                    size={20}
+                    color={Colors.primarySapphire[500]}
+                    style={{
+                      alignSelf: 'center',
+                    }}
+                    onPress={() => setcHidePass(!chidePass)}
+                  />
+                </View>
               }
               wrapperStyle={{ marginTop: 15 }}
               onFocus={() => setState({ ...state, cPasswordError: '' })}

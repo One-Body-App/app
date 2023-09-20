@@ -119,14 +119,14 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Interests'}
             placeholderTextColor={'black'}
