@@ -1,7 +1,18 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { Colors } from '@/src/styles';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
 
 export const styles = StyleSheet.create({
+  inputGroup: {
+    backgroundColor: 'white',
+    borderColor: Colors.neutral[800],
+    borderWidth: borderWidth.base,
+    borderRadius: borderRadius.base,
+    padding: spacing.x16,
+  },
+
   container: {
     flex: 1,
   },
@@ -55,7 +66,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: getHeight(1),
   },
-  InputsContainer: { marginTop: 5, marginHorizontal: 10 },
+
   text: { width: '80%', textAlign: 'center' },
 
   TextInput: { backgroundColor: 'white' },

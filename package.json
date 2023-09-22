@@ -1,6 +1,6 @@
 {
   "name": "onebody",
-  "version": "0.1.93",
+  "version": "0.1.94",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -44,6 +44,7 @@
     "html-entities": "^2.4.0",
     "iconsax-react-native": "^0.0.8",
     "lodash": "^4.17.21",
+    "object-to-formdata": "^4.5.1",
     "react": "18.2.0",
     "react-native": "0.72.3",
     "react-native-animated-progress": "^1.0.2",

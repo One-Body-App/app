@@ -4,14 +4,26 @@ import EditProfile from '../screens/main/EditProfile';
 
 import MyProfile from '../screens/main/myProfile';
 import { MyProfileStackParamsList } from './types';
+import { useTheme } from '@react-navigation/native';
+import { Colors } from '../styles';
 
 const Stack = createNativeStackNavigator<MyProfileStackParamsList>();
 
 const ProfileStack = () => {
+  const { colors } = useTheme();
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MyProfile" component={MyProfile} />
-      <Stack.Screen name="EditProfile" component={EditProfile} />
+    <Stack.Navigator>
+      <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfile}
+        options={{
+          headerBackTitleVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          title: 'Edit Profile',
+          contentStyle: { backgroundColor: Colors.neutral[700] },
+        }}
+      />
     </Stack.Navigator>
   );
 };

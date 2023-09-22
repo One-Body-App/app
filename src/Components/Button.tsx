@@ -43,7 +43,7 @@ const Button = ({
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={(event) => (onPress ? onPress(event) : null)}
-        style={disabled ? disabledBtnStyle : btnStyle}
+        style={disabled && disabledBtnStyle ? disabledBtnStyle : btnStyle}
         disabled={disabled}
       >
         <View
@@ -59,7 +59,9 @@ const Button = ({
         >
           {leftIcon}
           {text ? (
-            <StyledText style={disabled ? [disabledBtnTextStyle] : [btnTextStyle]}>
+            <StyledText
+              style={disabled && disabledBtnTextStyle ? [disabledBtnTextStyle] : [btnTextStyle]}
+            >
               {text}
             </StyledText>
           ) : null}

@@ -117,6 +117,7 @@ function* updateProfileRequest(params) {
         params.data.go();
       }
     } else {
+      console.log(res);
       yield put(setLoader(false));
       Alert.alert('Error', 'An error accoured during profile Update', [
         { text: 'Close', onPress: () => console.log('Close Pressed') },

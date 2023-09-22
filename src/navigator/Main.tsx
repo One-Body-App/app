@@ -189,12 +189,27 @@ const Main = () => {
         },
         MainRoot: {
           screens: {
-            InfluencerStepTwo: {
-              path: '/influencer/login/:action',
+            Main: {
+              screens: {
+                ExploreTab: {
+                  screens: {
+                    UserProfile: {
+                      path: '/profile/:id',
+                    },
+                  },
+                },
+              },
             },
+            Settings: {
+              screens: {
+                InfluencerStepTwo: {
+                  path: '/influencer/login/:action',
+                },
 
-            InfluencerSettings: {
-              path: '/influencer-settings/:action/:service',
+                InfluencerSettings: {
+                  path: '/influencer-settings/:action/:service',
+                },
+              },
             },
           },
         },

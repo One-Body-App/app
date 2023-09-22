@@ -4,7 +4,7 @@ import { Text, TextProps } from 'react-native';
 
 export const StyledText: FC<TextProps> = (props) => {
   return (
-    <Text style={[props.style, poppins.base]} {...props}>
+    <Text {...props} style={[poppins.base, props?.style]}>
       {props.children}
     </Text>
   );

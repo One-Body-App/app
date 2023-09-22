@@ -167,7 +167,9 @@ export type SearchStackParamsList = {
 };
 
 export type MyProfileStackParamsList = {
-  MyProfile: undefined;
+  MyProfile: {
+    openSettings?: boolean;
+  };
   EditProfile: undefined;
 };
 
@@ -183,7 +185,7 @@ export type MainDrawerParamsList = {
 
   Connections: undefined;
   Saved: undefined;
-  Settings: undefined;
+  Settings: NavigatorScreenParams<SettingsStackParamsList>;
   Help: undefined;
 };
 
@@ -255,7 +257,7 @@ export type OnboardingStackParamList = {
 };
 
 export type MainStackParamList = {
-  MainRoot: undefined;
+  MainRoot: NavigatorScreenParams<MainDrawerParamsList>;
   NewPassword: undefined;
   Intro: undefined;
   AccountType: undefined;

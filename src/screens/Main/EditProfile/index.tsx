@@ -7,14 +7,14 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
-import { Divider, Provider, TextInput, Text } from 'react-native-paper';
 import Modal from 'react-native-modal';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '@/src/components/Button';
 
 import {
   CameraOptions,
+  ImageLibraryOptions,
   launchCamera,
   launchImageLibrary,
   MediaType,
@@ -35,46 +35,75 @@ import GradientButton from '@/src/components/GradientButton';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ChurchType, Location, Tag } from '@/utils/types';
+import { ChurchType, Interest, Location, Tag } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getuserGet, getUserProfile } from '@/src/Redux/actions/UserAction';
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
+import { spacing } from '@/src/styles/spacing';
+import { profileImagesize } from '@/src/components/Profile';
+import { Colors, Typography } from '@/src/styles';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { StyledText } from '@/src/components/styled/Text';
+import { ArrowDown2, Calendar, GalleryEdit } from 'iconsax-react-native';
+import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { button } from '@/src/styles/buttons';
+import { StyledSelect } from '@/src/components/styled/Select';
+import SearchIcon from '@/assets/icons/search.svg';
+import { iterestListItem } from '@/src/styles/items';
+import { serialize } from 'object-to-formdata';
 
 type Props = StackScreenProps<RootStackParamList, 'EditProfile'>;
 
 const EditProfile = ({ navigation }: Props) => {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [gender, setGender] = useState(user?.gender);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
+  const [headerImagePickerModalVisibile, setHeaderImagePickerModalVisibile] = useState(false);
   const [imageToUpload, setImageToUpload] = useState('');
   const [imageObject, setImageObject] = useState<{ uri: string; type: string; name: string }>();
 
-  const [fullname, setFullName] = useState<string>(user?.name ?? '');
+  const [headerImageToUpload, setHeaderImageToUpload] = useState(user?.profileHeader || '');
+  const [headerImageObject, setHeaderImageObject] = useState<{
+    uri: string;
+    type: string;
+    name: string;
+  }>();
+  const [fullname, setFullName] = useState<string>(
+    user?.accountType == 'individual' ? user?.name ?? '' : user?.profile.companyName ?? ''
+  );
+
   const [username, setUsername] = useState<string>(user?.username ?? '');
   const [website, setWebsite] = useState<string>(user?.website ?? '');
   const [bio, setBio] = useState<string>(user?.bio ?? '');
-  const [whatIDo, setWhatIDo] = useState<Tag | null>(user?.whatIDo ? user?.whatIDo : null);
+  const [whatIDo, setWhatIDo] = useState<string>(user?.profile.whatIDo?._id || '');
   const [organizationType, setOrganizationType] = useState<Tag | null>(
     user?.typeOfOrganization ? user?.typeOfOrganization : null
   );
 
+  const [organizationContactName, setOrganizationContactName] = useState<string>(
+    user?.profile.contactName ?? ''
+  );
+
+  const [organizationContactEmail, setOrganizationContactEmail] = useState<string>(
+    user?.profile.contactEmail ?? ''
+  );
+
+  const [organizationContactPhone, setOrganizationContactPhone] = useState<string>(
+    user?.profile.contactPhoneNumber ?? ''
+  );
+
   const [whatIDoList, setWhatIDoList] = useState<Tag[]>([]);
   const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
-  const [visible, setVisible] = useState(false);
   const dispatch = useDispatch();
   const [date, setDate] = useState<string>(user?.profile?.dateOfBirth ?? '');
   const [open, setOpen] = useState(false);
 
-  const [oftenChurchVisible, setOftenChurchVisible] = useState(false);
   const [oftenChurch, setOftenChurch] = useState(user?.profile?.oftenChurch ?? '');
 
-  const [churchTypeModalVisible, setChurchTypeModalVisible] = useState(false);
-  const [churchSubTypeModalVisible, setChurchSubTypeModalVisible] = useState(false);
   const [churchSubType, setSubChurchType] = useState<string>(user?.profile?.churchSubType ?? '');
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
   const [churchType, setChurchType] = useState<string>(user?.profile?.churchType ?? '');
@@ -83,8 +112,33 @@ const EditProfile = ({ navigation }: Props) => {
   const [newLocation, setNewLocation] = useState<MapSuggestion | null>(null);
   const [longitude, setLongitude] = useState<number>();
   const [latitude, setLatitude] = useState<number>();
+  const [interest, setInterest] = useState<Interest[]>([]);
+  const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
+  const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
 
   const oftenChurchOptions = ['Weekly', 'Bi-Weekly', 'Once a month', 'I only watch at home'];
+
+  // React.useEffect(() => {
+  //   navigation.setOptions({
+  //     headerRight: () => (
+  //       <View style={{ flexDirection: 'row', padding: spacing.x5 }}>
+  //         <Button
+  //           onPress={() => {}}
+  //           text="Save"
+  //           btnTextStyle={{ color: Colors.primarySapphire.brand }}
+  //           btnStyle={[
+  //             button.outline,
+  //             {
+  //               paddingHorizontal: spacing.x24,
+  //               paddingVertical: spacing.x5,
+  //               borderColor: Colors.primarySapphire.brand,
+  //             },
+  //           ]}
+  //         />
+  //       </View>
+  //     ),
+  //   });
+  // }, [navigation]);
 
   useEffect(() => {
     if (newLocation) {
@@ -95,6 +149,7 @@ const EditProfile = ({ navigation }: Props) => {
       });
     }
   }, [newLocation]);
+
   const getChurchTypes = async () => {
     try {
       const res = await ApiCall({
@@ -113,48 +168,45 @@ const EditProfile = ({ navigation }: Props) => {
     }
   };
 
-  const captureImage = async (contentType: MediaType) => {
+  const captureImage = async (contentType: MediaType, imageType: 'header' | 'photo') => {
     let options: CameraOptions = {
       mediaType: contentType,
-      quality: 1,
+      quality: 0.8,
       // noData: true,
-      videoQuality: 'low',
-      durationLimit: 30,
     };
     // let isCameraPermitted = await requestCameraPermission();
     // let isStoragePermitted = await requestExternalWritePermission();
     // if (isCameraPermitted && isStoragePermitted) {
-    launchCamera(options, (response) => {
-      console.log('Response = ', response);
+    const response = await launchCamera(options);
 
-      if (response.didCancel) {
-        console.log('User cancelled camera picker');
+    console.log('Response = ', response);
 
-        return;
-      } else if (response.errorCode == 'camera_unavailable') {
-        console.log('Camera not available on device');
+    if (response.didCancel) {
+      console.log('User cancelled camera picker');
 
-        return;
-      } else if (response.errorCode == 'permission') {
-        console.log('Permission not satisfied');
+      return;
+    } else if (response.errorCode == 'camera_unavailable') {
+      console.log('Camera not available on device');
 
-        return;
-      } else if (response.errorCode == 'others') {
-        console.log(response.errorMessage);
+      return;
+    } else if (response.errorCode == 'permission') {
+      console.log('Permission not satisfied');
 
-        return;
-      }
-      let uri = response?.assets?.at(0)?.uri ?? '';
-      let type = response?.assets?.at(0)?.type ?? '';
-      let name = response?.assets?.at(0)?.fileName ?? '';
+      return;
+    } else if (response.errorCode == 'others') {
+      console.log(response.errorMessage);
 
-      setImageObject({ uri, type, name });
-      setImageToUpload(uri);
-      setTimeout(function () {
-        cropimage(uri);
-        dispatch(setLoader(false));
-      }, 3000);
-    });
+      return;
+    }
+    let uri = response?.assets?.at(0)?.uri ?? '';
+    let type = response?.assets?.at(0)?.type ?? '';
+    let name = response?.assets?.at(0)?.fileName ?? '';
+
+    setImageObject({ uri, type, name });
+    setImageToUpload(uri);
+
+    cropimage(uri, imageType);
+
     // } else {
     //   console.log('no ', isCameraPermitted);
     // }
@@ -194,58 +246,100 @@ const EditProfile = ({ navigation }: Props) => {
     }
   };
 
-  const chooseImageGallery = () => {
-    let options: CameraOptions = {
-      mediaType: 'mixed',
-      quality: 1,
-      // noData: true,
-      // selectionLimit: 1,
-    };
-    launchImageLibrary(options, (response) => {
-      dispatch(setLoader(true));
+  const addInterests = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'user/add-interests',
+        token: token,
+        params: { interests: selectedInterest },
+        verb: 'patch',
+      });
 
-      if (response.didCancel) {
-        console.log('User cancelled camera picker');
-
-        return;
-      } else if (response.errorCode == 'camera_unavailable') {
-        console.log('Camera not available on device');
-
-        return;
-      } else if (response.errorCode == 'permission') {
-        console.log('Permission not satisfied');
-
-        return;
-      } else if (response.errorCode == 'others') {
-        console.log(response.errorMessage);
-        return;
-      }
-      let uri = response?.assets ? response?.assets[0]?.uri : '';
-      let type = response?.assets ? response?.assets[0]?.type : '';
-      let name = response?.assets ? response?.assets[0]?.fileName : '';
-      setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
-      setImageToUpload(uri ?? '');
-      setTimeout(function () {
-        cropimage(uri ?? '');
+      if (res?.status == 200) {
+      } else {
         dispatch(setLoader(false));
-      }, 3000);
-    });
+        console.log('error', res);
+      }
+    } catch (e: any) {}
   };
 
-  const cropimage = (uri: string) => {
-    ImagePicker.openCropper({
+  const chooseImageGallery = async (imageType: 'header' | 'photo') => {
+    let options: ImageLibraryOptions = {
       mediaType: 'photo',
-      path: uri,
-    }).then((image) => {
-      setImageToUpload(image?.path);
-      const MyObject = {
-        uri: image?.path,
-        type: image?.mime,
-        name: 'profileImage' + user?._id,
-      };
-      setImageObject(MyObject);
-      setPickerModalVisibile(false);
-    });
+
+      // noData: true,
+      selectionLimit: 0.8,
+    };
+    const response = await launchImageLibrary(options);
+
+    if (response.didCancel) {
+      console.log('User cancelled camera picker');
+
+      return;
+    } else if (response.errorCode == 'camera_unavailable') {
+      console.log('Camera not available on device');
+
+      return;
+    } else if (response.errorCode == 'permission') {
+      console.log('Permission not satisfied');
+
+      return;
+    } else if (response.errorCode == 'others') {
+      console.log(response.errorMessage);
+      return;
+    }
+    let uri = response?.assets ? response?.assets[0]?.uri : '';
+    let type = response?.assets ? response?.assets[0]?.type : '';
+    let name = response?.assets ? response?.assets[0]?.fileName : '';
+    // if (imageType == 'photo') {
+    //   setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
+    //   setImageToUpload(uri ?? '');
+    // } else {
+    //   setHeaderImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
+    //   setHeaderImageToUpload(uri ?? '');
+    // }
+
+    cropimage(uri ?? '', imageType);
+  };
+
+  const cropimage = async (uri: string, imageType: 'header' | 'photo') => {
+    try {
+      setTimeout(async () => {
+        const image = await ImagePicker.openCropper({
+          height: imageType == 'header' ? (Dimensions.get('screen').width * 9) / 16 : undefined,
+          width: imageType == 'header' ? Dimensions.get('screen').width : undefined,
+          mediaType: 'photo',
+          cropperCircleOverlay: imageType == 'photo',
+          path: uri,
+          forceJpg: true,
+          maxFiles: 1,
+          compressImageMaxHeight: 150,
+        });
+
+        const MyObject = {
+          uri: image?.path,
+          type: image?.mime,
+        };
+
+        if (imageType == 'photo') {
+          setImageToUpload(image?.path);
+          setImageObject({
+            ...MyObject,
+            name: 'profileImage' + user?._id,
+          });
+          setPickerModalVisibile(false);
+        } else {
+          setHeaderImageToUpload(uri ?? '');
+          setHeaderImageObject({
+            ...MyObject,
+            name: 'headerImage' + user?._id,
+          });
+          setHeaderImagePickerModalVisibile(false);
+        }
+      }, 500);
+    } catch (e) {
+      console.log(e);
+    }
   };
   const go = () => {
     navigation.goBack();
@@ -262,385 +356,564 @@ const EditProfile = ({ navigation }: Props) => {
   }, [user]);
 
   useEffect(() => {
+    if (user && interest) {
+      setSelectedInterest(user.interests.map((item) => item._id));
+    }
+  }, [user, interest]);
+
+  useEffect(() => {
     if (token) {
       getChurchTypes();
+      getInterest();
     }
   }, [token]);
 
+  const getInterest = async () => {
+    try {
+      const res = await ApiCall({
+        route: 'tags/interest',
+        verb: 'get',
+        token: token,
+      });
+
+      if (res?.status == 200) {
+        setInterest(res?.response);
+        setSearchInterest(res?.response);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const selectedWhatIDo = whatIDoList.filter((type) => type._id == whatIDo);
+  const selectedWhatIDoName = selectedWhatIDo.length > 0 ? selectedWhatIDo[0].name : '';
+
   const selectedChurchType = churchTypes.filter((type) => type.churchType == churchType);
+  const selectedChurchTypeName =
+    selectedChurchType.length > 0 ? selectedChurchType[0].churchType : '';
+
+  const selectedChurchSubType =
+    selectedChurchType.length > 0
+      ? selectedChurchType[0].children.filter((item) => {
+          return item.churchType == churchSubType;
+        })
+      : [];
+
+  const selectedChurchSubTypeName =
+    selectedChurchSubType.length > 0 ? selectedChurchSubType[0].churchType : '';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
-        <View style={{ flex: 1 }}>
-          <Button
-            onPress={() => navigation.goBack()}
-            mode="text"
-            paper
-            content={<Icon name="chevron-back" size={20} color={colors.text} />}
-          />
-        </View>
-        <View style={{ flex: 4, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={styles.titletext}>Edit Profile</Text>
-        </View>
-        <View style={{ flex: 1 }} />
-      </View>
-
-      <ImagePickerModal
-        visible={pickerModalVisibile}
-        hideVisible={() => setPickerModalVisibile(false)}
-        galleryImage={() => chooseImageGallery()}
-        cameraImage={() => captureImage('photo')}
-      />
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={visible}
-        onBackdropPress={() => setVisible(false)}
-        onSwipeComplete={() => setVisible(false)}
-        swipeDirection={['down']}
-        style={styles.bottomView}
-        avoidKeyboard={true}
-        propagateSwipe
-      >
-        <View style={styles.content2}>
-          <View style={styles.headLine} />
-          <View style={styles.container}>
-            {user?.accountType == 'individual' ? (
-              <FlatList
-                data={whatIDoList}
-                keyExtractor={(item, index) => index.toString()}
-                ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
-                ItemSeparatorComponent={() => <Divider />}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setWhatIDo(item);
-
-                      setVisible(false);
-                    }}
-                    style={styles.listItem}
-                  >
-                    <Text
-                      style={{
-                        color: '#81979E',
-                        fontSize: getFontSize(2.2),
-                        fontFamily: 'Rubik-Regular',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item?.name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-            ) : (
-              <FlatList
-                data={organizationTypes}
-                keyExtractor={(item, index) => index.toString()}
-                ListHeaderComponent={() => <View style={{ height: getHeight(2) }} />}
-                ItemSeparatorComponent={() => <Divider />}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setOrganizationType(item);
-
-                      setVisible(false);
-                    }}
-                    style={styles.listItem}
-                  >
-                    <Text
-                      style={{
-                        color: '#81979E',
-                        fontSize: getFontSize(2.2),
-                        fontFamily: 'Rubik-Regular',
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item?.name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-            )}
-          </View>
-        </View>
-      </Modal>
+    <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
-        style={styles.container}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={120}
+        // keyboardVerticalOffset={120}
       >
         <ScrollView>
-          <View style={styles.topContainer}>
-            <TouchableOpacity
-              onPress={() => setPickerModalVisibile(true)}
-              style={styles.imageContainer}
-            >
-              {/* <Avatar.Image
-                size={getFontSize(14)}
-                resizeMode={'stretch'}
-                source={
-                  imageToUpload
-                    ? {uri: imageToUpload}
-                    : {uri: user?.profileImage}
-                }
-              /> */}
+          <View>
+            <View style={{ width: '100%', height: 200 }}>
+              {headerImageToUpload ? (
+                <FastImage
+                  style={{
+                    height: 150,
+                    width: '100%',
+                  }}
+                  source={{
+                    uri: headerImageToUpload,
+                  }}
+                  resizeMode={'cover'}
+                />
+              ) : (
+                <View
+                  style={{
+                    backgroundColor: Colors.primarySapphire.brand,
+                    height: 150,
+                    width: '100%',
+                  }}
+                />
+              )}
+
               <View
                 style={{
-                  flexDirection: 'row',
-                  width: '50%',
-                  justifyContent: 'center',
-                  alignContent: 'center',
+                  alignSelf: 'flex-end',
+                  backgroundColor: 'white',
+                  borderRadius: borderRadius.button,
+                  padding: spacing.x10,
+                  marginRight: spacing.x24,
+                  position: 'absolute',
+                  bottom: spacing.x64, // size of the profile image + margin space
+                  right: 0,
                 }}
               >
-                <FastImage
-                  style={{ width: 90, height: 90, borderRadius: 45 }}
-                  source={
-                    imageToUpload
-                      ? { uri: imageToUpload }
-                      : {
-                          uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
-                        }
-                  }
-                  resizeMode={FastImage.resizeMode.stretch}
+                <ImagePickerModal
+                  visible={headerImagePickerModalVisibile}
+                  hideVisible={() => setHeaderImagePickerModalVisibile(false)}
+                  galleryImage={() => chooseImageGallery('header')}
+                  cameraImage={() => captureImage('photo', 'header')}
                 />
-                <Text
-                  style={{
-                    color: '#757575',
-                    fontSize: 12,
-                    // marginTop: getHeight(1),
-                    fontFamily: 'Rubik-Regular',
-                    textAlign: 'center',
-                    width: '40%',
-                    alignSelf: 'center',
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setHeaderImagePickerModalVisibile(true);
                   }}
                 >
-                  Change Photo
-                </Text>
+                  <GalleryEdit color={Colors.neutral[200]} />
+                </TouchableOpacity>
               </View>
-            </TouchableOpacity>
-            <View style={styles.InputsContainer}>
-              <TextInput
-                style={{ backgroundColor: colors.background }}
-                onChangeText={(e) => setUsername(e)}
-                value={username}
-                label="Username"
-                activeOutlineColor={'#12D2D9'}
-                activeUnderlineColor={'#12D2D9'}
-                placeholder="username"
-                theme={{ roundness: 10 }}
-              />
 
-              <TextInput
-                style={{ backgroundColor: colors.background }}
-                onChangeText={(e) => setFullName(e)}
-                value={fullname}
-                label="Name"
-                activeOutlineColor={'#12D2D9'}
-                activeUnderlineColor={'#12D2D9'}
-                placeholder="Name"
-                theme={{ roundness: 10 }}
-              />
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: profileImagesize / 6,
+                  marginLeft: spacing.x24,
+                }}
+              >
+                <ImagePickerModal
+                  visible={pickerModalVisibile}
+                  hideVisible={() => setPickerModalVisibile(false)}
+                  galleryImage={() => chooseImageGallery('photo')}
+                  cameraImage={() => captureImage('photo', 'photo')}
+                />
+                <TouchableOpacity
+                  onPress={() => setPickerModalVisibile(true)}
+                  style={styles.imageContainer}
+                >
+                  <View
+                    style={{
+                      // flexDirection: 'row',
+                      // justifyContent: 'center',
+                      // alignContent: 'center',
 
-              <TextInput
-                style={{ backgroundColor: colors.background }}
-                label="Account type"
-                value={user?.accountType == 'individual' ? 'Individual' : 'Organization'}
-                editable={false}
-                theme={{ roundness: 10 }}
-                // placeholderTextColor={'red'}
-              />
-
-              {user?.accountType == 'individual' ? (
-                <>
-                  <TextInput
-                    label="What type of church do you attend?"
-                    activeOutlineColor={'#12D2D9'}
-                    activeUnderlineColor={'#12D2D9'}
-                    style={{ backgroundColor: colors.background }}
-                    theme={{ roundness: 10 }}
-                    showSoftInputOnFocus={false}
-                    onPressIn={() => setChurchTypeModalVisible(true)}
-                    value={churchType}
-                  />
-
-                  {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
-                    <TextInput
-                      label="What subtype of the church that you attend?"
-                      activeOutlineColor={'#12D2D9'}
-                      activeUnderlineColor={'#12D2D9'}
-                      style={{ backgroundColor: colors.background }}
-                      theme={{ roundness: 10 }}
-                      showSoftInputOnFocus={false}
-                      onPressIn={() => setChurchSubTypeModalVisible(true)}
-                      value={churchSubType}
+                      width: profileImagesize,
+                      height: profileImagesize,
+                      borderRadius: borderRadius.max,
+                    }}
+                  >
+                    <FastImage
+                      style={{
+                        width: profileImagesize,
+                        height: profileImagesize,
+                        borderRadius: borderRadius.max,
+                      }}
+                      source={
+                        imageToUpload
+                          ? { uri: imageToUpload }
+                          : {
+                              uri:
+                                user?.profileImage ||
+                                'https://cdn.onebodyapp.com/user/no-image.png',
+                            }
+                      }
+                      resizeMode={FastImage.resizeMode.stretch}
                     />
-                  ) : null}
 
-                  <TextInput
-                    label="How often do you attend church?"
-                    activeOutlineColor={'#12D2D9'}
-                    activeUnderlineColor={'#12D2D9'}
-                    style={{ backgroundColor: colors.background }}
-                    theme={{ roundness: 10 }}
-                    showSoftInputOnFocus={false}
-                    onPressIn={() => setOftenChurchVisible(true)}
-                    value={oftenChurch}
+                    <View
+                      style={{
+                        backgroundColor: 'rgba(0,0,0,0.7)',
+                        width: profileImagesize,
+                        height: profileImagesize,
+                        position: 'absolute',
+                        borderRadius: borderRadius.max,
+                        borderWidth: borderWidth.base,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+
+                        borderColor: 'white',
+                      }}
+                    >
+                      <GalleryEdit color="white" />
+                      <StyledText
+                        style={{
+                          // color: '#757575',
+                          // fontSize: 12,
+                          // // marginTop: getHeight(1),
+                          // fontFamily: 'Rubik-Regular',
+                          // textAlign: 'center',
+                          // width: '40%',
+                          // alignSelf: 'center',
+                          color: 'white',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Change
+                      </StyledText>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.topContainer}>
+            <View style={{ marginHorizontal: spacing.x24 }}>
+              <View style={styles.inputGroup}>
+                <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
+                  {user?.accountType} Details
+                </StyledText>
+                <StyledTextInput
+                  onChangeText={(e) => setUsername(e)}
+                  wrapperStyle={{ marginTop: spacing.x24 }}
+                  value={username}
+                  label="Username"
+                  placeholder="username"
+                />
+
+                <StyledTextInput
+                  onChangeText={(e) => setFullName(e)}
+                  wrapperStyle={{ marginTop: spacing.x16 }}
+                  value={fullname}
+                  label="Name"
+                  placeholder="Name"
+                />
+
+                <View style={{ flex: 4, marginTop: spacing.x16 }}>
+                  <StyledText style={{ marginBottom: 10 }}>Date of birth</StyledText>
+                  <Button
+                    text={date ? date : 'Select'}
+                    btnStyle={{
+                      flex: 1,
+                      backgroundColor: Colors.neutral[700],
+                      borderColor: Colors.neutral[800],
+                      borderRadius: borderRadius.small,
+                    }}
+                    wrapperBtnStyle={{
+                      justifyContent: 'space-between',
+                      paddingHorizontal: 14,
+                      paddingVertical: 16,
+                    }}
+                    btnTextStyle={{
+                      color: date ? Colors.neutral[300] : Colors.neutral[400],
+                    }}
+                    onPress={() => setOpen(true)}
+                    rightIcon={
+                      <Calendar
+                        onPress={() => setOpen(true)}
+                        style={{ paddingTop: 6 }}
+                        size={20}
+                        color={Colors.neutral[300]}
+                      />
+                    }
                   />
+                  <DatePicker
+                    modal
+                    minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
+                    maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+                    mode="date"
+                    androidVariant="nativeAndroid"
+                    open={open}
+                    date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
+                    onConfirm={(date) => {
+                      setOpen(false);
+                      setDate(format(date, 'MM/dd/yyyy'));
+                    }}
+                    onCancel={() => {
+                      setOpen(false);
+                    }}
+                  />
+                </View>
 
-                  <TextInput
-                    label="What City are you in?"
-                    activeOutlineColor={'#12D2D9'}
-                    activeUnderlineColor={'#12D2D9'}
-                    style={{ backgroundColor: colors.background }}
-                    theme={{ roundness: 10 }}
-                    showSoftInputOnFocus={false}
-                    onPressIn={() => setCitySelector(true)}
-                    value={location?.address}
+                {user?.accountType == 'individual' ? (
+                  <StyledSelect
+                    items={whatIDoList.map((item) => {
+                      return {
+                        text: item.name,
+                        value: item._id,
+                      };
+                    })}
+                    label="What I Do"
+                    selectedItem={whatIDo}
+                    btnText={whatIDo == '' ? 'Select' : selectedWhatIDoName}
+                    modalTitle="Select one"
+                    onChange={(item) => {
+                      setWhatIDo(item);
+                    }}
+                    wrapperStyle={{ marginTop: spacing.x16 }}
+                  />
+                ) : (
+                  <StyledSelect
+                    items={organizationTypes.map((item) => {
+                      return {
+                        text: item.name,
+                        value: item._id,
+                      };
+                    })}
+                    label="Type"
+                    selectedItem={organizationType?._id}
+                    btnText={!organizationType ? 'Select' : organizationType.name}
+                    modalTitle="Select one"
+                    onChange={(item) => {
+                      setOrganizationType(item);
+                    }}
+                    wrapperStyle={{ marginTop: spacing.x16 }}
+                  />
+                )}
+                {user?.isInfluencer == true || user?.accountType == 'organization' ? (
+                  <StyledTextInput
+                    multiline
+                    numberOfLines={3}
+                    maxLength={150}
+                    label="Bio"
+                    inputStyle={{ minHeight: 80 }}
+                    showCharCounter
+                    value={bio}
+                    onChangeText={(e) => setBio(e)}
+                    counterContainerStyle={{
+                      justifyContent: 'center',
+                      alignItems: 'flex-end',
+                    }}
+                    counterTextStyleStyle={{
+                      marginTop: spacing.x32 * -1,
+                      marginRight: spacing.x10,
+                      color: Colors.neutral[300],
+                    }}
+                    wrapperStyle={{ marginTop: spacing.x16 }}
+                  />
+                ) : null}
+
+                <View style={{ flex: 4, marginTop: spacing.x16 }}>
+                  <StyledText style={{ marginBottom: 10 }}>Location</StyledText>
+                  <Button
+                    text={location ? location.address : newLocation?.place_name}
+                    btnStyle={{
+                      flex: 1,
+                      backgroundColor: Colors.neutral[700],
+                      borderColor: Colors.neutral[800],
+                      borderRadius: borderRadius.small,
+                    }}
+                    wrapperBtnStyle={{
+                      justifyContent: 'space-between',
+                      paddingHorizontal: 14,
+                      paddingVertical: 16,
+                    }}
+                    btnTextStyle={{
+                      color: location ? Colors.neutral[300] : Colors.neutral[400],
+                    }}
+                    onPress={() => setCitySelector(true)}
+                    rightIcon={
+                      <ArrowDown2
+                        onPress={() => setCitySelector(true)}
+                        style={{ paddingTop: 6 }}
+                        size={15}
+                        color={Colors.neutral[300]}
+                      />
+                    }
                   />
 
                   <MapBox
                     location={newLocation}
                     setLongitude={setLongitude}
                     setLatitude={setLatitude}
-                    CheckIn={citySelector}
-                    setCheckIn={setCitySelector}
+                    modalVisible={citySelector}
+                    setModalVisible={setCitySelector}
                     setLocation={setNewLocation}
+                    modalTitle="Find Location"
                   />
+                </View>
 
-                  <TextInput
-                    label="Date of Birth"
-                    activeOutlineColor={'#12D2D9'}
-                    activeUnderlineColor={'#12D2D9'}
-                    style={{ backgroundColor: colors.background }}
-                    theme={{ roundness: 10 }}
-                    showSoftInputOnFocus={false}
-                    onFocus={() => setOpen(true)}
-                    onChangeText={(value) => setDate(value)}
-                    onPressIn={() => setOpen(true)}
-                    value={date}
-                    right={
-                      <TextInput.Icon
-                        icon="calendar"
-                        onPress={() => setOpen(true)}
-                        style={{ paddingTop: 6 }}
-                        color={'#032f3c'}
-                      />
-                    }
-                  />
-                </>
-              ) : null}
-
-              <DatePicker
-                modal
-                minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
-                maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
-                mode="date"
-                androidVariant="nativeAndroid"
-                open={open}
-                date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
-                onConfirm={(date) => {
-                  setOpen(false);
-                  setDate(format(date, 'MM/dd/yyyy'));
-                }}
-                onCancel={() => {
-                  setOpen(false);
-                }}
-              />
-
-              <View>
-                {user?.accountType == 'individual' ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      getWhatIDo();
-                      setVisible(true);
-                    }}
-                    style={{ width: '100%' }}
-                  >
-                    <TextInput
-                      style={{ backgroundColor: colors.background }}
-                      value={whatIDo?.name ? whatIDo?.name : ''}
-                      editable={false}
-                      pointerEvents="none"
-                      label="What I do"
-                      activeOutlineColor={'#12D2D9'}
-                      activeUnderlineColor={'#12D2D9'}
-                    />
-                  </TouchableOpacity>
-                ) : (
-                  <>
-                    <TouchableOpacity
-                      onPress={() => {
-                        getWhatIDo();
-                        setVisible(true);
-                      }}
-                      style={{ width: '100%' }}
-                    >
-                      <TextInput
-                        style={{ backgroundColor: colors.background }}
-                        value={organizationType?.name ? organizationType?.name : ''}
-                        editable={false}
-                        pointerEvents="none"
-                        label="Who We Are?"
-                        activeOutlineColor={'#12D2D9'}
-                        activeUnderlineColor={'#12D2D9'}
-                        // onChangeText={e => setWhatIDo(e)}
-                      />
-                    </TouchableOpacity>
-                    {user?.isInfluencer == true ? (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          paddingVertical: 10,
-                        }}
-                      >
-                        <TextInput
-                          multiline={true}
-                          numberOfLines={5}
-                          label="Bio"
-                          value={user?.bio}
-                          returnKeyType={'next'}
-                          mode="outlined"
-                          activeOutlineColor={'#12D2D9'}
-                          activeUnderlineColor={'#12D2D9'}
-                          outlineColor={colors.border}
-                          maxLength={150}
-                          style={{
-                            flex: 4,
-                          }}
-                          theme={{
-                            dark: dark,
-                            colors: {
-                              text: colors.text,
-                              placeholder: colors.primary,
-                              background: colors.background,
-                            },
-                          }}
-                          onChangeText={(e) => setBio(e)}
-                          blurOnSubmit={false}
-                        />
-                        <Text style={{ flex: 1, textAlign: 'center' }}>{bio.length}/150</Text>
-                      </View>
-                    ) : null}
-                  </>
-                )}
-
-                <TextInput
-                  style={{ backgroundColor: colors.background }}
+                <StyledTextInput
                   value={website}
                   label="Website"
                   keyboardType="url"
                   autoCorrect={false}
                   autoCapitalize="none"
-                  placeholder="https://www.website.com"
-                  activeOutlineColor={'#12D2D9'}
-                  activeUnderlineColor={'#12D2D9'}
+                  placeholder="www.website.com"
                   onChangeText={(e) => setWebsite(e)}
+                  wrapperStyle={{ marginTop: spacing.x16 }}
                 />
+              </View>
+
+              {user?.accountType == 'individual' ? (
+                <View style={[styles.inputGroup, { marginTop: spacing.x32 }]}>
+                  <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
+                    Church Details
+                  </StyledText>
+                  <StyledSelect
+                    items={churchTypes.map((item) => {
+                      return {
+                        text: item.churchType,
+                        value: item.churchType,
+                      };
+                    })}
+                    label="Church type"
+                    selectedItem={churchType}
+                    btnText={selectedChurchTypeName == '' ? 'Select' : selectedChurchTypeName}
+                    modalTitle="Select church type"
+                    onChange={(item) => {
+                      setChurchType(item);
+                      setSubChurchType('');
+                    }}
+                    wrapperStyle={{ marginTop: spacing.x24 }}
+                  />
+
+                  {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
+                    <StyledSelect
+                      wrapperStyle={{ marginTop: spacing.x24 }}
+                      items={selectedChurchType[0].children.map((item) => {
+                        return {
+                          text: item.churchType,
+                          value: item.churchType,
+                        };
+                      })}
+                      label="Church sub type"
+                      btnText={
+                        selectedChurchSubTypeName == '' ? 'Select' : selectedChurchSubTypeName
+                      }
+                      onChange={(item) => {
+                        setSubChurchType(item);
+                      }}
+                      modalTitle="Select church sub type"
+                    />
+                  ) : null}
+
+                  <StyledSelect
+                    wrapperStyle={{ marginTop: spacing.x24 }}
+                    items={oftenChurchOptions.map((item) => {
+                      return {
+                        text: item,
+                        value: item,
+                      };
+                    })}
+                    label="Church attendence"
+                    btnText={oftenChurch == '' ? 'Select' : oftenChurch}
+                    onChange={(item) => {
+                      setOftenChurch(item);
+                    }}
+                    modalTitle="Select Church Attendence"
+                  />
+                </View>
+              ) : null}
+
+              {user?.accountType == 'organization' ? (
+                <View style={[styles.inputGroup, { marginTop: spacing.x32 }]}>
+                  <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
+                    Organization Contact
+                  </StyledText>
+                  <StyledTextInput
+                    onChangeText={(e) => setOrganizationContactName(e)}
+                    wrapperStyle={{ marginTop: spacing.x24 }}
+                    value={organizationContactName}
+                    label="Name"
+                    placeholder="Contact name"
+                  />
+
+                  <StyledTextInput
+                    onChangeText={(e) => setOrganizationContactEmail(e)}
+                    wrapperStyle={{ marginTop: spacing.x24 }}
+                    value={organizationContactEmail}
+                    label="Email"
+                    placeholder="Contact email"
+                  />
+
+                  <StyledTextInput
+                    onChangeText={(e) => setOrganizationContactPhone(e)}
+                    wrapperStyle={{ marginTop: spacing.x24 }}
+                    value={organizationContactPhone}
+                    label="Phone Number"
+                    placeholder="Contact phone number"
+                  />
+                </View>
+              ) : null}
+
+              <View style={[styles.inputGroup, { marginTop: spacing.x32 }]}>
+                <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
+                  Interests
+                </StyledText>
+
+                <View style={{ flex: 6, marginTop: spacing.x24 }}>
+                  <View>
+                    <StyledTextInput
+                      // style={{ ...GeneralStyle.input, width: getWidth(80) }}
+                      // mode="outlined"
+
+                      clearButtonMode="always"
+                      onChangeText={(text) => {
+                        const newSearchInterest = [];
+                        for (let i = 0; i < interest.length; i++) {
+                          if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                            newSearchInterest.push(interest[i]);
+                          }
+                          setSearchInterest(newSearchInterest);
+                        }
+                      }}
+                      leftIcon={
+                        <View style={{ justifyContent: 'center' }}>
+                          <SearchIcon
+                            style={{ height: 20, width: 20, marginRight: spacing.x10 }}
+                            stroke={Colors.neutral[300]}
+                          />
+                        </View>
+                        // <MaterialCommunityIcons
+                        //   name="magnify"
+                        //   size={20}
+                        //   style={{ marginRight: 10 }}
+                        //   color={Colors.neutral[200]}
+                        // />
+                      }
+                      placeholder="Search for interest"
+                    />
+                  </View>
+                  <View style={{ flex: 10 }}>
+                    <ScrollView
+                      contentContainerStyle={{
+                        marginTop: spacing.x24,
+                        paddingBottom: spacing.x48,
+                        flexDirection: searchInterest.length < 1 ? 'column' : 'row',
+                        flexWrap: searchInterest.length < 1 ? 'nowrap' : 'wrap',
+                      }}
+                    >
+                      {searchInterest.length < 1 ? (
+                        <StyledText
+                          style={[
+                            Typography.body.x2M,
+                            { padding: spacing.x16, textAlign: 'center' },
+                          ]}
+                        >
+                          No Search Results
+                        </StyledText>
+                      ) : null}
+                      {searchInterest.map((item, index) => {
+                        return (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() =>
+                              selectedInterest.includes(item?._id)
+                                ? setSelectedInterest(
+                                    selectedInterest.filter(function (item2) {
+                                      return item2 !== item?._id;
+                                    })
+                                  )
+                                : setSelectedInterest([...selectedInterest, item?._id])
+                            }
+                            style={
+                              selectedInterest.includes(item?._id)
+                                ? [
+                                    iterestListItem,
+                                    {
+                                      backgroundColor: Colors.primary.brand,
+                                      borderColor: Colors.primary.brand,
+                                    },
+                                  ]
+                                : iterestListItem
+                            }
+                          >
+                            <StyledText
+                              numberOfLines={1}
+                              style={
+                                selectedInterest.includes(item?._id)
+                                  ? { color: 'white' }
+                                  : { color: Colors.neutral[200] }
+                              }
+                            >
+                              {item?.name}
+                            </StyledText>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
@@ -655,185 +928,68 @@ const EditProfile = ({ navigation }: Props) => {
                 </View>
               </View>
             ) : null} */}
-            <View style={{ marginHorizontal: 25, width: '100%' }}>
+            <View
+              style={{ paddingHorizontal: spacing.x24, marginBottom: spacing.x16, width: '100%' }}
+            >
               <Button
-                text={'DONE'}
-                onPress={() => {
-                  const data = new FormData();
+                text={'SAVE'}
+                onPress={async () => {
+                  const data: Record<string, any> = {};
 
-                  if (fullname) data.append('name', fullname);
-                  if (gender) data.append('gender', gender);
-                  if (whatIDo) data.append('whatIDo', whatIDo?._id);
-                  if (organizationType) data.append('typeOfOrganization', organizationType?._id);
-                  if (website) data.append('website', website);
-                  if (imageObject) data.append('photo', imageObject);
-                  if (bio) data.append('bio', bio);
-                  if (username) data.append('username', username);
-                  if (churchType) data.append('churchType', churchType);
-                  if (churchSubType) data.append('churchSubType', churchSubType);
-                  if (oftenChurch) data.append('oftenChurch', oftenChurch);
-                  if (location) data.append('location', location?.address);
+                  if (fullname && user?.accountType == 'individual') data.name = fullname;
+                  if (fullname && user?.accountType == 'organization') data.companyName = fullname;
+
+                  if (organizationContactEmail && user?.accountType == 'organization')
+                    data.contactEmail = organizationContactEmail;
+                  if (organizationContactName && user?.accountType == 'organization')
+                    data.contactName = organizationContactName;
+                  if (organizationContactPhone && user?.accountType == 'organization')
+                    data.contactPhoneNumber = organizationContactPhone;
+
+                  if (gender) data.gender = gender;
+                  if (whatIDo) data.whatIDo = whatIDo;
+                  if (organizationType && organizationType._id)
+                    data.typeOfOrganization = organizationType?._id;
+                  if (website) data.website = website;
+                  if (imageObject) data.photo = imageObject;
+                  if (headerImageObject) data.headerImage = headerImageObject;
+                  if (bio) data.bio = bio;
+                  if (username) data.username = username;
+                  if (churchType) data.churchType = churchType;
+                  if (churchSubType) data.churchSubType = churchSubType;
+                  if (oftenChurch) data.oftenChurch = oftenChurch;
+                  if (location)
+                    data.location = {
+                      longitude: location.longitude,
+                      latitude: location.latitude,
+                      address: location.address,
+                    };
 
                   dispatch(setLoader(true));
 
+                  if (selectedInterest.length > 0) await addInterests();
+
                   if (user?.accountType == 'individual') {
-                    dispatch(profileUpdate({ data, token, accountType: 'individual', go }));
+                    dispatch(
+                      profileUpdate({ data: serialize(data), token, accountType: 'individual', go })
+                    );
                   } else {
-                    dispatch(profileUpdate({ data, token, accountType: 'organization', go }));
+                    dispatch(
+                      profileUpdate({
+                        data: serialize(data),
+                        token,
+                        accountType: 'organization',
+                        go,
+                      })
+                    );
                   }
                 }}
-                // btnStyle={{
-                //   ...GeneralStyle.btn,
-                //   height: getHeight(7),
-
-                //   backgroundColor: '#0C5C75',
-                // }}
-                // btnTextStyle={GeneralStyle.btnText}
-                mode="contained"
-                paper
-                btnStyle={{ marginHorizontal: 10 }}
-              />
-
-              <Button
-                text={'Cancel'}
-                mode="text"
-                textColor="#70747D"
-                paper
-                btnStyle={{ marginHorizontal: 0 }}
-                // btnStyle={{
-                //   ...GeneralStyle.btn,
-                //   backgroundColor: 'white',
-                //   marginTop: getHeight(2),
-                // }}
-                onPress={() => navigation.goBack()}
-                // btnTextStyle={{ ...GeneralStyle.btnText, color: '#707470' }}
+                btnStyle={[button.primary, { flex: 1 }]}
+                disabledBtnStyle={[button.primary, { flex: 1, opacity: 0.5 }]}
+                btnTextStyle={{ color: 'white' }}
               />
             </View>
           </View>
-          <Modal
-            backdropOpacity={0.3}
-            isVisible={churchTypeModalVisible}
-            onBackdropPress={() => setChurchTypeModalVisible(false)}
-            onSwipeComplete={() => setChurchTypeModalVisible(false)}
-            swipeDirection={['down']}
-            style={styles.bottomView}
-            propagateSwipe={true}
-          >
-            <View style={{ ...styles.content2, backgroundColor: colors.background }}>
-              <View style={styles.headLine} />
-
-              <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-                {churchTypes?.map((item, index) => {
-                  return (
-                    <TouchableOpacity
-                      onPress={() => {
-                        // setWhatIDo(item);
-                        setChurchType(item.churchType);
-                        setSubChurchType('');
-
-                        setChurchTypeModalVisible(false);
-                      }}
-                      style={styles.listItem2}
-                      key={index}
-                    >
-                      <Text
-                        style={{
-                          color: '#81979E',
-                          fontSize: getFontSize(2.2),
-                          fontFamily: 'Rubik-Regular',
-                        }}
-                        numberOfLines={1}
-                      >
-                        {item.churchType}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          </Modal>
-          <Modal
-            backdropOpacity={0.3}
-            isVisible={churchSubTypeModalVisible}
-            onBackdropPress={() => setChurchSubTypeModalVisible(false)}
-            onSwipeComplete={() => setChurchSubTypeModalVisible(false)}
-            swipeDirection={['down']}
-            style={styles.bottomView}
-            propagateSwipe={true}
-          >
-            <View style={styles.content2}>
-              <View style={styles.headLine} />
-              {selectedChurchType.length > 0 ? (
-                <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-                  {selectedChurchType[0].children.map((item, index) => {
-                    return (
-                      <TouchableOpacity
-                        onPress={() => {
-                          // setWhatIDo(item);
-                          setSubChurchType(item.churchType);
-                          setChurchSubTypeModalVisible(false);
-                        }}
-                        style={styles.listItem2}
-                        key={index}
-                      >
-                        <Text
-                          style={{
-                            color: '#81979E',
-                            fontSize: getFontSize(2.2),
-                            fontFamily: 'Rubik-Regular',
-                          }}
-                          numberOfLines={1}
-                        >
-                          {item.churchType}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              ) : null}
-            </View>
-          </Modal>
-          <Modal
-            backdropOpacity={0.3}
-            isVisible={oftenChurchVisible}
-            onBackdropPress={() => setOftenChurchVisible(false)}
-            onSwipeComplete={() => setOftenChurchVisible(false)}
-            swipeDirection={['down']}
-            style={styles.bottomView}
-            propagateSwipe={true}
-          >
-            <View style={styles.content2}>
-              <View style={styles.headLine} />
-              {oftenChurchOptions.length > 0 ? (
-                <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-                  {oftenChurchOptions.map((item, index) => {
-                    return (
-                      <TouchableOpacity
-                        onPress={() => {
-                          // setWhatIDo(item);
-                          setOftenChurch(item);
-                          setOftenChurchVisible(false);
-                        }}
-                        style={styles.listItem2}
-                        key={index}
-                      >
-                        <Text
-                          style={{
-                            color: '#81979E',
-                            fontSize: getFontSize(2.2),
-                            fontFamily: 'Rubik-Regular',
-                          }}
-                          numberOfLines={1}
-                        >
-                          {item}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              ) : null}
-            </View>
-          </Modal>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -23,8 +23,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Colors } from '../styles';
-import { Home3, Notification, Profile2User } from 'iconsax-react-native';
-import { Route, getFocusedRouteNameFromRoute, useTheme } from '@react-navigation/native';
+import { Home3, Notification, Profile2User, Setting2 } from 'iconsax-react-native';
+import {
+  CommonActions,
+  Route,
+  getFocusedRouteNameFromRoute,
+  getStateFromPath,
+  useTheme,
+} from '@react-navigation/native';
 import Saved from '../screens/main/saved';
 import Feather from 'react-native-vector-icons/Feather';
 import Connections from '../screens/main/connections';
@@ -55,7 +61,7 @@ function getHeaderTitle(route: Partial<Route<string>>) {
     case 'ExploreTab':
       return 'Discover Accounts';
     case 'MyProfileTab':
-      return 'My Account';
+      return 'Profile';
   }
 }
 
@@ -130,7 +136,7 @@ const DrawerNav = () => {
                       >
                         <Notification
                           style={{ height: 24, width: 24 }}
-                          stroke={Colors.primary.brand}
+                          color={Colors.primary.brand}
                           strokeWidth={0.2}
                         />
                       </TouchableOpacity>

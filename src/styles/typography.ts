@@ -26,20 +26,15 @@ export const fontSize: Record<FontSize, TextStyle> = {
   },
 };
 
-type FontWeight = 'regular' | 'medium' | 'semibold' | 'bold';
+type FontWeight = 'light' | 'regular' | 'medium' | 'semibold' | 'bold';
 export const fontWeight: Record<FontWeight, TextStyle> = {
-  regular: {
-    ...systemWeights.regular,
-  },
+  light: systemWeights.light,
+  regular: systemWeights.regular,
   medium: {
     fontWeight: '500',
   },
-  semibold: {
-    ...systemWeights.semibold,
-  },
-  bold: {
-    ...systemWeights.bold,
-  },
+  semibold: systemWeights.semibold,
+  bold: systemWeights.bold,
 };
 
 // type LetterSpacing = 'x30' | 'x40';
@@ -228,7 +223,5 @@ export const body: Record<Body, TextStyle> = {
 
 type Poppins = 'base';
 export const poppins: Record<Poppins, TextStyle> = {
-  base: {
-    fontFamily: poppinsFontFamily,
-  },
+  base: body.x2,
 };

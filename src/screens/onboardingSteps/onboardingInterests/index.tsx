@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, ScrollView } from 'react-native';
-import { styles } from './styles';
+import { View, TouchableOpacity, ScrollView } from 'react-native';
+
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { StackScreenProps } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '@/src/navigator/types';
@@ -172,7 +172,7 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
                         : iterestListItem
                     }
                   >
-                    <Text
+                    <StyledText
                       numberOfLines={1}
                       style={
                         selectedInterest.includes(item?._id)
@@ -181,7 +181,7 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
                       }
                     >
                       {item?.name}
-                    </Text>
+                    </StyledText>
                   </TouchableOpacity>
                 );
               })}
