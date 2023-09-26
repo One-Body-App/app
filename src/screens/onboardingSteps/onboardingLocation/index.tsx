@@ -36,6 +36,18 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
       }}
       onboardingType={AccountType.individual}
       activeStep={4}
+      reasonText={
+        <>
+          <StyledText>
+            Why are we asking this? Your location info helps us to understand the type of content
+            you would be most interested in seeing so that we may enhance your One Body experience.
+          </StyledText>
+          <StyledText> </StyledText>
+          <StyledText>
+            You can decide if you want this info to be Public or Private in your Profile settings.
+          </StyledText>
+        </>
+      }
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
@@ -43,7 +55,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
-            Enter your present location
+            Enter your present City
           </StyledText>
         </View>
 

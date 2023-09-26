@@ -2,7 +2,13 @@ import { getHeight } from '@/utils/ResponsiveFun';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { Text } from 'react-native-paper';
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import {
+  CompositeNavigationProp,
+  CompositeScreenProps,
+  NavigationProp,
+  useNavigation,
+  useTheme,
+} from '@react-navigation/native';
 import { styles } from './style';
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
 import FastImage from 'react-native-fast-image';
@@ -11,8 +17,23 @@ import Video from 'react-native-video';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 import { AccountType } from '@/utils/types';
+import {
+  ExploreStackParamsList,
+  MainDrawerParamsList,
+  MainBottomStackParamsList,
+} from '@/src/navigator/types';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { StackNavigationProp } from '@react-navigation/stack';
 
-type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
+// type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
+type ScreenNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
+  CompositeNavigationProp<
+    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
+    BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
+  >
+>;
 type LinkData = {
   description?: string;
   image?: { height: string; type: string; url: string; width: string };
@@ -137,8 +158,17 @@ const SocialItem = ({
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <TouchableOpacity
             onPress={() => {
-              navigation.navigate('UserProfile', {
-                id: item?.userData?._id,
+              // navigation.navigate('UserProfile', {
+              //   id: item?.userData?._id,
+              // });
+              navigation.navigate('Main', {
+                screen: 'ExploreTab',
+                params: {
+                  screen: 'UserProfile',
+                  params: {
+                    id: item?.userData?._id,
+                  },
+                },
               });
             }}
             style={{

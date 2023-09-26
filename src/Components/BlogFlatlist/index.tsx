@@ -21,14 +21,17 @@ import { isObject } from 'lodash';
 import { OpenURLButton } from '@/src/Services/constants';
 import ArticleItem from '../ListItems/ArticleItem';
 import { useTheme } from '@react-navigation/native';
-import { color } from 'react-native-reanimated';
 import OptionsModal from '../ListItems/OptionsModal';
 import { styles as globalStyle } from '@/src/components/ListItems/style';
+import { spacing } from '@/src/styles/spacing';
 
 const BlogFlatlist = ({
-  currentUser,
+  userId,
   setScrollPosition,
-}: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) => {
+}: SceneRendererProps & {
+  userId: string;
+  setScrollPosition: (position: number) => void;
+}) => {
   // const offset = useRef(new Animated.Value(0)).current;
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -43,7 +46,7 @@ const BlogFlatlist = ({
   const getBlog = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        route: `user/get-blog-feed/${currentUser._id}/${pageNumber}`,
+        route: `user/get-blog-feed/${userId}/${pageNumber}`,
         verb: 'post',
         token: token,
       });
@@ -176,15 +179,15 @@ const BlogFlatlist = ({
             item={item}
             imageSizeType="cover"
             blogPostStyle={{
-              ...globalStyle.blogpostview,
+              marginBottom: spacing.x24,
               backgroundColor: colors.card,
             }}
             blogPostImageStyle={globalStyle.newspostimage}
-            blogPostTitleStyle={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              marginTop: getHeight(1),
-            }}
+            // blogPostTitleStyle={{
+            //   flexDirection: 'row',
+            //   justifyContent: 'space-between',
+            //   // marginTop: getHeight(1),
+            // }}
             showModal={showModal}
           />
         )}

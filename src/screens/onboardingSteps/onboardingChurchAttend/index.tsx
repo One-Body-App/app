@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -36,6 +36,17 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
       onboardingType={AccountType.individual}
       activeStep={2}
       disabled={!churchAttend}
+      reasonText={
+        <>
+          <StyledText>
+            Why are we asking this? Your frequency of Church Attendance helps us to understand the
+            type of content you would be most interested in seeing to enhance your One Body
+            experience.
+          </StyledText>
+          <StyledText> </StyledText>
+          <StyledText>We do NOT publicly display this information.</StyledText>
+        </>
+      }
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
@@ -43,7 +54,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
-            Select the frequency at which you go to church
+            Select the rate at which you go to church
           </StyledText>
         </View>
 
@@ -65,7 +76,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ marginLeft: 15 }}>Weekly</Text>
+              <StyledText style={{ marginLeft: 15 }}>Weekly</StyledText>
             </View>
             <View
               style={[
@@ -96,7 +107,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ marginLeft: 15 }}>Bi-Weekly</Text>
+              <StyledText style={{ marginLeft: 15 }}>Bi-Weekly</StyledText>
             </View>
             <View
               style={[
@@ -131,7 +142,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ marginLeft: 15 }}>Once a Month</Text>
+              <StyledText style={{ marginLeft: 15 }}>Once a Month</StyledText>
             </View>
             <View
               style={[
@@ -168,7 +179,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ marginLeft: 15 }}>I only Watch at Home</Text>
+              <StyledText style={{ marginLeft: 15 }}>I only Watch at Home</StyledText>
             </View>
             <View
               style={[

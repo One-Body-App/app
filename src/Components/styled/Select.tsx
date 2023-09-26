@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from 'react';
-import { ButtonProps, ScrollView, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { ScrollView, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Modal from 'react-native-modal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StyledText } from './Text';
@@ -50,7 +50,7 @@ export const StyledSelect: FC<Props> = ({
   useEffect(() => {
     let values = items;
     if (searchText != '') {
-      values = items.filter((item) => item.text.toLowerCase().includes(searchText.toLowerCase()));
+      values = items.filter((item) => item.text.toLowerCase().startsWith(searchText.toLowerCase()));
     }
 
     setSearchedItems(values);

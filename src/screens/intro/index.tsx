@@ -46,7 +46,7 @@ const IntroScreen = ({ route, navigation }: Props) => {
                   <StyledText
                     style={[header.h2, { color: Colors.primarySapphire.brand, fontWeight: 'bold' }]}
                   >
-                    OneBody
+                    One Body
                   </StyledText>
                 </View>
 

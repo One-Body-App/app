@@ -1,6 +1,6 @@
 {
   "name": "onebody",
-  "version": "0.1.94",
+  "version": "0.1.97",
   "private": true,
   "scripts": {
     "android": "react-native run-android",

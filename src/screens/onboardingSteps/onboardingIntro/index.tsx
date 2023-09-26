@@ -102,7 +102,7 @@ const OnboardingIntro = ({ navigation }: Props) => {
             },
           ]}
           onPress={() => {
-            if (authState.getProfileData?.accountType == 'individual') {
+            if (authState.getProfileData?.accountType !== 'individual') {
               navigation.push('OnboardingChurchType');
             } else {
               navigation.push('OnboardingOrganizationType');

@@ -72,6 +72,13 @@ const OnboardingOrganizationType = ({ navigation }: Props) => {
       onboardingType={AccountType.organization}
       activeStep={1}
       disabled={selectedOrganizationTypeFiltered.length == 0}
+      reasonText={
+        <StyledText>
+          Why are we asking this? Denomination info helps us to understand the type of content you
+          would be most interested in seeing to enhance your One Body experience. You can decide if
+          you want this info to be Public or Private in your Profile settings."
+        </StyledText>
+      }
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>

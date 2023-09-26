@@ -89,6 +89,18 @@ const OnboardingChurchType = ({ navigation }: Props) => {
           selectedChurchTypeFiltered[0].children.length > 0 &&
           selectedChurchSubTypeFiltered.length < 1)
       }
+      reasonText={
+        <>
+          <StyledText>
+            Why are we asking this? Denomination info helps us to understand the type of content you
+            would be most interested in seeing to enhance your One Body experience.
+          </StyledText>
+          <StyledText> </StyledText>
+          <StyledText>
+            You can decide if you want this info to be Public or Private in your Profile settings.
+          </StyledText>
+        </>
+      }
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
@@ -96,7 +108,7 @@ const OnboardingChurchType = ({ navigation }: Props) => {
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
           >
-            Identify your church type
+            Identify your denomination
           </StyledText>
         </View>
 
@@ -108,10 +120,10 @@ const OnboardingChurchType = ({ navigation }: Props) => {
                 value: item._id,
               };
             })}
-            label="Church type"
+            label="Denomination"
             selectedItem={selectedChurchType}
             btnText={selectedChurchType == '' ? 'Select' : selectedChurchTypeName}
-            modalTitle="Select church type"
+            modalTitle="Select your Denomination"
             onChange={(item) => {
               setSelectedChurchType(item);
               setSelectedChurchSubType('');
@@ -128,12 +140,12 @@ const OnboardingChurchType = ({ navigation }: Props) => {
                   value: item._id,
                 };
               })}
-              label="Church sub type"
+              label="Sub Denomination or Association"
               btnText={selectedChurchSubType == '' ? 'Select' : selectedChurchSubTypeName}
               onChange={(item) => {
                 setSelectedChurchSubType(item);
               }}
-              modalTitle="Select church sub type"
+              modalTitle="Select sub Denomination"
             />
           ) : null}
         </View>

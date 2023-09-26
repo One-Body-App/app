@@ -34,6 +34,8 @@ import {
 } from '@/src/navigator/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import ProfileComponent from '@/src/components/Profile';
+import { Profile } from 'react-native-fbsdk-next';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'UserProfile'>,
@@ -91,97 +93,19 @@ const UserProfile = ({ navigation, route }: Props) => {
     }
   }, [user]);
 
-  const renderScene = ({
-    route,
-    jumpTo,
-  }: SceneRendererProps & {
-    route: any;
-  }) => {
-    switch (route.key) {
-      case 'Instagram':
-        return (
-          <InstagramFlatlist
-            setScrollPosition={updateScrollPosition}
-            jumpTo={jumpTo}
-            currentUser={user}
-            {...route}
-          />
-        );
-      case 'Blog':
-        return (
-          <BlogFlatlist
-            setScrollPosition={updateScrollPosition}
-            {...route}
-            jumpTo={jumpTo}
-            currentUser={user}
-          />
-        );
-      case 'Twitter':
-        return (
-          <TwitterFlatlist
-            setScrollPosition={updateScrollPosition}
-            currentUser={user}
-            jumpTo={jumpTo}
-            {...route}
-          />
-        );
-    }
-  };
-
-  const renderTabBar = (
-    props: SceneRendererProps & {
-      navigationState: NavigationState<any>;
-    }
-  ) => {
-    return (
-      <View style={styles.tabBar}>
-        {props.navigationState.routes
-          .filter((route) => {
-            if (user?.influencerProfile?.twitterId && route.key == 'Twitter') {
-              return true;
-            }
-
-            if (user?.influencerProfile?.rssUrl && route.key == 'Blog') {
-              return true;
-            }
-
-            if (user?.influencerProfile?.instagramId && route.key == 'Instagram') {
-              return true;
-            }
-
-            return false;
-          })
-          .map((route, i) => {
-            return (
-              <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
-                <Animated.Text
-                  style={
-                    props?.navigationState?.index == i
-                      ? {
-                          color: '#032F3C',
-                          fontFamily: 'Rubik-Medium',
-                        }
-                      : {
-                          color: '#032F3C',
-                          fontFamily: 'Rubik-Regular',
-                        }
-                  }
-                >
-                  {route.title}
-                </Animated.Text>
-                {props?.navigationState?.index == i ? <View style={styles.propview} /> : null}
-              </TouchableOpacity>
-            );
-          })}
-      </View>
-    );
-  };
-
   useEffect(() => {
     dispatch(setLoader(true));
     getUser();
     getRelatedUser();
   }, [id]);
+
+  useEffect(() => {
+    if (user) {
+      navigation.setOptions({
+        title: user.name,
+      });
+    }
+  }, [user]);
 
   const getUser = async () => {
     try {
@@ -298,198 +222,15 @@ const UserProfile = ({ navigation, route }: Props) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <Button
-        onPress={() => navigation.goBack()}
-        text=""
-        leftIcon={<Icon name="chevron-back" size={20} color={'#032f3c'} />}
-        btnStyle={{ padding: 20 }}
-      />
-
-      <View
-        style={{
-          alignSelf: 'center',
-          width: direction == 'down' ? 75 : 150,
-          height: direction == 'down' ? 75 : 150,
-          marginBottom: 10,
-        }}
-      >
-        <ImageModal
-          style={{
-            width: direction == 'down' ? 75 : 150,
-            height: direction == 'down' ? 75 : 150,
-            alignSelf: 'center',
-
-            borderRadius: 75,
-            borderColor: user?.profileImage ? '#032F3C' : '#09aadb',
-            borderWidth: 1,
-          }}
-          source={{
-            uri: user?.profileImage ?? 'https://cdn.onebodyapp.com/user/no-image.png',
-          }}
-          resizeMode={'contain'}
+      {user && currentUser ? (
+        <ProfileComponent
+          user={user}
+          currentUserId={currentUser?._id}
+          relatedUsers={relatedUsers}
         />
-      </View>
-      <Text
-        style={{
-          fontWeight: '500',
-          color: '#032f3c',
-          textAlign: 'center',
-          fontSize: direction == 'down' ? 15 : 20,
-        }}
-      >
-        {user?.accountType == 'organization' && user?.profile?.companyName
-          ? user?.profile?.companyName
-          : user?.name}
-      </Text>
-
-      {direction == 'down' ? null : (
-        <Animated.Text
-          style={[
-            {
-              textAlign: 'center',
-              marginBottom: 10,
-              color: '#5b7279',
-              marginTop: 5,
-            },
-          ]}
-        >
-          {user?.username ? `@${user?.username}` : ''}
-          {`${user?.whatIDo ? `• ${user?.whatIDo.name}` : ''}`}
-        </Animated.Text>
+      ) : (
+        <View />
       )}
-
-      {/* {user.role != 'individual' ? (
-          <Text style={{textAlign: 'center', color: '#5B7279'}}>
-            @nickdreamsalot . Minister and Ideator
-          </Text>
-        ) : null} */}
-      {direction == 'down' ? null : (
-        <Animated.View style={styles.manyimageview}>
-          <View
-            style={{
-              flex: 0,
-              padding: 5,
-            }}
-          >
-            <FlatList
-              data={user?.badgesData}
-              numColumns={3}
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <FastImage
-                  style={styles.firstimage}
-                  source={{
-                    uri: item.badge,
-                  }}
-                  resizeMode={FastImage.resizeMode.stretch}
-                />
-              )}
-            />
-          </View>
-        </Animated.View>
-      )}
-      {user?.isInfluencer == true || user?.accountType == 'organization' ? (
-        <>
-          <Text numberOfLines={3} style={styles.bio}>
-            {user?.bio}
-          </Text>
-          <TouchableOpacity onPress={() => OpenURLButton(user?.website)}>
-            <Text style={styles.onebodytext}>{user?.website}</Text>
-          </TouchableOpacity>
-        </>
-      ) : null}
-      {direction == 'down' ? null : (
-        <Animated.View>
-          {user?.isInfluencer == true ? (
-            <View style={{ alignItems: 'center' }}>
-              <Text
-                style={{
-                  color: '#032f3c',
-                  fontFamily: 'Rubik-Regular',
-                  marginVertical: getHeight(1),
-                }}
-              >
-                Reaching:{' '}
-                {user.followers > 999 ? `${(user.followers / 1000).toFixed(2)}k` : user.followers}
-              </Text>
-            </View>
-          ) : null}
-        </Animated.View>
-      )}
-      {direction == 'down' ? null : (
-        <View style={styles.bottomView}>
-          {user?._id && currentUser?.following.includes(user?._id) ? (
-            <Button
-              text={'Unfollow'}
-              btnStyle={{
-                ...styles.btn,
-                backgroundColor: '#F6F6F6',
-                borderWidth: 0,
-              }}
-              btnTextStyle={{
-                ...GeneralStyle.btnText,
-                color: '#595959',
-                letterSpacing: 0,
-              }}
-              onPress={() => {
-                handleUnSubscribe(user?._id);
-              }}
-            />
-          ) : (
-            <Button
-              text={'Follow'}
-              btnStyle={{
-                ...styles.btn,
-                backgroundColor: '#F6F6F6',
-                borderWidth: 0,
-              }}
-              btnTextStyle={{
-                ...GeneralStyle.btnText,
-                color: '#595959',
-                letterSpacing: 0,
-              }}
-              onPress={() => {
-                if (user?._id) handleSubscribe(user?._id);
-              }}
-            />
-          )}
-
-          {/* <Button
-            text={'Message'}
-            onPress={() => OpenConversation(user?._id)}
-            btnStyle={styles.btn}
-            btnTextStyle={{
-              ...GeneralStyle.btnText,
-              color: '#032f3c',
-              letterSpacing: 0,
-            }}
-          /> */}
-        </View>
-      )}
-
-      {user ? (
-        <>
-          {user?.isInfluencer == true && routes.length > 0 ? (
-            <TabView
-              navigationState={{ index, routes }}
-              renderScene={renderScene}
-              renderTabBar={renderTabBar}
-              onIndexChange={setIndex}
-              // initialLayout={{ width: getWidth(100) }}
-            />
-          ) : (
-            <SubscribeFlatlist
-              numColumns={3}
-              setScrollPosition={updateScrollPosition}
-              hideFollowButton={true}
-              itemStyle={{ width: '33%' }}
-              users={relatedUsers}
-            />
-          )}
-        </>
-      ) : null}
-
-      {/* </ScrollView> */}
     </View>
   );
 };

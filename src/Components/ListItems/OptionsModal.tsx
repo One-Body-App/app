@@ -1,4 +1,4 @@
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp, NavigationProp, useNavigation } from '@react-navigation/native';
 import { useTheme } from 'react-native-paper';
 import React from 'react';
 import { View, Share, Platform } from 'react-native';
@@ -17,9 +17,22 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { ArticleType } from '@/utils/types';
 import { isObject } from 'lodash';
 import { getuserGet } from '@/src/Redux/actions/UserAction';
+import {
+  ExploreStackParamsList,
+  MainDrawerParamsList,
+  MainBottomStackParamsList,
+} from '@/src/navigator/types';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { StackNavigationProp } from '@react-navigation/stack';
 
-type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
-
+type ScreenNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
+  CompositeNavigationProp<
+    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
+    BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
+  >
+>;
 const OptionsModal = ({
   show,
   setShow,
@@ -221,10 +234,17 @@ const OptionsModal = ({
                 btnTextStyle={{ color: colors.secondary }}
                 onPress={() => {
                   setShow(false);
-                  if (currentPopupItem)
-                    navigation.navigate('UserProfile', {
-                      id: currentPopupItem?.userData._id,
+                  if (currentPopupItem) {
+                    navigation.navigate('Main', {
+                      screen: 'ExploreTab',
+                      params: {
+                        screen: 'UserProfile',
+                        params: {
+                          id: currentPopupItem?.userData._id,
+                        },
+                      },
                     });
+                  }
                 }}
               />
             </View>

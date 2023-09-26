@@ -19,6 +19,8 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import { styles } from './style';
 import { decode } from 'html-entities';
 import { Caption } from 'react-native-paper';
+import { spacing } from '@/src/styles/spacing';
+import { StyledText } from '../styled/Text';
 
 const ArticleItem = ({
   item,
@@ -53,7 +55,7 @@ const ArticleItem = ({
       }}
       style={[
         styles.blogpostview,
-        { width: Dimensions.get('window').width - 32, backgroundColor: colors.background },
+        { backgroundColor: colors.background, marginHorizontal: spacing.x10 },
         blogPostStyle,
       ]}
     >
@@ -79,17 +81,20 @@ const ArticleItem = ({
         source={{ uri: item?.image?.url ?? NO_POST_IMAGE_URL }}
       />
 
-      <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, width: '100%' }}>
-        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'space-between' }}>
-          <View style={{ flex: 5 }}>
-            <Text
-              numberOfLines={2}
-              style={[styles.blogpostpara, { color: colors.text }, blogPostTitleStyle]}
-            >
+      <View style={{ paddingHorizontal: spacing.x10, paddingVertical: spacing.x10 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexGrow: 1,
+            justifyContent: 'space-between',
+          }}
+        >
+          <View style={{ flex: 1 }}>
+            <StyledText numberOfLines={2} style={[{ color: colors.text }, blogPostTitleStyle]}>
               {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
-            </Text>
+            </StyledText>
           </View>
-          <View style={{ flex: 1, justifyContent: 'center' }}>
+          <View style={{ flex: 0, justifyContent: 'center' }}>
             <TouchableOpacity
               onPress={() => {
                 showModal(item);
@@ -97,7 +102,7 @@ const ArticleItem = ({
             >
               <Entypo
                 name="dots-three-horizontal"
-                style={[styles.newsicon, { textAlign: 'right' }]}
+                style={[{ textAlign: 'right' }]}
                 size={iconSize ?? 25}
                 color={'#70747D'}
               />

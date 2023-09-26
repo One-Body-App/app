@@ -238,8 +238,8 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
   newspostimage: {
-    height: getHeight(22),
-    width: '100%',
+    // height: getHeight(22),
+    // width: '100%',
 
     borderTopLeftRadius: 5,
     borderTopRightRadius: 5,
@@ -258,8 +258,8 @@ export const styles = StyleSheet.create({
     ...shadowPosts,
     borderRadius: 5,
     // padding: 0,
-    position: 'relative',
-    flex: 1,
+    // position: 'relative',
+    // flex: 1,
 
     // alignSelf: 'center',
     // justifyContent: 'center',
@@ -277,7 +277,8 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 30,
     elevation: 0,
-    flex: 1,
+    width: '100%',
+    height: 200,
   },
   blogpostpara: {
     padding: 2,

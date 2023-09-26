@@ -71,7 +71,7 @@ const DrawerNav = () => {
 
   return (
     <>
-      {authState.getProfileData?.isProfileCompleted ? (
+      {!authState.getProfileData?.isProfileCompleted ? (
         <DrawerStack.Navigator
           screenOptions={{
             drawerType:

@@ -22,7 +22,7 @@ import { getuserAll } from '@/redux//actions/UserAction';
 import ImageModal from 'react-native-image-modal';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest, User } from '@/utils/types';
-import { RootStackParamList } from '@/src/_Navigation/types';
+
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { Colors, Typography } from '@/src/styles';
@@ -34,8 +34,9 @@ import { spacing } from '@/src/styles/spacing';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { iterestListItem, profileImageList } from '@/src/styles/items';
+import { MainDrawerParamsList } from '@/src/navigator/types';
 
-type Props = DrawerScreenProps<RootStackParamList, 'Connections'>;
+type Props = DrawerScreenProps<MainDrawerParamsList, 'Connections'>;
 
 const Connections = ({ navigation }: Props) => {
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
@@ -329,26 +330,25 @@ const Connections = ({ navigation }: Props) => {
                 </View>
               </TouchableOpacity>
             </View>
-            {userProfile?.isInfluencer ? (
-              <View style={{ flex: 1, alignItems: 'center' }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (filter != 'connections') setFilter('connections');
+
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (filter != 'connections') setFilter('connections');
+                }}
+              >
+                <View
+                  style={{
+                    paddingBottom: spacing.x10,
+                    borderBottomColor: Colors.neutral.brand,
+                    borderBottomWidth: filter == 'connections' ? 2 : 0,
+                    alignSelf: 'flex-start',
                   }}
                 >
-                  <View
-                    style={{
-                      paddingBottom: spacing.x10,
-                      borderBottomColor: Colors.neutral.brand,
-                      borderBottomWidth: filter == 'connections' ? 2 : 0,
-                      alignSelf: 'flex-start',
-                    }}
-                  >
-                    <StyledText>{searchResultsFollowers.length} Connections</StyledText>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+                  <StyledText>{searchResultsFollowers.length} Connections</StyledText>
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -359,11 +359,17 @@ const Connections = ({ navigation }: Props) => {
             renderItem={({ item }) => {
               return (
                 <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('UserProfile', {
-                      id: item?._id,
-                    })
-                  }
+                  onPress={() => {
+                    navigation.navigate('Main', {
+                      screen: 'ExploreTab',
+                      params: {
+                        screen: 'UserProfile',
+                        params: {
+                          id: item?._id,
+                        },
+                      },
+                    });
+                  }}
                   style={{
                     justifyContent: 'space-between',
                     flexDirection: 'row',
@@ -434,6 +440,7 @@ const Connections = ({ navigation }: Props) => {
                 </TouchableOpacity>
               );
             }}
+            scrollIndicatorInsets={{ right: 1 }}
           />
         </View>
 

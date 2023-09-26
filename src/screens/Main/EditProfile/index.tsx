@@ -81,7 +81,7 @@ const EditProfile = ({ navigation }: Props) => {
   const [bio, setBio] = useState<string>(user?.bio ?? '');
   const [whatIDo, setWhatIDo] = useState<string>(user?.profile.whatIDo?._id || '');
   const [organizationType, setOrganizationType] = useState<Tag | null>(
-    user?.typeOfOrganization ? user?.typeOfOrganization : null
+    user?.profile.typeOfOrganization ? user?.profile.typeOfOrganization : null
   );
 
   const [organizationContactName, setOrganizationContactName] = useState<string>(
@@ -643,8 +643,14 @@ const EditProfile = ({ navigation }: Props) => {
                     selectedItem={organizationType?._id}
                     btnText={!organizationType ? 'Select' : organizationType.name}
                     modalTitle="Select one"
-                    onChange={(item) => {
-                      setOrganizationType(item);
+                    onChange={(_id) => {
+                      const newOrganizationType = organizationTypes.filter(
+                        (item) => item._id == _id
+                      );
+
+                      if (newOrganizationType && newOrganizationType.length > 0) {
+                        setOrganizationType(newOrganizationType[0]);
+                      }
                     }}
                     wrapperStyle={{ marginTop: spacing.x16 }}
                   />

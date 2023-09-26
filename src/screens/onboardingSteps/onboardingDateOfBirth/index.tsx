@@ -40,6 +40,16 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
       onboardingType={AccountType.individual}
       activeStep={3}
       disabled={!date}
+      reasonText={
+        <>
+          <StyledText>
+            Why are we asking this? Your Date of Birth helps us to understand the type of content
+            you would be most interested in seeing so that we may enhance your One Body experience.
+          </StyledText>
+          <StyledText> </StyledText>
+          <StyledText>We do NOT publicly display this information.</StyledText>
+        </>
+      }
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>

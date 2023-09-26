@@ -324,7 +324,7 @@ const Explore = ({ navigation }: Props) => {
 
   const renderListHeader = () => {
     return (
-      <View style={{ flex: 3.5 }}>
+      <View style={{ flex: 3.5, paddingHorizontal: spacing.x24 }}>
         <View style={{ flexDirection: 'row' }}>
           <Button
             text={'My Connections'}
@@ -458,7 +458,7 @@ const Explore = ({ navigation }: Props) => {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={{ backgroundColor: colors.background, flex: 1, marginHorizontal: spacing.x24 }}>
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
         {renderListHeader()}
         <View style={{ flex: 8 }}>
           <FlatList
@@ -466,6 +466,8 @@ const Explore = ({ navigation }: Props) => {
             // contentContainerStyle={{
             //   flex: 1,
             // }}
+            contentContainerStyle={{ paddingHorizontal: spacing.x24 }}
+            scrollIndicatorInsets={{ right: 1 }}
             ListEmptyComponent={() => (
               <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                 <StyledText style={{ margin: spacing.x16 }}>
@@ -490,11 +492,21 @@ const Explore = ({ navigation }: Props) => {
             renderItem={({ item }) => {
               return (
                 <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('UserProfile', {
-                      id: item?._id,
-                    })
-                  }
+                  onPress={() => {
+                    // navigation.navigate('UserProfile', {
+                    //   id: item?._id,
+                    // })
+
+                    navigation.navigate('Main', {
+                      screen: 'ExploreTab',
+                      params: {
+                        screen: 'UserProfile',
+                        params: {
+                          id: item?._id,
+                        },
+                      },
+                    });
+                  }}
                   style={{ flex: 1, marginBottom: spacing.x24 }}
                 >
                   <View
@@ -758,11 +770,20 @@ const Explore = ({ navigation }: Props) => {
                   renderItem={({ item, index }) => {
                     return (
                       <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate('UserProfile', {
-                            id: item?._id,
-                          })
-                        }
+                        onPress={() => {
+                          // navigation.navigate('UserProfile', {
+                          //   id: item?._id,
+                          // })
+                          navigation.navigate('Main', {
+                            screen: 'ExploreTab',
+                            params: {
+                              screen: 'UserProfile',
+                              params: {
+                                id: item?._id,
+                              },
+                            },
+                          });
+                        }}
                         style={{
                           marginBottom: spacing.x24,
                           alignItems: 'center',

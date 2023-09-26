@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, Image, TouchableOpacity, SafeAreaView, StyleSheet } from 'react-native';
+import { View, Image, TouchableOpacity, SafeAreaView, StyleSheet } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
@@ -37,17 +37,17 @@ const AccountType = ({ route, navigation }: Props) => {
     <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
       <View style={{ flex: 1, paddingHorizontal: 30, justifyContent: 'space-between' }}>
         <View>
-          <Text style={[Typography.header.h1, { color: Colors.neutral[200], marginTop: 45 }]}>
+          <StyledText style={[Typography.header.h1, { color: Colors.neutral[200], marginTop: 45 }]}>
             What account type best describes you?
-          </Text>
-          <Text
+          </StyledText>
+          <StyledText
             style={[
               Typography.subheader.R,
               { color: Colors.neutral[300], marginTop: 15, marginBottom: 25 },
             ]}
           >
             Get started on your experience in connecting with others. Let's setup your account
-          </Text>
+          </StyledText>
 
           <TouchableOpacity
             style={[
@@ -66,7 +66,7 @@ const AccountType = ({ route, navigation }: Props) => {
               setAccountType(AccountTypeType.individual);
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <View
                 style={{
                   backgroundColor: Colors.neutral[800],
@@ -76,7 +76,19 @@ const AccountType = ({ route, navigation }: Props) => {
               >
                 <Profile color={Colors.primary.brand} />
               </View>
-              <Text style={{ marginLeft: 15 }}>I am an Individual</Text>
+              <View style={{ flex: 1 }}>
+                <StyledText style={{ marginLeft: 15, ...Typography.body.x3 }}>
+                  I am an Individual
+                </StyledText>
+                {accountType == AccountTypeType.individual ? (
+                  <StyledText
+                    style={{ marginLeft: 15, ...Typography.body.x2, color: Colors.neutral[300] }}
+                  >
+                    Individual profiles are for individuals, leaders, or any one person that desires
+                    to create a One Body profile.
+                  </StyledText>
+                ) : null}
+              </View>
             </View>
             <View
               style={[
@@ -112,7 +124,7 @@ const AccountType = ({ route, navigation }: Props) => {
               setAccountType(AccountTypeType.organization);
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <View
                 style={{
                   backgroundColor: Colors.neutral[800],
@@ -123,7 +135,19 @@ const AccountType = ({ route, navigation }: Props) => {
                 <People color={Colors.primary.brand} />
               </View>
 
-              <Text style={{ marginLeft: 15 }}>We are an Organization</Text>
+              <View style={{ flex: 1 }}>
+                <StyledText style={{ marginLeft: 15, ...Typography.body.x3 }}>
+                  We are an Organization
+                </StyledText>
+                {accountType == AccountTypeType.organization ? (
+                  <StyledText
+                    style={{ marginLeft: 15, ...Typography.body.x2, color: Colors.neutral[300] }}
+                  >
+                    Organization accounts are for Churches, Non-Profits, Businesses, or any
+                    Christian entities that desire to create a One Body profile.
+                  </StyledText>
+                ) : null}
+              </View>
             </View>
             <View
               style={[
