@@ -78,7 +78,7 @@ import DrawerNav from './DrawerStack';
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 export const headerOptions: NativeStackNavigationOptions = {
-  headerShadowVisible: false,
+  headerShadowVisible: Platform.OS != 'ios',
   headerTransparent: Platform.OS == 'ios' ? true : false,
   headerBackTitleVisible: false,
   headerTitle() {
@@ -315,13 +315,44 @@ const Main = () => {
           <>
             <MainStack.Screen name="Intro" component={Intro} options={{ headerShown: false }} />
             <MainStack.Screen name="AccountType" component={AccountType} options={headerOptions} />
-            <MainStack.Screen name="Login" component={Login} options={headerOptions} />
-            <MainStack.Screen name="SignUp" component={Signup} options={headerOptions} />
+            <MainStack.Screen
+              name="Login"
+              component={Login}
+              options={{
+                ...headerOptions,
+                headerStyle: {
+                  backgroundColor:
+                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                },
+                headerTransparent: false,
+              }}
+            />
+            <MainStack.Screen
+              name="SignUp"
+              component={Signup}
+              options={{
+                ...headerOptions,
+
+                headerTransparent: false,
+                headerStyle: {
+                  backgroundColor:
+                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                },
+              }}
+            />
 
             <MainStack.Screen
               name="ForgotPassword"
               component={ForgotPassword}
-              options={headerOptions}
+              options={{
+                ...headerOptions,
+
+                headerTransparent: false,
+                headerStyle: {
+                  backgroundColor:
+                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                },
+              }}
             />
           </>
         )}

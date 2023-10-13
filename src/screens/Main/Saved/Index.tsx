@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Touchable, StatusBar, Image, FlatList, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -26,13 +26,45 @@ import { Bookmark, NotificationBing } from 'iconsax-react-native';
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faBookmark } from '@fortawesome/free-solid-svg-icons';
+import { getProfile } from '@/src/Redux/actions/AuthActions';
 
 type Props = DrawerScreenProps<RootStackParamList, 'Saved'>;
 
 const Saved = ({ navigation }: Props) => {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const authState = useSelector((state: RootState) => state.auth);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const dispatch = useDispatch();
+
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      dispatch(
+        getProfile.Request({
+          token,
+        })
+      );
+    });
+
+    // Return the function to unsubscribe from the event so it gets removed on unmount
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
+    if (token) {
+      dispatch(
+        getProfile.Request({
+          token,
+        })
+      );
+    }
+  }, [token, isRefreshing]);
+
+  useEffect(() => {
+    // if (authState.getProfileSuccess == false) {
+    setIsRefreshing(false);
+    // }
+  }, [authState.getProfileSuccess]);
 
   const removePost = async (link: string) => {
     dispatch(setLoader(true));
@@ -68,6 +100,11 @@ const Saved = ({ navigation }: Props) => {
           data={user?.savedPost}
           numColumns={2}
           contentContainerStyle={{ flexGrow: 1 }}
+          onRefresh={() => {
+            setIsRefreshing(true);
+          }}
+          refreshing={isRefreshing}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => {
             return (
               <View style={{ flex: 1, justifyContent: 'center' }}>

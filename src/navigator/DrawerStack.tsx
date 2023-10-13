@@ -71,7 +71,7 @@ const DrawerNav = () => {
 
   return (
     <>
-      {!authState.getProfileData?.isProfileCompleted ? (
+      {authState.getProfileData?.isProfileCompleted ? (
         <DrawerStack.Navigator
           screenOptions={{
             drawerType:
@@ -159,7 +159,7 @@ const DrawerNav = () => {
             component={Saved}
             options={{
               title: 'Saved Posts',
-              drawerIcon: ({ color, size, focused }) => {
+              drawerIcon: ({ color, size }) => {
                 return <Feather name="bookmark" size={size} color={color} />;
               },
             }}
@@ -170,7 +170,7 @@ const DrawerNav = () => {
             component={Connections}
             options={{
               title: 'My Connections',
-              drawerIcon: ({ color, size, focused }) => {
+              drawerIcon: ({ color, size }) => {
                 return <Profile2User size={size} color={color} />;
               },
             }}

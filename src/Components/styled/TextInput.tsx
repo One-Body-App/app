@@ -53,14 +53,18 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
           flexDirection: 'row',
           backgroundColor: backgroundColorWrapper,
           paddingHorizontal: 14,
-          paddingVertical: Platform.OS == 'ios' ? 12 : 0,
+
           borderRadius: borderRadius.small,
           borderWidth: 1,
           borderColor: Colors.neutral[700],
         }}
       >
         {leftIcon ? leftIcon : null}
-        <TextInput ref={ref} style={[styles.input, inputStyle, poppins.base]} {...textInputProps} />
+        <TextInput
+          ref={ref}
+          style={[{ paddingVertical: 12 }, styles.input, inputStyle, poppins.base]}
+          {...textInputProps}
+        />
         {rightIcon ? rightIcon : null}
       </View>
       {showCharCounter && textInputProps.maxLength ? (

@@ -114,6 +114,10 @@ export type HomeStackParamsList = {
   };
   Search: undefined;
   Notifications: undefined;
+
+  UserProfile: {
+    id: string;
+  };
 };
 
 export type ExploreStackParamsList = {
@@ -257,7 +261,7 @@ export type OnboardingStackParamList = {
 };
 
 export type MainStackParamList = {
-  MainRoot: NavigatorScreenParams<MainDrawerParamsList>;
+  MainRoot?: NavigatorScreenParams<MainDrawerParamsList>;
   NewPassword: undefined;
   Intro: undefined;
   AccountType: undefined;

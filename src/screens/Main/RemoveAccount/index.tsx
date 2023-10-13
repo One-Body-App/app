@@ -225,7 +225,7 @@ const RemoveAccount = ({ navigation }: Props) => {
             </View>
 
             <Button
-              text="Delete Account"
+              text="Remove Account"
               onPress={() => {
                 setLoginSuccess(false);
                 // navigation.navigate('ConfirmLogin', {});

@@ -10,7 +10,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import SplashScreen from 'react-native-splash-screen';
 // import ZendeskChat from 'react-native-zendesk-chat';
 import dynamicLinks from '@react-native-firebase/dynamic-links';
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Platform, SafeAreaView } from 'react-native';
 import { ToastProvider } from 'react-native-toast-notifications';
 import {
   configureFonts,
@@ -20,6 +20,7 @@ import {
 import { Appearance } from 'react-native';
 
 import * as Sentry from '@sentry/react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 Sentry.init({
   dsn: 'https://5a54913b45c44079b31e038fc1e7b4aa@o4504958486642688.ingest.sentry.io/4504958800560128',
@@ -195,15 +196,19 @@ const App = () => {
   }, []);
 
   return (
-    <ToastProvider offsetTop={60}>
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          {/* <PaperProvider theme={theme}> */}
-          <Main />
-          {/* </PaperProvider> */}
-        </PersistGate>
-      </Provider>
-    </ToastProvider>
+    <SafeAreaProvider>
+      <ToastProvider offsetTop={60}>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            {/* <PaperProvider theme={theme}> */}
+
+            <Main />
+
+            {/* </PaperProvider> */}
+          </PersistGate>
+        </Provider>
+      </ToastProvider>
+    </SafeAreaProvider>
   );
 };
 export default Sentry.wrap(App);

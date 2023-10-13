@@ -45,7 +45,7 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
   // }, [tabs]);
 
   // navigation.getParent()?.setOptions({
-  //   screenOptions: {
+  //   screenOptions: {options
   //       header
   //   }
   // });
@@ -54,6 +54,7 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
   return (
     <Tab.Navigator
       screenOptions={{
+        headerStatusBarHeight: 0,
         headerShown: false,
         headerStyle: {
           backgroundColor: 'white',
@@ -70,10 +71,10 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
           backgroundColor: Platform.OS == 'ios' ? '#ffffffe6' : '#fff',
           borderTopWidth: 1,
           borderTopColor: Colors.neutral[800],
-          paddingVertical: Platform.OS == 'ios' ? 10 : 0,
+          // paddingVertical: Platform.OS == 'ios' ? 10 : 0,
         },
 
-        tabBarHideOnKeyboard: true,
+        // tabBarHideOnKeyboard: true,
         tabBarAllowFontScaling: false,
       }}
     >

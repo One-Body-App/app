@@ -224,8 +224,8 @@ const UserProfile = ({ navigation, route }: Props) => {
     <View style={{ flex: 1 }}>
       {user && currentUser ? (
         <ProfileComponent
-          user={user}
-          currentUserId={currentUser?._id}
+          profileData={user}
+          currentUser={currentUser}
           relatedUsers={relatedUsers}
         />
       ) : (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, useColorScheme, Platform } from 'react-native';
+import { Text, View, useColorScheme, Platform, StyleProp, ViewStyle } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
 import Button from '../Button';
@@ -26,9 +26,10 @@ interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
 
   socialLogin: Function;
   disabled?: boolean;
+  wrapperStyles?: ViewStyle;
 }
 
-const SignupButtons = ({ errorFromLogin, socialLogin, disabled }: Props) => {
+const SignupButtons = ({ errorFromLogin, socialLogin, disabled, wrapperStyles }: Props) => {
   const [error, seterror] = useState<string>(errorFromLogin ?? '');
 
   const [state, setState] = useState({
@@ -197,7 +198,7 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled }: Props) => {
 
   return (
     <>
-      <View style={styles.buttonList}>
+      <View style={[styles.buttonList, wrapperStyles]}>
         <Button
           disabled={disabled}
           leftIcon={<G height={40} />}

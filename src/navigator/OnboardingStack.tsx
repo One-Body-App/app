@@ -17,8 +17,6 @@ import OnboardingOrganizationContact from '../screens/onboardingSteps/onboarding
 import OnboardingOrganizationInfo from '../screens/onboardingSteps/onboardingOrganizationInfo';
 import OnboardingOrganizationType from '../screens/onboardingSteps/onboardingOrganizationType';
 
-import { useSelector } from 'react-redux';
-import { RootState } from '../Redux/reducers/rootReducer';
 import { headerOptions } from './Main';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();

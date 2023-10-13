@@ -26,7 +26,7 @@ function* UserGetRequest(params) {
         yield put(setLoader(false));
         yield put(setUserIntrest(res?.response?.interests));
       } else {
-        console.log('else part in working now', res?.response);
+        console.log('else part in working now');
         yield put(setLoader(false));
 
         yield put(setUserProfile(res?.response));

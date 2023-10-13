@@ -1,26 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, View, FlatList, TouchableOpacity, ScrollView, Share } from 'react-native';
-import Modal from 'react-native-modal';
-import { useDispatch, useSelector } from 'react-redux';
-import Toast from 'react-native-simple-toast';
-import { TabView, SceneRendererProps } from 'react-native-tab-view';
-import Add_badges from '@/assets/svg/Add_badges.svg';
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Button from '@/src/components/Button';
-import { styles } from './styles';
-import FastImage from 'react-native-fast-image';
-import { GeneralStyle } from '../../../constants/GeneralStyle';
+import { View, TouchableOpacity, Share, Platform } from 'react-native';
+
+import { SceneRendererProps } from 'react-native-tab-view';
 import TwitterFlatlist from '@/src/components/TwitterFlatlist';
 import BlogFlatlist from '@/src/components/BlogFlatlist';
 import InstagramFlatlist from '@/src/components/InstagramFlatlist';
-import Selected from '@/assets/svg/Selected.svg';
-import { getProfile, getBadges, setUserBadges } from '@/redux//actions/AuthActions';
 
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
+import { CompositeScreenProps } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { Badge } from '@/utils/types';
-import { OpenURLButton } from '@/src/Services/constants';
 import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
@@ -28,24 +16,17 @@ import {
 } from '@/src/navigator/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { StyledText } from '@/src/components/styled/Text';
-import { Colors, Spacing, Typography } from '@/src/styles';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
-import {
-  Add,
-  Calendar,
-  HomeHashtag,
-  Link2,
-  Link21,
-  Location,
-  Setting2,
-  ShieldTick,
-} from 'iconsax-react-native';
-import { button } from '@/src/styles/buttons';
 
-import { format, parseISO } from 'date-fns';
+import { Colors } from '@/src/styles';
+
+import { spacing } from '@/src/styles/spacing';
+import { Setting2 } from 'iconsax-react-native';
+
 import Profile from '@/src/components/Profile';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+import { useSelector } from 'react-redux';
+import SettingsSheet from './SettingsSheet';
 
 type Props = CompositeScreenProps<
   StackScreenProps<MyProfileStackParamsList, 'MyProfile'>,
@@ -107,6 +88,25 @@ const MyProfile = ({ navigation, route }: Props) => {
         headerRight: () => (
           <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
             <TouchableOpacity
+              style={{ marginRight: spacing.x16 }}
+              onPress={() => {
+                Share.share({
+                  title:
+                    // profileData?._id == currentUser._id ?
+                    `Check my profile on One Body App`,
+                  // : 'Check this profile on One Body App`',
+                  // message: `Check my profile in One Body App`,
+                  url: `https://app.onebodyapp.com/profile/${user?.username}`,
+                });
+              }}
+            >
+              {Platform.OS == 'android' ? (
+                <Ionicons name="share-social-outline" size={24} color={Colors.primary.brand} />
+              ) : (
+                <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => {
                 setShowSettings(true);
               }}
@@ -120,11 +120,7 @@ const MyProfile = ({ navigation, route }: Props) => {
           </View>
         ),
       });
-  }, [navigation]);
-
-  useEffect(() => {
-    setShowSettings(route.params?.openSettings ?? false);
-  }, [route.params?.openSettings]);
+  }, [navigation, user]);
 
   const renderScene = ({
     route,
@@ -163,42 +159,14 @@ const MyProfile = ({ navigation, route }: Props) => {
     }
   };
 
-  const { colors } = useTheme();
-
   if (!user) {
     return null;
   }
 
   return (
     <View style={{ flex: 1 }}>
-      <Profile user={user} currentUserId={user._id} />
-
-      <Modal
-        swipeDirection={['down']}
-        avoidKeyboard={true}
-        backdropOpacity={0.3}
-        isVisible={showSettings}
-        onBackdropPress={() => setShowSettings(false)}
-        onSwipeComplete={() => setShowSettings(false)}
-        // style={styles.bottomView}
-        style={{
-          justifyContent: 'flex-end',
-          margin: 0,
-        }}
-        propagateSwipe={true}
-      >
-        <View
-          style={{
-            paddingVertical: 18,
-            borderTopRightRadius: borderRadius.large,
-            borderTopLeftRadius: borderRadius.large,
-            height: '60%',
-            backgroundColor: colors.background,
-          }}
-        >
-          <StyledText>Edit Profule</StyledText>
-        </View>
-      </Modal>
+      <Profile profileData={user} currentUser={user} />
+      <SettingsSheet userData={user} showModal={showSettings} setShowModal={setShowSettings} />
     </View>
   );
 };

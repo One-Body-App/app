@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
-import { Badge, User } from '@/utils/types';
+import { AccountType, Badge, User } from '@/utils/types';
 import Button from './Button';
 import Modal from 'react-native-modal';
 import Selected from '@/assets/svg/Selected.svg';
@@ -35,14 +35,14 @@ type Route = {
 };
 
 interface Props {
-  user: User;
-  currentUserId: string;
+  profileData: User;
+  currentUser: User;
   relatedUsers?: User[];
 }
 
 export const profileImagesize = 80;
 
-const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
+const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
   const navigation = useNavigation<NavigationProp<MyProfileStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const authState = useSelector((state: RootState) => state.auth);
@@ -51,7 +51,7 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
   const [index, setIndex] = React.useState(0);
   const [routes, setRoutes] = React.useState<Route[]>([]);
 
-  const [selectedBadges, setSelectedBadges] = useState<Badge[]>(user?.badgesData ?? []);
+  const [selectedBadges, setSelectedBadges] = useState<Badge[]>(profileData?.badgesData ?? []);
 
   const updateScrollPosition = (position: number) => {
     // if (
@@ -88,7 +88,7 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
           <InstagramFlatlist
             setScrollPosition={updateScrollPosition}
             jumpTo={jumpTo}
-            userId={user._id}
+            userId={profileData._id}
             {...route}
           />
         );
@@ -98,14 +98,14 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
             setScrollPosition={updateScrollPosition}
             {...route}
             jumpTo={jumpTo}
-            userId={user._id}
+            userId={profileData._id}
           />
         );
       case 'Twitter':
         return (
           <TwitterFlatlist
             setScrollPosition={updateScrollPosition}
-            userId={user._id}
+            userId={profileData._id}
             jumpTo={jumpTo}
             {...route}
           />
@@ -122,15 +122,15 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
       <View style={{ flexDirection: 'row' }}>
         {props.navigationState.routes
           .filter((route) => {
-            if (user?.influencerProfile?.twitterId && route.key == 'Twitter') {
+            if (profileData?.influencerProfile?.twitterId && route.key == 'Twitter') {
               return true;
             }
 
-            if (user?.influencerProfile?.rssUrl && route.key == 'Blog') {
+            if (profileData?.influencerProfile?.rssUrl && route.key == 'Blog') {
               return true;
             }
 
-            if (user?.influencerProfile?.instagramId && route.key == 'Instagram') {
+            if (profileData?.influencerProfile?.instagramId && route.key == 'Instagram') {
               return true;
             }
 
@@ -181,29 +181,29 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
 
   useEffect(() => {
     if (authState?.setUserBadgesSuccess == true) {
-      dispatch(getProfile.Request({ token: token, accountType: user?.accountType }));
+      dispatch(getProfile.Request({ token: token, accountType: profileData?.accountType }));
     } else if (authState?.setUserBadgesSuccess == false) {
       Toast.show('Unable to set badges at this time!', Toast.LONG);
     }
   }, [authState?.setUserBadgesSuccess]);
 
   useEffect(() => {
-    if (user?.influencerProfile) {
+    if (profileData?.influencerProfile) {
       const routes = [];
-      if (user?.influencerProfile?.twitterId) {
+      if (profileData?.influencerProfile?.twitterId) {
         routes.push({ key: 'Twitter', title: 'Twitter' });
       }
 
-      if (user?.influencerProfile?.rssUrl) {
+      if (profileData?.influencerProfile?.rssUrl) {
         routes.push({ key: 'Blog', title: 'Blog/News' });
       }
 
-      if (user?.influencerProfile?.instagramId) {
+      if (profileData?.influencerProfile?.instagramId) {
         routes.push({ key: 'Instagram', title: 'Instagram' });
       }
       setRoutes(routes);
     }
-  }, [user]);
+  }, [profileData]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -215,29 +215,29 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
       <View>
         <View>
           <View style={{ width: '100%', height: 230 }}>
-            {user?.profileHeader ? (
+            {profileData?.profileHeader ? (
               <FastImage
                 style={{
                   height: 150,
                   width: '100%',
                 }}
                 source={{
-                  uri: user?.profileHeader,
+                  uri: profileData?.profileHeader,
                 }}
                 resizeMode={'cover'}
               />
             ) : (
               <View
                 style={{
-                  backgroundColor: Colors.primarySapphire.brand,
+                  backgroundColor: Colors.neutral[600],
                   height: 150,
                   width: '100%',
                 }}
               />
             )}
-            {user?.accountType == 'individual' &&
-            ((user?.badgesData?.length > 0 && user?._id != currentUserId) ||
-              (user?.badgesData?.length < 3 && user?._id == currentUserId)) ? (
+            {profileData?.accountType == 'individual' &&
+            ((profileData?.badgesData?.length > 0 && profileData?._id != currentUser._id) ||
+              (profileData?.badgesData?.length < 3 && profileData?._id == currentUser._id)) ? (
               <View
                 style={{
                   alignSelf: 'flex-end',
@@ -255,14 +255,14 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                     flexDirection: 'row',
                   }}
                 >
-                  {user?.badgesData?.length < 3 && user?._id == currentUserId && (
+                  {profileData?.badgesData?.length < 3 && profileData?._id == currentUser._id && (
                     <TouchableOpacity
                       style={{
                         borderColor: 'white',
                         borderWidth: borderWidth.thin,
                         borderRadius: borderRadius.max,
                         padding: spacing.x8,
-                        marginRight: user?.badgesData.length > 0 ? spacing.x10 : 0,
+                        marginRight: profileData?.badgesData.length > 0 ? spacing.x10 : 0,
                       }}
                       onPress={() => {
                         //getBadge();
@@ -274,22 +274,23 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                     </TouchableOpacity>
                   )}
 
-                  {user?.badgesData.map((item, index) => (
+                  {profileData?.badgesData.map((item, index) => (
                     <View key={index}>
-                      {user?.badgesData?.length < 3 ? (
+                      {profileData?.badgesData?.length < 3 ? (
                         <FastImage
                           style={{
                             width: 40,
                             height: 40,
                             borderRadius: borderRadius.max,
-                            marginRight: index == user?.badgesData.length - 1 ? 0 : spacing.x10,
+                            marginRight:
+                              index == profileData?.badgesData.length - 1 ? 0 : spacing.x10,
                           }}
                           source={{
                             uri: item.badge,
                           }}
                           resizeMode={FastImage.resizeMode.stretch}
                         />
-                      ) : (
+                      ) : profileData?._id == currentUser._id ? (
                         <TouchableOpacity
                           style={{ marginHorizontal: spacing.x10 }}
                           onPress={() => {
@@ -310,6 +311,18 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                             resizeMode={FastImage.resizeMode.stretch}
                           />
                         </TouchableOpacity>
+                      ) : (
+                        <FastImage
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: borderRadius.max,
+                          }}
+                          source={{
+                            uri: item.badge,
+                          }}
+                          resizeMode={FastImage.resizeMode.stretch}
+                        />
                       )}
                     </View>
                   ))}
@@ -333,7 +346,7 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                   borderColor: 'white',
                 }}
                 source={{
-                  uri: user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                  uri: profileData?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
                 }}
                 resizeMode={'cover'}
               />
@@ -348,47 +361,71 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                 paddingHorizontal: spacing.x24,
               }}
             >
-              {user?._id == currentUserId ? (
+              {profileData?._id == currentUser._id ? (
                 <Button
                   onPress={() => {
                     navigation.navigate('EditProfile');
                   }}
+                  text="Edit Profile"
                   btnStyle={[
                     button.primary,
                     {
-                      backgroundColor: Colors.neutral[700],
                       paddingVertical: spacing.x10,
                       paddingHorizontal: spacing.x16,
-                      marginRight: spacing.x10,
                     },
                   ]}
-                  text="Edit Profile"
-                  btnTextStyle={{ color: Colors.neutral[200] }}
+                  btnTextStyle={{ color: '#FFF' }}
                 />
-              ) : null}
-              <Button
-                onPress={() => {
-                  try {
-                    Share.share({
-                      title:
-                        user?._id == currentUserId
-                          ? `Check my profile on One Body App`
-                          : 'Check this profile on One Body App`',
-                      // message: `Check my profile in One Body App`,
-                      url: `https://app.onebodyapp.com/profile/${user?.username}`,
-                    });
-                  } catch (error: any) {}
-                }}
-                text="Share Profile"
-                btnStyle={[
-                  button.primary,
-                  {
-                    paddingVertical: spacing.x10,
-                    paddingHorizontal: spacing.x16,
-                  },
-                ]}
-                btnTextStyle={{ color: '#FFF' }}
-              />
+              ) : (
+                <>
+                  {/* <Button
+                    btnStyle={[
+                      button.primary,
+                      {
+                        backgroundColor: Colors.neutral[700],
+                        paddingVertical: spacing.x10,
+                        paddingHorizontal: spacing.x16,
+                        marginRight: spacing.x10,
+                      },
+                    ]}
+                    btnTextStyle={{ color: Colors.neutral[200] }}
+                    onPress={() => {
+                      try {
+                        Share.share({
+                          title:
+                            profileData?._id == currentUser._id
+                              ? `Check my profile on One Body App`
+                              : 'Check this profile on One Body App`',
+                          // message: `Check my profile in One Body App`,
+                          url: `https://app.onebodyapp.com/profile/${profileData?.username}`,
+                        });
+                      } catch (error: any) {}
+                    }}
+                    text="Share Profile"
+                  /> */}
+                  <Button
+                    onPress={() => {}}
+                    text={
+                      currentUser?.following.includes(profileData?._id) ? 'Connect' : 'Connected'
+                    }
+                    btnStyle={[
+                      button.primary,
+                      {
+                        paddingVertical: spacing.x10,
+                        paddingHorizontal: spacing.x16,
+                        backgroundColor: currentUser?.following.includes(profileData?._id)
+                          ? Colors.primarySapphire.brand
+                          : Colors.neutral[500],
+                      },
+                    ]}
+                    btnTextStyle={{
+                      color: currentUser?.following.includes(profileData?._id)
+                        ? '#FFF'
+                        : Colors.neutral[700],
+                    }}
+                  />
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -403,11 +440,11 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                 // },
               ]}
             >
-              {user?.accountType == 'organization' && user?.profile?.companyName
-                ? user?.profile?.companyName
-                : user?.name}
+              {profileData?.accountType == 'organization' && profileData?.profile?.companyName
+                ? profileData?.profile?.companyName
+                : profileData?.name}
             </StyledText>
-            {user?.influencerProfile?.influencerStatus == 'approved' ? (
+            {profileData?.influencerProfile?.influencerStatus == 'approved' ? (
               <Icon
                 name="check-decagram"
                 size={20}
@@ -428,84 +465,80 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
             ]}
           >
             <StyledText style={{ color: Colors.neutral[300] }}>
-              {user?.username ? `@${user?.username}` : ''}
+              {profileData?.username ? `@${profileData?.username}` : ''}
             </StyledText>
-            {user?.profile.whatIDo || user.profile.typeOfOrganization ? (
+            {profileData?.profile?.whatIDo || profileData?.profile?.typeOfOrganization ? (
               <StyledText style={{ color: Colors.neutral[300] }}>
-                {user?.username ? ` • ` : ''}
+                {profileData?.username ? ` • ` : ''}
               </StyledText>
             ) : null}
-            {`${user?.profile?.whatIDo ? `${user?.profile?.whatIDo.name}` : ''}`}
+            {`${profileData?.profile?.whatIDo ? `${profileData?.profile?.whatIDo?.name}` : ''}`}
             {`${
-              user?.profile?.typeOfOrganization ? `${user?.profile?.typeOfOrganization?.name}` : ''
+              profileData?.profile?.typeOfOrganization
+                ? `${profileData?.profile?.typeOfOrganization?.name}`
+                : ''
             }`}
           </StyledText>
-          {(user?.influencerProfile?.influencerStatus == 'approved' ||
-            user?.accountType == 'organization') &&
-          user?.bio ? (
+          {profileData?.influencerProfile?.influencerStatus == 'approved' && profileData?.bio ? (
             <StyledText
               numberOfLines={3}
               style={{ color: Colors.neutral[200], marginVertical: spacing.x24 }}
             >
-              {user?.bio}
+              {profileData?.bio}
             </StyledText>
           ) : null}
 
-          {user?._id == currentUserId ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                paddingBottom: spacing.x16,
-                justifyContent: 'center',
-              }}
-            >
-              {user?.profile.location?.address ? (
-                <View style={{ flexDirection: 'row', flex: 1 }}>
-                  <Location size={20} color={Colors.neutral.brand} />
-                  <StyledText
-                    style={{ marginHorizontal: spacing.x10, ...Typography.fontWeight.light }}
-                  >
-                    {user?.profile.location.address}
-                  </StyledText>
-                </View>
-              ) : null}
-
-              <View
-                style={{
-                  flexDirection: 'row',
-                  paddingLeft: user?.profile.location?.address ? spacing.x16 : 0,
-                  flex: 1,
-                }}
-              >
-                <Calendar size={20} color={Colors.neutral.brand} />
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              paddingBottom: spacing.x16,
+              justifyContent: 'center',
+            }}
+          >
+            {profileData?.profile?.location?.address ? (
+              <View style={{ flexDirection: 'row', flex: 1 }}>
+                <Location size={20} color={Colors.neutral.brand} />
                 <StyledText
                   style={{ marginHorizontal: spacing.x10, ...Typography.fontWeight.light }}
                 >
-                  Joined{' '}
-                  <StyledText style={{ ...Typography.fontWeight.light }}>
-                    {format(parseISO(user?.createdAt ?? ''), 'MMM yyyy')}
-                  </StyledText>
+                  {profileData?.profile?.location.address}
                 </StyledText>
               </View>
-            </View>
-          ) : null}
+            ) : null}
 
-          {user?.influencerProfile?.influencerStatus == 'approved' && user?._id == currentUserId ? (
             <View
-              style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
+              style={{
+                flexDirection: 'row',
+                paddingLeft: profileData?.profile?.location?.address ? spacing.x16 : 0,
+                flex: 1,
+              }}
             >
-              <ShieldTick size={20} color={Colors.neutral.brand} />
-
-              <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
-                Profile
+              <Calendar size={20} color={Colors.neutral.brand} />
+              <StyledText style={{ marginHorizontal: spacing.x10, ...Typography.fontWeight.light }}>
+                Joined{' '}
+                <StyledText style={{ ...Typography.fontWeight.light }}>
+                  {format(parseISO(profileData?.createdAt ?? ''), 'MMM yyyy')}
+                </StyledText>
               </StyledText>
-              <StyledText style={{}}>{user?.username ? ` • ` : ''}</StyledText>
-              <StyledText style={{ marginHorizontal: spacing.x10 }}>{user?.accountType}</StyledText>
             </View>
-          ) : null}
+          </View>
 
-          {user?._id == currentUserId ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}>
+            <ShieldTick size={20} color={Colors.neutral.brand} />
+
+            <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
+              Profile
+            </StyledText>
+            <StyledText style={{}}>{profileData?.username ? ` • ` : ''}</StyledText>
+            <StyledText style={{ marginHorizontal: spacing.x10, textTransform: 'capitalize' }}>
+              {profileData?.accountType}{' '}
+              {profileData?.influencerProfile?.influencerStatus == 'approved' ? 'Influencer' : ''}
+            </StyledText>
+          </View>
+
+          {profileData?._id == currentUser._id &&
+          profileData.accountType == AccountType.individual ? (
             <View
               style={{ flexDirection: 'row', alignItems: 'flex-start', paddingBottom: spacing.x16 }}
             >
@@ -515,12 +548,12 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                 Denomination
                 <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
                 <StyledText>
-                  {user?.profile.churchType}
-                  {user?.profile.churchSubType ? (
+                  {profileData?.profile.churchType}
+                  {profileData?.profile.churchSubType ? (
                     <>
                       {` - `}
 
-                      {user?.profile.churchSubType}
+                      {profileData?.profile.churchSubType}
                     </>
                   ) : null}
                 </StyledText>
@@ -528,7 +561,31 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
             </View>
           ) : null}
 
-          {user?.website ? (
+          {/* {profileData?._id == currentUser._id &&
+          profileData.accountType == AccountType.individual ? (
+            <View
+              style={{ flexDirection: 'row', alignItems: 'flex-start', paddingBottom: spacing.x16 }}
+            >
+              <HomeHashtag size={20} color={Colors.neutral.brand} />
+
+              <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
+                Denomination
+                <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
+                <StyledText>
+                  {profileData?.profile.churchType}
+                  {profileData?.profile.churchSubType ? (
+                    <>
+                      {` - `}
+
+                      {profileData?.profile.churchSubType}
+                    </>
+                  ) : null}
+                </StyledText>
+              </StyledText>
+            </View>
+          ) : null} */}
+
+          {profileData?.website ? (
             <View
               style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
             >
@@ -537,55 +594,51 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                 onPress={() =>
                   OpenURLButton(
                     `${
-                      user?.website.indexOf('https://') == -1
-                        ? `https://${user?.website}`
-                        : user?.website
+                      profileData?.website.indexOf('https://') == -1
+                        ? `https://${profileData?.website}`
+                        : profileData?.website
                     }`
                   )
                 }
                 style={{ justifyContent: 'center', marginLeft: spacing.x10 }}
               >
                 <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                  {user?.website}
+                  {profileData?.website}
                 </StyledText>
               </TouchableOpacity>
             </View>
           ) : null}
 
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {user?.influencerProfile?.influencerStatus == 'approved' ? (
-              <StyledText style={[Typography.body.x3M]}>
-                {user?.followerCount && user?.followerCount > 999
-                  ? `${(user.followerCount / 1000).toFixed(2)}k`
-                  : user?.followerCount && user?.followerCount > 999999
-                  ? `${(user.followerCount / 1000000).toFixed(2)}m`
-                  : user?.followerCount}{' '}
-                <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
-              </StyledText>
-            ) : null}
-            {user?.following ? (
-              <StyledText
-                style={[
-                  Typography.body.x3M,
-                  {
-                    marginLeft:
-                      user?.influencerProfile?.influencerStatus == 'approved' ? spacing.x24 : 0,
-                  },
-                ]}
-              >
-                {user?.following.length > 999
-                  ? `${(user.following.length / 1000).toFixed(2)}k`
-                  : user?.following.length > 999999
-                  ? `${(user.following.length / 1000000).toFixed(2)}m`
-                  : user?.following.length}{' '}
-                <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
-              </StyledText>
-            ) : null}
+            <StyledText style={[Typography.body.x3M]}>
+              {profileData?.followerCount && profileData?.followerCount > 999
+                ? `${(profileData.followerCount / 1000).toFixed(2)}k`
+                : profileData?.followerCount && profileData?.followerCount > 999999
+                ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
+                : profileData?.followerCount ?? 0}{' '}
+              <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
+            </StyledText>
+
+            <StyledText
+              style={[
+                Typography.body.x3M,
+                {
+                  marginLeft: spacing.x24,
+                },
+              ]}
+            >
+              {profileData?.following.length > 999
+                ? `${(profileData.following.length / 1000).toFixed(2)}k`
+                : profileData?.following.length > 999999
+                ? `${(profileData.following.length / 1000000).toFixed(2)}m`
+                : profileData?.following.length ?? 0}{' '}
+              <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
+            </StyledText>
           </View>
         </View>
       </View>
       <View style={{ flex: 3, paddingHorizontal: spacing.x24 }}>
-        {user?.influencerProfile?.influencerStatus == 'approved' && routes.length > 0 ? (
+        {profileData?.influencerProfile?.influencerStatus == 'approved' && routes.length > 0 ? (
           <TabView
             navigationState={{ index, routes }}
             renderScene={renderScene}
@@ -593,7 +646,7 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
             onIndexChange={setIndex}
             // initialLayout={{ width: getWidth(100) }}
           />
-        ) : user?._id != currentUserId && relatedUsers ? (
+        ) : profileData?._id != currentUser._id && relatedUsers ? (
           <SubscribeFlatlist
             numColumns={3}
             setScrollPosition={updateScrollPosition}
@@ -638,7 +691,7 @@ const Profile = ({ user, currentUserId, relatedUsers }: Props) => {
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => {
-                      if (user?.badges.includes(item?._id)) {
+                      if (profileData?.badges.includes(item?._id)) {
                         unselect(item?._id);
                       } else {
                         const badgeIndex = selectedBadges.findIndex((badgeToCheck) => {

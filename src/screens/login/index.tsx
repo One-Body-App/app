@@ -1,9 +1,8 @@
 import React from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import LoginComponent from '@/src/components/loginComponent';
 
-import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
 
 import { MainStackParamList } from '@/src/navigator/types';
@@ -19,21 +18,18 @@ const Login = ({ route, navigation }: Props) => {
 
   return (
     <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        // contentContainerStyle={{
-        //   marginTop: 615,
-        // }}
+      <ScrollView
+        keyboardShouldPersistTaps={'always'}
+        removeClippedSubviews={false}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        <ScrollView style={{ flex: 1 }}>
-          <LoginComponent
-            showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
-            enabledLoginProviders={loginProviders}
-            {...route.params}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <LoginComponent
+          showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
+          enabledLoginProviders={loginProviders}
+          {...route.params}
+        />
+      </ScrollView>
     </UserStepsLayout>
   );
 };

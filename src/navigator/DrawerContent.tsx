@@ -100,16 +100,15 @@ export default function DrawerContent({
                     Connectors
                   </StyledText>
                 </View>
-                {user?.followerCount && user?.followerCount > 0 ? (
-                  <View style={{ flexDirection: 'row' }}>
-                    <StyledText style={[Typography.body.x1M, { color: Colors.neutral.brand }]}>
-                      {user?.followerCount}{' '}
-                    </StyledText>
-                    <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
-                      Connections
-                    </StyledText>
-                  </View>
-                ) : null}
+
+                <View style={{ flexDirection: 'row' }}>
+                  <StyledText style={[Typography.body.x1M, { color: Colors.neutral.brand }]}>
+                    {user?.followerCount ?? 0}{' '}
+                  </StyledText>
+                  <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
+                    Connections
+                  </StyledText>
+                </View>
               </View>
             </View>
           </TouchableOpacity>

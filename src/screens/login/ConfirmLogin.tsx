@@ -18,6 +18,7 @@ import NewPassword from '../newPassword/NewPassword';
 import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
@@ -49,28 +50,23 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
   }, []);
 
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        // contentContainerStyle={{
-        //   marginTop: 615,
-        // }}
-      >
-        <ScrollView style={{ flex: 1 }}>
-          {route?.params?.mode == 'resetPassword' ? (
-            <NewPassword {...route.params} />
-          ) : (
-            <LoginComponent
-              showConfirmationEmailMessage={false}
-              verifyAccount={true}
-              currentUserEmail={userData?.email ?? ''}
-              enabledLoginProviders={enabledLoginProviders}
-              {...route.params}
-            />
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+    <UserStepsLayout
+      backgroundColor={dark ? colors.background : Colors.neutral[700]}
+      keyboardAvoidingViewStyle={{}}
+    >
+      <ScrollView style={{ flexGrow: 1, marginTop: spacing.x24 }}>
+        {route?.params?.mode == 'resetPassword' ? (
+          <NewPassword {...route.params} />
+        ) : (
+          <LoginComponent
+            showConfirmationEmailMessage={false}
+            verifyAccount={true}
+            currentUserEmail={userData?.email ?? ''}
+            enabledLoginProviders={enabledLoginProviders}
+            {...route.params}
+          />
+        )}
+      </ScrollView>
     </UserStepsLayout>
   );
 };

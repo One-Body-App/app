@@ -38,7 +38,7 @@ import { MainDrawerParamsList } from '@/src/navigator/types';
 
 type Props = DrawerScreenProps<MainDrawerParamsList, 'Connections'>;
 
-const Connections = ({ navigation }: Props) => {
+const Connected = ({ navigation }: Props) => {
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
 
   const [interests, setInterests] = useState<Interest[]>([]);
@@ -49,7 +49,7 @@ const Connections = ({ navigation }: Props) => {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.userProfile);
-  const [filter, setFilter] = useState<'connectors' | 'connections'>('connectors');
+  const [filter, setFilter] = useState<'connectors' | 'connected'>('connected');
 
   const [searchChannelsText, setSearchChannelsText] = useState<string>('');
 
@@ -334,18 +334,18 @@ const Connections = ({ navigation }: Props) => {
             <View style={{ flex: 1, alignItems: 'center' }}>
               <TouchableOpacity
                 onPress={() => {
-                  if (filter != 'connections') setFilter('connections');
+                  if (filter != 'connected') setFilter('connected');
                 }}
               >
                 <View
                   style={{
                     paddingBottom: spacing.x10,
                     borderBottomColor: Colors.neutral.brand,
-                    borderBottomWidth: filter == 'connections' ? 2 : 0,
+                    borderBottomWidth: filter == 'connected' ? 2 : 0,
                     alignSelf: 'flex-start',
                   }}
                 >
-                  <StyledText>{searchResultsFollowers.length} Connections</StyledText>
+                  <StyledText>{searchResultsFollowers.length} Connected</StyledText>
                 </View>
               </TouchableOpacity>
             </View>
@@ -554,4 +554,4 @@ const Connections = ({ navigation }: Props) => {
     </KeyboardAvoidingView>
   );
 };
-export default Connections;
+export default Connected;

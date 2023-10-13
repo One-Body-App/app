@@ -1,12 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
+
 import {
   View,
   TouchableOpacity,
   Animated,
   Dimensions,
-  KeyboardAvoidingView,
   Platform,
   Keyboard,
+  KeyboardAvoidingView,
+  StatusBar,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -25,7 +27,7 @@ import { useTheme } from '@react-navigation/native';
 import Recaptcha, { RecaptchaHandles } from 'react-native-recaptcha-that-works';
 import { ScrollView } from 'react-native';
 import { MainStackParamList } from '@/src/navigator/types';
-import UserStepsLayout from '../layout/UserStepsLayout';
+import UserStepsLayout, { BottomStepsText } from '../layout/UserStepsLayout';
 import { button } from '@/src/styles/buttons';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
 import { Colors, Typography } from '@/src/styles';
@@ -39,6 +41,8 @@ import { processLogin } from '@/src/Services/login';
 import SignupButtons from '@/src/components/SignupButtons';
 import Button from '@/src/components/Button';
 import { ApiCall } from '@/src/Services/api';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 const { width: wWidth } = Dimensions.get('window');
 
@@ -200,10 +204,14 @@ const SignupForm = ({ navigation, route }: Props) => {
     if (authState.signUpSuccess) {
       setIsloading(false);
       navigation.replace('Login', { showConfirmationEmailMessage: true });
-    } else if (authState.signUpSuccess == false) {
-      setIsloading(false);
+    } else if (authState.signUpSuccess === false) {
+      if (loading) {
+        setIsloading(false);
+      }
       console.log('Register Error', authState?.error);
-      setError(authState?.error ? authState?.error[0] : '');
+      if (authState?.error && authState?.error.length > 0 && authState?.error[0] != error) {
+        setError(authState?.error ? authState?.error[0] : '');
+      }
     }
 
     return () => {
@@ -312,197 +320,232 @@ const SignupForm = ({ navigation, route }: Props) => {
     }
   }, [route.params]);
 
+  const headerHeight = useHeaderHeight();
+
+  // const insets = useSafeAreaInsets();
+  // console.log(headerHeight);
+  // const [topPadding, setTopPadding] = useState(insets.top);
+  // console.log(topPadding);
+  // useEffect(() => {
+  //   // This useEffect is needed because insets are undefined at first for some reason
+  //   // https://github.com/th3rdwave/react-native-safe-area-context/issues/54
+
+  //   setTopPadding(insets.top);
+  // }, [insets.top]);
+
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        // contentContainerStyle={{
-        //   marginTop: 615,
+    <UserStepsLayout
+      backgroundColor={dark ? colors.background : Colors.neutral[700]}
+      keyboardVerticalOffset={
+        headerHeight + (Platform.OS == 'ios' ? 0 : 150) + (StatusBar.currentHeight ?? 0)
+      }
+      hideBottomText={true}
+    >
+      <ScrollView
+        ref={scrollView}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        // style={{ overflow: 'scroll', backgroundColor: 'red' }}
+        // style={{
+        //   flex: 1,
+        //   // padding: 25,
+        //   // marginTop: 40,
         // }}
       >
-        <ScrollView style={{ flex: 1 }} ref={scrollView}>
-          <View style={{ marginVertical: spacing.x48, marginHorizontal: spacing.x16 }}>
-            <StyledText style={[Typography.header.h1]}>
-              Create an account (
-              {route.params.accountType
-                ? route.params.accountType?.charAt(0).toUpperCase() +
-                  route.params.accountType?.slice(1)
-                : ''}
-              )
-            </StyledText>
-            <StyledText
-              style={[
-                Typography.subheader.R,
-                { color: Colors.neutral[300], marginTop: spacing.x8 },
-              ]}
-            >
-              Enter your details to enable us setup your account
-            </StyledText>
-          </View>
-          <View
-            style={{
-              marginHorizontal: spacing.x16,
-              paddingHorizontal: spacing.x16,
-              paddingVertical: spacing.x24,
-              flex: 1,
-              backgroundColor: '#FFF',
-              borderRadius: borderRadius.base,
-              marginBottom: spacing.x64,
+        <View
+          style={{
+            marginTop: spacing.x24,
+            marginBottom: spacing.x24,
+            marginHorizontal: spacing.x16,
+          }}
+        >
+          <StyledText style={[Typography.header.h1]}>
+            Create an account (
+            {route.params.accountType
+              ? route.params.accountType?.charAt(0).toUpperCase() +
+                route.params.accountType?.slice(1)
+              : ''}
+            )
+          </StyledText>
+          <StyledText
+            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+          >
+            Enter your details to enable us setup your account
+          </StyledText>
+        </View>
+        <View
+          style={{
+            marginHorizontal: spacing.x16,
+            paddingHorizontal: spacing.x16,
+            paddingVertical: spacing.x24,
+            // flex: 1,
+            backgroundColor: '#FFF',
+            borderRadius: borderRadius.base,
+            marginBottom: spacing.x64,
+          }}
+        >
+          <TouchableOpacity
+            style={{ flexDirection: 'row', marginBottom: spacing.x24 }}
+            onPress={() => {
+              navigation.replace('Login');
             }}
           >
-            <TouchableOpacity
-              style={{ flexDirection: 'row', marginBottom: spacing.x24 }}
-              onPress={() => {
-                navigation.replace('Login');
+            <StyledText>Already have an account? </StyledText>
+            <StyledText style={{ color: Colors.primarySapphire.brand }}>Sign in</StyledText>
+          </TouchableOpacity>
+          <View style={{ marginBottom: spacing.x10 }}>
+            <SignupButtons
+              wrapperStyles={{ flex: 0 }}
+              socialLogin={socialLogin}
+              navigation={navigation}
+              route={route}
+              errorFromLogin={socialError}
+              disabled={!!!accountType}
+            />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+            <View
+              style={{
+                borderBottomColor: Colors.neutral[800],
+                borderBottomWidth: borderWidth.thin,
+                flex: 1,
               }}
-            >
-              <StyledText>Already have an account? </StyledText>
-              <StyledText style={{ color: Colors.primarySapphire.brand }}>Sign in</StyledText>
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <SignupButtons
-                socialLogin={socialLogin}
-                navigation={navigation}
-                route={route}
-                errorFromLogin={socialError}
-                disabled={!!!accountType}
-              />
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-              <View
-                style={{
-                  borderBottomColor: Colors.neutral[800],
-                  borderBottomWidth: borderWidth.thin,
-                  flex: 1,
-                }}
-              />
-
-              <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[300] }}>
-                Or
-              </StyledText>
-              <View
-                style={{
-                  borderBottomColor: Colors.neutral[800],
-                  borderBottomWidth: borderWidth.thin,
-                  flex: 1,
-                }}
-              />
-            </View>
-            <StyledTextInput
-              wrapperStyle={{ marginTop: 15 }}
-              ref={inputRefs.username}
-              value={state.username}
-              returnKeyType={'next'}
-              label="Username"
-              onFocus={() => setState({ ...state, usernameError: '' })}
-              placeholder="Enter username"
-              onBlur={
-                () => {}
-                // validateFields(state.username, 'username', (error) =>
-                //   setState({ ...state, usernameError: error })
-                // )
-              }
-              onSubmitEditing={() => inputRefs.name.current?.focus()}
-              onChangeText={(username) => changeHandler('username', username)}
-              autoCorrect={false}
-              autoComplete="username"
-              keyboardType="default"
-              autoCapitalize="none"
-              textContentType="username"
             />
 
-            {state.usernameError ? (
-              <StyledText style={{ ...GeneralStyle.InputError }}>{state.usernameError}</StyledText>
-            ) : null}
-
-            <StyledTextInput
-              wrapperStyle={{ marginTop: 15 }}
-              ref={inputRefs.name}
-              label="Full Name"
-              placeholder="Enter your full name"
-              value={state.name}
-              returnKeyType={'next'}
-              onFocus={() => setState({ ...state, nameError: '' })}
-              onBlur={
-                () => {}
-                // validateFields(state.name, 'name', (error) =>
-                //   setState({ ...state, nameError: error })
-                // )
-              }
-              onSubmitEditing={() => inputRefs.email.current?.focus()}
-              onChangeText={(name) => changeHandler('name', name)}
-              keyboardType="default"
-              autoCapitalize="words"
+            <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[300] }}>
+              Or
+            </StyledText>
+            <View
+              style={{
+                borderBottomColor: Colors.neutral[800],
+                borderBottomWidth: borderWidth.thin,
+                flex: 1,
+              }}
             />
+          </View>
+          <StyledTextInput
+            wrapperStyle={{ marginTop: spacing.x16 }}
+            ref={inputRefs.username}
+            value={state.username}
+            returnKeyType={'next'}
+            returnKeyLabel="next"
+            label="Username"
+            autoCapitalize={'none'}
+            onFocus={() => setState({ ...state, usernameError: '' })}
+            placeholder="Enter username"
+            onBlur={
+              () => {}
+              // validateFields(state.username, 'username', (error) =>
+              //   setState({ ...state, usernameError: error })
+              // )
+            }
+            onSubmitEditing={() => inputRefs.name.current?.focus()}
+            onChangeText={(username) => changeHandler('username', username)}
+            autoCorrect={false}
+            autoComplete="username"
+            keyboardType="default"
+            textContentType="username"
+            blurOnSubmit={false}
+          />
 
-            {state.nameError ? (
-              <StyledText style={{ ...GeneralStyle.InputError }}>{state.nameError}</StyledText>
-            ) : null}
+          {state.usernameError ? (
+            <StyledText style={{ ...GeneralStyle.InputError }}>{state.usernameError}</StyledText>
+          ) : null}
 
-            <StyledTextInput
-              wrapperStyle={{ marginTop: 15 }}
-              ref={inputRefs.email}
-              value={state.email}
-              label="Email"
-              placeholder="Enter your email"
-              returnKeyType={'next'}
-              keyboardType="email-address"
-              autoCorrect={false}
-              onFocus={() => setState({ ...state, emailError: '' })}
-              onBlur={
-                () => {}
-                // validateFields(state.email, 'email', (error) =>
-                //   setState({ ...state, emailError: error })
-                // )
-              }
-              onSubmitEditing={() => inputRefs.password.current?.focus()}
-              onChangeText={(email) => changeHandler('email', email.trim())}
-              autoCapitalize="none"
-              autoComplete="email"
-              textContentType="emailAddress"
-            />
+          <StyledTextInput
+            wrapperStyle={{ marginTop: 15 }}
+            ref={inputRefs.name}
+            label="Full Name"
+            placeholder="Enter your full name"
+            value={state.name}
+            returnKeyType={'next'}
+            returnKeyLabel="next"
+            onFocus={() => setState({ ...state, nameError: '' })}
+            onBlur={
+              () => {}
+              // validateFields(state.name, 'name', (error) =>
+              //   setState({ ...state, nameError: error })
+              // )
+            }
+            onSubmitEditing={() => inputRefs.email.current?.focus()}
+            onChangeText={(name) => changeHandler('name', name)}
+            keyboardType="default"
+            autoCapitalize="words"
+            blurOnSubmit={false}
+          />
 
-            {state.emailError ? (
-              <StyledText style={{ ...GeneralStyle.InputError }}>{state.emailError}</StyledText>
-            ) : null}
+          {state.nameError ? (
+            <StyledText style={{ ...GeneralStyle.InputError }}>{state.nameError}</StyledText>
+          ) : null}
 
-            <StyledTextInput
-              ref={inputRefs.password}
-              value={state.password}
-              label="Password"
-              returnKeyType={'next'}
-              secureTextEntry={hidePass ? true : false}
-              textContentType={'newPassword'}
-              passwordRules="minlength: 6; required: digit; required: special; allowed: upper,lower;"
-              autoComplete="password-new"
-              placeholder="Enter your password"
-              rightIcon={
-                <View style={{ justifyContent: 'center' }}>
-                  <MaterialCommunityIcons
-                    name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-                    size={20}
-                    color={Colors.primarySapphire[500]}
-                    style={{
-                      alignSelf: 'center',
-                    }}
-                    onPress={() => setHidePass(!hidePass)}
-                  />
-                </View>
-              }
-              autoCorrect={false}
-              wrapperStyle={{ marginTop: 15 }}
-              onFocus={() => setState({ ...state, passwordError: '' })}
-              onBlur={() =>
-                validateFields(state.password, 'password', (error) =>
-                  setState({ ...state, passwordError: error })
-                )
-              }
-              onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
-              onChangeText={(password) => changeHandler('password', password)}
-            />
+          <StyledTextInput
+            wrapperStyle={{ marginTop: 15 }}
+            ref={inputRefs.email}
+            value={state.email}
+            label="Email"
+            placeholder="Enter your email"
+            returnKeyType={'next'}
+            returnKeyLabel="next"
+            keyboardType="email-address"
+            autoCorrect={false}
+            onFocus={() => setState({ ...state, emailError: '' })}
+            onBlur={
+              () => {}
+              // validateFields(state.email, 'email', (error) =>
+              //   setState({ ...state, emailError: error })
+              // )
+            }
+            onSubmitEditing={() => inputRefs.password.current?.focus()}
+            onChangeText={(email) => changeHandler('email', email.trim())}
+            autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
+            blurOnSubmit={false}
+          />
 
-            {/* <View style={[styles.passwordStrengthWrapper]}>
+          {state.emailError ? (
+            <StyledText style={{ ...GeneralStyle.InputError }}>{state.emailError}</StyledText>
+          ) : null}
+
+          <StyledTextInput
+            ref={inputRefs.password}
+            value={state.password}
+            label="Password"
+            returnKeyType={'next'}
+            returnKeyLabel="next"
+            secureTextEntry={hidePass ? true : false}
+            textContentType={'newPassword'}
+            autoCapitalize={'none'}
+            autoCorrect={false}
+            passwordRules="minlength: 6; required: digit; required: special; allowed: upper,lower;"
+            autoComplete="password-new"
+            placeholder="Enter your password"
+            blurOnSubmit={false}
+            rightIcon={
+              <View style={{ justifyContent: 'center' }}>
+                <MaterialCommunityIcons
+                  name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={Colors.primarySapphire[500]}
+                  style={{
+                    alignSelf: 'center',
+                  }}
+                  onPress={() => setHidePass(!hidePass)}
+                />
+              </View>
+            }
+            wrapperStyle={{ marginTop: 15 }}
+            onFocus={() => setState({ ...state, passwordError: '' })}
+            onBlur={() =>
+              validateFields(state.password, 'password', (error) =>
+                setState({ ...state, passwordError: error })
+              )
+            }
+            onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
+            onChangeText={(password) => changeHandler('password', password)}
+          />
+
+          {/* <View style={[styles.passwordStrengthWrapper]}>
               <Animated.View
                 style={[
                   styles.passwordStrengthBar,
@@ -516,167 +559,168 @@ const SignupForm = ({ navigation, route }: Props) => {
               </Animated.View>
             </View> */}
 
-            {state.password.length > 0 ? (
-              <View style={{ marginVertical: 10 }}>
-                {passwordStrength < 5 ? (
-                  <View style={{ flexDirection: 'row' }}>
-                    <MaterialCommunityIcons
-                      name={!passwordTracker.sixCharsOrMore ? 'close' : 'check'}
-                      size={20}
-                      color={!passwordTracker.sixCharsOrMore ? 'red' : 'green'}
-                      style={
-                        {
-                          // alignSelf: 'center',
-                          // justifyContent: 'center',
-                          // marginTop: getHeight(1),
-                        }
+          {state.password.length > 0 ? (
+            <View style={{ marginVertical: 10 }}>
+              {passwordStrength < 5 ? (
+                <View style={{ flexDirection: 'row' }}>
+                  <MaterialCommunityIcons
+                    name={!passwordTracker.sixCharsOrMore ? 'close' : 'check'}
+                    size={20}
+                    color={!passwordTracker.sixCharsOrMore ? 'red' : 'green'}
+                    style={
+                      {
+                        // alignSelf: 'center',
+                        // justifyContent: 'center',
+                        // marginTop: getHeight(1),
                       }
-                    />
-                    <StyledText
-                      style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : 'green' }}
-                    >
-                      At least 6 characters
-                    </StyledText>
-                  </View>
-                ) : null}
-
-                <View style={{ flexDirection: 'row' }}>
-                  <MaterialCommunityIcons
-                    name={!passwordTracker.specialChar ? 'close' : 'check'}
-                    size={20}
-                    color={!passwordTracker.specialChar ? 'red' : 'green'}
+                    }
                   />
-                  <StyledText style={{ color: !passwordTracker.specialChar ? 'red' : 'green' }}>
-                    At least 1 special character
+                  <StyledText style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : 'green' }}>
+                    At least 6 characters
                   </StyledText>
                 </View>
+              ) : null}
 
-                <View style={{ flexDirection: 'row' }}>
-                  <MaterialCommunityIcons
-                    name={!passwordTracker.number ? 'close' : 'check'}
-                    size={20}
-                    color={!passwordTracker.number ? 'red' : 'green'}
-                  />
-                  <StyledText style={{ color: !passwordTracker.number ? 'red' : 'green' }}>
-                    Contains at least 1 number
-                  </StyledText>
-                </View>
+              <View style={{ flexDirection: 'row' }}>
+                <MaterialCommunityIcons
+                  name={!passwordTracker.specialChar ? 'close' : 'check'}
+                  size={20}
+                  color={!passwordTracker.specialChar ? 'red' : 'green'}
+                />
+                <StyledText style={{ color: !passwordTracker.specialChar ? 'red' : 'green' }}>
+                  At least 1 special character
+                </StyledText>
               </View>
-            ) : null}
 
-            <StyledTextInput
-              ref={inputRefs.cPassword}
-              value={state.cPassword}
-              returnKeyType={'done'}
-              label="Confirm Password"
-              placeholder="Confirm your password"
-              secureTextEntry={chidePass ? true : false}
-              rightIcon={
-                <View style={{ justifyContent: 'center' }}>
-                  <MaterialCommunityIcons
-                    name={chidePass ? 'eye-outline' : 'eye-off-outline'}
-                    size={20}
-                    color={Colors.primarySapphire[500]}
-                    style={{
-                      alignSelf: 'center',
-                    }}
-                    onPress={() => setcHidePass(!chidePass)}
-                  />
-                </View>
-              }
-              wrapperStyle={{ marginTop: 15 }}
-              onFocus={() => setState({ ...state, cPasswordError: '' })}
-              onBlur={() =>
-                validateFields(
-                  state.cPassword,
-                  'cPassword',
-                  (error) => setState({ ...state, cPasswordError: error }),
-                  { password: state.password }
-                )
-              }
-              onSubmitEditing={() => signUpUser()}
-              onChangeText={(cPassword) => changeHandler('cPassword', cPassword)}
-            />
-            <StyledText style={{ ...GeneralStyle.InputError }}>{state.cPasswordError}</StyledText>
-
-            <Recaptcha
-              ref={recaptcha}
-              siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
-              baseUrl="http://www.onebodyapp.com"
-              onVerify={onVerify}
-              onExpire={onExpire}
-              size="invisible"
-            />
-
-            <View style={{ flexDirection: 'row', flex: 1, flexWrap: 'wrap', marginBottom: 20 }}>
-              <StyledText style={{ color: dark ? colors.text : '#032F3C' }}>
-                By creating an account, you agree to our
-              </StyledText>
-
-              <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
-                <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
-                  User Agreements
+              <View style={{ flexDirection: 'row' }}>
+                <MaterialCommunityIcons
+                  name={!passwordTracker.number ? 'close' : 'check'}
+                  size={20}
+                  color={!passwordTracker.number ? 'red' : 'green'}
+                />
+                <StyledText style={{ color: !passwordTracker.number ? 'red' : 'green' }}>
+                  Contains at least 1 number
                 </StyledText>
-              </TouchableOpacity>
-              <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
-                {' '}
-                &{' '}
-              </StyledText>
-              <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
-                <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
-                  Privacy Policy
-                </StyledText>
-              </TouchableOpacity>
+              </View>
             </View>
+          ) : null}
 
-            {error && error != '' ? (
-              <View style={{ padding: 5, flexDirection: 'row', marginBottom: 10 }}>
-                <StyledText
+          <StyledTextInput
+            ref={inputRefs.cPassword}
+            value={state.cPassword}
+            returnKeyType={'done'}
+            returnKeyLabel="done"
+            label="Confirm Password"
+            autoCapitalize={'none'}
+            autoCorrect={false}
+            placeholder="Confirm your password"
+            secureTextEntry={chidePass ? true : false}
+            blurOnSubmit={false}
+            rightIcon={
+              <View style={{ justifyContent: 'center' }}>
+                <MaterialCommunityIcons
+                  name={chidePass ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={Colors.primarySapphire[500]}
                   style={{
-                    color: 'red',
-                    // left: getWidth(3),
-                    // width: getWidth(78),
-                    // fontSize: getFontSize(2),
+                    alignSelf: 'center',
                   }}
-                >
-                  {error}
-                </StyledText>
+                  onPress={() => setcHidePass(!chidePass)}
+                />
               </View>
-            ) : null}
+            }
+            wrapperStyle={{ marginTop: 15 }}
+            onFocus={() => setState({ ...state, cPasswordError: '' })}
+            onBlur={() =>
+              validateFields(
+                state.cPassword,
+                'cPassword',
+                (error) => setState({ ...state, cPasswordError: error }),
+                { password: state.password }
+              )
+            }
+            onSubmitEditing={() => signUpUser()}
+            onChangeText={(cPassword) => changeHandler('cPassword', cPassword)}
+          />
+          <StyledText style={{ ...GeneralStyle.InputError }}>{state.cPasswordError}</StyledText>
 
-            <Button
-              text="Create Account"
-              btnStyle={[
-                button.primary,
-                {
-                  flex: 1,
-                },
-              ]}
-              disabledBtnStyle={[
-                button.primary,
-                {
-                  flex: 1,
-                  opacity: 0.4,
-                },
-              ]}
-              onPress={() => {
-                signUpUser();
-              }}
-              btnTextStyle={{ color: '#FFF' }}
-              disabledBtnTextStyle={{ color: '#FFF' }}
-              wrapperBtnStyle={{ flex: 1 }}
-              disabled={
-                loading ||
-                !state.cPassword ||
-                !state.password ||
-                !state.email ||
-                !state.name ||
-                !state.username
-              }
-            />
+          <Recaptcha
+            ref={recaptcha}
+            siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
+            baseUrl="http://www.onebodyapp.com"
+            onVerify={onVerify}
+            onExpire={onExpire}
+            size="invisible"
+          />
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: spacing.x24 }}>
+            <StyledText style={{ color: dark ? colors.text : '#032F3C' }}>
+              By creating an account, you agree to our
+            </StyledText>
+
+            <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
+              <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
+                User Agreements
+              </StyledText>
+            </TouchableOpacity>
+            <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
+              {' '}
+              &{' '}
+            </StyledText>
+            <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
+              <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
+                Privacy Policy
+              </StyledText>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          {error && error != '' ? (
+            <View style={{ padding: 5, flexDirection: 'row', marginBottom: 10 }}>
+              <StyledText
+                style={{
+                  color: 'red',
+                  // left: getWidth(3),
+                  // width: getWidth(78),
+                  // fontSize: getFontSize(2),
+                }}
+              >
+                {error}
+              </StyledText>
+            </View>
+          ) : null}
+
+          <Button
+            text="Create Account"
+            btnStyle={[
+              button.primary,
+              {
+                flex: 1,
+              },
+            ]}
+            disabledBtnStyle={[
+              button.primary,
+              {
+                flex: 1,
+                opacity: 0.4,
+              },
+            ]}
+            onPress={() => {
+              signUpUser();
+            }}
+            btnTextStyle={{ color: '#FFF' }}
+            disabledBtnTextStyle={{ color: '#FFF' }}
+            disabled={
+              loading ||
+              !state.cPassword ||
+              !state.password ||
+              !state.email ||
+              !state.name ||
+              !state.username
+            }
+          />
+        </View>
+        <BottomStepsText />
+      </ScrollView>
     </UserStepsLayout>
   );
 };

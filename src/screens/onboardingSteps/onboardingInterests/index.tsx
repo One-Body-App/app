@@ -83,8 +83,12 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
     <OnboardingStepsLayout
       buttonText={'Next'}
       onPress={() => {
-        if (selectedInterest.length > 0) {
+        if (selectedInterest.length >= 3) {
           addInterests();
+        } else {
+          toast.show('Select at least 3 topics to continue', {
+            type: 'danger',
+          });
         }
       }}
       onboardingType={route.params.profileType}

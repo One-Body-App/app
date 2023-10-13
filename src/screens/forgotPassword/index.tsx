@@ -76,110 +76,101 @@ const ForgotPassword = ({ navigation }: Props) => {
   };
   const { dark } = useTheme();
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[600]}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        // contentContainerStyle={{
-        //   marginTop: 615,
-        // }}
-      >
-        <ScrollView style={{ flex: 1 }}>
-          <View style={{ flex: 1, marginHorizontal: spacing.x16 }}>
-            <View style={{ marginVertical: spacing.x16 }}>
-              <StyledText style={[Typography.header.h1]}>Forgot your password?</StyledText>
+    <UserStepsLayout backgroundColor={colors.background}>
+      <ScrollView style={{ flexGrow: 1 }}>
+        <View style={{ marginHorizontal: spacing.x16 }}>
+          <View style={{ marginVertical: spacing.x16 }}>
+            <StyledText style={[Typography.header.h1]}>Forgot your password?</StyledText>
 
-              <StyledText
-                style={[
-                  Typography.subheader.R,
-                  { color: Colors.neutral[200], marginTop: spacing.x8 },
-                ]}
-              >
-                No problem! Enter the email address that you signed up with to reset it.
-              </StyledText>
-            </View>
-            <View
-              style={{
-                paddingHorizontal: spacing.x16,
-                paddingVertical: spacing.x24,
-
-                backgroundColor: colors.background,
-                borderRadius: borderRadius.base,
-                marginBottom: spacing.x64,
-                marginTop: spacing.x32,
-              }}
+            <StyledText
+              style={[
+                Typography.subheader.R,
+                { color: Colors.neutral[200], marginTop: spacing.x8 },
+              ]}
             >
-              <View style={{ flex: 1 }}>
-                {showSuccess ? (
-                  <View
-                    style={[
-                      GeneralStyle.MessageView,
-                      { backgroundColor: Colors.successFeedback.background },
-                    ]}
-                  >
-                    <StyledText style={GeneralStyle.successtext}>
-                      If you have an account with us, You will get an email with the instructions to
-                      reset your password
-                    </StyledText>
-                  </View>
-                ) : null}
-                <StyledTextInput
-                  wrapperStyle={{ flex: 1 }}
-                  value={email}
-                  keyboardType="email-address"
-                  label={'Email'}
-                  placeholder="Email address"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  onChangeText={(e) => {
-                    setEmail(e), setEmailError(false);
-                  }}
-                />
-                {error != null ? (
-                  <StyledText style={{ ...GeneralStyle.InputError }}>{error}</StyledText>
-                ) : null}
-              </View>
-              <Button
-                text="Send Reset Link"
-                btnStyle={[
-                  button.primary,
-                  {
-                    flex: 1,
-                  },
-                ]}
-                disabled={!email}
-                disabledBtnStyle={[
-                  button.primary,
-                  {
-                    backgroundColor: Colors.primarySapphire[200],
-                    flex: 1,
-                    opacity: 0.4,
-                  },
-                ]}
-                onPress={() => forget()}
-                btnTextStyle={{ color: '#FFF' }}
-                disabledBtnTextStyle={{ color: Colors.primarySapphire[600] }}
-              />
-            </View>
+              No problem! Enter the email address that you signed up with to reset it.
+            </StyledText>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: spacing.x16,
+              paddingVertical: spacing.x24,
 
-            <View style={{ alignItems: 'flex-start' }}>
-              <Button
-                onPress={() => {
-                  Linking.openURL('mailto:support@onebodyapp.com');
-                }}
-                text={'Still having issues? '}
-                wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'flex-end' }}
-                btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[200] }]}
-                rightIcon={
-                  <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                    Contact us
+              backgroundColor: colors.background,
+              borderRadius: borderRadius.base,
+              marginBottom: spacing.x64,
+              marginTop: spacing.x32,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              {showSuccess ? (
+                <View
+                  style={[
+                    GeneralStyle.MessageView,
+                    { backgroundColor: Colors.successFeedback.background },
+                  ]}
+                >
+                  <StyledText style={GeneralStyle.successtext}>
+                    If you have an account with us, You will get an email with the instructions to
+                    reset your password
                   </StyledText>
-                }
+                </View>
+              ) : null}
+              <StyledTextInput
+                wrapperStyle={{ flex: 1 }}
+                value={email}
+                keyboardType="email-address"
+                label={'Email'}
+                placeholder="Email address"
+                autoComplete="email"
+                autoCapitalize="none"
+                onChangeText={(e) => {
+                  setEmail(e), setEmailError(false);
+                }}
               />
+              {error != null ? (
+                <StyledText style={{ ...GeneralStyle.InputError }}>{error}</StyledText>
+              ) : null}
             </View>
+            <Button
+              text="Send Reset Link"
+              btnStyle={[
+                button.primary,
+                {
+                  flex: 1,
+                },
+              ]}
+              disabled={!email}
+              disabledBtnStyle={[
+                button.primary,
+                {
+                  backgroundColor: Colors.primarySapphire[200],
+                  flex: 1,
+                  opacity: 0.4,
+                },
+              ]}
+              onPress={() => forget()}
+              btnTextStyle={{ color: '#FFF' }}
+              disabledBtnTextStyle={{ color: Colors.primarySapphire[600] }}
+            />
           </View>
 
-          {/* <>
+          <View style={{ alignItems: 'center' }}>
+            <Button
+              onPress={() => {
+                Linking.openURL('mailto:support@onebodyapp.com');
+              }}
+              text={'Still having issues? '}
+              wrapperViewBtnStyle={{ marginTop: spacing.x32 }}
+              btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[200] }]}
+              rightIcon={
+                <StyledText style={{ color: Colors.primarySapphire.brand }}>Contact us</StyledText>
+              }
+            />
+          </View>
+        </View>
+
+        {/* <>
               <TextInput
                 style={{ ...GeneralStyle.input, marginTop: getHeight(3) }}
                 theme={{ roundness: 10 }}
@@ -219,8 +210,7 @@ const ForgotPassword = ({ navigation }: Props) => {
               <Button text={'GO BACK'} onPress={() => navigation.goBack()} />
             </View>
           )} */}
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </ScrollView>
     </UserStepsLayout>
   );
 };

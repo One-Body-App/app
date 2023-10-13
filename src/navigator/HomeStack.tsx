@@ -6,9 +6,13 @@ import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Search from '../screens/main/search';
 import Notifications from '../screens/notifications';
+import { useTheme } from '@react-navigation/native';
+import { Colors } from '../styles';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
 const HomeStack = () => {
+  const { colors } = useTheme();
+
   return (
     <Stack.Navigator>
       <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
@@ -18,7 +22,16 @@ const HomeStack = () => {
         options={{ presentation: 'modal' }}
       />
 
-      {/* <Stack.Screen name="UserProfile" component={UserProfile} /> */}
+      <Stack.Screen
+        name="UserProfile"
+        component={UserProfile}
+        options={{
+          headerBackTitleVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          title: '',
+          contentStyle: { backgroundColor: Colors.neutral[700] },
+        }}
+      />
 
       {/* <Stack.Screen name="LoadingPage" component={LoadingPage} /> */}
 

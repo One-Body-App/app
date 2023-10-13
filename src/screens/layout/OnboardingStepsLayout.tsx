@@ -89,15 +89,18 @@ const OnboardingStepsLayout = ({
       >
         <ScrollView style={{ flex: 1 }}>{children}</ScrollView>
       </KeyboardAvoidingView>
+
       <View style={{ justifyContent: 'center' }}>
-        <Button
-          text="Why are we asking this?"
-          onPress={() => {
-            setShowModal(true);
-          }}
-          btnStyle={{ ...Buttons.buttonText, marginBottom: spacing.x16, flex: 1 }}
-          btnTextStyle={{ ...Typography.body.x1, color: Colors.primarySapphire[500] }}
-        />
+        {reasonText ? (
+          <Button
+            text="Why are we asking this?"
+            onPress={() => {
+              setShowModal(true);
+            }}
+            btnStyle={{ ...Buttons.buttonText, marginBottom: spacing.x16, flex: 1 }}
+            btnTextStyle={{ ...Typography.body.x1, color: Colors.primarySapphire[500] }}
+          />
+        ) : null}
 
         <Button
           text={buttonText}
@@ -146,6 +149,7 @@ const OnboardingStepsLayout = ({
             <View
               style={{
                 alignItems: 'flex-end',
+                marginBottom: spacing.x10,
               }}
             >
               <TouchableOpacity

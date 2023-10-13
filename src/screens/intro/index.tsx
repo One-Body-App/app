@@ -2,7 +2,7 @@ import React from 'react';
 import { MainStackParamList } from '@/src/navigator/types';
 import { header, subheader } from '@/src/styles/typography';
 import { StackScreenProps } from '@react-navigation/stack';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import UserStepsLayout from '../layout/UserStepsLayout';
@@ -18,21 +18,35 @@ const IntroScreen = ({ route, navigation }: Props) => {
 
   return (
     <UserStepsLayout>
-      <>
-        <View style={{ flex: 3, marginTop: 40 }}>
+      <View
+        style={{
+          flexGrow: 1,
+          flexShrink: 0,
+          flexBasis: 'auto',
+        }}
+      >
+        <View
+          style={{
+            flexGrow: 1,
+            flexShrink: 0,
+            flexBasis: 300,
+            marginTop: 40,
+          }}
+        >
           <FastImage
             resizeMode="contain"
             style={{ height: '100%', width: '100%' }}
             source={require('@/assets/images/introImage.png')}
           />
         </View>
-        <View style={{ flex: 5 }}>
+        <View style={{ flexGrow: 1, flexBasis: 400 }}>
           <View
             style={{
               paddingTop: 60,
               justifyContent: 'space-between',
               flex: 1,
               flexDirection: 'column',
+              flexShrink: 0,
             }}
           >
             <View style={{ flex: 1, paddingBottom: 40 }}>
@@ -85,7 +99,7 @@ const IntroScreen = ({ route, navigation }: Props) => {
             </View>
           </View>
         </View>
-      </>
+      </View>
     </UserStepsLayout>
   );
 };

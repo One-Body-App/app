@@ -236,7 +236,7 @@ const OptionsModal = ({
                   setShow(false);
                   if (currentPopupItem) {
                     navigation.navigate('Main', {
-                      screen: 'ExploreTab',
+                      screen: 'HomeTab',
                       params: {
                         screen: 'UserProfile',
                         params: {

@@ -708,7 +708,7 @@ PODS:
     - React-perflogger (= 0.72.3)
   - RNAppleAuthentication (2.2.2):
     - React-Core
-  - RNCAsyncStorage (1.19.1):
+  - RNCAsyncStorage (1.19.3):
     - React-Core
   - RNCPicker (2.4.10):
     - React-Core
@@ -757,6 +757,8 @@ PODS:
     - React-Core
   - RNPermissions (3.8.4):
     - React-Core
+  - RNRate (1.2.12):
+    - React-Core
   - RNReanimated (3.4.1):
     - DoubleConversion
     - FBLazyVector
@@ -796,7 +798,7 @@ PODS:
     - React-Core
   - RNShare (9.2.3):
     - React-Core
-  - RNSVG (13.10.0):
+  - RNSVG (13.13.0):
     - React-Core
   - SDWebImage (5.11.1):
     - SDWebImage/Core (= 5.11.1)
@@ -912,6 +914,7 @@ DEPENDENCIES:
   - RNImageCropPicker (from `../node_modules/react-native-image-crop-picker`)
   - RNInAppBrowser (from `../node_modules/react-native-inappbrowser-reborn`)
   - RNPermissions (from `../node_modules/react-native-permissions`)
+  - RNRate (from `../node_modules/react-native-rate`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
@@ -1111,6 +1114,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-inappbrowser-reborn"
   RNPermissions:
     :path: "../node_modules/react-native-permissions"
+  RNRate:
+    :path: "../node_modules/react-native-rate"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -1221,7 +1226,7 @@ SPEC CHECKSUMS:
   React-utils: bcb57da67eec2711f8b353f6e3d33bd8e4b2efa3
   ReactCommon: 3ccb8fb14e6b3277e38c73b0ff5e4a1b8db017a9
   RNAppleAuthentication: 0571c08da8c327ae2afc0261b48b4a515b0286a6
-  RNCAsyncStorage: f47fe18526970a69c34b548883e1aeceb115e3e1
+  RNCAsyncStorage: c913ede1fa163a71cea118ed4670bbaaa4b511bb
   RNCPicker: 0bc2f0a29abcca7b7ed44a2d036aac9ab6d25700
   RNDeviceInfo: 5795b418ed3451ebcaf39384e6cf51f60cb931c9
   RNFastImage: 5c9c9fed9c076e521b3f509fe79e790418a544e8
@@ -1235,12 +1240,13 @@ SPEC CHECKSUMS:
   RNImageCropPicker: 486e2f7e2b0461ce24321f751410dce1b3b49e6d
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
   RNPermissions: f1b49dd05fa9b83993cd05a9ee115247944d8f1a
+  RNRate: ef3bcff84f39bb1d1e41c5593d3eea4aab2bd73a
   RNReanimated: 53ca20eee770c41173703f5948cd8898aa08262c
   RNScreens: 6a8a3c6b808aa48dca1780df7b73ea524f602c63
   RNSentry: f9e637773502a61c7b455c4ce65bc7008ce22a6e
   RNSha256: a6bc3640a34eb41907e363828b9ec742c274298d
   RNShare: da6d90b6dc332f51f86498041d6e34211f96b630
-  RNSVG: 80584470ff1ffc7994923ea135a3e5ad825546b9
+  RNSVG: ed492aaf3af9ca01bc945f7a149d76d62e73ec82
   SDWebImage: a7f831e1a65eb5e285e3fb046a23fcfbf08e696d
   SDWebImageWebPCoder: 908b83b6adda48effe7667cd2b7f78c897e5111d
   Sentry: 97161cac725da1ecbe77d1445bf8a61c1e5667f1

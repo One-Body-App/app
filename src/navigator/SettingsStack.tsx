@@ -97,7 +97,7 @@ const SettingsStack = () => {
         component={RemoveAccount}
         options={{
           ...headerOptions,
-          title: 'Delete Account',
+          title: 'Remove Account',
           headerStyle: { backgroundColor: colors.background },
         }}
       />

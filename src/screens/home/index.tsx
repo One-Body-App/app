@@ -173,181 +173,177 @@ const Home = ({ navigation }: Props) => {
 
   return (
     <>
-      <SafeAreaView style={{ flex: 0, backgroundColor: '#126B87' }} />
-
-      <SafeAreaView style={styles.continer}>
-        <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 20 }}>
-            {feedTypes.map((feedType) => {
-              return (
-                <View style={{ flex: 1 }} key={feedType}>
-                  <TouchableOpacity
-                    onPress={() => filterUpdate(feedType)}
-                    style={feedOptions.type == feedType ? styles.menuItemSelected : styles.menuItem}
+      <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 20 }}>
+          {feedTypes.map((feedType) => {
+            return (
+              <View style={{ flex: 1 }} key={feedType}>
+                <TouchableOpacity
+                  onPress={() => filterUpdate(feedType)}
+                  style={feedOptions.type == feedType ? styles.menuItemSelected : styles.menuItem}
+                >
+                  <StyledText
+                    style={
+                      feedOptions.type == feedType
+                        ? styles.menuItemTextSelected
+                        : styles.menuItemText
+                    }
                   >
-                    <StyledText
-                      style={
-                        feedOptions.type == feedType
-                          ? styles.menuItemTextSelected
-                          : styles.menuItemText
-                      }
-                    >
-                      {feedType}
-                    </StyledText>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+                    {feedType}
+                  </StyledText>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </View>
+
+        {isLoading && feedOptions.page == 1 && !isRefreshing ? (
+          <View style={{ marginTop: 10 }}>
+            <ActivityIndicatorContent size="small" />
           </View>
-
-          {isLoading && feedOptions.page == 1 && !isRefreshing ? (
-            <View style={{ marginTop: 10 }}>
-              <ActivityIndicatorContent size="small" />
-            </View>
-          ) : (
-            <View style={{ flex: 1, marginHorizontal: 20 }}>
-              <FlatList
-                viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-                data={feedData}
-                ref={listRef}
-                keyExtractor={(item, index) => {
-                  return `${item.id}-${index}`;
-                }}
-                contentContainerStyle={{
-                  flexGrow: 1,
-                }}
-                renderItem={({ item, index }) => {
-                  if (item.type == 'social') {
-                    return (
-                      <SocialItem
-                        key={`social_${item.id}_${index}`}
-                        item={item}
-                        visible={
-                          visibleItemsIndex && visibleItemsIndex.length > 0
-                            ? visibleItemsIndex?.indexOf(index) > -1
-                            : false
-                        }
-                        socialPostviewStyle={{ backgroundColor: colors.card }}
-                      />
-                    );
-                  }
-
-                  if (item.type == 'tasteBreaker') {
-                    return (
-                      <View style={{ paddingHorizontal: 10 }}>
-                        <FlatList
-                          nestedScrollEnabled
-                          data={item.items}
-                          horizontal={true}
-                          showsHorizontalScrollIndicator={false}
-                          ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-                          keyExtractor={(item, index) => `${item.created}_${index}`}
-                          renderItem={({ item }) => (
-                            <ArticleItem
-                              pillText="Taste Breakers"
-                              key={`article_${item.id}`}
-                              item={item}
-                              imageSizeType="cover"
-                              blogPostStyle={{
-                                ...globalStyle.blogpostview,
-                                backgroundColor: cardSecondaryColor,
-                              }}
-                              blogPostImageStyle={globalStyle.newspostimage}
-                              blogPostTitleStyle={{
-                                flexWrap: 'wrap',
-                                marginTop: getHeight(1),
-                              }}
-                              showModal={showModal}
-                            />
-                          )}
-                        />
-                      </View>
-                    );
-                  }
-
-                  if (item.type == 'relatedContent') {
-                    return (
-                      <View style={{ paddingHorizontal: 10 }}>
-                        <ArticleItem
-                          pillText="Suggested"
-                          key={`relatedContent_${item.id}`}
-                          item={item.item}
-                          imageSizeType="cover"
-                          blogPostStyle={{
-                            ...globalStyle.blogpostview,
-                            backgroundColor: cardSecondaryColor,
-                          }}
-                          blogPostImageStyle={globalStyle.newspostimage}
-                          blogPostTitleStyle={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            marginTop: getHeight(1),
-                          }}
-                          showModal={showModal}
-                        />
-                      </View>
-                    );
-                  }
+        ) : (
+          <View style={{ flex: 1, marginHorizontal: 20 }}>
+            <FlatList
+              viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+              data={feedData}
+              ref={listRef}
+              keyExtractor={(item, index) => {
+                return `${item.id}-${index}`;
+              }}
+              contentContainerStyle={{
+                flexGrow: 1,
+              }}
+              renderItem={({ item, index }) => {
+                if (item.type == 'social') {
                   return (
-                    <ArticleItem
-                      key={`article_${item.id}`}
+                    <SocialItem
+                      key={`social_${item.id}_${index}`}
                       item={item}
-                      imageSizeType="cover"
-                      blogPostStyle={{
-                        ...globalStyle.blogpostview,
-                        backgroundColor: colors.card,
-
-                        width: 'auto',
-                        flexGrow: 1,
-
-                        marginVertical: 7,
-                      }}
-                      blogPostImageStyle={globalStyle.newspostimage}
-                      blogPostTitleStyle={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        marginTop: getHeight(1),
-                      }}
-                      showModal={showModal}
+                      visible={
+                        visibleItemsIndex && visibleItemsIndex.length > 0
+                          ? visibleItemsIndex?.indexOf(index) > -1
+                          : false
+                      }
+                      socialPostviewStyle={{ backgroundColor: colors.card }}
                     />
                   );
-                }}
-                refreshing={isLoading}
-                refreshControl={
-                  <RefreshControl
-                    enabled={true}
-                    refreshing={isRefreshing}
-                    colors={
-                      dark
-                        ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
-                        : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
-                    }
-                    tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
-                    onRefresh={() => {
-                      setIsRefreshing(true);
-                    }}
-                  />
                 }
-                onEndReachedThreshold={0.5}
-                onEndReached={() => {
-                  if (!isLoading && !isRefreshing && !isEndOfList) {
-                    setFeedOptions({
-                      ...feedOptions,
-                      page: feedOptions.page + 1,
-                    });
+
+                if (item.type == 'tasteBreaker') {
+                  return (
+                    <View style={{ paddingHorizontal: 10 }}>
+                      <FlatList
+                        nestedScrollEnabled
+                        data={item.items}
+                        horizontal={true}
+                        showsHorizontalScrollIndicator={false}
+                        ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+                        keyExtractor={(item, index) => `${item.created}_${index}`}
+                        renderItem={({ item }) => (
+                          <ArticleItem
+                            pillText="Taste Breakers"
+                            key={`article_${item.id}`}
+                            item={item}
+                            imageSizeType="cover"
+                            blogPostStyle={{
+                              ...globalStyle.blogpostview,
+                              backgroundColor: cardSecondaryColor,
+                            }}
+                            blogPostImageStyle={globalStyle.newspostimage}
+                            blogPostTitleStyle={{
+                              flexWrap: 'wrap',
+                              marginTop: getHeight(1),
+                            }}
+                            showModal={showModal}
+                          />
+                        )}
+                      />
+                    </View>
+                  );
+                }
+
+                if (item.type == 'relatedContent') {
+                  return (
+                    <View style={{ paddingHorizontal: 10 }}>
+                      <ArticleItem
+                        pillText="Suggested"
+                        key={`relatedContent_${item.id}`}
+                        item={item.item}
+                        imageSizeType="cover"
+                        blogPostStyle={{
+                          ...globalStyle.blogpostview,
+                          backgroundColor: cardSecondaryColor,
+                        }}
+                        blogPostImageStyle={globalStyle.newspostimage}
+                        blogPostTitleStyle={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          marginTop: getHeight(1),
+                        }}
+                        showModal={showModal}
+                      />
+                    </View>
+                  );
+                }
+                return (
+                  <ArticleItem
+                    key={`article_${item.id}`}
+                    item={item}
+                    imageSizeType="cover"
+                    blogPostStyle={{
+                      ...globalStyle.blogpostview,
+                      backgroundColor: colors.card,
+
+                      width: 'auto',
+                      flexGrow: 1,
+
+                      marginVertical: 7,
+                    }}
+                    blogPostImageStyle={globalStyle.newspostimage}
+                    blogPostTitleStyle={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginTop: getHeight(1),
+                    }}
+                    showModal={showModal}
+                  />
+                );
+              }}
+              refreshing={isLoading}
+              refreshControl={
+                <RefreshControl
+                  enabled={true}
+                  refreshing={isRefreshing}
+                  colors={
+                    dark
+                      ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
+                      : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
                   }
-                }}
-                ListFooterComponent={() => (
-                  <View>
-                    {isLoading && !isRefreshing ? <ActivityIndicatorContent size="small" /> : null}
-                  </View>
-                )}
-              />
-            </View>
-          )}
-        </View>
-      </SafeAreaView>
+                  tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
+                  onRefresh={() => {
+                    setIsRefreshing(true);
+                  }}
+                />
+              }
+              onEndReachedThreshold={0.5}
+              onEndReached={() => {
+                if (!isLoading && !isRefreshing && !isEndOfList) {
+                  setFeedOptions({
+                    ...feedOptions,
+                    page: feedOptions.page + 1,
+                  });
+                }
+              }}
+              ListFooterComponent={() => (
+                <View>
+                  {isLoading && !isRefreshing ? <ActivityIndicatorContent size="small" /> : null}
+                </View>
+              )}
+            />
+          </View>
+        )}
+      </View>
     </>
   );
 };

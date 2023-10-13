@@ -170,7 +170,7 @@ const MapBox = (props: MapBoxProps) => {
           backgroundColor: colors.background,
         }}
       >
-        <View style={{ flex: 1.5, maxHeight: 80, paddingHorizontal: 18 }}>
+        <View style={{ flex: 2, maxHeight: 80, paddingHorizontal: 18 }}>
           <View
             style={{
               flexDirection: 'row',
@@ -189,16 +189,15 @@ const MapBox = (props: MapBoxProps) => {
               <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
             </TouchableOpacity>
           </View>
-          <View style={{ flex: 2 }}>
+          <View style={{ flex: 3 }}>
             <StyledTextInput
-              autoFocus
-              wrapperStyle={{ flex: 1 }}
+              wrapperStyle={{ flex: 0 }}
               value={searchLocation}
               returnKeyType={'search'}
               placeholder="Search"
               onChangeText={(val) => getSuggestion(val)}
               leftIcon={
-                <View style={{ justifyContent: 'center' }}>
+                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                   <SearchIcon
                     style={{ height: 20, width: 20, marginRight: 10 }}
                     stroke={Colors.neutral[200]}
@@ -213,7 +212,7 @@ const MapBox = (props: MapBoxProps) => {
               }
               rightIcon={
                 !props.hideSearchMyLocation ? (
-                  <>
+                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                     {location != null && searchLocation ? null : (
                       <>
                         {loading ? (
@@ -230,7 +229,7 @@ const MapBox = (props: MapBoxProps) => {
                         )}
                       </>
                     )}
-                  </>
+                  </View>
                 ) : undefined
               }
             />

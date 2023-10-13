@@ -42,7 +42,6 @@ import { ArticleType } from '@/utils/types';
 import SocialItem from '../ListItems/SocialItem';
 import { decode } from 'html-entities';
 import ArticleItem from '../ListItems/ArticleItem';
-import { SearchBase, SearchComponent, SearchBox } from '@appbaseio/react-native-searchbox';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 

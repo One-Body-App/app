@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  Share,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import Button from '@/src/components/Button';
@@ -47,17 +48,20 @@ import { profileImagesize } from '@/src/components/Profile';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { StyledText } from '@/src/components/styled/Text';
-import { ArrowDown2, Calendar, GalleryEdit } from 'iconsax-react-native';
+import { ArrowDown2, Calendar, GalleryEdit, Setting2 } from 'iconsax-react-native';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 import { StyledSelect } from '@/src/components/styled/Select';
 import SearchIcon from '@/assets/icons/search.svg';
 import { iterestListItem } from '@/src/styles/items';
 import { serialize } from 'object-to-formdata';
+import SettingsSheet from '../myProfile/SettingsSheet';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 type Props = StackScreenProps<RootStackParamList, 'EditProfile'>;
 
 const EditProfile = ({ navigation }: Props) => {
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [gender, setGender] = useState(user?.gender);
@@ -149,6 +153,48 @@ const EditProfile = ({ navigation }: Props) => {
       });
     }
   }, [newLocation]);
+
+  useEffect(() => {
+    navigation
+      .getParent()
+      ?.getParent()
+      ?.setOptions({
+        headerRight: () => (
+          <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
+            <TouchableOpacity
+              style={{ marginRight: spacing.x16 }}
+              onPress={() => {
+                Share.share({
+                  title:
+                    // profileData?._id == currentUser._id ?
+                    `Check my profile on One Body App`,
+                  // : 'Check this profile on One Body App`',
+                  // message: `Check my profile in One Body App`,
+                  url: `https://app.onebodyapp.com/profile/${user?.username}`,
+                });
+              }}
+            >
+              {Platform.OS == 'android' ? (
+                <Ionicons name="share-social-outline" size={24} color={Colors.primary.brand} />
+              ) : (
+                <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setShowSettings(true);
+              }}
+            >
+              <Setting2
+                style={{ height: 24, width: 24 }}
+                color={Colors.primary.brand}
+                strokeWidth={0.2}
+              />
+            </TouchableOpacity>
+          </View>
+        ),
+      });
+  }, [navigation, user]);
 
   const getChurchTypes = async () => {
     try {
@@ -998,6 +1044,9 @@ const EditProfile = ({ navigation }: Props) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      {user ? (
+        <SettingsSheet userData={user} showModal={showSettings} setShowModal={setShowSettings} />
+      ) : null}
     </SafeAreaView>
   );
 };

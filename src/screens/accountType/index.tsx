@@ -34,8 +34,8 @@ const AccountType = ({ route, navigation }: Props) => {
   const { dark, colors } = useTheme();
 
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
-      <View style={{ flex: 1, paddingHorizontal: 30, justifyContent: 'space-between' }}>
+    <UserStepsLayout backgroundColor={colors.background}>
+      <View style={{ flexGrow: 1, paddingHorizontal: 30, justifyContent: 'space-between' }}>
         <View>
           <StyledText style={[Typography.header.h1, { color: Colors.neutral[200], marginTop: 45 }]}>
             What account type best describes you?
@@ -166,7 +166,7 @@ const AccountType = ({ route, navigation }: Props) => {
             </View>
           </TouchableOpacity>
         </View>
-        <View style={{ marginBottom: 20 }}>
+        <View style={{ marginVertical: spacing.x24 }}>
           <TouchableOpacity
             style={[
               button.primary,
@@ -183,7 +183,7 @@ const AccountType = ({ route, navigation }: Props) => {
             <StyledText style={{ color: '#FFF' }}>Continue</StyledText>
           </TouchableOpacity>
           <TouchableOpacity
-            style={{ flexDirection: 'row' }}
+            style={{ flexDirection: 'row', alignSelf: 'center' }}
             onPress={() => {
               navigation.replace('Login');
             }}

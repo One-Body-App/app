@@ -6,6 +6,7 @@ import {
   Linking,
   useColorScheme,
   Platform,
+  Text,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -153,6 +154,16 @@ const LoginComponent: FC<Props> = ({
     //   dispatch(logout());
     // });
   }, []);
+
+  useEffect(() => {
+    if (token) {
+      auth().currentUser?.reload();
+
+      if (Platform.OS == 'android') {
+        navigation.replace('MainRoot');
+      }
+    }
+  }, [token]);
 
   useEffect(() => {
     if (mode == 'verifyEmail' && action == 'action' && oobCode) {
@@ -332,6 +343,9 @@ const LoginComponent: FC<Props> = ({
           setState({ ...state, password: '' });
 
           if (mode == 'verifyEmail') {
+            if (Platform.OS == 'ios') {
+              navigation.pop();
+            }
             await processLogin(emailCredential, setNewUserCredentials, setToken);
           } else {
             if (toScreen) {
@@ -568,7 +582,7 @@ const LoginComponent: FC<Props> = ({
 
   if (isVerificationNeeded || (showConfirmationEmailMessage && userProfile)) {
     return (
-      <View style={{ marginHorizontal: spacing.x16, flex: 1 }}>
+      <View style={{ marginHorizontal: spacing.x16, flex: 1, marginTop: spacing.x24 }}>
         <StyledText style={Typography.header.h1}>Verify your email address</StyledText>
         <StyledText
           style={[
@@ -595,8 +609,8 @@ const LoginComponent: FC<Props> = ({
           onPress={() => {
             dispatch(sendVerificationEmail.Request({ token: userProfile?.token }));
           }}
-          text={'Didn’t get mail? '}
-          wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'flex-end' }}
+          text={'Didn’t received the mail? '}
+          wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'center' }}
           btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[300] }]}
           rightIcon={
             <StyledText style={{ color: Colors.primarySapphire.brand }}>Resend email</StyledText>
@@ -627,7 +641,12 @@ const LoginComponent: FC<Props> = ({
   };
 
   return (
-    <View style={{ flex: 1, marginHorizontal: spacing.x16 }}>
+    <View
+      style={{
+        flex: 1,
+        marginHorizontal: spacing.x16,
+      }}
+    >
       <View style={{ marginVertical: spacing.x16 }}>
         <StyledText style={[Typography.header.h1]}>
           {verifyAccount ? 'Verify your account information' : 'Welcome back'}
@@ -691,6 +710,7 @@ const LoginComponent: FC<Props> = ({
                 returnKeyType={'next'}
                 keyboardType="email-address"
                 label={'Email'}
+                autoCorrect={false}
                 placeholder="Email address"
                 autoComplete="email"
                 autoCapitalize="none"
@@ -714,6 +734,8 @@ const LoginComponent: FC<Props> = ({
                 returnKeyType={'send'}
                 label={'Password'}
                 placeholder="Password"
+                autoCapitalize={'none'}
+                autoCorrect={false}
                 secureTextEntry={hidePass ? true : false}
                 rightIcon={
                   <View style={{ justifyContent: 'center' }}>
@@ -737,7 +759,63 @@ const LoginComponent: FC<Props> = ({
             </View>
           ) : null}
 
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingTop: spacing.x32 }}>
+            {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
+              <View style={{ marginHorizontal: 10 }}>
+                <Button
+                  text="Sign in"
+                  disabled={!state.password || !state.email}
+                  btnStyle={[
+                    button.primary,
+                    {
+                      flex: 1,
+                    },
+                  ]}
+                  disabledBtnStyle={[
+                    button.primary,
+                    {
+                      backgroundColor: Colors.primarySapphire[200],
+                      flex: 1,
+                      opacity: 0.4,
+                    },
+                  ]}
+                  onPress={() => signInUser()}
+                  btnTextStyle={{ color: '#FFF' }}
+                />
+              </View>
+            ) : null}
+
+            {verifyAccount ? (
+              <View style={{ marginTop: enabledLoginProviders ? 20 : 0 }}>
+                <Button
+                  text="Cancel"
+                  btnStyle={[
+                    {
+                      flex: 1,
+                    },
+                  ]}
+                  onPress={async () => {
+                    dispatch(signUp.Reset());
+                    if (updateParent) {
+                      updateParent(false);
+                    }
+                    navigation.goBack();
+                    LoginManager.logOut();
+                    await auth().signOut();
+                    await auth().currentUser?.reload();
+                    dispatch(logout());
+                  }}
+                  btnTextStyle={{ color: Colors.neutral[300] }}
+                />
+              </View>
+            ) : null}
+
+            {!verifyAccount && error ? (
+              <View style={{ ...styles.Errorview, marginTop: spacing.x24 }}>
+                <StyledText style={styles.errortext}>{error}</StyledText>
+              </View>
+            ) : null}
+
             {enabledLoginProviders &&
             enabledLoginProviders?.includes('password') &&
             ((enabledLoginProviders && enabledLoginProviders?.includes('google.com')) ||
@@ -749,7 +827,7 @@ const LoginComponent: FC<Props> = ({
                   justifyContent: 'center',
                   alignItems: 'center',
                   flex: 1,
-                  marginTop: 20,
+                  marginTop: spacing.x24,
                 }}
               >
                 <View
@@ -776,7 +854,7 @@ const LoginComponent: FC<Props> = ({
             {enabledLoginProviders ? (
               <View
                 style={{
-                  marginVertical: 20,
+                  marginTop: spacing.x24,
                   flex: 1,
                   flexDirection: 'column',
                 }}
@@ -850,7 +928,7 @@ const LoginComponent: FC<Props> = ({
                   {enabledLoginProviders &&
                   enabledLoginProviders?.includes('twitter.com') &&
                   enabledLoginProviders?.includes('password') ? (
-                    <View style={{ paddingHorizontal: 10, flex: 1 }}>
+                    <View style={{ paddingHorizontal: spacing.x10, flex: 1 }}>
                       <Button
                         onPress={() => onTwitterButtonPress()}
                         wrapperViewBtnStyle={{ flex: 1 }}
@@ -893,7 +971,7 @@ const LoginComponent: FC<Props> = ({
                   enabledLoginProviders?.includes('apple') &&
                   enabledLoginProviders?.includes('password') &&
                   Platform.OS == 'ios' ? (
-                    <View style={{ paddingHorizontal: 10, flex: 1 }}>
+                    <View style={{ paddingHorizontal: spacing.x10, flex: 1 }}>
                       <Button
                         onPress={() => onAppleButtonPress()}
                         wrapperViewBtnStyle={{ flex: 1 }}
@@ -936,7 +1014,7 @@ const LoginComponent: FC<Props> = ({
                 {!verifyAccount &&
                 enabledLoginProviders &&
                 enabledLoginProviders?.includes('password') ? (
-                  <View style={{ alignItems: 'flex-end', flex: 1, marginTop: 15 }}>
+                  <View style={{ alignItems: 'center', flex: 1, marginTop: spacing.x16 }}>
                     <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                       <StyledText style={{ color: Colors.primarySapphire.brand }}>
                         Forgot Password?
@@ -944,57 +1022,6 @@ const LoginComponent: FC<Props> = ({
                     </TouchableOpacity>
                   </View>
                 ) : null}
-              </View>
-            ) : null}
-            {enabledLoginProviders && enabledLoginProviders?.includes('password') ? (
-              <View style={{ marginHorizontal: 10 }}>
-                <Button
-                  text="Sign in"
-                  disabled={!state.password || !state.email}
-                  btnStyle={[
-                    button.primary,
-                    {
-                      flex: 1,
-                    },
-                  ]}
-                  disabledBtnStyle={[
-                    button.primary,
-                    {
-                      backgroundColor: Colors.primarySapphire[200],
-                      flex: 1,
-                      opacity: 0.4,
-                    },
-                  ]}
-                  onPress={() => signInUser()}
-                  btnTextStyle={{ color: '#FFF' }}
-                />
-              </View>
-            ) : null}
-
-            {verifyAccount ? (
-              <View style={{ marginTop: enabledLoginProviders ? 20 : 0 }}>
-                <Button
-                  text="Cancel"
-                  btnStyle={[
-                    {
-                      flex: 1,
-                    },
-                  ]}
-                  onPress={() => {
-                    dispatch(signUp.Reset());
-                    if (updateParent) {
-                      updateParent(false);
-                    }
-                    navigation.goBack();
-                  }}
-                  btnTextStyle={{ color: Colors.neutral[300] }}
-                />
-              </View>
-            ) : null}
-
-            {!verifyAccount && error ? (
-              <View style={{ ...styles.Errorview, marginTop: 20 }}>
-                <StyledText style={styles.errortext}>{error}</StyledText>
               </View>
             ) : null}
           </View>
