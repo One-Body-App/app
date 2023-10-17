@@ -87,6 +87,7 @@ export const GetBadges = {
   REQUEST: 'get_badges_request',
   SUCCESS: 'get_badges_success',
   FAILED: 'get_badges_failed',
+  RESET: 'get_badges_reset',
 };
 
 export const SetUserBadges = {

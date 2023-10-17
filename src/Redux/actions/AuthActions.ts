@@ -132,7 +132,11 @@ export const sendVerificationEmail = {
 };
 
 //Badge Actions
+
 export const getBadges = {
+  Reset: () => ({
+    type: GetBadges.RESET,
+  }),
   Request: (params: any) => ({
     type: GetBadges.REQUEST,
     params,

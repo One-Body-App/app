@@ -9,6 +9,7 @@ import {
   Platform,
   Dimensions,
   Share,
+  Switch,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import Button from '@/src/components/Button';
@@ -119,6 +120,12 @@ const EditProfile = ({ navigation }: Props) => {
   const [interest, setInterest] = useState<Interest[]>([]);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
   const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
+  const [isPublicLocationEnabled, setIsPublicLocationEnabled] = React.useState(
+    user?.profile.isLocationPublic ?? false
+  );
+  const [isPublicChurchTypeEnabled, setIsPublicChurchTypeEnabled] = React.useState(
+    user?.profile.isChurchTypePublic ?? false
+  );
 
   const oftenChurchOptions = ['Weekly', 'Bi-Weekly', 'Once a month', 'I only watch at home'];
 
@@ -727,7 +734,11 @@ const EditProfile = ({ navigation }: Props) => {
                 <View style={{ flex: 4, marginTop: spacing.x16 }}>
                   <StyledText style={{ marginBottom: 10 }}>Location</StyledText>
                   <Button
-                    text={location ? location.address : newLocation?.place_name}
+                    text={
+                      location
+                        ? location.address
+                        : newLocation?.place_name ?? 'Select your location'
+                    }
                     btnStyle={{
                       flex: 1,
                       backgroundColor: Colors.neutral[700],
@@ -762,6 +773,34 @@ const EditProfile = ({ navigation }: Props) => {
                     setLocation={setNewLocation}
                     modalTitle="Find Location"
                   />
+
+                  <View
+                    style={{
+                      justifyContent: 'center',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingTop: spacing.x10,
+                    }}
+                  >
+                    <StyledText style={[{ color: Colors.neutral.brand }]}>
+                      Make your location public
+                    </StyledText>
+
+                    <View
+                      style={{
+                        paddingLeft: spacing.x10,
+                        flex: 1,
+                        alignItems: 'flex-end',
+                      }}
+                    >
+                      <Switch
+                        value={isPublicLocationEnabled}
+                        onValueChange={(value) => {
+                          setIsPublicLocationEnabled(value);
+                        }}
+                      />
+                    </View>
+                  </View>
                 </View>
 
                 <StyledTextInput
@@ -788,10 +827,10 @@ const EditProfile = ({ navigation }: Props) => {
                         value: item.churchType,
                       };
                     })}
-                    label="Church type"
+                    label="Denomination"
                     selectedItem={churchType}
                     btnText={selectedChurchTypeName == '' ? 'Select' : selectedChurchTypeName}
-                    modalTitle="Select church type"
+                    modalTitle="Select your Denomination"
                     onChange={(item) => {
                       setChurchType(item);
                       setSubChurchType('');
@@ -808,16 +847,44 @@ const EditProfile = ({ navigation }: Props) => {
                           value: item.churchType,
                         };
                       })}
-                      label="Church sub type"
+                      label="Sub Denomination or Association"
                       btnText={
                         selectedChurchSubTypeName == '' ? 'Select' : selectedChurchSubTypeName
                       }
                       onChange={(item) => {
                         setSubChurchType(item);
                       }}
-                      modalTitle="Select church sub type"
+                      modalTitle="Select church sub Denomination"
                     />
                   ) : null}
+
+                  <View
+                    style={{
+                      justifyContent: 'center',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingTop: spacing.x10,
+                    }}
+                  >
+                    <StyledText style={[{ color: Colors.neutral.brand }]}>
+                      Make your denomination public
+                    </StyledText>
+
+                    <View
+                      style={{
+                        paddingLeft: spacing.x10,
+                        flex: 1,
+                        alignItems: 'flex-end',
+                      }}
+                    >
+                      <Switch
+                        value={isPublicChurchTypeEnabled}
+                        onValueChange={(value) => {
+                          setIsPublicChurchTypeEnabled(value);
+                        }}
+                      />
+                    </View>
+                  </View>
 
                   <StyledSelect
                     wrapperStyle={{ marginTop: spacing.x24 }}
@@ -1010,6 +1077,8 @@ const EditProfile = ({ navigation }: Props) => {
                   if (churchType) data.churchType = churchType;
                   if (churchSubType) data.churchSubType = churchSubType;
                   if (oftenChurch) data.oftenChurch = oftenChurch;
+                  data.isChurchTypePublic = isPublicChurchTypeEnabled;
+                  data.isLocationPublic = isPublicLocationEnabled;
                   if (location)
                     data.location = {
                       longitude: location.longitude,

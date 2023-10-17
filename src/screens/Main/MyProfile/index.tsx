@@ -80,7 +80,7 @@ const MyProfile = ({ navigation, route }: Props) => {
     }
   }, [user]);
 
-  React.useEffect(() => {
+  const addHeaderButtons = () => {
     navigation
       .getParent()
       ?.getParent()
@@ -120,6 +120,47 @@ const MyProfile = ({ navigation, route }: Props) => {
           </View>
         ),
       });
+
+    return () => {
+      navigation
+        .getParent()
+        ?.getParent()
+        ?.setOptions({
+          headerRight: () => <View />,
+        });
+    };
+  };
+
+  const removeHeaderButtons = () => {
+    navigation
+      .getParent()
+      ?.getParent()
+      ?.setOptions({
+        headerRight: () => <View />,
+      });
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      addHeaderButtons();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      removeHeaderButtons();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
+    addHeaderButtons();
+    return () => {
+      removeHeaderButtons();
+    };
   }, [navigation, user]);
 
   const renderScene = ({

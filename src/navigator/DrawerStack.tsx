@@ -69,6 +69,8 @@ const DrawerNav = () => {
   const authState = useSelector((state: RootState) => state.auth);
   const dimensions = useWindowDimensions();
 
+  const { dark } = useTheme();
+
   return (
     <>
       {authState.getProfileData?.isProfileCompleted ? (
@@ -78,9 +80,9 @@ const DrawerNav = () => {
               dimensions.width >= 768 ? 'permanent' : Platform.OS == 'ios' ? 'slide' : 'front',
             headerTintColor: Colors.primary.brand,
 
-            drawerActiveBackgroundColor: Colors.neutral[600],
+            drawerActiveBackgroundColor: !dark ? Colors.neutral[600] : undefined,
             headerStyle: {
-              backgroundColor: 'white',
+              // backgroundColor: 'white',
             },
           }}
           drawerContent={(props) => <DrawerContent {...props} />}
@@ -121,35 +123,6 @@ const DrawerNav = () => {
                     ]}
                   />
                 );
-              },
-
-              headerRight() {
-                const routeName = getHeaderTitle(route);
-                if (routeName == 'Home') {
-                  return (
-                    <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          navigation.navigate('Notifications');
-                        }}
-                        // style={{ paddingRight: spacing.x24 }}
-                      >
-                        <Notification
-                          style={{ height: 24, width: 24 }}
-                          color={Colors.primary.brand}
-                          strokeWidth={0.2}
-                        />
-                      </TouchableOpacity>
-                      {/* <TouchableOpacity onPress={() => {}}>
-                            <Message
-                              style={{ height: 24, width: 24 }}
-                              stroke={Colors.primary.brand}
-                              strokeWidth={0.2}
-                            />
-                          </TouchableOpacity> */}
-                    </View>
-                  );
-                }
               },
             })}
           />

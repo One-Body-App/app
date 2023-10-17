@@ -28,6 +28,9 @@ import {
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { StyledText } from '@/src/components/styled/Text';
+import { spacing } from '@/src/styles/spacing';
+import { Colors } from '@/src/styles';
+import { Notification } from 'iconsax-react-native';
 
 enum FeedTypes {
   All = 'all',
@@ -170,6 +173,71 @@ const Home = ({ navigation }: Props) => {
   };
 
   const cardSecondaryColor = dark ? '#353535' : '#DDD';
+
+  const addHeaderButtons = () => {
+    navigation
+      .getParent()
+      ?.getParent()
+      ?.setOptions({
+        headerRight: () => (
+          <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('Notifications');
+              }}
+              // style={{ paddingRight: spacing.x24 }}
+            >
+              <Notification
+                style={{ height: 24, width: 24 }}
+                color={Colors.primary.brand}
+                strokeWidth={0.2}
+              />
+            </TouchableOpacity>
+            {/* <TouchableOpacity onPress={() => {}}>
+                            <Message
+                              style={{ height: 24, width: 24 }}
+                              stroke={Colors.primary.brand}
+                              strokeWidth={0.2}
+                            />
+                          </TouchableOpacity> */}
+          </View>
+        ),
+      });
+
+    return () => {
+      navigation
+        .getParent()
+        ?.getParent()
+        ?.setOptions({
+          headerRight: () => <View />,
+        });
+    };
+  };
+
+  const removeHeaderButtons = () => {
+    navigation
+      .getParent()
+      ?.getParent()
+      ?.setOptions({
+        headerRight: () => <View />,
+      });
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      addHeaderButtons();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      removeHeaderButtons();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <>

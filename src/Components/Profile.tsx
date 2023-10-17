@@ -28,6 +28,8 @@ import { NavigationState, SceneRendererProps, TabView } from 'react-native-tab-v
 import InstagramFlatlist from './InstagramFlatlist';
 import BlogFlatlist from './BlogFlatlist';
 import TwitterFlatlist from './TwitterFlatlist';
+import { ApiCall } from '../Services/api';
+import { getuserAll } from '../Redux/actions/UserAction';
 
 type Route = {
   key: string;
@@ -38,11 +40,19 @@ interface Props {
   profileData: User;
   currentUser: User;
   relatedUsers?: User[];
+  handleSubscribe?: Function;
+  handleUnSubscribe?: Function;
 }
 
 export const profileImagesize = 80;
 
-const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
+const Profile = ({
+  profileData,
+  currentUser,
+  relatedUsers,
+  handleSubscribe,
+  handleUnSubscribe,
+}: Props) => {
   const navigation = useNavigation<NavigationProp<MyProfileStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const authState = useSelector((state: RootState) => state.auth);
@@ -176,6 +186,7 @@ const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
   useEffect(() => {
     if (authState?.getBadgesSuccess == false) {
       Toast.show('Unable to get badges at this time!', Toast.LONG);
+      dispatch(getBadges.Reset());
     }
   }, [authState?.getBadgesSuccess]);
 
@@ -184,6 +195,7 @@ const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
       dispatch(getProfile.Request({ token: token, accountType: profileData?.accountType }));
     } else if (authState?.setUserBadgesSuccess == false) {
       Toast.show('Unable to set badges at this time!', Toast.LONG);
+      dispatch(getBadges.Reset());
     }
   }, [authState?.setUserBadgesSuccess]);
 
@@ -404,9 +416,15 @@ const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
                     text="Share Profile"
                   /> */}
                   <Button
-                    onPress={() => {}}
+                    onPress={() => {
+                      if (currentUser?.following.includes(profileData?._id)) {
+                        if (handleUnSubscribe) handleUnSubscribe(profileData?._id);
+                      } else {
+                        if (handleSubscribe) handleSubscribe(profileData?._id);
+                      }
+                    }}
                     text={
-                      currentUser?.following.includes(profileData?._id) ? 'Connect' : 'Connected'
+                      currentUser?.following.includes(profileData?._id) ? 'Connected' : 'Connect'
                     }
                     btnStyle={[
                       button.primary,
@@ -414,14 +432,14 @@ const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
                         paddingVertical: spacing.x10,
                         paddingHorizontal: spacing.x16,
                         backgroundColor: currentUser?.following.includes(profileData?._id)
-                          ? Colors.primarySapphire.brand
-                          : Colors.neutral[500],
+                          ? Colors.neutral[500]
+                          : Colors.primarySapphire.brand,
                       },
                     ]}
                     btnTextStyle={{
                       color: currentUser?.following.includes(profileData?._id)
-                        ? '#FFF'
-                        : Colors.neutral[700],
+                        ? Colors.neutral[700]
+                        : '#FFF',
                     }}
                   />
                 </>
@@ -467,12 +485,14 @@ const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
             <StyledText style={{ color: Colors.neutral[300] }}>
               {profileData?.username ? `@${profileData?.username}` : ''}
             </StyledText>
-            {profileData?.profile?.whatIDo || profileData?.profile?.typeOfOrganization ? (
+            {profileData?.profile?.whatIDo?.name || profileData?.profile?.typeOfOrganization ? (
               <StyledText style={{ color: Colors.neutral[300] }}>
                 {profileData?.username ? ` • ` : ''}
               </StyledText>
             ) : null}
-            {`${profileData?.profile?.whatIDo ? `${profileData?.profile?.whatIDo?.name}` : ''}`}
+            {`${
+              profileData?.profile?.whatIDo?.name ? `${profileData?.profile?.whatIDo?.name}` : ''
+            }`}
             {`${
               profileData?.profile?.typeOfOrganization
                 ? `${profileData?.profile?.typeOfOrganization?.name}`
@@ -496,7 +516,8 @@ const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
               justifyContent: 'center',
             }}
           >
-            {profileData?.profile?.location?.address ? (
+            {profileData?.profile?.location?.address &&
+            (profileData?._id == currentUser._id || profileData.profile.isChurchTypePublic) ? (
               <View style={{ flexDirection: 'row', flex: 1 }}>
                 <Location size={20} color={Colors.neutral.brand} />
                 <StyledText
@@ -537,8 +558,8 @@ const Profile = ({ profileData, currentUser, relatedUsers }: Props) => {
             </StyledText>
           </View>
 
-          {profileData?._id == currentUser._id &&
-          profileData.accountType == AccountType.individual ? (
+          {profileData.accountType == AccountType.individual &&
+          (profileData?._id == currentUser._id || profileData.profile.isChurchTypePublic) ? (
             <View
               style={{ flexDirection: 'row', alignItems: 'flex-start', paddingBottom: spacing.x16 }}
             >

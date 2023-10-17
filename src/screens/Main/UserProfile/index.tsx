@@ -36,6 +36,7 @@ import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import ProfileComponent from '@/src/components/Profile';
 import { Profile } from 'react-native-fbsdk-next';
+import { getProfile } from '@/src/Redux/actions/AuthActions';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'UserProfile'>,
@@ -154,9 +155,10 @@ const UserProfile = ({ navigation, route }: Props) => {
         verb: 'patch',
       });
       if (res?.status == 200) {
-        Toast.show('unfollowed successfully.', Toast.LONG);
-        dispatch(getuserAll({ token: token }));
-        dispatch(getuserGet({ token: token }));
+        dispatch(getProfile.Request({ token: token }));
+        // Toast.show('unfollowed successfully.', Toast.LONG);
+        // dispatch(getuserAll({ token: token }));
+        // dispatch(getuserGet({ token: token }));
       } else {
         Toast.show('Error unfollowing, please try again later.', Toast.LONG);
       }
@@ -173,9 +175,10 @@ const UserProfile = ({ navigation, route }: Props) => {
         verb: 'patch',
       });
       if (res?.status == 200) {
-        dispatch(getuserAll({ token: token }));
-        dispatch(getuserGet({ token: token }));
-        Toast.show('Followed successfully.', Toast.LONG);
+        // dispatch(getuserAll({ token: token }));
+        // dispatch(getuserGet({ token: token }));
+        dispatch(getProfile.Request({ token: token }));
+        // Toast.show('Followed successfully.', Toast.LONG);
       } else {
         Toast.show('Error following, please try again later.', Toast.LONG);
       }
@@ -227,6 +230,8 @@ const UserProfile = ({ navigation, route }: Props) => {
           profileData={user}
           currentUser={currentUser}
           relatedUsers={relatedUsers}
+          handleSubscribe={handleSubscribe}
+          handleUnSubscribe={handleUnSubscribe}
         />
       ) : (
         <View />

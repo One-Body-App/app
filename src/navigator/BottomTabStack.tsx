@@ -1,25 +1,16 @@
 import { FC, useState } from 'react';
 import FastImage from 'react-native-fast-image';
 
-import { Text, View, TouchableOpacity, StyleSheet, Platform, StatusBar, Image } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { View, Platform } from 'react-native';
 
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { BottomTabBar, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import FontAwesome from 'react-native-vector-icons/FontAwesome5';
-import LogoHeader from '@/assets/svg/logo2.svg';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
 import DeviceInfo from 'react-native-device-info';
 import { MainBottomStackParamsList, MainDrawerParamsList } from './types';
-import Message from '@/assets/icons/message.svg';
-import Notification from '@/assets/icons/notification.svg';
-import Logo from '@/assets/icons/logo.svg';
-import { spacing } from '../styles/spacing';
 import Home from '@/assets/icons/home.svg';
 import Search from '@/assets/icons/search.svg';
 import Global from '@/assets/icons/global.svg';
@@ -28,36 +19,25 @@ import { Colors } from '../styles';
 import SearchStack from './SearchStack';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
+import { borderWidth } from '../styles/outlines';
+import { useTheme } from '@react-navigation/native';
 
 type Props = DrawerScreenProps<MainDrawerParamsList, 'Main'>;
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
 const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const { dark, colors } = useTheme();
+
   const authState = useSelector((state: RootState) => state.auth);
-  // const tabs = route?.params?.tabs;
-
-  // const [tab, setTab] = React.useState(tabs ?? 'HomeTab');
-
-  // React.useEffect(() => {
-  //   if (tabs) setTab(tabs);
-  // }, [tabs]);
-
-  // navigation.getParent()?.setOptions({
-  //   screenOptions: {options
-  //       header
-  //   }
-  // });
-  const HEADER_PADDING_TOP = DeviceInfo.hasNotch() || DeviceInfo.hasDynamicIsland() ? 60 : 40;
-
+  console.log(colors);
   return (
     <Tab.Navigator
       screenOptions={{
         headerStatusBarHeight: 0,
         headerShown: false,
         headerStyle: {
-          backgroundColor: 'white',
+          backgroundColor: colors.background,
         },
         // tabBarActiveBackgroundColor: '#4d9eba',
 
@@ -68,9 +48,9 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
 
         tabBarLabelStyle: { paddingTop: 4 },
         tabBarStyle: {
-          backgroundColor: Platform.OS == 'ios' ? '#ffffffe6' : '#fff',
+          // backgroundColor: Platform.OS == 'ios' ? '#ffffffe6' : '#fff',
           borderTopWidth: 1,
-          borderTopColor: Colors.neutral[800],
+          borderTopColor: colors.border, // Colors.neutral[800],
           // paddingVertical: Platform.OS == 'ios' ? 10 : 0,
         },
 
@@ -116,7 +96,13 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
             if (authState.getProfileData?.profileImage) {
               return (
                 <FastImage
-                  style={{ width: 20, height: 20, borderRadius: 25 }}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 25,
+                    borderColor: props.color,
+                    borderWidth: props.focused ? borderWidth.base : 0,
+                  }}
                   source={{
                     uri: authState.getProfileData?.profileImage,
                   }}

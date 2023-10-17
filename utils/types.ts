@@ -46,6 +46,8 @@ type Profile = {
   contactPhoneNumber?: string;
   whatIDo?: Tag;
   typeOfOrganization?: Tag;
+  isLocationPublic?: boolean;
+  isChurchTypePublic?: boolean;
 };
 
 export type SavedPost = {

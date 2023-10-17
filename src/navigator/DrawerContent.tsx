@@ -20,6 +20,7 @@ import { Logout, LogoutCurve, Setting2 } from 'iconsax-react-native';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { logout } from '../Redux/actions/AuthActions';
 import Icon from 'react-native-vector-icons/AntDesign';
+import { useTheme } from '@react-navigation/native';
 
 export default function DrawerContent({
   descriptors,
@@ -35,15 +36,20 @@ export default function DrawerContent({
   const { drawerContentStyle, drawerContentContainerStyle } = focusedOptions;
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
+  const { dark, colors } = useTheme();
 
   return (
     <DrawerContentScrollView
       {...rest}
       contentContainerStyle={[
         drawerContentContainerStyle,
-        { paddingBottom: insets.bottom, flexGrow: 1, backgroundColor: 'white' },
+        {
+          paddingBottom: insets.bottom,
+          flexGrow: 1,
+          backgroundColor: dark ? undefined : colors.background,
+        },
       ]}
-      style={[{ backgroundColor: 'white' }, drawerContentStyle]}
+      style={[{ backgroundColor: dark ? undefined : colors.background }, drawerContentStyle]}
     >
       <View style={styles.drawerContent}>
         <View>
@@ -54,7 +60,7 @@ export default function DrawerContent({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              borderColor: Colors.neutral[900],
+              borderColor: colors.border, //Colors.neutral[900],
               borderWidth: borderWidth.thin,
               margin: spacing.x16,
               flex: 1,
@@ -121,8 +127,10 @@ export default function DrawerContent({
         </View>
         <View
           style={{
-            borderTopColor: Colors.neutral[800],
-            borderTopWidth: borderWidth.base,
+            // borderTopColor: Colors.neutral[800],
+            // borderTopWidth: borderWidth.base,
+            borderTopColor: colors.border, //Colors.neutral[900],
+            borderTopWidth: borderWidth.thin,
             paddingHorizontal: spacing.x16,
             flexDirection: 'row',
             justifyContent: 'space-between',

@@ -172,11 +172,13 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
 
     //Badges
     case GetBadges.REQUEST:
+    case GetBadges.RESET:
       return {
         ...state,
         getBadgesSuccess: undefined,
         error: null,
       };
+
     case GetBadges.SUCCESS:
       return {
         ...state,

@@ -264,6 +264,7 @@ const Main = () => {
       background: '#FFF',
       primary: '#032F3C',
       card: '#F6F6F6',
+      border: Colors.neutral[900],
     },
   };
 
@@ -271,9 +272,10 @@ const Main = () => {
     ...DarkTheme,
     colors: {
       ...DarkTheme.colors,
-
+      // Colors.neutral[900]
       primary: '#5B7279',
-      card: '#191919',
+      card: '#202328',
+      background: '#0D0D0D',
     },
   };
 

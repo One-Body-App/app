@@ -300,6 +300,7 @@ function* getBadgesSaga({ params }) {
       verb: 'get',
       token: params.token,
     });
+
     if (res?.status == 200) {
       yield put(getBadges.Success(res?.response?.data));
     } else yield put(getBadges.Failed(res?.response));

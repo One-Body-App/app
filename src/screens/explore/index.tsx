@@ -168,6 +168,14 @@ const Explore = ({ navigation }: Props) => {
     getFollowing();
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      dispatch(getuserAll({ token: token }));
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const addInterests = async (newInterest: Interest) => {
     setIsLoading(true);
 
@@ -568,12 +576,20 @@ const Explore = ({ navigation }: Props) => {
                             : Colors.primarySapphire.brand,
                         },
                       ]}
-                      btnTextStyle={{ color: 'white' }}
+                      btnTextStyle={{
+                        color: following.some((user) => user._id == item?._id)
+                          ? Colors.primary.brand
+                          : 'white',
+                      }}
                       text={
                         following.some((user) => user._id == item?._id) ? 'Connected' : 'Connect'
                       }
                       onPress={() => {
-                        handleSubscribe(item?._id);
+                        if (following.some((user) => user._id == item?._id)) {
+                          handleUnSubscribe(item?._id);
+                        } else {
+                          handleSubscribe(item?._id);
+                        }
                       }}
                       wrapperViewBtnStyle={{ justifyContent: 'flex-end' }}
                     />
@@ -832,22 +848,23 @@ const Explore = ({ navigation }: Props) => {
                         <Button
                           btnStyle={[
                             {
-                              padding: spacing.x8,
+                              paddingVertical: spacing.x10,
+                              paddingHorizontal: spacing.x24,
                             },
                           ]}
                           disabledBtnStyle={{
-                            padding: spacing.x8,
+                            paddingVertical: spacing.x10,
+                            paddingHorizontal: spacing.x24,
                             opacity: 0.5,
                           }}
                           btnTextStyle={{ color: Colors.neutral[200] }}
                           disabledBtnTextStyle={{ color: Colors.neutral[300] }}
-                          text="Unfollow"
+                          text="Connected"
                           onPress={() => {
                             handleUnSubscribe(item?._id);
                           }}
                           disabled={isLoading}
                           wrapperViewBtnStyle={{
-                            flex: 1,
                             justifyContent: 'center',
                             backgroundColor: Colors.neutral[800],
                             borderRadius: borderRadius.button,
