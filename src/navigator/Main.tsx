@@ -74,6 +74,9 @@ import Feather from 'react-native-vector-icons/Feather';
 import { Home3, Profile2User } from 'iconsax-react-native';
 
 import DrawerNav from './DrawerStack';
+import NewPost from '../screens/post/NewPost';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { StackScreenProps } from '@react-navigation/stack';
 
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
@@ -308,11 +311,39 @@ const Main = () => {
         (authState.getProfileData?.accountType == 'individual' ||
           authState.getProfileData?.accountType == 'organization') &&
         user?.emailVerified ? (
-          <MainStack.Screen
-            name="MainRoot"
-            component={DrawerNav}
-            options={{ headerShown: false }}
-          />
+          <>
+            <MainStack.Screen
+              name="MainRoot"
+              component={DrawerNav}
+              options={{ headerShown: false }}
+            />
+
+            <MainStack.Screen
+              name="Post"
+              component={NewPost}
+              options={({ navigation, route }) => ({
+                presentation: 'fullScreenModal',
+                title: 'Create Post',
+                headerLeft: (props) => {
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (props.canGoBack) {
+                          navigation.pop();
+                        }
+                      }}
+                    >
+                      <MaterialCommunityIcons
+                        name="window-close"
+                        size={18}
+                        color={Colors.primary.brand}
+                      />
+                    </TouchableOpacity>
+                  );
+                },
+              })}
+            />
+          </>
         ) : (
           <>
             <MainStack.Screen name="Intro" component={Intro} options={{ headerShown: false }} />

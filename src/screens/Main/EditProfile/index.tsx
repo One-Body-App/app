@@ -45,7 +45,7 @@ import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
 import { spacing } from '@/src/styles/spacing';
-import { profileImagesize } from '@/src/components/Profile';
+import { profileImagesize } from '@/src/components/profile/Profile';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { StyledText } from '@/src/components/styled/Text';

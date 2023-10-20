@@ -140,3 +140,5 @@ export type NotificationType = {
   title: string;
   description: string;
 };
+
+export type RefreshListRef = { setRefreshing: Function };

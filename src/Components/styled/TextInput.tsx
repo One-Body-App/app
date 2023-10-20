@@ -12,6 +12,7 @@ import {
 import { StyledText } from './Text';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
 
 interface Props extends TextInputProps {
   label?: string;
@@ -23,6 +24,7 @@ interface Props extends TextInputProps {
   showCharCounter?: boolean;
   counterContainerStyle?: ViewStyle;
   counterTextStyleStyle?: TextStyle;
+  inputWrapperStyle?: ViewStyle;
 }
 
 export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
@@ -32,6 +34,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
     rightIcon,
     leftIcon,
     wrapperStyle,
+    inputWrapperStyle,
     backgroundColor,
     showCharCounter,
     counterContainerStyle,
@@ -49,20 +52,23 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
         <StyledText style={{ marginBottom: 15, color: Colors.neutral.brand }}>{label}</StyledText>
       ) : null}
       <View
-        style={{
-          flexDirection: 'row',
-          backgroundColor: backgroundColorWrapper,
-          paddingHorizontal: 14,
+        style={[
+          {
+            flexDirection: 'row',
+            backgroundColor: backgroundColorWrapper,
+            paddingHorizontal: spacing.x16,
 
-          borderRadius: borderRadius.small,
-          borderWidth: 1,
-          borderColor: Colors.neutral[700],
-        }}
+            borderRadius: borderRadius.small,
+            borderWidth: 1,
+            borderColor: Colors.neutral[700],
+          },
+          inputWrapperStyle,
+        ]}
       >
         {leftIcon ? leftIcon : null}
         <TextInput
           ref={ref}
-          style={[{ paddingVertical: 12 }, styles.input, inputStyle, poppins.base]}
+          style={[{ paddingVertical: spacing.x10 }, styles.input, inputStyle, poppins.base]}
           {...textInputProps}
         />
         {rightIcon ? rightIcon : null}

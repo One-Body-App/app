@@ -34,7 +34,7 @@ import {
 } from '@/src/navigator/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import ProfileComponent from '@/src/components/Profile';
+import ProfileComponent from '@/src/components/profile/Profile';
 import { Profile } from 'react-native-fbsdk-next';
 import { getProfile } from '@/src/Redux/actions/AuthActions';
 

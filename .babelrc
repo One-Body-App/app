@@ -9,6 +9,7 @@
     ],
     "transform-inline-environment-variables",
     "jest-hoist",
+    "react-native-worklets-core/plugin",
     // [
 
     // {

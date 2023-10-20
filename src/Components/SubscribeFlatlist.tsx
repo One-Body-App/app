@@ -79,7 +79,6 @@ const SubscribeFlatlist = ({
   }, []);
   return (
     <FlatList
-      nestedScrollEnabled
       data={users ? users : allusers}
       numColumns={numColumns}
       horizontal={horizontal}
@@ -87,9 +86,10 @@ const SubscribeFlatlist = ({
       ListFooterComponent={() => <View style={{ padding: 7 }} />}
       ListHeaderComponent={() => <View style={{ padding: 7 }} />}
       ItemSeparatorComponent={() => <View style={{ margin: 7 }} />}
-      onScroll={(e) => {
-        if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
-      }}
+      // onScroll={(e) => {
+      //   if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
+      // }}
+      // scrollEnabled={false}
       renderItem={({ item, index }) => (
         <TouchableOpacity
           onPress={() =>

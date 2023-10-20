@@ -9,24 +9,24 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome5';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
-import DeviceInfo from 'react-native-device-info';
 import { MainBottomStackParamsList, MainDrawerParamsList } from './types';
 import Home from '@/assets/icons/home.svg';
 import Search from '@/assets/icons/search.svg';
 import Global from '@/assets/icons/global.svg';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { Colors } from '../styles';
 import SearchStack from './SearchStack';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
 import { borderWidth } from '../styles/outlines';
 import { useTheme } from '@react-navigation/native';
+import { AddSquare } from 'iconsax-react-native';
+import PostStack from './PostStack';
 
 type Props = DrawerScreenProps<MainDrawerParamsList, 'Main'>;
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
-const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
+const BottomStack: FC<Props> = () => {
   const { dark, colors } = useTheme();
 
   const authState = useSelector((state: RootState) => state.auth);
@@ -39,22 +39,17 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
         headerStyle: {
           backgroundColor: colors.background,
         },
-        // tabBarActiveBackgroundColor: '#4d9eba',
 
         tabBarActiveTintColor: Colors.primarySapphire.brand,
         tabBarInactiveTintColor: Colors.neutral[400],
         tabBarShowLabel: false,
-        // tabBarInactiveBackgroundColor: '#126B87',
 
         tabBarLabelStyle: { paddingTop: 4 },
         tabBarStyle: {
-          // backgroundColor: Platform.OS == 'ios' ? '#ffffffe6' : '#fff',
           borderTopWidth: 1,
-          borderTopColor: colors.border, // Colors.neutral[800],
-          // paddingVertical: Platform.OS == 'ios' ? 10 : 0,
+          borderTopColor: colors.border,
         },
 
-        // tabBarHideOnKeyboard: true,
         tabBarAllowFontScaling: false,
       }}
     >
@@ -78,6 +73,22 @@ const BottomStack: FC<Props> = ({ navigation, route }: Props) => {
             </View>
           ),
         }}
+      />
+      <Tab.Screen
+        name="PostTab"
+        component={PostStack}
+        options={{
+          tabBarLabel: 'Post',
+          tabBarIcon: (props) => (
+            <AddSquare style={{ height: 22, width: 22 }} color={props.color} />
+          ),
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('Post');
+          },
+        })}
       />
       <Tab.Screen
         name="ExploreTab"

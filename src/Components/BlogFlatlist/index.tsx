@@ -24,14 +24,9 @@ import { useTheme } from '@react-navigation/native';
 import OptionsModal from '../ListItems/OptionsModal';
 import { styles as globalStyle } from '@/src/components/ListItems/style';
 import { spacing } from '@/src/styles/spacing';
+import { Tabs } from 'react-native-collapsible-tab-view';
 
-const BlogFlatlist = ({
-  userId,
-  setScrollPosition,
-}: SceneRendererProps & {
-  userId: string;
-  setScrollPosition: (position: number) => void;
-}) => {
+const BlogFlatlist = ({ userId }: { userId: string }) => {
   // const offset = useRef(new Animated.Value(0)).current;
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -111,12 +106,12 @@ const BlogFlatlist = ({
         hideChannelSection={true}
         height={getHeight(25)}
       />
-      <FlatList
+      <Tabs.FlatList
         nestedScrollEnabled={true}
         data={blogs}
-        onScroll={(e) => {
-          setScrollPosition(e.nativeEvent.contentOffset.y);
-        }}
+        // onScroll={(e) => {
+        //   setScrollPosition(e.nativeEvent.contentOffset.y);
+        // }}
         // contentContainerStyle={{
         //   marginTop: getHeight(1),
         //   marginBottom: getHeight(10),
@@ -154,7 +149,7 @@ const BlogFlatlist = ({
         //   },
         // )}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
+        renderItem={({ item }: any) => (
           // <TouchableOpacity
           //   onPress={() => {
           //     OpenURLButton(item?.link);

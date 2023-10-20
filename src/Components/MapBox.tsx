@@ -37,8 +37,8 @@ export enum MapBoxTypes {
 
 type MapBoxProps = {
   location: MapSuggestion | null;
-  setLongitude: Dispatch<SetStateAction<number | undefined>>;
-  setLatitude: Dispatch<SetStateAction<number | undefined>>;
+  setLongitude?: Dispatch<SetStateAction<number | undefined>>;
+  setLatitude?: Dispatch<SetStateAction<number | undefined>>;
   modalVisible: boolean;
   setModalVisible: Dispatch<SetStateAction<boolean>>;
   setLocation: Dispatch<SetStateAction<MapSuggestion | null>>;
@@ -67,9 +67,9 @@ const MapBox = (props: MapBoxProps) => {
   const { setLocation, location, setModalVisible, modalVisible, setLongitude, setLatitude } = props;
   const { colors, dark } = useTheme();
 
-  const [show, setshown] = useState<boolean>(false);
+  const [show, setshown] = useState<boolean>(!!location);
   const [loading, setLoading] = useState<boolean>(false);
-  const [suggetions, setSuggetions] = useState<MapSuggestion[]>();
+  const [suggetions, setSuggetions] = useState<MapSuggestion[]>(location ? [location] : []);
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
 
   const getSuggestion = async (val: string) => {
@@ -96,10 +96,10 @@ const MapBox = (props: MapBoxProps) => {
     }
   };
   const onclose = () => {
-    setLocation(null);
     setsearchLocation('');
     setModalVisible(false);
     setSuggetions([]);
+    setshown(false);
     // setCheckIn(false);
   };
   const getlocationPermison = async () => {
@@ -138,11 +138,12 @@ const MapBox = (props: MapBoxProps) => {
       .then((data) => {
         setLocation(data?.features[0]);
         setsearchLocation(data?.features[0]?.place_name);
-        setLatitude(latitude);
-        setLongitude(longitude);
+        if (setLatitude) setLatitude(latitude);
+        if (setLongitude) setLongitude(longitude);
         // dispatch(setLoader(false));
         setLoading(false);
-        setModalVisible(false);
+
+        onclose();
       });
   };
 
@@ -160,6 +161,8 @@ const MapBox = (props: MapBoxProps) => {
         margin: 0,
       }}
       propagateSwipe={true}
+      coverScreen={true}
+      useNativeDriver
     >
       <View
         style={{
@@ -236,44 +239,44 @@ const MapBox = (props: MapBoxProps) => {
           </View>
         </View>
         <View style={{ flex: 5 }}>
-          {show == true ? (
-            <FlatList
-              style={{ flex: 1, paddingVertical: 10 }}
-              nestedScrollEnabled
-              data={suggetions}
-              ListEmptyComponent={
-                <>
-                  {searchLocation && !loading ? (
-                    <StyledText style={[Typography.body.x2M, { padding: 18, textAlign: 'center' }]}>
-                      No results found
+          <FlatList
+            style={{ flex: 1, paddingVertical: 10 }}
+            nestedScrollEnabled
+            data={suggetions}
+            ListEmptyComponent={
+              <>
+                {searchLocation && !loading ? (
+                  <StyledText style={[Typography.body.x2M, { padding: 18, textAlign: 'center' }]}>
+                    No results found
+                  </StyledText>
+                ) : null}
+              </>
+            }
+            renderItem={({ item }) => {
+              console.log(item);
+              return (
+                <TouchableOpacity
+                  onPress={() => {
+                    if (setLongitude) setLongitude(item?.center[0]);
+                    if (setLatitude) setLatitude(item?.center[1]);
+
+                    setLocation(item);
+                    setsearchLocation(item.place_name);
+
+                    onclose();
+                  }}
+                >
+                  <View>
+                    <StyledText
+                      style={{ color: colors.text, marginHorizontal: 18, marginVertical: 10 }}
+                    >
+                      {item.place_name}
                     </StyledText>
-                  ) : null}
-                </>
-              }
-              renderItem={({ item }) => {
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setLongitude(item?.center[0]);
-                      setLatitude(item?.center[1]);
-                      setshown(false);
-                      setLocation(item);
-                      setsearchLocation(item.place_name);
-                      setModalVisible(false);
-                    }}
-                  >
-                    <View>
-                      <StyledText
-                        style={{ color: colors.text, marginHorizontal: 18, marginVertical: 10 }}
-                      >
-                        {item.place_name}
-                      </StyledText>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          ) : null}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
         </View>
       </View>
     </Modal>

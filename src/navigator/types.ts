@@ -171,7 +171,7 @@ export type SearchStackParamsList = {
 };
 
 export type MyProfileStackParamsList = {
-  MyProfile: {
+  MyProfile?: {
     openSettings?: boolean;
   };
   EditProfile: undefined;
@@ -180,6 +180,7 @@ export type MyProfileStackParamsList = {
 export type MainBottomStackParamsList = {
   ExploreTab: NavigatorScreenParams<ExploreStackParamsList>;
   SearchTab: NavigatorScreenParams<SearchStackParamsList>;
+  PostTab: NavigatorScreenParams<PostStackParamsList>;
   HomeTab: NavigatorScreenParams<HomeStackParamsList>;
   MyProfileTab: NavigatorScreenParams<MyProfileStackParamsList>;
 };
@@ -192,6 +193,8 @@ export type MainDrawerParamsList = {
   Settings: NavigatorScreenParams<SettingsStackParamsList>;
   Help: undefined;
 };
+
+export type PostStackParamsList = {};
 
 export type OnboardingStackParamList = {
   OnboardingIntro: undefined;
@@ -262,6 +265,7 @@ export type OnboardingStackParamList = {
 
 export type MainStackParamList = {
   MainRoot?: NavigatorScreenParams<MainDrawerParamsList>;
+  Post: undefined;
   NewPassword: undefined;
   Intro: undefined;
   AccountType: undefined;

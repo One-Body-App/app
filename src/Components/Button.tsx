@@ -24,6 +24,7 @@ const Button = ({
   disabledBtnTextStyle,
   wrapperViewBtnStyle,
   wrapperBtnStyle,
+  content,
 }: {
   text?: string;
   content?: ReactNode;
@@ -65,6 +66,8 @@ const Button = ({
               {text}
             </StyledText>
           ) : null}
+
+          {content ? content : null}
 
           {rightIcon}
         </View>

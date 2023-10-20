@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, TouchableOpacity, Share, Platform } from 'react-native';
+import React, { createRef, useEffect, useState } from 'react';
+import { View, TouchableOpacity, Share, Platform, FlatList } from 'react-native';
 
 import { SceneRendererProps } from 'react-native-tab-view';
 import TwitterFlatlist from '@/src/components/TwitterFlatlist';
@@ -22,7 +22,7 @@ import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { Setting2 } from 'iconsax-react-native';
 
-import Profile from '@/src/components/Profile';
+import Profile from '@/src/components/profile/Profile';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { useSelector } from 'react-redux';
@@ -143,6 +143,7 @@ const MyProfile = ({ navigation, route }: Props) => {
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       addHeaderButtons();
+      setRefresh(true);
     });
 
     return unsubscribe;
@@ -163,50 +164,22 @@ const MyProfile = ({ navigation, route }: Props) => {
     };
   }, [navigation, user]);
 
-  const renderScene = ({
-    route,
-    jumpTo,
-  }: SceneRendererProps & {
-    route: any;
-  }) => {
-    switch (route.key) {
-      case 'Instagram':
-        return (
-          <InstagramFlatlist
-            setScrollPosition={updateScrollPosition}
-            jumpTo={jumpTo}
-            currentUser={user}
-            {...route}
-          />
-        );
-      case 'Blog':
-        return (
-          <BlogFlatlist
-            setScrollPosition={updateScrollPosition}
-            {...route}
-            jumpTo={jumpTo}
-            currentUser={user}
-          />
-        );
-      case 'Twitter':
-        return (
-          <TwitterFlatlist
-            setScrollPosition={updateScrollPosition}
-            currentUser={user}
-            jumpTo={jumpTo}
-            {...route}
-          />
-        );
-    }
-  };
-
   if (!user) {
     return null;
   }
 
+  const socialList = createRef<FlatList>();
+
+  const [refresh, setRefresh] = useState(false);
+
   return (
     <View style={{ flex: 1 }}>
-      <Profile profileData={user} currentUser={user} />
+      <Profile
+        profileData={user}
+        currentUser={user}
+        refreshContent={refresh}
+        setRefreshContent={setRefresh}
+      />
       <SettingsSheet userData={user} showModal={showSettings} setShowModal={setShowSettings} />
     </View>
   );
