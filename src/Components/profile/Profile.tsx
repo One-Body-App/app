@@ -24,7 +24,7 @@ export interface ProfileProps {
 
 export const profileImagesize = 80;
 export const HEADER_EXPANDED_HEIGHT = 550;
-export const HEADER_COLLAPSED_HEIGHT = HEADER_EXPANDED_HEIGHT / 4;
+export const HEADER_COLLAPSED_HEIGHT = 170;
 
 import { Tabs } from 'react-native-collapsible-tab-view';
 import { createRef, useEffect } from 'react';

@@ -32,7 +32,13 @@ import Toast from 'react-native-simple-toast';
 
 import { styles } from '../loginComponent/styles';
 import { StyledText } from '../styled/Text';
-import Animated, { interpolate, useAnimatedStyle, useDerivedValue } from 'react-native-reanimated';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useDerivedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { AccountType, Badge } from '@/utils/types';
 import Modal from 'react-native-modal';
 import Selected from '@/assets/svg/Selected.svg';
@@ -66,86 +72,107 @@ const ProfileHeader = ({
     setSelectedBadges(array);
   };
 
-  const scrollYValue = useDerivedValue(() => scrollY.value.toFixed(2));
-
-  const stylez = useAnimatedStyle(() => {
-    console.log(scrollYValue.value);
-    console.log({
-      transform: {
-        translateY: interpolate(
-          scrollY.value,
-          [0, -(height.value || 0 - HEADER_EXPANDED_HEIGHT)],
-          [0, -1 * HEADER_EXPANDED_HEIGHT]
-          // [0, (height.value * -1 || 0 - HEADER_COLLAPSED_HEIGHT) / 2]
-        ),
-      },
-    });
-    // console.log(
-    //   top.value,
-    //   [0, -(height.value || 0 - HEADER_EXPANDED_HEIGHT)],
-    //   [0, -HEADER_EXPANDED_HEIGHT / 2]
-    //   // [0, -(height.value || 0 - HEADER_EXPANDED_HEIGHT)],
-    //   // [0, (height.value ? height.value : 0 - HEADER_COLLAPSED_HEIGHT) / 2]
-    // );
-    console.log([0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)]);
-    let value = interpolate(
+  const profileImageAnimation = useAnimatedStyle(() => {
+    let valueTranslate = interpolate(
       scrollY.value,
-      // [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - 400]
-      // [0, (height.value * -1 || 0 - HEADER_COLLAPSED_HEIGHT) / 2]
+      [0, -(HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - 300]
     );
 
-    if (value > 275) {
-      value = 275;
+    let valueScale = interpolate(
+      scrollY.value,
+      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
+      [2, 1]
+    );
+
+    if (valueTranslate > 245) {
+      valueTranslate = 245;
     }
-    console.log({
-      transform: [
-        {
-          translateY: value,
-        },
-      ],
-    });
+
+    if (valueScale > 1) {
+      valueScale = 1;
+    }
+
     return {
       transform: [
         {
-          translateY: value,
+          translateY: withSpring(valueTranslate),
+        },
+        { scale: valueScale },
+      ],
+    };
+  });
+
+  const buttonsAnimation = useAnimatedStyle(() => {
+    let value = interpolate(
+      scrollY.value,
+      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - 300]
+    );
+
+    if (value > 200) {
+      value = 200;
+    }
+
+    return {
+      transform: [
+        {
+          translateY: withSpring(value),
+        },
+      ],
+    };
+  });
+
+  const nameAnimation = useAnimatedStyle(() => {
+    let value = interpolate(
+      scrollY.value,
+      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - 300]
+    );
+
+    if (value > 210) {
+      value = 210;
+    }
+
+    return {
+      transform: [
+        {
+          translateY: withSpring(value),
+        },
+      ],
+    };
+  });
+
+  const contentAnimation = useAnimatedStyle(() => {
+    let value = interpolate(
+      scrollY.value,
+      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - 300]
+    );
+
+    let opacity = interpolate(
+      scrollY.value,
+
+      [0, 130],
+      [1, 0]
+    );
+
+    return {
+      opacity: opacity,
+      transform: [
+        {
+          translateY: withSpring(-1 * value),
         },
       ],
     };
   });
 
   // const AnimatedFastImage = Animated.createAnimatedComponent(FastImage);
-  console.log(stylez, 'asdadf');
 
   return (
-    <Animated.View
-      pointerEvents="box-none"
-      // style={{
-      //   // position: 'absolute',
-      //   // width: SCREEN_WIDTH,
-      //   top: 0,
-      //   left: 0,
-      //   right: 0,
-      //   height: 550,
-      //   // height: translationScrollViewHeader,
-      //   backgroundColor: 'tomato',
-      //   transform: [{ translateY: translationScrollViewHeader }],
-      // }}
-      // style={[
-      //   {
-      //     backgroundColor: 'lightblue',
-      //     position: 'absolute',
-      //     width: SCREEN_WIDTH,
-      //     top: 0,
-      //     left: 0,
-      //     zIndex: 9999,
-      //   },
-      //   { height: headerHeight },
-      // ]}
-    >
+    <Animated.View pointerEvents="box-none">
       <Animated.View pointerEvents="box-none">
-        <View style={[{ width: '100%', height: 230 }]} pointerEvents="box-none">
+        <View style={[{ width: '100%', height: 220 }]} pointerEvents="box-none">
           {profileData?.profileHeader ? (
             <View pointerEvents="none">
               <Image
@@ -276,8 +303,13 @@ const ProfileHeader = ({
                 position: 'absolute',
                 bottom: profileImagesize / 2,
                 marginLeft: spacing.x24,
+
+                //animatedStyles
+                // profileImageAnimation
               },
-              stylez,
+
+              profileImageAnimation,
+              // animatedStyles,
             ]}
             pointerEvents="none"
           >
@@ -296,14 +328,17 @@ const ProfileHeader = ({
             />
           </Animated.View>
 
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              marginTop: spacing.x16,
-              paddingHorizontal: spacing.x24,
-            }}
+          <Animated.View
+            style={[
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                marginTop: spacing.x16,
+                paddingHorizontal: spacing.x24,
+              },
+              buttonsAnimation,
+            ]}
             pointerEvents="box-none"
           >
             {profileData?._id == currentUser._id ? (
@@ -375,12 +410,15 @@ const ProfileHeader = ({
                 />
               </>
             )}
-          </View>
+          </Animated.View>
         </View>
       </Animated.View>
 
-      <Animated.View style={[{ paddingHorizontal: spacing.x24 }, stylez]} pointerEvents="box-none">
-        <View style={{ flexDirection: 'row', alignItems: 'center' }} pointerEvents="none">
+      <View style={[{ paddingHorizontal: spacing.x24 }]} pointerEvents="box-none">
+        <Animated.View
+          style={[{ flexDirection: 'row', alignItems: 'center' }, nameAnimation]}
+          pointerEvents="none"
+        >
           <StyledText
             style={[
               Typography.header.h3,
@@ -401,36 +439,38 @@ const ProfileHeader = ({
               color={Colors.primarySapphire.brand}
             />
           ) : null}
-        </View>
+        </Animated.View>
         <View pointerEvents="none">
-          <StyledText
-            style={[
-              {
-                // textAlign: 'center',
-                // marginBottom: 20,
-                // color: '#5b7279',
-                // marginTop: 5,
-                paddingBottom: spacing.x24,
-              },
-            ]}
-          >
-            <StyledText style={{ color: Colors.neutral[300] }}>
-              {profileData?.username ? `@${profileData?.username}` : ''}
-            </StyledText>
-            {profileData?.profile?.whatIDo?.name || profileData?.profile?.typeOfOrganization ? (
+          <Animated.View style={[nameAnimation]}>
+            <StyledText
+              style={[
+                {
+                  // textAlign: 'center',
+                  // marginBottom: 20,
+                  // color: '#5b7279',
+                  // marginTop: 5,
+                  paddingBottom: spacing.x24,
+                },
+              ]}
+            >
               <StyledText style={{ color: Colors.neutral[300] }}>
-                {profileData?.username ? ` • ` : ''}
+                {profileData?.username ? `@${profileData?.username}` : ''}
               </StyledText>
-            ) : null}
-            {`${
-              profileData?.profile?.whatIDo?.name ? `${profileData?.profile?.whatIDo?.name}` : ''
-            }`}
-            {`${
-              profileData?.profile?.typeOfOrganization
-                ? `${profileData?.profile?.typeOfOrganization?.name}`
-                : ''
-            }`}
-          </StyledText>
+              {profileData?.profile?.whatIDo?.name || profileData?.profile?.typeOfOrganization ? (
+                <StyledText style={{ color: Colors.neutral[300] }}>
+                  {profileData?.username ? ` • ` : ''}
+                </StyledText>
+              ) : null}
+              {`${
+                profileData?.profile?.whatIDo?.name ? `${profileData?.profile?.whatIDo?.name}` : ''
+              }`}
+              {`${
+                profileData?.profile?.typeOfOrganization
+                  ? `${profileData?.profile?.typeOfOrganization?.name}`
+                  : ''
+              }`}
+            </StyledText>
+          </Animated.View>
           {profileData?.influencerProfile?.influencerStatus == 'approved' && profileData?.bio ? (
             <StyledText
               numberOfLines={3}
@@ -440,88 +480,92 @@ const ProfileHeader = ({
             </StyledText>
           ) : null}
         </View>
-        <View
-          pointerEvents="none"
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            paddingBottom: spacing.x16,
-            justifyContent: 'center',
-          }}
-        >
-          {profileData?.profile?.location?.address &&
-          (profileData?._id == currentUser._id || profileData.profile.isChurchTypePublic) ? (
-            <View style={{ flexDirection: 'row', flex: 1 }}>
-              <Location size={20} color={Colors.neutral.brand} />
+        <Animated.View style={[contentAnimation]} pointerEvents="box-none">
+          <View
+            pointerEvents="none"
+            style={[
+              {
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                paddingBottom: spacing.x16,
+                justifyContent: 'center',
+              },
+            ]}
+          >
+            {profileData?.profile?.location?.address &&
+            (profileData?._id == currentUser._id || profileData.profile.isChurchTypePublic) ? (
+              <View style={{ flexDirection: 'row', flex: 1 }}>
+                <Location size={20} color={Colors.neutral.brand} />
+                <StyledText
+                  style={{ marginHorizontal: spacing.x10, ...Typography.fontWeight.light }}
+                >
+                  {profileData?.profile?.location.address}
+                </StyledText>
+              </View>
+            ) : null}
+
+            <View
+              style={{
+                flexDirection: 'row',
+                paddingLeft: profileData?.profile?.location?.address ? spacing.x16 : 0,
+                flex: 1,
+              }}
+            >
+              <Calendar size={20} color={Colors.neutral.brand} />
               <StyledText style={{ marginHorizontal: spacing.x10, ...Typography.fontWeight.light }}>
-                {profileData?.profile?.location.address}
+                Joined{' '}
+                <StyledText style={{ ...Typography.fontWeight.light }}>
+                  {format(parseISO(profileData?.createdAt ?? ''), 'MMM yyyy')}
+                </StyledText>
+              </StyledText>
+            </View>
+          </View>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
+            pointerEvents="none"
+          >
+            <ShieldTick size={20} color={Colors.neutral.brand} />
+
+            <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
+              Profile
+            </StyledText>
+            <StyledText style={{}}>{profileData?.username ? ` • ` : ''}</StyledText>
+            <StyledText style={{ marginHorizontal: spacing.x10, textTransform: 'capitalize' }}>
+              {profileData?.accountType}{' '}
+              {profileData?.influencerProfile?.influencerStatus == 'approved' ? 'Influencer' : ''}
+            </StyledText>
+          </View>
+
+          {profileData.accountType == AccountType.individual &&
+          (profileData?._id == currentUser._id || profileData.profile.isChurchTypePublic) ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                paddingBottom: spacing.x16,
+              }}
+              pointerEvents="none"
+            >
+              <HomeHashtag size={20} color={Colors.neutral.brand} />
+
+              <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
+                Denomination
+                <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
+                <StyledText>
+                  {profileData?.profile.churchType}
+                  {profileData?.profile.churchSubType ? (
+                    <>
+                      {` - `}
+
+                      {profileData?.profile.churchSubType}
+                    </>
+                  ) : null}
+                </StyledText>
               </StyledText>
             </View>
           ) : null}
 
-          <View
-            style={{
-              flexDirection: 'row',
-              paddingLeft: profileData?.profile?.location?.address ? spacing.x16 : 0,
-              flex: 1,
-            }}
-          >
-            <Calendar size={20} color={Colors.neutral.brand} />
-            <StyledText style={{ marginHorizontal: spacing.x10, ...Typography.fontWeight.light }}>
-              Joined{' '}
-              <StyledText style={{ ...Typography.fontWeight.light }}>
-                {format(parseISO(profileData?.createdAt ?? ''), 'MMM yyyy')}
-              </StyledText>
-            </StyledText>
-          </View>
-        </View>
-
-        <View
-          style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
-          pointerEvents="none"
-        >
-          <ShieldTick size={20} color={Colors.neutral.brand} />
-
-          <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
-            Profile
-          </StyledText>
-          <StyledText style={{}}>{profileData?.username ? ` • ` : ''}</StyledText>
-          <StyledText style={{ marginHorizontal: spacing.x10, textTransform: 'capitalize' }}>
-            {profileData?.accountType}{' '}
-            {profileData?.influencerProfile?.influencerStatus == 'approved' ? 'Influencer' : ''}
-          </StyledText>
-        </View>
-
-        {profileData.accountType == AccountType.individual &&
-        (profileData?._id == currentUser._id || profileData.profile.isChurchTypePublic) ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              paddingBottom: spacing.x16,
-            }}
-            pointerEvents="none"
-          >
-            <HomeHashtag size={20} color={Colors.neutral.brand} />
-
-            <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
-              Denomination
-              <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
-              <StyledText>
-                {profileData?.profile.churchType}
-                {profileData?.profile.churchSubType ? (
-                  <>
-                    {` - `}
-
-                    {profileData?.profile.churchSubType}
-                  </>
-                ) : null}
-              </StyledText>
-            </StyledText>
-          </View>
-        ) : null}
-
-        {/* {profileData?._id == currentUser._id &&
+          {/* {profileData?._id == currentUser._id &&
           profileData.accountType == AccountType.individual ? (
             <View
               style={{ flexDirection: 'row', alignItems: 'flex-start', paddingBottom: spacing.x16 }}
@@ -545,31 +589,31 @@ const ProfileHeader = ({
             </View>
           ) : null} */}
 
-        {profileData?.website ? (
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
-            pointerEvents="box-none"
-          >
-            <Link21 size={20} color={Colors.neutral.brand} />
-            <TouchableOpacity
-              onPress={() =>
-                OpenURLButton(
-                  `${
-                    profileData?.website.indexOf('https://') == -1
-                      ? `https://${profileData?.website}`
-                      : profileData?.website
-                  }`
-                )
-              }
-              style={{ justifyContent: 'center', marginLeft: spacing.x10 }}
+          {profileData?.website ? (
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
+              pointerEvents="box-none"
             >
-              <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                {profileData?.website}
-              </StyledText>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
+              <Link21 size={20} color={Colors.neutral.brand} />
+              <TouchableOpacity
+                onPress={() =>
+                  OpenURLButton(
+                    `${
+                      profileData?.website.indexOf('https://') == -1
+                        ? `https://${profileData?.website}`
+                        : profileData?.website
+                    }`
+                  )
+                }
+                style={{ justifyContent: 'center', marginLeft: spacing.x10 }}
+              >
+                <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                  {profileData?.website}
+                </StyledText>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </Animated.View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }} pointerEvents="none">
           <StyledText style={[Typography.body.x3M]}>
             {profileData?.followerCount && profileData?.followerCount > 999
@@ -596,7 +640,7 @@ const ProfileHeader = ({
             <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
           </StyledText>
         </View>
-      </Animated.View>
+      </View>
       <Modal
         backdropOpacity={0.3}
         isVisible={requestModel}
