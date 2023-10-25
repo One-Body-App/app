@@ -46,7 +46,7 @@ export default function DrawerContent({
         {
           paddingBottom: insets.bottom,
           flexGrow: 1,
-          backgroundColor: dark ? undefined : colors.background,
+          // backgroundColor: dark ? undefined : colors.background,
         },
       ]}
       style={[{ backgroundColor: dark ? undefined : colors.background }, drawerContentStyle]}
@@ -60,7 +60,7 @@ export default function DrawerContent({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              borderColor: colors.border, //Colors.neutral[900],
+              borderColor: Colors.neutral[900],
               borderWidth: borderWidth.thin,
               margin: spacing.x16,
               flex: 1,
@@ -86,20 +86,27 @@ export default function DrawerContent({
             >
               <StyledText
                 numberOfLines={1}
-                style={[Typography.body.x2M, { color: Colors.neutral.brand }]}
+                // style={[Typography.body.x2M, { color: dark ? colors.text : Colors.neutral.brand }]}
+                style={[Typography.body.x2M, { color: dark ? colors.text : Colors.neutral.brand }]}
               >
                 {user?.name}
               </StyledText>
               <StyledText
                 numberOfLines={1}
                 style={[Typography.body.x1, { color: Colors.neutral[300] }]}
+                // style={[Typography.body.x1, { color: dark ? colors.text : Colors.neutral[300] }]}
               >
                 @{user?.username}
               </StyledText>
 
               <View>
                 <View style={{ flexDirection: 'row', marginTop: spacing.x8 }}>
-                  <StyledText style={[Typography.body.x1M, { color: Colors.neutral.brand }]}>
+                  <StyledText
+                    style={[
+                      Typography.body.x1M,
+                      { color: dark ? colors.text : Colors.neutral.brand },
+                    ]}
+                  >
                     {user?.following.length}{' '}
                   </StyledText>
                   <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
@@ -108,7 +115,12 @@ export default function DrawerContent({
                 </View>
 
                 <View style={{ flexDirection: 'row' }}>
-                  <StyledText style={[Typography.body.x1M, { color: Colors.neutral.brand }]}>
+                  <StyledText
+                    style={[
+                      Typography.body.x1M,
+                      { color: dark ? colors.text : Colors.neutral.brand },
+                    ]}
+                  >
                     {user?.followerCount ?? 0}{' '}
                   </StyledText>
                   <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
@@ -166,7 +178,7 @@ export default function DrawerContent({
               <Setting2
                 color={
                   state.routeNames[state.index] == 'Settings'
-                    ? Colors.primary.brand
+                    ? focusedOptions.drawerActiveBackgroundColor
                     : Colors.neutral[200]
                 }
               />

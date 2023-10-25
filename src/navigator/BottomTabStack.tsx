@@ -10,16 +10,16 @@ import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
 import { MainBottomStackParamsList, MainDrawerParamsList } from './types';
-import Home from '@/assets/icons/home.svg';
-import Search from '@/assets/icons/search.svg';
-import Global from '@/assets/icons/global.svg';
+// import Home from '@/assets/icons/home.svg';
+// import Search from '@/assets/icons/search.svg';
+// import Global from '@/assets/icons/global.svg';
 import { Colors } from '../styles';
 import SearchStack from './SearchStack';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/reducers/rootReducer';
 import { borderWidth } from '../styles/outlines';
 import { useTheme } from '@react-navigation/native';
-import { AddSquare } from 'iconsax-react-native';
+import { AddSquare, Global, Home3, SearchNormal1 } from 'iconsax-react-native';
 import PostStack from './PostStack';
 
 type Props = DrawerScreenProps<MainDrawerParamsList, 'Main'>;
@@ -30,7 +30,7 @@ const BottomStack: FC<Props> = () => {
   const { dark, colors } = useTheme();
 
   const authState = useSelector((state: RootState) => state.auth);
-  console.log(colors);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -40,8 +40,8 @@ const BottomStack: FC<Props> = () => {
           backgroundColor: colors.background,
         },
 
-        tabBarActiveTintColor: Colors.primarySapphire.brand,
-        tabBarInactiveTintColor: Colors.neutral[400],
+        tabBarActiveTintColor: dark ? colors.text : Colors.primarySapphire.brand,
+        tabBarInactiveTintColor: dark ? undefined : Colors.neutral[400],
         tabBarShowLabel: false,
 
         tabBarLabelStyle: { paddingTop: 4 },
@@ -59,7 +59,17 @@ const BottomStack: FC<Props> = () => {
         options={{
           tabBarLabel: 'Home',
 
-          tabBarIcon: (props) => <Home style={{ height: 22, width: 22 }} fill={props.color} />,
+          tabBarIcon: (props) => {
+            return (
+              <>
+                {props.focused ? (
+                  <Home3 style={{ height: 22, width: 22 }} color={props.color} variant="Bold" />
+                ) : (
+                  <Home3 style={{ height: 22, width: 22 }} color={props.color} />
+                )}
+              </>
+            );
+          },
         }}
       />
       <Tab.Screen
@@ -67,11 +77,21 @@ const BottomStack: FC<Props> = () => {
         component={SearchStack}
         options={{
           tabBarLabel: 'Search',
-          tabBarIcon: (props) => (
-            <View>
-              <Search style={{ height: 20, width: 20 }} stroke={props.color} strokeWidth={2} />
-            </View>
-          ),
+          tabBarIcon: (props) => {
+            return (
+              <>
+                {props.focused ? (
+                  <SearchNormal1
+                    style={{ height: 22, width: 22 }}
+                    color={props.color}
+                    variant="Bold"
+                  />
+                ) : (
+                  <SearchNormal1 style={{ height: 22, width: 22 }} color={props.color} />
+                )}
+              </>
+            );
+          },
         }}
       />
       <Tab.Screen
@@ -95,7 +115,17 @@ const BottomStack: FC<Props> = () => {
         component={ExploreStack}
         options={{
           tabBarLabel: 'Explore',
-          tabBarIcon: (props) => <Global style={{ height: 22, width: 22 }} fill={props.color} />,
+          tabBarIcon: (props) => {
+            return (
+              <>
+                {props.focused ? (
+                  <Global style={{ height: 22, width: 22 }} color={props.color} variant="Bold" />
+                ) : (
+                  <Global style={{ height: 22, width: 22 }} color={props.color} />
+                )}
+              </>
+            );
+          },
         }}
       />
       <Tab.Screen

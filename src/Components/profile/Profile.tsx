@@ -24,11 +24,12 @@ export interface ProfileProps {
 
 export const profileImagesize = 80;
 export const HEADER_EXPANDED_HEIGHT = 550;
-export const HEADER_COLLAPSED_HEIGHT = 170;
+export const HEADER_COLLAPSED_HEIGHT = 190;
 
 import { Tabs } from 'react-native-collapsible-tab-view';
 import { createRef, useEffect } from 'react';
 import ProfileHeader from './ProfileHeader';
+import { useTheme } from '@react-navigation/native';
 
 const Profile = ({
   profileData,
@@ -52,6 +53,8 @@ const Profile = ({
     profileData?.influencerProfile?.influencerStatus != 'approved' ||
     !profileData?.influencerProfile?.rssUrl;
 
+  const { colors } = useTheme();
+
   return (
     <Tabs.Container
       lazy
@@ -67,9 +70,9 @@ const Profile = ({
           />
         );
       }}
-      headerHeight={HEADER_EXPANDED_HEIGHT}
       minHeaderHeight={HEADER_COLLAPSED_HEIGHT}
       headerContainerStyle={{
+        backgroundColor: colors.card,
         shadowOffset: {
           width: 0,
           height: onlyOneTab ? 0 : 2,
@@ -80,7 +83,6 @@ const Profile = ({
         borderBottomColor: Platform.OS == 'ios' ? Colors.neutral[800] : undefined,
         paddingBottom: onlyOneTab ? spacing.x10 : undefined,
       }}
-      tabBarHeight={0}
       renderTabBar={onlyOneTab ? () => null : undefined}
     >
       <Tabs.Tab name="social" label="Social">
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
   },
 
   content2: {
-    backgroundColor: 'white',
+    // backgroundColor: 'white',
     alignItems: 'center',
     padding: 13,
     borderTopRightRadius: 17,

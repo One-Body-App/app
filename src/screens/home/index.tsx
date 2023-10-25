@@ -243,19 +243,30 @@ const Home = ({ navigation }: Props) => {
     <>
       <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
       <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 20 }}>
+        <View
+          style={{
+            backgroundColor: Colors.neutral[700],
+            flexDirection: 'row',
+            paddingHorizontal: 10,
+            marginBottom: 20,
+          }}
+        >
           {feedTypes.map((feedType) => {
             return (
               <View style={{ flex: 1 }} key={feedType}>
                 <TouchableOpacity
                   onPress={() => filterUpdate(feedType)}
-                  style={feedOptions.type == feedType ? styles.menuItemSelected : styles.menuItem}
+                  style={
+                    feedOptions.type == feedType
+                      ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
+                      : [styles.menuItem]
+                  }
                 >
                   <StyledText
                     style={
                       feedOptions.type == feedType
-                        ? styles.menuItemTextSelected
-                        : styles.menuItemText
+                        ? [styles.menuItemText, { color: Colors.neutral.brand }]
+                        : [styles.menuItemText, { color: Colors.neutral[400] }]
                     }
                   >
                     {feedType}

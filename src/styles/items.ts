@@ -5,7 +5,7 @@ import { spacing } from './spacing';
 
 export const card: ViewStyle = {
   marginTop: spacing.x24,
-  backgroundColor: '#FFF',
+
   padding: spacing.x24,
   borderRadius: 14,
   borderWidth: borderWidth.thin,
@@ -16,8 +16,8 @@ export const profileImageList = {
   height: 60,
   borderRadius: borderRadius.max,
   marginBottom: spacing.x8,
-  borderColor: Colors.neutral[800],
-  borderWidth: borderWidth.thin,
+  // borderColor: Colors.neutral[800],
+  // borderWidth: borderWidth.thin,
   marginRight: spacing.x8,
 };
 

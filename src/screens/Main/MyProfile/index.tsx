@@ -1,12 +1,7 @@
 import React, { createRef, useEffect, useState } from 'react';
 import { View, TouchableOpacity, Share, Platform, FlatList } from 'react-native';
 
-import { SceneRendererProps } from 'react-native-tab-view';
-import TwitterFlatlist from '@/src/components/TwitterFlatlist';
-import BlogFlatlist from '@/src/components/BlogFlatlist';
-import InstagramFlatlist from '@/src/components/InstagramFlatlist';
-
-import { CompositeScreenProps } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
@@ -40,45 +35,7 @@ const MyProfile = ({ navigation, route }: Props) => {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
-
-  const [scrollPosition, setScrollPosition] = React.useState(0);
-  const [direction, setDirection] = React.useState('');
-
-  const updateScrollPosition = (position: number) => {
-    if (
-      (position > scrollPosition || position == scrollPosition) &&
-      scrollPosition - position < 0 &&
-      scrollPosition - position < -45
-    ) {
-      setDirection('down');
-    } else if (
-      position < scrollPosition &&
-      scrollPosition - position > 0 &&
-      scrollPosition - position > 55
-    ) {
-      setDirection('up');
-    }
-
-    setScrollPosition(position);
-  };
-
-  useEffect(() => {
-    if (user?.influencerProfile) {
-      const routes = [];
-      if (user?.influencerProfile?.twitterId) {
-        routes.push({ key: 'Twitter', title: 'Twitter' });
-      }
-
-      if (user?.influencerProfile?.rssUrl) {
-        routes.push({ key: 'Blog', title: 'Blog/News' });
-      }
-
-      if (user?.influencerProfile?.instagramId) {
-        routes.push({ key: 'Instagram', title: 'Instagram' });
-      }
-      // setRoutes(routes);
-    }
-  }, [user]);
+  const { dark, colors } = useTheme();
 
   const addHeaderButtons = () => {
     navigation
@@ -101,9 +58,17 @@ const MyProfile = ({ navigation, route }: Props) => {
               }}
             >
               {Platform.OS == 'android' ? (
-                <Ionicons name="share-social-outline" size={24} color={Colors.primary.brand} />
+                <Ionicons
+                  name="share-social-outline"
+                  size={24}
+                  color={dark ? colors.text : Colors.primary.brand}
+                />
               ) : (
-                <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
+                <Ionicons
+                  name="share-outline"
+                  size={24}
+                  color={dark ? colors.text : Colors.primary.brand}
+                />
               )}
             </TouchableOpacity>
             <TouchableOpacity
@@ -113,7 +78,7 @@ const MyProfile = ({ navigation, route }: Props) => {
             >
               <Setting2
                 style={{ height: 24, width: 24 }}
-                color={Colors.primary.brand}
+                color={dark ? colors.text : Colors.primary.brand}
                 strokeWidth={0.2}
               />
             </TouchableOpacity>

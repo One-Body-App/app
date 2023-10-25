@@ -36,9 +36,8 @@ import Feather from 'react-native-vector-icons/Feather';
 import Connections from '../screens/main/connections';
 import SettingsStack from './SettingsStack';
 import Logo from '@/assets/icons/logo.svg';
+import LogoWhite from '@/assets/icons/logo_white.svg';
 import MainTabStack from './BottomTabStack';
-import FastImage from 'react-native-fast-image';
-import { spacing } from '../styles/spacing';
 import DrawerContent from './DrawerContent';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
@@ -69,7 +68,7 @@ const DrawerNav = () => {
   const authState = useSelector((state: RootState) => state.auth);
   const dimensions = useWindowDimensions();
 
-  const { dark } = useTheme();
+  const { dark, colors } = useTheme();
 
   return (
     <>
@@ -78,19 +77,16 @@ const DrawerNav = () => {
           screenOptions={{
             drawerType:
               dimensions.width >= 768 ? 'permanent' : Platform.OS == 'ios' ? 'slide' : 'front',
-            headerTintColor: Colors.primary.brand,
+            headerTintColor: dark ? colors.text : Colors.primary.brand,
 
             drawerActiveBackgroundColor: !dark ? Colors.neutral[600] : undefined,
-            headerStyle: {
-              // backgroundColor: 'white',
-            },
           }}
           drawerContent={(props) => <DrawerContent {...props} />}
         >
           <DrawerStack.Screen
             name="Main"
             component={MainTabStack}
-            options={({ route, navigation }) => ({
+            options={({ route }) => ({
               title: 'Home',
               drawerIcon: ({ color, size, focused }) => {
                 return <Home3 size={size} color={color} />;
@@ -105,10 +101,15 @@ const DrawerNav = () => {
                 if (title == 'Home') {
                   return (
                     <View style={{ height: 28, width: 28 }}>
-                      <Logo style={{ height: 28, width: 28 }} />
+                      {dark ? (
+                        <LogoWhite style={{ height: 28, width: 28 }} />
+                      ) : (
+                        <Logo style={{ height: 28, width: 28 }} />
+                      )}
                     </View>
                   );
                 }
+
                 return (
                   <Animated.Text
                     accessibilityRole="header"

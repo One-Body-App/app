@@ -14,7 +14,7 @@ const isDarkMode = () => {
 export const primary: Record<ColorVariants, string> = {
   get brand() {
     const dark = isDarkMode();
-    return dark ? '' : '#032F3C';
+    return dark ? '#C3EFFC' : '#032F3C';
   },
   get 200() {
     const dark = isDarkMode();
@@ -49,7 +49,7 @@ export const primary: Record<ColorVariants, string> = {
   get 800() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#CDD5D8';
+    return dark ? '#323D40' : '#CDD5D8';
   },
   get 900() {
     const dark = isDarkMode();
@@ -62,7 +62,7 @@ export const primarySapphire: Record<ColorVariants, string> = {
   get brand() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#126B87';
+    return dark ? '#126B87' : '#126B87';
   },
 
   get 200() {
@@ -159,23 +159,23 @@ export const neutral: Record<ColorVariants, string> = {
   get brand() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#212121';
+    return dark ? '#FFF' : '#212121';
   },
 
   get 200() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#313332';
+    return dark ? '#CCCECD' : '#313332';
   },
   get 300() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#5A5C5B';
+    return dark ? '#999DA1' : '#5A5C5B';
   },
   get 400() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#838584';
+    return dark ? '#999DA1' : '#838584';
   },
   get 500() {
     const dark = isDarkMode();
@@ -190,17 +190,17 @@ export const neutral: Record<ColorVariants, string> = {
   get 700() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#F7F7F7';
+    return dark ? '#202328' : '#F7F7F7';
   },
   get 800() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#F2F3F3';
+    return dark ? '#191919' : '#F2F3F3';
   },
   get 900() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#F1F1F1';
+    return dark ? '#1B1B1B' : '#F1F1F1';
   },
 };
 
@@ -323,5 +323,19 @@ export const infoFeedback: Record<FeedBackColor, string> = {
     const dark = isDarkMode();
 
     return dark ? '' : '#E7F2FF';
+  },
+};
+
+export const main = {
+  get white() {
+    const dark = isDarkMode();
+
+    return dark ? '#0D0D0D' : 'white';
+  },
+
+  get black() {
+    const dark = isDarkMode();
+
+    return dark ? '' : 'black';
   },
 };

@@ -85,11 +85,17 @@ export const headerOptions: NativeStackNavigationOptions = {
   headerTransparent: Platform.OS == 'ios' ? true : false,
   headerBackTitleVisible: false,
   headerTitle() {
+    const { dark } = useTheme();
+
     return (
       <FastImage
         style={{ width: 100, height: 28 }}
         resizeMode={FastImage.resizeMode.contain}
-        source={require('@/assets/images/logo_header.png')}
+        source={
+          dark
+            ? require('@/assets/images/logo_header_white.png')
+            : require('@/assets/images/logo_header.png')
+        }
       />
     );
   },
@@ -264,9 +270,9 @@ const Main = () => {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      background: '#FFF',
-      primary: '#032F3C',
-      card: '#F6F6F6',
+      background: Colors.main.white,
+      primary: Colors.primary.brand,
+      // card: '#F6F6F6',
       border: Colors.neutral[900],
     },
   };
@@ -277,8 +283,8 @@ const Main = () => {
       ...DarkTheme.colors,
       // Colors.neutral[900]
       primary: '#5B7279',
-      card: '#202328',
-      background: '#0D0D0D',
+      // card: Colors.neutral[700],
+      background: Colors.main.white,
     },
   };
 
@@ -325,6 +331,7 @@ const Main = () => {
                 presentation: 'fullScreenModal',
                 title: 'Create Post',
                 headerLeft: (props) => {
+                  const { dark, colors } = useTheme();
                   return (
                     <TouchableOpacity
                       onPress={() => {
@@ -336,7 +343,7 @@ const Main = () => {
                       <MaterialCommunityIcons
                         name="window-close"
                         size={18}
-                        color={Colors.primary.brand}
+                        color={dark ? colors.text : Colors.primary.brand}
                       />
                     </TouchableOpacity>
                   );

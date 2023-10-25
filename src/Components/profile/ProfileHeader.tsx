@@ -22,7 +22,7 @@ import { Colors, Typography } from '@/src/styles';
 
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { Add, Location, Calendar, ShieldTick, HomeHashtag, Link21 } from 'iconsax-react-native';
 import React, { useState } from 'react';
 import { View, Image, TouchableOpacity } from 'react-native';
@@ -60,10 +60,12 @@ const ProfileHeader = ({
 }: HeaderProps) => {
   const dispatch = useDispatch();
   const [requestModel, setRequestModel] = useState<boolean>(false);
+  const [height, setHeight] = useState<number>(0);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const navigation = useNavigation<NavigationProp<MyProfileStackParamsList>>();
   const authState = useSelector((state: RootState) => state.auth);
-  const { top, height } = useHeaderMeasurements();
+  // const { top, height } = useHeaderMeasurements();
+
   const scrollY = useCurrentTabScrollY();
   const [selectedBadges, setSelectedBadges] = useState<Badge[]>(profileData?.badgesData ?? []);
   const unselect = (id: string) => {
@@ -71,26 +73,18 @@ const ProfileHeader = ({
 
     setSelectedBadges(array);
   };
+  const { colors } = useTheme();
 
   const profileImageAnimation = useAnimatedStyle(() => {
     let valueTranslate = interpolate(
       scrollY.value,
-      [0, -(HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
+      [0, -(height - HEADER_COLLAPSED_HEIGHT)],
       [0, 0 - 300]
     );
 
-    let valueScale = interpolate(
-      scrollY.value,
-      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
-      [2, 1]
-    );
-
-    if (valueTranslate > 245) {
-      valueTranslate = 245;
-    }
-
-    if (valueScale > 1) {
-      valueScale = 1;
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT / 2 + 10; // 10 = marginTop
+    if (valueTranslate > maxValue) {
+      valueTranslate = maxValue;
     }
 
     return {
@@ -98,46 +92,48 @@ const ProfileHeader = ({
         {
           translateY: withSpring(valueTranslate),
         },
-        { scale: valueScale },
       ],
     };
   });
 
   const buttonsAnimation = useAnimatedStyle(() => {
-    let value = interpolate(
+    let valueTranslate = interpolate(
       scrollY.value,
-      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
       [0, 0 - 300]
     );
 
-    if (value > 200) {
-      value = 200;
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + 30; // 10 = marginTop
+    if (valueTranslate > maxValue) {
+      valueTranslate = maxValue;
     }
 
     return {
       transform: [
         {
-          translateY: withSpring(value),
+          translateY: withSpring(valueTranslate),
         },
       ],
     };
   });
 
   const nameAnimation = useAnimatedStyle(() => {
-    let value = interpolate(
+    let valueTranslate = interpolate(
       scrollY.value,
-      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
       [0, 0 - 300]
     );
 
-    if (value > 210) {
-      value = 210;
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize; // 10 = marginTop
+    if (valueTranslate > maxValue) {
+      valueTranslate = maxValue;
     }
 
+    // console.log(value);
     return {
       transform: [
         {
-          translateY: withSpring(value),
+          translateY: withSpring(valueTranslate),
         },
       ],
     };
@@ -146,8 +142,8 @@ const ProfileHeader = ({
   const contentAnimation = useAnimatedStyle(() => {
     let value = interpolate(
       scrollY.value,
-      [0, 0 - (HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - 300]
+      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - HEADER_COLLAPSED_HEIGHT]
     );
 
     let opacity = interpolate(
@@ -170,7 +166,14 @@ const ProfileHeader = ({
   // const AnimatedFastImage = Animated.createAnimatedComponent(FastImage);
 
   return (
-    <Animated.View pointerEvents="box-none">
+    <Animated.View
+      pointerEvents="box-none"
+      onLayout={({ nativeEvent }) => {
+        const { x, y, width, height } = nativeEvent.layout;
+
+        setHeight(height);
+      }}
+    >
       <Animated.View pointerEvents="box-none">
         <View style={[{ width: '100%', height: 220 }]} pointerEvents="box-none">
           {profileData?.profileHeader ? (

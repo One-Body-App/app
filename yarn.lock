@@ -10911,6 +10911,7 @@ __metadata:
     babel-plugin-transform-inline-environment-variables: ^0.4.4
     babel-plugin-transform-remove-console: ^6.9.4
     buffer: ^6.0.3
+    color: ^4.2.3
     date-fns: ^2.30.0
     eslint: ^8.46.0
     eslint-config-airbnb: ^19.0.4

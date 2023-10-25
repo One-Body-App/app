@@ -1,8 +1,10 @@
 import { StyleSheet, TextStyle, ViewStyle } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { Colors } from '@/src/styles';
 
 const menuItemText: TextStyle = {
-  color: '#126B87',
+  // color: '#126B87',
+
   fontSize: 15,
   textAlign: 'center',
   fontWeight: '500',
@@ -330,14 +332,9 @@ export const styles = StyleSheet.create({
   },
   menuItem,
   menuItemText,
-  menuItemTextSelected: {
-    ...menuItemText,
-    color: '#032F3C',
-  },
   menuItemSelected: {
     ...menuItem,
     borderBottomWidth: 3,
-    borderBottomColor: '#12D2D9',
 
     borderBottomLeftRadius: 1.5,
     borderBottomRightRadius: 1.5,

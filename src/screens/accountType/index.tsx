@@ -34,7 +34,7 @@ const AccountType = ({ route, navigation }: Props) => {
   const { dark, colors } = useTheme();
 
   return (
-    <UserStepsLayout backgroundColor={colors.background}>
+    <UserStepsLayout backgroundColor={Colors.neutral[700]}>
       <View style={{ flexGrow: 1, paddingHorizontal: 30, justifyContent: 'space-between' }}>
         <View>
           <StyledText style={[Typography.header.h1, { color: Colors.neutral[200], marginTop: 45 }]}>
@@ -53,6 +53,7 @@ const AccountType = ({ route, navigation }: Props) => {
             style={[
               card,
               {
+                backgroundColor: Colors.main.white,
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -111,6 +112,7 @@ const AccountType = ({ route, navigation }: Props) => {
             style={[
               card,
               {
+                backgroundColor: Colors.main.white,
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',

@@ -41,6 +41,7 @@
     "auto-changelog": "^2.4.0",
     "axios": "^1.4.0",
     "buffer": "^6.0.3",
+    "color": "^4.2.3",
     "date-fns": "^2.30.0",
     "html-entities": "^2.4.0",
     "iconsax-react-native": "^0.0.8",
