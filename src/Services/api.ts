@@ -48,7 +48,13 @@ export const ApiCall = async ({
         response = await axios.post(
           url,
           params,
-          token ? { headers: { Authorization: `Bearer ${tokenToUse}` } } : undefined
+          token
+            ? {
+                headers: {
+                  Authorization: `Bearer ${tokenToUse}`,
+                },
+              }
+            : undefined
         );
         break;
       case 'patch':

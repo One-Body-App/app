@@ -71,7 +71,7 @@ const AccountType = ({ route, navigation }: Props) => {
               <View
                 style={{
                   backgroundColor: Colors.neutral[800],
-                  borderRadius: borderRadius.card,
+                  borderRadius: borderRadius.base,
                   padding: spacing.x10,
                 }}
               >
@@ -130,7 +130,7 @@ const AccountType = ({ route, navigation }: Props) => {
               <View
                 style={{
                   backgroundColor: Colors.neutral[800],
-                  borderRadius: borderRadius.card,
+                  borderRadius: borderRadius.base,
                   padding: 10,
                 }}
               >

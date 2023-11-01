@@ -103,7 +103,7 @@ export const primarySapphire: Record<ColorVariants, string> = {
   get 900() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#E7F0F3';
+    return dark ? '#202328' : '#E7F0F3';
   },
 };
 
@@ -216,7 +216,7 @@ export const errorFeedback: Record<FeedBackColor, string> = {
   get 200() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#E35640';
+    return dark ? '#E35640' : '#E35640';
   },
   get 300() {
     const dark = isDarkMode();

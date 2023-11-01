@@ -245,9 +245,8 @@ const Home = ({ navigation }: Props) => {
       <View style={{ flex: 1 }}>
         <View
           style={{
-            backgroundColor: Colors.neutral[700],
             flexDirection: 'row',
-            paddingHorizontal: 10,
+
             marginBottom: 20,
           }}
         >
@@ -282,7 +281,7 @@ const Home = ({ navigation }: Props) => {
             <ActivityIndicatorContent size="small" />
           </View>
         ) : (
-          <View style={{ flex: 1, marginHorizontal: 20 }}>
+          <View style={{ flex: 1 }}>
             <FlatList
               viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
               data={feedData}
@@ -311,13 +310,12 @@ const Home = ({ navigation }: Props) => {
 
                 if (item.type == 'tasteBreaker') {
                   return (
-                    <View style={{ paddingHorizontal: 10 }}>
+                    <View>
                       <FlatList
                         nestedScrollEnabled
                         data={item.items}
                         horizontal={true}
                         showsHorizontalScrollIndicator={false}
-                        ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
                         keyExtractor={(item, index) => `${item.created}_${index}`}
                         renderItem={({ item }) => (
                           <ArticleItem
@@ -332,7 +330,6 @@ const Home = ({ navigation }: Props) => {
                             blogPostImageStyle={globalStyle.newspostimage}
                             blogPostTitleStyle={{
                               flexWrap: 'wrap',
-                              marginTop: getHeight(1),
                             }}
                             showModal={showModal}
                           />
@@ -358,7 +355,6 @@ const Home = ({ navigation }: Props) => {
                         blogPostTitleStyle={{
                           flexDirection: 'row',
                           justifyContent: 'space-between',
-                          marginTop: getHeight(1),
                         }}
                         showModal={showModal}
                       />
@@ -370,20 +366,10 @@ const Home = ({ navigation }: Props) => {
                     key={`article_${item.id}`}
                     item={item}
                     imageSizeType="cover"
-                    blogPostStyle={{
-                      ...globalStyle.blogpostview,
-                      backgroundColor: colors.card,
-
-                      width: 'auto',
-                      flexGrow: 1,
-
-                      marginVertical: 7,
-                    }}
                     blogPostImageStyle={globalStyle.newspostimage}
                     blogPostTitleStyle={{
                       flexDirection: 'row',
                       justifyContent: 'space-between',
-                      marginTop: getHeight(1),
                     }}
                     showModal={showModal}
                   />

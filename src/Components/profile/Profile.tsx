@@ -81,13 +81,14 @@ const Profile = ({
         shadowRadius: 2.62,
         borderBottomWidth: Platform.OS == 'ios' ? borderWidth.thin : 0,
         borderBottomColor: Platform.OS == 'ios' ? Colors.neutral[800] : undefined,
-        paddingBottom: onlyOneTab ? spacing.x10 : undefined,
+        // paddingBottom: onlyOneTab ? spacing.x10 : undefined,
       }}
       renderTabBar={onlyOneTab ? () => null : undefined}
     >
       <Tabs.Tab name="social" label="Social">
         <SocialFlatlist ref={socialList} userIdToPullData={profileData._id} />
       </Tabs.Tab>
+
       {profileData?.influencerProfile?.influencerStatus == 'approved' &&
       profileData?.influencerProfile?.rssUrl ? (
         <Tabs.Tab name="blog" label="Blog/News">

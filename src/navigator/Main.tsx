@@ -272,7 +272,7 @@ const Main = () => {
       ...DefaultTheme.colors,
       background: Colors.main.white,
       primary: Colors.primary.brand,
-      // card: '#F6F6F6',
+      // card: Colors.neutral[800],
       border: Colors.neutral[900],
     },
   };

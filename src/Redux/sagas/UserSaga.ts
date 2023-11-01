@@ -12,6 +12,7 @@ import {
   addUserInterest,
   getInterests,
 } from '../actions/UserAction';
+import { getProfile } from '../actions/AuthActions';
 
 function* UserGetRequest(params) {
   try {
@@ -26,10 +27,10 @@ function* UserGetRequest(params) {
         yield put(setLoader(false));
         yield put(setUserIntrest(res?.response?.interests));
       } else {
-        console.log('else part in working now');
         yield put(setLoader(false));
 
         yield put(setUserProfile(res?.response));
+        yield put(getProfile.Success(res?.response));
       }
     } else {
       yield put(setLoader(false));

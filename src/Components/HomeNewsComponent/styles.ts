@@ -44,7 +44,6 @@ export const styles = StyleSheet.create({
   sourcename: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: getHeight(1),
   },
   textstyle: {
     color: 'white',

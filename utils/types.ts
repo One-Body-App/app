@@ -50,12 +50,19 @@ type Profile = {
   isChurchTypePublic?: boolean;
 };
 
+export enum PostType {
+  social = 'social',
+  rss = 'rss',
+}
+
 export type SavedPost = {
+  postId: string;
+  type: PostType;
   title: string;
-  image: string;
-  createdAt: Date;
-  userId: string;
-  link: string;
+  image?: string;
+  createdAt?: string;
+  userId?: string;
+  link?: string;
 };
 
 export type User = {

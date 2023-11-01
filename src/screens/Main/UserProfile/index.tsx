@@ -115,7 +115,7 @@ const UserProfile = ({ navigation, route }: Props) => {
         verb: 'get',
         token: token,
       });
-
+      console.log(res?.status);
       if (res?.status == 200) {
         dispatch(setLoader(false));
         setUser(res?.response);

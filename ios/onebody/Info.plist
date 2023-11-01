@@ -110,9 +110,11 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app uses the location services to personalize the user content shown to the user</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile</string>
+	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
 	<key>NSCameraUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile</string>
+	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Rubik-Black.ttf</string>

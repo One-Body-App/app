@@ -1,5 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { Colors } from '@/src/styles';
 
 const shadowPosts = {
   shadowColor: '#000',
@@ -207,20 +210,27 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  postView: {
+    flexGrow: 1,
+    borderBottomWidth: borderWidth.thick * 2,
+    padding: spacing.x16,
+  },
   socialpostview: {
-    alignSelf: 'center',
+    flexGrow: 1,
+    // alignSelf: 'center',
     //justifyContent: 'center',
     //alignItems: 'center',
-    width: '90%',
-    borderRadius: 5,
-    padding: 8,
+    // width: '90%',
+    // borderRadius: 5,
+    // padding: 8,
 
-    ...shadowPosts,
-    marginVertical: 15,
-
-    // padding: 0,
-    flex: 1,
-    marginHorizontal: 7,
+    // ...shadowPosts,
+    // marginBottom: 15,
+    borderBottomColor: '#E7F0F3',
+    borderBottomWidth: borderWidth.thick * 2,
+    padding: spacing.x16,
+    // flex: 1,
+    // marginHorizontal: 7,
   },
   NewsToday: {
     backgroundColor: 'white',
@@ -255,30 +265,23 @@ export const styles = StyleSheet.create({
     color: '#126B87',
   },
   blogpostview: {
-    ...shadowPosts,
-    borderRadius: 5,
+    // ...shadowPosts,
+    // borderRadius: 5,
     // padding: 0,
     // position: 'relative',
     // flex: 1,
-
     // alignSelf: 'center',
     // justifyContent: 'center',
     // alignItems: 'center',
     // height: getHeight(23),
   },
   blogpostimage: {
-    // borderRadius: 16,
+    borderTopEndRadius: borderRadius.base,
+    borderTopStartRadius: borderRadius.base,
     // marginVertical: 5,
-    shadowColor: '#0e5469',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 30,
-    elevation: 0,
+    // elevation: 0,
     width: '100%',
-    height: 200,
+    aspectRatio: 16 / 9,
   },
   blogpostpara: {
     padding: 2,

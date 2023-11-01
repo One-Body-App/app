@@ -11,6 +11,8 @@ import SocialItem from '../ListItems/SocialItem';
 import { isObject } from 'lodash';
 import { Tabs } from 'react-native-collapsible-tab-view';
 import { RefreshListRef } from '@/utils/types';
+import { StyledText } from '../styled/Text';
+import { spacing } from '@/src/styles/spacing';
 
 const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>(
   ({ userIdToPullData }, ref) => {
@@ -90,7 +92,7 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
 
     return (
       <Tabs.FlatList
-        data={[...socialPost, ...socialPost, ...socialPost]}
+        data={socialPost}
         style={{ flex: 1 }}
         keyExtractor={(item, index) => {
           return `${item?.handler}-${item.id}-${index}`;
@@ -110,6 +112,15 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
         refreshControl={
           <RefreshControl enabled={true} refreshing={isRefreshing} onRefresh={refreshContent} />
         }
+        ListEmptyComponent={() => (
+          <>
+            {isLoading ? null : (
+              <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
+                Nothing here
+              </StyledText>
+            )}
+          </>
+        )}
       />
       // <>
       //   {socialPost?.map((item, i) => (
