@@ -110,6 +110,9 @@ export const signUp = {
     type: SignUp.FAILED,
     payload: error,
   }),
+  Reset: () => ({
+    type: SignUp.RESET,
+  }),
 };
 
 //Send Verification Email Actions
@@ -129,7 +132,11 @@ export const sendVerificationEmail = {
 };
 
 //Badge Actions
+
 export const getBadges = {
+  Reset: () => ({
+    type: GetBadges.RESET,
+  }),
   Request: (params: any) => ({
     type: GetBadges.REQUEST,
     params,

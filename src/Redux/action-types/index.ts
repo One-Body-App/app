@@ -27,6 +27,7 @@ export const ACTIONS = {
   SET_User_INTREST: 'SET_User_INTREST',
   GET_User_GET: 'GET_User_GET',
   SET_User_SUBSCRIBE: 'SET_User_SUBSCRIBE',
+  GET_PRAYERS: 'GET_PRAYERS',
   SET_PRAYERS: 'SET_PRAYERS',
   SET_PRAYERS_Live: 'SET_PRAYERS_Live',
   SET_USERPRAYERS: 'SET_USERPRAYERS',
@@ -71,6 +72,7 @@ export const SignUp = {
   REQUEST: 'sign_up_request',
   SUCCESS: 'sign_up_success',
   FAILED: 'sign_up_failed',
+  RESET: 'sign_up_reset',
 };
 
 //Send Verification Email
@@ -85,6 +87,7 @@ export const GetBadges = {
   REQUEST: 'get_badges_request',
   SUCCESS: 'get_badges_success',
   FAILED: 'get_badges_failed',
+  RESET: 'get_badges_reset',
 };
 
 export const SetUserBadges = {

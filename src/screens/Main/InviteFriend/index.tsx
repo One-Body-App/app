@@ -17,11 +17,11 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import QRCode from 'react-native-qrcode-svg';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/components/Header';
-import Button from '@/components/Button';
+import Header from '@/src/components/Header';
+import Button from '@/src/components/Button';
 import { styles } from './styles';
 import Share from 'react-native-share';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { useTheme } from '@react-navigation/native';
 

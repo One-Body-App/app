@@ -2,24 +2,26 @@ import React from 'react';
 import { Text, View, Alert } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Header from '@/components/Header';
-import Button from '@/components/Button';
+import Header from '@/src/components/Header';
+import Button from '@/src/components/Button';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { logout } from '@/redux//actions/AuthActions';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import auth from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
-import { useTheme } from 'react-native-paper';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'DeactivateAccountConfirm'>;
+import { SettingsStackParamsList } from '@/src/navigator/types';
+import { useTheme } from '@react-navigation/native';
+
+type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccountConfirmation'>;
 
 const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
   const { reason } = route.params;

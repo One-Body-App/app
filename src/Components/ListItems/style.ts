@@ -1,5 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { Colors } from '@/src/styles';
 
 const shadowPosts = {
   shadowColor: '#000',
@@ -62,17 +65,17 @@ export const styles = StyleSheet.create({
     borderRadius: 7,
   },
   sharetouch: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    // alignItems: 'center',
+    // justifyContent: 'center',
     flexDirection: 'row',
-    width: '100%',
-    height: getHeight(6),
-    borderRadius: 7,
+    // width: '100%',
+    // height: getHeight(6),
+    // borderRadius: 7,
   },
   savetuch: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    // alignItems: 'center',
+    // justifyContent: 'center',
     width: '100%',
     height: getHeight(6),
     borderRadius: 7,
@@ -207,20 +210,27 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  postView: {
+    flexGrow: 1,
+    borderBottomWidth: borderWidth.thick * 2,
+    padding: spacing.x16,
+  },
   socialpostview: {
-    alignSelf: 'center',
+    flexGrow: 1,
+    // alignSelf: 'center',
     //justifyContent: 'center',
     //alignItems: 'center',
-    width: '90%',
-    borderRadius: 5,
-    padding: 8,
+    // width: '90%',
+    // borderRadius: 5,
+    // padding: 8,
 
-    ...shadowPosts,
-    marginVertical: 15,
-
-    // padding: 0,
-    flex: 1,
-    marginHorizontal: 7,
+    // ...shadowPosts,
+    // marginBottom: 15,
+    borderBottomColor: '#E7F0F3',
+    borderBottomWidth: borderWidth.thick * 2,
+    padding: spacing.x16,
+    // flex: 1,
+    // marginHorizontal: 7,
   },
   NewsToday: {
     backgroundColor: 'white',
@@ -238,8 +248,8 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
   newspostimage: {
-    height: getHeight(22),
-    width: '100%',
+    // height: getHeight(22),
+    // width: '100%',
 
     borderTopLeftRadius: 5,
     borderTopRightRadius: 5,
@@ -255,32 +265,23 @@ export const styles = StyleSheet.create({
     color: '#126B87',
   },
   blogpostview: {
-    ...shadowPosts,
-    borderRadius: 5,
+    // ...shadowPosts,
+    // borderRadius: 5,
     // padding: 0,
-    position: 'relative',
-    flex: 1,
-    marginHorizontal: 7,
-
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
+    // position: 'relative',
+    // flex: 1,
+    // alignSelf: 'center',
+    // justifyContent: 'center',
+    // alignItems: 'center',
     // height: getHeight(23),
-
-    marginVertical: 7,
   },
   blogpostimage: {
-    // borderRadius: 16,
+    borderTopEndRadius: borderRadius.base,
+    borderTopStartRadius: borderRadius.base,
     // marginVertical: 5,
-    shadowColor: '#0e5469',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 30,
-    elevation: 0,
-    flex: 1,
+    // elevation: 0,
+    width: '100%',
+    aspectRatio: 16 / 9,
   },
   blogpostpara: {
     padding: 2,
@@ -354,8 +355,8 @@ export const styles = StyleSheet.create({
   },
 
   content2: {
-    alignItems: 'center',
-    padding: 13,
+    // alignItems: 'center',
+    padding: spacing.x10,
     borderTopRightRadius: 17,
     borderTopLeftRadius: 17,
   },

@@ -27,7 +27,7 @@ const AddIntrestsModel = (props: any) => {
 
   useEffect(() => {
     if (userState?.getInterestsSuccess == false) {
-      Toast.show('Unable to fetch interests!');
+      Toast.show('Unable to fetch interests!', Toast.LONG);
     }
   }, [userState?.getInterestsSuccess]);
 
@@ -37,7 +37,7 @@ const AddIntrestsModel = (props: any) => {
       setSelectedIntrest([]);
       dispatch(getuserAll({ token: token }));
     } else if (userState?.addUserInterestSuccess == false) {
-      Toast.show('Unable to add interests!');
+      Toast.show('Unable to add interests!', Toast.LONG);
     }
   }, [userState?.addUserInterestSuccess]);
 
@@ -61,7 +61,8 @@ const AddIntrestsModel = (props: any) => {
                 flexWrap: 'wrap',
               }}
             >
-              {authState?.getProfileData?.interests?.length > 0 &&
+              {authState?.getProfileData?.interests &&
+                authState?.getProfileData?.interests?.length > 0 &&
                 authState?.getProfileData?.interests?.map((item: any) => (
                   <TouchableOpacity
                     onPress={() => {

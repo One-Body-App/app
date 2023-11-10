@@ -5,21 +5,22 @@ import auth from '@react-native-firebase/auth';
 import { getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
-import Header from '@/components/Header';
+import Header from '@/src/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { ApiCall } from '@/src/Services/api';
 import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
 import { setProfile } from '@/src/Redux/actions/AuthActions';
 import { useTheme } from '@react-navigation/native';
-import GoBackIcon from '@/src/Components/GoBackIcon';
+import GoBackIcon from '@/src/components/GoBackIcon';
 import { DrawerScreenProps } from '@react-navigation/drawer';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<RootStackParamList, 'NotificationSettings'>;
+type Props = StackScreenProps<SettingsStackParamsList, 'NotificationSettings'>;
 
 const NotificationSettings = ({ navigation }: Props) => {
   const dispatch = useDispatch();
@@ -124,13 +125,6 @@ const NotificationSettings = ({ navigation }: Props) => {
 
   return (
     <View style={{ ...styles.container, backgroundColor: colors.background }}>
-      <GeneralStatusBar backgroundColor={colors.background} hidden={false} translucent={true} />
-
-      <Header
-        title={'Notifications settings'}
-        leftView={<GoBackIcon color={colors.text} />}
-        RightView={<View style={{ width: getWidth(5) }} />}
-      />
       <View style={styles.innerContainer}>
         <View style={{ ...styles.list, backgroundColor: colors.card }}>
           <Text style={{ ...styles.heading, color: colors.text }}>Push Notifications</Text>

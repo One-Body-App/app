@@ -146,7 +146,9 @@ function* updateOrgProfileRequest(params) {
     if (res?.status == '200') {
       yield put(getProfile.Request({ token: params.data.token, accountType: 'organization' }));
       yield put(setLoader(false));
-      params?.data?.go();
+      if (params?.data?.go) {
+        params?.data?.go();
+      }
     } else {
       yield put(setLoader(false));
       Alert.alert('Error', 'An error accoured during profile Update', [
@@ -295,6 +297,7 @@ function* getBadgesSaga({ params }) {
       verb: 'get',
       token: params.token,
     });
+
     if (res?.status == 200) {
       yield put(getBadges.Success(res?.response?.data));
     } else yield put(getBadges.Failed(res?.response));
@@ -315,8 +318,15 @@ function* setUserBadgesSaga({ params }) {
       params: { badges: params.badges },
       verb: 'patch',
     });
+
     if (res?.status == 200) {
       yield put(setUserBadges.Success(res?.response?.data));
+
+      yield put(
+        getProfile.Request({
+          token: params.token,
+        })
+      );
     } else yield put(setUserBadges.Failed(res?.response));
   } catch (e) {
     yield put(setUserBadges.Failed(e));
@@ -334,6 +344,7 @@ function* getProfileSaga({ params }) {
       token: params.token,
       verb: 'get',
     });
+
     if (res?.status == 200) {
       yield put(getProfile.Success({ token: params.token, ...res?.response }));
     } else {

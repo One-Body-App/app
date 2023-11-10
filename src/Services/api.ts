@@ -14,7 +14,7 @@ export const ApiCall = async ({
 {
   params?: Record<string, any>;
   route: string;
-  verb: string;
+  verb: 'post' | 'get' | 'delete' | 'patch';
   token?: string;
   baseurl?: string;
   external?: boolean;
@@ -48,7 +48,13 @@ export const ApiCall = async ({
         response = await axios.post(
           url,
           params,
-          token ? { headers: { Authorization: `Bearer ${tokenToUse}` } } : undefined
+          token
+            ? {
+                headers: {
+                  Authorization: `Bearer ${tokenToUse}`,
+                },
+              }
+            : undefined
         );
         break;
       case 'patch':
@@ -59,7 +65,7 @@ export const ApiCall = async ({
           token
             ? {
                 headers: {
-                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                  // 'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
                   Authorization: `Bearer ${tokenToUse}`,
                 },
               }

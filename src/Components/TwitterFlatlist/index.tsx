@@ -64,6 +64,7 @@ const TwitterFlatlist = ({
   }, [page]);
 
   const { colors } = useTheme();
+  const [isScrollEnable, setIsScrollEnable] = useState(true);
 
   return (
     <FlatList
@@ -71,11 +72,14 @@ const TwitterFlatlist = ({
       contentContainerStyle={{ marginTop: getHeight(1) }}
       showsHorizontalScrollIndicator={false}
       ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
-      renderItem={({ item }) => (
+      scrollEnabled={isScrollEnable}
+      renderItem={({ item, index }) => (
         <SocialItem
           key={item.id}
+          index={index}
           item={item}
           socialPostviewStyle={{ backgroundColor: colors.card }}
+          onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
         />
       )}
       keyExtractor={(item) => item.id}
@@ -111,7 +115,6 @@ const TwitterFlatlist = ({
                 color: '#70747D',
                 fontSize: 14,
               }}
-              paper
               onPress={() => {
                 OpenURLButton(
                   `https://twitter.com/${currentUser.influencerProfile?.twitterHandler}`,

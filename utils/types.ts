@@ -46,14 +46,23 @@ type Profile = {
   contactPhoneNumber?: string;
   whatIDo?: Tag;
   typeOfOrganization?: Tag;
+  isLocationPublic?: boolean;
+  isChurchTypePublic?: boolean;
 };
 
+export enum PostType {
+  social = 'social',
+  rss = 'rss',
+}
+
 export type SavedPost = {
+  postId: string;
+  type: PostType;
   title: string;
-  image: string;
-  createdAt: Date;
-  userId: string;
-  link: string;
+  image?: string;
+  createdAt?: string;
+  userId?: string;
+  link?: string;
 };
 
 export type User = {
@@ -65,8 +74,9 @@ export type User = {
   isInfluencer: boolean;
   isProfileCompleted: boolean;
   name: string;
-  profileImage: string;
-  accountType: 'individual' | 'organization';
+  profileImage?: string;
+  profileHeader?: string;
+  accountType: AccountType;
   updatedAt: string;
   username: string;
   bio?: string;
@@ -77,7 +87,8 @@ export type User = {
   gender: string;
   token: string;
   userId: string;
-  followers: number;
+  followers?: User[];
+  followerCount?: number;
   following: string[];
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
@@ -114,13 +125,40 @@ export type ArticleType = {
   id?: string;
   link?: string;
   created: Date;
-  image: { url: string };
+  image?: { url: string };
   title: string | { a: any };
   userData: {
     _id: string;
     name: string;
     username: string;
-    accountType: 'individual' | 'organization';
+    accountType: AccountType;
     profileImage: string;
   };
+};
+
+export enum AccountType {
+  individual = 'individual',
+  organization = 'organization',
+}
+
+export enum SocialPostReactionType {
+  love = 'love',
+  praying = 'praying',
+  happy = 'happy',
+}
+
+export type NotificationType = {
+  _id: string;
+  userID?: string;
+  title: string;
+  description: string;
+};
+
+export type RefreshListRef = { setRefreshing: Function };
+
+export type SocialPostReaction = {
+  type: SocialPostReactionType;
+  userId: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 };

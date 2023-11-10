@@ -16,13 +16,13 @@ import {
 import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Button from '@/components/Button';
+import Button from '@/src/components/Button';
 import { styles } from './styles';
 import { Divider, Switch, TextInput, Text } from 'react-native-paper';
 import ProgressBar from 'react-native-animated-progress';
 import Toast from 'react-native-toast-message';
 import DatePicker from 'react-native-date-picker';
-import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
+import MapBox, { MapBoxTypes, MapSuggestion } from '@/src/components/MapBox';
 import { ApiCall } from '@/services/api';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import { format, parse } from 'date-fns';
@@ -37,7 +37,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
-import GradientButton from '@/components/GradientButton';
+import GradientButton from '@/src/components/GradientButton';
 import auth from '@react-native-firebase/auth';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -45,7 +45,7 @@ import Geolocation from 'react-native-geolocation-service';
 import { LoginManager } from 'react-native-fbsdk-next';
 import messaging from '@react-native-firebase/messaging';
 import { useToast } from 'react-native-toast-notifications';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { ChurchType, Interest, User } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -349,7 +349,7 @@ const IndividualSteps = ({ navigation }: Props) => {
                 backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
               }}
               leftIcon={<View />}
-              RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
+              rightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
               onPress={() => setChurchTypeModalVisible(true)}
             />
@@ -470,7 +470,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               mode="outlined"
               label="Date"
               style={{ ...GeneralStyle.input, width: getWidth(80) }}
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               theme={{ roundness: 10 }}
               showSoftInputOnFocus={false}
               onFocus={() => setOpen(true)}
@@ -523,7 +523,7 @@ const IndividualSteps = ({ navigation }: Props) => {
             mode="outlined"
             value={location?.place_name ?? ''}
             theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             showSoftInputOnFocus={false}
             onPressIn={(e) => {
               Keyboard.dismiss();
@@ -549,7 +549,7 @@ const IndividualSteps = ({ navigation }: Props) => {
               location?.place_name.replace(`, ${location_country?.place_name ?? ''}`, '') ?? ''
             }
             theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             showSoftInputOnFocus={false}
             onPressIn={() => {
               if (location_country) setCheckIn(true);
@@ -615,14 +615,14 @@ const IndividualSteps = ({ navigation }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Interests'}
             placeholderTextColor={'black'}
@@ -703,14 +703,14 @@ const IndividualSteps = ({ navigation }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Name'}
             placeholderTextColor={'black'}

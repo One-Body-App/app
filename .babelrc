@@ -9,6 +9,7 @@
     ],
     "transform-inline-environment-variables",
     "jest-hoist",
+    "react-native-worklets-core/plugin",
     // [
 
     // {
@@ -29,6 +30,7 @@
           "@/components": "./src/Components",
           "@/constants": "./src/constants",
           "@/navigation": "./src/Navigation",
+          "@/navigator": "./src/navigator",
           "@/redux": "./src/Redux",
           "@/screens": "./src/screens",
           "@/services": "./src/Services"

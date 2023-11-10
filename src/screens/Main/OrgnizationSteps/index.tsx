@@ -15,7 +15,7 @@ import {
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Button from '@/components/Button';
+import Button from '@/src/components/Button';
 import { styles } from './styles';
 import Toast from 'react-native-toast-message';
 import { TextInput as NativeTextInput } from 'react-native';
@@ -25,18 +25,18 @@ import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import ProgressBar from 'react-native-animated-progress';
 import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
-import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
+import MapBox, { MapBoxTypes, MapSuggestion } from '@/src/components/MapBox';
 import { orgprofileUpdate, logout } from '@/redux/actions/AuthActions';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import Modal from 'react-native-modal';
 import validator from '@/utils/validation/validator';
 import { validateFields } from '@/utils/validation/validate-fields';
 import LinearGradient from 'react-native-linear-gradient';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '@/constants/GeneralStyle';
 import Group134 from '@/assets/svg/Group134.svg';
-import GradientButton from '@/components/GradientButton';
+import GradientButton from '@/src/components/GradientButton';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import auth from '@react-native-firebase/auth';
 import { LoginManager } from 'react-native-fbsdk-next';
@@ -416,7 +416,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
               }}
               leftIcon={<View />}
-              RightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
+              rightIcon={<Ionicons name="chevron-down" color={'#4F6D77'} size={getFontSize(2.4)} />}
               btnTextStyle={styles.btnText3}
               onPress={() => setVisible(true)}
             />
@@ -453,7 +453,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               value={state.companyName}
               returnKeyType={'next'}
               mode="outlined"
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               label={'Company Name'}
               onFocus={() => setStateError({ ...stateError, companyNameError: '' })}
               // onBlur={() =>
@@ -485,7 +485,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
               returnKeyType={'done'}
               mode="outlined"
               value={location_label?.place_name}
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               showSoftInputOnFocus={false}
               onPressIn={() => setCheckIn(true)}
               label={'Company Address'}
@@ -543,7 +543,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 value={state.contactName}
                 returnKeyType={'next'}
                 mode="outlined"
-                activeOutlineColor={'#5B7279'}
+                activeOutlinecolor={Colors.primarySapphire[500]}
                 label={'Full Name'}
                 onFocus={() => setStateError({ ...stateError, contactNameError: '' })}
                 // onBlur={() => {
@@ -566,7 +566,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 ref={inputRefs.contactEmail}
                 value={state.contactEmail}
                 returnKeyType={'next'}
-                activeOutlineColor={'#5B7279'}
+                activeOutlinecolor={Colors.primarySapphire[500]}
                 label={'Email'}
                 onFocus={() => setStateError({ ...stateError, contactEmailError: '' })}
                 // onBlur={() =>
@@ -590,7 +590,7 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                 returnKeyType={'done'}
                 mode="outlined"
                 keyboardType="number-pad"
-                activeOutlineColor={'#5B7279'}
+                activeOutlinecolor={Colors.primarySapphire[500]}
                 label={'Phone number'}
                 onFocus={() => setStateError({ ...stateError, contactPhoneNumberError: '' })}
                 // onBlur={() =>
@@ -651,14 +651,14 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Interests'}
             placeholderTextColor={'black'}
@@ -745,14 +745,14 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                   <EvilIcons
                     name={'search'}
                     size={getFontSize(4)}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
                   />
                 )}
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
             label={'Search by Name'}
             placeholderTextColor={'black'}
@@ -811,7 +811,9 @@ const OrgnizationSteps = ({ navigation }: Props) => {
                           alignSelf: 'center',
                         }}
                       >
-                        {item?.whatIDo?.name}
+                        {item?.profile?.whatIDo?.name ??
+                          item?.profile?.typeOfOrganization?.name ??
+                          item?.whatIDo?.name}
                       </Text>
                     </View>
                   </TouchableOpacity>

@@ -12,7 +12,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { OpenURLButton } from '@/src/Services/constants';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { isArray, isObject } from 'lodash';
 import ArticleItem from '../ListItems/ArticleItem';

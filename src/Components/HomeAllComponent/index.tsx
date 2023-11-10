@@ -32,7 +32,7 @@ import { ApiCall } from '@/services/api';
 import { SetRecentBlog } from '@/redux/actions/SocialActions';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import { OpenURLButton } from '@/src/Services/constants';
 import { isObject } from 'lodash';
 import Twitter from '@/assets/svg/Twitter.svg';
@@ -42,7 +42,6 @@ import { ArticleType } from '@/utils/types';
 import SocialItem from '../ListItems/SocialItem';
 import { decode } from 'html-entities';
 import ArticleItem from '../ListItems/ArticleItem';
-import { SearchBase, SearchComponent, SearchBox } from '@appbaseio/react-native-searchbox';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
@@ -129,9 +128,10 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
     getData();
   }, []);
 
+  const [isScrollEnable, setIsScrollEnable] = useState(true);
+
   return (
     <View style={{ flex: 1 }}>
-      <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 75 }}
@@ -225,8 +225,16 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
             keyExtractor={(item, index) => {
               return `${item?.handler}-${item.id}-${index}`;
             }}
-            renderItem={({ item }) => {
-              if (item.type == 'social') return <SocialItem item={item} />;
+            scrollEnabled={isScrollEnable}
+            renderItem={({ item, index }) => {
+              if (item.type == 'social')
+                return (
+                  <SocialItem
+                    item={item}
+                    index={index}
+                    onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                  />
+                );
               if (item.type == 'tasteBreaker') {
                 return <Text>tasteBreaker</Text>;
               }
@@ -246,7 +254,6 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                   blogPostTitleStyle={{
                     flexDirection: 'row',
                     justifyContent: 'space-between',
-                    marginTop: getHeight(1),
                   }}
                   showModal={showModal}
                 />

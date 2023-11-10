@@ -92,7 +92,7 @@ const PrayerInputHome = ({ color }) => {
           setPrayerTypeShow(false);
           setPrayerType(null);
           setPrayer('');
-          Toast.show(res?.response?.message);
+          Toast.show(res?.response?.message, Toast.LONG);
 
           dispatch(
             getMyPrayer({

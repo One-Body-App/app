@@ -22,7 +22,7 @@ type AuthReducer = {
   getBadgesSuccess?: boolean;
   setUserBadgesSuccess?: boolean;
   getProfileSuccess?: boolean;
-  getBadgesData: ArrayLike<any> | null | undefined;
+  getBadgesData: any[] | null | undefined;
   getProfileData: User | null | undefined;
   userToken: string;
   userProfile: User | null;
@@ -32,6 +32,7 @@ type AuthReducer = {
   loginErrors: string[];
   FcmToken: string;
   error: string[] | null;
+  isLoading: boolean;
 };
 
 const initialState: AuthReducer = {
@@ -47,6 +48,7 @@ const initialState: AuthReducer = {
   sendVerificationEmailData: null,
   getBadgesData: null,
   getProfileData: null,
+  isLoading: false,
 };
 
 const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyAction) => {
@@ -141,6 +143,13 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         error: action.payload,
       };
 
+    case SignUp.RESET:
+      return {
+        ...state,
+        signUpSuccess: false,
+        error: '',
+      };
+
     //Send Verification Email
     case SendVerificationEmail.REQUEST:
       return {
@@ -163,11 +172,13 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
 
     //Badges
     case GetBadges.REQUEST:
+    case GetBadges.RESET:
       return {
         ...state,
         getBadgesSuccess: undefined,
         error: null,
       };
+
     case GetBadges.SUCCESS:
       return {
         ...state,
@@ -205,18 +216,21 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         getProfileSuccess: undefined,
+        isLoading: true,
         error: null,
       };
     case GetProfile.SUCCESS:
       return {
         ...state,
         getProfileSuccess: true,
+        isLoading: false,
         getProfileData: action.payload,
       };
     case GetProfile.FAILED:
       return {
         ...state,
         getProfileSuccess: false,
+        isLoading: false,
         error: action.payload,
       };
 

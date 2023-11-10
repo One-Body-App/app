@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
-import Header from '@/components/Header';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+import Header from '@/src/components/Header';
 import { styles } from './styles';
 
 const EndUserAgrement = ({ navigation }) => {

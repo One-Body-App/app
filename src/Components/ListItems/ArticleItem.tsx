@@ -1,14 +1,13 @@
-import { NO_POST_IMAGE_URL, OpenURLButton } from '@/src/Services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
-import { ArticleType } from '@/utils/types';
-import { useTheme } from '@react-navigation/native';
+import { ArticleType, PostType } from '@/utils/types';
+import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { isObject } from 'lodash';
 import React from 'react';
 import {
   Dimensions,
   Image,
   StyleProp,
-  Text,
   TextStyle,
   TouchableOpacity,
   View,
@@ -19,6 +18,29 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import { styles } from './style';
 import { decode } from 'html-entities';
 import { Caption } from 'react-native-paper';
+import { spacing } from '@/src/styles/spacing';
+import { StyledText } from '../styled/Text';
+import { Colors } from '@/src/styles';
+import BaseItem from './BaseItem';
+import {
+  ExploreStackParamsList,
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+} from '@/src/navigator/types';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { borderRadius } from '@/src/styles/outlines';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+
+type ScreenNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
+  CompositeNavigationProp<
+    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
+    BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
+  >
+>;
 
 const ArticleItem = ({
   item,
@@ -30,6 +52,7 @@ const ArticleItem = ({
   iconSize,
   hideProfileName,
   pillText,
+  onPress,
 }: {
   item: ArticleType;
   blogPostStyle?: StyleProp<ViewStyle>;
@@ -40,78 +63,123 @@ const ArticleItem = ({
   showModal: (item: ArticleType) => void;
   hideProfileName?: boolean;
   pillText?: string;
+  onPress?: (item: ArticleType) => void;
 }) => {
   const { colors } = useTheme();
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const navigation = useNavigation<ScreenNavigationProp>();
 
   return (
-    <TouchableOpacity
-      onPress={() => {
-        if (item?.link) OpenURLButton(item?.link);
+    <BaseItem
+      postData={{
+        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
+
+        id: item.id,
+        type: PostType.rss,
+        postlink: item.link,
+        created: item.created,
+        image: item.image,
       }}
-      style={[styles.blogpostview, { width: Dimensions.get('window').width - 32 }, blogPostStyle]}
+      createdDate={item?.created}
+      userData={item.userData}
+      profileImage={
+        item?.userData?.profileImage && item?.userData?.profileImage != ''
+          ? item?.userData?.profileImage
+          : NO_PROFILE_IMAGE
+      }
+      isApprovedInfluencer={user?.influencerProfile?.influencerStatus == 'approved'}
+      onPress={() => {
+        if (item.userData._id != user?._id) {
+          navigation.navigate('Main', {
+            screen: 'HomeTab',
+            params: {
+              screen: 'UserProfile',
+              params: {
+                id: item.userData._id ?? '',
+              },
+            },
+          });
+        }
+      }}
+      style={blogPostStyle}
     >
-      {pillText ? (
+      <TouchableOpacity
+        onPress={() => {
+          if (item?.link) OpenURLButton(item?.link);
+          if (onPress) onPress(item);
+        }}
+      >
+        {pillText ? (
+          <View
+            style={{
+              position: 'absolute',
+              zIndex: 9,
+              top: 10,
+              left: 10,
+              backgroundColor: colors.primary,
+              padding: 5,
+              borderRadius: 5,
+            }}
+          >
+            <Caption style={{ color: 'white' }}>{pillText}</Caption>
+          </View>
+        ) : null}
+
+        <FastImage
+          style={[styles.blogpostimage, blogPostImageStyle]}
+          resizeMode={imageSizeType}
+          source={{ uri: item?.image?.url ?? NO_POST_IMAGE_URL }}
+        />
+
         <View
           style={{
-            position: 'absolute',
-            zIndex: 9,
-            top: 10,
-            left: 10,
-            backgroundColor: colors.primary,
-            padding: 5,
-            borderRadius: 5,
+            paddingHorizontal: spacing.x10,
+            paddingVertical: spacing.x10,
+            backgroundColor: Colors.neutral[900],
+            borderEndEndRadius: borderRadius.base,
+            borderEndStartRadius: borderRadius.base,
           }}
         >
-          <Caption style={{ color: 'white' }}>{pillText}</Caption>
-        </View>
-      ) : null}
-
-      <FastImage
-        style={[styles.blogpostimage, blogPostImageStyle]}
-        resizeMode={imageSizeType}
-        source={{ uri: item?.image?.url ?? NO_POST_IMAGE_URL }}
-      />
-
-      <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, width: '100%' }}>
-        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'space-between' }}>
-          <View style={{ flex: 5 }}>
-            <Text
-              numberOfLines={2}
-              style={[styles.blogpostpara, { color: colors.text }, blogPostTitleStyle]}
-            >
-              {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
-            </Text>
-          </View>
-          <View style={{ flex: 1, justifyContent: 'center' }}>
-            <TouchableOpacity
-              onPress={() => {
-                showModal(item);
+          <View
+            style={{
+              flexDirection: 'row',
+              flexGrow: 1,
+              justifyContent: 'space-between',
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
               }}
             >
-              <Entypo
-                name="dots-three-horizontal"
-                style={[styles.newsicon, { textAlign: 'right' }]}
-                size={iconSize ?? 25}
-                color={'#70747D'}
-              />
-            </TouchableOpacity>
+              <StyledText numberOfLines={2} style={[{ color: colors.text }, blogPostTitleStyle]}>
+                {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
+              </StyledText>
+              <StyledText
+                numberOfLines={1}
+                style={[{ color: Colors.neutral[500] }, blogPostTitleStyle]}
+              >
+                {item?.link}
+              </StyledText>
+            </View>
+            {/* <View style={{ flex: 0, justifyContent: 'center' }}>
+              <TouchableOpacity
+                onPress={() => {
+                  showModal(item);
+                }}
+              >
+                <Entypo
+                  name="dots-three-horizontal"
+                  style={[{ textAlign: 'right' }]}
+                  size={iconSize ?? 25}
+                  color={'#70747D'}
+                />
+              </TouchableOpacity>
+            </View> */}
           </View>
         </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexGrow: 0 }}>
-          {hideProfileName ? null : (
-            <Text style={[styles.blogposthour, { flex: 2.4 }]} numberOfLines={1}>
-              {item?.userData?.name}
-            </Text>
-          )}
-
-          {item?.created ? (
-            <Text style={[styles.blogposthour, { flex: 1, textAlign: 'right' }]}>
-              {timeSince(item?.created)} ago
-            </Text>
-          ) : null}
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </BaseItem>
   );
 };
 export default ArticleItem;

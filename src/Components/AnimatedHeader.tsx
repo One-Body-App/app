@@ -129,7 +129,7 @@ const AnimatedHeader = ({
             {/* <TextInput
               mode="outlined"
               theme={{roundness: 20}}
-              activeOutlineColor={'#5B7279'}
+              activeOutlinecolor={Colors.primarySapphire[500]}
               label={'Search'}
               placeholder="Search"
               style={styles.sear}

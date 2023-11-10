@@ -171,7 +171,6 @@ const HomeBlogComponent = () => {
             blogPostTitleStyle={{
               flexDirection: 'row',
               justifyContent: 'space-between',
-              marginTop: getHeight(1),
             }}
             showModal={showModal}
           />

@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, Linking, useColorScheme, Platform } from 'react-native';
-
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
+import { Text, View, useColorScheme, Platform, StyleProp, ViewStyle } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import G from '@/assets/svg/G.svg';
 import Facebook from '@/assets/svg/Facebook.svg';
@@ -18,25 +14,22 @@ import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import {
-  GOOGLE_LOGIN_CLIENT_ID,
-  OpenURLButton,
-  PRIVACY_POLICY_URL,
-  TERMS_CONDITIONS_URL,
-} from '@/src/Services/constants';
+import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/Navigation/types';
 import { useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { MainStackParamList } from '@/src/navigator/types';
 
-interface Props extends StackScreenProps<RootStackParamList, 'SignUp'> {
+interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
   errorFromLogin?: string;
 
   socialLogin: Function;
+  disabled?: boolean;
+  wrapperStyles?: ViewStyle;
 }
 
-const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
+const SignupButtons = ({ errorFromLogin, socialLogin, disabled, wrapperStyles }: Props) => {
   const [error, seterror] = useState<string>(errorFromLogin ?? '');
 
   const [state, setState] = useState({
@@ -46,15 +39,11 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
     passwordError: '',
   });
 
-  const [token, setToken] = useState('');
-
   const dispatch = useDispatch();
   const accounType = useSelector((state: RootState) => state.general.accountType);
 
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
-
-  const AccountType = useSelector((state: RootState) => state.general.accountType);
 
   useEffect(() => {
     seterror(errorFromLogin ?? '');
@@ -99,7 +88,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
       if (credentialState === appleAuth.State.AUTHORIZED) {
         const userCredentials = await auth().signInWithCredential(appleCredential);
 
-        processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+        processLogin(userCredentials, setNewUserCredentials);
       }
     } catch (error: any) {
       if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
@@ -142,7 +131,7 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
 
       const userCredentials = await auth().signInWithCredential(googleCredential);
 
-      processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+      processLogin(userCredentials, setNewUserCredentials);
     } catch (error: any) {
       if (!error.message.includes('Code=-5')) {
         seterror(error.message.replace(`[${error.code}]`, ''));
@@ -172,13 +161,11 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
       const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
       const userCredentials = await auth().signInWithCredential(facebookCredential);
 
-      processLogin(userCredentials, setToken, dispatch, setAccountType, setNewUserCredentials);
+      processLogin(userCredentials, setNewUserCredentials);
     } catch (error: any) {
       if (error.message) seterror(error.message.replace(`[${error.code}]`, ''));
     }
   };
-
-  const disabled = !!!AccountType;
 
   const scheme = useColorScheme();
   const { dark, colors } = useTheme();
@@ -188,7 +175,10 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
   };
 
   const getButtonContainer = () => {
-    return { ...styles.buttonContainer, borderColor: colors.border };
+    return {
+      ...styles.buttonContainer,
+      borderColor: colors.border,
+    };
   };
 
   const getDisabledButtonTextStyle = () => {
@@ -200,186 +190,83 @@ const SignupButtons = ({ navigation, errorFromLogin, socialLogin }: Props) => {
   };
 
   const getDisabledButtonStyle = () => {
-    return { ...styles.disabledButtonContainer, borderColor: colors.border };
+    return {
+      ...styles.buttonContainer,
+      borderColor: colors.border,
+    };
   };
 
   return (
-    <LinearGradient
-      colors={
-        scheme == 'dark'
-          ? [colors.background, colors.background, '#434748']
-          : [colors.background, colors.background, '#E0EEF3']
-      }
-      style={styles.container}
-    >
-      <View style={styles.buttonList}>
+    <>
+      <View style={[styles.buttonList, wrapperStyles]}>
         <Button
           disabled={disabled}
-          text={'Sign up with Google'}
-          leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
+          leftIcon={<G height={40} />}
           btnStyle={getButtonContainer()}
           btnTextStyle={getButtonTextStyle()}
           onPress={() => {
-            AccountType != null ? googleSignIn() : null;
+            disabled != null ? googleSignIn() : null;
           }}
           disabledBtnStyle={getDisabledButtonStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperBtnStyle={{ width: '100%' }}
+          wrapperViewBtnStyle={styles.buttonsWrapper}
         />
         {/* <Button
           disabled={disabled}
-          text={'Sign up with Facebook'}
-          leftIcon={<Facebook style={{ marginLeft: 5, marginRight: 10 }} fill="#1877f2" />}
+          leftIcon={<Facebook fill="#1877f2" />}
           btnStyle={getButtonContainer()}
           btnTextStyle={getButtonTextStyle()}
           onPress={() => {
-            AccountType != null ? facebookLogin() : null;
+            disabled != null ? facebookLogin() : null;
           }}
           disabledBtnStyle={getDisabledButtonStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperBtnStyle={{
-            width: '100%',
-
-            paddingVertical: 10,
-          }}
+          wrapperViewBtnStyle={styles.buttonsWrapper}
         /> */}
 
         <Button
           disabled={disabled}
-          text={'Sign up with Twitter'}
-          leftIcon={<Twitter style={{ marginRight: 7 }} height={getHeight(5)} fill="#00acee" />}
+          leftIcon={<Twitter fill="#00acee" />}
           btnStyle={getButtonContainer()}
           btnTextStyle={getButtonTextStyle()}
           onPress={() => {
-            AccountType != null ? onTwitterButtonPress() : null;
+            disabled != null ? onTwitterButtonPress() : null;
           }}
           disabledBtnStyle={getDisabledButtonStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperBtnStyle={{ width: '100%' }}
+          wrapperViewBtnStyle={styles.buttonsWrapper}
         />
 
         {Platform.OS == 'ios' ? (
           <Button
             disabled={disabled}
-            text={'Sign up with Apple'}
             leftIcon={
               <FontAwesome
                 name="apple"
                 style={{
-                  marginRight: getWidth(3),
-                  // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
                   color: dark ? colors.text : '#B3C1C5',
                 }}
-                size={getFontSize(4)}
+                size={30}
               />
             }
             onPress={() => {
-              AccountType != null ? onAppleButtonPress() : null;
+              disabled != null ? onAppleButtonPress() : null;
             }}
             btnStyle={getButtonContainer()}
             disabledBtnStyle={getDisabledButtonStyle()}
             btnTextStyle={getButtonTextStyle()}
             disabledBtnTextStyle={getDisabledButtonTextStyle()}
-            wrapperBtnStyle={{ width: '100%' }}
-          />
-        ) : (
-          <Button
-            disabled={disabled}
-            text={'Sign up with Email'}
-            leftIcon={
-              <Ionicons
-                name="mail"
-                style={{
-                  marginRight: getWidth(3),
-                  // color: disabled ? (dark ? colors.text : '#B3C1C5') : '',
-                  color: dark ? colors.text : '#B3C1C5',
-                }}
-                size={getFontSize(4)}
-              />
-            }
-            onPress={() => {
-              AccountType != null ? navigation.navigate('SignupForm') : null;
-            }}
-            btnStyle={getButtonContainer()}
-            disabledBtnStyle={getDisabledButtonStyle()}
-            btnTextStyle={getButtonTextStyle()}
-            disabledBtnTextStyle={getDisabledButtonTextStyle()}
-            wrapperBtnStyle={{ width: '100%' }}
-          />
-        )}
-
-        {Platform.OS == 'ios' ? (
-          <Button
-            disabled={disabled}
-            text={'Or, Sign up with Email'}
-            onPress={() => {
-              AccountType != null ? navigation.navigate('SignupForm') : null;
-            }}
-            btnStyle={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-
-              marginVertical: 5,
-            }}
-            disabledBtnStyle={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-
-              marginVertical: 5,
-            }}
-            btnTextStyle={{ ...getButtonTextStyle(), fontSize: 12 }}
-            disabledBtnTextStyle={{ ...getDisabledButtonTextStyle(), fontSize: 12 }}
-            wrapperBtnStyle={{ width: '100%' }}
+            wrapperViewBtnStyle={styles.buttonsWrapper}
           />
         ) : null}
-
-        {error != null ? (
-          <View style={styles.Errorview}>
-            <Text style={styles.errortext}>{error}</Text>
-          </View>
-        ) : null}
-        <View style={{ ...styles.center, paddingBottom: 80 }}>
-          <Text style={{ color: scheme == 'dark' ? colors.text : '#032F3C' }}>
-            By signing up, you agree to our
-          </Text>
-          <View style={{ flexDirection: 'row' }}>
-            <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
-              <Text style={{ ...styles.text, color: scheme == 'dark' ? colors.text : '#81979E' }}>
-                User Agreement
-              </Text>
-            </TouchableOpacity>
-            <Text
-              style={{ ...styles.simpleText, color: scheme == 'dark' ? colors.text : '#81979E' }}
-            >
-              {' '}
-              &{' '}
-            </Text>
-            <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
-              <Text style={{ ...styles.text, color: scheme == 'dark' ? colors.text : '#81979E' }}>
-                Privacy Policy
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text
-            style={{
-              ...styles.alreadyAccountContainer,
-              color: scheme == 'dark' ? colors.text : '#032F3C',
-            }}
-          >
-            Already Have an account?
-          </Text>
-          <TouchableOpacity
-            style={{ marginLeft: 5, marginTop: 5, marginBottom: 20 }}
-            onPress={() => navigation.navigate('Login', {})}
-          >
-            <Text style={{ ...styles.helight, textDecorationLine: 'underline' }}>Login</Text>
-          </TouchableOpacity>
-        </View>
       </View>
-    </LinearGradient>
+
+      {error != null ? (
+        <View style={styles.Errorview}>
+          <Text style={styles.errortext}>{error}</Text>
+        </View>
+      ) : null}
+    </>
   );
 };
 

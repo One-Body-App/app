@@ -1,18 +1,18 @@
 import { Text, View, TouchableOpacity } from 'react-native';
 import React, { useRef, useState } from 'react';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import Button from '@/components/Button';
+import Button from '@/src/components/Button';
 import { TextInput } from 'react-native-paper';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { styles } from './styles';
-import Header from '@/components/Header';
+import Header from '@/src/components/Header';
 import { profileUpdate } from '@/redux//actions/AuthActions';
 
 const PhoneNumberUpdate = ({ navigation, route }) => {
@@ -71,7 +71,7 @@ const PhoneNumberUpdate = ({ navigation, route }) => {
         <View style={{ margin: getHeight(5) }}>
           <TextInput
             theme={{ roundness: 10 }}
-            activeOutlineColor={'#5B7279'}
+            activeOutlinecolor={Colors.primarySapphire[500]}
             ref={inputRefs.phoneNumber}
             value={state.phoneNumber}
             returnKeyType={'done'}
@@ -85,7 +85,7 @@ const PhoneNumberUpdate = ({ navigation, route }) => {
                   <AntDesign
                     name={editPhone ? 'edit' : 'lock'}
                     size={20}
-                    color={'#5B7279'}
+                    color={Colors.primarySapphire[500]}
                     style={styles.hidepicc}
                     onPress={() => setEditPhone(!editPhone)}
                   />

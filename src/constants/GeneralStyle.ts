@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { borderRadius } from '../styles/outlines';
+import { Colors } from '../styles';
 
 export const GeneralStyle = StyleSheet.create({
   continer: {
@@ -34,10 +36,51 @@ export const GeneralStyle = StyleSheet.create({
   },
   InputError: {
     color: 'red',
-    marginTop: 2,
     marginBottom: 3,
-    // marginHorizontal: 15,
-    alignSelf: 'stretch',
-    height: getHeight(2),
+    marginTop: 10,
+  },
+  MessageView: {
+    marginBottom: 25,
+    flexDirection: 'row',
+    padding: 11,
+    borderRadius: borderRadius.base,
+  },
+  successtext: {
+    color: Colors.successFeedback.text,
+    flex: 1,
+  },
+
+  radioButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 45,
+  },
+  radioButton: {
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioButtonIcon: {
+    height: 14,
+    width: 14,
+    borderRadius: 7,
+    backgroundColor: Colors.primarySapphire.brand,
+  },
+  radioButtonText: {
+    fontSize: 16,
+    marginLeft: 16,
+  },
+
+  profileImageList: {
+    width: 60,
+    height: 60,
+    borderRadius: borderRadius.max,
+    marginBottom: 5,
+    borderColor: Colors.neutral[800],
+    borderWidth: 1,
+    marginRight: 10,
   },
 });

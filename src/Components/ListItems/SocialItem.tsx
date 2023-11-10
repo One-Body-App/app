@@ -1,17 +1,48 @@
-import { getHeight } from '@/utils/ResponsiveFun';
+import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
-import { Text } from 'react-native-paper';
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import {
+  CompositeNavigationProp,
+  CompositeScreenProps,
+  NavigationProp,
+  useNavigation,
+  useTheme,
+} from '@react-navigation/native';
 import { styles } from './style';
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
 import FastImage from 'react-native-fast-image';
-import { RootStackParamList } from '@/src/Navigation/types';
+import { RootStackParamList } from '@/src/_Navigation/types';
 import Video from 'react-native-video';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
+import { AccountType, PostType, SocialPostReaction } from '@/utils/types';
+import {
+  ExploreStackParamsList,
+  MainDrawerParamsList,
+  MainBottomStackParamsList,
+} from '@/src/navigator/types';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { StyledText } from '../styled/Text';
+import { fontSize } from '@/src/styles/typography';
+import { spacing } from '@/src/styles/spacing';
+import { Colors, Spacing } from '@/src/styles';
+import BaseItem from './BaseItem';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { useReducedMotion } from 'react-native-reanimated';
+import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 
-type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
+// type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
+type ScreenNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
+  CompositeNavigationProp<
+    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
+    BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
+  >
+>;
 type LinkData = {
   description?: string;
   image?: { height: string; type: string; url: string; width: string };
@@ -19,14 +50,11 @@ type LinkData = {
   title?: string;
   url?: string;
 };
-const SocialItem = ({
-  item,
-  socialPostviewStyle,
-  visible,
-}: {
+type SocialItemProps = {
   currentPopupItemId?: string;
   visible?: boolean;
   item: {
+    postId?: string;
     content: string;
     date: string;
     source: 'twitter' | 'instagram';
@@ -43,7 +71,7 @@ const SocialItem = ({
         siteName?: string;
         image?: { height: string; type: string; url: string; width: string };
         description?: string;
-      }
+      },
     ];
     mediaType?: string;
     permalink?: string;
@@ -51,20 +79,44 @@ const SocialItem = ({
       _id: string;
       name: string;
       username: string;
-      accountType: 'individual' | 'organization';
+      accountType: AccountType;
       profileImage: string;
       twitterHandler?: string;
       instagramHandler?: string;
     };
+    images?: string[];
+    videos?: string[];
     created: Date;
     id: string;
+
+    reactions: SocialPostReaction[];
+    location?: {
+      type?: string;
+      coordinates?: number[];
+    };
+    locationName?: string;
   };
   socialPostviewStyle?: StyleProp<ViewStyle>;
-}) => {
+  selectedEmoji?: EmojiItemProp;
+
+  onShowDismissCard?: (e?: boolean) => void;
+  isScrollEnable?: boolean;
+  index?: number;
+  parentRefreshContent?: Function;
+};
+const SocialItem = ({
+  item,
+  socialPostviewStyle,
+  visible,
+  index,
+  onShowDismissCard,
+  parentRefreshContent,
+}: SocialItemProps) => {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const navigation = useNavigation<ScreenNavigationProp>();
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   let url = '';
   if (item?.source == 'twitter') {
     url = `https://twitter.com/${item?.handler}/status/${item?.id}`;
@@ -90,6 +142,7 @@ const SocialItem = ({
   }, [visible]);
 
   let media = null;
+
   if (item?.mediaUrl) {
     media = {
       type: item.mediaType,
@@ -103,6 +156,15 @@ const SocialItem = ({
           url: attachment.url,
         };
       }
+    });
+  } else if (item.images && item.images.length > 0) {
+    item.images.forEach((attachment) => {
+      // if (attachment.type == 'photo' || attachment.type == 'video') {
+      media = {
+        type: 'photo',
+        url: attachment,
+      };
+      // }
     });
   }
 
@@ -124,214 +186,148 @@ const SocialItem = ({
     });
   }
 
+  let myReaction: SocialPostReaction | undefined = undefined;
+
+  item.reactions?.forEach((reaction) => {
+    if (reaction.userId == user?._id) {
+      myReaction = reaction;
+    }
+  });
+
   return (
-    <View
-      style={[
-        styles.socialpostview,
-        { width: Dimensions.get('window').width - 32 },
-        socialPostviewStyle,
-      ]}
+    <BaseItem
+      postData={{
+        title: item?.title,
+        id: item.postId ?? item.id,
+        type: PostType.social,
+        postlink: item.link,
+        created: item.created,
+        image: item.images && item.images.length > 0 ? { url: item.images[0] } : undefined,
+        externalLink: url,
+        reactions: item.reactions ?? [],
+        myReaction,
+        location: item.location,
+        locationName: item.locationName,
+      }}
+      parentRefreshContent={parentRefreshContent}
+      createdDate={item?.created}
+      source={item.source}
+      userData={item.userData}
+      isApprovedInfluencer={user?.influencerProfile?.influencerStatus == 'approved'}
+      profileImage={
+        item?.userData?.profileImage && item?.userData?.profileImage != ''
+          ? item?.userData?.profileImage
+          : NO_PROFILE_IMAGE
+      }
+      onShowDismissCard={onShowDismissCard}
+      index={index}
+      onPress={() => {
+        if (item.userData._id != user?._id) {
+          navigation.navigate('Main', {
+            screen: 'HomeTab',
+            params: {
+              screen: 'UserProfile',
+              params: {
+                id: item?.userData._id,
+              },
+            },
+          });
+        }
+      }}
+      style={socialPostviewStyle}
     >
-      {item.userData ? (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+      <View style={{ flexGrow: 1, flex: 1 }}>
+        <View style={{ flexGrow: 1 }}>
+          <StyledText
+            style={{
+              color: colors.text,
+              marginBottom: spacing.x8,
+              flexGrow: 1,
+            }}
+          >
+            {item?.content}
+          </StyledText>
+        </View>
+
+        {hasLink ? (
           <TouchableOpacity
             onPress={() => {
-              navigation.navigate('UserProfile', {
-                id: item?.userData?._id,
-              });
+              if (linkData!.url) OpenURLButton(linkData!.url);
             }}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'flex-start',
-              alignItems: 'center',
-            }}
+            style={[
+              {
+                borderRadius: 8,
+                marginVertical: 10,
+                borderColor: '#808080',
+                borderWidth: borderWidth.thin,
+              },
+            ]}
           >
             <FastImage
-              source={{
-                uri:
-                  item?.userData?.profileImage && item?.userData?.profileImage != ''
-                    ? item?.userData?.profileImage
-                    : NO_PROFILE_IMAGE,
-              }}
               style={{
-                width: 35,
-                height: 35,
-                borderRadius: 25,
-                // marginBottom: 5,
-                borderColor:
-                  item?.userData?.profileImage && item?.userData?.profileImage != ''
-                    ? '#032F3C'
-                    : '#09aadb',
-                borderWidth: 1,
+                height: 200,
+                // borderRadiusTop: 2,
+                borderTopLeftRadius: 8,
+                borderTopRightRadius: 8,
               }}
-              resizeMode={'contain'}
+              source={{ uri: linkData!.image?.url ?? NO_POST_IMAGE_URL }}
             />
-            <View style={{ flexDirection: 'column' }}>
-              <Text
-                style={{
-                  marginLeft: 5,
-                  fontFamily: 'Rubik',
-                  color: '#68828A',
-                  alignItems: 'center',
-                  fontSize: 13,
-                  maxWidth: 200,
-                }}
-                numberOfLines={2}
-              >
-                {item?.userData?.name}
-              </Text>
-              <Text
-                style={{
-                  marginLeft: 5,
-                  fontFamily: 'Rubik',
-                  color: '#68828A',
-                  alignItems: 'center',
-                  fontSize: 13,
-                  maxWidth: 200,
-                }}
-              >
-                @
-                {item?.source == 'twitter'
-                  ? item?.userData?.twitterHandler
-                  : item?.userData?.instagramHandler}
-              </Text>
+            <View style={{ padding: 10 }}>
+              {linkData!.siteName ? (
+                <StyledText numberOfLines={1} style={{ color: '#979797' }}>
+                  {getDomainName(linkData!.url || '')}
+                </StyledText>
+              ) : null}
+              <StyledText numberOfLines={1} style={{ fontWeight: 'bold' }}>
+                {linkData!.title}
+              </StyledText>
+              <StyledText numberOfLines={2}>{linkData!.description}</StyledText>
             </View>
           </TouchableOpacity>
+        ) : null}
 
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text>
-              {item?.source == 'instagram' ? (
-                <Instagram height={getHeight(2.5)} fill="#00acee" />
-              ) : (
-                <Twitter height={getHeight(2.5)} fill="#00acee" />
-              )}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-
-      {media ? (
-        <>
-          {media.type == 'VIDEO' ? (
-            <>
-              <Video
-                ignoreSilentSwitch="ignore"
-                source={{
-                  uri: media.url,
+        {media ? (
+          <>
+            {media.type == 'VIDEO' ? (
+              <>
+                <Video
+                  ignoreSilentSwitch="ignore"
+                  source={{
+                    uri: media.url,
+                  }}
+                  style={{ height: 300, borderRadius: 2, marginVertical: 10 }}
+                  controls={false}
+                  resizeMode="cover"
+                  paused={!isPlaying}
+                  muted={isMuted}
+                  repeat={true}
+                  onTouchEnd={() => {
+                    if (!isPlaying) {
+                      setIsPlaying(true);
+                    }
+                    setIsMuted(!isMuted);
+                  }}
+                  // hideShutterView={true}
+                />
+              </>
+            ) : (
+              <FastImage
+                style={{
+                  // flexGrow: 1,
+                  aspectRatio: 16 / 9,
+                  // width: '100%',
+                  // height: 300,
+                  // borderRadius: 2,
+                  // marginVertical: 10,
                 }}
-                style={{ width: '100%', height: 300, borderRadius: 2, marginVertical: 10 }}
-                controls={false}
                 resizeMode="cover"
-                paused={!isPlaying}
-                muted={isMuted}
-                repeat={true}
-                onTouchEnd={() => {
-                  if (!isPlaying) {
-                    setIsPlaying(true);
-                  }
-                  setIsMuted(!isMuted);
-                }}
-                // hideShutterView={true}
+                source={{ uri: media?.url ?? NO_POST_IMAGE_URL }}
               />
-            </>
-          ) : (
-            <FastImage
-              style={{
-                width: '100%',
-                height: 300,
-                borderRadius: 2,
-                marginVertical: 10,
-              }}
-              source={{ uri: media?.url ?? NO_POST_IMAGE_URL }}
-            />
-          )}
-        </>
-      ) : null}
-
-      <View style={{ flexDirection: 'row', padding: 5 }}>
-        <Text
-          style={{
-            padding: 5,
-            fontFamily: 'Rubik',
-            lineHeight: 18,
-            color: colors.text,
-            marginTop: getHeight(1),
-          }}
-        >
-          {item?.content}
-        </Text>
+            )}
+          </>
+        ) : null}
       </View>
-
-      {hasLink ? (
-        <TouchableOpacity
-          onPress={() => {
-            if (linkData!.url) OpenURLButton(linkData!.url);
-          }}
-          style={[
-            { width: Dimensions.get('window').width - 70 },
-            {
-              borderRadius: 8,
-              marginVertical: 10,
-              borderColor: '#808080',
-              borderWidth: 1,
-            },
-          ]}
-        >
-          <FastImage
-            style={{
-              width: '100%',
-              height: 200,
-              // borderRadiusTop: 2,
-              borderTopLeftRadius: 8,
-              borderTopRightRadius: 8,
-            }}
-            source={{ uri: linkData!.image?.url ?? NO_POST_IMAGE_URL }}
-          />
-          <View style={{ padding: 10 }}>
-            {linkData!.siteName ? (
-              <Text numberOfLines={1} style={{ color: '#979797' }}>
-                {getDomainName(linkData!.url || '')}
-              </Text>
-            ) : null}
-            <Text numberOfLines={1} style={{ fontWeight: 'bold' }}>
-              {linkData!.title}
-            </Text>
-            <Text numberOfLines={2}>{linkData!.description}</Text>
-          </View>
-        </TouchableOpacity>
-      ) : null}
-
-      {url ? (
-        <TouchableOpacity
-          onPress={() => {
-            if (url) OpenURLButton(url);
-          }}
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Text
-            style={{
-              marginLeft: 5,
-              fontFamily: 'Rubik',
-              color: '#68828A',
-              alignItems: 'center',
-              marginBottom: 5,
-            }}
-          >
-            {item?.source == 'twitter' ? `View on Twitter` : `View on Instagram`}
-          </Text>
-        </TouchableOpacity>
-      ) : null}
-    </View>
+    </BaseItem>
   );
 };
 

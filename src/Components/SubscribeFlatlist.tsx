@@ -20,7 +20,7 @@ import FastImage from 'react-native-fast-image';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootState } from '../Redux/reducers/rootReducer';
 
-import { RootStackParamList } from '../Navigation/types';
+import { RootStackParamList } from '../_Navigation/types';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
@@ -68,7 +68,7 @@ const SubscribeFlatlist = ({
       } else {
         const result = subscribe.filter((item) => item != id);
         setSubscibe(result);
-        Toast.show(' ' + res?.response?.message);
+        Toast.show(' ' + res?.response?.message, Toast.LONG);
       }
     } catch (e) {
       console.log('saga sign up err --- ', e);
@@ -79,7 +79,6 @@ const SubscribeFlatlist = ({
   }, []);
   return (
     <FlatList
-      nestedScrollEnabled
       data={users ? users : allusers}
       numColumns={numColumns}
       horizontal={horizontal}
@@ -87,9 +86,10 @@ const SubscribeFlatlist = ({
       ListFooterComponent={() => <View style={{ padding: 7 }} />}
       ListHeaderComponent={() => <View style={{ padding: 7 }} />}
       ItemSeparatorComponent={() => <View style={{ margin: 7 }} />}
-      onScroll={(e) => {
-        if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
-      }}
+      // onScroll={(e) => {
+      //   if (setScrollPosition) setScrollPosition(e.nativeEvent.contentOffset.y);
+      // }}
+      // scrollEnabled={false}
       renderItem={({ item, index }) => (
         <TouchableOpacity
           onPress={() =>
