@@ -8,7 +8,6 @@ import {
   Dimensions,
   Image,
   StyleProp,
-  Text,
   TextStyle,
   TouchableOpacity,
   View,

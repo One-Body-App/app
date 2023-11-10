@@ -175,17 +175,17 @@ export const neutral: Record<ColorVariants, string> = {
   get 400() {
     const dark = isDarkMode();
 
-    return dark ? '#999DA1' : '#838584';
+    return dark ? '#99A1A0' : '#838584';
   },
   get 500() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#999DA1';
+    return dark ? '#9A99A1' : '#999DA1';
   },
   get 600() {
     const dark = isDarkMode();
 
-    return dark ? '' : '#D6D6D6';
+    return dark ? '#585859' : '#D6D6D6';
   },
   get 700() {
     const dark = isDarkMode();
@@ -195,12 +195,12 @@ export const neutral: Record<ColorVariants, string> = {
   get 800() {
     const dark = isDarkMode();
 
-    return dark ? '#191919' : '#F2F3F3';
+    return dark ? '#212121' : '#F2F3F3';
   },
   get 900() {
     const dark = isDarkMode();
 
-    return dark ? '#1B1B1B' : '#F1F1F1';
+    return dark ? '#191919' : '#F1F1F1';
   },
 };
 
@@ -208,121 +208,81 @@ type FeedBackColor = 'background' | '200' | '300' | '400' | 'text';
 
 export const errorFeedback: Record<FeedBackColor, string> = {
   get background() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#DC2C10';
+    return '#DC2C10';
   },
 
   get 200() {
-    const dark = isDarkMode();
-
-    return dark ? '#E35640' : '#E35640';
+    return '#E35640';
   },
   get 300() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#EE9688';
+    return '#EE9688';
   },
   get 400() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#F8D5CF';
+    return '#F8D5CF';
   },
 
   get text() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#FCEAE7';
+    return '#FCEAE7';
   },
 };
 
 export const successFeedback: Record<FeedBackColor, string> = {
   get background() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#EDFFF9';
+    return '#EDFFF9';
   },
 
   get 200() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#12AC7B';
+    return '#12AC7B';
   },
   get 300() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#2DD59F';
+    return '#2DD59F';
   },
   get 400() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#8FFFDB';
+    return '#8FFFDB';
   },
 
   get text() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#008359';
+    return '#008359';
   },
 };
 
 export const warningFeedback: Record<FeedBackColor, string> = {
   get background() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#D96A00';
+    return '#D96A00';
   },
 
   get 200() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#FF8816';
+    return '#FF8816';
   },
   get 300() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#FF9D40';
+    return '#FF9D40';
   },
   get 400() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#FFC894';
+    return '#FFC894';
   },
 
   get text() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#FFF3E7';
+    return '#FFF3E7';
   },
 };
 
 export const infoFeedback: Record<FeedBackColor, string> = {
   get background() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#0066D8';
+    return '#0066D8';
   },
 
   get 200() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#1684FF';
+    return '#1684FF';
   },
   get 300() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#409AFF';
+    return '#409AFF';
   },
   get 400() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#94C6FF';
+    return '#94C6FF';
   },
 
   get text() {
-    const dark = isDarkMode();
-
-    return dark ? '' : '#E7F2FF';
+    return '#E7F2FF';
   },
 };
 
@@ -336,6 +296,6 @@ export const main = {
   get black() {
     const dark = isDarkMode();
 
-    return dark ? '' : 'black';
+    return dark ? 'white' : 'black';
   },
 };

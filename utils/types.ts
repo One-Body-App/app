@@ -125,7 +125,7 @@ export type ArticleType = {
   id?: string;
   link?: string;
   created: Date;
-  image: { url: string };
+  image?: { url: string };
   title: string | { a: any };
   userData: {
     _id: string;
@@ -141,6 +141,12 @@ export enum AccountType {
   organization = 'organization',
 }
 
+export enum SocialPostReactionType {
+  love = 'love',
+  praying = 'praying',
+  happy = 'happy',
+}
+
 export type NotificationType = {
   _id: string;
   userID?: string;
@@ -149,3 +155,10 @@ export type NotificationType = {
 };
 
 export type RefreshListRef = { setRefreshing: Function };
+
+export type SocialPostReaction = {
+  type: SocialPostReactionType;
+  userId: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+};

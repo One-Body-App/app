@@ -8,7 +8,7 @@ const menuItemText: TextStyle = {
   fontSize: 15,
   textAlign: 'center',
   fontWeight: '500',
-  textTransform: 'uppercase',
+  textTransform: 'capitalize',
 };
 
 const menuItem: ViewStyle = {

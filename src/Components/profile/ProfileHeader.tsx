@@ -6,7 +6,6 @@ import {
   useHeaderMeasurements,
 } from 'react-native-collapsible-tab-view';
 
-import { TabName } from 'react-native-collapsible-tab-view/lib/typescript/src/types';
 import {
   HEADER_COLLAPSED_HEIGHT,
   HEADER_EXPANDED_HEIGHT,
@@ -25,7 +24,7 @@ import { spacing } from '@/src/styles/spacing';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { Add, Location, Calendar, ShieldTick, HomeHashtag, Link21 } from 'iconsax-react-native';
 import React, { useState } from 'react';
-import { View, Image, TouchableOpacity } from 'react-native';
+import { View, Image, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import FastImage from 'react-native-fast-image';
 
 import Toast from 'react-native-simple-toast';
@@ -48,7 +47,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, parseISO } from 'date-fns';
 import { OpenURLButton } from '@/src/Services/constants';
 
-interface HeaderProps extends ProfileProps, TabBarProps<TabName> {}
+interface HeaderProps extends ProfileProps {}
 
 const ProfileHeader = ({
   profileData,
@@ -653,105 +652,198 @@ const ProfileHeader = ({
         style={styles.bottomView}
         propagateSwipe
       >
-        <View style={styles.content2}>
-          <StyledText
-            style={{
-              color: '#032F3C',
-              marginLeft: 20,
-              marginRight: 20,
-              textAlign: 'center',
-              letterSpacing: 0.25,
-            }}
-          >
-            <StyledText style={{ fontWeight: 'bold' }}>Select up to 3 badage</StyledText> you would
-            like to display on your profile
-          </StyledText>
-          <View style={{ flex: 1 }}>
-            <View style={{ marginVertical: 15 }}>
-              <FlatList
-                data={authState?.getBadgesData}
-                numColumns={3}
-                showsHorizontalScrollIndicator={false}
-                // ListFooterComponent={() => <View style={{ padding: 7 }} />}
-                ItemSeparatorComponent={() => <View style={{ margin: 7 }} />}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (profileData?.badges.includes(item?._id)) {
-                        unselect(item?._id);
-                      } else {
-                        const badgeIndex = selectedBadges.findIndex((badgeToCheck) => {
-                          return badgeToCheck._id == item?._id;
-                        });
+        <View style={[styles.content2, { backgroundColor: colors.background }]}>
+          <SafeAreaView>
+            <StyledText
+              style={{
+                marginLeft: 20,
+                marginRight: 20,
+                textAlign: 'center',
+                letterSpacing: 0.25,
+              }}
+            >
+              <StyledText style={{ fontWeight: 'bold' }}>Select up to 3 badges</StyledText> you
+              would like to display on your profile
+            </StyledText>
+            <View style={{ flex: 1 }}>
+              <View style={{ marginVertical: 15 }}>
+                <ScrollView>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: spacing.x10,
+                    }}
+                  >
+                    {authState?.getBadgesData && authState?.getBadgesData?.length > 0
+                      ? authState?.getBadgesData?.map((item: any) => {
+                          return (
+                            <TouchableOpacity
+                              onPress={() => {
+                                if (profileData?.badges.includes(item?._id)) {
+                                  unselect(item?._id);
+                                } else {
+                                  const badgeIndex = selectedBadges.findIndex((badgeToCheck) => {
+                                    return badgeToCheck._id == item?._id;
+                                  });
 
-                        if (badgeIndex > -1) {
-                          const newSelectedBadges = selectedBadges.filter((selectedBadge) => {
-                            return selectedBadge._id != selectedBadges[badgeIndex]._id;
-                          });
-                          setSelectedBadges(newSelectedBadges);
+                                  if (badgeIndex > -1) {
+                                    const newSelectedBadges = selectedBadges.filter(
+                                      (selectedBadge) => {
+                                        return selectedBadge._id != selectedBadges[badgeIndex]._id;
+                                      }
+                                    );
+                                    setSelectedBadges(newSelectedBadges);
+                                  } else {
+                                    if (selectedBadges.length < 3) {
+                                      setSelectedBadges([...selectedBadges, item]);
+                                    } else {
+                                      Toast.show(
+                                        'You cannot select more then 3 badges!',
+                                        Toast.LONG
+                                      );
+                                    }
+                                  }
+                                }
+                              }}
+                              style={{
+                                flex: 1,
+                                alignItems: 'stretch',
+                              }}
+                            >
+                              <View
+                                style={{
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  alignContent: 'center',
+                                  flex: 1,
+                                }}
+                              >
+                                <FastImage
+                                  style={{
+                                    flexGrow: 1,
+                                    width: '80%',
+                                    borderRadius: borderRadius.max,
+                                    aspectRatio: 1,
+                                    // maxWidth: '80%',
+                                  }}
+                                  source={{
+                                    uri: item?.badge,
+                                  }}
+                                  resizeMode={FastImage.resizeMode.contain}
+                                />
+                                {selectedBadges.filter((x) => x._id == item?._id).length > 0 ? (
+                                  <View
+                                    style={{
+                                      position: 'absolute',
+                                      alignSelf: 'center',
+                                      marginTop: 2,
+                                    }}
+                                  >
+                                    <Selected />
+                                  </View>
+                                ) : null}
+                                <StyledText
+                                  style={{
+                                    color: Colors.primary.brand,
+
+                                    marginTop: spacing.x10,
+                                  }}
+                                >
+                                  {item?.title}
+                                </StyledText>
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })
+                      : null}
+                  </View>
+                </ScrollView>
+                {/* <FlatList
+                  data={authState?.getBadgesData}
+                  numColumns={3}
+                  showsHorizontalScrollIndicator={false}
+                  // ListFooterComponent={() => <View style={{ padding: 7 }} />}
+                  // ItemSeparatorComponent={() => <View style={{ margin: 7 }} />}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (profileData?.badges.includes(item?._id)) {
+                          unselect(item?._id);
                         } else {
-                          if (selectedBadges.length < 3) {
-                            setSelectedBadges([...selectedBadges, item]);
+                          const badgeIndex = selectedBadges.findIndex((badgeToCheck) => {
+                            return badgeToCheck._id == item?._id;
+                          });
+
+                          if (badgeIndex > -1) {
+                            const newSelectedBadges = selectedBadges.filter((selectedBadge) => {
+                              return selectedBadge._id != selectedBadges[badgeIndex]._id;
+                            });
+                            setSelectedBadges(newSelectedBadges);
                           } else {
-                            Toast.show('You cannot select more then 3 badges!', Toast.LONG);
+                            if (selectedBadges.length < 3) {
+                              setSelectedBadges([...selectedBadges, item]);
+                            } else {
+                              Toast.show('You cannot select more then 3 badges!', Toast.LONG);
+                            }
                           }
                         }
-                      }
-                    }}
-                    style={{ width: 30, alignItems: 'center', height: 70 }}
-                  >
-                    <FastImage
-                      style={{ width: '33%', height: 40, borderRadius: borderRadius.max }}
-                      source={{
-                        uri: item?.badge,
                       }}
-                      resizeMode={FastImage.resizeMode.contain}
-                    />
-                    {selectedBadges.filter((x) => x._id == item?._id).length > 0 ? (
-                      <View
+                      style={{ width: 30, alignItems: 'center', height: 70 }}
+                    >
+                      <FastImage
+                        style={{ width: '33%', height: 40, borderRadius: borderRadius.max }}
+                        source={{
+                          uri: item?.badge,
+                        }}
+                        resizeMode={FastImage.resizeMode.contain}
+                      />
+                      {selectedBadges.filter((x) => x._id == item?._id).length > 0 ? (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            alignSelf: 'center',
+                            marginTop: 2,
+                          }}
+                        >
+                          <Selected />
+                        </View>
+                      ) : null}
+                      <StyledText
                         style={{
-                          position: 'absolute',
-                          alignSelf: 'center',
-                          marginTop: 2,
+                          color: Colors.primary.brand,
+
+                          marginTop: spacing.x10,
                         }}
                       >
-                        <Selected />
-                      </View>
-                    ) : null}
-                    <StyledText
-                      style={{
-                        color: Colors.primary.brand,
-
-                        marginTop: spacing.x10,
-                      }}
-                    >
-                      {item?.title}
-                    </StyledText>
-                  </TouchableOpacity>
-                )}
-              />
+                        {item?.title}
+                      </StyledText>
+                    </TouchableOpacity>
+                  )}
+                /> */}
+              </View>
             </View>
-          </View>
 
-          <View style={{ width: '100%' }}>
-            <TouchableOpacity
-              onPress={() => {
-                dispatch(setUserBadges.Request({ token: token, badges: selectedBadges }));
-                setRequestModel(false);
-              }}
-              style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}
-            >
-              <StyledText
-                style={{
-                  color: '#032F3C',
-                  fontWeight: 'bold',
-                  letterSpacing: 1.25,
+            <View>
+              <TouchableOpacity
+                onPress={() => {
+                  dispatch(setUserBadges.Request({ token: token, badges: selectedBadges }));
+                  setRequestModel(false);
                 }}
+                style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}
               >
-                DONE
-              </StyledText>
-            </TouchableOpacity>
-          </View>
+                <StyledText
+                  style={{
+                    color: '#032F3C',
+                    fontWeight: 'bold',
+                    letterSpacing: 1.25,
+                  }}
+                >
+                  DONE
+                </StyledText>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
         </View>
       </Modal>
     </Animated.View>

@@ -128,9 +128,10 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
     getData();
   }, []);
 
+  const [isScrollEnable, setIsScrollEnable] = useState(true);
+
   return (
     <View style={{ flex: 1 }}>
-      <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 75 }}
@@ -224,8 +225,16 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
             keyExtractor={(item, index) => {
               return `${item?.handler}-${item.id}-${index}`;
             }}
-            renderItem={({ item }) => {
-              if (item.type == 'social') return <SocialItem item={item} />;
+            scrollEnabled={isScrollEnable}
+            renderItem={({ item, index }) => {
+              if (item.type == 'social')
+                return (
+                  <SocialItem
+                    item={item}
+                    index={index}
+                    onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                  />
+                );
               if (item.type == 'tasteBreaker') {
                 return <Text>tasteBreaker</Text>;
               }

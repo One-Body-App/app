@@ -609,7 +609,7 @@ const LoginComponent: FC<Props> = ({
           onPress={() => {
             dispatch(sendVerificationEmail.Request({ token: userProfile?.token }));
           }}
-          text={'Didn’t received the mail? '}
+          text={'Didn’t receive the mail? '}
           wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'center' }}
           btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[300] }]}
           rightIcon={

@@ -83,6 +83,7 @@ const InstagramFlatlist = ({
     },
   ]);
   const { colors } = useTheme();
+  const [isScrollEnable, setIsScrollEnable] = useState(true);
 
   if (instagramPosts.length) {
     return (
@@ -92,8 +93,11 @@ const InstagramFlatlist = ({
         contentContainerStyle={{ marginTop: getHeight(1) }}
         showsHorizontalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
+        scrollEnabled={isScrollEnable}
         renderItem={({ item, index }) => (
           <SocialItem
+            index={index}
+            onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
             visible={
               visibleItemsIndex && visibleItemsIndex.length > 0
                 ? visibleItemsIndex?.indexOf(index) > -1
@@ -132,9 +136,6 @@ const InstagramFlatlist = ({
                 color: '#70747D',
                 fontSize: 14,
               }}
-              mode="text"
-              paper
-              textColor="#70747D"
               onPress={() => {
                 OpenURLButton(
                   `https://instagram.com/${currentUser.influencerProfile?.instagramHandler}`,

@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, SafeAreaView, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
+import {
+  View,
+  SafeAreaView,
+  TouchableOpacity,
+  FlatList,
+  RefreshControl,
+  Dimensions,
+} from 'react-native';
 
 import { getHeight } from '@/utils/ResponsiveFun';
 import { styles } from './styles';
@@ -31,12 +38,15 @@ import { StyledText } from '@/src/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 import { Notification } from 'iconsax-react-native';
+import { Dropdown } from 'react-native-element-dropdown';
+import { fontSize, poppins } from '@/src/styles/typography';
 
 enum FeedTypes {
-  All = 'all',
-  News = 'news',
-  Social = 'social',
-  Blog = 'blog',
+  Connected = 'connected',
+  ForYou = 'foryou',
+  Read = 'read',
+  Pray = 'pray',
+  Watch = 'watch',
 }
 
 type feedOptions = {
@@ -44,7 +54,7 @@ type feedOptions = {
   page: number;
 };
 
-const feedTypes: FeedTypes[] = [FeedTypes.All, FeedTypes.News, FeedTypes.Social, FeedTypes.Blog];
+const feedTypes: FeedTypes[] = [FeedTypes.Connected, FeedTypes.Read];
 
 type Props = CompositeScreenProps<
   StackScreenProps<HomeStackParamsList, 'Home'>,
@@ -238,10 +248,10 @@ const Home = ({ navigation }: Props) => {
 
     return unsubscribe;
   }, [navigation]);
+  const [isScrollEnable, setIsScrollEnable] = useState(true);
 
   return (
     <>
-      <OptionsModal show={show ?? false} setShow={setShow} currentPopupItem={currentPopupItem} />
       <View style={{ flex: 1 }}>
         <View
           style={{
@@ -254,22 +264,62 @@ const Home = ({ navigation }: Props) => {
             return (
               <View style={{ flex: 1 }} key={feedType}>
                 <TouchableOpacity
-                  onPress={() => filterUpdate(feedType)}
+                  onPress={() => {
+                    if (feedType != FeedTypes.Connected) {
+                      filterUpdate(feedType);
+                    }
+                  }}
                   style={
-                    feedOptions.type == feedType
+                    feedOptions.type == feedType ||
+                    (feedType == FeedTypes.Connected && feedOptions.type == FeedTypes.ForYou)
                       ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
                       : [styles.menuItem]
                   }
                 >
-                  <StyledText
-                    style={
-                      feedOptions.type == feedType
-                        ? [styles.menuItemText, { color: Colors.neutral.brand }]
-                        : [styles.menuItemText, { color: Colors.neutral[400] }]
-                    }
-                  >
-                    {feedType}
-                  </StyledText>
+                  {feedType == FeedTypes.Connected ? (
+                    <Dropdown
+                      style={{ backgroundColor: colors.card }}
+                      placeholderStyle={[poppins.base, { color: colors.text }]}
+                      selectedTextStyle={[poppins.base, { color: colors.text }]}
+                      // inputSearchStyle={styles.inputSearchStyle}
+                      // iconStyle={styles.iconStyle}
+                      containerStyle={{ backgroundColor: colors.card }}
+                      itemTextStyle={[poppins.base, { color: colors.text }]}
+                      activeColor={colors.primary}
+                      data={[
+                        { label: 'Connected', value: FeedTypes.Connected },
+                        { label: 'For You', value: FeedTypes.ForYou },
+                      ]}
+                      maxHeight={300}
+                      labelField="label"
+                      valueField="value"
+                      placeholder={'Feed'}
+                      value={feedOptions.type}
+                      onChange={(item) => {
+                        // setValue(item.value);
+                        // setIsFocus(false);
+                        filterUpdate(item.value);
+                      }}
+                      // renderLeftIcon={() => (
+                      //   <AntDesign
+                      //     style={styles.icon}
+                      //     color={isFocus ? 'blue' : 'black'}
+                      //     name="Safety"
+                      //     size={20}
+                      //   />
+                      // )}
+                    />
+                  ) : (
+                    <StyledText
+                      style={
+                        feedOptions.type == feedType
+                          ? [styles.menuItemText, { color: Colors.neutral.brand }]
+                          : [styles.menuItemText, { color: Colors.neutral[400] }]
+                      }
+                    >
+                      {feedType}
+                    </StyledText>
+                  )}
                 </TouchableOpacity>
               </View>
             );
@@ -292,11 +342,14 @@ const Home = ({ navigation }: Props) => {
               contentContainerStyle={{
                 flexGrow: 1,
               }}
+              scrollEnabled={isScrollEnable}
               renderItem={({ item, index }) => {
                 if (item.type == 'social') {
                   return (
                     <SocialItem
+                      index={index}
                       key={`social_${item.id}_${index}`}
+                      onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
                       item={item}
                       visible={
                         visibleItemsIndex && visibleItemsIndex.length > 0
@@ -310,12 +363,12 @@ const Home = ({ navigation }: Props) => {
 
                 if (item.type == 'tasteBreaker') {
                   return (
-                    <View>
-                      <FlatList
+                    <View style={{ paddingHorizontal: 10 }}>
+                      {/* <FlatList
                         nestedScrollEnabled
                         data={item.items}
                         horizontal={true}
-                        showsHorizontalScrollIndicator={false}
+                        showsHorizontalScrollIndicator={true}
                         keyExtractor={(item, index) => `${item.created}_${index}`}
                         renderItem={({ item }) => (
                           <ArticleItem
@@ -326,14 +379,43 @@ const Home = ({ navigation }: Props) => {
                             blogPostStyle={{
                               ...globalStyle.blogpostview,
                               backgroundColor: cardSecondaryColor,
+                              height: 400,
+                              width: Dimensions.get('screen').width - 30,
+                              // width: 350,
                             }}
-                            blogPostImageStyle={globalStyle.newspostimage}
+                            blogPostImageStyle={[globalStyle.newspostimage]}
                             blogPostTitleStyle={{
-                              flexWrap: 'wrap',
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
                             }}
                             showModal={showModal}
                           />
                         )}
+                      /> */}
+
+                      <ArticleItem
+                        pillText="Taste Breakers"
+                        key={`article_${item.id}`}
+                        item={item.items[0]}
+                        imageSizeType="cover"
+                        // blogPostStyle={{
+                        //   ...globalStyle.blogpostview,
+                        //   backgroundColor: cardSecondaryColor,
+                        // }}
+                        // blogPostImageStyle={globalStyle.newspostimage}
+                        // blogPostTitleStyle={{
+                        //   flexWrap: 'wrap',
+                        // }}
+                        blogPostStyle={{
+                          ...globalStyle.blogpostview,
+                          backgroundColor: cardSecondaryColor,
+                        }}
+                        blogPostImageStyle={globalStyle.newspostimage}
+                        blogPostTitleStyle={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                        }}
+                        showModal={showModal}
                       />
                     </View>
                   );

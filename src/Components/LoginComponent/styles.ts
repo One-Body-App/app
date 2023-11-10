@@ -129,7 +129,6 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
   content2: {
-    backgroundColor: 'white',
     alignItems: 'center',
     padding: 13,
     borderTopRightRadius: 17,

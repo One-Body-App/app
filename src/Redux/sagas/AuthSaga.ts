@@ -97,7 +97,6 @@ export function* loginSocialSaga() {
 
 function* updateProfileRequest(params) {
   try {
-    console.log(params);
     const res = yield ApiCall({
       params: params.data.data,
       route: `user/update-profile`,
@@ -117,7 +116,6 @@ function* updateProfileRequest(params) {
         params.data.go();
       }
     } else {
-      console.log(res);
       yield put(setLoader(false));
       Alert.alert('Error', 'An error accoured during profile Update', [
         { text: 'Close', onPress: () => console.log('Close Pressed') },
@@ -138,7 +136,6 @@ export function* UpdateProfileSaga() {
 }
 function* updateOrgProfileRequest(params) {
   try {
-    console.log(params);
     const res = yield ApiCall({
       params: { ...params.data.data, accountType: 'organization' },
       route: 'user/update-profile',
@@ -321,8 +318,15 @@ function* setUserBadgesSaga({ params }) {
       params: { badges: params.badges },
       verb: 'patch',
     });
+
     if (res?.status == 200) {
       yield put(setUserBadges.Success(res?.response?.data));
+
+      yield put(
+        getProfile.Request({
+          token: params.token,
+        })
+      );
     } else yield put(setUserBadges.Failed(res?.response));
   } catch (e) {
     yield put(setUserBadges.Failed(e));

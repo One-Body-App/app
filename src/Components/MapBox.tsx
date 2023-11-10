@@ -15,7 +15,7 @@ import { useTheme } from '@react-navigation/native';
 import { borderRadius } from '../styles/outlines';
 import { StyledText } from './styled/Text';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Gps, GpsSlash } from 'iconsax-react-native';
+import { Gps } from 'iconsax-react-native';
 import { Colors, Typography } from '../styles';
 import { StyledTextInput } from './styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
@@ -253,7 +253,6 @@ const MapBox = (props: MapBoxProps) => {
               </>
             }
             renderItem={({ item }) => {
-              console.log(item);
               return (
                 <TouchableOpacity
                   onPress={() => {

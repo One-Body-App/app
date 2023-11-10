@@ -77,6 +77,7 @@ import DrawerNav from './DrawerStack';
 import NewPost from '../screens/post/NewPost';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { StackScreenProps } from '@react-navigation/stack';
+import { ReactionProvider } from 'react-native-reactions';
 
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
@@ -308,102 +309,108 @@ const Main = () => {
 
   return (
     <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
-      {/* <AppProvider> */}
+      <ReactionProvider>
+        {/* <AppProvider> */}
 
-      <MainStack.Navigator>
-        {user &&
-        token &&
-        authState.getProfileData &&
-        (authState.getProfileData?.accountType == 'individual' ||
-          authState.getProfileData?.accountType == 'organization') &&
-        user?.emailVerified ? (
-          <>
-            <MainStack.Screen
-              name="MainRoot"
-              component={DrawerNav}
-              options={{ headerShown: false }}
-            />
+        <MainStack.Navigator>
+          {user &&
+          token &&
+          authState.getProfileData &&
+          (authState.getProfileData?.accountType == 'individual' ||
+            authState.getProfileData?.accountType == 'organization') &&
+          user?.emailVerified ? (
+            <>
+              <MainStack.Screen
+                name="MainRoot"
+                component={DrawerNav}
+                options={{ headerShown: false }}
+              />
 
-            <MainStack.Screen
-              name="Post"
-              component={NewPost}
-              options={({ navigation, route }) => ({
-                presentation: 'fullScreenModal',
-                title: 'Create Post',
-                headerLeft: (props) => {
-                  const { dark, colors } = useTheme();
-                  return (
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (props.canGoBack) {
-                          navigation.pop();
-                        }
-                      }}
-                    >
-                      <MaterialCommunityIcons
-                        name="window-close"
-                        size={18}
-                        color={dark ? colors.text : Colors.primary.brand}
-                      />
-                    </TouchableOpacity>
-                  );
-                },
-              })}
-            />
-          </>
-        ) : (
-          <>
-            <MainStack.Screen name="Intro" component={Intro} options={{ headerShown: false }} />
-            <MainStack.Screen name="AccountType" component={AccountType} options={headerOptions} />
-            <MainStack.Screen
-              name="Login"
-              component={Login}
-              options={{
-                ...headerOptions,
-                headerStyle: {
-                  backgroundColor:
-                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                },
-                headerTransparent: false,
-              }}
-            />
-            <MainStack.Screen
-              name="SignUp"
-              component={Signup}
-              options={{
-                ...headerOptions,
+              <MainStack.Screen
+                name="Post"
+                component={NewPost}
+                options={({ navigation, route }) => ({
+                  presentation: 'fullScreenModal',
+                  title: 'Create Post',
+                  headerLeft: (props) => {
+                    const { dark, colors } = useTheme();
+                    return (
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (props.canGoBack) {
+                            navigation.pop();
+                          }
+                        }}
+                      >
+                        <MaterialCommunityIcons
+                          name="window-close"
+                          size={18}
+                          color={dark ? colors.text : Colors.primary.brand}
+                        />
+                      </TouchableOpacity>
+                    );
+                  },
+                })}
+              />
+            </>
+          ) : (
+            <>
+              <MainStack.Screen name="Intro" component={Intro} options={{ headerShown: false }} />
+              <MainStack.Screen
+                name="AccountType"
+                component={AccountType}
+                options={headerOptions}
+              />
+              <MainStack.Screen
+                name="Login"
+                component={Login}
+                options={{
+                  ...headerOptions,
+                  headerStyle: {
+                    backgroundColor:
+                      scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                  },
+                  headerTransparent: false,
+                }}
+              />
+              <MainStack.Screen
+                name="SignUp"
+                component={Signup}
+                options={{
+                  ...headerOptions,
 
-                headerTransparent: false,
-                headerStyle: {
-                  backgroundColor:
-                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                },
-              }}
-            />
+                  headerTransparent: false,
+                  headerStyle: {
+                    backgroundColor:
+                      scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                  },
+                }}
+              />
 
-            <MainStack.Screen
-              name="ForgotPassword"
-              component={ForgotPassword}
-              options={{
-                ...headerOptions,
+              <MainStack.Screen
+                name="ForgotPassword"
+                component={ForgotPassword}
+                options={{
+                  ...headerOptions,
 
-                headerTransparent: false,
-                headerStyle: {
-                  backgroundColor:
-                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                },
-              }}
-            />
-          </>
-        )}
-        <MainStack.Screen
-          name="ConfirmLogin"
-          component={ConfirmLogin}
-          options={{ presentation: 'modal', ...headerOptions }}
-        />
-      </MainStack.Navigator>
+                  headerTransparent: false,
+                  headerStyle: {
+                    backgroundColor:
+                      scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                  },
+                }}
+              />
+            </>
+          )}
+          <MainStack.Screen
+            name="ConfirmLogin"
+            component={ConfirmLogin}
+            options={{ presentation: 'modal', ...headerOptions }}
+          />
+        </MainStack.Navigator>
 
-      {/* </AppProvider> */}
+        {/* </AppProvider> */}
+      </ReactionProvider>
     </NavigationContainer>
   );
 };

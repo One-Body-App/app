@@ -1,21 +1,18 @@
-import { CompositeNavigationProp, NavigationProp, useNavigation } from '@react-navigation/native';
-import { useTheme } from 'react-native-paper';
-import React from 'react';
-import { View, Share, Platform } from 'react-native';
+import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+
+import React, { useRef } from 'react';
+import { View, Share, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Modal from 'react-native-modal';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
+
 import Button from '../Button';
-import Feather from 'react-native-vector-icons/Feather';
-import { RootStackParamList } from '@/src/_Navigation/types';
+
 import { styles } from './style';
-import { getHeight } from '@/utils/ResponsiveFun';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { ApiCall } from '@/src/Services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { ArticleType } from '@/utils/types';
-import { isObject } from 'lodash';
+import { AccountType, PostType, SocialPostReaction } from '@/utils/types';
 import { getuserGet } from '@/src/Redux/actions/UserAction';
 import {
   ExploreStackParamsList,
@@ -25,6 +22,16 @@ import {
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Colors } from '@/src/styles';
+import { StyledText } from '../styled/Text';
+import { spacing } from '@/src/styles/spacing';
+import { borderRadius } from '@/src/styles/outlines';
+import { Copy, InfoCircle, Profile, User } from 'iconsax-react-native';
+import { Bookmark, ShareAndroid, ShareIos } from 'iconoir-react-native';
+import { body, fontSize, header } from '@/src/styles/typography';
+import Clipboard from '@react-native-clipboard/clipboard';
+import Toast from 'react-native-toast-notifications';
+import ToastContainer from 'react-native-toast-notifications';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -39,20 +46,43 @@ const OptionsModal = ({
   currentPopupItem,
   hideChannelSection,
   height,
+  onProfilePress,
 }: {
   show: boolean;
   setShow: (show: boolean) => void;
-  currentPopupItem?: ArticleType;
+  currentPopupItem?: {
+    id?: string;
+    type?: PostType;
+    postlink?: string;
+    title: string;
+    created: Date;
+    image?: {
+      url: string;
+    };
+    externalLink?: string;
+    reactions?: SocialPostReaction[];
+    myReaction?: SocialPostReaction;
+    userData: {
+      twitterHandler?: string;
+      instagramHandler?: string;
+      name: string;
+      username: string;
+      _id: string;
+      accountType: AccountType;
+      profileImage: string;
+    };
+  };
   hideChannelSection?: boolean;
   height?: number;
+  onProfilePress?: Function;
 }) => {
   const { colors, dark } = useTheme();
-  const navigation = useNavigation<ScreenNavigationProp>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
+  const toast = useRef<ToastContainer>(null);
 
-  const removePost = async (link: string) => {
+  const removePost = async (link?: string, id?: string) => {
     dispatch(setLoader(true));
 
     try {
@@ -61,6 +91,7 @@ const OptionsModal = ({
         verb: 'delete',
         token: token,
         params: {
+          id,
           link,
         },
       });
@@ -75,8 +106,9 @@ const OptionsModal = ({
   };
 
   const savePost = async (
-    title: string,
-
+    postId?: string,
+    type?: string,
+    title?: string,
     createdAt?: Date,
     userId?: string,
     link?: string,
@@ -90,6 +122,8 @@ const OptionsModal = ({
         verb: 'post',
         token: token,
         params: {
+          postId,
+          type,
           title,
           image,
           createdAt,
@@ -107,9 +141,12 @@ const OptionsModal = ({
     }
   };
   let isThisPostSaved = false;
-  if (user?.savedPost) {
+  if (user?.savedPost && user?.savedPost.length > 0) {
     user?.savedPost.forEach((savedPost) => {
-      if (savedPost.link == currentPopupItem?.link) {
+      if (
+        (savedPost.link != undefined && savedPost.link == currentPopupItem?.postlink) ||
+        (savedPost.postId != undefined && savedPost.postId == currentPopupItem?.id)
+      ) {
         isThisPostSaved = true;
       }
     });
@@ -123,157 +160,188 @@ const OptionsModal = ({
       onSwipeComplete={() => setShow(false)}
       swipeDirection={['down']}
       style={styles.bottomView}
+      propagateSwipe={true}
+      coverScreen={true}
+      useNativeDriver
     >
+      <Toast ref={toast} />
       <View
-        style={[
-          styles.content2,
-          { height: height ?? getHeight(35), backgroundColor: colors.background },
-        ]}
+        // style={[styles.content2, { height: height ?? '60%', backgroundColor: Colors.main.white }]}
+        style={{
+          paddingVertical: spacing.x16,
+          paddingHorizontal: spacing.x24,
+          borderTopRightRadius: borderRadius.large,
+          borderTopLeftRadius: borderRadius.large,
+          height: height ?? '60%',
+          backgroundColor: colors.background,
+        }}
       >
-        <View style={[styles.headLine, { backgroundColor: dark ? '#000000' : '#EAEAEA' }]} />
-        <View style={styles.contview}>
-          <View style={styles.saveview}>
-            <View style={{ flex: 1, paddingRight: 5 }}>
+        <View style={{ alignItems: 'center' }}>
+          <View style={[styles.headLine, { backgroundColor: dark ? '#000000' : '#EAEAEA' }]} />
+        </View>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+
+            paddingBottom: spacing.x10,
+          }}
+        >
+          <StyledText style={header.h3}>Options</StyledText>
+          <TouchableOpacity
+            onPress={() => {
+              setShow(false);
+            }}
+          >
+            <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
+          </TouchableOpacity>
+        </View>
+        <ScrollView style={{ flexGrow: 1 }}>
+          <View>
+            {hideChannelSection ? null : (
+              <View style={{ marginVertical: spacing.x8 }}>
+                <Button
+                  text="View Account"
+                  btnTextStyle={[body.x2, { color: colors.text }]}
+                  leftIcon={
+                    <Profile
+                      style={{ marginRight: spacing.x5 }}
+                      size={fontSize.x5.fontSize}
+                      color={colors.text}
+                    />
+                  }
+                  onPress={() => {
+                    setShow(false);
+                    if (onProfilePress) onProfilePress();
+                  }}
+                />
+              </View>
+            )}
+            <View style={{ marginVertical: spacing.x8 }}>
               <Button
-                btnStyle={[styles.savetuch, { backgroundColor: colors.onPrimary }]}
-                text={isThisPostSaved ? 'Remove' : 'Save'}
+                text={isThisPostSaved ? 'Remove Saved Post' : 'Save Post'}
+                btnTextStyle={[body.x2, { color: colors.text }]}
                 leftIcon={
-                  <Feather
-                    style={{ marginRight: 3 }}
-                    name="bookmark"
-                    size={17}
-                    color={colors.secondary}
+                  <Bookmark
+                    style={{ marginRight: spacing.x5 }}
+                    width={fontSize.x5.fontSize}
+                    height={fontSize.x5.fontSize}
+                    color={colors.text}
+                    fill={isThisPostSaved ? colors.text : colors.background}
                   />
                 }
-                btnTextStyle={{ color: colors.secondary }}
                 onPress={() => {
                   if (isThisPostSaved) {
-                    if (currentPopupItem?.link) removePost(currentPopupItem?.link);
+                    if (currentPopupItem?.id) removePost(undefined, currentPopupItem?.id);
+                    else if (currentPopupItem?.postlink) removePost(currentPopupItem?.postlink);
                   } else {
                     savePost(
-                      isObject(currentPopupItem?.title)
-                        ? currentPopupItem?.title?.a.$text
-                        : currentPopupItem?.title,
-
+                      currentPopupItem?.id,
+                      currentPopupItem?.type,
+                      currentPopupItem?.title,
                       currentPopupItem?.created,
                       currentPopupItem?.userData._id,
-                      currentPopupItem?.link,
-                      currentPopupItem?.image.url
+                      currentPopupItem?.postlink,
+                      currentPopupItem?.image?.url
                     );
                   }
                 }}
               />
             </View>
-
-            {/* <TouchableOpacity style={styles.savetuch}>
-                <Text style={{color: '#032F3C'}}>Save</Text>
-              </TouchableOpacity> */}
-            <View style={{ flex: 1, paddingLeft: 5 }}>
+            <View style={{ marginVertical: spacing.x8 }}>
               <Button
-                btnStyle={[styles.sharetouch, { backgroundColor: colors.onPrimary }]}
+                btnStyle={{ backgroundColor: colors.card, flexDirection: 'row' }}
                 text="Share"
                 leftIcon={
-                  <MaterialCommunityIcons
-                    style={{ marginRight: 3 }}
-                    name="share-outline"
-                    size={18}
-                    color={colors.secondary}
-                  />
+                  Platform.OS == 'ios' ? (
+                    <ShareIos
+                      style={{ marginRight: spacing.x5 }}
+                      color={colors.text}
+                      height={fontSize.x5.fontSize}
+                      width={fontSize.x5.fontSize}
+                    />
+                  ) : (
+                    <ShareAndroid
+                      style={{ marginRight: spacing.x5 }}
+                      color={colors.text}
+                      height={fontSize.x5.fontSize}
+                      width={fontSize.x5.fontSize}
+                    />
+                  )
                 }
-                btnTextStyle={{ color: colors.secondary }}
+                btnTextStyle={[body.x2, { color: colors.text }]}
                 onPress={async () => {
                   await Share.share({
                     title: `${currentPopupItem?.title}`,
                     url:
-                      Platform.OS == 'ios' && currentPopupItem?.link ? currentPopupItem?.link : '',
+                      Platform.OS == 'ios' && currentPopupItem?.postlink
+                        ? currentPopupItem?.postlink
+                        : '',
                     message:
-                      Platform.OS == 'android' && currentPopupItem?.link
-                        ? currentPopupItem?.link
+                      Platform.OS == 'android' && currentPopupItem?.postlink
+                        ? currentPopupItem?.postlink
                         : '',
                   });
                 }}
               />
             </View>
-
-            {/* <TouchableOpacity style={styles.sharetouch}>
-                <MaterialCommunityIcons name="rocket" size={20} color="#900" />
-                <Text style={{color: '#032F3C'}}>Share</Text>
-              </TouchableOpacity> */}
           </View>
-          {/* <Button
-              btnStyle={styles.reporttouch}
-              text="Report"
-              leftIcon={
-                <AntDesign
-                  style={{ marginRight: 5 }}
-                  name="infocirlceo"
-                  size={14}
-                  color="#E90202"
-                />
-              }
-              btnTextStyle={{ color: '#E90202' }}
-              onPress={() => console.log('press')}
-            /> */}
-          {/* <TouchableOpacity style={styles.reporttouch}>
-              <Text style={{color: '#E90202'}}>Report</Text>
-            </TouchableOpacity> */}
-          {/* <TouchableOpacity style={styles.linktouch}>
-              <Text style={{color: '#032F3C'}}>Link</Text>
-            </TouchableOpacity> */}
-          {hideChannelSection ? null : (
-            <View>
+
+          {currentPopupItem?.postlink ? (
+            <View style={{ marginVertical: spacing.x8 }}>
               <Button
-                btnStyle={{
-                  ...GeneralStyle.btn,
-                  backgroundColor: colors.onPrimary,
-                  flexDirection: 'row',
-                  flexGrow: 1,
-                  marginHorizontal: 0,
-                }}
-                text="View Channel"
-                btnTextStyle={{ color: colors.secondary }}
+                text="Copy Link"
+                btnTextStyle={[body.x2, { color: colors.text }]}
+                leftIcon={
+                  <Copy
+                    style={{ marginRight: spacing.x5 }}
+                    size={fontSize.x5.fontSize}
+                    color={colors.text}
+                  />
+                }
                 onPress={() => {
-                  setShow(false);
-                  if (currentPopupItem) {
-                    navigation.navigate('Main', {
-                      screen: 'HomeTab',
-                      params: {
-                        screen: 'UserProfile',
-                        params: {
-                          id: currentPopupItem?.userData._id,
-                        },
-                      },
+                  if (currentPopupItem?.postlink) {
+                    Clipboard.setString(currentPopupItem?.postlink);
+                    toast.current?.show('Link copied to the clipboard', {
+                      placement: 'bottom',
                     });
                   }
                 }}
               />
             </View>
-          )}
+          ) : null}
 
-          {/* <Button
-              btnStyle={{
-                ...GeneralStyle.btn,
-                backgroundColor: '#f6f6f6',
-                flexDirection: 'row',
-              }}
-              text="Unsubscribe"
-              btnTextStyle={{ color: '#032F3C' }}
+          <View style={{ marginVertical: spacing.x8 }}>
+            <Button
+              text="Block Account"
+              leftIcon={
+                <MaterialCommunityIcons
+                  name="block-helper"
+                  style={{ marginRight: spacing.x5 }}
+                  size={fontSize.x5.fontSize}
+                  color={Colors.errorFeedback.background}
+                />
+              }
+              btnTextStyle={[body.x2, { color: Colors.errorFeedback.background }]}
               onPress={() => console.log('press')}
-            /> */}
+            />
+          </View>
 
-          <Button
-            text={'CLOSE'}
-            btnStyle={{
-              ...GeneralStyle.btn,
-              flexDirection: 'row',
-              flexGrow: 1,
-            }}
-            btnTextStyle={{ ...GeneralStyle.btnText, color: colors.secondary }}
-            onPress={() => {
-              setShow(false);
-            }}
-          />
-        </View>
+          <View style={{ marginVertical: spacing.x8 }}>
+            <Button
+              text="Report Post"
+              leftIcon={
+                <InfoCircle
+                  style={{ marginRight: spacing.x5 }}
+                  size={fontSize.x5.fontSize}
+                  color={Colors.errorFeedback.background}
+                />
+              }
+              btnTextStyle={[body.x2, { color: Colors.errorFeedback.background }]}
+              onPress={() => console.log('press')}
+            />
+          </View>
+        </ScrollView>
       </View>
     </Modal>
   );

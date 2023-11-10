@@ -17,20 +17,26 @@ import { spacing } from '@/src/styles/spacing';
 const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>(
   ({ userIdToPullData }, ref) => {
     const socialPost = useSelector((state: RootState) => state.social.SocialPost);
+
     const token = useSelector((state: RootState) => state.auth.userToken);
     const [hasMore, setHasMore] = useState(true);
     const dispatch = useDispatch();
     const [page, setPage] = useState(1);
     const [isEndOfList, setIsEndOfList] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [showRefreshIndicator, setShowRefreshIndicator] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [show, setShow] = useState<boolean>(false);
     const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
 
-    const refreshContent = () => {
+    const refreshContent = (showRefreshIndicator = false) => {
       setIsEndOfList(false);
-      setIsRefreshing(true);
       setPage(1);
+      setIsRefreshing(true);
+
+      if (showRefreshIndicator) {
+        setShowRefreshIndicator(true);
+      }
     };
 
     const getData = async () => {
@@ -63,7 +69,7 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
             setIsEndOfList(false);
           } else {
             posts = [...socialPost, ...(res?.response?.content ?? [])];
-            if (res?.response?.content < 1) {
+            if (res?.response?.content?.length < 1) {
               setIsEndOfList(true);
             }
           }
@@ -73,11 +79,13 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
         }
         setIsLoading(false);
         setIsRefreshing(false);
+        setShowRefreshIndicator(false);
       } catch (e: any) {
-        console.log(`saga get twitter timline  error -- `, e.toString());
+        console.log(e.toString());
       }
       setIsLoading(false);
       setIsRefreshing(false);
+      setShowRefreshIndicator(false);
 
       setPage(pageNumber);
     };
@@ -89,15 +97,25 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
     useEffect(() => {
       if (isRefreshing) getData();
     }, [isRefreshing]);
+    const [isScrollEnable, setIsScrollEnable] = useState(true);
 
     return (
       <Tabs.FlatList
         data={socialPost}
         style={{ flex: 1 }}
         keyExtractor={(item, index) => {
-          return `${item?.handler}-${item.id}-${index}`;
+          return `${item?.userData?.username}-${item.id ?? item.postId}-${index}`;
         }}
-        renderItem={({ item }) => <SocialItem item={item} />}
+        extraData={isRefreshing}
+        scrollEnabled={isScrollEnable}
+        renderItem={({ item, index }) => (
+          <SocialItem
+            item={item}
+            onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+            index={index}
+            parentRefreshContent={refreshContent}
+          />
+        )}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
           if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
@@ -110,7 +128,13 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
           </View>
         )}
         refreshControl={
-          <RefreshControl enabled={true} refreshing={isRefreshing} onRefresh={refreshContent} />
+          <RefreshControl
+            enabled={true}
+            refreshing={isRefreshing && showRefreshIndicator}
+            onRefresh={() => {
+              refreshContent();
+            }}
+          />
         }
         ListEmptyComponent={() => (
           <>

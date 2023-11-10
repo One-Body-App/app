@@ -22,7 +22,7 @@ type AuthReducer = {
   getBadgesSuccess?: boolean;
   setUserBadgesSuccess?: boolean;
   getProfileSuccess?: boolean;
-  getBadgesData: ArrayLike<any> | null | undefined;
+  getBadgesData: any[] | null | undefined;
   getProfileData: User | null | undefined;
   userToken: string;
   userProfile: User | null;

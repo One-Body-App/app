@@ -84,6 +84,12 @@ const NewPost = ({ navigation }: Props) => {
           {
             content,
             images: imagesObject,
+            location: location
+              ? {
+                  coordinates: location?.geometry.coordinates,
+                  name: location?.place_name,
+                }
+              : undefined,
           },
           {
             noAttributesWithArrayNotation: true,
@@ -95,6 +101,7 @@ const NewPost = ({ navigation }: Props) => {
       });
 
       setIsLoading(false);
+
       if (result.status == 200) {
         setContent('');
         navigation.popToTop();
@@ -307,7 +314,9 @@ const NewPost = ({ navigation }: Props) => {
                       marginLeft: spacing.x16,
                     }}
                     onPress={() => setLocation(null)}
-                    rightIcon={<MaterialCommunityIcons name="window-close" size={20} />}
+                    rightIcon={
+                      <MaterialCommunityIcons name="window-close" size={20} color={colors.text} />
+                    }
                   />
                 </View>
               </View>
@@ -315,6 +324,7 @@ const NewPost = ({ navigation }: Props) => {
 
             <StyledTextInput
               style={{ height: 200, flexGrow: 1 }}
+              inputStyle={{ color: 'red' }}
               inputWrapperStyle={{ paddingVertical: spacing.x10 }}
               value={content}
               multiline
@@ -322,6 +332,7 @@ const NewPost = ({ navigation }: Props) => {
               label={''}
               autoCorrect
               placeholder="What's on your heart?"
+              placeholderTextColor={Colors.neutral[300]}
               // onSubmitEditing={() => inputRefs.password?.current.focus()}
               onChangeText={(value) => {
                 setContent(value);

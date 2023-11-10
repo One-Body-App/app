@@ -15,7 +15,7 @@ import { RootStackParamList } from '@/src/_Navigation/types';
 import Video from 'react-native-video';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
-import { AccountType, PostType } from '@/utils/types';
+import { AccountType, PostType, SocialPostReaction } from '@/utils/types';
 import {
   ExploreStackParamsList,
   MainDrawerParamsList,
@@ -33,6 +33,7 @@ import BaseItem from './BaseItem';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { useReducedMotion } from 'react-native-reanimated';
+import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
@@ -49,11 +50,7 @@ type LinkData = {
   title?: string;
   url?: string;
 };
-const SocialItem = ({
-  item,
-  socialPostviewStyle,
-  visible,
-}: {
+type SocialItemProps = {
   currentPopupItemId?: string;
   visible?: boolean;
   item: {
@@ -92,10 +89,29 @@ const SocialItem = ({
     created: Date;
     id: string;
 
-    reactions: any[];
+    reactions: SocialPostReaction[];
+    location?: {
+      type?: string;
+      coordinates?: number[];
+    };
+    locationName?: string;
   };
   socialPostviewStyle?: StyleProp<ViewStyle>;
-}) => {
+  selectedEmoji?: EmojiItemProp;
+
+  onShowDismissCard?: (e?: boolean) => void;
+  isScrollEnable?: boolean;
+  index?: number;
+  parentRefreshContent?: Function;
+};
+const SocialItem = ({
+  item,
+  socialPostviewStyle,
+  visible,
+  index,
+  onShowDismissCard,
+  parentRefreshContent,
+}: SocialItemProps) => {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
@@ -170,7 +186,7 @@ const SocialItem = ({
     });
   }
 
-  let myReaction = undefined;
+  let myReaction: SocialPostReaction | undefined = undefined;
 
   item.reactions?.forEach((reaction) => {
     if (reaction.userId == user?._id) {
@@ -182,15 +198,18 @@ const SocialItem = ({
     <BaseItem
       postData={{
         title: item?.title,
-        id: item.id ?? item.postId,
+        id: item.postId ?? item.id,
         type: PostType.social,
         postlink: item.link,
         created: item.created,
         image: item.images && item.images.length > 0 ? { url: item.images[0] } : undefined,
         externalLink: url,
-        reactions: item.reactions?.length ?? 0,
+        reactions: item.reactions ?? [],
         myReaction,
+        location: item.location,
+        locationName: item.locationName,
       }}
+      parentRefreshContent={parentRefreshContent}
       createdDate={item?.created}
       source={item.source}
       userData={item.userData}
@@ -200,6 +219,8 @@ const SocialItem = ({
           ? item?.userData?.profileImage
           : NO_PROFILE_IMAGE
       }
+      onShowDismissCard={onShowDismissCard}
+      index={index}
       onPress={() => {
         if (item.userData._id != user?._id) {
           navigation.navigate('Main', {
