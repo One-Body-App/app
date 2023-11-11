@@ -175,6 +175,7 @@ export type MyProfileStackParamsList = {
     openSettings?: boolean;
   };
   EditProfile: undefined;
+  InviteFriends: undefined;
 };
 
 export type MainBottomStackParamsList = {

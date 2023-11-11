@@ -56,7 +56,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1]}>
+          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
             What is your Organizations Name and Location
           </StyledText>
           <StyledText
@@ -86,7 +86,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
                 flex: 1,
                 backgroundColor: Colors.neutral[700],
                 borderColor: Colors.neutral[800],
-                borderRadius: borderRadius.small,
+                borderRadius: borderRadius.xs,
               }}
               wrapperBtnStyle={{
                 justifyContent: 'space-between',
@@ -114,7 +114,17 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
               modalVisible={modalVisible}
               setModalVisible={setModalVisible}
               setLocation={setLocationData}
-              modalTitle="Find Location"
+              modalTitle={
+                <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
+                  In what{' '}
+                  <StyledText
+                    style={{ fontSize: 18, color: Colors.primary.brand, fontWeight: 'bold' }}
+                  >
+                    city
+                  </StyledText>{' '}
+                  are you located?
+                </StyledText>
+              }
             />
           </View>
         </View>

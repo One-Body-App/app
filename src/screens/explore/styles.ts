@@ -11,6 +11,6 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.x10,
 
     marginRight: spacing.x24,
-    borderRadius: borderRadius.small,
+    borderRadius: borderRadius.xs,
   },
 });

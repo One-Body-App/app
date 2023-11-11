@@ -255,7 +255,7 @@ const Search = () => {
       <View style={{ flex: 1 }}>
         {input && results.length > 0 ? (
           <>
-            {/* <View
+            <View
               style={{
                 flexDirection: 'row',
 
@@ -304,7 +304,7 @@ const Search = () => {
                   </View>
                 </TouchableOpacity>
               </View>
-            </View> */}
+            </View>
 
             <FlatList
               contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.x24 }}

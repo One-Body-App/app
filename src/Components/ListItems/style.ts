@@ -276,8 +276,8 @@ export const styles = StyleSheet.create({
     // height: getHeight(23),
   },
   blogpostimage: {
-    borderTopEndRadius: borderRadius.base,
-    borderTopStartRadius: borderRadius.base,
+    borderTopEndRadius: borderRadius.small,
+    borderTopStartRadius: borderRadius.small,
     // marginVertical: 5,
     // elevation: 0,
     width: '100%',

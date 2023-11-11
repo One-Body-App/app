@@ -53,7 +53,7 @@ export const BottomStepsText = () => (
       paddingVertical: Platform.OS == 'android' ? spacing.x10 : 0,
     }}
   >
-    <StyledText style={[Typography.subheader.M, { color: Colors.primarySapphire.brand }]}>
+    <StyledText style={[Typography.subheader.M, { color: Colors.primary[300] }]}>
       Unify the Body{' '}
     </StyledText>
     <StyledText style={[Typography.subheader.M, { color: Colors.primarySapphire.brand }]}>

@@ -1,6 +1,6 @@
 import { getHeight, timeSince } from '@/utils/ResponsiveFun';
-import React, { useEffect, useState } from 'react';
-import { Dimensions, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
+import React, { ReactElement, useEffect, useState } from 'react';
+import { Dimensions, Image, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import {
   CompositeNavigationProp,
   CompositeScreenProps,
@@ -83,6 +83,7 @@ type SocialItemProps = {
       profileImage: string;
       twitterHandler?: string;
       instagramHandler?: string;
+      isApprovedInfluencer?: boolean;
     };
     images?: string[];
     videos?: string[];
@@ -114,6 +115,17 @@ const SocialItem = ({
 }: SocialItemProps) => {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [media, setMedia] = useState<{
+    type: string;
+    url: string;
+  } | null>(null);
+
+  const [image, setImage] = useState<{
+    url: string;
+    height: number;
+    width: number;
+  } | null>(null);
+
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const navigation = useNavigation<ScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -141,32 +153,40 @@ const SocialItem = ({
     if (!visible && !isMuted) setIsMuted(true);
   }, [visible]);
 
-  let media = null;
+  useEffect(() => {
+    let media: { type: string; url: string } | null = null;
 
-  if (item?.mediaUrl) {
-    media = {
-      type: item.mediaType,
-      url: item.mediaUrl,
-    };
-  } else if (item.attachments && item.attachments.length > 0) {
-    item.attachments.forEach((attachment) => {
-      if (attachment.type == 'photo' || attachment.type == 'video') {
-        media = {
-          type: attachment.type,
-          url: attachment.url,
-        };
-      }
-    });
-  } else if (item.images && item.images.length > 0) {
-    item.images.forEach((attachment) => {
-      // if (attachment.type == 'photo' || attachment.type == 'video') {
+    if (item?.mediaUrl) {
       media = {
-        type: 'photo',
-        url: attachment,
+        type: item.mediaType ?? '',
+        url: item.mediaUrl,
       };
-      // }
-    });
-  }
+    } else if (item.attachments && item.attachments.length > 0) {
+      item.attachments.forEach((attachment) => {
+        if (attachment.type == 'photo' || attachment.type == 'video') {
+          media = {
+            type: attachment.type,
+            url: attachment.url,
+          };
+        }
+      });
+    } else if (item.images && item.images.length > 0) {
+      item.images.forEach((attachment) => {
+        // if (attachment.type == 'photo' || attachment.type == 'video') {
+        media = {
+          type: 'photo',
+          url: attachment,
+        };
+        // }
+      });
+
+      if (media) getImage((media as { type: string; url: string })?.url);
+    }
+
+    if (media) {
+      setMedia(media);
+    }
+  }, [item]);
 
   let linkData: LinkData;
   let hasLink = false;
@@ -194,6 +214,16 @@ const SocialItem = ({
     }
   });
 
+  const getImage = async (image: string) => {
+    await Image.getSize(image, (width, height) => {
+      setImage({
+        url: image,
+        width,
+        height,
+      });
+    });
+  };
+
   return (
     <BaseItem
       postData={{
@@ -213,7 +243,7 @@ const SocialItem = ({
       createdDate={item?.created}
       source={item.source}
       userData={item.userData}
-      isApprovedInfluencer={user?.influencerProfile?.influencerStatus == 'approved'}
+      isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
       profileImage={
         item?.userData?.profileImage && item?.userData?.profileImage != ''
           ? item?.userData?.profileImage
@@ -311,18 +341,37 @@ const SocialItem = ({
                 />
               </>
             ) : (
-              <FastImage
-                style={{
-                  // flexGrow: 1,
-                  aspectRatio: 16 / 9,
-                  // width: '100%',
-                  // height: 300,
-                  // borderRadius: 2,
-                  // marginVertical: 10,
-                }}
-                resizeMode="cover"
-                source={{ uri: media?.url ?? NO_POST_IMAGE_URL }}
-              />
+              <>
+                {image?.url ? (
+                  <FastImage
+                    style={{
+                      borderRadius: borderRadius.small,
+                      // flexGrow: 1,
+                      aspectRatio: image.width / image.height,
+                      // width: '100%',
+                      // height: 300,
+                      // borderRadius: 2,
+                      // marginVertical: 10,
+                    }}
+                    resizeMode={image.width > image.height ? 'contain' : 'stretch'}
+                    source={{ uri: media?.url }}
+                  />
+                ) : (
+                  <FastImage
+                    style={{
+                      borderRadius: borderRadius.small,
+                      // flexGrow: 1,
+                      aspectRatio: 16 / 9,
+                      // width: '100%',
+                      // height: 300,
+                      // borderRadius: 2,
+                      // marginVertical: 10,
+                    }}
+                    resizeMode="contain"
+                    source={{ uri: NO_POST_IMAGE_URL }}
+                  />
+                )}
+              </>
             )}
           </>
         ) : null}

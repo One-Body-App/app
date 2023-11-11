@@ -83,7 +83,12 @@ const AccountType = ({ route, navigation }: Props) => {
                 </StyledText>
                 {accountType == AccountTypeType.individual ? (
                   <StyledText
-                    style={{ marginLeft: 15, ...Typography.body.x2, color: Colors.neutral[300] }}
+                    style={{
+                      marginLeft: 15,
+                      marginRight: 5,
+                      ...Typography.body.x2,
+                      color: Colors.neutral[300],
+                    }}
                   >
                     Individual profiles are for individuals, leaders, or any one person that desires
                     to create a One Body profile.
@@ -143,7 +148,12 @@ const AccountType = ({ route, navigation }: Props) => {
                 </StyledText>
                 {accountType == AccountTypeType.organization ? (
                   <StyledText
-                    style={{ marginLeft: 15, ...Typography.body.x2, color: Colors.neutral[300] }}
+                    style={{
+                      marginLeft: 15,
+                      marginRight: 5,
+                      ...Typography.body.x2,
+                      color: Colors.neutral[300],
+                    }}
                   >
                     Organization accounts are for Churches, Non-Profits, Businesses, or any
                     Christian entities that desire to create a One Body profile.

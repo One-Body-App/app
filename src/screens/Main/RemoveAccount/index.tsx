@@ -44,6 +44,7 @@ const RemoveAccount = ({ navigation }: Props) => {
 
   const [loginSuccess, setLoginSuccess] = useState<boolean>(false);
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const { colors } = useTheme();
   const dispatch = useDispatch();
   const toast = useToast();
 
@@ -52,7 +53,7 @@ const RemoveAccount = ({ navigation }: Props) => {
       reason: 'Could not find content relevant to my faith',
     },
     {
-      reason: 'I do not use OneBody enough',
+      reason: 'I do not use One Body enough',
     },
     {
       reason: 'I have found too many bugs in the app',
@@ -145,7 +146,7 @@ const RemoveAccount = ({ navigation }: Props) => {
                             <Icon
                               name="radio-button-on"
                               size={20}
-                              color={Colors.primarySapphire.brand}
+                              color={Colors.errorFeedback.background}
                               style={{ marginRight: spacing.x10 }}
                             />
                           ) : (
@@ -162,7 +163,7 @@ const RemoveAccount = ({ navigation }: Props) => {
                         Platform.OS == 'ios' ? (
                           <Icon
                             name="check"
-                            color={Colors.primarySapphire.brand}
+                            color={Colors.errorFeedback.background}
                             style={{
                               opacity: reason == item.reason ? 1 : 0,
                             }}
@@ -182,10 +183,12 @@ const RemoveAccount = ({ navigation }: Props) => {
                       btnTextStyle={[
                         styles.btnText,
                         {
-                          color:
-                            reason == item.reason
-                              ? Colors.primarySapphire.brand
-                              : Colors.neutral.brand,
+                          fontWeight: reason == item.reason ? 'bold' : 'normal',
+                          color: !reason
+                            ? colors.text
+                            : reason == item.reason
+                            ? Colors.errorFeedback.background
+                            : Colors.neutral[500],
                         },
                       ]}
                       wrapperBtnStyle={{

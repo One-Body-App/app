@@ -1,4 +1,4 @@
-import React, { useState, useEffect, SetStateAction, Dispatch } from 'react';
+import React, { useState, useEffect, SetStateAction, Dispatch, ReactElement } from 'react';
 import {
   FlatList,
   Platform,
@@ -45,7 +45,7 @@ type MapBoxProps = {
   types?: MapBoxTypes[];
   countries?: string[];
   hideSearchMyLocation?: boolean;
-  modalTitle: string;
+  modalTitle: ReactElement;
 };
 
 export type MapSuggestion = {
@@ -182,7 +182,8 @@ const MapBox = (props: MapBoxProps) => {
               paddingBottom: 10,
             }}
           >
-            <StyledText style={{ fontSize: 18 }}>{props.modalTitle}</StyledText>
+            {props.modalTitle}
+
             <TouchableOpacity
               onPress={() => {
                 // setModalVisible(false);

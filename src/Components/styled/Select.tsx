@@ -65,7 +65,7 @@ export const StyledSelect: FC<Props> = ({
           flex: 1,
           backgroundColor: Colors.neutral[700],
           borderColor: Colors.neutral[800],
-          borderRadius: borderRadius.small,
+          borderRadius: borderRadius.xs,
           // ...styles.btn3,
           // backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
         }}

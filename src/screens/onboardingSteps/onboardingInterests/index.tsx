@@ -93,11 +93,11 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
       }}
       onboardingType={route.params.profileType}
       activeStep={route.params.profileType == AccountType.individual ? 5 : 4}
-      disabled={selectedInterest.length == 0}
+      disabled={selectedInterest.length < 3}
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>
-          <StyledText style={[Typography.header.h1]}>
+          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
             Select a minimum of 3 interests to personalize your feeds
           </StyledText>
         </View>

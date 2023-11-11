@@ -133,7 +133,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>
-          <StyledText style={[Typography.header.h1]}>
+          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
             Select Influencers & Organizations to connect to
           </StyledText>
         </View>

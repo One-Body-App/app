@@ -332,7 +332,7 @@ const Explore = ({ navigation }: Props) => {
 
   const renderListHeader = () => {
     return (
-      <View style={{ flex: 3.5, paddingHorizontal: spacing.x24 }}>
+      <View style={{ paddingHorizontal: spacing.x24 }}>
         <View style={{ flexDirection: 'row' }}>
           <Button
             text={'My Connections'}
@@ -468,7 +468,7 @@ const Explore = ({ navigation }: Props) => {
     >
       <View style={{ backgroundColor: colors.background, flex: 1 }}>
         {renderListHeader()}
-        <View style={{ flex: 8 }}>
+        <View style={{ flex: 0 }}>
           <FlatList
             data={searchChannelsToFollow}
             // contentContainerStyle={{
@@ -678,7 +678,7 @@ const Explore = ({ navigation }: Props) => {
                               borderColor: Colors.primary[300],
                             },
                           ]
-                        : iterestListItem
+                        : { ...iterestListItem, backgroundColor: Colors.neutral[700] }
                     }
                   >
                     <StyledText

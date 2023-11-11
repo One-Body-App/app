@@ -38,7 +38,7 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { ChurchType, Interest, Location, Tag } from '@/utils/types';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getuserGet, getUserProfile } from '@/src/Redux/actions/UserAction';
 import DatePicker from 'react-native-date-picker';
@@ -58,8 +58,21 @@ import { iterestListItem } from '@/src/styles/items';
 import { serialize } from 'object-to-formdata';
 import SettingsSheet from '../myProfile/SettingsSheet';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+  MyProfileStackParamsList,
+} from '@/src/navigator/types';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
-type Props = StackScreenProps<RootStackParamList, 'EditProfile'>;
+type Props = CompositeScreenProps<
+  StackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
+  CompositeScreenProps<
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
+    BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
+  >
+>;
 
 const EditProfile = ({ navigation }: Props) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -150,6 +163,8 @@ const EditProfile = ({ navigation }: Props) => {
   //     ),
   //   });
   // }, [navigation]);
+
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (newLocation) {
@@ -601,7 +616,7 @@ const EditProfile = ({ navigation }: Props) => {
 
           <View style={styles.topContainer}>
             <View style={{ marginHorizontal: spacing.x24 }}>
-              <View style={styles.inputGroup}>
+              <View style={[styles.inputGroup, { backgroundColor: colors.card }]}>
                 <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
                   {user?.accountType} Details
                 </StyledText>
@@ -629,7 +644,7 @@ const EditProfile = ({ navigation }: Props) => {
                       flex: 1,
                       backgroundColor: Colors.neutral[700],
                       borderColor: Colors.neutral[800],
-                      borderRadius: borderRadius.small,
+                      borderRadius: borderRadius.xs,
                     }}
                     wrapperBtnStyle={{
                       justifyContent: 'space-between',
@@ -743,7 +758,7 @@ const EditProfile = ({ navigation }: Props) => {
                       flex: 1,
                       backgroundColor: Colors.neutral[700],
                       borderColor: Colors.neutral[800],
-                      borderRadius: borderRadius.small,
+                      borderRadius: borderRadius.xs,
                     }}
                     wrapperBtnStyle={{
                       justifyContent: 'space-between',
@@ -771,7 +786,17 @@ const EditProfile = ({ navigation }: Props) => {
                     modalVisible={citySelector}
                     setModalVisible={setCitySelector}
                     setLocation={setNewLocation}
-                    modalTitle="Find Location"
+                    modalTitle={
+                      <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
+                        In what{' '}
+                        <StyledText
+                          style={{ fontSize: 18, color: Colors.primary.brand, fontWeight: 'bold' }}
+                        >
+                          city
+                        </StyledText>{' '}
+                        are you located?
+                      </StyledText>
+                    }
                   />
 
                   <View
@@ -816,7 +841,12 @@ const EditProfile = ({ navigation }: Props) => {
               </View>
 
               {user?.accountType == 'individual' ? (
-                <View style={[styles.inputGroup, { marginTop: spacing.x32 }]}>
+                <View
+                  style={[
+                    styles.inputGroup,
+                    { backgroundColor: colors.card, marginTop: spacing.x32 },
+                  ]}
+                >
                   <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
                     Church Details
                   </StyledText>
@@ -905,7 +935,12 @@ const EditProfile = ({ navigation }: Props) => {
               ) : null}
 
               {user?.accountType == 'organization' ? (
-                <View style={[styles.inputGroup, { marginTop: spacing.x32 }]}>
+                <View
+                  style={[
+                    styles.inputGroup,
+                    { backgroundColor: colors.card, marginTop: spacing.x32 },
+                  ]}
+                >
                   <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
                     Organization Contact
                   </StyledText>
@@ -935,7 +970,12 @@ const EditProfile = ({ navigation }: Props) => {
                 </View>
               ) : null}
 
-              <View style={[styles.inputGroup, { marginTop: spacing.x32 }]}>
+              <View
+                style={[
+                  styles.inputGroup,
+                  { backgroundColor: colors.card, marginTop: spacing.x32 },
+                ]}
+              >
                 <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
                   Interests
                 </StyledText>
@@ -1074,8 +1114,8 @@ const EditProfile = ({ navigation }: Props) => {
                   if (headerImageObject) data.headerImage = headerImageObject;
                   if (bio) data.bio = bio;
                   if (username) data.username = username;
-                  if (churchType) data.churchType = churchType;
-                  if (churchSubType) data.churchSubType = churchSubType;
+                  data.churchType = churchType;
+                  data.churchSubType = churchSubType;
                   if (oftenChurch) data.oftenChurch = oftenChurch;
                   data.isChurchTypePublic = isPublicChurchTypeEnabled;
                   data.isLocationPublic = isPublicLocationEnabled;

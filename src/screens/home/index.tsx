@@ -110,6 +110,7 @@ const Home = ({ navigation }: Props) => {
   };
 
   const getFeedData = async (type: FeedTypes, pageNumber: number) => {
+    console.log(type);
     setIsLoading(true);
     try {
       const res = await ApiCall({

@@ -23,28 +23,32 @@ import { styles } from './styles';
 import Share from 'react-native-share';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
+import { Colors } from '@/src/styles';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
-const InviteFriend = ({ navigation }) => {
-  const shareUrl = async () => {
-    const shareOptions = {
-      title: 'Share url',
-      message: 'invite link is there..........',
-      failOnCancel: false,
-    };
-    try {
-      const ShareResponse = await Share.open(shareOptions);
-      setResult(JSON.stringify(ShareResponse, null, 2));
-    } catch (error) {
-      console.log('Error =>', error);
-      setResult('error: '.concat(getErrorString(error)));
-    }
-  };
+const InviteFriend = () => {
+  // const shareUrl = async () => {
+  //   const shareOptions = {
+  //     title: 'Share url',
+  //     message: 'invite link is there..........',
+  //     failOnCancel: false,
+  //   };
+  //   try {
+  //     const ShareResponse = await Share.open(shareOptions);
+  //     setResult(JSON.stringify(ShareResponse, null, 2));
+  //   } catch (error) {
+  //     console.log('Error =>', error);
+  //     setResult('error: '.concat(getErrorString(error)));
+  //   }
+  // };
   const { dark, colors } = useTheme();
+  const userData = useSelector((state: RootState) => state.auth.userData);
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <GeneralStatusBar hidden={false} translucent={true} />
-
+      {/*
       <Header
         title={'Invite a friend'}
         leftView={
@@ -53,7 +57,7 @@ const InviteFriend = ({ navigation }) => {
           </TouchableOpacity>
         }
         RightView={<View style={{ width: getWidth(5) }} />}
-      />
+      /> */}
       <View style={styles.innerContainer}>
         <View
           style={{
@@ -65,14 +69,18 @@ const InviteFriend = ({ navigation }) => {
           <Text style={[styles.heading, { color: dark ? colors.text : '#032F3C' }]}>
             Scan QR code
           </Text>
-          <Text style={styles.text}>Scan QR code to invite your friend</Text>
+          <Text style={styles.text}>Scan QR code to invite your friends</Text>
         </View>
         <QRCode
-          size={getFontSize(35)}
-          value="http://awesome.link.qr"
-          logo={require('@/assets/images/LogoMain.png')}
-          logoSize={getFontSize(9)}
-          logoBackgroundColor="white"
+          size={300}
+          value={`https://www.onebodyapp.com/?u=${userData?.uid}`}
+          logo={
+            dark ? require('@/assets/images/logo.png') : require('@/assets/images/LogoMain.png')
+          }
+          logoSize={40}
+          color={Colors.primarySapphire.brand}
+          backgroundColor={colors.background}
+          logoBackgroundColor={colors.background}
         />
         <View
           style={{
@@ -96,10 +104,10 @@ const InviteFriend = ({ navigation }) => {
             marginTop: 25,
           }}
           btnTextStyle={{ ...GeneralStyle.btnText, color: '#032F3C' }}
-          onPress={() => shareUrl()}
+          onPress={() => {}}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 };
 export default InviteFriend;

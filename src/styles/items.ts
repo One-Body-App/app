@@ -25,10 +25,9 @@ export const iterestListItem: ViewStyle = {
   paddingHorizontal: spacing.x10,
   paddingVertical: spacing.x10,
   justifyContent: 'center',
-  borderRadius: borderRadius.small,
+  borderRadius: borderRadius.xs,
   marginHorizontal: spacing.x8,
   marginVertical: spacing.x8 / 2,
 
   // borderWidth: borderWidth.thin,
-  backgroundColor: Colors.neutral[700],
 };

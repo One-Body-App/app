@@ -4,6 +4,7 @@ import { Buttons, Colors, Spacing, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
+import { header } from '@/src/styles/typography';
 import { AccountType } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { ReactElement, useState } from 'react';
@@ -166,7 +167,12 @@ const OnboardingStepsLayout = ({
                 />
               </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={{ flex: 1 }}>{reasonText}</ScrollView>
+            <ScrollView contentContainerStyle={{ flex: 1 }}>
+              <StyledText style={[header.h1, { color: Colors.primary.brand }]}>
+                Why are we asking this?
+              </StyledText>
+              {reasonText}
+            </ScrollView>
           </View>
         </View>
       </Modal>

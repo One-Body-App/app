@@ -13,6 +13,7 @@ import { Colors, Typography } from '@/src/styles';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
 import { ArrowDown2 } from 'iconsax-react-native';
 import { borderRadius } from '@/src/styles/outlines';
+import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
 
@@ -38,12 +39,12 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
       activeStep={4}
       reasonText={
         <>
-          <StyledText>
-            Why are we asking this? Your location info helps us to understand the type of content
-            you would be most interested in seeing so that we may enhance your One Body experience.
+          <StyledText style={{ color: Colors.primary.brand }}>
+            Your location info helps us to understand the type of content you would be most
+            interested in seeing so that we may enhance your One Body experience.
           </StyledText>
           <StyledText> </StyledText>
-          <StyledText>
+          <StyledText style={{ color: Colors.primary.brand }}>
             You can decide if you want this info to be Public or Private in your Profile settings.
           </StyledText>
         </>
@@ -51,7 +52,9 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1]}>Where are you Located?</StyledText>
+          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+            Where are you Located?
+          </StyledText>
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
@@ -67,7 +70,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
               flex: 1,
               backgroundColor: Colors.neutral[700],
               borderColor: Colors.neutral[800],
-              borderRadius: borderRadius.small,
+              borderRadius: borderRadius.xs,
             }}
             wrapperBtnStyle={{
               justifyContent: 'space-between',
@@ -95,7 +98,17 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
             modalVisible={modalVisible}
             setModalVisible={setModalVisible}
             setLocation={setLocationData}
-            modalTitle="Find Location"
+            modalTitle={
+              <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
+                In what{' '}
+                <StyledText
+                  style={{ fontSize: 18, color: Colors.primary.brand, fontWeight: 'bold' }}
+                >
+                  city
+                </StyledText>{' '}
+                are you located?
+              </StyledText>
+            }
           />
         </View>
       </View>

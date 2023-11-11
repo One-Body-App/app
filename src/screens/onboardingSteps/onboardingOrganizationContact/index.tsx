@@ -65,7 +65,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1, paddingBottom: 40 }}>
-          <StyledText style={[Typography.header.h1]}>
+          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
             Set your Organization primary Contact
           </StyledText>
           <StyledText

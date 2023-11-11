@@ -319,7 +319,7 @@ const SignupForm = ({ navigation, route }: Props) => {
       getTwitterAuthToken();
     }
   }, [route.params]);
-
+  console.log(state.password, 'state.password');
   const headerHeight = useHeaderHeight();
 
   // const insets = useSafeAreaInsets();
@@ -370,7 +370,7 @@ const SignupForm = ({ navigation, route }: Props) => {
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
-            Enter your details to enable us setup your account
+            Enter your details so that we can get you setup:
           </StyledText>
         </View>
         <View
@@ -379,7 +379,7 @@ const SignupForm = ({ navigation, route }: Props) => {
             paddingHorizontal: spacing.x16,
             paddingVertical: spacing.x24,
             // flex: 1,
-            backgroundColor: '#FFF',
+            backgroundColor: colors.card,
             borderRadius: borderRadius.base,
             marginBottom: spacing.x64,
           }}
@@ -542,7 +542,15 @@ const SignupForm = ({ navigation, route }: Props) => {
               )
             }
             onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
-            onChangeText={(password) => changeHandler('password', password)}
+            onChangeText={(password) => {
+              console.log(password);
+              changeHandler('password', password);
+            }}
+            onEndEditing={(event) => {
+              if (event.nativeEvent.text.length === 0) {
+                changeHandler('password', '');
+              }
+            }}
           />
 
           {/* <View style={[styles.passwordStrengthWrapper]}>
@@ -559,7 +567,7 @@ const SignupForm = ({ navigation, route }: Props) => {
               </Animated.View>
             </View> */}
 
-          {state.password.length > 0 ? (
+          {state.password && state.password != '' && state.password.length > 2 ? (
             <View style={{ marginVertical: 10 }}>
               {passwordStrength < 5 ? (
                 <View style={{ flexDirection: 'row' }}>
@@ -655,7 +663,7 @@ const SignupForm = ({ navigation, route }: Props) => {
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: spacing.x24 }}>
             <StyledText style={{ color: dark ? colors.text : '#032F3C' }}>
-              By creating an account, you agree to our
+              By creating an account, you agree to our{' '}
             </StyledText>
 
             <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>

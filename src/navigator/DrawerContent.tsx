@@ -174,15 +174,7 @@ export default function DrawerContent({
               padding: spacing.x16,
               borderRadius: borderRadius.base,
             }}
-            leftIcon={
-              <Setting2
-                color={
-                  state.routeNames[state.index] == 'Settings'
-                    ? focusedOptions.drawerActiveBackgroundColor
-                    : Colors.neutral[200]
-                }
-              />
-            }
+            leftIcon={<Setting2 color={Colors.neutral[200]} />}
             onPress={() => {
               navigation.navigate('Settings');
             }}

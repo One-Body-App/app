@@ -13,6 +13,7 @@ import { StyledText } from './Text';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
+import { useTheme } from '@react-navigation/native';
 
 interface Props extends TextInputProps {
   label?: string;
@@ -46,6 +47,8 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
   if (!backgroundColor) {
     backgroundColorWrapper = Colors.neutral[700];
   }
+  const { colors } = useTheme();
+
   return (
     <View style={wrapperStyle}>
       {label && label != '' ? (
@@ -58,7 +61,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
             backgroundColor: backgroundColorWrapper,
             paddingHorizontal: spacing.x16,
 
-            borderRadius: borderRadius.small,
+            borderRadius: borderRadius.xs,
             borderWidth: 1,
             borderColor: Colors.neutral[700],
           },
@@ -68,7 +71,12 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
         {leftIcon ? leftIcon : null}
         <TextInput
           ref={ref}
-          style={[{ paddingVertical: spacing.x10 }, styles.input, inputStyle, poppins.base]}
+          style={[
+            { paddingVertical: spacing.x10, color: colors.text },
+            styles.input,
+            inputStyle,
+            poppins.base,
+          ]}
           {...textInputProps}
         />
         {rightIcon ? rightIcon : null}

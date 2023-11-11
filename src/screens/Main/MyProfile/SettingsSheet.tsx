@@ -170,6 +170,7 @@ const SettingsSheet = ({ setShowModal, showModal, userData }: Props) => {
               />
             }
             onPress={() => {
+              navigation.navigate('InviteFriends');
               setShowModal(false);
             }}
             btnStyle={{ marginBottom: spacing.x32 }}

@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.x16,
     paddingVertical: spacing.x10,
     justifyContent: 'center',
-    borderRadius: borderRadius.small,
+    borderRadius: borderRadius.xs,
     marginHorizontal: spacing.x8,
     marginVertical: spacing.x8,
     backgroundColor: Colors.neutral[700],

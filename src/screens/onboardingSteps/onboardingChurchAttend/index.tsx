@@ -11,6 +11,7 @@ import { spacing } from '@/src/styles/spacing';
 import { card } from '@/src/styles/items';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { useToast } from 'react-native-toast-notifications';
+import { fontSize, header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchAttend'>;
 
@@ -37,20 +38,20 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
       activeStep={2}
       disabled={!churchAttend}
       reasonText={
-        <>
-          <StyledText>
-            Why are we asking this? Your frequency of Church Attendance helps us to understand the
-            type of content you would be most interested in seeing to enhance your One Body
-            experience.
+        <StyledText style={{ color: Colors.primary.brand }}>
+          Your frequency of church attendance helps us to understand the type of content you would
+          be most interested in seeing to enhance your One Body experience.{' '}
+          <StyledText style={{ fontWeight: 'bold', color: Colors.primary.brand }}>
+            We do NOT publicly display this information.
           </StyledText>
-          <StyledText> </StyledText>
-          <StyledText>We do NOT publicly display this information.</StyledText>
-        </>
+        </StyledText>
       }
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1]}>How often do you attend Church?</StyledText>
+          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+            How often do you attend Church?
+          </StyledText>
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >

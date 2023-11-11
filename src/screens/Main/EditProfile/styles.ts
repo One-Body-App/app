@@ -6,7 +6,6 @@ import { spacing } from '@/src/styles/spacing';
 
 export const styles = StyleSheet.create({
   inputGroup: {
-    backgroundColor: 'white',
     borderColor: Colors.neutral[800],
     borderWidth: borderWidth.base,
     borderRadius: borderRadius.base,

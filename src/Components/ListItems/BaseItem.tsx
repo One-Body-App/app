@@ -28,7 +28,6 @@ import { AccountType, PostType, SocialPostReaction, SocialPostReactionType } fro
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import OptionsModal from './OptionsModal';
-import { useFloating, shift, hide } from '@floating-ui/react-native';
 import { Reaction } from 'react-native-reactions';
 
 interface BaseItemProps {
@@ -99,20 +98,6 @@ const BaseItem = ({
   const [showActions, setShowActions] = useState(false);
 
   const [showOptions, setShowOptions] = useState(false);
-
-  // console.log(selectedEmoji);
-  const { refs, floatingStyles } = useFloating({
-    placement: 'top',
-    middleware: [shift(), hide()],
-  });
-  // console.log(postData, 'dfghjklpostDatapostData');
-  // useEffect(() => {
-  //   // if (postData.reactions) {
-
-  //   // }
-  //   console.log(postData.reactions, 'dfghjkl');
-  //   // setReactions(postData.reactions ?? []);
-  // }, [postData.reactions]);
 
   const reactPost = async (type?: SocialPostReactionType) => {
     dispatch(setLoader(true));
@@ -385,7 +370,7 @@ const BaseItem = ({
                 }}
               >
                 <View style={{ flexDirection: 'column' }}>
-                  <View>
+                  <View style={{ flexDirection: 'row' }}>
                     <StyledText
                       style={{
                         color: Colors.neutral.brand,

@@ -683,7 +683,7 @@ const LoginComponent: FC<Props> = ({
                 navigation.replace('AccountType');
               }}
             >
-              <StyledText style={{ color: Colors.neutral[300] }}>New to OneBody? </StyledText>
+              <StyledText style={{ color: Colors.neutral[300] }}>New to One Body? </StyledText>
               <StyledText style={{ color: Colors.primarySapphire.brand }}>
                 Create an account
               </StyledText>

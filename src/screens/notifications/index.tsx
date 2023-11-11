@@ -239,7 +239,7 @@ const Notification = ({ navigation }: Props) => {
                     },
                   ]}
                 >
-                  Your notifications on various activities on Onebody app will show here
+                  Your notifications on various activities on One Body app will show here
                 </StyledText>
               </View>
             );

@@ -1,6 +1,6 @@
 {
   "name": "onebody",
-  "version": "0.1.108",
+  "version": "0.1.109",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@elastic/elasticsearch": "^8.9.0",
-    "@floating-ui/react-native": "^0.10.1",
     "@fortawesome/fontawesome-svg-core": "^6.4.2",
     "@fortawesome/free-brands-svg-icons": "^6.4.2",
     "@fortawesome/free-regular-svg-icons": "^6.4.2",
@@ -50,7 +49,7 @@
     "lodash": "^4.17.21",
     "object-to-formdata": "^4.5.1",
     "react": "18.2.0",
-    "react-native": "0.72.5",
+    "react-native": "0.72.6",
     "react-native-animated-progress": "^1.0.2",
     "react-native-collapsible-tab-view": "^6.2.1",
     "react-native-date-picker": "^4.2.13",

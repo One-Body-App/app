@@ -7,6 +7,11 @@ import { AccountType, Badge, RefreshListRef, User } from '@/utils/types';
 import BlogFlatlist from '../BlogFlatlist';
 import SocialFlatlist from '../SocialFlatlist';
 
+import { MaterialTabBar, TabBarProps, Tabs } from 'react-native-collapsible-tab-view';
+import { createRef, useCallback, useEffect } from 'react';
+import ProfileHeader from './ProfileHeader';
+import { useTheme } from '@react-navigation/native';
+
 type Route = {
   key: string;
   title: string;
@@ -25,11 +30,6 @@ export interface ProfileProps {
 export const profileImagesize = 80;
 export const HEADER_EXPANDED_HEIGHT = 550;
 export const HEADER_COLLAPSED_HEIGHT = 190;
-
-import { Tabs } from 'react-native-collapsible-tab-view';
-import { createRef, useEffect } from 'react';
-import ProfileHeader from './ProfileHeader';
-import { useTheme } from '@react-navigation/native';
 
 const Profile = ({
   profileData,
@@ -54,6 +54,23 @@ const Profile = ({
     !profileData?.influencerProfile?.rssUrl;
 
   const { colors } = useTheme();
+
+  const renderTabBar = useCallback(
+    (props: TabBarProps) => {
+      return (
+        <MaterialTabBar
+          {...props}
+          indicatorStyle={{ backgroundColor: Colors.primary.brand }}
+          tabStyle={{ flex: 1 }}
+          activeColor={colors.text}
+          contentContainerStyle={{ flex: 1 }}
+          inactiveColor={Colors.neutral[200]}
+          scrollEnabled
+        />
+      );
+    },
+    [colors.text]
+  );
 
   return (
     <Tabs.Container
@@ -83,7 +100,7 @@ const Profile = ({
         borderBottomColor: Platform.OS == 'ios' ? Colors.neutral[800] : undefined,
         // paddingBottom: onlyOneTab ? spacing.x10 : undefined,
       }}
-      renderTabBar={onlyOneTab ? () => null : undefined}
+      renderTabBar={onlyOneTab ? () => null : renderTabBar}
     >
       <Tabs.Tab name="social" label="Social">
         <SocialFlatlist ref={socialList} userIdToPullData={profileData._id} />

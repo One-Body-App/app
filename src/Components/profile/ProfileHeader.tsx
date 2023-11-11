@@ -17,7 +17,7 @@ import { getBadges, setUserBadges } from '@/src/Redux/actions/AuthActions';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { MyProfileStackParamsList } from '@/src/navigator/types';
-import { Colors, Typography } from '@/src/styles';
+import { Colors, Spacing, Typography } from '@/src/styles';
 
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
@@ -163,7 +163,7 @@ const ProfileHeader = ({
   });
 
   // const AnimatedFastImage = Animated.createAnimatedComponent(FastImage);
-
+  console.log(profileData?.profile.churchType);
   return (
     <Animated.View
       pointerEvents="box-none"
@@ -174,7 +174,7 @@ const ProfileHeader = ({
       }}
     >
       <Animated.View pointerEvents="box-none">
-        <View style={[{ width: '100%', height: 220 }]} pointerEvents="box-none">
+        <View style={[{ width: '100%', height: 180 }]} pointerEvents="box-none">
           {profileData?.profileHeader ? (
             <View pointerEvents="none">
               <Image
@@ -212,7 +212,7 @@ const ProfileHeader = ({
                 padding: spacing.x10,
                 marginRight: spacing.x24,
                 position: 'absolute',
-                bottom: spacing.x16 + profileImagesize, // size of the profile image + margin space
+                bottom: 40, // size of the profile image + margin space
                 right: 0,
               }}
               pointerEvents="box-none"
@@ -303,7 +303,7 @@ const ProfileHeader = ({
             style={[
               {
                 position: 'absolute',
-                bottom: profileImagesize / 2,
+                bottom: 10,
                 marginLeft: spacing.x24,
 
                 //animatedStyles
@@ -329,6 +329,77 @@ const ProfileHeader = ({
               resizeMode={'cover'}
             />
           </Animated.View>
+        </View>
+      </Animated.View>
+
+      <View style={[{ paddingHorizontal: spacing.x24 }]} pointerEvents="box-none">
+        <Animated.View
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+            },
+            nameAnimation,
+          ]}
+          pointerEvents="box-none"
+        >
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row' }}>
+              <StyledText
+                numberOfLines={2}
+                style={[
+                  Typography.header.h3,
+                  {
+                    marginRight: spacing.x10,
+                  },
+                  // {
+                  //   marginTop: direction == 'down' ? 10 : 0,
+                  // },
+                ]}
+              >
+                {profileData?.accountType == 'organization' && profileData?.profile?.companyName
+                  ? profileData?.profile?.companyName
+                  : profileData?.name}
+              </StyledText>
+
+              {profileData?.influencerProfile?.influencerStatus == 'approved' ? (
+                <Icon name="check-decagram" size={20} color={Colors.primarySapphire.brand} />
+              ) : null}
+            </View>
+            <Animated.View style={[nameAnimation]}>
+              <StyledText
+                style={[
+                  {
+                    // textAlign: 'center',
+                    // marginBottom: 20,
+                    // color: '#5b7279',
+                    // marginTop: 5,
+                    paddingBottom: spacing.x24,
+                  },
+                ]}
+              >
+                <StyledText style={{ color: Colors.neutral[300] }}>
+                  {profileData?.username ? `@${profileData?.username}` : ''}
+                </StyledText>
+                {profileData?.profile?.whatIDo?.name || profileData?.profile?.typeOfOrganization ? (
+                  <StyledText style={{ color: Colors.neutral[300] }}>
+                    {profileData?.username ? ` • ` : ''}
+                  </StyledText>
+                ) : null}
+                {`${
+                  profileData?.profile?.whatIDo?.name
+                    ? `${profileData?.profile?.whatIDo?.name}`
+                    : ''
+                }`}
+                {`${
+                  profileData?.profile?.typeOfOrganization
+                    ? `${profileData?.profile?.typeOfOrganization?.name}`
+                    : ''
+                }`}
+              </StyledText>
+            </Animated.View>
+          </View>
 
           <Animated.View
             style={[
@@ -336,8 +407,6 @@ const ProfileHeader = ({
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
-                marginTop: spacing.x16,
-                paddingHorizontal: spacing.x24,
               },
               buttonsAnimation,
             ]}
@@ -359,120 +428,35 @@ const ProfileHeader = ({
                 btnTextStyle={{ color: '#FFF' }}
               />
             ) : (
-              <>
-                {/* <Button
-                    btnStyle={[
-                      button.primary,
-                      {
-                        backgroundColor: Colors.neutral[700],
-                        paddingVertical: spacing.x10,
-                        paddingHorizontal: spacing.x16,
-                        marginRight: spacing.x10,
-                      },
-                    ]}
-                    btnTextStyle={{ color: Colors.neutral[200] }}
-                    onPress={() => {
-                      try {
-                        Share.share({
-                          title:
-                            profileData?._id == currentUser._id
-                              ? `Check my profile on One Body App`
-                              : 'Check this profile on One Body App`',
-                          // message: `Check my profile in One Body App`,
-                          url: `https://app.onebodyapp.com/profile/${profileData?.username}`,
-                        });
-                      } catch (error: any) {}
-                    }}
-                    text="Share Profile"
-                  /> */}
-                <Button
-                  onPress={() => {
-                    if (currentUser?.following.includes(profileData?._id)) {
-                      if (handleUnSubscribe) handleUnSubscribe(profileData?._id);
-                    } else {
-                      if (handleSubscribe) handleSubscribe(profileData?._id);
-                    }
-                  }}
-                  text={currentUser?.following.includes(profileData?._id) ? 'Connected' : 'Connect'}
-                  btnStyle={[
-                    button.primary,
-                    {
-                      paddingVertical: spacing.x10,
-                      paddingHorizontal: spacing.x16,
-                      backgroundColor: currentUser?.following.includes(profileData?._id)
-                        ? Colors.neutral[500]
-                        : Colors.primarySapphire.brand,
-                    },
-                  ]}
-                  btnTextStyle={{
-                    color: currentUser?.following.includes(profileData?._id)
-                      ? Colors.neutral[700]
-                      : '#FFF',
-                  }}
-                />
-              </>
+              <Button
+                onPress={() => {
+                  if (currentUser?.following.includes(profileData?._id)) {
+                    if (handleUnSubscribe) handleUnSubscribe(profileData?._id);
+                  } else {
+                    if (handleSubscribe) handleSubscribe(profileData?._id);
+                  }
+                }}
+                text={currentUser?.following.includes(profileData?._id) ? 'Connected' : 'Connect'}
+                btnStyle={[
+                  button.primary,
+                  {
+                    paddingVertical: spacing.x10,
+                    paddingHorizontal: spacing.x16,
+                    backgroundColor: currentUser?.following.includes(profileData?._id)
+                      ? Colors.neutral[500]
+                      : Colors.primarySapphire.brand,
+                  },
+                ]}
+                btnTextStyle={{
+                  color: currentUser?.following.includes(profileData?._id)
+                    ? Colors.neutral[700]
+                    : '#FFF',
+                }}
+              />
             )}
           </Animated.View>
-        </View>
-      </Animated.View>
-
-      <View style={[{ paddingHorizontal: spacing.x24 }]} pointerEvents="box-none">
-        <Animated.View
-          style={[{ flexDirection: 'row', alignItems: 'center' }, nameAnimation]}
-          pointerEvents="none"
-        >
-          <StyledText
-            style={[
-              Typography.header.h3,
-              // {
-              //   marginTop: direction == 'down' ? 10 : 0,
-              // },
-            ]}
-          >
-            {profileData?.accountType == 'organization' && profileData?.profile?.companyName
-              ? profileData?.profile?.companyName
-              : profileData?.name}
-          </StyledText>
-          {profileData?.influencerProfile?.influencerStatus == 'approved' ? (
-            <Icon
-              name="check-decagram"
-              size={20}
-              style={{ marginLeft: spacing.x8 }}
-              color={Colors.primarySapphire.brand}
-            />
-          ) : null}
         </Animated.View>
         <View pointerEvents="none">
-          <Animated.View style={[nameAnimation]}>
-            <StyledText
-              style={[
-                {
-                  // textAlign: 'center',
-                  // marginBottom: 20,
-                  // color: '#5b7279',
-                  // marginTop: 5,
-                  paddingBottom: spacing.x24,
-                },
-              ]}
-            >
-              <StyledText style={{ color: Colors.neutral[300] }}>
-                {profileData?.username ? `@${profileData?.username}` : ''}
-              </StyledText>
-              {profileData?.profile?.whatIDo?.name || profileData?.profile?.typeOfOrganization ? (
-                <StyledText style={{ color: Colors.neutral[300] }}>
-                  {profileData?.username ? ` • ` : ''}
-                </StyledText>
-              ) : null}
-              {`${
-                profileData?.profile?.whatIDo?.name ? `${profileData?.profile?.whatIDo?.name}` : ''
-              }`}
-              {`${
-                profileData?.profile?.typeOfOrganization
-                  ? `${profileData?.profile?.typeOfOrganization?.name}`
-                  : ''
-              }`}
-            </StyledText>
-          </Animated.View>
           {profileData?.influencerProfile?.influencerStatus == 'approved' && profileData?.bio ? (
             <StyledText
               numberOfLines={3}
@@ -495,7 +479,7 @@ const ProfileHeader = ({
             ]}
           >
             {profileData?.profile?.location?.address &&
-            (profileData?._id == currentUser._id || profileData.profile.isChurchTypePublic) ? (
+            (profileData?._id == currentUser._id || profileData.profile.isLocationPublic) ? (
               <View style={{ flexDirection: 'row', flex: 1 }}>
                 <Location size={20} color={Colors.neutral.brand} />
                 <StyledText
@@ -509,12 +493,16 @@ const ProfileHeader = ({
             <View
               style={{
                 flexDirection: 'row',
-                paddingLeft: profileData?.profile?.location?.address ? spacing.x16 : 0,
+                paddingLeft:
+                  profileData?.profile?.location?.address &&
+                  (profileData?._id == currentUser._id || profileData.profile.isLocationPublic)
+                    ? spacing.x16
+                    : 0,
                 flex: 1,
               }}
             >
               <Calendar size={20} color={Colors.neutral.brand} />
-              <StyledText style={{ marginHorizontal: spacing.x10, ...Typography.fontWeight.light }}>
+              <StyledText style={{ ...Typography.fontWeight.light, marginLeft: spacing.x10 }}>
                 Joined{' '}
                 <StyledText style={{ ...Typography.fontWeight.light }}>
                   {format(parseISO(profileData?.createdAt ?? ''), 'MMM yyyy')}
@@ -616,7 +604,10 @@ const ProfileHeader = ({
             </View>
           ) : null}
         </Animated.View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }} pointerEvents="none">
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.x10 }}
+          pointerEvents="none"
+        >
           <StyledText style={[Typography.body.x3M]}>
             {profileData?.followerCount && profileData?.followerCount > 999
               ? `${(profileData.followerCount / 1000).toFixed(2)}k`

@@ -324,8 +324,8 @@ const NewPost = ({ navigation }: Props) => {
 
             <StyledTextInput
               style={{ height: 200, flexGrow: 1 }}
-              inputStyle={{ color: 'red' }}
-              inputWrapperStyle={{ paddingVertical: spacing.x10 }}
+              inputStyle={{}}
+              inputWrapperStyle={{ paddingVertical: spacing.x10, borderRadius: borderRadius.base }}
               value={content}
               multiline
               returnKeyType="done"
@@ -394,7 +394,17 @@ const NewPost = ({ navigation }: Props) => {
               modalVisible={locationSelector}
               setModalVisible={setLocationSelector}
               setLocation={setLocation}
-              modalTitle="Find Location"
+              modalTitle={
+                <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
+                  In what{' '}
+                  <StyledText
+                    style={{ fontSize: 18, color: Colors.primary.brand, fontWeight: 'bold' }}
+                  >
+                    city
+                  </StyledText>{' '}
+                  are you located?
+                </StyledText>
+              }
             />
 
             <ImagePickerModal
@@ -475,7 +485,7 @@ const NewPost = ({ navigation }: Props) => {
           </View>
         </ScrollView>
         <Button
-          disabled={isLoading}
+          disabled={isLoading || (!location && !content && !imagesObject)}
           onPress={() => {
             postSocial();
           }}
@@ -485,6 +495,8 @@ const NewPost = ({ navigation }: Props) => {
               flex: 1,
             },
           ]}
+          disabledBtnStyle={[button.primary, { flex: 1, opacity: 0.5 }]}
+          disabledBtnTextStyle={{}}
           content={
             <>
               {isLoading ? (

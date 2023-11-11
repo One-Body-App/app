@@ -77,7 +77,10 @@ const OnboardingIntro = ({ navigation }: Props) => {
         <StyledText
           style={[
             Typography.header.h1,
-            { marginVertical: spacing.x8, color: Colors.neutral.brand },
+            {
+              color: Colors.primary.brand,
+              marginVertical: spacing.x8,
+            },
           ]}
         >
           Let’s Get to Know You
@@ -86,7 +89,7 @@ const OnboardingIntro = ({ navigation }: Props) => {
           style={{
             marginHorizontal: spacing.x16,
             textAlign: 'center',
-            color: Colors.neutral[200],
+            color: Colors.primary.brand,
           }}
         >
           This should only take about 2-3 minutes to complete.

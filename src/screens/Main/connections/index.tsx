@@ -530,7 +530,7 @@ const Connected = ({ navigation }: Props) => {
                               borderColor: Colors.primary[300],
                             },
                           ]
-                        : iterestListItem
+                        : { ...iterestListItem, backgroundColor: Colors.neutral[700] }
                     }
                   >
                     <StyledText

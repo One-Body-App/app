@@ -14,6 +14,7 @@ import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
 import { Calendar } from 'iconsax-react-native';
 import { useToast } from 'react-native-toast-notifications';
+import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
 
@@ -42,18 +43,21 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
       disabled={!date}
       reasonText={
         <>
-          <StyledText>
-            Why are we asking this? Your Date of Birth helps us to understand the type of content
-            you would be most interested in seeing so that we may enhance your One Body experience.
+          <StyledText style={{ color: Colors.primary.brand }}>
+            Your date of birth helps us to understand the type of content you would be most
+            interested in seeing so that we may enhance your One Body experience.{' '}
+            <StyledText style={{ fontWeight: 'bold', color: Colors.primary.brand }}>
+              We do NOT publicly display this information.
+            </StyledText>
           </StyledText>
-          <StyledText> </StyledText>
-          <StyledText>We do NOT publicly display this information.</StyledText>
         </>
       }
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1]}>What is your date of birth?</StyledText>
+          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+            What is your date of birth?
+          </StyledText>
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
           >
@@ -69,7 +73,7 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
               flex: 1,
               backgroundColor: Colors.neutral[700],
               borderColor: Colors.neutral[800],
-              borderRadius: borderRadius.small,
+              borderRadius: borderRadius.xs,
             }}
             wrapperBtnStyle={{
               justifyContent: 'space-between',

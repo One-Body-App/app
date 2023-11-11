@@ -14,6 +14,7 @@ import { StyledSelect } from '@/src/components/styled/Select';
 import { StackScreenProps } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { useToast } from 'react-native-toast-notifications';
+import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationType'>;
 
@@ -73,16 +74,18 @@ const OnboardingOrganizationType = ({ navigation }: Props) => {
       activeStep={1}
       disabled={selectedOrganizationTypeFiltered.length == 0}
       reasonText={
-        <StyledText>
-          Why are we asking this? Denomination info helps us to understand the type of content you
-          would be most interested in seeing to enhance your One Body experience. You can decide if
-          you want this info to be Public or Private in your Profile settings."
+        <StyledText style={{ color: Colors.primary.brand }}>
+          Denomination info helps us to understand the type of content you would be most interested
+          in seeing to enhance your One Body experience. You can decide if you want this info to be
+          Public or Private in your Profile settings.
         </StyledText>
       }
     >
       <View style={{ marginVertical: spacing.x48, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1]}>What type of Organization are you?</StyledText>
+          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+            What type of Organization are you?
+          </StyledText>
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
           >

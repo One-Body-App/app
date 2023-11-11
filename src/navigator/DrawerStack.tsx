@@ -79,7 +79,8 @@ const DrawerNav = () => {
               dimensions.width >= 768 ? 'permanent' : Platform.OS == 'ios' ? 'slide' : 'front',
             headerTintColor: dark ? colors.text : Colors.primary.brand,
 
-            drawerActiveBackgroundColor: !dark ? Colors.neutral[600] : undefined,
+            drawerActiveBackgroundColor: Colors.neutral[600],
+            drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
           }}
           drawerContent={(props) => <DrawerContent {...props} />}
         >

@@ -242,7 +242,7 @@ const Settings = ({ navigation }: Props) => {
             }}
           >
             <View style={{ flex: 1 }}>
-              <StyledText style={[Typography.body.x4M, { flex: 1 }]}>
+              <StyledText style={[Typography.body.x4M, { color: Colors.primary[300], flex: 1 }]}>
                 Get more from your account. Apply to become an influencer
               </StyledText>
             </View>
@@ -286,7 +286,7 @@ const Settings = ({ navigation }: Props) => {
               style={[
                 styles.settingsCard,
                 {
-                  backgroundColor: 'white',
+                  backgroundColor: colors.card,
                 },
               ]}
             >
@@ -383,7 +383,7 @@ const Settings = ({ navigation }: Props) => {
             style={[
               styles.settingsCard,
               {
-                backgroundColor: 'white',
+                backgroundColor: colors.card,
               },
             ]}
           >
@@ -542,7 +542,7 @@ const Settings = ({ navigation }: Props) => {
               style={[
                 styles.settingsCard,
                 {
-                  backgroundColor: 'white',
+                  backgroundColor: colors.card,
                 },
               ]}
             >
@@ -595,7 +595,7 @@ const Settings = ({ navigation }: Props) => {
             style={[
               styles.settingsCard,
               {
-                backgroundColor: 'white',
+                backgroundColor: colors.card,
               },
             ]}
           >
@@ -638,7 +638,7 @@ const Settings = ({ navigation }: Props) => {
             style={[
               styles.settingsCard,
               {
-                backgroundColor: 'white',
+                backgroundColor: colors.card,
               },
             ]}
           >
@@ -758,7 +758,7 @@ const Settings = ({ navigation }: Props) => {
                   Safety Tips
                 </StyledText>
                 <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  Ensure your safety on Onebody
+                  Ensure your safety on One Body
                 </StyledText>
               </View>
             </TouchableOpacity> */}
