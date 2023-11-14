@@ -102,7 +102,7 @@ const ProfileHeader = ({
       [0, 0 - 300]
     );
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + 30; // 10 = marginTop
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - profileImagesize - 230; // 10 = marginTop
     if (valueTranslate > maxValue) {
       valueTranslate = maxValue;
     }
@@ -123,12 +123,12 @@ const ProfileHeader = ({
       [0, 0 - 300]
     );
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize; // 10 = marginTop
+    const maxValue =
+      height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize + 20;
     if (valueTranslate > maxValue) {
       valueTranslate = maxValue;
     }
 
-    // console.log(value);
     return {
       transform: [
         {
@@ -367,7 +367,7 @@ const ProfileHeader = ({
                 <Icon name="check-decagram" size={20} color={Colors.primarySapphire.brand} />
               ) : null}
             </View>
-            <Animated.View style={[nameAnimation]}>
+            <Animated.View>
               <StyledText
                 style={[
                   {

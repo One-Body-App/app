@@ -152,7 +152,7 @@ const Saved = ({ navigation }: Props) => {
                 marginHorizontal: 10,
               }}
               onPress={() => {
-                OpenURLButton(item.link);
+                if (item.link) OpenURLButton(item.link);
               }}
             >
               <FastImage
@@ -184,7 +184,7 @@ const Saved = ({ navigation }: Props) => {
               </StyledText>
               <TouchableOpacity
                 onPress={() => {
-                  removePost(item.link);
+                  if (item.link) removePost(item.link);
                 }}
               >
                 <StyledText>Remove</StyledText>
