@@ -29,7 +29,7 @@ export interface ProfileProps {
 
 export const profileImagesize = 80;
 export const HEADER_EXPANDED_HEIGHT = 550;
-export const HEADER_COLLAPSED_HEIGHT = 190;
+export const HEADER_COLLAPSED_HEIGHT = 170;
 
 const Profile = ({
   profileData,

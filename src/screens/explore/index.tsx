@@ -19,7 +19,7 @@ import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from '@/src/components/Button';
 
-import { getuserAll, getUserProfile } from '@/redux/actions/UserAction';
+import { getUserProfile } from '@/redux/actions/UserAction';
 import { ApiCall } from '@/services/api';
 import { styles } from './styles';
 
@@ -44,6 +44,8 @@ import { spacing } from '@/src/styles/spacing';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { iterestListItem, profileImageList } from '@/src/styles/items';
+import { isNumber } from 'lodash';
+import { NO_PROFILE_IMAGE } from '@/src/Services/constants';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 type Props = CompositeScreenProps<
@@ -53,6 +55,13 @@ type Props = CompositeScreenProps<
     BottomTabScreenProps<MainBottomStackParamsList, 'ExploreTab'>
   >
 >;
+
+enum SortType {
+  alpha = 'alpha',
+  popular = 'popular',
+  geo = 'geo',
+  forMe = 'forMe',
+}
 
 const Explore = ({ navigation }: Props) => {
   const dispatch = useDispatch();
@@ -64,7 +73,6 @@ const Explore = ({ navigation }: Props) => {
   const offset = useRef(new Animated.Value(0)).current;
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const allusers = useSelector((state: RootState) => state.user.allUser);
 
   // const [subscribe, setSubscibe] = useState<string[]>(user?.following ?? []);
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
@@ -73,96 +81,68 @@ const Explore = ({ navigation }: Props) => {
   const [showMyConnections, setShowMyConnections] = useState<boolean>(false);
   const [interests, setInterests] = useState<Interest[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
-  const [filter, setFilter] = useState<'alpha' | 'popular'>('alpha');
+  const [sort, setSort] = useState<SortType>(SortType.forMe);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchChannels, setSearchChannels] = useState<User[]>([]);
   const [searchChannelsToFollow, setSearchChannelsToFollow] = useState<User[]>();
   const [searchChannelsToFollowText, setSearchChannelsToFollowText] = useState<string>('');
   const [selectedInterest, setSelectedInterest] = useState<Interest[]>(user?.interests ?? []);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(true);
+  const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const getAllUserRequest = async (pageNumber: number) => {
+    try {
+      const res = await ApiCall({
+        token: token,
+        route: `user/get-users-to-subscribe/${pageNumber}?term=${searchChannelsToFollowText}&itemsPerPage=50&sort=${
+          sort == SortType.forMe ? '' : sort
+        }`,
+        verb: 'get',
+      });
+
+      if (res?.status == 200) {
+        let userData = [];
+
+        if (pageNumber == 1) {
+          userData = res?.response.data ?? [];
+          setIsEndOfList(false);
+        } else {
+          userData = [...users, ...(res?.response.data ?? [])];
+          if (res?.response.data.length < 1) {
+            setIsEndOfList(true);
+          }
+        }
+
+        setUsers(userData);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e) {
+      console.log('saga get all user err --- ', e);
+    }
+  };
 
   useEffect(() => {
     setIsRefreshing(false);
   }, [searchChannelsToFollow]);
 
   useEffect(() => {
-    let items = searchChannelsToFollowText ? searchChannelsToFollow ?? [] : allusers;
-
-    if (filter == 'alpha') {
-      items = items.sort((a, b) => {
-        if (a.name.toLowerCase() < b.name.toLowerCase()) {
-          return -1;
-        }
-        if (a.name.toLowerCase() > b.name.toLowerCase()) {
-          return 1;
-        }
-
-        return 0;
-      });
-    } else {
-      items = items.sort((a, b) => {
-        if (a.followerCount && b.followerCount) {
-          if (a.followerCount < b.followerCount) {
-            return -1;
-          }
-          if (a.followerCount > b.followerCount) {
-            return 1;
-          }
-        }
-
-        return 0;
-      });
+    if (user) {
+      const getData = async () => {
+        getAllUserRequest(page);
+      };
+      setLoadingMore(true);
+      getData();
     }
-
-    if (searchChannelsToFollowText) {
-      setFilteredUsers(items, searchChannelsToFollowText);
-    } else {
-      setSearchChannelsToFollow(items);
-    }
-
-    setIsLoading(false);
-  }, [allusers, filter, searchChannelsToFollowText]);
-
-  // useEffect(() => {
-  //   let items = allusers;
-  //   if (searchChannelsToFollowText) {
-  //     items =
-  //       searchChannelsToFollow && searchChannelsToFollow?.length > 0 ? searchChannelsToFollow : [];
-  //   }
-  //   console.log(filter);
-  //   if (filter == 'alpha') {
-  //     items = allusers.sort((a, b) => {
-  //       if (a.name.toLowerCase() < b.name.toLowerCase()) {
-  //         return -1;
-  //       }
-  //       if (a.name.toLowerCase() > b.name.toLowerCase()) {
-  //         return 1;
-  //       }
-
-  //       return 0;
-  //     });
-  //   } else {
-  //     items = allusers.sort((a, b) => {
-  //       if (a.followers < b.followers) {
-  //         return -1;
-  //       }
-  //       if (a.followers > b.followers) {
-  //         return 1;
-  //       }
-
-  //       return 0;
-  //     });
-  //   }
-  //   if (searchChannelsToFollowText) {
-  //     setFilteredUsers(items, searchChannelsToFollowText);
-  //   } else {
-  //     setSearchChannelsToFollow(items);
-  //   }
-  // }, [filter]);
+  }, [page, user, sort, searchChannelsToFollowText]);
 
   useEffect(() => {
-    dispatch(getuserAll({ token: token }));
+    getAllUserRequest(1);
     dispatch(getUserProfile({ token: token }));
     getInterests();
     getFollowing();
@@ -170,7 +150,7 @@ const Explore = ({ navigation }: Props) => {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      dispatch(getuserAll({ token: token }));
+      getAllUserRequest(1);
     });
 
     return unsubscribe;
@@ -195,7 +175,8 @@ const Explore = ({ navigation }: Props) => {
               })
             )
           : setSelectedInterest([...selectedInterest, newInterest]);
-        dispatch(getuserAll({ token: token }));
+        // dispatch(getuserAll({ token: token }));
+        getAllUserRequest(1);
       }
       setIsLoading(false);
     } catch (e: any) {
@@ -221,7 +202,8 @@ const Explore = ({ navigation }: Props) => {
           })
         );
 
-        dispatch(getuserAll({ token: token }));
+        // dispatch(getuserAll({ token: token }));
+        getAllUserRequest(1);
       }
       setIsLoading(false);
     } catch (e: any) {
@@ -282,7 +264,8 @@ const Explore = ({ navigation }: Props) => {
       if (res?.status == 200) {
         // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
         await getFollowing();
-        dispatch(getuserAll({ token: token }));
+        // dispatch(getuserAll({ token: token }));
+        getAllUserRequest(1);
       } else {
         const result = following.filter((item) => item._id != id);
         // setSubscibe(result);
@@ -306,7 +289,8 @@ const Explore = ({ navigation }: Props) => {
         // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
         await getFollowing();
 
-        dispatch(getuserAll({ token: token }));
+        // dispatch(getuserAll({ token: token }));
+        getAllUserRequest(1);
       } else {
         const result = following.filter((item) => item._id != id);
         // setSubscibe(result);
@@ -426,19 +410,37 @@ const Explore = ({ navigation }: Props) => {
             }
           />
         </View>
-        <View style={{ marginBottom: spacing.x24, flexDirection: 'row' }}>
+        <ScrollView
+          horizontal
+          style={{ marginBottom: spacing.x24, flexDirection: 'row' }}
+          showsHorizontalScrollIndicator={false}
+        >
           <Button
             btnStyle={[
               styles.filterButton,
               {
                 backgroundColor:
-                  filter == 'alpha' ? Colors.primarySapphire.brand : Colors.neutral[800],
+                  sort == SortType.forMe ? Colors.primarySapphire.brand : Colors.neutral[800],
               },
             ]}
-            btnTextStyle={[{ color: filter == 'alpha' ? 'white' : Colors.neutral[200] }]}
+            btnTextStyle={[{ color: sort == SortType.forMe ? 'white' : Colors.neutral[200] }]}
+            text="For Me"
+            onPress={() => {
+              if (sort != SortType.forMe) setSort(SortType.forMe);
+            }}
+          />
+          <Button
+            btnStyle={[
+              styles.filterButton,
+              {
+                backgroundColor:
+                  sort == SortType.alpha ? Colors.primarySapphire.brand : Colors.neutral[800],
+              },
+            ]}
+            btnTextStyle={[{ color: sort == SortType.alpha ? 'white' : Colors.neutral[200] }]}
             text="A-Z"
             onPress={() => {
-              if (filter != 'alpha') setFilter('alpha');
+              if (sort != SortType.alpha) setSort(SortType.alpha);
             }}
           />
           <Button
@@ -446,16 +448,33 @@ const Explore = ({ navigation }: Props) => {
               styles.filterButton,
               {
                 backgroundColor:
-                  filter == 'popular' ? Colors.primarySapphire.brand : Colors.neutral[800],
+                  sort == SortType.popular ? Colors.primarySapphire.brand : Colors.neutral[800],
               },
             ]}
-            btnTextStyle={[{ color: filter == 'popular' ? 'white' : Colors.neutral[200] }]}
+            btnTextStyle={[{ color: sort == SortType.popular ? 'white' : Colors.neutral[200] }]}
             text="Popular"
             onPress={() => {
-              if (filter != 'popular') setFilter('popular');
+              if (sort != SortType.popular) setSort(SortType.popular);
             }}
           />
-        </View>
+
+          {user?.profile.location?.coordinates ? (
+            <Button
+              btnStyle={[
+                styles.filterButton,
+                {
+                  backgroundColor:
+                    sort == SortType.geo ? Colors.primarySapphire.brand : Colors.neutral[800],
+                },
+              ]}
+              btnTextStyle={[{ color: sort == SortType.geo ? 'white' : Colors.neutral[200] }]}
+              text="Location"
+              onPress={() => {
+                if (sort != SortType.geo) setSort(SortType.geo);
+              }}
+            />
+          ) : null}
+        </ScrollView>
       </View>
     );
   };
@@ -468,22 +487,30 @@ const Explore = ({ navigation }: Props) => {
     >
       <View style={{ backgroundColor: colors.background, flex: 1 }}>
         {renderListHeader()}
-        <View style={{ flex: 0 }}>
+        <View style={{ flex: 1 }}>
           <FlatList
-            data={searchChannelsToFollow}
+            data={users}
+            keyExtractor={(item) => {
+              return item._id;
+            }}
             // contentContainerStyle={{
             //   flex: 1,
             // }}
+            style={{ flexGrow: 1 }}
             contentContainerStyle={{ paddingHorizontal: spacing.x24 }}
             scrollIndicatorInsets={{ right: 1 }}
             ListEmptyComponent={() => (
-              <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                <StyledText style={{ margin: spacing.x16 }}>
-                  {searchChannelsToFollowText
-                    ? 'No search results'
-                    : 'Looks like you haven’t selected any interests'}
-                </StyledText>
-              </View>
+              <>
+                {!isRefreshing && !isLoading ? (
+                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                    <StyledText style={{ margin: spacing.x16 }}>
+                      {searchChannelsToFollowText
+                        ? 'No search results'
+                        : 'Looks like you haven’t selected any interests'}
+                    </StyledText>
+                  </View>
+                ) : null}
+              </>
             )}
             refreshing={isRefreshing}
             refreshControl={
@@ -492,11 +519,16 @@ const Explore = ({ navigation }: Props) => {
                 refreshing={isRefreshing}
                 onRefresh={() => {
                   setIsRefreshing(true);
-                  setSearchChannelsToFollow([]);
-                  dispatch(getuserAll({ token: token }));
+                  // setSearchChannelsToFollow([]);
+                  // dispatch(getuserAll({ token: token }));
+                  getAllUserRequest(1);
                 }}
               />
             }
+            onEndReached={() => {
+              if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+            }}
+            onEndReachedThreshold={0.8}
             renderItem={({ item }) => {
               return (
                 <TouchableOpacity
@@ -790,6 +822,7 @@ const Explore = ({ navigation }: Props) => {
                           // navigation.navigate('UserProfile', {
                           //   id: item?._id,
                           // })
+                          setShowFollowingModal(false);
                           navigation.navigate('Main', {
                             screen: 'ExploreTab',
                             params: {
@@ -813,7 +846,7 @@ const Explore = ({ navigation }: Props) => {
                             uri:
                               item?.profileImage && item?.profileImage != ''
                                 ? item?.profileImage
-                                : 'https://cdn.onebodyapp.com/user/no-image.png',
+                                : NO_PROFILE_IMAGE,
                           }}
                         />
 

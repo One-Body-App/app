@@ -6,6 +6,11 @@ import {
   FlatList,
   RefreshControl,
   Dimensions,
+  Modal,
+  TouchableWithoutFeedback,
+  StyleSheet,
+  ViewStyle,
+  TouchableHighlight,
 } from 'react-native';
 
 import { getHeight } from '@/utils/ResponsiveFun';
@@ -37,9 +42,11 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { StyledText } from '@/src/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import { Notification } from 'iconsax-react-native';
+import { ArrowDown, ArrowDown2, Notification } from 'iconsax-react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import { fontSize, poppins } from '@/src/styles/typography';
+import { borderWidth } from '@/src/styles/outlines';
+import { GiphyDialog } from '@giphy/react-native-sdk';
 
 enum FeedTypes {
   Connected = 'connected',
@@ -54,7 +61,7 @@ type feedOptions = {
   page: number;
 };
 
-const feedTypes: FeedTypes[] = [FeedTypes.Connected, FeedTypes.Read];
+const feedTypes: FeedTypes[] = [FeedTypes.Read];
 
 type Props = CompositeScreenProps<
   StackScreenProps<HomeStackParamsList, 'Home'>,
@@ -68,9 +75,11 @@ const Home = ({ navigation }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
 
   const [feedOptions, setFeedOptions] = useState<feedOptions>({
-    type: feedTypes[0],
+    type: FeedTypes.Connected,
     page: 1,
   });
+
+  const [feedSubType, setFeedSubType] = useState<FeedTypes>(FeedTypes.Connected);
 
   const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
 
@@ -103,6 +112,8 @@ const Home = ({ navigation }: Props) => {
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectVisible, setSelectVisible] = useState(false);
+  const [position, setPosition] = useState<any>();
 
   const showModal = (item: ArticleType) => {
     setCurrentPopupItem(item);
@@ -110,7 +121,6 @@ const Home = ({ navigation }: Props) => {
   };
 
   const getFeedData = async (type: FeedTypes, pageNumber: number) => {
-    console.log(type);
     setIsLoading(true);
     try {
       const res = await ApiCall({
@@ -251,6 +261,82 @@ const Home = ({ navigation }: Props) => {
   }, [navigation]);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
 
+  const _renderModal = useCallback(() => {
+    if (selectVisible) {
+      return (
+        <Modal
+          transparent
+          statusBarTranslucent
+          visible={selectVisible}
+          supportedOrientations={['landscape', 'portrait']}
+          onRequestClose={() => {
+            setSelectVisible(false);
+          }}
+        >
+          <TouchableWithoutFeedback onPress={() => setSelectVisible(false)}>
+            <View style={StyleSheet.flatten([{ flex: 1 }])}>
+              <View
+                style={StyleSheet.flatten([
+                  { flex: 1 },
+                  { paddingTop: 135, paddingLeft: 10 },
+                  { width: 180 },
+                ])}
+              >
+                <View
+                  style={StyleSheet.flatten([
+                    {
+                      flexShrink: 1,
+                      borderWidth: borderWidth.hairline,
+                      borderColor: Colors.neutral[400],
+
+                      shadowColor: Colors.main.black,
+                      shadowOffset: {
+                        width: 0,
+                        height: 1,
+                      },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 1.41,
+                      elevation: 2,
+                    },
+                    // isFull ? styleHorizontal : styleVertical,
+                    // containerStyle,
+                  ])}
+                >
+                  <TouchableHighlight
+                    underlayColor={Colors.neutral[700]}
+                    style={{
+                      backgroundColor: colors.background,
+                      height: 42,
+                      padding: spacing.x10,
+                    }}
+                    onPress={() => {
+                      setSelectVisible(false);
+                      setFeedSubType(
+                        feedOptions.type == FeedTypes.Connected
+                          ? FeedTypes.ForYou
+                          : FeedTypes.Connected
+                      );
+                      filterUpdate(
+                        feedOptions.type == FeedTypes.Connected
+                          ? FeedTypes.ForYou
+                          : FeedTypes.Connected
+                      );
+                    }}
+                  >
+                    <StyledText>
+                      {feedOptions.type == FeedTypes.Connected ? 'For You' : 'Connected'}
+                    </StyledText>
+                  </TouchableHighlight>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      );
+    }
+    return null;
+  }, [selectVisible, setSelectVisible, position, feedOptions, filterUpdate]);
+
   return (
     <>
       <View style={{ flex: 1 }}>
@@ -261,12 +347,69 @@ const Home = ({ navigation }: Props) => {
             marginBottom: 20,
           }}
         >
+          <View style={{ flex: 1 }} key={'main'}>
+            <TouchableOpacity
+              onPress={() => {
+                if (
+                  feedOptions.type == FeedTypes.Connected ||
+                  feedOptions.type == FeedTypes.ForYou
+                ) {
+                  setSelectVisible(true);
+                } else {
+                  // setFeedSubType(
+                  //   feedSubType == FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
+                  // );
+                  filterUpdate(
+                    feedSubType == FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
+                  );
+                }
+              }}
+              style={
+                feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou
+                  ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
+                  : [styles.menuItem]
+              }
+            >
+              <>
+                <View style={{ flexDirection: 'row' }}>
+                  <StyledText
+                    style={
+                      feedOptions.type == FeedTypes.Connected ||
+                      feedOptions.type == FeedTypes.ForYou
+                        ? [styles.menuItemText, { color: Colors.neutral.brand }]
+                        : [styles.menuItemText, { color: Colors.neutral[400] }]
+                    }
+                  >
+                    {feedSubType == FeedTypes.Connected ? 'Connected' : 'For You'}
+                  </StyledText>
+                  <ArrowDown2
+                    size={20}
+                    color={
+                      feedOptions.type == FeedTypes.Connected ||
+                      feedOptions.type == FeedTypes.ForYou
+                        ? Colors.neutral.brand
+                        : Colors.neutral[400]
+                    }
+                    style={{ marginLeft: spacing.x10 }}
+                  />
+                </View>
+                {_renderModal()}
+              </>
+            </TouchableOpacity>
+          </View>
+
           {feedTypes.map((feedType) => {
             return (
               <View style={{ flex: 1 }} key={feedType}>
                 <TouchableOpacity
                   onPress={() => {
-                    if (feedType != FeedTypes.Connected) {
+                    if (
+                      (feedOptions.type == FeedTypes.Connected ||
+                        feedOptions.type == FeedTypes.ForYou) &&
+                      (feedType == FeedTypes.Connected || feedType == FeedTypes.ForYou)
+                    ) {
+                      setSelectVisible(true);
+                    } else if (feedOptions.type != feedType) {
                       filterUpdate(feedType);
                     }
                   }}
@@ -277,50 +420,15 @@ const Home = ({ navigation }: Props) => {
                       : [styles.menuItem]
                   }
                 >
-                  {feedType == FeedTypes.Connected ? (
-                    <Dropdown
-                      style={{ backgroundColor: colors.card }}
-                      placeholderStyle={[poppins.base, { color: colors.text }]}
-                      selectedTextStyle={[poppins.base, { color: colors.text }]}
-                      // inputSearchStyle={styles.inputSearchStyle}
-                      // iconStyle={styles.iconStyle}
-                      containerStyle={{ backgroundColor: colors.card }}
-                      itemTextStyle={[poppins.base, { color: colors.text }]}
-                      activeColor={colors.primary}
-                      data={[
-                        { label: 'Connected', value: FeedTypes.Connected },
-                        { label: 'For You', value: FeedTypes.ForYou },
-                      ]}
-                      maxHeight={300}
-                      labelField="label"
-                      valueField="value"
-                      placeholder={'Feed'}
-                      value={feedOptions.type}
-                      onChange={(item) => {
-                        // setValue(item.value);
-                        // setIsFocus(false);
-                        filterUpdate(item.value);
-                      }}
-                      // renderLeftIcon={() => (
-                      //   <AntDesign
-                      //     style={styles.icon}
-                      //     color={isFocus ? 'blue' : 'black'}
-                      //     name="Safety"
-                      //     size={20}
-                      //   />
-                      // )}
-                    />
-                  ) : (
-                    <StyledText
-                      style={
-                        feedOptions.type == feedType
-                          ? [styles.menuItemText, { color: Colors.neutral.brand }]
-                          : [styles.menuItemText, { color: Colors.neutral[400] }]
-                      }
-                    >
-                      {feedType}
-                    </StyledText>
-                  )}
+                  <StyledText
+                    style={
+                      feedOptions.type == feedType
+                        ? [styles.menuItemText, { color: Colors.neutral.brand }]
+                        : [styles.menuItemText, { color: Colors.neutral[400] }]
+                    }
+                  >
+                    {feedType}
+                  </StyledText>
                 </TouchableOpacity>
               </View>
             );

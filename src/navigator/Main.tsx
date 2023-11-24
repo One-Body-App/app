@@ -79,6 +79,20 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { StackScreenProps } from '@react-navigation/stack';
 import { ReactionProvider } from 'react-native-reactions';
 
+import {
+  GiphyDialog,
+  type GiphyDialogConfig,
+  type GiphyMedia,
+  GiphyVideoManager,
+  GiphyDialogMediaSelectEventHandler,
+  GiphyDialogEvent,
+  GiphyMediaView,
+  GiphySDK,
+} from '@giphy/react-native-sdk';
+import { StyledText } from '../components/styled/Text';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 export const headerOptions: NativeStackNavigationOptions = {
@@ -113,7 +127,7 @@ const Main = () => {
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');
-
+  console.log(token, user);
   useEffect(() => {
     toast.hideAll();
 
@@ -330,7 +344,7 @@ const Main = () => {
                 name="Post"
                 component={NewPost}
                 options={({ navigation, route }) => ({
-                  presentation: 'fullScreenModal',
+                  // presentation: 'formSheet',
                   title: 'Create Post',
                   headerLeft: (props) => {
                     const { dark, colors } = useTheme();

@@ -168,6 +168,9 @@ export type SettingsStackParamsList = {
 
 export type SearchStackParamsList = {
   Search: undefined;
+  UserProfile: {
+    id: string;
+  };
 };
 
 export type MyProfileStackParamsList = {

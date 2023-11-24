@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
   StyleSheet,
-  Text,
   View,
   FlatList,
   Animated,
@@ -10,9 +9,9 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Platform,
+  Share,
 } from 'react-native';
-import { Avatar, Provider } from 'react-native-paper';
-import DropDown from 'react-native-paper-dropdown';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import QRCode from 'react-native-qrcode-svg';
@@ -20,94 +19,166 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import Header from '@/src/components/Header';
 import Button from '@/src/components/Button';
 import { styles } from './styles';
-import Share from 'react-native-share';
+
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { Colors } from '@/src/styles';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
+import LinearGradient from 'react-native-linear-gradient';
+import { spacing } from '@/src/styles/spacing';
+import { StyledText } from '@/src/components/styled/Text';
+import { fontSize } from '@/src/styles/typography';
+import FastImage from 'react-native-fast-image';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { NO_PROFILE_IMAGE } from '@/src/Services/constants';
+import { Link, Link1 } from 'iconsax-react-native';
+import { ShareAndroid, ShareIos } from 'iconoir-react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import ToastContainer, { useToast } from 'react-native-toast-notifications';
 
 const InviteFriend = () => {
-  // const shareUrl = async () => {
-  //   const shareOptions = {
-  //     title: 'Share url',
-  //     message: 'invite link is there..........',
-  //     failOnCancel: false,
-  //   };
-  //   try {
-  //     const ShareResponse = await Share.open(shareOptions);
-  //     setResult(JSON.stringify(ShareResponse, null, 2));
-  //   } catch (error) {
-  //     console.log('Error =>', error);
-  //     setResult('error: '.concat(getErrorString(error)));
-  //   }
-  // };
   const { dark, colors } = useTheme();
-  const userData = useSelector((state: RootState) => state.auth.userData);
+  const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
+  const shareUrl = `https://www.onebodyapp.com/?u=${userProfile?.userId}`;
+
+  const toast = useToast();
   return (
-    <ScrollView style={styles.container}>
-      <GeneralStatusBar hidden={false} translucent={true} />
-      {/*
-      <Header
-        title={'Invite a friend'}
-        leftView={
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu" size={24} color={colors.text} />
-          </TouchableOpacity>
-        }
-        RightView={<View style={{ width: getWidth(5) }} />}
-      /> */}
-      <View style={styles.innerContainer}>
-        <View
-          style={{
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: getHeight(5),
-          }}
-        >
-          <Text style={[styles.heading, { color: dark ? colors.text : '#032F3C' }]}>
-            Scan QR code
-          </Text>
-          <Text style={styles.text}>Scan QR code to invite your friends</Text>
-        </View>
-        <QRCode
-          size={300}
-          value={`https://www.onebodyapp.com/?u=${userData?.uid}`}
-          logo={
-            dark ? require('@/assets/images/logo.png') : require('@/assets/images/LogoMain.png')
-          }
-          logoSize={40}
-          color={Colors.primarySapphire.brand}
-          backgroundColor={colors.background}
-          logoBackgroundColor={colors.background}
-        />
-        <View
-          style={{
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginTop: getHeight(7),
-          }}
-        >
-          <Text style={[styles.heading, { color: dark ? colors.text : '#032F3C' }]}>
-            Invite link
-          </Text>
-          <Text style={styles.text}>Or send an invite link to your friend</Text>
+    <LinearGradient
+      colors={dark ? [colors.background] : ['#12D2D9', '#126B87']}
+      style={{ flex: 1, paddingTop: spacing.x48 }}
+    >
+      <ScrollView style={styles.container}>
+        <View style={[styles.innerContainer, { backgroundColor: colors.card }]}>
+          <View
+            style={{
+              borderColor: 'white',
+              borderWidth: borderWidth.base,
+              position: 'absolute',
+              borderRadius: borderRadius.max,
+              backgroundColor: 'white',
+              top: -30,
+            }}
+          >
+            <FastImage
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: borderRadius.max,
+              }}
+              source={{
+                uri: userProfile?.profileImage ? userProfile?.profileImage : NO_PROFILE_IMAGE,
+              }}
+              resizeMode={FastImage.resizeMode.stretch}
+            />
+          </View>
+          <View
+            style={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: spacing.x24,
+              marginTop: spacing.x16,
+            }}
+          >
+            <StyledText style={[fontSize.x2, { color: colors.text, textAlign: 'center' }]}>
+              {userProfile?.name}
+            </StyledText>
+            <StyledText style={[fontSize.x2, { color: colors.text, textAlign: 'center' }]}>
+              Invites You to join them on One Body
+            </StyledText>
+            <StyledText style={[fontSize.x1, { color: Colors.neutral[300], textAlign: 'center' }]}>
+              Scan QR Code to signup for an account
+            </StyledText>
+          </View>
+          <QRCode
+            size={200}
+            value={shareUrl}
+            logo={
+              dark
+                ? require('@/assets/images/logo_header_white.png')
+                : require('@/assets/images/logo.png')
+            }
+            logoSize={30}
+            logoMargin={5}
+            color={dark ? colors.text : Colors.primarySapphire.brand}
+            backgroundColor={colors.card}
+            logoBackgroundColor={colors.card}
+          />
         </View>
 
-        <Button
-          text={'SHARE THE LINK'}
-          // RightIcon={<Ionicons name={'share-outline'} size={getFontSize(3)} />}
-          btnStyle={{
-            ...GeneralStyle.btn,
-            backgroundColor: '#E6EAEC',
-            marginTop: 25,
-          }}
-          btnTextStyle={{ ...GeneralStyle.btnText, color: '#032F3C' }}
-          onPress={() => {}}
-        />
-      </View>
-    </ScrollView>
+        <View
+          style={[
+            styles.innerContainer,
+            {
+              marginTop: spacing.x24,
+              backgroundColor: colors.card,
+              flexDirection: 'row',
+              marginBottom: spacing.x32,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={() => {
+              Clipboard.setString(shareUrl);
+              toast.show('Link copied to the clipboard', {
+                placement: 'bottom',
+              });
+            }}
+          >
+            <View
+              style={{
+                padding: spacing.x20,
+                borderColor: Colors.neutral[800],
+                borderWidth: borderWidth.base,
+                borderRadius: borderRadius.max,
+                marginBottom: spacing.x10,
+              }}
+            >
+              <Link1 color={Colors.neutral[300]} />
+            </View>
+            <StyledText style={{ textAlign: 'center' }}>Copy invite link</StyledText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={async () => {
+              await Share.share({
+                title: `${userProfile?.name} invites You to join them on One Body`,
+                url: Platform.OS == 'ios' && shareUrl ? shareUrl : '',
+                message: Platform.OS == 'android' && shareUrl ? shareUrl : '',
+              });
+            }}
+          >
+            <View
+              style={{
+                padding: spacing.x20,
+                borderColor: Colors.neutral[800],
+                borderWidth: borderWidth.base,
+                borderRadius: borderRadius.max,
+                marginBottom: spacing.x10,
+              }}
+            >
+              {Platform.OS == 'android' ? (
+                <ShareAndroid color={Colors.neutral[300]} height={25} width={25} />
+              ) : (
+                <ShareIos color={Colors.neutral[300]} height={25} width={25} />
+              )}
+            </View>
+            <StyledText style={{ textAlign: 'center' }}>Share invite link</StyledText>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 export default InviteFriend;

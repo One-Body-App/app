@@ -50,7 +50,9 @@ export const StyledSelect: FC<Props> = ({
   useEffect(() => {
     let values = items;
     if (searchText != '') {
-      values = items.filter((item) => item.text.toLowerCase().startsWith(searchText.toLowerCase()));
+      values = items.filter(
+        (item) => item.text.toLowerCase().indexOf(searchText.toLowerCase()) > -1
+      );
     }
 
     setSearchedItems(values);

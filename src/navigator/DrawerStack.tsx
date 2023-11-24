@@ -87,46 +87,48 @@ const DrawerNav = () => {
           <DrawerStack.Screen
             name="Main"
             component={MainTabStack}
-            options={({ route }) => ({
-              title: 'Home',
-              drawerIcon: ({ color, size, focused }) => {
-                return <Home3 size={size} color={color} />;
-              },
+            options={({ route }) => {
+              return {
+                title: 'Home',
+                drawerIcon: ({ color, size, focused }) => {
+                  return <Home3 size={size} color={color} />;
+                },
 
-              headerTitleAlign:
-                getHeaderTitle(route) == 'Home' || Platform.OS == 'ios' ? 'center' : 'left',
-              headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
-                const { colors } = useTheme();
-                const title = getHeaderTitle(route);
+                headerTitleAlign:
+                  getHeaderTitle(route) == 'Home' || Platform.OS == 'ios' ? 'center' : 'left',
+                headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
+                  const { colors } = useTheme();
+                  const title = getHeaderTitle(route);
 
-                if (title == 'Home') {
+                  if (title == 'Home') {
+                    return (
+                      <View style={{ height: 28, width: 28 }}>
+                        {dark ? (
+                          <LogoWhite style={{ height: 28, width: 28 }} />
+                        ) : (
+                          <Logo style={{ height: 28, width: 28 }} />
+                        )}
+                      </View>
+                    );
+                  }
+
                   return (
-                    <View style={{ height: 28, width: 28 }}>
-                      {dark ? (
-                        <LogoWhite style={{ height: 28, width: 28 }} />
-                      ) : (
-                        <Logo style={{ height: 28, width: 28 }} />
-                      )}
-                    </View>
+                    <Animated.Text
+                      accessibilityRole="header"
+                      aria-level="1"
+                      numberOfLines={1}
+                      children={title}
+                      {...rest}
+                      style={[
+                        styles.title,
+                        { color: tintColor === undefined ? colors.text : tintColor },
+                        style,
+                      ]}
+                    />
                   );
-                }
-
-                return (
-                  <Animated.Text
-                    accessibilityRole="header"
-                    aria-level="1"
-                    numberOfLines={1}
-                    children={title}
-                    {...rest}
-                    style={[
-                      styles.title,
-                      { color: tintColor === undefined ? colors.text : tintColor },
-                      style,
-                    ]}
-                  />
-                );
-              },
-            })}
+                },
+              };
+            }}
           />
 
           <DrawerStack.Screen

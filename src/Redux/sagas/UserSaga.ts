@@ -49,7 +49,7 @@ function* GetAllUserRequest(params) {
     const res = yield ApiCall({
       token: params.data.token,
       route: `user/get-users-to-subscribe${
-        params.data?.limit ? `?limit=${params.data?.limit}` : ''
+        params.data?.limit ? `?itemsPerPage=${params.data?.limit}` : ''
       }`,
       verb: 'get',
     });

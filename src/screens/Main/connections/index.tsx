@@ -19,7 +19,7 @@ import { ApiCall } from '@/services/api';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { getuserAll } from '@/redux//actions/UserAction';
 
-import ImageModal from 'react-native-image-modal';
+import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest, User } from '@/utils/types';
 

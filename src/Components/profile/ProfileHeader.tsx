@@ -24,7 +24,15 @@ import { spacing } from '@/src/styles/spacing';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { Add, Location, Calendar, ShieldTick, HomeHashtag, Link21 } from 'iconsax-react-native';
 import React, { useState } from 'react';
-import { View, Image, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  Dimensions,
+  useWindowDimensions,
+} from 'react-native';
 import FastImage from 'react-native-fast-image';
 
 import Toast from 'react-native-simple-toast';
@@ -63,6 +71,7 @@ const ProfileHeader = ({
   const token = useSelector((state: RootState) => state.auth.userToken);
   const navigation = useNavigation<NavigationProp<MyProfileStackParamsList>>();
   const authState = useSelector((state: RootState) => state.auth);
+  const { width } = useWindowDimensions();
   // const { top, height } = useHeaderMeasurements();
 
   const scrollY = useCurrentTabScrollY();
@@ -81,7 +90,8 @@ const ProfileHeader = ({
       [0, 0 - 300]
     );
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT / 2 + 10; // 10 = marginTop
+    const maxValue =
+      height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize + 10; // 10 = marginTop
     if (valueTranslate > maxValue) {
       valueTranslate = maxValue;
     }
@@ -89,7 +99,7 @@ const ProfileHeader = ({
     return {
       transform: [
         {
-          translateY: withSpring(valueTranslate),
+          translateY: valueTranslate,
         },
       ],
     };
@@ -102,7 +112,7 @@ const ProfileHeader = ({
       [0, 0 - 300]
     );
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - profileImagesize - 230; // 10 = marginTop
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - profileImagesize; // 10 = marginTop
     if (valueTranslate > maxValue) {
       valueTranslate = maxValue;
     }
@@ -110,29 +120,43 @@ const ProfileHeader = ({
     return {
       transform: [
         {
-          translateY: withSpring(valueTranslate),
+          translateY: valueTranslate,
         },
       ],
     };
   });
 
   const nameAnimation = useAnimatedStyle(() => {
-    let valueTranslate = interpolate(
+    let valueTranslateY = interpolate(
       scrollY.value,
       [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
       [0, 0 - 300]
     );
 
-    const maxValue =
-      height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize + 20;
-    if (valueTranslate > maxValue) {
-      valueTranslate = maxValue;
+    let valueTranslateX = interpolate(
+      scrollY.value,
+      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - 90]
+    );
+
+    // const maxValueY = height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + 20;
+    const maxValueY = height - HEADER_COLLAPSED_HEIGHT - 160;
+    if (valueTranslateY > maxValueY) {
+      valueTranslateY = maxValueY;
+    }
+
+    const maxValueX = width / 4;
+    if (valueTranslateY > maxValueX) {
+      valueTranslateX = maxValueX;
     }
 
     return {
       transform: [
         {
-          translateY: withSpring(valueTranslate),
+          translateY: valueTranslateY,
+        },
+        {
+          translateX: valueTranslateX,
         },
       ],
     };
@@ -156,14 +180,43 @@ const ProfileHeader = ({
       opacity: opacity,
       transform: [
         {
-          translateY: withSpring(-1 * value),
+          translateY: -1 * value,
         },
       ],
     };
   });
 
-  // const AnimatedFastImage = Animated.createAnimatedComponent(FastImage);
-  console.log(profileData?.profile.churchType);
+  const connectedConnectorsContent = useAnimatedStyle(() => {
+    let valueTranslateY = interpolate(
+      scrollY.value,
+      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
+      [0, 0 - 300]
+    );
+    let width = interpolate(
+      scrollY.value,
+
+      [0, 0 - 300],
+      [0, 35]
+    );
+
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - (profileData?.bio ? 310 : 200);
+    if (valueTranslateY > maxValue) {
+      valueTranslateY = maxValue;
+    }
+
+    if (100 + width < 70) {
+      width = -35;
+    }
+    return {
+      width: `${100 + width}%`,
+      transform: [
+        {
+          translateY: -1 * valueTranslateY,
+        },
+      ],
+    };
+  });
+
   return (
     <Animated.View
       pointerEvents="box-none"
@@ -340,11 +393,10 @@ const ProfileHeader = ({
               alignItems: 'flex-start',
               justifyContent: 'space-between',
             },
-            nameAnimation,
           ]}
           pointerEvents="box-none"
         >
-          <View style={{ flex: 1 }}>
+          <Animated.View style={[{ flex: 1, height: 75 }, nameAnimation]}>
             <View style={{ flexDirection: 'row' }}>
               <StyledText
                 numberOfLines={2}
@@ -360,26 +412,16 @@ const ProfileHeader = ({
               >
                 {profileData?.accountType == 'organization' && profileData?.profile?.companyName
                   ? profileData?.profile?.companyName
-                  : profileData?.name}
+                  : `${profileData?.name}`}
               </StyledText>
 
               {profileData?.influencerProfile?.influencerStatus == 'approved' ? (
                 <Icon name="check-decagram" size={20} color={Colors.primarySapphire.brand} />
               ) : null}
             </View>
-            <Animated.View>
-              <StyledText
-                style={[
-                  {
-                    // textAlign: 'center',
-                    // marginBottom: 20,
-                    // color: '#5b7279',
-                    // marginTop: 5,
-                    paddingBottom: spacing.x24,
-                  },
-                ]}
-              >
-                <StyledText style={{ color: Colors.neutral[300] }}>
+            <Animated.View style={{ flex: 1 }}>
+              <StyledText>
+                <StyledText style={{ color: Colors.neutral[300] }} numberOfLines={1}>
                   {profileData?.username ? `@${profileData?.username}` : ''}
                 </StyledText>
                 {profileData?.profile?.whatIDo?.name || profileData?.profile?.typeOfOrganization ? (
@@ -399,7 +441,7 @@ const ProfileHeader = ({
                 }`}
               </StyledText>
             </Animated.View>
-          </View>
+          </Animated.View>
 
           <Animated.View
             style={[
@@ -456,17 +498,15 @@ const ProfileHeader = ({
             )}
           </Animated.View>
         </Animated.View>
-        <View pointerEvents="none">
-          {profileData?.influencerProfile?.influencerStatus == 'approved' && profileData?.bio ? (
-            <StyledText
-              numberOfLines={3}
-              style={{ color: Colors.neutral[200], marginVertical: spacing.x24 }}
-            >
-              {profileData?.bio}
-            </StyledText>
-          ) : null}
-        </View>
+
         <Animated.View style={[contentAnimation]} pointerEvents="box-none">
+          {profileData?.influencerProfile?.influencerStatus == 'approved' && profileData?.bio ? (
+            <View style={{ marginBottom: spacing.x16 }} pointerEvents="box-none">
+              <StyledText numberOfLines={3} style={{ color: Colors.neutral[200] }}>
+                {profileData?.bio}
+              </StyledText>
+            </View>
+          ) : null}
           <View
             pointerEvents="none"
             style={[
@@ -527,7 +567,7 @@ const ProfileHeader = ({
           </View>
 
           {profileData.accountType == AccountType.individual &&
-          (profileData?._id == currentUser._id || profileData.profile.isChurchTypePublic) ? (
+          (profileData?._id == currentUser._id || profileData.profile?.isChurchTypePublic) ? (
             <View
               style={{
                 flexDirection: 'row',
@@ -555,30 +595,6 @@ const ProfileHeader = ({
             </View>
           ) : null}
 
-          {/* {profileData?._id == currentUser._id &&
-          profileData.accountType == AccountType.individual ? (
-            <View
-              style={{ flexDirection: 'row', alignItems: 'flex-start', paddingBottom: spacing.x16 }}
-            >
-              <HomeHashtag size={20} color={Colors.neutral.brand} />
-
-              <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
-                Denomination
-                <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
-                <StyledText>
-                  {profileData?.profile.churchType}
-                  {profileData?.profile.churchSubType ? (
-                    <>
-                      {` - `}
-
-                      {profileData?.profile.churchSubType}
-                    </>
-                  ) : null}
-                </StyledText>
-              </StyledText>
-            </View>
-          ) : null} */}
-
           {profileData?.website ? (
             <View
               style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.x16 }}
@@ -604,11 +620,22 @@ const ProfileHeader = ({
             </View>
           ) : null}
         </Animated.View>
-        <View
-          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.x10 }}
+        <Animated.View
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              // marginBottom: spacing.x10,
+              // width: '65%',
+              overflow: 'hidden',
+              height: 60,
+              paddingTop: spacing.x5,
+            },
+            connectedConnectorsContent,
+          ]}
           pointerEvents="none"
         >
-          <StyledText style={[Typography.body.x3M]}>
+          <StyledText style={[Typography.body.x3M, { flex: 1 }]}>
             {profileData?.followerCount && profileData?.followerCount > 999
               ? `${(profileData.followerCount / 1000).toFixed(2)}k`
               : profileData?.followerCount && profileData?.followerCount > 999999
@@ -620,8 +647,10 @@ const ProfileHeader = ({
           <StyledText
             style={[
               Typography.body.x3M,
+
               {
                 marginLeft: spacing.x24,
+                flex: 1,
               },
             ]}
           >
@@ -632,7 +661,7 @@ const ProfileHeader = ({
               : profileData?.following.length ?? 0}{' '}
             <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
           </StyledText>
-        </View>
+        </Animated.View>
       </View>
       <Modal
         backdropOpacity={0.3}

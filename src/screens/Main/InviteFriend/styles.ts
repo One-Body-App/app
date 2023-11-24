@@ -1,12 +1,18 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { spacing } from '@/src/styles/spacing';
+import { borderRadius } from '@/src/styles/outlines';
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
   innerContainer: {
     alignItems: 'center',
-    marginTop: getHeight(5.5),
-    flex: 1,
+
+    marginHorizontal: spacing.x24,
+    marginTop: spacing.x64,
+    borderRadius: borderRadius.base,
+    paddingTop: spacing.x32,
+    paddingBottom: spacing.x48,
   },
 
   text: {

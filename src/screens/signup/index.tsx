@@ -535,7 +535,10 @@ const SignupForm = ({ navigation, route }: Props) => {
               </View>
             }
             wrapperStyle={{ marginTop: 15 }}
-            onFocus={() => setState({ ...state, passwordError: '' })}
+            onFocus={() => {
+              console.log('focussssss');
+              setState({ ...state, passwordError: '' });
+            }}
             onBlur={() =>
               validateFields(state.password, 'password', (error) =>
                 setState({ ...state, passwordError: error })
@@ -543,10 +546,11 @@ const SignupForm = ({ navigation, route }: Props) => {
             }
             onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
             onChangeText={(password) => {
-              console.log(password);
+              console.log(password, 'passwordpolo');
               changeHandler('password', password);
             }}
             onEndEditing={(event) => {
+              console.log(event.nativeEvent.text.length, 'event.nativeEvent.text.length ');
               if (event.nativeEvent.text.length === 0) {
                 changeHandler('password', '');
               }

@@ -51,6 +51,8 @@ import SearchIcon from '@/assets/icons/search.svg';
 import { ArrowRight } from 'iconsax-react-native';
 import FastImage from 'react-native-fast-image';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import UserItem from '@/src/components/ListItems/UserItem';
+import { header } from '@/src/styles/typography';
 
 // type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;
 type Props = CompositeScreenProps<
@@ -69,12 +71,13 @@ let timer: NodeJS.Timeout;
 const keyStorage = 'recent-searchs';
 const Search = () => {
   const [input, setInput] = useState('');
-  const [results, setResults] = useState<ArticleType[]>([]);
+  const [results, setResults] = useState<any[]>([]);
   const [recentSearches, setRecentSearches] = useState<
     { item: string; type: SearchType; itemMeta?: { image?: string; whatIDo?: string } }[]
   >([]);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [show, setShow] = useState<boolean>();
+  const [searchType, setSearchType] = useState<'users' | 'posts'>('users');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -117,12 +120,13 @@ const Search = () => {
     }
   };
 
-  async function fetchData(text: string) {
+  async function fetchData(text: string, type: String) {
     const res = await ApiCall({
       route: `user/search`,
       token: token,
       verb: 'post',
       params: {
+        type,
         text,
       },
     });
@@ -139,13 +143,13 @@ const Search = () => {
       clearTimeout(timer);
 
       timer = setTimeout(() => {
-        fetchData(input);
+        fetchData(input, searchType);
       }, 300);
       return () => clearTimeout(timer);
     } else {
       setResults([]);
     }
-  }, [input]);
+  }, [input, searchType]);
 
   useEffect(() => {
     const getSearchData = async () => {
@@ -253,7 +257,7 @@ const Search = () => {
       </View>
 
       <View style={{ flex: 1 }}>
-        {input && results.length > 0 ? (
+        {input ? (
           <>
             <View
               style={{
@@ -277,67 +281,109 @@ const Search = () => {
                   alignItems: 'center',
                 }}
               >
-                <TouchableOpacity onPress={() => {}}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (searchType != 'users') setSearchType('users');
+                  }}
+                >
                   <View
                     style={{
                       paddingBottom: 10,
                       borderBottomColor: Colors.neutral.brand,
-                      borderBottomWidth: 2,
+                      borderBottomWidth: searchType == 'users' ? 3 : 0,
                       alignSelf: 'flex-start',
                     }}
                   >
-                    <StyledText>Accounts</StyledText>
+                    <StyledText
+                      style={[
+                        header.h3,
+                        {
+                          color: searchType == 'users' ? Colors.main.black : Colors.neutral[400],
+                        },
+                      ]}
+                    >
+                      Accounts
+                    </StyledText>
                   </View>
                 </TouchableOpacity>
               </View>
               <View style={{ flex: 1, alignItems: 'center' }}>
-                <TouchableOpacity onPress={() => {}}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (searchType != 'posts') setSearchType('posts');
+                  }}
+                >
                   <View
                     style={{
                       paddingBottom: 10,
                       borderBottomColor: Colors.neutral.brand,
-                      borderBottomWidth: 2,
+                      borderBottomWidth: searchType == 'posts' ? 3 : 0,
                       alignSelf: 'flex-start',
                     }}
                   >
-                    <StyledText>Posts</StyledText>
+                    <StyledText
+                      style={[
+                        header.h3,
+                        {
+                          color: searchType == 'posts' ? Colors.main.black : Colors.neutral[400],
+                        },
+                      ]}
+                    >
+                      Posts
+                    </StyledText>
                   </View>
                 </TouchableOpacity>
               </View>
             </View>
 
             <FlatList
-              contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.x24 }}
+              contentContainerStyle={{ flexGrow: 1 }}
               data={results}
-              renderItem={({ item }) => (
-                <ArticleItem
-                  key={item.id}
-                  item={item}
-                  imageSizeType="cover"
-                  blogPostStyle={{
-                    // ...styles.socialpostview,
-                    width: 'auto',
-                    flexGrow: 1,
-                    backgroundColor: colors.card,
-                    marginVertical: spacing.x8,
-                  }}
-                  blogPostImageStyle={{
-                    height: getHeight(22),
-                    width: '100%',
-                    borderTopLeftRadius: spacing.x10,
-                    borderTopRightRadius: spacing.x10,
-                    marginBottom: spacing.x8 / 2,
-                  }}
-                  blogPostTitleStyle={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                  }}
-                  showModal={showModal}
-                  // onPress={(item) => {
-                  //   storeAsyncData([...recentSearches, input]);
-                  // }}
-                />
+              ListEmptyComponent={() => (
+                <>
+                  {!isLoading ? (
+                    <StyledText style={{ textAlign: 'center' }}>No search results</StyledText>
+                  ) : null}
+                </>
               )}
+              renderItem={({ item }) => {
+                if (item.type == 'posts') {
+                  return (
+                    <ArticleItem
+                      key={item.id}
+                      item={item}
+                      imageSizeType="cover"
+                      blogPostStyle={{
+                        width: 'auto',
+                        flexGrow: 1,
+                        backgroundColor: colors.card,
+                        marginVertical: spacing.x8,
+                        paddingHorizontal: spacing.x24,
+                      }}
+                      blogPostImageStyle={{
+                        flexGrow: 1,
+                        borderTopLeftRadius: spacing.x10,
+                        borderTopRightRadius: spacing.x10,
+                        marginBottom: spacing.x8 / 2,
+                      }}
+                      blogPostTitleStyle={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                      }}
+                      showModal={showModal}
+                      // onPress={(item) => {
+                      //   storeAsyncData([...recentSearches, input]);
+                      // }}
+                    />
+                  );
+                }
+
+                return (
+                  <View style={{ paddingHorizontal: spacing.x24 }}>
+                    <UserItem item={item} />
+                  </View>
+                );
+              }}
               keyExtractor={(item, index) => {
                 return item.id ?? index.toString();
               }}
@@ -465,13 +511,7 @@ const Search = () => {
                   }}
                 />
               </>
-            ) : (
-              <>
-                {!isLoading ? (
-                  <StyledText style={{ textAlign: 'center' }}>No search results</StyledText>
-                ) : null}
-              </>
-            )}
+            ) : null}
           </>
         )}
       </View>

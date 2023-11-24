@@ -34,7 +34,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { useReducedMotion } from 'react-native-reanimated';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
-
+import ImageModal from '@dreamwalk-os/react-native-image-modal';
+import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+import { ScrollView } from 'react-native-gesture-handler';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -43,6 +45,7 @@ type ScreenNavigationProp = CompositeNavigationProp<
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
   >
 >;
+type Media = { type: string; url: string };
 type LinkData = {
   description?: string;
   image?: { height: string; type: string; url: string; width: string };
@@ -86,6 +89,7 @@ type SocialItemProps = {
       isApprovedInfluencer?: boolean;
     };
     images?: string[];
+    gif?: GiphyMedia;
     videos?: string[];
     created: Date;
     id: string;
@@ -115,16 +119,15 @@ const SocialItem = ({
 }: SocialItemProps) => {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
-  const [media, setMedia] = useState<{
-    type: string;
-    url: string;
-  } | null>(null);
+  const [media, setMedia] = useState<Media[]>([]);
 
-  const [image, setImage] = useState<{
-    url: string;
-    height: number;
-    width: number;
-  } | null>(null);
+  const [imageInfo, setImageInfo] = useState<
+    {
+      url: string;
+      height: number;
+      width: number;
+    }[]
+  >([]);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const navigation = useNavigation<ScreenNavigationProp>();
@@ -154,37 +157,37 @@ const SocialItem = ({
   }, [visible]);
 
   useEffect(() => {
-    let media: { type: string; url: string } | null = null;
+    setImageInfo([]);
+    let media: Media[] = [];
 
     if (item?.mediaUrl) {
-      media = {
-        type: item.mediaType ?? '',
-        url: item.mediaUrl,
-      };
+      media = [
+        {
+          type: item.mediaType ?? '',
+          url: item.mediaUrl,
+        },
+      ];
     } else if (item.attachments && item.attachments.length > 0) {
       item.attachments.forEach((attachment) => {
         if (attachment.type == 'photo' || attachment.type == 'video') {
-          media = {
+          media?.push({
             type: attachment.type,
             url: attachment.url,
-          };
+          });
         }
       });
     } else if (item.images && item.images.length > 0) {
       item.images.forEach((attachment) => {
-        // if (attachment.type == 'photo' || attachment.type == 'video') {
-        media = {
+        media.push({
           type: 'photo',
           url: attachment,
-        };
-        // }
+        });
       });
-
-      if (media) getImage((media as { type: string; url: string })?.url);
     }
 
     if (media) {
       setMedia(media);
+      getMediaInfo(media);
     }
   }, [item]);
 
@@ -214,14 +217,41 @@ const SocialItem = ({
     }
   });
 
-  const getImage = async (image: string) => {
-    await Image.getSize(image, (width, height) => {
-      setImage({
-        url: image,
-        width,
-        height,
+  const getMediaInfo = async (media: Media[]) => {
+    const images = media.filter((item) => item.type == 'photo');
+
+    if (images.length > 0) {
+      const imagePromises = images.map((img) => {
+        return new Promise<{ url: string; width: number; height: number } | null>(
+          (resolve, reject) => {
+            Image.getSize(
+              img.url,
+              (width, height) => {
+                // successfully got image dimensions
+                resolve({ url: img.url, width, height });
+              },
+              () => {
+                // error case
+                console.warn(`Error with ${img}`);
+                resolve(null);
+              }
+            );
+          }
+        );
       });
-    });
+
+      Promise.all(imagePromises)
+        .then((images) => images.filter(Boolean))
+        .then((images) => {
+          setImageInfo(
+            images.map((image) => ({
+              url: image?.url ?? '',
+              width: image?.width ?? 0,
+              height: image?.height ?? 0,
+            }))
+          );
+        });
+    }
   };
 
   return (
@@ -267,17 +297,19 @@ const SocialItem = ({
       style={socialPostviewStyle}
     >
       <View style={{ flexGrow: 1, flex: 1 }}>
-        <View style={{ flexGrow: 1 }}>
-          <StyledText
-            style={{
-              color: colors.text,
-              marginBottom: spacing.x8,
-              flexGrow: 1,
-            }}
-          >
-            {item?.content}
-          </StyledText>
-        </View>
+        {item?.content && (
+          <View style={{ flexGrow: 1 }}>
+            <StyledText
+              style={{
+                color: colors.text,
+                marginBottom: spacing.x8,
+                flexGrow: 1,
+              }}
+            >
+              {item?.content}
+            </StyledText>
+          </View>
+        )}
 
         {hasLink ? (
           <TouchableOpacity
@@ -286,7 +318,7 @@ const SocialItem = ({
             }}
             style={[
               {
-                borderRadius: 8,
+                borderRadius: borderRadius.small,
                 marginVertical: 10,
                 borderColor: '#808080',
                 borderWidth: borderWidth.thin,
@@ -316,16 +348,16 @@ const SocialItem = ({
           </TouchableOpacity>
         ) : null}
 
-        {media ? (
-          <>
-            {media.type == 'VIDEO' ? (
-              <>
+        {media.length > 0 &&
+          media.map((mediaItem) => {
+            if (mediaItem.type == 'VIDEO') {
+              return (
                 <Video
                   ignoreSilentSwitch="ignore"
                   source={{
-                    uri: media.url,
+                    uri: mediaItem.url,
                   }}
-                  style={{ height: 300, borderRadius: 2, marginVertical: 10 }}
+                  style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
                   controls={false}
                   resizeMode="cover"
                   paused={!isPlaying}
@@ -339,42 +371,83 @@ const SocialItem = ({
                   }}
                   // hideShutterView={true}
                 />
-              </>
+              );
+            }
+          })}
+
+        {imageInfo.length > 0 ? (
+          <>
+            {imageInfo.length > 1 ? (
+              <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
+                {imageInfo.map((image, index) => {
+                  return (
+                    <View
+                      style={{
+                        flexGrow: 1,
+                        aspectRatio: image.width / image.height,
+
+                        padding: spacing.x10,
+                      }}
+                    >
+                      <ImageModal
+                        key={index}
+                        resizeMode={image.width > image.height ? 'contain' : 'stretch'}
+                        style={{
+                          borderRadius: borderRadius.small,
+                          flexGrow: 1,
+                          aspectRatio: image.width / image.height,
+                          width: 250,
+                          // height: 300,
+                          // borderRadius: 2,
+                          // marginVertical: 10,
+                        }}
+                        modalImageResizeMode="center"
+                        source={{ uri: image?.url }}
+                      />
+                    </View>
+                  );
+                })}
+              </ScrollView>
             ) : (
-              <>
-                {image?.url ? (
-                  <FastImage
-                    style={{
-                      borderRadius: borderRadius.small,
-                      // flexGrow: 1,
-                      aspectRatio: image.width / image.height,
-                      // width: '100%',
-                      // height: 300,
-                      // borderRadius: 2,
-                      // marginVertical: 10,
-                    }}
-                    resizeMode={image.width > image.height ? 'contain' : 'stretch'}
-                    source={{ uri: media?.url }}
-                  />
-                ) : (
-                  <FastImage
-                    style={{
-                      borderRadius: borderRadius.small,
-                      // flexGrow: 1,
-                      aspectRatio: 16 / 9,
-                      // width: '100%',
-                      // height: 300,
-                      // borderRadius: 2,
-                      // marginVertical: 10,
-                    }}
-                    resizeMode="contain"
-                    source={{ uri: NO_POST_IMAGE_URL }}
-                  />
-                )}
-              </>
+              <ImageModal
+                key={index}
+                resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
+                style={{
+                  borderRadius: borderRadius.small,
+                  // flexGrow: 1,
+                  aspectRatio: imageInfo[0].width / imageInfo[0].height,
+                  width: '100%',
+                  // height: 300,
+                  // borderRadius: 2,
+                  // marginVertical: 10,
+                }}
+                modalImageResizeMode="center"
+                source={{ uri: imageInfo[0]?.url }}
+              />
             )}
           </>
         ) : null}
+        {item.gif && (
+          <View
+            style={{
+              padding: 10,
+              // height: 100,
+              // width: 100,
+              borderRadius: borderRadius.small,
+            }}
+          >
+            <GiphyMediaView
+              media={item.gif}
+              resizeMode="cover"
+              style={{
+                aspectRatio: item.gif.aspectRatio,
+                borderRadius: borderRadius.small,
+
+                overflow: 'hidden',
+              }}
+            />
+          </View>
+        )}
       </View>
     </BaseItem>
   );

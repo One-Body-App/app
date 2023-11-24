@@ -3,13 +3,15 @@ import React from 'react';
 
 import { SearchStackParamsList } from './types';
 import Search from '../screens/main/search';
+import UserProfile from '../screens/main/userProfile';
 
 const Stack = createNativeStackNavigator<SearchStackParamsList>();
 
 const SearchStack = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Search" component={Search} />
+    <Stack.Navigator>
+      <Stack.Screen name="Search" component={Search} options={{ headerShown: false }} />
+      <Stack.Screen name="UserProfile" component={UserProfile} />
     </Stack.Navigator>
   );
 };

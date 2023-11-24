@@ -249,14 +249,14 @@ const BaseItem = ({
   // console.log('here', postData);
 
   const reactionTypes = {
-    love: false,
-    praying: false,
-    happy: false,
+    love: 0,
+    praying: 0,
+    happy: 0,
   };
 
   if (postData.reactions) {
     postData.reactions.forEach((reaction) => {
-      reactionTypes[reaction.type] = true;
+      reactionTypes[reaction.type] += 1;
     });
   }
 
@@ -273,7 +273,7 @@ const BaseItem = ({
             borderColor: Colors.main.white,
           }}
         >
-          <Heart size={20} color="white" />
+          <Heart size={25} color="white" />
         </View>
       ),
       title: 'Love',
@@ -292,7 +292,7 @@ const BaseItem = ({
             borderColor: Colors.main.white,
           }}
         >
-          <PrayerIcon width={20} height={20} color="white" />
+          <PrayerIcon width={25} height={25} color="white" />
         </View>
       ),
       title: 'Praying',
@@ -311,7 +311,7 @@ const BaseItem = ({
             borderColor: Colors.main.white,
           }}
         >
-          <NounHands width={20} height={20} color="white" />
+          <NounHands width={25} height={25} color="white" />
         </View>
       ),
       title: 'Praise',
@@ -454,63 +454,89 @@ const BaseItem = ({
                     alignItems: 'center',
                   }}
                 >
-                  {reactionTypes.love ? (
-                    <View
-                      style={{
-                        padding: 4,
-                        backgroundColor: Colors.errorFeedback[200],
-                        borderRadius: borderRadius.max,
-                        zIndex: 10,
-                        borderWidth: borderWidth.thin,
-                        borderColor: Colors.main.white,
-                      }}
-                    >
-                      <Heart size={15} color="white" />
-                    </View>
+                  {reactionTypes.love > 0 ? (
+                    <>
+                      <View
+                        style={{
+                          padding: spacing.x5,
+                          backgroundColor: Colors.errorFeedback[200],
+                          borderRadius: borderRadius.max,
+                          borderWidth: borderWidth.thin,
+                          borderColor: Colors.main.white,
+                          marginRight: spacing.x5 / 2,
+                        }}
+                      >
+                        <Heart size={15} color="white" />
+                      </View>
+                      <StyledText
+                        style={[
+                          fontSize.x2,
+                          {
+                            color: Colors.neutral[300],
+                            marginRight: spacing.x5,
+                          },
+                        ]}
+                      >
+                        {reactionTypes.love}
+                      </StyledText>
+                    </>
                   ) : null}
 
-                  {reactionTypes.happy ? (
-                    <View
-                      style={{
-                        padding: 4,
-                        backgroundColor: Colors.infoFeedback[200],
-                        borderRadius: borderRadius.max,
-                        marginLeft: reactionTypes.love ? -1 * spacing.x8 : 0,
-                        borderWidth: borderWidth.thin,
-                        borderColor: Colors.main.white,
-                      }}
-                    >
-                      <NounHands width={15} height={15} color="white" />
-                    </View>
+                  {reactionTypes.happy > 0 ? (
+                    <>
+                      <View
+                        style={{
+                          padding: spacing.x5,
+                          backgroundColor: Colors.infoFeedback[200],
+                          borderRadius: borderRadius.max,
+                          borderWidth: borderWidth.thin,
+                          borderColor: Colors.main.white,
+                          marginRight: spacing.x5 / 2,
+                        }}
+                      >
+                        <NounHands width={15} height={15} color="white" />
+                      </View>
+                      <StyledText
+                        style={[
+                          fontSize.x2,
+                          {
+                            color: Colors.neutral[300],
+                            marginRight: spacing.x5,
+                          },
+                        ]}
+                      >
+                        {reactionTypes.happy}
+                      </StyledText>
+                    </>
                   ) : null}
 
-                  {reactionTypes.praying ? (
-                    <View
-                      style={{
-                        padding: 4,
-                        backgroundColor: Colors.successFeedback[200],
-                        borderRadius: borderRadius.max,
-                        marginLeft: reactionTypes.love || reactionTypes.happy ? -1 * spacing.x8 : 0,
-                        zIndex: 8,
-                        borderWidth: borderWidth.thin,
-                        borderColor: Colors.main.white,
-                      }}
-                    >
-                      <PrayerIcon width={15} height={15} color="white" />
-                    </View>
+                  {reactionTypes.praying > 0 ? (
+                    <>
+                      <View
+                        style={{
+                          padding: spacing.x5,
+                          backgroundColor: Colors.successFeedback[200],
+                          borderRadius: borderRadius.max,
+                          borderWidth: borderWidth.thin,
+                          borderColor: Colors.main.white,
+                          marginRight: spacing.x5 / 2,
+                        }}
+                      >
+                        <PrayerIcon width={15} height={15} color="white" />
+                      </View>
+                      <StyledText
+                        style={[
+                          fontSize.x2,
+                          {
+                            color: Colors.neutral[300],
+                            marginRight: spacing.x5,
+                          },
+                        ]}
+                      >
+                        {reactionTypes.praying}
+                      </StyledText>
+                    </>
                   ) : null}
-
-                  <StyledText
-                    style={[
-                      fontSize.x2,
-                      {
-                        color: Colors.neutral[300],
-                        marginLeft: spacing.x5,
-                      },
-                    ]}
-                  >
-                    {postData?.reactions.length}
-                  </StyledText>
                 </View>
               ) : null}
             </View>
@@ -550,6 +576,12 @@ const BaseItem = ({
                       <Reaction
                         items={ReactionItems}
                         type="modal"
+                        cardStyle={{
+                          padding: spacing.x5,
+                          shadowOpacity: 0.2,
+                          marginTop: spacing.x16,
+                          borderRadius: borderRadius.base,
+                        }}
                         onTap={async (item) => {
                           if (item) {
                             if (myReaction?.type == item['type']) {

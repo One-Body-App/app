@@ -11,7 +11,7 @@ import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { Location } from '@/utils/types';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -36,7 +36,7 @@ import {
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fontSize } from '@/src/styles/typography';
-import { Camera, useCameraDevice } from 'react-native-vision-camera';
+
 import ImagePickerModal from '@/src/components/ImagePickerModal';
 import ImagePicker from 'react-native-image-crop-picker';
 import {
@@ -49,22 +49,35 @@ import {
 } from 'react-native-image-picker';
 import { serialize } from 'object-to-formdata';
 import FastImage from 'react-native-fast-image';
+import {
+  GiphyDialog,
+  type GiphyMedia,
+  GiphyDialogMediaSelectEventHandler,
+  GiphyDialogEvent,
+  GiphyMediaView,
+  GiphySDK,
+  GiphyThemePreset,
+} from '@giphy/react-native-sdk';
+import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/src/Services/constants';
+
+GiphySDK.configure({
+  apiKey: Platform.OS == 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID,
+});
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
 
 const NewPost = ({ navigation }: Props) => {
-  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [camera, setCamera] = useState(false);
+
   const token = useSelector((state: RootState) => state.auth.userToken);
-  // console.log(token);
+
   const [location, setLocation] = useState<MapSuggestion | null>(null);
   const [locationSelector, setLocationSelector] = useState<boolean>(false);
   const [headerImagePickerModalVisibile, setHeaderImagePickerModalVisibile] = useState(false);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
   const [imagesToUpload, setImagesToUpload] = useState<Asset[]>([]);
-
+  const { colors } = useTheme();
   const [imagesObject, setImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
 
@@ -73,6 +86,10 @@ const NewPost = ({ navigation }: Props) => {
     type: string;
     name: string;
   }>();
+
+  useEffect(() => {
+    GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
+  }, []);
 
   const postSocial = async () => {
     setIsLoading(true);
@@ -84,6 +101,7 @@ const NewPost = ({ navigation }: Props) => {
           {
             content,
             images: imagesObject,
+            gif: mediaGif,
             location: location
               ? {
                   coordinates: location?.geometry.coordinates,
@@ -258,8 +276,19 @@ const NewPost = ({ navigation }: Props) => {
     setHeaderImagePickerModalVisibile(false);
   };
 
-  const { dark, colors } = useTheme();
-  const device = useCameraDevice('back');
+  const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
+
+  // Handling GIFs selection in GiphyDialog
+  useEffect(() => {
+    const handler: GiphyDialogMediaSelectEventHandler = (e) => {
+      setGif(e.media);
+      GiphyDialog.hide();
+    };
+    const listener = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
+    return () => {
+      listener.remove();
+    };
+  }, []);
 
   return (
     <SafeAreaView
@@ -323,7 +352,7 @@ const NewPost = ({ navigation }: Props) => {
             ) : null}
 
             <StyledTextInput
-              style={{ height: 200, flexGrow: 1 }}
+              style={{ height: 200, flexGrow: 1, color: colors.text }}
               inputStyle={{}}
               inputWrapperStyle={{ paddingVertical: spacing.x10, borderRadius: borderRadius.base }}
               value={content}
@@ -338,7 +367,7 @@ const NewPost = ({ navigation }: Props) => {
                 setContent(value);
               }}
             />
-            {imagesToUpload.length > 0 ? (
+            {imagesToUpload.length > 0 || mediaGif ? (
               <ScrollView
                 style={{ flexDirection: 'row', gap: spacing.x10, marginTop: spacing.x16 }}
                 horizontal={true}
@@ -348,44 +377,84 @@ const NewPost = ({ navigation }: Props) => {
                 showsHorizontalScrollIndicator={false}
                 pagingEnabled={true}
               >
-                {imagesToUpload.map((image, index) => {
-                  return (
-                    <View key={`${image.fileName}-${index}`} style={{ padding: 10 }}>
-                      <TouchableOpacity
-                        style={{
-                          backgroundColor: Colors.primarySapphire.brand,
-                          borderRadius: borderRadius.max,
-                          position: 'absolute',
-                          width: 30,
-                          height: 30,
-                          top: 0,
-                          right: 0,
-                          zIndex: 10,
-                        }}
-                        onPress={() => {
-                          setImagesToUpload(
-                            imagesToUpload.filter((item, filterIndex) => {
-                              return filterIndex != index;
-                            })
-                          );
-                        }}
-                      >
-                        <CloseCircle size="30" color="#fff" />
-                      </TouchableOpacity>
-                      <FastImage
-                        style={{
-                          height: 80,
-                          width: 80,
-                          borderRadius: borderRadius.base,
-                        }}
-                        source={{
-                          uri: image.uri,
-                        }}
-                        resizeMode={'cover'}
-                      />
-                    </View>
-                  );
-                })}
+                {imagesToUpload &&
+                  imagesToUpload.map((image, index) => {
+                    return (
+                      <View key={`${image.fileName}-${index}`} style={{ padding: 10 }}>
+                        <TouchableOpacity
+                          style={{
+                            backgroundColor: Colors.primarySapphire.brand,
+                            borderRadius: borderRadius.max,
+                            position: 'absolute',
+                            width: 30,
+                            height: 30,
+                            top: 0,
+                            right: 0,
+                            zIndex: 10,
+                          }}
+                          onPress={() => {
+                            setImagesToUpload(
+                              imagesToUpload.filter((item, filterIndex) => {
+                                return filterIndex != index;
+                              })
+                            );
+                          }}
+                        >
+                          <CloseCircle size="30" color="#fff" />
+                        </TouchableOpacity>
+                        <FastImage
+                          style={{
+                            height: 80,
+                            width: 80,
+                            borderRadius: borderRadius.base,
+                          }}
+                          source={{
+                            uri: image.uri,
+                          }}
+                          resizeMode={'cover'}
+                        />
+                      </View>
+                    );
+                  })}
+
+                {mediaGif && (
+                  <View
+                    style={{
+                      padding: 10,
+                      height: 100,
+                      width: 100,
+                      borderRadius: borderRadius.base,
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: Colors.primarySapphire.brand,
+                        borderRadius: borderRadius.max,
+                        position: 'absolute',
+                        width: 30,
+                        height: 30,
+                        top: 0,
+                        right: 0,
+                        zIndex: 10,
+                      }}
+                      onPress={() => {
+                        setGif(null);
+                      }}
+                    >
+                      <CloseCircle size="30" color="#fff" />
+                    </TouchableOpacity>
+                    <GiphyMediaView
+                      media={mediaGif}
+                      resizeMode="cover"
+                      style={{
+                        aspectRatio: mediaGif.aspectRatio,
+                        borderRadius: borderRadius.base,
+
+                        overflow: 'hidden',
+                      }}
+                    />
+                  </View>
+                )}
               </ScrollView>
             ) : null}
 
@@ -481,11 +550,35 @@ const NewPost = ({ navigation }: Props) => {
                   setLocationSelector(true);
                 }}
               />
+              <Button
+                text="GIF"
+                wrapperViewBtnStyle={{ flex: 1 }}
+                btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
+                btnStyle={{
+                  backgroundColor: Colors.neutral[700],
+                  flex: 1,
+                  padding: spacing.x16,
+                  borderRadius: borderRadius.base,
+                }}
+                wrapperBtnStyle={{ flexDirection: 'column' }}
+                leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
+                onPress={() => {
+                  // LoginManager.logOut();
+                  // dispatch(logout());
+                  // await auth().signOut();
+                  try {
+                    GiphyDialog.show();
+                  } catch (e) {
+                    console.log(e);
+                  }
+                }}
+              />
             </View>
           </View>
         </ScrollView>
+
         <Button
-          disabled={isLoading || (!location && !content && !imagesObject)}
+          disabled={isLoading || (!location && !content && !imagesObject && !mediaGif)}
           onPress={() => {
             postSocial();
           }}

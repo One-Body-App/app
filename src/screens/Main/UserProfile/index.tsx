@@ -15,7 +15,7 @@ import TwitterFlatlist from '@/src/components/TwitterFlatlist';
 import BlogFlatlist from '@/src/components/BlogFlatlist';
 import InstagramFlatlist from '@/src/components/InstagramFlatlist';
 import Icon from 'react-native-vector-icons/Ionicons';
-import ImageModal from 'react-native-image-modal';
+import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
@@ -115,7 +115,7 @@ const UserProfile = ({ navigation, route }: Props) => {
         verb: 'get',
         token: token,
       });
-      console.log(res?.status);
+
       if (res?.status == 200) {
         dispatch(setLoader(false));
         setUser(res?.response);

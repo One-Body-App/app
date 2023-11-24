@@ -25,7 +25,16 @@ const ProfileStack = () => {
           contentStyle: { backgroundColor: Colors.neutral[700] },
         }}
       />
-      <Stack.Screen name="InviteFriends" component={InviteFriend} />
+      <Stack.Screen
+        name="InviteFriends"
+        component={InviteFriend}
+        options={{
+          headerShown: true,
+          headerTransparent: true,
+          headerTintColor: '#fff',
+          title: 'Invite',
+        }}
+      />
     </Stack.Navigator>
   );
 };

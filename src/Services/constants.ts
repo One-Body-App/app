@@ -15,6 +15,8 @@ import {
   NO_PROFILE_IMAGE as _NO_PROFILE_IMAGE,
   NO_POST_IMAGE_URL as _NO_POST_IMAGE_URL,
   TWITTER_CLIENT_ID as _TWITTER_CLIENT_ID,
+  GIPHY_KEY_IOS as _GIPHY_KEY_IOS,
+  GIPHY_KEY_ANDROID as _GIPHY_KEY_ANDROID,
 } from 'react-native-dotenv';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { sha256 } from 'react-native-sha256';
@@ -40,6 +42,8 @@ export const INSTAGRAM_LOGIN_REDIRECT = _INSTAGRAM_LOGIN_REDIRECT;
 export const INSTAGRAM_CONNECT_REDIRECT = _INSTAGRAM_CONNECT_REDIRECT;
 export const INSTAGRAM_RECONNECT_REDIRECT = _INSTAGRAM_RECONNECT_REDIRECT;
 export const TWITTER_CLIENT_ID = _TWITTER_CLIENT_ID;
+export const GIPHY_KEY_ANDROID = _GIPHY_KEY_ANDROID;
+export const GIPHY_KEY_IOS = _GIPHY_KEY_IOS;
 
 export const OpenURLButton = async (
   url: string,

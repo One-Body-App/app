@@ -2302,6 +2302,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dreamwalk-os/react-native-image-modal@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "@dreamwalk-os/react-native-image-modal@npm:2.2.0"
+  peerDependencies:
+    react: 17.0.2
+    react-native: 0.68.1
+    react-native-fast-image: 8.5.11
+  checksum: 1b8d65454e15fcef048d210bbc8f140af3f1cd227b983ed8075ddf010b44631b78d303b8167e09e024d8a834c718e8afb9d98de6367f77771155fe612630fb12
+  languageName: node
+  linkType: hard
+
 "@egjs/hammerjs@npm:^2.0.17":
   version: 2.0.17
   resolution: "@egjs/hammerjs@npm:2.0.17"
@@ -2457,6 +2468,26 @@ __metadata:
   version: 1.1.3
   resolution: "@gar/promisify@npm:1.1.3"
   checksum: 4059f790e2d07bf3c3ff3e0fec0daa8144fe35c1f6e0111c9921bd32106adaa97a4ab096ad7dab1e28ee6a9060083c4d1a4ada42a7f5f3f7a96b8812e2b757c1
+  languageName: node
+  linkType: hard
+
+"@giphy/js-types@npm:^4.4.0":
+  version: 4.4.0
+  resolution: "@giphy/js-types@npm:4.4.0"
+  checksum: 01108487b38372d1a268a3b36dfa1c5974304508a3796dbb533f133eef53a73f4d2bc87707ac72fce36843d2064a5daad11f412558b8b6118abf2aa7e49fcdff
+  languageName: node
+  linkType: hard
+
+"@giphy/react-native-sdk@npm:^3.2.1":
+  version: 3.2.1
+  resolution: "@giphy/react-native-sdk@npm:3.2.1"
+  dependencies:
+    "@giphy/js-types": ^4.4.0
+    type-fest: ^4.5.0
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: b7bbfd211eb39520cb1e27743dbf68f0146dac5eb1681dcc3b96a2d828f62d4695924d6db3415928f4e4ed0405961e32a180c6a4ae95c2667e2c889a0772d077
   languageName: node
   linkType: hard
 
@@ -10841,12 +10872,14 @@ __metadata:
     "@babel/core": ^7.22.9
     "@babel/preset-env": ^7.22.9
     "@babel/runtime": ^7.22.6
+    "@dreamwalk-os/react-native-image-modal": ^2.2.0
     "@elastic/elasticsearch": ^8.9.0
     "@fortawesome/fontawesome-svg-core": ^6.4.2
     "@fortawesome/free-brands-svg-icons": ^6.4.2
     "@fortawesome/free-regular-svg-icons": ^6.4.2
     "@fortawesome/free-solid-svg-icons": ^6.4.2
     "@fortawesome/react-native-fontawesome": ^0.3.0
+    "@giphy/react-native-sdk": ^3.2.1
     "@invertase/react-native-apple-authentication": ^2.2.2
     "@r0b0t3d/react-native-collapsible": ^1.4.3
     "@react-native-async-storage/async-storage": ^1.19.3
@@ -10925,11 +10958,10 @@ __metadata:
     react-native-gesture-handler: ^2.12.1
     react-native-gifted-chat: ^1.0.0
     react-native-image-crop-picker: ^0.40.0
-    react-native-image-modal: ^2.0.4
     react-native-image-picker: ^5.6.0
     react-native-inappbrowser-reborn: ^3.7.0
     react-native-keyboard-aware-scroll-view: ^0.9.5
-    react-native-linear-gradient: ^2.8.1
+    react-native-linear-gradient: ^2.8.3
     react-native-modal: ^13.0.1
     react-native-pager-view: ^6.2.0
     react-native-paper: ^5.10.0
@@ -10958,9 +10990,7 @@ __metadata:
     react-native-typography: ^1.4.1
     react-native-vector-icons: ^10.0.0
     react-native-video: ^5.2.1
-    react-native-vision-camera: ^3.5.1
     react-native-webview: ^13.3.1
-    react-native-worklets-core: ^0.2.2
     react-redux: ^8.1.2
     react-test-renderer: ^18.2.0
     redux: ^4.2.1
@@ -11743,17 +11773,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-image-modal@npm:^2.0.4":
-  version: 2.0.4
-  resolution: "react-native-image-modal@npm:2.0.4"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-    react-native-fast-image: "*"
-  checksum: 63b4d0acdf973efade4c5cd906f6fc377dc35b195e6b06026fb15994a6dd46adcc2d46948f8f0ed9fa58575b74ec653f17f6b92bc320e1f98ccce92608095aea
-  languageName: node
-  linkType: hard
-
 "react-native-image-picker@npm:^5.6.0":
   version: 5.6.0
   resolution: "react-native-image-picker@npm:5.6.0"
@@ -11807,13 +11826,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-linear-gradient@npm:^2.8.1":
-  version: 2.8.1
-  resolution: "react-native-linear-gradient@npm:2.8.1"
+"react-native-linear-gradient@npm:^2.8.3":
+  version: 2.8.3
+  resolution: "react-native-linear-gradient@npm:2.8.3"
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: d1397dd333285e336b9505fbae94a8b0f23d450e963995fa5472439257017fa9b0c54fc5f094d54c54e2cd5d2c0b80d517f21a7e768706d34a8e315dcdd0ee66
+  checksum: f980d324e551bbc475c6406bdc5250a08242020cbe653412fa169bbdf51e28a502e225de105b4d696d6a1a1b733d44782469020f4936d8b3ce0e2c78e51cf58f
   languageName: node
   linkType: hard
 
@@ -12184,20 +12203,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-vision-camera@npm:^3.5.1":
-  version: 3.5.1
-  resolution: "react-native-vision-camera@npm:3.5.1"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-    react-native-worklets-core: "*"
-  peerDependenciesMeta:
-    react-native-worklets-core:
-      optional: true
-  checksum: b27f996c1a3b3d20b9efa83f620de30d9094b475d4d63d3ffac50c472c73ed86cd19d4477a07848b781d6940ac115dba9cb019a63d764a374ae9d7a762a75145
-  languageName: node
-  linkType: hard
-
 "react-native-webview@npm:^13.3.1":
   version: 13.3.1
   resolution: "react-native-webview@npm:13.3.1"
@@ -12208,18 +12213,6 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: c455279ccc42f4787e75c5c0e4609b535bb417eb35536c978079f23474c1135f39f5b8aed32445dd5422913c07651db77343e3c348e193c0b17329fdaa35e1a7
-  languageName: node
-  linkType: hard
-
-"react-native-worklets-core@npm:^0.2.2":
-  version: 0.2.2
-  resolution: "react-native-worklets-core@npm:0.2.2"
-  dependencies:
-    string-hash-64: ^1.0.3
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 211d7e49bda60bfdfd9cb2b4519cd02d65c166e4c67e39c815af527f7490830a8d44faecec60fa3d9d17ba9d9c15e4e1dab1cc74036bf18cd52b692293232a7c
   languageName: node
   linkType: hard
 
@@ -13259,13 +13252,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"string-hash-64@npm:^1.0.3":
-  version: 1.0.3
-  resolution: "string-hash-64@npm:1.0.3"
-  checksum: 79de8431b4fa3e85a2429cd52a34f7948221ff167b7a094e05d6bcfd0173474b232e0c9845c96f74b0d7b6b0c8bbe2c3532a4cacb21635293ef0cf3cc8e77f06
-  languageName: node
-  linkType: hard
-
 "string-length@npm:^4.0.1":
   version: 4.0.2
   resolution: "string-length@npm:4.0.2"
@@ -13729,6 +13715,13 @@ __metadata:
   version: 0.7.1
   resolution: "type-fest@npm:0.7.1"
   checksum: 5b1b113529d59949d97b76977d545989ddc11b81bb0c766b6d2ccc65473cb4b4a5c7d24f5be2c2bb2de302a5d7a13c1732ea1d34c8c59b7e0ec1f890cf7fc424
+  languageName: node
+  linkType: hard
+
+"type-fest@npm:^4.5.0":
+  version: 4.7.1
+  resolution: "type-fest@npm:4.7.1"
+  checksum: 95d31b2421955e8e3d58508515e02061fa7fe05d7097b20feb33fa7ee392959a5a38b302957485895a7a287556d14c8d6721b66bebb71391be151ce128755413
   languageName: node
   linkType: hard
 

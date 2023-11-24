@@ -25,10 +25,20 @@ export type Badge = {
   badge: string;
 };
 
+type Coordinates = {
+  lon: number;
+  lat: number;
+};
+
+type Point = {
+  type: string;
+  coordinates: number[];
+};
+
 export type Location = {
-  longitude?: number;
-  latitude?: number;
-  address: string;
+  address?: string;
+  coordinates?: Coordinates;
+  point?: Point;
 };
 
 export type TGender = 'Male' | 'Female';
@@ -83,6 +93,7 @@ export type User = {
   website: string;
 
   _id: string;
+  id?: string;
   badgesData: Badge[];
   gender: string;
   token: string;

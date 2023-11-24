@@ -137,7 +137,7 @@ const EditProfile = ({ navigation }: Props) => {
     user?.profile.isLocationPublic ?? false
   );
   const [isPublicChurchTypeEnabled, setIsPublicChurchTypeEnabled] = React.useState(
-    user?.profile.isChurchTypePublic ?? false
+    user?.profile?.isChurchTypePublic ?? false
   );
 
   const oftenChurchOptions = ['Weekly', 'Bi-Weekly', 'Once a month', 'I only watch at home'];
@@ -470,7 +470,11 @@ const EditProfile = ({ navigation }: Props) => {
       : [];
 
   const selectedChurchSubTypeName =
-    selectedChurchSubType.length > 0 ? selectedChurchSubType[0].churchType : '';
+    churchSubType == 'none'
+      ? 'None'
+      : selectedChurchSubType.length > 0
+      ? selectedChurchSubType[0].churchType
+      : '';
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -871,12 +875,18 @@ const EditProfile = ({ navigation }: Props) => {
                   {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
                     <StyledSelect
                       wrapperStyle={{ marginTop: spacing.x24 }}
-                      items={selectedChurchType[0].children.map((item) => {
-                        return {
-                          text: item.churchType,
-                          value: item.churchType,
-                        };
-                      })}
+                      items={[
+                        {
+                          text: 'None',
+                          value: 'none',
+                        },
+                        ...selectedChurchType[0].children.map((item) => {
+                          return {
+                            text: item.churchType,
+                            value: item.churchType,
+                          };
+                        }),
+                      ]}
                       label="Sub Denomination or Association"
                       btnText={
                         selectedChurchSubTypeName == '' ? 'Select' : selectedChurchSubTypeName
@@ -1115,11 +1125,11 @@ const EditProfile = ({ navigation }: Props) => {
                   if (bio) data.bio = bio;
                   if (username) data.username = username;
                   data.churchType = churchType;
-                  data.churchSubType = churchSubType;
+                  data.churchSubType = churchSubType == 'none' ? '' : churchSubType;
                   if (oftenChurch) data.oftenChurch = oftenChurch;
                   data.isChurchTypePublic = isPublicChurchTypeEnabled;
                   data.isLocationPublic = isPublicLocationEnabled;
-                  if (location)
+                  if (location && location.longitude && location.latitude && location.address)
                     data.location = {
                       longitude: location.longitude,
                       latitude: location.latitude,
