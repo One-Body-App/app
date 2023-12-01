@@ -1,7 +1,6 @@
 import { fork, all } from 'redux-saga/effects';
 import {
   GetUserProfileSaga,
-  loginSaga,
   loginSocialSaga,
   SignUpSaga,
   UpdateOrgProfileSaga,
@@ -22,7 +21,6 @@ import { GetAllUserSaga, GetChatSaga, UserGetSaga, GetInterestsSaga } from './Us
 
 export function* rootSaga() {
   yield all([
-    loginSaga(),
     loginSocialSaga(),
     SignUpSaga(),
     UpdateProfileSaga(),

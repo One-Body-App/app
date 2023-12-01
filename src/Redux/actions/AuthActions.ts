@@ -1,4 +1,5 @@
 // --------------- TYPES ---------------
+import { AccountType } from '@/utils/types';
 import {
   ACTIONS,
   GetBadges,
@@ -9,11 +10,13 @@ import {
 } from '../action-types';
 
 // --------------- ACTIONS ---------------
-export const loginRequest = (data) => ({
-  type: ACTIONS.LOGIN,
-  data,
-});
-export const loginSocialRequest = (data) => ({
+
+export const loginSocialRequest = (data: {
+  data: { token: string };
+  gotoSignup?: Function;
+  seterror: Function;
+  sendFcm: Function;
+}) => ({
   type: ACTIONS.LOGIN_SOCIAL,
   data,
 });
@@ -33,7 +36,12 @@ export const setSignUpData = (data) => ({
   data,
 });
 
-export const profileUpdate = (data) => ({
+export const profileUpdate = (data: {
+  token: string;
+  accountType: AccountType;
+  data: FormData;
+  go?: Function;
+}) => ({
   type: ACTIONS.Profile_Update,
   data,
 });

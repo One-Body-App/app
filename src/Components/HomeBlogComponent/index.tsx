@@ -13,7 +13,7 @@ import { isObject } from 'lodash';
 import { decode } from 'html-entities';
 import ArticleItem from '../ListItems/ArticleItem';
 import { ArticleType } from '@/utils/types';
-import OptionsModal from '../ListItems/OptionsModal';
+import OptionsModal, { PopupItem } from '../ListItems/OptionsModal';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 const HomeBlogComponent = () => {
@@ -21,15 +21,34 @@ const HomeBlogComponent = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const allBlog = useSelector((state: RootState) => state.social.AllBlog);
   const [page, setPage] = useState(1);
-
+  const user = useSelector((state: RootState) => state.auth.userProfile);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [show, setShow] = useState<boolean>();
-  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
+  const [currentPopupItem, setCurrentPopupItem] = useState<PopupItem>();
 
   const showModal = (item: ArticleType) => {
-    setCurrentPopupItem(item);
+    if (user) {
+      setCurrentPopupItem({
+        id: item.id,
+        postlink: item.link,
+        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
+        created: item.created,
+        image: item.image,
+        externalLink: item.link,
+
+        userData: {
+          twitterHandler: user?.influencerProfile?.twitterHandler,
+          instagramHandler: user?.influencerProfile?.instagramHandler,
+          name: user?.name,
+          username: user?.username,
+          _id: user?._id,
+          accountType: user?.accountType,
+          profileImage: user?.profileImage,
+        },
+      });
+    }
     setShow(true);
   };
   const getAllBlog = async (pageNumber: number) => {

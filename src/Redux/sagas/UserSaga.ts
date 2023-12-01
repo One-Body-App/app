@@ -18,7 +18,7 @@ function* UserGetRequest(params) {
   try {
     const res = yield ApiCall({
       token: params.data.token,
-      route: 'user/my-profile',
+      route: `user/my-profile?pullSavedData=${params.pullSavedData ?? false}`,
       verb: 'get',
     });
 

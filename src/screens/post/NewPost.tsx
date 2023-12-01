@@ -59,6 +59,7 @@ import {
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
 import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/src/Services/constants';
+import { isArray, isEmpty } from 'lodash';
 
 GiphySDK.configure({
   apiKey: Platform.OS == 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID,
@@ -66,7 +67,7 @@ GiphySDK.configure({
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
 
-const NewPost = ({ navigation }: Props) => {
+const NewPost = ({ navigation, route }: Props) => {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -78,7 +79,9 @@ const NewPost = ({ navigation }: Props) => {
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
   const [imagesToUpload, setImagesToUpload] = useState<Asset[]>([]);
   const { colors } = useTheme();
-  const [imagesObject, setImagesObject] =
+  const [imagesObject, setImagesObject] = useState<string[]>([]);
+
+  const [uploadImagesObject, setUploadImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
 
   const [headerImageObject, setHeaderImageObject] = useState<{
@@ -91,6 +94,59 @@ const NewPost = ({ navigation }: Props) => {
     GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
   }, []);
 
+  useEffect(() => {
+    if (route.params?.postId) {
+      getPostSocial();
+    }
+  }, [route.params?.postId]);
+
+  const editSocial = async () => {
+    setIsLoading(true);
+    try {
+      const result = await ApiCall({
+        route: `social/post/${route.params?.postId}`,
+        token: token,
+        params: serialize(
+          {
+            content,
+            uploadImages: uploadImagesObject,
+            images: imagesObject,
+            gif: mediaGif,
+            location: location
+              ? {
+                  coordinates: location?.geometry.coordinates,
+                  name: location?.place_name,
+                }
+              : undefined,
+          },
+          {
+            noAttributesWithArrayNotation: true,
+            noFilesWithArrayNotation: true,
+          }
+        ),
+        verb: 'patch',
+        isFormUrlEncode: true,
+      });
+
+      setIsLoading(false);
+      console.log(result);
+      if (result.status == 200) {
+        setContent('');
+        navigation.popToTop();
+        navigation.navigate('MainRoot', {
+          screen: 'Main',
+          params: {
+            screen: 'MyProfileTab',
+          },
+        });
+      }
+      setIsLoading(false);
+    } catch (e) {
+      console.log(e);
+      setIsLoading(false);
+    }
+  };
+
   const postSocial = async () => {
     setIsLoading(true);
     try {
@@ -100,7 +156,7 @@ const NewPost = ({ navigation }: Props) => {
         params: serialize(
           {
             content,
-            images: imagesObject,
+            images: uploadImagesObject,
             gif: mediaGif,
             location: location
               ? {
@@ -129,6 +185,38 @@ const NewPost = ({ navigation }: Props) => {
             screen: 'MyProfileTab',
           },
         });
+      }
+    } catch (e) {
+      console.log(e);
+      setIsLoading(false);
+    }
+  };
+
+  const getPostSocial = async () => {
+    setIsLoading(true);
+    try {
+      const result = await ApiCall({
+        route: `social/post/${route.params?.postId}`,
+        token: token,
+
+        verb: 'get',
+      });
+
+      setIsLoading(false);
+
+      if (result.status == 200) {
+        setContent(result.response.content);
+        if (result.response?.images?.length > 0) {
+          setImagesObject(result.response?.images);
+        }
+
+        if (result.response?.gif) {
+          setGif(result.response.gif);
+        }
+
+        if (!isEmpty(result.response?.location)) {
+          setLocation(result.response?.location);
+        }
       }
     } catch (e) {
       console.log(e);
@@ -172,7 +260,7 @@ const NewPost = ({ navigation }: Props) => {
 
     if (response?.assets && response?.assets.length > 0) {
       setImagesToUpload(response?.assets);
-      setImagesObject(
+      setUploadImagesObject(
         response?.assets.map((imagesObj) => {
           return {
             uri: imagesObj.uri ?? '',
@@ -263,7 +351,7 @@ const NewPost = ({ navigation }: Props) => {
 
     if (response?.assets && response?.assets.length > 0) {
       setImagesToUpload(response?.assets);
-      setImagesObject(
+      setUploadImagesObject(
         response?.assets.map((imagesObj) => {
           return {
             uri: imagesObj.uri ?? '',
@@ -367,7 +455,7 @@ const NewPost = ({ navigation }: Props) => {
                 setContent(value);
               }}
             />
-            {imagesToUpload.length > 0 || mediaGif ? (
+            {imagesToUpload.length > 0 || imagesObject.length > 0 || mediaGif ? (
               <ScrollView
                 style={{ flexDirection: 'row', gap: spacing.x10, marginTop: spacing.x16 }}
                 horizontal={true}
@@ -410,6 +498,47 @@ const NewPost = ({ navigation }: Props) => {
                           }}
                           source={{
                             uri: image.uri,
+                          }}
+                          resizeMode={'cover'}
+                        />
+                      </View>
+                    );
+                  })}
+
+                {isArray(imagesObject) &&
+                  imagesObject?.length > 0 &&
+                  imagesObject?.map((image, index) => {
+                    return (
+                      <View key={`${image}-${index}`} style={{ padding: 10 }}>
+                        <TouchableOpacity
+                          style={{
+                            backgroundColor: Colors.primarySapphire.brand,
+                            borderRadius: borderRadius.max,
+                            position: 'absolute',
+                            width: 30,
+                            height: 30,
+                            top: 0,
+                            right: 0,
+                            zIndex: 10,
+                          }}
+                          onPress={() => {
+                            setImagesObject(
+                              imagesObject.filter((item, filterIndex) => {
+                                return filterIndex != index;
+                              })
+                            );
+                          }}
+                        >
+                          <CloseCircle size="30" color="#fff" />
+                        </TouchableOpacity>
+                        <FastImage
+                          style={{
+                            height: 80,
+                            width: 80,
+                            borderRadius: borderRadius.base,
+                          }}
+                          source={{
+                            uri: image,
                           }}
                           resizeMode={'cover'}
                         />
@@ -578,9 +707,16 @@ const NewPost = ({ navigation }: Props) => {
         </ScrollView>
 
         <Button
-          disabled={isLoading || (!location && !content && !imagesObject && !mediaGif)}
+          disabled={
+            isLoading ||
+            (!location && !content && !uploadImagesObject && !imagesObject && !mediaGif)
+          }
           onPress={() => {
-            postSocial();
+            if (route.params?.postId) {
+              editSocial();
+            } else {
+              postSocial();
+            }
           }}
           btnStyle={[
             button.primary,
@@ -595,7 +731,9 @@ const NewPost = ({ navigation }: Props) => {
               {isLoading ? (
                 <ActivityIndicator />
               ) : (
-                <StyledText style={{ color: 'white' }}>Post</StyledText>
+                <StyledText style={{ color: 'white' }}>
+                  {route.params?.postId ? 'Edit Post' : 'Post'}
+                </StyledText>
               )}
             </>
           }

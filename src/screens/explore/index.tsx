@@ -390,6 +390,7 @@ const Explore = ({ navigation }: Props) => {
             clearButtonMode="always"
             onChangeText={(text) => {
               setSearchChannelsToFollowText(text);
+              setPage(1);
             }}
             leftIcon={
               <View style={{ justifyContent: 'center' }}>
@@ -536,16 +537,17 @@ const Explore = ({ navigation }: Props) => {
                     // navigation.navigate('UserProfile', {
                     //   id: item?._id,
                     // })
-
-                    navigation.navigate('Main', {
-                      screen: 'ExploreTab',
-                      params: {
-                        screen: 'UserProfile',
+                    if (item?.id) {
+                      navigation.navigate('Main', {
+                        screen: 'ExploreTab',
                         params: {
-                          id: item?._id,
+                          screen: 'UserProfile',
+                          params: {
+                            id: item?.id,
+                          },
                         },
-                      },
-                    });
+                      });
+                    }
                   }}
                   style={{ flex: 1, marginBottom: spacing.x24 }}
                 >

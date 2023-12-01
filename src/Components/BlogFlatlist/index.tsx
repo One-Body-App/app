@@ -21,7 +21,7 @@ import { isObject } from 'lodash';
 import { OpenURLButton } from '@/src/Services/constants';
 import ArticleItem from '../ListItems/ArticleItem';
 import { useTheme } from '@react-navigation/native';
-import OptionsModal from '../ListItems/OptionsModal';
+import OptionsModal, { PopupItem } from '../ListItems/OptionsModal';
 import { styles as globalStyle } from '@/src/components/ListItems/style';
 import { spacing } from '@/src/styles/spacing';
 import { Tabs } from 'react-native-collapsible-tab-view';
@@ -36,7 +36,7 @@ const BlogFlatlist = ({ userId }: { userId: string }) => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(true);
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
-  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
+  const [currentPopupItem, setCurrentPopupItem] = useState<PopupItem>();
 
   const getBlog = async (pageNumber: number) => {
     try {
@@ -85,7 +85,26 @@ const BlogFlatlist = ({ userId }: { userId: string }) => {
   const { colors } = useTheme();
 
   const showModal = (item: ArticleType) => {
-    setCurrentPopupItem(item);
+    if (user) {
+      setCurrentPopupItem({
+        id: item.id,
+        postlink: item.link,
+        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
+        created: item.created,
+        image: item.image,
+        externalLink: item.link,
+
+        userData: {
+          twitterHandler: user?.influencerProfile?.twitterHandler,
+          instagramHandler: user?.influencerProfile?.instagramHandler,
+          name: user?.name,
+          username: user?.username,
+          _id: user?._id,
+          accountType: user?.accountType,
+          profileImage: user?.profileImage,
+        },
+      });
+    }
     setShow(true);
   };
 
@@ -103,7 +122,6 @@ const BlogFlatlist = ({ userId }: { userId: string }) => {
         show={show ?? false}
         setShow={setShow}
         currentPopupItem={currentPopupItem}
-        hideChannelSection={true}
         height={getHeight(25)}
       />
       <Tabs.FlatList

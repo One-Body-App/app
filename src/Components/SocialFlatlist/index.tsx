@@ -5,7 +5,7 @@ import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { SetSocial } from '@/redux/actions/SocialActions';
-import { useTheme } from '@react-navigation/native';
+import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import SocialItem from '../ListItems/SocialItem';
 import { isObject } from 'lodash';
@@ -13,6 +13,7 @@ import { Tabs } from 'react-native-collapsible-tab-view';
 import { RefreshListRef } from '@/utils/types';
 import { StyledText } from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
+import { MainStackParamList } from '@/src/navigator/types';
 
 const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>(
   ({ userIdToPullData }, ref) => {
@@ -28,6 +29,7 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
     const [isLoading, setIsLoading] = useState(false);
     const [show, setShow] = useState<boolean>(false);
     const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
+    const navigation = useNavigation<NavigationProp<MainStackParamList>>();
 
     const refreshContent = (showRefreshIndicator = false) => {
       setIsEndOfList(false);
@@ -99,6 +101,38 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
     }, [isRefreshing]);
     const [isScrollEnable, setIsScrollEnable] = useState(true);
 
+    const removePost = async (id: string) => {
+      try {
+        const res = await ApiCall({
+          route: `social/remove-post/${id}`,
+          verb: 'delete',
+          token: token,
+        });
+
+        if (res?.status == 200) {
+          getData();
+        }
+      } catch (e: any) {
+        console.log('saga error -- ', e.toString());
+      }
+    };
+
+    const editPost = async (id: string) => {
+      navigation.navigate('Post', { postId: id });
+      // try {
+      //   const res = await ApiCall({
+      //     route: `social/edit-post/${id}`,
+      //     verb: 'patch',
+      //     token: token,
+      //   });
+      //   if (res?.status == 200) {
+      //     getFeedData(feedOptions.type, feedOptions.page);
+      //   }
+      // } catch (e: any) {
+      //   console.log('saga error -- ', e.toString());
+      // }
+    };
+
     return (
       <Tabs.FlatList
         data={socialPost}
@@ -114,6 +148,8 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
             onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
             index={index}
             parentRefreshContent={refreshContent}
+            removePost={removePost}
+            editPost={editPost}
           />
         )}
         onEndReachedThreshold={0.5}

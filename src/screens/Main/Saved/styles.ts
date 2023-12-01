@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { spacing } from '@/src/styles/spacing';
+import { borderRadius } from '@/src/styles/outlines';
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -37,5 +39,15 @@ export const styles = StyleSheet.create({
     padding: 8,
     color: '#757575',
     alignSelf: 'stretch',
+  },
+
+  mainButtonWrapper: { flex: 1, marginVertical: spacing.x16 },
+
+  filterButton: {
+    paddingHorizontal: spacing.x24,
+    paddingVertical: spacing.x10,
+
+    marginRight: spacing.x24,
+    borderRadius: borderRadius.xs,
   },
 });

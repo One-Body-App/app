@@ -37,29 +37,50 @@ import { OpenURLButton } from '@/src/Services/constants';
 import { isObject } from 'lodash';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { SceneRendererProps } from 'react-native-tab-view';
-import OptionsModal from '../ListItems/OptionsModal';
+import OptionsModal, { PopupItem } from '../ListItems/OptionsModal';
 import { ArticleType } from '@/utils/types';
 import SocialItem from '../ListItems/SocialItem';
 import { decode } from 'html-entities';
 import ArticleItem from '../ListItems/ArticleItem';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { MainStackParamList } from '@/src/navigator/types';
 
 type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const todayNews = useSelector((state: RootState) => state.social.TodayNews);
-
+  const user = useSelector((state: RootState) => state.auth.userProfile);
   const recentBlog = useSelector((state: RootState) => state.social.RecentBlog);
   const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   const [show, setShow] = useState<boolean>();
-  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
+  const [currentPopupItem, setCurrentPopupItem] = useState<PopupItem>();
   const [page, setPage] = useState<number>(1);
   const [socialPosts, setSocialPosts] = useState<any[]>();
-  const navigation = useNavigation<ScreenNavigationProp>();
+  const navigation = useNavigation<NavigationProp<MainStackParamList>>();
 
   const showModal = (item: ArticleType) => {
-    setCurrentPopupItem(item);
+    if (user) {
+      setCurrentPopupItem({
+        id: item.id,
+        postlink: item.link,
+        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
+        created: item.created,
+        image: item.image,
+        externalLink: item.link,
+
+        userData: {
+          twitterHandler: user?.influencerProfile?.twitterHandler,
+          instagramHandler: user?.influencerProfile?.instagramHandler,
+          name: user?.name,
+          username: user?.username,
+          _id: user?._id,
+          accountType: user?.accountType,
+          profileImage: user?.profileImage,
+        },
+      });
+    }
     setShow(true);
   };
 
@@ -101,6 +122,41 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
     } catch (e: any) {
       console.log(`saga get twitter timline  error -- `, e.toString());
     }
+  };
+
+  const removePost = async (id: string) => {
+    dispatch(setLoader(true));
+
+    try {
+      const res = await ApiCall({
+        route: `social/remove-post/${id}`,
+        verb: 'delete',
+        token: token,
+      });
+
+      if (res?.status == 200) {
+        getData();
+      }
+      dispatch(setLoader(false));
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const editPost = async (id: string) => {
+    navigation.navigate('Post', { postId: id });
+    // try {
+    //   const res = await ApiCall({
+    //     route: `social/edit-post/${id}`,
+    //     verb: 'patch',
+    //     token: token,
+    //   });
+    //   if (res?.status == 200) {
+    //     getFeedData(feedOptions.type, feedOptions.page);
+    //   }
+    // } catch (e: any) {
+    //   console.log('saga error -- ', e.toString());
+    // }
   };
 
   const getData = async () => {
@@ -157,8 +213,6 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                 horizontal={true}
                 contentContainerStyle={{ marginTop: 20 }}
                 showsHorizontalScrollIndicator={false}
-                ListHeaderComponent={() => <View style={{ padding: 7 }} />}
-                ListFooterComponent={() => <View style={{ padding: 7 }} />}
                 ItemSeparatorComponent={() => <View style={{ padding: 7 }} />}
                 keyExtractor={(item, index) => `${item.created}_${index}`}
                 renderItem={({ item }) => (
@@ -233,6 +287,8 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                     item={item}
                     index={index}
                     onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                    removePost={removePost}
+                    editPost={editPost}
                   />
                 );
               if (item.type == 'tasteBreaker') {
@@ -243,14 +299,6 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
                 <ArticleItem
                   item={item}
                   imageSizeType="cover"
-                  blogPostStyle={{
-                    ...styles.socialpostview,
-                    backgroundColor: colors.card,
-                    padding: 0,
-                    margin: 7,
-                    flex: 1,
-                  }}
-                  blogPostImageStyle={styles.socialpostimage}
                   blogPostTitleStyle={{
                     flexDirection: 'row',
                     justifyContent: 'space-between',
@@ -311,7 +359,18 @@ const HomeAllComponent = ({ jumpTo }: SceneRendererProps) => {
           <Text style={{ ...styles.explortext, color: colors.text }}>
             Explore Influencers & Organizations
           </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Explore')} style={styles.viewtext}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('MainRoot', {
+                screen: 'Main',
+                params: {
+                  screen: 'ExploreTab',
+                  params: { screen: 'Explore' },
+                },
+              })
+            }
+            style={styles.viewtext}
+          >
             <Text style={{ color: '#126B87' }}>View more</Text>
             <Fontisto name="angle-right" size={12} color="#126B87" />
           </TouchableOpacity>

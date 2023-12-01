@@ -35,14 +35,16 @@ interface BaseItemProps {
   style?: StyleProp<ViewStyle>;
   onPress: Function;
   profileImage: string;
-  createdDate?: Date;
+  created?: Date;
+  updated?: Date;
+  edited?: boolean;
   source?: string;
+  fromSavedPosts?: boolean;
   postData: {
     id?: string;
     type?: PostType;
     postlink?: string;
     title: string;
-    created: Date;
     image?: {
       url: string;
     };
@@ -54,6 +56,7 @@ interface BaseItemProps {
       coordinates?: number[];
     };
     locationName?: string;
+    edited?: boolean;
   };
   userData: {
     twitterHandler?: string;
@@ -62,7 +65,7 @@ interface BaseItemProps {
     username: string;
     _id: string;
     accountType: AccountType;
-    profileImage: string;
+    profileImage?: string;
   };
 
   isApprovedInfluencer?: boolean;
@@ -71,6 +74,8 @@ interface BaseItemProps {
   isScrollEnable?: boolean;
   index?: number;
   parentRefreshContent?: Function;
+  removePost?: (postId: string) => void;
+  editPost?: (postId: string) => void;
 }
 
 const BaseItem = ({
@@ -78,7 +83,9 @@ const BaseItem = ({
   onPress,
   profileImage,
   children,
-  createdDate,
+  created,
+  updated,
+  edited,
   source,
   userData,
   isApprovedInfluencer,
@@ -87,6 +94,9 @@ const BaseItem = ({
   onShowDismissCard,
   isScrollEnable,
   index,
+  removePost,
+  editPost,
+  fromSavedPosts,
 }: BaseItemProps) => {
   const { colors } = useTheme();
   const dispatch = useDispatch();
@@ -204,7 +214,7 @@ const BaseItem = ({
       });
 
       if (res?.status == 200) {
-        dispatch(getuserGet({ token }));
+        dispatch(getuserGet({ token, pullSavedData: fromSavedPosts }));
       }
       dispatch(setLoader(false));
     } catch (e: any) {
@@ -212,12 +222,12 @@ const BaseItem = ({
     }
   };
 
-  const removePost = async (link?: string, id?: string) => {
+  const removeSavedPost = async (link?: string, id?: string) => {
     dispatch(setLoader(true));
 
     try {
       const res = await ApiCall({
-        route: `user/remove-post`,
+        route: `user/remove-saved-post`,
         verb: 'delete',
         token: token,
         params: {
@@ -227,7 +237,7 @@ const BaseItem = ({
       });
 
       if (res?.status == 200) {
-        dispatch(getuserGet({ token }));
+        dispatch(getuserGet({ token, pullSavedData: fromSavedPosts }));
       }
       dispatch(setLoader(false));
     } catch (e: any) {
@@ -404,7 +414,7 @@ const BaseItem = ({
                       : source == 'instagram'
                       ? userData?.instagramHandler
                       : userData?.username}
-                    {createdDate ? (
+                    {created ? (
                       <>
                         {' '}
                         •{' '}
@@ -414,7 +424,21 @@ const BaseItem = ({
                             { color: Colors.neutral[300], alignItems: 'center' },
                           ]}
                         >
-                          {timeSince(createdDate)} ago
+                          {timeSince(created)} ago
+                        </StyledText>
+                      </>
+                    ) : null}
+                    {edited && updated ? (
+                      <>
+                        {' '}
+                        • {' Edited '}
+                        <StyledText
+                          style={[
+                            fontSize.x1,
+                            { color: Colors.neutral[300], alignItems: 'center' },
+                          ]}
+                        >
+                          {timeSince(updated)} ago
                         </StyledText>
                       </>
                     ) : null}
@@ -639,14 +663,14 @@ const BaseItem = ({
                   <TouchableOpacity
                     onPress={() => {
                       if (isThisPostSaved) {
-                        if (postData.id) removePost(undefined, postData.id);
-                        else if (postData.postlink) removePost(postData.postlink);
+                        if (postData.id) removeSavedPost(undefined, postData.id);
+                        else if (postData.postlink) removeSavedPost(postData.postlink);
                       } else {
                         savePost(
                           postData?.id,
                           postData?.type,
                           postData.title,
-                          postData?.created,
+                          created,
                           userData?._id,
                           postData?.postlink,
                           postData?.image?.url
@@ -691,9 +715,10 @@ const BaseItem = ({
       <OptionsModal
         show={showOptions ?? false}
         setShow={setShowOptions}
-        currentPopupItem={{ ...postData, userData }}
-        hideChannelSection={user?._id == userData._id}
+        currentPopupItem={{ ...postData, userData, created }}
         onProfilePress={onPress}
+        removePost={removePost}
+        editPost={editPost}
       />
     </View>
   );

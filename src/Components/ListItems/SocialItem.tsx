@@ -15,7 +15,7 @@ import { RootStackParamList } from '@/src/_Navigation/types';
 import Video from 'react-native-video';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
-import { AccountType, PostType, SocialPostReaction } from '@/utils/types';
+import { AccountType, PostType, SocialPost, SocialPostReaction } from '@/utils/types';
 import {
   ExploreStackParamsList,
   MainDrawerParamsList,
@@ -37,6 +37,9 @@ import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionVie
 import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { ScrollView } from 'react-native-gesture-handler';
+import { ApiCall } from '@/src/Services/api';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { isArray } from 'lodash';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -56,51 +59,7 @@ type LinkData = {
 type SocialItemProps = {
   currentPopupItemId?: string;
   visible?: boolean;
-  item: {
-    postId?: string;
-    content: string;
-    date: string;
-    source: 'twitter' | 'instagram';
-    handler: string;
-    link: string;
-    title: string;
-    mediaUrl?: string;
-    attachments?: [
-      {
-        media_key: string;
-        type: string;
-        url: string;
-        title?: string;
-        siteName?: string;
-        image?: { height: string; type: string; url: string; width: string };
-        description?: string;
-      },
-    ];
-    mediaType?: string;
-    permalink?: string;
-    userData: {
-      _id: string;
-      name: string;
-      username: string;
-      accountType: AccountType;
-      profileImage: string;
-      twitterHandler?: string;
-      instagramHandler?: string;
-      isApprovedInfluencer?: boolean;
-    };
-    images?: string[];
-    gif?: GiphyMedia;
-    videos?: string[];
-    created: Date;
-    id: string;
-
-    reactions: SocialPostReaction[];
-    location?: {
-      type?: string;
-      coordinates?: number[];
-    };
-    locationName?: string;
-  };
+  item: SocialPost;
   socialPostviewStyle?: StyleProp<ViewStyle>;
   selectedEmoji?: EmojiItemProp;
 
@@ -108,6 +67,9 @@ type SocialItemProps = {
   isScrollEnable?: boolean;
   index?: number;
   parentRefreshContent?: Function;
+  removePost: (postId: string) => void;
+  editPost?: (postId: string) => void;
+  fromSavedPosts?: boolean;
 };
 const SocialItem = ({
   item,
@@ -116,6 +78,9 @@ const SocialItem = ({
   index,
   onShowDismissCard,
   parentRefreshContent,
+  removePost,
+  editPost,
+  fromSavedPosts,
 }: SocialItemProps) => {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -176,8 +141,8 @@ const SocialItem = ({
           });
         }
       });
-    } else if (item.images && item.images.length > 0) {
-      item.images.forEach((attachment) => {
+    } else if (isArray(item.images) && item.images && item.images.length > 0) {
+      item.images?.forEach((attachment) => {
         media.push({
           type: 'photo',
           url: attachment,
@@ -256,21 +221,26 @@ const SocialItem = ({
 
   return (
     <BaseItem
+      removePost={removePost}
+      editPost={editPost}
+      edited={item.edited}
+      updated={item.updated}
+      fromSavedPosts={fromSavedPosts}
       postData={{
         title: item?.title,
-        id: item.postId ?? item.id,
+        id: item.postId ?? item.id ?? item._id,
         type: PostType.social,
         postlink: item.link,
-        created: item.created,
         image: item.images && item.images.length > 0 ? { url: item.images[0] } : undefined,
         externalLink: url,
         reactions: item.reactions ?? [],
         myReaction,
         location: item.location,
         locationName: item.locationName,
+        edited: item.edited,
       }}
       parentRefreshContent={parentRefreshContent}
-      createdDate={item?.created}
+      created={item?.created}
       source={item.source}
       userData={item.userData}
       isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}

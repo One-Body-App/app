@@ -288,7 +288,7 @@ const LoginComponent: FC<Props> = ({
                   navigation.goBack();
 
                   navigation.push(toScreen as keyof MainStackParamList, {
-                    setError: seterror,
+                    // setError: seterror,
                     ...toScreenParams,
                   });
                 } else {
@@ -351,7 +351,7 @@ const LoginComponent: FC<Props> = ({
             if (toScreen) {
               navigation.goBack();
               navigation.push(toScreen as keyof MainStackParamList, {
-                setError: seterror,
+                // setError: seterror,
                 ...toScreenRouteParams,
               });
             } else {
@@ -500,7 +500,7 @@ const LoginComponent: FC<Props> = ({
             navigation.goBack();
 
             navigation.push(toScreen as keyof MainStackParamList, {
-              setError: seterror,
+              // setError: seterror,
               ...toScreenParams,
             });
           } else {
@@ -557,7 +557,7 @@ const LoginComponent: FC<Props> = ({
             navigation.goBack();
 
             navigation.push(toScreen as keyof MainStackParamList, {
-              setError: seterror,
+              // setError: seterror,
               ...toScreenParams,
             });
           } else {
@@ -795,15 +795,18 @@ const LoginComponent: FC<Props> = ({
                     },
                   ]}
                   onPress={async () => {
-                    dispatch(signUp.Reset());
                     if (updateParent) {
                       updateParent(false);
                     }
+
                     navigation.goBack();
-                    LoginManager.logOut();
-                    await auth().signOut();
-                    await auth().currentUser?.reload();
-                    dispatch(logout());
+                    if (!onlyPassword) {
+                      dispatch(signUp.Reset());
+                      LoginManager.logOut();
+                      await auth().signOut();
+                      await auth().currentUser?.reload();
+                      dispatch(logout());
+                    }
                   }}
                   btnTextStyle={{ color: Colors.neutral[300] }}
                 />

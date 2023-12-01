@@ -1,7 +1,7 @@
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 
 import React, { useRef } from 'react';
-import { View, Share, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Share, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Modal from 'react-native-modal';
 
@@ -26,8 +26,8 @@ import { Colors } from '@/src/styles';
 import { StyledText } from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
-import { Copy, InfoCircle, Profile, User } from 'iconsax-react-native';
-import { Bookmark, ShareAndroid, ShareIos } from 'iconoir-react-native';
+import { Copy, InfoCircle, Profile } from 'iconsax-react-native';
+import { Bookmark, EditPencil, ShareAndroid, ShareIos, Xmark } from 'iconoir-react-native';
 import { body, fontSize, header } from '@/src/styles/typography';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Toast from 'react-native-toast-notifications';
@@ -40,39 +40,43 @@ type ScreenNavigationProp = CompositeNavigationProp<
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
   >
 >;
+
+export type PopupItem = {
+  id?: string;
+  type?: PostType;
+  postlink?: string;
+  title: string;
+  created?: Date;
+  image?: {
+    url: string;
+  };
+  externalLink?: string;
+  reactions?: SocialPostReaction[];
+  myReaction?: SocialPostReaction;
+  userData: {
+    twitterHandler?: string;
+    instagramHandler?: string;
+    name: string;
+    username: string;
+    _id: string;
+    accountType: AccountType;
+    profileImage?: string;
+  };
+};
 const OptionsModal = ({
   show,
   setShow,
   currentPopupItem,
-  hideChannelSection,
   height,
   onProfilePress,
+  removePost,
+  editPost,
 }: {
   show: boolean;
   setShow: (show: boolean) => void;
-  currentPopupItem?: {
-    id?: string;
-    type?: PostType;
-    postlink?: string;
-    title: string;
-    created: Date;
-    image?: {
-      url: string;
-    };
-    externalLink?: string;
-    reactions?: SocialPostReaction[];
-    myReaction?: SocialPostReaction;
-    userData: {
-      twitterHandler?: string;
-      instagramHandler?: string;
-      name: string;
-      username: string;
-      _id: string;
-      accountType: AccountType;
-      profileImage: string;
-    };
-  };
-  hideChannelSection?: boolean;
+  removePost?: (postId: string) => void;
+  editPost?: (postId: string) => void;
+  currentPopupItem?: PopupItem;
   height?: number;
   onProfilePress?: Function;
 }) => {
@@ -81,13 +85,14 @@ const OptionsModal = ({
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
   const toast = useRef<ToastContainer>(null);
+  const loader = useSelector((state: RootState) => state.general.loader);
 
-  const removePost = async (link?: string, id?: string) => {
+  const removeSavedPost = async (link?: string, id?: string) => {
     dispatch(setLoader(true));
 
     try {
       const res = await ApiCall({
-        route: `user/remove-post`,
+        route: `user/remove-saved-post`,
         verb: 'delete',
         token: token,
         params: {
@@ -198,7 +203,7 @@ const OptionsModal = ({
         </View>
         <ScrollView style={{ flexGrow: 1 }}>
           <View>
-            {hideChannelSection ? null : (
+            {currentPopupItem?.userData?._id != user?._id ? (
               <View style={{ marginVertical: spacing.x8 }}>
                 <Button
                   text="View Account"
@@ -216,11 +221,74 @@ const OptionsModal = ({
                   }}
                 />
               </View>
-            )}
+            ) : null}
+
+            {currentPopupItem?.userData?._id == user?._id ? (
+              <>
+                {editPost ? (
+                  <View style={{ marginVertical: spacing.x8 }}>
+                    <Button
+                      text="Edit"
+                      btnTextStyle={[body.x2, { color: colors.text }]}
+                      leftIcon={
+                        <EditPencil
+                          style={{ marginRight: spacing.x5 }}
+                          width={fontSize.x5.fontSize}
+                          height={fontSize.x5.fontSize}
+                          color={colors.text}
+                          fill={isThisPostSaved ? colors.text : colors.background}
+                        />
+                      }
+                      onPress={() => {
+                        setShow(false);
+                        if (currentPopupItem?.id) editPost(currentPopupItem?.id);
+                      }}
+                    />
+                  </View>
+                ) : null}
+
+                {removePost ? (
+                  <View style={{ marginVertical: spacing.x8 }}>
+                    <Button
+                      text="Remove"
+                      btnTextStyle={[body.x2, { color: Colors.errorFeedback.background }]}
+                      leftIcon={
+                        <Xmark
+                          style={{ marginRight: spacing.x5 }}
+                          width={fontSize.x5.fontSize}
+                          height={fontSize.x5.fontSize}
+                          color={Colors.errorFeedback.background}
+                          fill={isThisPostSaved ? colors.text : colors.background}
+                        />
+                      }
+                      onPress={() => {
+                        Alert.alert('Are you sure you want to delete this post?', undefined, [
+                          {
+                            text: 'Yes',
+                            onPress: () => {
+                              setShow(false);
+                              if (currentPopupItem) {
+                                removePost(currentPopupItem?.id ?? '');
+                              }
+                            },
+                            style: 'destructive',
+                          },
+                          {
+                            text: 'No',
+                            style: 'cancel',
+                          },
+                        ]);
+                      }}
+                    />
+                  </View>
+                ) : null}
+              </>
+            ) : null}
             <View style={{ marginVertical: spacing.x8 }}>
               <Button
                 text={isThisPostSaved ? 'Remove Saved Post' : 'Save Post'}
                 btnTextStyle={[body.x2, { color: colors.text }]}
+                disabled={loader}
                 leftIcon={
                   <Bookmark
                     style={{ marginRight: spacing.x5 }}
@@ -232,8 +300,9 @@ const OptionsModal = ({
                 }
                 onPress={() => {
                   if (isThisPostSaved) {
-                    if (currentPopupItem?.id) removePost(undefined, currentPopupItem?.id);
-                    else if (currentPopupItem?.postlink) removePost(currentPopupItem?.postlink);
+                    if (currentPopupItem?.id) removeSavedPost(undefined, currentPopupItem?.id);
+                    else if (currentPopupItem?.postlink)
+                      removeSavedPost(currentPopupItem?.postlink);
                   } else {
                     savePost(
                       currentPopupItem?.id,

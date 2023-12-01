@@ -28,6 +28,7 @@ type Props = {
   onboardingType: AccountType;
   activeStep: number;
   disabled?: boolean;
+  dontUseScrollView?: boolean;
 };
 
 const indicatorStyle: ViewStyle = {
@@ -47,6 +48,7 @@ const OnboardingStepsLayout = ({
   activeStep,
   disabled,
   reasonText,
+  dontUseScrollView,
 }: Props) => {
   const { colors, dark } = useTheme();
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -88,7 +90,7 @@ const OnboardingStepsLayout = ({
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView style={{ flex: 1 }}>{children}</ScrollView>
+        {dontUseScrollView ? children : <ScrollView style={{ flex: 1 }}>{children}</ScrollView>}
       </KeyboardAvoidingView>
 
       <View style={{ justifyContent: 'center' }}>

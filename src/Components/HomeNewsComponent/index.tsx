@@ -16,13 +16,14 @@ import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { isArray, isObject } from 'lodash';
 import ArticleItem from '../ListItems/ArticleItem';
-import OptionsModal from '../ListItems/OptionsModal';
+import OptionsModal, { PopupItem } from '../ListItems/OptionsModal';
 import { ArticleType } from '@/utils/types';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
 const HomeNewsComponent = () => {
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const user = useSelector((state: RootState) => state.auth.userProfile);
   const allNews = useSelector((state: RootState) => {
     return isArray(state.social.AllNews) ? state.social.AllNews : [];
   });
@@ -95,10 +96,29 @@ const HomeNewsComponent = () => {
   }, [refreshing]);
 
   const [show, setShow] = useState<boolean>();
-  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
+  const [currentPopupItem, setCurrentPopupItem] = useState<PopupItem>();
 
   const showModal = (item: ArticleType) => {
-    setCurrentPopupItem(item);
+    if (user) {
+      setCurrentPopupItem({
+        id: item.id,
+        postlink: item.link,
+        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
+        created: item.created,
+        image: item.image,
+        externalLink: item.link,
+
+        userData: {
+          twitterHandler: user?.influencerProfile?.twitterHandler,
+          instagramHandler: user?.influencerProfile?.instagramHandler,
+          name: user?.name,
+          username: user?.username,
+          _id: user?._id,
+          accountType: user?.accountType,
+          profileImage: user?.profileImage,
+        },
+      });
+    }
     setShow(true);
   };
 

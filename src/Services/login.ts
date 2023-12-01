@@ -111,7 +111,7 @@ export const socialLogin = (
 
     dispatch(
       loginSocialRequest({
-        dataToSend,
+        data: dataToSend,
         seterror: data.seterror,
         gotoSignup: data.gotoSignup,
         sendFcm: data.sendFcm,

@@ -52,6 +52,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faCircle } from '@fortawesome/free-solid-svg-icons/faCircle';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '@/src/styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'IndividualSteps'>;
 

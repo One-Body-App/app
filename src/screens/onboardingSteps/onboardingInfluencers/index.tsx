@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Image, TouchableOpacity, ScrollView, FlatList, RefreshControl } from 'react-native';
 import { styles } from './styles';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -20,42 +20,61 @@ import { fontSize } from '@/src/styles/typography';
 import { orgprofileUpdate, profileUpdate } from '@/src/Redux/actions/AuthActions';
 import SearchIcon from '@/assets/icons/search.svg';
 import { profileImageList } from '@/src/styles/items';
+import { serialize } from 'object-to-formdata';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
 const OnboardingInfluencers = ({ route }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
 
-  const [influencer, setInfluencer] = useState<User[]>([]);
-  const [searchInfluencer, setSearchInfluencer] = useState<User[]>([]);
+  const [influencers, setInfluencers] = useState<User[]>([]);
   const [selectedInfluencers, setselectedInfluencers] = useState<string[]>([]);
 
   const toast = useToast();
   const dispatch = useDispatch();
+  const [searchText, setSearchText] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const [loadingMore, setLoadingMore] = useState<boolean>(true);
+  const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (token) {
-      getInfluencers();
+      getInfluencers(page);
+      setLoadingMore(true);
     }
-  }, [token]);
+  }, [token, searchText, page]);
 
-  const getInfluencers = async () => {
+  const getInfluencers = async (pageNumber: number) => {
     try {
+      console.log(`user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`);
       const res = await ApiCall({
-        route: 'user/get-users-to-subscribe',
+        route: `user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`,
         verb: 'get',
         token: token,
       });
 
       if (res?.status == 200) {
-        setInfluencer(res.response?.data);
+        let userData = [];
 
-        setSearchInfluencer(res.response?.data);
+        if (pageNumber == 1) {
+          userData = res?.response.data ?? [];
+          setIsEndOfList(false);
+        } else {
+          userData = [...influencers, ...(res?.response.data ?? [])];
+          if (res?.response.data.length < 1) {
+            setIsEndOfList(true);
+          }
+        }
+
+        setInfluencers(userData);
       } else {
         console.log('error', res?.response);
       }
+      setLoadingMore(false);
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
+      setLoadingMore(false);
     }
   };
 
@@ -88,6 +107,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
   return (
     <OnboardingStepsLayout
       buttonText={'Done'}
+      dontUseScrollView
       onPress={async () => {
         if (selectedInfluencers.length > 0) {
           await addFollowing();
@@ -108,7 +128,9 @@ const OnboardingInfluencers = ({ route }: Props) => {
                     }
                   : null,
             };
-            dispatch(profileUpdate({ data, token, accountType: route.params.profileType }));
+            dispatch(
+              profileUpdate({ data: serialize(data), token, accountType: route.params.profileType })
+            );
           } else {
             const data = {
               typeOfOrganization: route.params.selectedOrganizationType,
@@ -143,14 +165,10 @@ const OnboardingInfluencers = ({ route }: Props) => {
             <StyledTextInput
               clearButtonMode="always"
               onChangeText={(text) => {
-                const newSearchInfluencer = [];
-                for (let i = 0; i < influencer.length; i++) {
-                  if (influencer[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                    newSearchInfluencer.push(influencer[i]);
-                  }
-                  setSearchInfluencer(newSearchInfluencer);
-                }
+                setSearchText(text);
+                setPage(1);
               }}
+              value={searchText}
               leftIcon={
                 <View style={{ justifyContent: 'center' }}>
                   <SearchIcon
@@ -169,91 +187,110 @@ const OnboardingInfluencers = ({ route }: Props) => {
             />
           </View>
           <View style={{ flex: 10 }}>
-            <ScrollView
+            <FlatList
+              data={influencers}
+              refreshing={isRefreshing}
+              refreshControl={
+                <RefreshControl
+                  enabled={true}
+                  refreshing={isRefreshing}
+                  onRefresh={() => {
+                    setIsRefreshing(true);
+                    // setSearchChannelsToFollow([]);
+                    // dispatch(getuserAll({ token: token }));
+                    getInfluencers(1);
+                  }}
+                />
+              }
+              onEndReached={() => {
+                if (!loadingMore && !isRefreshing && !isEndOfList) setPage(page + 1);
+              }}
+              onEndReachedThreshold={0.8}
               contentContainerStyle={{
                 marginTop: spacing.x24,
                 paddingBottom: spacing.x48,
-                flexDirection: searchInfluencer.length < 1 ? 'column' : 'row',
-                flexWrap: searchInfluencer.length < 1 ? 'nowrap' : 'wrap',
+                // flexDirection: influencers.length < 1 ? 'column' : 'row',
+                // flexWrap: influencers.length < 1 ? 'nowrap' : 'wrap',
               }}
-            >
-              {searchInfluencer.length < 1 ? (
+              numColumns={3}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  onPress={() => {
+                    if (item.id) {
+                      if (selectedInfluencers.includes(item.id)) {
+                        setselectedInfluencers(
+                          selectedInfluencers.filter((organizationId) => {
+                            return organizationId !== item.id;
+                          })
+                        );
+                      } else {
+                        setselectedInfluencers([...selectedInfluencers, item.id]);
+                      }
+                    }
+                  }}
+                  style={{
+                    width: '33%',
+
+                    alignItems: 'center',
+                  }}
+                >
+                  <Image
+                    style={
+                      item.id && selectedInfluencers.includes(item.id)
+                        ? {
+                            ...profileImageList,
+                            borderWidth: 2.5,
+                            borderColor: Colors.infoFeedback[200],
+                          }
+                        : profileImageList
+                    }
+                    resizeMode="contain"
+                    source={{
+                      uri:
+                        item?.profileImage && item?.profileImage != ''
+                          ? item?.profileImage
+                          : 'https://cdn.onebodyapp.com/user/no-image.png',
+                    }}
+                  />
+
+                  <View style={{ marginBottom: spacing.x24 }}>
+                    <StyledText
+                      style={{
+                        textAlign: 'center',
+                        color:
+                          item.id && selectedInfluencers.includes(item.id)
+                            ? Colors.infoFeedback[200]
+                            : Colors.neutral.brand,
+                      }}
+                      numberOfLines={2}
+                    >
+                      {item?.name}
+                    </StyledText>
+                    <StyledText
+                      numberOfLines={1}
+                      style={{
+                        color:
+                          item.id && selectedInfluencers.includes(item.id)
+                            ? Colors.infoFeedback[400]
+                            : Colors.neutral[300],
+                        alignSelf: 'center',
+                        ...fontSize.x1,
+                      }}
+                    >
+                      {item?.profile?.whatIDo?.name ?? item?.profile?.typeOfOrganization?.name}
+                    </StyledText>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={() => (
                 <StyledText
                   style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}
                 >
                   No Search Results
                 </StyledText>
-              ) : null}
-              {searchInfluencer?.map((item, index) => {
-                return (
-                  <TouchableOpacity
-                    activeOpacity={0.6}
-                    onPress={() => {
-                      if (selectedInfluencers.includes(item._id)) {
-                        setselectedInfluencers(
-                          selectedInfluencers.filter((organizationId) => {
-                            return organizationId !== item._id;
-                          })
-                        );
-                      } else {
-                        setselectedInfluencers([...selectedInfluencers, item._id]);
-                      }
-                    }}
-                    style={{
-                      width: '33%',
-
-                      alignItems: 'center',
-                    }}
-                    key={index}
-                  >
-                    <Image
-                      style={
-                        selectedInfluencers.includes(item._id)
-                          ? {
-                              ...profileImageList,
-                              borderWidth: 2.5,
-                              borderColor: Colors.infoFeedback[200],
-                            }
-                          : profileImageList
-                      }
-                      resizeMode="contain"
-                      source={{
-                        uri:
-                          item?.profileImage && item?.profileImage != ''
-                            ? item?.profileImage
-                            : 'https://cdn.onebodyapp.com/user/no-image.png',
-                      }}
-                    />
-
-                    <View style={{ marginBottom: spacing.x24 }}>
-                      <StyledText
-                        style={{
-                          textAlign: 'center',
-                          color: selectedInfluencers.includes(item._id)
-                            ? Colors.infoFeedback[200]
-                            : Colors.neutral.brand,
-                        }}
-                        numberOfLines={2}
-                      >
-                        {item?.name}
-                      </StyledText>
-                      <StyledText
-                        numberOfLines={1}
-                        style={{
-                          color: selectedInfluencers.includes(item._id)
-                            ? Colors.infoFeedback[400]
-                            : Colors.neutral[300],
-                          alignSelf: 'center',
-                          ...fontSize.x1,
-                        }}
-                      >
-                        {item?.profile?.whatIDo?.name ?? item?.profile?.typeOfOrganization?.name}
-                      </StyledText>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+              )}
+            />
           </View>
         </View>
       </View>

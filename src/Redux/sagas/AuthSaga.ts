@@ -29,75 +29,19 @@ import {
   signUp,
   sendVerificationEmail,
 } from '../actions/AuthActions';
+import { AccountType, ResponseGenerator } from '@/utils/types';
 
-function* loginRequest(params) {
+function* updateProfileRequest(params: {
+  data: {
+    token: string;
+    accountType: AccountType;
+    data: FormData;
+    go?: Function;
+  };
+  type: string;
+}) {
   try {
-    const res = yield ApiCall({
-      params: params.data.data,
-      route: 'auth/login',
-      verb: 'post',
-    });
-
-    if (res?.status == '200') {
-      yield put(setLoader(false));
-
-      if (res?.user?.email) {
-        params.data.gotoOtp();
-      }
-      params.data.sendFcm(res?.response?.token);
-      yield put(setLoginData(res));
-      yield put(
-        getProfile({
-          token: res?.response?.token,
-          accountType: res?.response.user.accountType,
-        })
-      );
-    } else {
-      params.data.seterror(res?.response?.message);
-      yield put(setLoader(false));
-    }
-  } catch (e) {
-    console.log('saga login error -- ', e.toString());
-    yield put(setLoader(false));
-  }
-}
-export function* loginSaga() {
-  yield takeLatest(ACTIONS.LOGIN, loginRequest);
-}
-
-function* loginSocialRequest(params) {
-  try {
-    const res = yield ApiCall({
-      params: params.data.data,
-      route: 'auth/social-login',
-      verb: 'post',
-      token: params.data.token,
-    });
-
-    if (res?.status == '200') {
-      if (res?.response?.email && params.data.gotoSignup) {
-        yield put(setProfile(res?.response));
-        params.data.gotoSignup();
-      } else {
-        yield put(setLoader(false));
-      }
-      params.data.sendFcm(params.data.data.token);
-      yield put(setLoginData({ token: params.data.data.token }));
-    } else {
-      params.data.seterror(res?.response?.message);
-      yield put(setLoader(false));
-    }
-  } catch (e) {
-    yield put(setLoader(false));
-  }
-}
-export function* loginSocialSaga() {
-  yield takeLatest(ACTIONS.LOGIN_SOCIAL, loginSocialRequest);
-}
-
-function* updateProfileRequest(params) {
-  try {
-    const res = yield ApiCall({
+    const res: ResponseGenerator = yield ApiCall({
       params: params.data.data,
       route: `user/update-profile`,
       token: params.data.token,
@@ -134,16 +78,55 @@ function* updateProfileRequest(params) {
 export function* UpdateProfileSaga() {
   yield takeLatest(ACTIONS.Profile_Update, updateProfileRequest);
 }
+
+function* loginSocialRequest(params: {
+  data: {
+    data: { token: string };
+    gotoSignup?: Function;
+    sendFcm: Function;
+    seterror: Function;
+  };
+  type: string;
+}) {
+  try {
+    const res: ResponseGenerator = yield ApiCall({
+      params: params.data.data,
+      route: 'auth/social-login',
+      verb: 'post',
+      token: params.data.data.token,
+    });
+    console.log(res, 'resresresresres');
+    if (res?.status == 200) {
+      if (res?.response?.email && params.data.gotoSignup) {
+        yield put(setProfile(res?.response));
+        params.data.gotoSignup();
+      } else {
+        yield put(setLoader(false));
+      }
+      params.data.sendFcm(params.data.data.token);
+      yield put(setLoginData({ token: params.data.data.token }));
+    } else {
+      params.data.seterror(res?.response?.message);
+      yield put(setLoader(false));
+    }
+  } catch (e) {
+    yield put(setLoader(false));
+  }
+}
+export function* loginSocialSaga() {
+  yield takeLatest(ACTIONS.LOGIN_SOCIAL, loginSocialRequest);
+}
+
 function* updateOrgProfileRequest(params) {
   try {
-    const res = yield ApiCall({
+    const res: ResponseGenerator = yield ApiCall({
       params: { ...params.data.data, accountType: 'organization' },
       route: 'user/update-profile',
       token: params.data.token,
       verb: 'patch',
     });
 
-    if (res?.status == '200') {
+    if (res?.status == 200) {
       yield put(getProfile.Request({ token: params.data.token, accountType: 'organization' }));
       yield put(setLoader(false));
       if (params?.data?.go) {
@@ -170,13 +153,13 @@ function* updateOrgProfileRequest(params) {
 // }
 // function* getProfileRequest(params) {
 //   try {
-//     const res = yield ApiCall({
+//     const res: ResponseGenerator = yield ApiCall({
 //       route: 'user/my-profile',
 //       token: params.data.token,
 //       verb: 'get',
 //     });
 //     console.log(params.data.token);
-//     if (res?.status == '200') {
+//     if (res?.status == 200) {
 //       yield put(setProfile({ token: params.data.token, ...res.response }));
 //       // params?.data?.go();
 //       yield put(setLoader(false));
@@ -194,8 +177,8 @@ export function* UpdateOrgProfileSaga() {
 }
 function* getUserProfileRequest(params) {
   try {
-    const res = yield ApiCall({
-      route: `user/my-profile`,
+    const res: ResponseGenerator = yield ApiCall({
+      route: `user/my-profile?pullSavedData=${params.pullSavedData ?? false}`,
       token: params.data.token,
       verb: 'get',
     });
@@ -219,7 +202,7 @@ export function* GetUserProfileSaga() {
 
 function* removeSocialAccountRequest(params) {
   try {
-    const res = yield ApiCall({
+    const res: ResponseGenerator = yield ApiCall({
       route: `auth/remove-influencer-social-account/${params.data.type}`,
       token: params.data.token,
       verb: 'delete',
@@ -245,7 +228,7 @@ export function* RemoveSocialAccountSaga() {
 
 function* signUpSaga({ params }) {
   try {
-    const res = yield ApiCall({
+    const res: ResponseGenerator = yield ApiCall({
       params: params.data,
       route: 'user/register',
       verb: 'post',
@@ -269,7 +252,7 @@ export function* SignUpSaga() {
 function* sendVerificationEmailSaga({ params }) {
   console.log('SEND VERIFICATION EMAIL SAGA', params);
   try {
-    const res = yield ApiCall({
+    const res: ResponseGenerator = yield ApiCall({
       params: params.data,
       route: 'auth/sendVerificationEmail',
       verb: 'post',
@@ -292,7 +275,7 @@ export function* SendVerificationEmailSaga() {
 
 function* getBadgesSaga({ params }) {
   try {
-    const res = yield ApiCall({
+    const res: ResponseGenerator = yield ApiCall({
       route: 'user/badges',
       verb: 'get',
       token: params.token,
@@ -312,7 +295,7 @@ export function* GetBadgesSaga() {
 
 function* setUserBadgesSaga({ params }) {
   try {
-    const res = yield ApiCall({
+    const res: ResponseGenerator = yield ApiCall({
       route: 'user/assign-badge',
       token: params.token,
       params: { badges: params.badges },
@@ -339,8 +322,8 @@ export function* SetUserBadgesSaga() {
 
 function* getProfileSaga({ params }) {
   try {
-    const res = yield ApiCall({
-      route: 'user/my-profile',
+    const res: ResponseGenerator = yield ApiCall({
+      route: `user/my-profile?pullSavedData=${params.pullSavedData ?? false}`,
       token: params.token,
       verb: 'get',
     });

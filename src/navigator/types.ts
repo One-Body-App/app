@@ -269,7 +269,9 @@ export type OnboardingStackParamList = {
 
 export type MainStackParamList = {
   MainRoot?: NavigatorScreenParams<MainDrawerParamsList>;
-  Post: undefined;
+  Post?: {
+    postId?: string;
+  };
   NewPassword: undefined;
   Intro: undefined;
   AccountType: undefined;

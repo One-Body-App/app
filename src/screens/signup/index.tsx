@@ -273,7 +273,7 @@ const SignupForm = ({ navigation, route }: Props) => {
         token,
       };
 
-      dispatch(loginSocialRequest({ data, setSocialError, gotoSignup, sendFcm }));
+      dispatch(loginSocialRequest({ data, seterror: setSocialError, gotoSignup, sendFcm }));
     }
   };
 

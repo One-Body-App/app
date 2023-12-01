@@ -199,7 +199,7 @@ const ProfileHeader = ({
       [0, 35]
     );
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - (profileData?.bio ? 310 : 200);
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - (profileData?.bio ? 310 : 250);
     if (valueTranslateY > maxValue) {
       valueTranslateY = maxValue;
     }

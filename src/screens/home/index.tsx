@@ -36,6 +36,7 @@ import {
   HomeStackParamsList,
   MainBottomStackParamsList,
   MainDrawerParamsList,
+  MainStackParamList,
 } from '@/src/navigator/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -47,6 +48,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 import { fontSize, poppins } from '@/src/styles/typography';
 import { borderWidth } from '@/src/styles/outlines';
 import { GiphyDialog } from '@giphy/react-native-sdk';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
 
 enum FeedTypes {
   Connected = 'connected',
@@ -67,7 +69,10 @@ type Props = CompositeScreenProps<
   StackScreenProps<HomeStackParamsList, 'Home'>,
   CompositeScreenProps<
     DrawerScreenProps<MainDrawerParamsList, 'Main'>,
-    BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
+    CompositeScreenProps<
+      DrawerScreenProps<MainBottomStackParamsList, 'HomeTab'>,
+      StackScreenProps<MainStackParamList, 'MainRoot'>
+    >
   >
 >;
 
@@ -204,7 +209,10 @@ const Home = ({ navigation }: Props) => {
           <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('Notifications');
+                navigation.navigate('MainRoot', {
+                  screen: 'Main',
+                  params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
+                });
               }}
               // style={{ paddingRight: spacing.x24 }}
             >
@@ -260,6 +268,39 @@ const Home = ({ navigation }: Props) => {
     return unsubscribe;
   }, [navigation]);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
+
+  const removePost = async (id: string) => {
+    try {
+      const res = await ApiCall({
+        route: `social/remove-post/${id}`,
+        verb: 'delete',
+        token: token,
+      });
+
+      if (res?.status == 200) {
+        getFeedData(feedOptions.type, feedOptions.page);
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
+
+  const editPost = async (id: string) => {
+    navigation.navigate('Post');
+    // try {
+    //   const res = await ApiCall({
+    //     route: `social/edit-post/${id}`,
+    //     verb: 'patch',
+    //     token: token,
+    //   });
+
+    //   if (res?.status == 200) {
+    //     getFeedData(feedOptions.type, feedOptions.page);
+    //   }
+    // } catch (e: any) {
+    //   console.log('saga error -- ', e.toString());
+    // }
+  };
 
   const _renderModal = useCallback(() => {
     if (selectVisible) {
@@ -366,7 +407,7 @@ const Home = ({ navigation }: Props) => {
               }}
               style={
                 feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou
-                  ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
+                  ? [styles.menuItemSelected]
                   : [styles.menuItem]
               }
             >
@@ -376,7 +417,10 @@ const Home = ({ navigation }: Props) => {
                     style={
                       feedOptions.type == FeedTypes.Connected ||
                       feedOptions.type == FeedTypes.ForYou
-                        ? [styles.menuItemText, { color: Colors.neutral.brand }]
+                        ? [
+                            styles.menuItemText,
+                            { fontWeight: 'bold', color: Colors.primarySapphire.brand },
+                          ]
                         : [styles.menuItemText, { color: Colors.neutral[400] }]
                     }
                   >
@@ -387,7 +431,7 @@ const Home = ({ navigation }: Props) => {
                     color={
                       feedOptions.type == FeedTypes.Connected ||
                       feedOptions.type == FeedTypes.ForYou
-                        ? Colors.neutral.brand
+                        ? Colors.primarySapphire.brand
                         : Colors.neutral[400]
                     }
                     style={{ marginLeft: spacing.x10 }}
@@ -423,7 +467,10 @@ const Home = ({ navigation }: Props) => {
                   <StyledText
                     style={
                       feedOptions.type == feedType
-                        ? [styles.menuItemText, { color: Colors.neutral.brand }]
+                        ? [
+                            styles.menuItemText,
+                            { fontWeight: 'bold', color: Colors.primarySapphire.brand },
+                          ]
                         : [styles.menuItemText, { color: Colors.neutral[400] }]
                     }
                   >
@@ -466,6 +513,8 @@ const Home = ({ navigation }: Props) => {
                           : false
                       }
                       socialPostviewStyle={{ backgroundColor: colors.card }}
+                      removePost={removePost}
+                      editPost={editPost}
                     />
                   );
                 }

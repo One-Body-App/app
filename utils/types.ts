@@ -1,3 +1,5 @@
+import { type GiphyMedia } from '@giphy/react-native-sdk';
+
 export type ChurchType = {
   churchType: string;
   children: ChurchType[];
@@ -70,7 +72,7 @@ export type SavedPost = {
   type: PostType;
   title: string;
   image?: string;
-  createdAt?: string;
+  created?: Date;
   userId?: string;
   link?: string;
 };
@@ -107,6 +109,7 @@ export type User = {
   influencerProfile?: InfluencerProfile;
   profile: Profile;
   savedPost?: SavedPost[];
+  savedPostData?: SocialPost[];
   whatIDo?: Tag;
   typeOfOrganization?: Tag;
 };
@@ -143,7 +146,7 @@ export type ArticleType = {
     name: string;
     username: string;
     accountType: AccountType;
-    profileImage: string;
+    profileImage?: string;
   };
 };
 
@@ -173,3 +176,75 @@ export type SocialPostReaction = {
   createdAt?: Date;
   updatedAt?: Date;
 };
+
+export interface ResponseGenerator {
+  status: number;
+  response: any;
+}
+
+// export interface SocialPost {
+//   _id: string;
+//   content?: string;
+//   videos?: string[];
+//   images?: string[];
+//   user?: User;
+//   edited?: boolean;
+//   gif?: GiphyMedia;
+//   locationName?: string;
+//   location?: {
+//     type: string;
+//     coordinates: number[];
+//   };
+//   reactions: SocialPostReaction[];
+//   createdAt?: Date;
+//   updatedAt?: Date;
+// }
+
+export interface SocialPost {
+  _id?: string;
+  postId?: string;
+  content: string;
+  date: string;
+  source: 'twitter' | 'instagram';
+  handler: string;
+  link: string;
+  title: string;
+  mediaUrl?: string;
+  attachments?: [
+    {
+      media_key: string;
+      type: string;
+      url: string;
+      title?: string;
+      siteName?: string;
+      image?: { height: string; type: string; url: string; width: string };
+      description?: string;
+    },
+  ];
+  mediaType?: string;
+  permalink?: string;
+  userData: {
+    _id: string;
+    name: string;
+    username: string;
+    accountType: AccountType;
+    profileImage: string;
+    twitterHandler?: string;
+    instagramHandler?: string;
+    isApprovedInfluencer?: boolean;
+  };
+  images?: string[];
+  gif?: GiphyMedia;
+  videos?: string[];
+  created: Date;
+  updated: Date;
+  id: string;
+
+  reactions: SocialPostReaction[];
+  location?: {
+    type?: string;
+    coordinates?: number[];
+  };
+  locationName?: string;
+  edited?: boolean;
+}

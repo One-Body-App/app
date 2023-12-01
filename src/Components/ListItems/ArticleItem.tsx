@@ -77,10 +77,9 @@ const ArticleItem = ({
         id: item.id,
         type: PostType.rss,
         postlink: item.link,
-        created: item.created,
         image: item.image,
       }}
-      createdDate={item?.created}
+      created={item?.created}
       userData={item.userData}
       profileImage={
         item?.userData?.profileImage && item?.userData?.profileImage != ''

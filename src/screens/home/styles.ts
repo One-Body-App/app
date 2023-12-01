@@ -12,9 +12,10 @@ const menuItemText: TextStyle = {
 };
 
 const menuItem: ViewStyle = {
-  paddingTop: 15,
-  paddingBottom: 9,
+  paddingVertical: 10,
   marginHorizontal: 15,
+  justifyContent: 'center',
+  alignItems: 'center',
 };
 
 export const styles = StyleSheet.create({
@@ -334,7 +335,6 @@ export const styles = StyleSheet.create({
   menuItemText,
   menuItemSelected: {
     ...menuItem,
-    borderBottomWidth: 3,
 
     borderBottomLeftRadius: 1.5,
     borderBottomRightRadius: 1.5,

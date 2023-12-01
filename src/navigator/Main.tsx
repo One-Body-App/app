@@ -127,7 +127,7 @@ const Main = () => {
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');
-  console.log(token, user);
+
   useEffect(() => {
     toast.hideAll();
 
@@ -343,28 +343,30 @@ const Main = () => {
               <MainStack.Screen
                 name="Post"
                 component={NewPost}
-                options={({ navigation, route }) => ({
-                  // presentation: 'formSheet',
-                  title: 'Create Post',
-                  headerLeft: (props) => {
-                    const { dark, colors } = useTheme();
-                    return (
-                      <TouchableOpacity
-                        onPress={() => {
-                          if (props.canGoBack) {
-                            navigation.pop();
-                          }
-                        }}
-                      >
-                        <MaterialCommunityIcons
-                          name="window-close"
-                          size={18}
-                          color={dark ? colors.text : Colors.primary.brand}
-                        />
-                      </TouchableOpacity>
-                    );
-                  },
-                })}
+                options={({ navigation, route }) => {
+                  return {
+                    // presentation: 'formSheet',
+                    title: route.params?.postId ? 'Edit Post' : 'Create Post',
+                    headerLeft: (props) => {
+                      const { dark, colors } = useTheme();
+                      return (
+                        <TouchableOpacity
+                          onPress={() => {
+                            if (props.canGoBack) {
+                              navigation.pop();
+                            }
+                          }}
+                        >
+                          <MaterialCommunityIcons
+                            name="window-close"
+                            size={18}
+                            color={dark ? colors.text : Colors.primary.brand}
+                          />
+                        </TouchableOpacity>
+                      );
+                    },
+                  };
+                }}
               />
             </>
           ) : (

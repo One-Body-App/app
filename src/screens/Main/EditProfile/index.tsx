@@ -37,7 +37,7 @@ import GradientButton from '@/src/components/GradientButton';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ChurchType, Interest, Location, Tag } from '@/utils/types';
+import { AccountType, ChurchType, Interest, Tag } from '@/utils/types';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getuserGet, getUserProfile } from '@/src/Redux/actions/UserAction';
@@ -73,6 +73,39 @@ type Props = CompositeScreenProps<
     BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
   >
 >;
+
+export type LocationDTO = {
+  address: string;
+  longitude: number;
+  latitude: number;
+};
+
+type EditProfileDTO = {
+  name?: string;
+  companyName?: string;
+  contactEmail?: string;
+  contactName?: string;
+  contactPhoneNumber?: string;
+
+  gender?: string;
+  whatIDo?: string;
+  typeOfOrganization?: string;
+  website?: string;
+  photo?: { uri: string; type: string; name: string };
+  headerImage?: { uri: string; type: string; name: string };
+  bio?: string;
+  username?: string;
+  churchType: string;
+  churchSubType: string;
+  oftenChurch?: string;
+  isChurchTypePublic: boolean;
+  isLocationPublic: boolean;
+  location?: {
+    longitude: number;
+    latitude: number;
+    address: string;
+  };
+};
 
 const EditProfile = ({ navigation }: Props) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -126,7 +159,18 @@ const EditProfile = ({ navigation }: Props) => {
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
   const [churchType, setChurchType] = useState<string>(user?.profile?.churchType ?? '');
   const [citySelector, setCitySelector] = useState<boolean>(false);
-  const [location, setLocation] = useState<Location | null>(user?.profile.location ?? null);
+  const [location, setLocation] = useState<LocationDTO | null>(
+    user?.profile.location &&
+      user?.profile.location.coordinates?.lon &&
+      user?.profile.location.coordinates?.lat &&
+      user?.profile.location.address
+      ? {
+          address: user?.profile.location.address,
+          longitude: user?.profile.location.coordinates?.lon,
+          latitude: user?.profile.location.coordinates?.lat,
+        }
+      : null
+  );
   const [newLocation, setNewLocation] = useState<MapSuggestion | null>(null);
   const [longitude, setLongitude] = useState<number>();
   const [latitude, setLatitude] = useState<number>();
@@ -167,14 +211,14 @@ const EditProfile = ({ navigation }: Props) => {
   const { colors } = useTheme();
 
   useEffect(() => {
-    if (newLocation) {
+    if (newLocation && latitude && longitude) {
       setLocation({
         longitude,
         latitude,
         address: newLocation.place_name,
       });
     }
-  }, [newLocation]);
+  }, [newLocation, longitude, latitude]);
 
   useEffect(() => {
     navigation
@@ -1103,7 +1147,12 @@ const EditProfile = ({ navigation }: Props) => {
               <Button
                 text={'SAVE'}
                 onPress={async () => {
-                  const data: Record<string, any> = {};
+                  const data: EditProfileDTO = {
+                    churchType: churchType,
+                    churchSubType: churchSubType == 'none' ? '' : churchSubType,
+                    isChurchTypePublic: isPublicChurchTypeEnabled,
+                    isLocationPublic: isPublicLocationEnabled,
+                  };
 
                   if (fullname && user?.accountType == 'individual') data.name = fullname;
                   if (fullname && user?.accountType == 'organization') data.companyName = fullname;
@@ -1124,11 +1173,9 @@ const EditProfile = ({ navigation }: Props) => {
                   if (headerImageObject) data.headerImage = headerImageObject;
                   if (bio) data.bio = bio;
                   if (username) data.username = username;
-                  data.churchType = churchType;
-                  data.churchSubType = churchSubType == 'none' ? '' : churchSubType;
+
                   if (oftenChurch) data.oftenChurch = oftenChurch;
-                  data.isChurchTypePublic = isPublicChurchTypeEnabled;
-                  data.isLocationPublic = isPublicLocationEnabled;
+
                   if (location && location.longitude && location.latitude && location.address)
                     data.location = {
                       longitude: location.longitude,
@@ -1140,16 +1187,21 @@ const EditProfile = ({ navigation }: Props) => {
 
                   if (selectedInterest.length > 0) await addInterests();
 
-                  if (user?.accountType == 'individual') {
+                  if (user?.accountType == AccountType.individual) {
                     dispatch(
-                      profileUpdate({ data: serialize(data), token, accountType: 'individual', go })
+                      profileUpdate({
+                        data: serialize(data),
+                        token,
+                        accountType: AccountType.individual,
+                        go,
+                      })
                     );
                   } else {
                     dispatch(
                       profileUpdate({
                         data: serialize(data),
                         token,
-                        accountType: 'organization',
+                        accountType: AccountType.organization,
                         go,
                       })
                     );
