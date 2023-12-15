@@ -69,6 +69,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
         ]}
       >
         {leftIcon ? leftIcon : null}
+
         <TextInput
           ref={ref}
           style={[
@@ -79,6 +80,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
           ]}
           {...textInputProps}
         />
+
         {rightIcon ? rightIcon : null}
       </View>
       {showCharCounter && textInputProps.maxLength ? (

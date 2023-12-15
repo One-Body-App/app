@@ -22,10 +22,10 @@ import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
+
 import {
   BASE_URL,
   OpenURLButton,
@@ -265,13 +265,6 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
 
   return (
     <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
-
       <Modal
         animationType="slide"
         transparent={true}
@@ -460,9 +453,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
             </View>
             <Button
               text={'DONE'}
-              paper
               btnStyle={{ backgroundColor: '#032F3C' }}
-              textColor="#fff"
               onPress={() => {
                 setModalVisible(false);
                 const {

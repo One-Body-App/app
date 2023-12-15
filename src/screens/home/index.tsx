@@ -22,15 +22,15 @@ import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
-import SocialItem from '@/src/components/ListItems/SocialItem';
-import ArticleItem from '@/src/components/ListItems/ArticleItem';
+import SocialItem from '@/src/components/listItems/SocialItem';
+import ArticleItem from '@/src/components/listItems/ArticleItem';
 import ActivityIndicatorContent from '@/src/components/ActivityIndicatorContent';
 import { ArticleType } from '@/utils/types';
-import OptionsModal from '@/src/components/ListItems/OptionsModal';
-import { styles as globalStyle } from '@/src/components/ListItems/style';
+import OptionsModal from '@/src/components/listItems/OptionsModal';
+import { styles as globalStyle } from '@/src/components/listItems/style';
 import { useScrollToTop } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
+
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   HomeStackParamsList,
@@ -302,82 +302,6 @@ const Home = ({ navigation }: Props) => {
     // }
   };
 
-  const _renderModal = useCallback(() => {
-    if (selectVisible) {
-      return (
-        <Modal
-          transparent
-          statusBarTranslucent
-          visible={selectVisible}
-          supportedOrientations={['landscape', 'portrait']}
-          onRequestClose={() => {
-            setSelectVisible(false);
-          }}
-        >
-          <TouchableWithoutFeedback onPress={() => setSelectVisible(false)}>
-            <View style={StyleSheet.flatten([{ flex: 1 }])}>
-              <View
-                style={StyleSheet.flatten([
-                  { flex: 1 },
-                  { paddingTop: 135, paddingLeft: 10 },
-                  { width: 180 },
-                ])}
-              >
-                <View
-                  style={StyleSheet.flatten([
-                    {
-                      flexShrink: 1,
-                      borderWidth: borderWidth.hairline,
-                      borderColor: Colors.neutral[400],
-
-                      shadowColor: Colors.main.black,
-                      shadowOffset: {
-                        width: 0,
-                        height: 1,
-                      },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 1.41,
-                      elevation: 2,
-                    },
-                    // isFull ? styleHorizontal : styleVertical,
-                    // containerStyle,
-                  ])}
-                >
-                  <TouchableHighlight
-                    underlayColor={Colors.neutral[700]}
-                    style={{
-                      backgroundColor: colors.background,
-                      height: 42,
-                      padding: spacing.x10,
-                    }}
-                    onPress={() => {
-                      setSelectVisible(false);
-                      setFeedSubType(
-                        feedOptions.type == FeedTypes.Connected
-                          ? FeedTypes.ForYou
-                          : FeedTypes.Connected
-                      );
-                      filterUpdate(
-                        feedOptions.type == FeedTypes.Connected
-                          ? FeedTypes.ForYou
-                          : FeedTypes.Connected
-                      );
-                    }}
-                  >
-                    <StyledText>
-                      {feedOptions.type == FeedTypes.Connected ? 'For You' : 'Connected'}
-                    </StyledText>
-                  </TouchableHighlight>
-                </View>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-      );
-    }
-    return null;
-  }, [selectVisible, setSelectVisible, position, feedOptions, filterUpdate]);
-
   return (
     <>
       <View style={{ flex: 1 }}>
@@ -395,11 +319,13 @@ const Home = ({ navigation }: Props) => {
                   feedOptions.type == FeedTypes.Connected ||
                   feedOptions.type == FeedTypes.ForYou
                 ) {
-                  setSelectVisible(true);
+                  setFeedSubType(
+                    feedOptions.type == FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
+                  );
+                  filterUpdate(
+                    feedOptions.type == FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
+                  );
                 } else {
-                  // setFeedSubType(
-                  //   feedSubType == FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
-                  // );
                   filterUpdate(
                     feedSubType == FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
                   );
@@ -437,7 +363,6 @@ const Home = ({ navigation }: Props) => {
                     style={{ marginLeft: spacing.x10 }}
                   />
                 </View>
-                {_renderModal()}
               </>
             </TouchableOpacity>
           </View>

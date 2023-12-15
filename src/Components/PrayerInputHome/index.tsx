@@ -59,14 +59,14 @@ const PrayerInputHome = ({ color }) => {
           setPrayer('');
           dispatch(
             getMyPrayer({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );
 
           dispatch(
             getAllPrayer({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );
@@ -96,13 +96,13 @@ const PrayerInputHome = ({ color }) => {
 
           dispatch(
             getMyPrayer({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );
           dispatch(
             getAllPrayer({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );

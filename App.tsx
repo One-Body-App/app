@@ -7,7 +7,9 @@ import { persistor, store } from './src/Redux/store';
 import { Provider, useDispatch } from 'react-redux';
 import Main from '@/navigator/Main';
 import { PersistGate } from 'redux-persist/integration/react';
-import SplashScreen from 'react-native-splash-screen';
+// import SplashScreen from 'react-native-splash-screen';
+import LottieSplashScreen from 'react-native-lottie-splash-screen';
+
 // import ZendeskChat from 'react-native-zendesk-chat';
 import dynamicLinks from '@react-native-firebase/dynamic-links';
 import { Alert, KeyboardAvoidingView, Linking, Platform, SafeAreaView } from 'react-native';
@@ -164,7 +166,7 @@ const App = () => {
     //   '6im7AfpfISANDuQOXekDDaEEMBMrhDxPgZPTkfHJ'
     // );
 
-    SplashScreen.hide();
+    // SplashScreen.hide();
 
     const event = Linking.addEventListener('url', ({ url }) => handleDynamicLink(url));
 

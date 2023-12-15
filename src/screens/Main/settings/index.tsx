@@ -12,21 +12,10 @@ import {
   Switch,
   ActivityIndicator,
 } from 'react-native';
-import { getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
 import { styles } from './styles';
-import Header from '@/src/components/Header';
-import { logout } from '@/redux/actions/AuthActions';
 import { useDispatch, useSelector } from 'react-redux';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { LoginManager } from 'react-native-fbsdk-next';
-import auth from '@react-native-firebase/auth';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { useTheme } from '@react-navigation/native';
-import GoBackIcon from '@/src/components/GoBackIcon';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import { borderRadius } from '@/src/styles/outlines';
@@ -34,12 +23,9 @@ import { StyledText } from '@/src/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors, Typography } from '@/src/styles';
 import {
-  CardRemove,
-  InfoCircle,
   Key,
   Note,
   Note1,
-  Notification,
   NotificationStatus,
   Setting,
   Sms,

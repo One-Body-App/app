@@ -15,7 +15,7 @@ import { fontSize } from '@/src/styles/typography';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Heart, Location } from 'iconsax-react-native';
+import { Heart, Location, Message2 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 
 import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
@@ -24,7 +24,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/src/Services/api';
 import { getuserGet } from '@/src/Redux/actions/UserAction';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { AccountType, PostType, SocialPostReaction, SocialPostReactionType } from '@/utils/types';
+import {
+  AccountType,
+  CommentPost,
+  PostType,
+  PostUserData,
+  SocialPostReaction,
+  SocialPostReactionType,
+} from '@/utils/types';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import OptionsModal from './OptionsModal';
@@ -34,7 +41,6 @@ interface BaseItemProps {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   onPress: Function;
-  profileImage: string;
   created?: Date;
   updated?: Date;
   edited?: boolean;
@@ -44,7 +50,7 @@ interface BaseItemProps {
     id?: string;
     type?: PostType;
     postlink?: string;
-    title: string;
+    title?: string;
     image?: {
       url: string;
     };
@@ -57,16 +63,11 @@ interface BaseItemProps {
     };
     locationName?: string;
     edited?: boolean;
+    isPrivate?: boolean;
+    comments?: CommentPost[];
+    commentNumber?: number;
   };
-  userData: {
-    twitterHandler?: string;
-    instagramHandler?: string;
-    name: string;
-    username: string;
-    _id: string;
-    accountType: AccountType;
-    profileImage?: string;
-  };
+  userData: PostUserData;
 
   isApprovedInfluencer?: boolean;
 
@@ -74,14 +75,14 @@ interface BaseItemProps {
   isScrollEnable?: boolean;
   index?: number;
   parentRefreshContent?: Function;
-  removePost?: (postId: string) => void;
+  removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
 }
 
 const BaseItem = ({
   style,
   onPress,
-  profileImage,
+
   children,
   created,
   updated,
@@ -113,7 +114,7 @@ const BaseItem = ({
     dispatch(setLoader(true));
     try {
       const res = await ApiCall({
-        route: `social/react`,
+        route: `${postData.type}/react`,
         verb: 'patch',
         token: token,
         params: {
@@ -154,7 +155,7 @@ const BaseItem = ({
 
     try {
       const res = await ApiCall({
-        route: `social/remove-reaction`,
+        route: `${PostType.social}/remove-reaction`,
         verb: 'patch',
         token: token,
         params: {
@@ -204,6 +205,7 @@ const BaseItem = ({
         token: token,
         params: {
           postId,
+
           type,
           title,
           image,
@@ -222,7 +224,7 @@ const BaseItem = ({
     }
   };
 
-  const removeSavedPost = async (link?: string, id?: string) => {
+  const removeSavedPost = async (type?: string, link?: string, id?: string) => {
     dispatch(setLoader(true));
 
     try {
@@ -233,6 +235,7 @@ const BaseItem = ({
         params: {
           id,
           link,
+          type,
         },
       });
 
@@ -246,7 +249,14 @@ const BaseItem = ({
   };
 
   let isThisPostSaved = false;
-  if (user?.savedPost && user?.savedPost.length > 0) {
+
+  if (postData.type == PostType.prayer && user?.savedPrayers && user?.savedPrayers.length > 0) {
+    user?.savedPrayers.forEach((savedPrayer) => {
+      if (savedPrayer == postData?.id) {
+        isThisPostSaved = true;
+      }
+    });
+  } else if (postData.type != PostType.prayer && user?.savedPost && user?.savedPost.length > 0) {
     user?.savedPost.forEach((savedPost) => {
       if (
         (savedPost.link != undefined && savedPost.link == postData.postlink) ||
@@ -348,20 +358,33 @@ const BaseItem = ({
             alignItems: 'center',
           }}
         >
-          <FastImage
-            source={{
-              uri: profileImage,
-            }}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: borderRadius.max,
-              // marginBottom: 5,
-              borderColor: profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-              borderWidth: borderWidth.thin,
-            }}
-            resizeMode={'contain'}
-          />
+          {userData.profileIcon && !userData.profileImage ? (
+            <View
+              style={{
+                borderRadius: borderRadius.max,
+                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderWidth: borderWidth.thin,
+                padding: spacing.x5,
+              }}
+            >
+              {userData.profileIcon}
+            </View>
+          ) : (
+            <FastImage
+              source={{
+                uri: userData.profileImage != '' ? userData.profileImage : NO_PROFILE_IMAGE,
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: borderRadius.max,
+                // marginBottom: 5,
+                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderWidth: borderWidth.thin,
+              }}
+              resizeMode={'contain'}
+            />
+          )}
         </TouchableOpacity>
         <View style={{ flexGrow: 1, flex: 1 }}>
           {userData ? (
@@ -377,6 +400,8 @@ const BaseItem = ({
                   flexDirection: 'row',
                   justifyContent: 'flex-start',
                   alignItems: 'center',
+                  flexGrow: 1,
+                  flex: 1,
                 }}
               >
                 <View style={{ flexDirection: 'column' }}>
@@ -408,16 +433,25 @@ const BaseItem = ({
                       ...fontSize.x1,
                     }}
                   >
-                    @
-                    {source == 'twitter'
-                      ? userData?.twitterHandler
-                      : source == 'instagram'
-                      ? userData?.instagramHandler
-                      : userData?.username}
+                    {(source == 'twitter' && userData?.twitterHandler) ||
+                    (source == 'instagram' && userData?.instagramHandler) ||
+                    userData?.username
+                      ? `@${
+                          source == 'twitter'
+                            ? userData?.twitterHandler
+                            : source == 'instagram'
+                            ? userData?.instagramHandler
+                            : userData?.username
+                        }`
+                      : ''}
+
                     {created ? (
                       <>
-                        {' '}
-                        •{' '}
+                        {(source == 'twitter' && userData?.twitterHandler) ||
+                        (source == 'instagram' && userData?.instagramHandler) ||
+                        userData?.username
+                          ? ` • `
+                          : ''}
                         <StyledText
                           style={[
                             fontSize.x1,
@@ -443,17 +477,18 @@ const BaseItem = ({
                       </>
                     ) : null}
                   </StyledText>
+
                   {postData.locationName ? (
-                    <StyledText
-                      style={[fontSize.x1, { color: Colors.neutral[300], alignItems: 'center' }]}
-                    >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Location
                         size={15}
                         color={Colors.neutral[300]}
                         style={{ marginRight: spacing.x5 }}
                       />
-                      {postData.locationName}
-                    </StyledText>
+                      <StyledText style={[fontSize.x1, { color: Colors.neutral[300] }]}>
+                        {postData.locationName}
+                      </StyledText>
+                    </View>
                   ) : null}
                 </View>
               </TouchableOpacity>
@@ -468,7 +503,8 @@ const BaseItem = ({
           ) : null}
 
           <View style={{ marginTop: spacing.x16 }}>{children}</View>
-          {postData.type == PostType.social && !postData.externalLink ? (
+          {(postData.type == PostType.social || postData.type == PostType.prayer) &&
+          !postData.externalLink ? (
             <View style={{ flexDirection: 'row' }}>
               {postData?.reactions && postData.reactions.length > 0 ? (
                 <View
@@ -591,48 +627,50 @@ const BaseItem = ({
                 flex: 3,
                 alignItems: 'center',
                 marginTop: spacing.x10,
+                justifyContent: 'space-between',
               }}
             >
-              {postData.type == PostType.social ? (
-                <>
-                  {!postData.externalLink ? (
-                    <>
-                      <Reaction
-                        items={ReactionItems}
-                        type="modal"
-                        cardStyle={{
-                          padding: spacing.x5,
-                          shadowOpacity: 0.2,
-                          marginTop: spacing.x16,
-                          borderRadius: borderRadius.base,
-                        }}
-                        onTap={async (item) => {
-                          if (item) {
-                            if (myReaction?.type == item['type']) {
-                              await removeReactPost();
-                            } else {
-                              await reactPost(item['type']);
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {postData.type == PostType.social || postData.type == PostType.prayer ? (
+                  <>
+                    {!postData.externalLink ? (
+                      <>
+                        <Reaction
+                          items={ReactionItems}
+                          type="modal"
+                          cardStyle={{
+                            padding: spacing.x5,
+                            shadowOpacity: 0.2,
+                            marginTop: spacing.x16,
+                            borderRadius: borderRadius.base,
+                          }}
+                          onTap={async (item) => {
+                            if (item) {
+                              if (myReaction?.type == item['type']) {
+                                await removeReactPost();
+                              } else {
+                                await reactPost(item['type']);
+                              }
                             }
-                          }
-                        }}
-                        itemIndex={index}
-                        onShowDismissCard={onShowDismissCard}
-                        onPress={() => {
-                          if (myReaction) {
-                            removeReactPost();
-                          } else {
-                            reactPost(SocialPostReactionType.love);
-                          }
-                        }}
-                      >
-                        <Heart
-                          size={25}
-                          color={myReaction ? Colors.errorFeedback[200] : colors.text}
-                          variant={myReaction ? 'Bold' : 'Linear'}
-                        />
-                      </Reaction>
+                          }}
+                          itemIndex={index}
+                          onShowDismissCard={onShowDismissCard}
+                          onPress={() => {
+                            if (myReaction) {
+                              removeReactPost();
+                            } else {
+                              reactPost(SocialPostReactionType.love);
+                            }
+                          }}
+                        >
+                          <Heart
+                            size={25}
+                            color={myReaction ? Colors.errorFeedback[200] : colors.text}
+                            variant={myReaction ? 'Bold' : 'Linear'}
+                          />
+                        </Reaction>
 
-                      {/* <TouchableOpacity
+                        {/* <TouchableOpacity
                         onLongPress={() => {
                           if (!myReaction) {
                             setShowActions(!showActions);
@@ -658,36 +696,49 @@ const BaseItem = ({
                           variant={myReaction ? 'Bold' : 'Linear'}
                         />
                       </TouchableOpacity> */}
-                    </>
-                  ) : null}
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (isThisPostSaved) {
-                        if (postData.id) removeSavedPost(undefined, postData.id);
-                        else if (postData.postlink) removeSavedPost(postData.postlink);
-                      } else {
-                        savePost(
-                          postData?.id,
-                          postData?.type,
-                          postData.title,
-                          created,
-                          userData?._id,
-                          postData?.postlink,
-                          postData?.image?.url
-                        );
-                      }
-                    }}
-                  >
-                    <Bookmark
-                      style={{ marginRight: 3 }}
-                      width={25}
-                      height={25}
-                      color={colors.text}
-                      fill={isThisPostSaved ? colors.text : colors.background}
-                    />
-                  </TouchableOpacity>
-                </>
-              ) : null}
+                      </>
+                    ) : null}
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (isThisPostSaved) {
+                          if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                          else if (postData.postlink)
+                            removeSavedPost(postData.type, postData.postlink);
+                        } else {
+                          savePost(
+                            postData?.id,
+                            postData?.type,
+                            postData.title,
+                            created,
+                            userData?._id,
+                            postData?.postlink,
+                            postData?.image?.url
+                          );
+                        }
+                      }}
+                    >
+                      <Bookmark
+                        style={{ marginRight: 3 }}
+                        width={25}
+                        height={25}
+                        color={colors.text}
+                        fill={isThisPostSaved ? colors.text : colors.background}
+                      />
+                    </TouchableOpacity>
+                  </>
+                ) : null}
+              </View>
+
+              <View>
+                {postData.type == PostType.prayer ? (
+                  <View style={{ flexDirection: 'row' }}>
+                    <Message2 color={colors.text} />
+                    <StyledText style={{ marginLeft: spacing.x10 }}>
+                      {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                    </StyledText>
+                  </View>
+                ) : null}
+              </View>
             </View>
             {postData.type == PostType.rss ? (
               <View style={{ flex: 1, alignItems: 'flex-end', marginTop: spacing.x10 }}>
@@ -715,10 +766,16 @@ const BaseItem = ({
       <OptionsModal
         show={showOptions ?? false}
         setShow={setShowOptions}
-        currentPopupItem={{ ...postData, userData, created }}
+        currentPopupItem={{
+          ...postData,
+          type: postData.type ?? PostType.social,
+          userData,
+          created,
+        }}
         onProfilePress={onPress}
         removePost={removePost}
         editPost={editPost}
+        isPrivate={postData.isPrivate}
       />
     </View>
   );

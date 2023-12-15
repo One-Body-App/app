@@ -30,7 +30,6 @@
 		62C46892A9284EF98AE6DC83 /* Rubik-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 12A4C298E420402E8EC9D6DB /* Rubik-Bold.ttf */; };
 		6490BD9E141F428C9510B0EF /* Rubik-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1D278A8A5FA640289546FDC4 /* Rubik-ExtraBoldItalic.ttf */; };
 		675F58D5017949E99EAB0FEB /* Poppins-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 88B05A0A10D04EE388CA0663 /* Poppins-SemiBold.ttf */; };
-		6BCAEE9C030C2CABA978B5AA /* libPods-onebody-onebodyTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F61A9722D6771FA83E3E52D /* libPods-onebody-onebodyTests.a */; };
 		7278A14B289CB24F003FC089 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7278A14A289CB24F003FC089 /* GoogleService-Info.plist */; };
 		728343EF28A218BB0048A31B /* Rubik-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 728343E128A218BB0048A31B /* Rubik-SemiBold.ttf */; };
 		728343F028A218BB0048A31B /* Rubik-BlackItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 728343E228A218BB0048A31B /* Rubik-BlackItalic.ttf */; };
@@ -63,17 +62,20 @@
 		7283441B28A21AE00048A31B /* AntDesign.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7283440B28A21AE00048A31B /* AntDesign.ttf */; };
 		7283441C28A21AE00048A31B /* Zocial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7283440C28A21AE00048A31B /* Zocial.ttf */; };
 		7283441F28AF46100048A31B /* DONOTDELETE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7283441E28AF46100048A31B /* DONOTDELETE.swift */; };
+		728E61942B1FFB5B0013DA59 /* Dynamic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E61932B1FFB5B0013DA59 /* Dynamic.swift */; };
+		728E61962B1FFDB80013DA59 /* logoAnimation.json in Resources */ = {isa = PBXBuildFile; fileRef = 728E61952B1FFDB80013DA59 /* logoAnimation.json */; };
 		72A8C9FA28C2A5C600811FC8 /* libswiftWebKit.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A8C9F528C2A48400811FC8 /* libswiftWebKit.tbd */; };
 		72F05C49289CEB68004C3A5F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */; };
 		7325E2555269471BB4A481B1 /* Poppins-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5F59B6748D964C3B892ECBE4 /* Poppins-Light.ttf */; };
 		7B38A9AC935947658226B897 /* Poppins-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3F387F161E434612B405013C /* Poppins-ExtraBold.ttf */; };
 		7C2133B1178542F1A1A6EE1A /* Rubik-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EE323BEB8E934340AFDD662E /* Rubik-Light.ttf */; };
 		86C1E49A9A494D9F88D69AC3 /* Poppins-BlackItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4097BFF8BC204AE4B29562F0 /* Poppins-BlackItalic.ttf */; };
-		A41B74D089ADC001D3599CE3 /* libPods-onebody.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C1549B2CA9C54D7BD03560F4 /* libPods-onebody.a */; };
+		93961B6A2FD171BD7D99AB35 /* libPods-onebody-onebodyTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7875868AA5DA8A56C92FE081 /* libPods-onebody-onebodyTests.a */; };
 		B7E7CEC30DC6490E9BA1983A /* Poppins-ExtraLight.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 50D0BA8DC2CF464C8E4DE75D /* Poppins-ExtraLight.ttf */; };
 		BE2849414510415DB666B7F8 /* Rubik-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 44766743176243F2A0EC09FF /* Rubik-Italic.ttf */; };
 		E384FCD9E22B4EB789766766 /* Poppins-Thin.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF1EFAAF3B994B28A862AB69 /* Poppins-Thin.ttf */; };
 		E827FD5C72AD4DF2A43E9F10 /* Rubik-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 340D85C79D7D4904814500E1 /* Rubik-LightItalic.ttf */; };
+		EB9A96A4FC498FC130830791 /* libPods-onebody.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6F881297DCE20CDD34E05422 /* libPods-onebody.a */; };
 		EBF428C10A3543339222492E /* Poppins-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 79E91D0DC7E94A2286AF2A3F /* Poppins-Black.ttf */; };
 		EC87E17E6CA046B0ADD2A1D2 /* Rubik-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F529C1C408174256BDE7330A /* Rubik-SemiBoldItalic.ttf */; };
 		EE2C3FD2E7AD4A49B29CFB40 /* Rubik-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2C62561DB03E43B188904A89 /* Rubik-SemiBold.ttf */; };
@@ -95,6 +97,7 @@
 		00E356EE1AD99517003FC87E /* onebodyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = onebodyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00E356F21AD99517003FC87E /* onebodyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = onebodyTests.m; sourceTree = "<group>"; };
+		10E5FC941526784B29E38BF6 /* Pods-onebody.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody.debug.xcconfig"; path = "Target Support Files/Pods-onebody/Pods-onebody.debug.xcconfig"; sourceTree = "<group>"; };
 		12A4C298E420402E8EC9D6DB /* Rubik-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Bold.ttf"; path = "../src/assets/fonts/Rubik-Bold.ttf"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* onebody.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = onebody.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = onebody/AppDelegate.h; sourceTree = "<group>"; };
@@ -106,15 +109,17 @@
 		2C62561DB03E43B188904A89 /* Rubik-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-SemiBold.ttf"; path = "../src/assets/fonts/Rubik-SemiBold.ttf"; sourceTree = "<group>"; };
 		2CE6871060D14FA48369B4B6 /* Rubik-MediumItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-MediumItalic.ttf"; path = "../src/assets/fonts/Rubik-MediumItalic.ttf"; sourceTree = "<group>"; };
 		30705122470C4FE9AA7F4BB6 /* Rubik-BlackItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-BlackItalic.ttf"; path = "../src/assets/fonts/Rubik-BlackItalic.ttf"; sourceTree = "<group>"; };
+		330A8D17B2CA1609FD755F37 /* Pods-onebody-onebodyTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody-onebodyTests.release.xcconfig"; path = "Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests.release.xcconfig"; sourceTree = "<group>"; };
 		340D85C79D7D4904814500E1 /* Rubik-LightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-LightItalic.ttf"; path = "../src/assets/fonts/Rubik-LightItalic.ttf"; sourceTree = "<group>"; };
 		3F387F161E434612B405013C /* Poppins-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraBold.ttf"; path = "../src/assets/fonts/Poppins-ExtraBold.ttf"; sourceTree = "<group>"; };
 		4097BFF8BC204AE4B29562F0 /* Poppins-BlackItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-BlackItalic.ttf"; path = "../src/assets/fonts/Poppins-BlackItalic.ttf"; sourceTree = "<group>"; };
 		44766743176243F2A0EC09FF /* Rubik-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Italic.ttf"; path = "../src/assets/fonts/Rubik-Italic.ttf"; sourceTree = "<group>"; };
-		4E012F6402BECEC52552A598 /* Pods-onebody.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody.release.xcconfig"; path = "Target Support Files/Pods-onebody/Pods-onebody.release.xcconfig"; sourceTree = "<group>"; };
 		50D0BA8DC2CF464C8E4DE75D /* Poppins-ExtraLight.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraLight.ttf"; path = "../src/assets/fonts/Poppins-ExtraLight.ttf"; sourceTree = "<group>"; };
 		52FDCFC1E05145AEABF709D4 /* Poppins-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Regular.ttf"; path = "../src/assets/fonts/Poppins-Regular.ttf"; sourceTree = "<group>"; };
 		5F59B6748D964C3B892ECBE4 /* Poppins-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Light.ttf"; path = "../src/assets/fonts/Poppins-Light.ttf"; sourceTree = "<group>"; };
+		617A521EC84A735F05016B37 /* Pods-onebody.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody.release.xcconfig"; path = "Target Support Files/Pods-onebody/Pods-onebody.release.xcconfig"; sourceTree = "<group>"; };
 		6A2CA00D3BB04D1697B39017 /* Poppins-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraBoldItalic.ttf"; path = "../src/assets/fonts/Poppins-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
+		6F881297DCE20CDD34E05422 /* libPods-onebody.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-onebody.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7278A14A289CB24F003FC089 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		728343DF28A1F5A90048A31B /* onebody.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = onebody.entitlements; path = onebody/onebody.entitlements; sourceTree = "<group>"; };
 		728343E128A218BB0048A31B /* Rubik-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Rubik-SemiBold.ttf"; path = "../../src/assets/fonts/Rubik-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -149,26 +154,25 @@
 		7283440C28A21AE00048A31B /* Zocial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = Zocial.ttf; path = "../../node_modules/react-native-vector-icons/Fonts/Zocial.ttf"; sourceTree = "<group>"; };
 		7283441D28AF460F0048A31B /* onebody-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "onebody-Bridging-Header.h"; sourceTree = "<group>"; };
 		7283441E28AF46100048A31B /* DONOTDELETE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DONOTDELETE.swift; sourceTree = "<group>"; };
+		728E61932B1FFB5B0013DA59 /* Dynamic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dynamic.swift; sourceTree = "<group>"; };
+		728E61952B1FFDB80013DA59 /* logoAnimation.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = logoAnimation.json; sourceTree = "<group>"; };
 		72A8C9F528C2A48400811FC8 /* libswiftWebKit.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libswiftWebKit.tbd; path = usr/lib/swift/libswiftWebKit.tbd; sourceTree = SDKROOT; };
 		72A8C9F828C2A50700811FC8 /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk/System/iOSSupport/System/Library/Frameworks/JavaScriptCore.framework; sourceTree = DEVELOPER_DIR; };
 		72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		7875868AA5DA8A56C92FE081 /* libPods-onebody-onebodyTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-onebody-onebodyTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		79E91D0DC7E94A2286AF2A3F /* Poppins-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Black.ttf"; path = "../src/assets/fonts/Poppins-Black.ttf"; sourceTree = "<group>"; };
 		7AADD2A251BE41298F16C7DC /* Poppins-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Bold.ttf"; path = "../src/assets/fonts/Poppins-Bold.ttf"; sourceTree = "<group>"; };
-		7F61A9722D6771FA83E3E52D /* libPods-onebody-onebodyTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-onebody-onebodyTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		88B05A0A10D04EE388CA0663 /* Poppins-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-SemiBold.ttf"; path = "../src/assets/fonts/Poppins-SemiBold.ttf"; sourceTree = "<group>"; };
+		9A8845BD2208BABA8AEEEBE7 /* Pods-onebody-onebodyTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody-onebodyTests.debug.xcconfig"; path = "Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests.debug.xcconfig"; sourceTree = "<group>"; };
 		A034E90601C5402CA7C81835 /* Rubik-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Black.ttf"; path = "../src/assets/fonts/Rubik-Black.ttf"; sourceTree = "<group>"; };
 		A0C5D5832D9D4DDA817375F1 /* Poppins-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Medium.ttf"; path = "../src/assets/fonts/Poppins-Medium.ttf"; sourceTree = "<group>"; };
 		A1707E47898A4D93A418FB10 /* Poppins-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Italic.ttf"; path = "../src/assets/fonts/Poppins-Italic.ttf"; sourceTree = "<group>"; };
 		A651C9EAE4D14A518082A39A /* Poppins-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-SemiBoldItalic.ttf"; path = "../src/assets/fonts/Poppins-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
-		A6F7863F650D7F1B362B2393 /* Pods-onebody-onebodyTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody-onebodyTests.release.xcconfig"; path = "Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests.release.xcconfig"; sourceTree = "<group>"; };
 		A81485321C584AFEBC934FD1 /* Poppins-LightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-LightItalic.ttf"; path = "../src/assets/fonts/Poppins-LightItalic.ttf"; sourceTree = "<group>"; };
-		A9FE2C52ACD2B122AA367FA7 /* Pods-onebody-onebodyTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody-onebodyTests.debug.xcconfig"; path = "Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests.debug.xcconfig"; sourceTree = "<group>"; };
 		C03E3CEBCE2B400D81586AC9 /* Rubik-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-BoldItalic.ttf"; path = "../src/assets/fonts/Rubik-BoldItalic.ttf"; sourceTree = "<group>"; };
-		C1549B2CA9C54D7BD03560F4 /* libPods-onebody.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-onebody.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5E6F91A107346A3BE15C8CB /* Rubik-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-ExtraBold.ttf"; path = "../src/assets/fonts/Rubik-ExtraBold.ttf"; sourceTree = "<group>"; };
 		CB2A002084E647D1AA9A8709 /* Poppins-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-BoldItalic.ttf"; path = "../src/assets/fonts/Poppins-BoldItalic.ttf"; sourceTree = "<group>"; };
 		CD4992585B48416A99B3F4C1 /* Rubik-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rubik-Medium.ttf"; path = "../src/assets/fonts/Rubik-Medium.ttf"; sourceTree = "<group>"; };
-		D6D01367D17040D992AE1A4D /* Pods-onebody.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody.debug.xcconfig"; path = "Target Support Files/Pods-onebody/Pods-onebody.debug.xcconfig"; sourceTree = "<group>"; };
 		DB93782AFA3D41A3874A81EF /* Poppins-ThinItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ThinItalic.ttf"; path = "../src/assets/fonts/Poppins-ThinItalic.ttf"; sourceTree = "<group>"; };
 		DF1EFAAF3B994B28A862AB69 /* Poppins-Thin.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Thin.ttf"; path = "../src/assets/fonts/Poppins-Thin.ttf"; sourceTree = "<group>"; };
 		E22D6B52F30344D786116963 /* Poppins-ExtraLightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraLightItalic.ttf"; path = "../src/assets/fonts/Poppins-ExtraLightItalic.ttf"; sourceTree = "<group>"; };
@@ -184,7 +188,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6BCAEE9C030C2CABA978B5AA /* libPods-onebody-onebodyTests.a in Frameworks */,
+				93961B6A2FD171BD7D99AB35 /* libPods-onebody-onebodyTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,7 +197,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				72A8C9FA28C2A5C600811FC8 /* libswiftWebKit.tbd in Frameworks */,
-				A41B74D089ADC001D3599CE3 /* libPods-onebody.a in Frameworks */,
+				EB9A96A4FC498FC130830791 /* libPods-onebody.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -238,8 +242,8 @@
 				72A8C9F828C2A50700811FC8 /* JavaScriptCore.framework */,
 				72A8C9F528C2A48400811FC8 /* libswiftWebKit.tbd */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				C1549B2CA9C54D7BD03560F4 /* libPods-onebody.a */,
-				7F61A9722D6771FA83E3E52D /* libPods-onebody-onebodyTests.a */,
+				6F881297DCE20CDD34E05422 /* libPods-onebody.a */,
+				7875868AA5DA8A56C92FE081 /* libPods-onebody-onebodyTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -330,6 +334,8 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				728E61952B1FFDB80013DA59 /* logoAnimation.json */,
+				728E61932B1FFB5B0013DA59 /* Dynamic.swift */,
 				7283441E28AF46100048A31B /* DONOTDELETE.swift */,
 				7278A14A289CB24F003FC089 /* GoogleService-Info.plist */,
 				13B07FAE1A68108700A75B9A /* onebody */,
@@ -358,10 +364,10 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				D6D01367D17040D992AE1A4D /* Pods-onebody.debug.xcconfig */,
-				4E012F6402BECEC52552A598 /* Pods-onebody.release.xcconfig */,
-				A9FE2C52ACD2B122AA367FA7 /* Pods-onebody-onebodyTests.debug.xcconfig */,
-				A6F7863F650D7F1B362B2393 /* Pods-onebody-onebodyTests.release.xcconfig */,
+				10E5FC941526784B29E38BF6 /* Pods-onebody.debug.xcconfig */,
+				617A521EC84A735F05016B37 /* Pods-onebody.release.xcconfig */,
+				9A8845BD2208BABA8AEEEBE7 /* Pods-onebody-onebodyTests.debug.xcconfig */,
+				330A8D17B2CA1609FD755F37 /* Pods-onebody-onebodyTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -373,12 +379,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "onebodyTests" */;
 			buildPhases = (
-				2A938B8823DE7D70B7F34A19 /* [CP] Check Pods Manifest.lock */,
+				69061E1A89AB6704C3F46627 /* [CP] Check Pods Manifest.lock */,
 				00E356EA1AD99517003FC87E /* Sources */,
 				00E356EB1AD99517003FC87E /* Frameworks */,
 				00E356EC1AD99517003FC87E /* Resources */,
-				9A339F5CA4C41EDFFD83C3EF /* [CP] Embed Pods Frameworks */,
-				BC3B02FED31F78C746094E01 /* [CP] Copy Pods Resources */,
+				C6757AD16282EB760D482513 /* [CP] Embed Pods Frameworks */,
+				9E12C2D0D84E0B292665C079 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -394,16 +400,16 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "onebody" */;
 			buildPhases = (
-				3BEE7941E29F186E14AEE968 /* [CP] Check Pods Manifest.lock */,
+				CD2452097DA4842480FEA342 /* [CP] Check Pods Manifest.lock */,
 				FD10A7F022414F080027D42C /* Start Packager */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				4924A0D19C83400DB89B944E /* Upload Debug Symbols to Sentry */,
-				F92A3925D43F373CFDFD555F /* [CP] Embed Pods Frameworks */,
-				6D018C05C2D1B504A59D8D6A /* [CP] Copy Pods Resources */,
-				02B1B7A72AD5215980247DB4 /* [CP-User] [RNFB] Core Configuration */,
+				EF1C74DEEDF7266E751EE94A /* [CP] Embed Pods Frameworks */,
+				AB38DF09E68C80DCB5F0764A /* [CP] Copy Pods Resources */,
+				2EBE300D071A951CC303FD6F /* [CP-User] [RNFB] Core Configuration */,
 			);
 			buildRules = (
 			);
@@ -521,6 +527,7 @@
 				7325E2555269471BB4A481B1 /* Poppins-Light.ttf in Resources */,
 				0AE742DF17584F22B63775D0 /* Poppins-LightItalic.ttf in Resources */,
 				1CB940208CD54405B1C6D5AF /* Poppins-Medium.ttf in Resources */,
+				728E61962B1FFDB80013DA59 /* logoAnimation.json in Resources */,
 				5A22DF6F23A54CCE8E823F23 /* Poppins-MediumItalic.ttf in Resources */,
 				3C1446AB363F4C1A9790E9A5 /* Poppins-Regular.ttf in Resources */,
 				675F58D5017949E99EAB0FEB /* Poppins-SemiBold.ttf in Resources */,
@@ -549,7 +556,7 @@
 			shellPath = /bin/sh;
 			shellScript = "\nif [[ -s \"$HOME/.nvm/nvm.sh\" ]]; then\n. \"$HOME/.nvm/nvm.sh\"\nelif [[ -x \"$(command -v brew)\" && -s \"$(brew --prefix nvm)/nvm.sh\" ]]; then\n. \"$(brew --prefix nvm)/nvm.sh\"\nfi\n\nexport SENTRY_PROPERTIES=sentry.properties\nexport EXTRA_PACKAGER_ARGS=\"--sourcemap-output $DERIVED_FILE_DIR/main.jsbundle.map\"\nset -e\n\nWITH_ENVIRONMENT=\"../node_modules/react-native/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"../node_modules/react-native/scripts/react-native-xcode.sh\"\n#/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n/bin/sh -c \"$WITH_ENVIRONMENT \\\"../node_modules/@sentry/cli/bin/sentry-cli react-native xcode $REACT_NATIVE_XCODE\\\"\"\n\n/bin/sh ../node_modules/@sentry/react-native/scripts/collect-modules.sh\n";
 		};
-		02B1B7A72AD5215980247DB4 /* [CP-User] [RNFB] Core Configuration */ = {
+		2EBE300D071A951CC303FD6F /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -562,7 +569,21 @@
 			shellPath = /bin/sh;
 			shellScript = "#!/usr/bin/env bash\n#\n# Copyright (c) 2016-present Invertase Limited & Contributors\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this library except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#   http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n#\nset -e\n\n_MAX_LOOKUPS=2;\n_SEARCH_RESULT=''\n_RN_ROOT_EXISTS=''\n_CURRENT_LOOKUPS=1\n_JSON_ROOT=\"'react-native'\"\n_JSON_FILE_NAME='firebase.json'\n_JSON_OUTPUT_BASE64='e30=' # { }\n_CURRENT_SEARCH_DIR=${PROJECT_DIR}\n_PLIST_BUDDY=/usr/libexec/PlistBuddy\n_TARGET_PLIST=\"${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}\"\n_DSYM_PLIST=\"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist\"\n\n# plist arrays\n_PLIST_ENTRY_KEYS=()\n_PLIST_ENTRY_TYPES=()\n_PLIST_ENTRY_VALUES=()\n\nfunction setPlistValue {\n  echo \"info:      setting plist entry '$1' of type '$2' in file '$4'\"\n  ${_PLIST_BUDDY} -c \"Add :$1 $2 '$3'\" $4 || echo \"info:      '$1' already exists\"\n}\n\nfunction getFirebaseJsonKeyValue () {\n  if [[ ${_RN_ROOT_EXISTS} ]]; then\n    ruby -Ku -e \"require 'rubygems';require 'json'; output=JSON.parse('$1'); puts output[$_JSON_ROOT]['$2']\"\n  else\n    echo \"\"\n  fi;\n}\n\nfunction jsonBoolToYesNo () {\n  if [[ $1 == \"false\" ]]; then\n    echo \"NO\"\n  elif [[ $1 == \"true\" ]]; then\n    echo \"YES\"\n  else echo \"NO\"\n  fi\n}\n\necho \"info: -> RNFB build script started\"\necho \"info: 1) Locating ${_JSON_FILE_NAME} file:\"\n\nif [[ -z ${_CURRENT_SEARCH_DIR} ]]; then\n  _CURRENT_SEARCH_DIR=$(pwd)\nfi;\n\nwhile true; do\n  _CURRENT_SEARCH_DIR=$(dirname \"$_CURRENT_SEARCH_DIR\")\n  if [[ \"$_CURRENT_SEARCH_DIR\" == \"/\" ]] || [[ ${_CURRENT_LOOKUPS} -gt ${_MAX_LOOKUPS} ]]; then break; fi;\n  echo \"info:      ($_CURRENT_LOOKUPS of $_MAX_LOOKUPS) Searching in '$_CURRENT_SEARCH_DIR' for a ${_JSON_FILE_NAME} file.\"\n  _SEARCH_RESULT=$(find \"$_CURRENT_SEARCH_DIR\" -maxdepth 2 -name ${_JSON_FILE_NAME} -print | /usr/bin/head -n 1)\n  if [[ ${_SEARCH_RESULT} ]]; then\n    echo \"info:      ${_JSON_FILE_NAME} found at $_SEARCH_RESULT\"\n    break;\n  fi;\n  _CURRENT_LOOKUPS=$((_CURRENT_LOOKUPS+1))\ndone\n\nif [[ ${_SEARCH_RESULT} ]]; then\n  _JSON_OUTPUT_RAW=$(cat \"${_SEARCH_RESULT}\")\n  _RN_ROOT_EXISTS=$(ruby -Ku -e \"require 'rubygems';require 'json'; output=JSON.parse('$_JSON_OUTPUT_RAW'); puts output[$_JSON_ROOT]\" || echo '')\n\n  if [[ ${_RN_ROOT_EXISTS} ]]; then\n    if ! python3 --version >/dev/null 2>&1; then echo \"python3 not found, firebase.json file processing error.\" && exit 1; fi\n    _JSON_OUTPUT_BASE64=$(python3 -c 'import json,sys,base64;print(base64.b64encode(bytes(json.dumps(json.loads(open('\"'${_SEARCH_RESULT}'\"', '\"'rb'\"').read())['${_JSON_ROOT}']), '\"'utf-8'\"')).decode())' || echo \"e30=\")\n  fi\n\n  _PLIST_ENTRY_KEYS+=(\"firebase_json_raw\")\n  _PLIST_ENTRY_TYPES+=(\"string\")\n  _PLIST_ENTRY_VALUES+=(\"$_JSON_OUTPUT_BASE64\")\n\n  # config.app_data_collection_default_enabled\n  _APP_DATA_COLLECTION_ENABLED=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"app_data_collection_default_enabled\")\n  if [[ $_APP_DATA_COLLECTION_ENABLED ]]; then\n    _PLIST_ENTRY_KEYS+=(\"FirebaseDataCollectionDefaultEnabled\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_APP_DATA_COLLECTION_ENABLED\")\")\n  fi\n\n  # config.analytics_auto_collection_enabled\n  _ANALYTICS_AUTO_COLLECTION=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"analytics_auto_collection_enabled\")\n  if [[ $_ANALYTICS_AUTO_COLLECTION ]]; then\n    _PLIST_ENTRY_KEYS+=(\"FIREBASE_ANALYTICS_COLLECTION_ENABLED\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_ANALYTICS_AUTO_COLLECTION\")\")\n  fi\n\n  # config.analytics_collection_deactivated\n  _ANALYTICS_DEACTIVATED=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"analytics_collection_deactivated\")\n  if [[ $_ANALYTICS_DEACTIVATED ]]; then\n    _PLIST_ENTRY_KEYS+=(\"FIREBASE_ANALYTICS_COLLECTION_DEACTIVATED\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_ANALYTICS_DEACTIVATED\")\")\n  fi\n\n  # config.analytics_idfv_collection_enabled\n  _ANALYTICS_IDFV_COLLECTION=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"analytics_idfv_collection_enabled\")\n  if [[ $_ANALYTICS_IDFV_COLLECTION ]]; then\n    _PLIST_ENTRY_KEYS+=(\"GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_ANALYTICS_IDFV_COLLECTION\")\")\n  fi\n\n  # config.analytics_default_allow_ad_personalization_signals\n  _ANALYTICS_PERSONALIZATION=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"analytics_default_allow_ad_personalization_signals\")\n  if [[ $_ANALYTICS_PERSONALIZATION ]]; then\n    _PLIST_ENTRY_KEYS+=(\"GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_ANALYTICS_PERSONALIZATION\")\")\n  fi\n\n  # config.analytics_registration_with_ad_network_enabled\n  _ANALYTICS_REGISTRATION_WITH_AD_NETWORK=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"google_analytics_registration_with_ad_network_enabled\")\n  if [[ $_ANALYTICS_REGISTRATION_WITH_AD_NETWORK ]]; then\n    _PLIST_ENTRY_KEYS+=(\"GOOGLE_ANALYTICS_REGISTRATION_WITH_AD_NETWORK_ENABLED\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_ANALYTICS_REGISTRATION_WITH_AD_NETWORK\")\")\n  fi\n\n  # config.google_analytics_automatic_screen_reporting_enabled\n  _ANALYTICS_AUTO_SCREEN_REPORTING=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"google_analytics_automatic_screen_reporting_enabled\")\n  if [[ $_ANALYTICS_AUTO_SCREEN_REPORTING ]]; then\n    _PLIST_ENTRY_KEYS+=(\"FirebaseAutomaticScreenReportingEnabled\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_ANALYTICS_AUTO_SCREEN_REPORTING\")\")\n  fi\n\n  # config.perf_auto_collection_enabled\n  _PERF_AUTO_COLLECTION=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"perf_auto_collection_enabled\")\n  if [[ $_PERF_AUTO_COLLECTION ]]; then\n    _PLIST_ENTRY_KEYS+=(\"firebase_performance_collection_enabled\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_PERF_AUTO_COLLECTION\")\")\n  fi\n\n  # config.perf_collection_deactivated\n  _PERF_DEACTIVATED=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"perf_collection_deactivated\")\n  if [[ $_PERF_DEACTIVATED ]]; then\n    _PLIST_ENTRY_KEYS+=(\"firebase_performance_collection_deactivated\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_PERF_DEACTIVATED\")\")\n  fi\n\n  # config.messaging_auto_init_enabled\n  _MESSAGING_AUTO_INIT=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"messaging_auto_init_enabled\")\n  if [[ $_MESSAGING_AUTO_INIT ]]; then\n    _PLIST_ENTRY_KEYS+=(\"FirebaseMessagingAutoInitEnabled\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_MESSAGING_AUTO_INIT\")\")\n  fi\n\n  # config.in_app_messaging_auto_colllection_enabled\n  _FIAM_AUTO_INIT=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"in_app_messaging_auto_collection_enabled\")\n  if [[ $_FIAM_AUTO_INIT ]]; then\n    _PLIST_ENTRY_KEYS+=(\"FirebaseInAppMessagingAutomaticDataCollectionEnabled\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_FIAM_AUTO_INIT\")\")\n  fi\n\n  # config.app_check_token_auto_refresh\n  _APP_CHECK_TOKEN_AUTO_REFRESH=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"app_check_token_auto_refresh\")\n  if [[ $_APP_CHECK_TOKEN_AUTO_REFRESH ]]; then\n    _PLIST_ENTRY_KEYS+=(\"FirebaseAppCheckTokenAutoRefreshEnabled\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"$(jsonBoolToYesNo \"$_APP_CHECK_TOKEN_AUTO_REFRESH\")\")\n  fi\n\n  # config.crashlytics_disable_auto_disabler - undocumented for now - mainly for debugging, document if becomes useful\n  _CRASHLYTICS_AUTO_DISABLE_ENABLED=$(getFirebaseJsonKeyValue \"$_JSON_OUTPUT_RAW\" \"crashlytics_disable_auto_disabler\")\n  if [[ $_CRASHLYTICS_AUTO_DISABLE_ENABLED == \"true\" ]]; then\n    echo \"Disabled Crashlytics auto disabler.\" # do nothing\n  else\n    _PLIST_ENTRY_KEYS+=(\"FirebaseCrashlyticsCollectionEnabled\")\n    _PLIST_ENTRY_TYPES+=(\"bool\")\n    _PLIST_ENTRY_VALUES+=(\"NO\")\n  fi\nelse\n  _PLIST_ENTRY_KEYS+=(\"firebase_json_raw\")\n  _PLIST_ENTRY_TYPES+=(\"string\")\n  _PLIST_ENTRY_VALUES+=(\"$_JSON_OUTPUT_BASE64\")\n  echo \"warning:   A firebase.json file was not found, whilst this file is optional it is recommended to include it to configure firebase services in React Native Firebase.\"\nfi;\n\necho \"info: 2) Injecting Info.plist entries: \"\n\n# Log out the keys we're adding\nfor i in \"${!_PLIST_ENTRY_KEYS[@]}\"; do\n  echo \"    ->  $i) ${_PLIST_ENTRY_KEYS[$i]}\" \"${_PLIST_ENTRY_TYPES[$i]}\" \"${_PLIST_ENTRY_VALUES[$i]}\"\ndone\n\nfor plist in \"${_TARGET_PLIST}\" \"${_DSYM_PLIST}\" ; do\n  if [[ -f \"${plist}\" ]]; then\n\n    # paths with spaces break the call to setPlistValue. temporarily modify\n    # the shell internal field separator variable (IFS), which normally\n    # includes spaces, to consist only of line breaks\n    oldifs=$IFS\n    IFS=\"\n\"\n\n    for i in \"${!_PLIST_ENTRY_KEYS[@]}\"; do\n      setPlistValue \"${_PLIST_ENTRY_KEYS[$i]}\" \"${_PLIST_ENTRY_TYPES[$i]}\" \"${_PLIST_ENTRY_VALUES[$i]}\" \"${plist}\"\n    done\n\n    # restore the original internal field separator value\n    IFS=$oldifs\n  else\n    echo \"warning:   A Info.plist build output file was not found (${plist})\"\n  fi\ndone\n\necho \"info: <- RNFB build script finished\"\n";
 		};
-		2A938B8823DE7D70B7F34A19 /* [CP] Check Pods Manifest.lock */ = {
+		4924A0D19C83400DB89B944E /* Upload Debug Symbols to Sentry */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Upload Debug Symbols to Sentry";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\nif [[ -s \"$HOME/.nvm/nvm.sh\" ]]; then\n. \"$HOME/.nvm/nvm.sh\"\nelif [[ -x \"$(command -v brew)\" && -s \"$(brew --prefix nvm)/nvm.sh\" ]]; then\n. \"$(brew --prefix nvm)/nvm.sh\"\nfi\n\nexport SENTRY_PROPERTIES=sentry.properties\n[[ $SENTRY_INCLUDE_NATIVE_SOURCES == \"true\" ]] && INCLUDE_SOURCES_FLAG=\"--include-sources\" || INCLUDE_SOURCES_FLAG=\"\"\n../node_modules/@sentry/cli/bin/sentry-cli debug-files upload \"$INCLUDE_SOURCES_FLAG\" \"$DWARF_DSYM_FOLDER_PATH\"\n";
+		};
+		69061E1A89AB6704C3F46627 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -584,7 +605,58 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		3BEE7941E29F186E14AEE968 /* [CP] Check Pods Manifest.lock */ = {
+		9E12C2D0D84E0B292665C079 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		AB38DF09E68C80DCB5F0764A /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-onebody/Pods-onebody-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-onebody/Pods-onebody-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-onebody/Pods-onebody-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C6757AD16282EB760D482513 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		CD2452097DA4842480FEA342 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -606,72 +678,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		4924A0D19C83400DB89B944E /* Upload Debug Symbols to Sentry */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Upload Debug Symbols to Sentry";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\nif [[ -s \"$HOME/.nvm/nvm.sh\" ]]; then\n. \"$HOME/.nvm/nvm.sh\"\nelif [[ -x \"$(command -v brew)\" && -s \"$(brew --prefix nvm)/nvm.sh\" ]]; then\n. \"$(brew --prefix nvm)/nvm.sh\"\nfi\n\nexport SENTRY_PROPERTIES=sentry.properties\n[[ $SENTRY_INCLUDE_NATIVE_SOURCES == \"true\" ]] && INCLUDE_SOURCES_FLAG=\"--include-sources\" || INCLUDE_SOURCES_FLAG=\"\"\n../node_modules/@sentry/cli/bin/sentry-cli debug-files upload \"$INCLUDE_SOURCES_FLAG\" \"$DWARF_DSYM_FOLDER_PATH\"\n";
-		};
-		6D018C05C2D1B504A59D8D6A /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-onebody/Pods-onebody-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-onebody/Pods-onebody-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-onebody/Pods-onebody-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		9A339F5CA4C41EDFFD83C3EF /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		BC3B02FED31F78C746094E01 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-onebody-onebodyTests/Pods-onebody-onebodyTests-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		F92A3925D43F373CFDFD555F /* [CP] Embed Pods Frameworks */ = {
+		EF1C74DEEDF7266E751EE94A /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -723,6 +730,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
+				728E61942B1FFB5B0013DA59 /* Dynamic.swift in Sources */,
 				7283441F28AF46100048A31B /* DONOTDELETE.swift in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
@@ -741,7 +749,7 @@
 /* Begin XCBuildConfiguration section */
 		00E356F61AD99517003FC87E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A9FE2C52ACD2B122AA367FA7 /* Pods-onebody-onebodyTests.debug.xcconfig */;
+			baseConfigurationReference = 9A8845BD2208BABA8AEEEBE7 /* Pods-onebody-onebodyTests.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -770,7 +778,7 @@
 		};
 		00E356F71AD99517003FC87E /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A6F7863F650D7F1B362B2393 /* Pods-onebody-onebodyTests.release.xcconfig */;
+			baseConfigurationReference = 330A8D17B2CA1609FD755F37 /* Pods-onebody-onebodyTests.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -796,14 +804,14 @@
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D6D01367D17040D992AE1A4D /* Pods-onebody.debug.xcconfig */;
+			baseConfigurationReference = 10E5FC941526784B29E38BF6 /* Pods-onebody.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = onebody/onebody.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 9N63S64RJ2;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
@@ -946,14 +954,14 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4E012F6402BECEC52552A598 /* Pods-onebody.release.xcconfig */;
+			baseConfigurationReference = 617A521EC84A735F05016B37 /* Pods-onebody.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = onebody/onebody.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 9N63S64RJ2;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (

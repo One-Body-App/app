@@ -1,4 +1,5 @@
 import { type GiphyMedia } from '@giphy/react-native-sdk';
+import { ReactElement } from 'react';
 
 export type ChurchType = {
   churchType: string;
@@ -65,6 +66,8 @@ type Profile = {
 export enum PostType {
   social = 'social',
   rss = 'rss',
+  prayer = 'prayer',
+  comment = 'comment',
 }
 
 export type SavedPost = {
@@ -108,6 +111,7 @@ export type User = {
   subscribedToNewsletter: boolean;
   influencerProfile?: InfluencerProfile;
   profile: Profile;
+  savedPrayers?: string[];
   savedPost?: SavedPost[];
   savedPostData?: SocialPost[];
   whatIDo?: Tag;
@@ -246,5 +250,92 @@ export interface SocialPost {
     coordinates?: number[];
   };
   locationName?: string;
+  edited?: boolean;
+}
+
+export enum PrayerWallCategory {
+  Request = 'request',
+  Exhortation = 'exhortation',
+  Testimony = 'testimony',
+  AnsweredPrayer = 'answered',
+  MyPrayers = 'myPrayers',
+}
+
+export interface PrayerPost {
+  postId?: string;
+  content: string;
+  date: string;
+  private: boolean;
+  category: PrayerWallCategory;
+  userData: {
+    _id?: string;
+    name: string;
+    username?: string;
+    accountType?: AccountType;
+    profileImage?: string;
+    twitterHandler?: string;
+    instagramHandler?: string;
+    isApprovedInfluencer?: boolean;
+  };
+  testimony?: {
+    content: string;
+    reactions: SocialPostReaction[];
+  };
+  answered?: boolean;
+  images?: string[];
+  gif?: GiphyMedia;
+  videos?: string[];
+  created: Date;
+  updated: Date;
+  id: string;
+  comments: CommentPost[];
+  commentNumber: number;
+
+  reactions: SocialPostReaction[];
+  location?: {
+    type?: string;
+    coordinates?: number[];
+  };
+  locationName?: string;
+  edited?: boolean;
+}
+
+export interface PostUserData {
+  twitterHandler?: string;
+  instagramHandler?: string;
+  name: string;
+  username?: string;
+  _id?: string;
+  accountType?: AccountType;
+  profileImage?: string;
+  profileIcon?: ReactElement;
+}
+
+export interface CommentPost {
+  commentId?: string;
+  dateSeconds: number;
+  date: string;
+  objectId: string;
+  objectType: string;
+  content: string;
+  userData: {
+    _id?: string;
+    name: string;
+    username?: string;
+    accountType?: AccountType;
+    profileImage?: string;
+    twitterHandler?: string;
+    instagramHandler?: string;
+    isApprovedInfluencer?: boolean;
+  };
+
+  images?: string[];
+  gif?: GiphyMedia;
+  videos?: string[];
+  created: Date;
+  updated: Date;
+
+  reactions?: SocialPostReaction[];
+  response?: CommentPost[];
   edited?: boolean;
 }

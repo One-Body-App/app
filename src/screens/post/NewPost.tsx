@@ -74,6 +74,7 @@ const NewPost = ({ navigation, route }: Props) => {
   const token = useSelector((state: RootState) => state.auth.userToken);
 
   const [location, setLocation] = useState<MapSuggestion | null>(null);
+  const [locationName, setLocationName] = useState<string | null>(null);
   const [locationSelector, setLocationSelector] = useState<boolean>(false);
   const [headerImagePickerModalVisibile, setHeaderImagePickerModalVisibile] = useState(false);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
@@ -129,7 +130,7 @@ const NewPost = ({ navigation, route }: Props) => {
       });
 
       setIsLoading(false);
-      console.log(result);
+
       if (result.status == 200) {
         setContent('');
         navigation.popToTop();
@@ -216,6 +217,10 @@ const NewPost = ({ navigation, route }: Props) => {
 
         if (!isEmpty(result.response?.location)) {
           setLocation(result.response?.location);
+        }
+
+        if (!isEmpty(result.response?.locationName)) {
+          setLocationName(result.response?.locationName);
         }
       }
     } catch (e) {
@@ -421,7 +426,7 @@ const NewPost = ({ navigation, route }: Props) => {
                   }}
                 >
                   <Button
-                    text={location?.place_name}
+                    text={location?.place_name ?? locationName}
                     onPress={() => setLocationSelector(true)}
                     wrapperViewBtnStyle={{ flex: 1 }}
                   />

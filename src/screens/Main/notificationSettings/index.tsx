@@ -1,23 +1,15 @@
 import React, { useEffect } from 'react';
-import { Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Text, View, ActivityIndicator } from 'react-native';
 import { Switch } from 'react-native-paper';
-import auth from '@react-native-firebase/auth';
-import { getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
-import Header from '@/src/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { ApiCall } from '@/src/Services/api';
 import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
 import { setProfile } from '@/src/Redux/actions/AuthActions';
 import { useTheme } from '@react-navigation/native';
-import GoBackIcon from '@/src/components/GoBackIcon';
-import { DrawerScreenProps } from '@react-navigation/drawer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'NotificationSettings'>;

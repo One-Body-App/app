@@ -36,6 +36,7 @@ export const ApiCall = async ({
     }
 
     let response: AxiosResponse<any, any> | null = null;
+
     switch (verb) {
       case 'get':
         response = await axios.get(

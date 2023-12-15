@@ -12,12 +12,13 @@ import Settings from '../screens/main/settings';
 import EmailChange from '../screens/main/emailChange';
 import PasswordChange from '../screens/main/passwordChange';
 import InfluencerStepOne from '../screens/influencerApplication/InfluencerStepOne';
-import InfluencerStepTwo from '../screens/influencerApplication/InfluencerStepTwo';
+
 import InfluencerStepThree from '../screens/influencerApplication/InfluencerStepThree';
 import InfluencerStepFour from '../screens/influencerApplication/InfluencerStepFour';
 import NewPassword from '../screens/newPassword/NewPassword';
 import { Colors } from '../styles';
 import { useTheme } from '@react-navigation/native';
+import InfluencerStepTwo from '../screens/influencerApplication/InfluencerStepTwo';
 
 const Stack = createNativeStackNavigator<SettingsStackParamsList>();
 

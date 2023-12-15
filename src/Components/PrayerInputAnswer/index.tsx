@@ -40,9 +40,9 @@ const PrayerInputAnswer = ({ color, id, setIsAnswerd, setCurrentIndex }) => {
         setIsAnswerd(false);
         setCurrentIndex(null);
 
-        dispatch(getMyPrayer({ pageno: 1, token: token }));
-        dispatch(getAllPrayer({ pageno: 1, token: token }));
-        dispatch(getTestimonies({ pageno: 1, token: token }));
+        dispatch(getMyPrayer({ page: 1, token: token }));
+        dispatch(getAllPrayer({ page: 1, token: token }));
+        dispatch(getTestimonies({ page: 1, token: token }));
       } else {
         console.log('error', res?.response);
         dispatch(setLoader(false));

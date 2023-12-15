@@ -1,5 +1,5 @@
 import React, { FC, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { FlatList, Image, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, RefreshControl, TouchableOpacity, View } from 'react-native';
 import { styles } from './styles';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -7,7 +7,7 @@ import { ApiCall } from '@/services/api';
 import { SetSocial } from '@/redux/actions/SocialActions';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import SocialItem from '../ListItems/SocialItem';
+import SocialItem from '../listItems/SocialItem';
 import { isObject } from 'lodash';
 import { Tabs } from 'react-native-collapsible-tab-view';
 import { RefreshListRef } from '@/utils/types';
@@ -159,7 +159,9 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
         ListFooterComponent={() => (
           <View>
             {isEndOfList ? (
-              <Text style={{ textAlign: 'center' }}>Not more social posts at this time</Text>
+              <StyledText style={{ textAlign: 'center' }}>
+                Not more social posts at this time
+              </StyledText>
             ) : null}
           </View>
         )}

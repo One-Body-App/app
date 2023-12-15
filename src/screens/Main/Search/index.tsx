@@ -17,7 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { TabView, SceneMap } from 'react-native-tab-view';
 
@@ -25,12 +25,11 @@ import SearchContainComponent from '@/src/components/SearchContainComponent';
 import { BASE_URL } from '@/src/Services/constants';
 import { ApiCall } from '@/src/Services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import ArticleItem from '@/src/components/ListItems/ArticleItem';
+import ArticleItem from '@/src/components/listItems/ArticleItem';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
-import OptionsModal from '@/src/components/ListItems/OptionsModal';
+
 import { ArticleType } from '@/utils/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   HomeStackParamsList,
@@ -51,7 +50,7 @@ import SearchIcon from '@/assets/icons/search.svg';
 import { ArrowRight } from 'iconsax-react-native';
 import FastImage from 'react-native-fast-image';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import UserItem from '@/src/components/ListItems/UserItem';
+import UserItem from '@/src/components/listItems/UserItem';
 import { header } from '@/src/styles/typography';
 
 // type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;

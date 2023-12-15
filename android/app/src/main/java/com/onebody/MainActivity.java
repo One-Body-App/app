@@ -2,9 +2,11 @@ package com.onebody;
 import android.os.Bundle;
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
+import org.devio.rn.splashscreen.SplashScreen;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactActivityDelegate;
-import org.devio.rn.splashscreen.SplashScreen;
+// import org.devio.rn.splashscreen.SplashScreen;
+
 
 
 public class MainActivity extends ReactActivity {
@@ -20,7 +22,9 @@ public class MainActivity extends ReactActivity {
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
-    SplashScreen.show(this);  // here
+    // SplashScreen.show(this);  // here
+    SplashScreen.show(this, R.id.lottie); // here
+    SplashScreen.setAnimationFinished(true);
     super.onCreate(savedInstanceState);
   }
 

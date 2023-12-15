@@ -95,7 +95,7 @@ function* loginSocialRequest(params: {
       verb: 'post',
       token: params.data.data.token,
     });
-    console.log(res, 'resresresresres');
+
     if (res?.status == 200) {
       if (res?.response?.email && params.data.gotoSignup) {
         yield put(setProfile(res?.response));

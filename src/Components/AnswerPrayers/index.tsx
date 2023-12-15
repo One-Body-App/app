@@ -33,18 +33,18 @@ const AnswerPrayers = ({ color }) => {
         verb: 'patch',
       });
 
-      if (res?.status == '200') {
+      if (res?.status == 200) {
         dispatch(setLoader(false));
         setPrayer('');
         dispatch(
           getTestimonies({
-            pageno: 1,
+            page: 1,
             token: token,
           })
         );
         dispatch(
           getAllPrayer({
-            pageno: 1,
+            page: 1,
             token: token,
           })
         );

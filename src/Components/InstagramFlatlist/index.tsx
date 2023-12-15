@@ -8,7 +8,7 @@ import { ApiCall } from '@/src/Services/api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { User } from '@/utils/types';
-import SocialItem from '../ListItems/SocialItem';
+import SocialItem from '../listItems/SocialItem';
 import { OpenURLButton } from '@/src/Services/constants';
 import Button from '../Button';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';

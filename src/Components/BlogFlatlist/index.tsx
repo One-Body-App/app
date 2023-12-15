@@ -16,13 +16,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { ApiCall } from '@/src/Services/api';
 import { SceneRendererProps } from 'react-native-tab-view';
-import { ArticleType, User } from '@/utils/types';
+import { ArticleType, PostType, User } from '@/utils/types';
 import { isObject } from 'lodash';
 import { OpenURLButton } from '@/src/Services/constants';
-import ArticleItem from '../ListItems/ArticleItem';
+import ArticleItem from '../listItems/ArticleItem';
 import { useTheme } from '@react-navigation/native';
-import OptionsModal, { PopupItem } from '../ListItems/OptionsModal';
-import { styles as globalStyle } from '@/src/components/ListItems/style';
+import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
+import { styles as globalStyle } from '@/src/components/listItems/style';
 import { spacing } from '@/src/styles/spacing';
 import { Tabs } from 'react-native-collapsible-tab-view';
 
@@ -93,6 +93,7 @@ const BlogFlatlist = ({ userId }: { userId: string }) => {
         created: item.created,
         image: item.image,
         externalLink: item.link,
+        type: PostType.rss,
 
         userData: {
           twitterHandler: user?.influencerProfile?.twitterHandler,

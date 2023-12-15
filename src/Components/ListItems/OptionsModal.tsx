@@ -12,7 +12,7 @@ import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { ApiCall } from '@/src/Services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { AccountType, PostType, SocialPostReaction } from '@/utils/types';
+import { AccountType, PostType, PostUserData, SocialPostReaction } from '@/utils/types';
 import { getuserGet } from '@/src/Redux/actions/UserAction';
 import {
   ExploreStackParamsList,
@@ -43,9 +43,9 @@ type ScreenNavigationProp = CompositeNavigationProp<
 
 export type PopupItem = {
   id?: string;
-  type?: PostType;
+  type: PostType;
   postlink?: string;
-  title: string;
+  title?: string;
   created?: Date;
   image?: {
     url: string;
@@ -53,15 +53,7 @@ export type PopupItem = {
   externalLink?: string;
   reactions?: SocialPostReaction[];
   myReaction?: SocialPostReaction;
-  userData: {
-    twitterHandler?: string;
-    instagramHandler?: string;
-    name: string;
-    username: string;
-    _id: string;
-    accountType: AccountType;
-    profileImage?: string;
-  };
+  userData: PostUserData;
 };
 const OptionsModal = ({
   show,
@@ -71,14 +63,20 @@ const OptionsModal = ({
   onProfilePress,
   removePost,
   editPost,
+  hideSavePost,
+  hideShare,
+  isPrivate,
 }: {
   show: boolean;
   setShow: (show: boolean) => void;
-  removePost?: (postId: string) => void;
+  removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
   currentPopupItem?: PopupItem;
   height?: number;
   onProfilePress?: Function;
+  hideSavePost?: boolean;
+  hideShare?: boolean;
+  isPrivate?: boolean;
 }) => {
   const { colors, dark } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -87,7 +85,7 @@ const OptionsModal = ({
   const toast = useRef<ToastContainer>(null);
   const loader = useSelector((state: RootState) => state.general.loader);
 
-  const removeSavedPost = async (link?: string, id?: string) => {
+  const removeSavedPost = async (type?: string, link?: string, id?: string) => {
     dispatch(setLoader(true));
 
     try {
@@ -98,6 +96,7 @@ const OptionsModal = ({
         params: {
           id,
           link,
+          type,
         },
       });
 
@@ -146,10 +145,26 @@ const OptionsModal = ({
     }
   };
   let isThisPostSaved = false;
-  if (user?.savedPost && user?.savedPost.length > 0) {
+  if (
+    currentPopupItem?.type == PostType.prayer &&
+    user?.savedPrayers &&
+    user?.savedPrayers.length > 0
+  ) {
+    user?.savedPrayers.forEach((savedPrayers) => {
+      if (savedPrayers == currentPopupItem?.id) {
+        isThisPostSaved = true;
+      }
+    });
+  } else if (
+    currentPopupItem?.type != PostType.prayer &&
+    user?.savedPost &&
+    user?.savedPost.length > 0
+  ) {
     user?.savedPost.forEach((savedPost) => {
       if (
-        (savedPost.link != undefined && savedPost.link == currentPopupItem?.postlink) ||
+        (currentPopupItem &&
+          savedPost.link != undefined &&
+          savedPost.link == currentPopupItem?.postlink) ||
         (savedPost.postId != undefined && savedPost.postId == currentPopupItem?.id)
       ) {
         isThisPostSaved = true;
@@ -203,7 +218,7 @@ const OptionsModal = ({
         </View>
         <ScrollView style={{ flexGrow: 1 }}>
           <View>
-            {currentPopupItem?.userData?._id != user?._id ? (
+            {currentPopupItem?.userData?._id != user?._id && !isPrivate ? (
               <View style={{ marginVertical: spacing.x8 }}>
                 <Button
                   text="View Account"
@@ -268,7 +283,7 @@ const OptionsModal = ({
                             onPress: () => {
                               setShow(false);
                               if (currentPopupItem) {
-                                removePost(currentPopupItem?.id ?? '');
+                                removePost(currentPopupItem.type, currentPopupItem?.id ?? '');
                               }
                             },
                             style: 'destructive',
@@ -284,76 +299,82 @@ const OptionsModal = ({
                 ) : null}
               </>
             ) : null}
-            <View style={{ marginVertical: spacing.x8 }}>
-              <Button
-                text={isThisPostSaved ? 'Remove Saved Post' : 'Save Post'}
-                btnTextStyle={[body.x2, { color: colors.text }]}
-                disabled={loader}
-                leftIcon={
-                  <Bookmark
-                    style={{ marginRight: spacing.x5 }}
-                    width={fontSize.x5.fontSize}
-                    height={fontSize.x5.fontSize}
-                    color={colors.text}
-                    fill={isThisPostSaved ? colors.text : colors.background}
-                  />
-                }
-                onPress={() => {
-                  if (isThisPostSaved) {
-                    if (currentPopupItem?.id) removeSavedPost(undefined, currentPopupItem?.id);
-                    else if (currentPopupItem?.postlink)
-                      removeSavedPost(currentPopupItem?.postlink);
-                  } else {
-                    savePost(
-                      currentPopupItem?.id,
-                      currentPopupItem?.type,
-                      currentPopupItem?.title,
-                      currentPopupItem?.created,
-                      currentPopupItem?.userData._id,
-                      currentPopupItem?.postlink,
-                      currentPopupItem?.image?.url
-                    );
+            {!hideSavePost ? (
+              <View style={{ marginVertical: spacing.x8 }}>
+                <Button
+                  text={isThisPostSaved ? 'Remove Saved Post' : 'Save Post'}
+                  btnTextStyle={[body.x2, { color: colors.text }]}
+                  disabled={loader}
+                  leftIcon={
+                    <Bookmark
+                      style={{ marginRight: spacing.x5 }}
+                      width={fontSize.x5.fontSize}
+                      height={fontSize.x5.fontSize}
+                      color={colors.text}
+                      fill={isThisPostSaved ? colors.text : colors.background}
+                    />
                   }
-                }}
-              />
-            </View>
-            <View style={{ marginVertical: spacing.x8 }}>
-              <Button
-                btnStyle={{ backgroundColor: colors.card, flexDirection: 'row' }}
-                text="Share"
-                leftIcon={
-                  Platform.OS == 'ios' ? (
-                    <ShareIos
-                      style={{ marginRight: spacing.x5 }}
-                      color={colors.text}
-                      height={fontSize.x5.fontSize}
-                      width={fontSize.x5.fontSize}
-                    />
-                  ) : (
-                    <ShareAndroid
-                      style={{ marginRight: spacing.x5 }}
-                      color={colors.text}
-                      height={fontSize.x5.fontSize}
-                      width={fontSize.x5.fontSize}
-                    />
-                  )
-                }
-                btnTextStyle={[body.x2, { color: colors.text }]}
-                onPress={async () => {
-                  await Share.share({
-                    title: `${currentPopupItem?.title}`,
-                    url:
-                      Platform.OS == 'ios' && currentPopupItem?.postlink
-                        ? currentPopupItem?.postlink
-                        : '',
-                    message:
-                      Platform.OS == 'android' && currentPopupItem?.postlink
-                        ? currentPopupItem?.postlink
-                        : '',
-                  });
-                }}
-              />
-            </View>
+                  onPress={() => {
+                    if (isThisPostSaved) {
+                      if (currentPopupItem?.id)
+                        removeSavedPost(currentPopupItem?.type, undefined, currentPopupItem?.id);
+                      else if (currentPopupItem?.postlink)
+                        removeSavedPost(currentPopupItem?.type, currentPopupItem?.postlink);
+                    } else {
+                      savePost(
+                        currentPopupItem?.id,
+                        currentPopupItem?.type,
+                        currentPopupItem?.title,
+                        currentPopupItem?.created,
+                        currentPopupItem?.userData._id,
+                        currentPopupItem?.postlink,
+                        currentPopupItem?.image?.url
+                      );
+                    }
+                  }}
+                />
+              </View>
+            ) : null}
+
+            {!hideShare ? (
+              <View style={{ marginVertical: spacing.x8 }}>
+                <Button
+                  btnStyle={{ backgroundColor: colors.card, flexDirection: 'row' }}
+                  text="Share"
+                  leftIcon={
+                    Platform.OS == 'ios' ? (
+                      <ShareIos
+                        style={{ marginRight: spacing.x5 }}
+                        color={colors.text}
+                        height={fontSize.x5.fontSize}
+                        width={fontSize.x5.fontSize}
+                      />
+                    ) : (
+                      <ShareAndroid
+                        style={{ marginRight: spacing.x5 }}
+                        color={colors.text}
+                        height={fontSize.x5.fontSize}
+                        width={fontSize.x5.fontSize}
+                      />
+                    )
+                  }
+                  btnTextStyle={[body.x2, { color: colors.text }]}
+                  onPress={async () => {
+                    await Share.share({
+                      title: `${currentPopupItem?.title}`,
+                      url:
+                        Platform.OS == 'ios' && currentPopupItem?.postlink
+                          ? currentPopupItem?.postlink
+                          : '',
+                      message:
+                        Platform.OS == 'android' && currentPopupItem?.postlink
+                          ? currentPopupItem?.postlink
+                          : '',
+                    });
+                  }}
+                />
+              </View>
+            ) : null}
           </View>
 
           {currentPopupItem?.postlink ? (

@@ -8,9 +8,11 @@
 #import <RNGoogleSignin/RNGoogleSignin.h>
 
 
-
-#import <FBSDKCoreKit/FBSDKCoreKit-swift.h>
-
+#import <AuthenticationServices/AuthenticationServices.h>
+#import <SafariServices/SafariServices.h>
+#import <FBSDKCoreKit/FBSDKCoreKit-Swift.h>
+#import "RNSplashScreen.h"
+#import "Onebody-Swift.h"
 
 @implementation AppDelegate
 
@@ -29,7 +31,49 @@
   [[FBSDKApplicationDelegate sharedInstance] application:application
                          didFinishLaunchingWithOptions:launchOptions];
 
-  return [super application:application didFinishLaunchingWithOptions:launchOptions];
+  
+  BOOL success = [super application:application didFinishLaunchingWithOptions:launchOptions];
+    // return [super application:application didFinishLaunchingWithOptions:launchOptions];
+
+    // Following code was added for RN splash screen lottie
+    if (success) {
+      //This is where we will put the logic to get access to rootview
+      UIView *rootView = self.window.rootViewController.view;
+
+      
+   
+   
+      Dynamic *t = [Dynamic new];
+      UIView *animationUIView = (UIView *)[t createAnimationViewWithRootView:rootView lottieName:@"logoAnimation"]; // change lottieName to your lottie files name
+  
+      
+            if (@available(iOS 12.0, *)) {
+                    switch (UIScreen.mainScreen.traitCollection.userInterfaceStyle) {
+                        case UIUserInterfaceStyleDark:
+                        animationUIView.backgroundColor = [UIColor blackColor];
+                            break;
+                        case UIUserInterfaceStyleLight:
+                        case UIUserInterfaceStyleUnspecified:
+                        default:
+                        animationUIView.backgroundColor = [UIColor whiteColor];
+                            break;
+                    }
+            } else {
+              animationUIView.backgroundColor = [UIColor whiteColor];
+            }
+      // register LottieSplashScreen to RNSplashScreen
+      [RNSplashScreen showLottieSplash:animationUIView inRootView:rootView];
+      // casting UIView type to AnimationView type
+      LottieAnimationView *animationView = (LottieAnimationView *) animationUIView;
+      // play
+      [t playWithAnimationView:animationView];
+      // If you want the animation layout to be forced to remove when hide is called, use this code
+      [RNSplashScreen setAnimationFinished:true];
+    }
+   
+    return success;
+  
+
 }
 
 - (NSDictionary *)prepareInitialProps

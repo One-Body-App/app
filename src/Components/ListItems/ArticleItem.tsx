@@ -81,11 +81,6 @@ const ArticleItem = ({
       }}
       created={item?.created}
       userData={item.userData}
-      profileImage={
-        item?.userData?.profileImage && item?.userData?.profileImage != ''
-          ? item?.userData?.profileImage
-          : NO_PROFILE_IMAGE
-      }
       isApprovedInfluencer={user?.influencerProfile?.influencerStatus == 'approved'}
       onPress={() => {
         if (item.userData._id != user?._id) {

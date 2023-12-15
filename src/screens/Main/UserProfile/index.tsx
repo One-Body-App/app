@@ -1,48 +1,34 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Text, View, FlatList, TouchableOpacity, ScrollView } from 'react-native';
-import Modal from 'react-native-modal';
+import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
-import { TabView, SceneMap, SceneRendererProps, NavigationState } from 'react-native-tab-view';
-import Add_badges from '@/assets/svg/Add_badges.svg';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Button from '@/src/components/Button';
-import { styles } from './styles';
-import FastImage from 'react-native-fast-image';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { GeneralStyle } from '../../../constants/GeneralStyle';
-import TwitterFlatlist from '@/src/components/TwitterFlatlist';
-import BlogFlatlist from '@/src/components/BlogFlatlist';
-import InstagramFlatlist from '@/src/components/InstagramFlatlist';
-import Icon from 'react-native-vector-icons/Ionicons';
-import ImageModal from '@dreamwalk-os/react-native-image-modal';
+
 import { setLoader } from '@/redux//actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { User } from '@/utils/types';
-import { OpenURLButton } from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
-import Animated from 'react-native-reanimated';
-import SubscribeFlatlist from '@/src/components/SubscribeFlatlist';
-import { getuserAll, getuserGet } from '../../../Redux/actions/UserAction';
+
 import { CompositeScreenProps } from '@react-navigation/native';
 import {
   ExploreStackParamsList,
   MainBottomStackParamsList,
   MainDrawerParamsList,
+  PrayerWallStackParamsList,
 } from '@/src/navigator/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import ProfileComponent from '@/src/components/profile/Profile';
-import { Profile } from 'react-native-fbsdk-next';
 import { getProfile } from '@/src/Redux/actions/AuthActions';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'UserProfile'>,
   CompositeScreenProps<
-    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
-    BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
+    StackScreenProps<PrayerWallStackParamsList, 'UserProfile'>,
+    CompositeScreenProps<
+      DrawerScreenProps<MainDrawerParamsList, 'Main'>,
+      BottomTabScreenProps<MainBottomStackParamsList, 'HomeTab'>
+    >
   >
 >;
 

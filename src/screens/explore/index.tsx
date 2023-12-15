@@ -88,7 +88,7 @@ const Explore = ({ navigation }: Props) => {
   const [searchChannelsToFollow, setSearchChannelsToFollow] = useState<User[]>();
   const [searchChannelsToFollowText, setSearchChannelsToFollowText] = useState<string>('');
   const [selectedInterest, setSelectedInterest] = useState<Interest[]>(user?.interests ?? []);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+
   const [loadingMore, setLoadingMore] = useState<boolean>(true);
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
@@ -104,6 +104,7 @@ const Explore = ({ navigation }: Props) => {
         }`,
         verb: 'get',
       });
+      setIsRefreshing(false);
 
       if (res?.status == 200) {
         let userData = [];
@@ -123,6 +124,7 @@ const Explore = ({ navigation }: Props) => {
         console.log('error', res?.response);
       }
     } catch (e) {
+      setIsRefreshing(false);
       console.log('saga get all user err --- ', e);
     }
   };
@@ -527,7 +529,7 @@ const Explore = ({ navigation }: Props) => {
               />
             }
             onEndReached={() => {
-              if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+              if (!loadingMore && !isRefreshing && !isEndOfList) setPage(page + 1);
             }}
             onEndReachedThreshold={0.8}
             renderItem={({ item }) => {
@@ -535,7 +537,7 @@ const Explore = ({ navigation }: Props) => {
                 <TouchableOpacity
                   onPress={() => {
                     // navigation.navigate('UserProfile', {
-                    //   id: item?._id,
+                    //   id: item?.id,
                     // })
                     if (item?.id) {
                       navigation.navigate('Main', {
@@ -605,24 +607,26 @@ const Explore = ({ navigation }: Props) => {
                           paddingVertical: spacing.x10,
                           paddingHorizontal: spacing.x24,
                           borderRadius: borderRadius.button,
-                          backgroundColor: following.some((user) => user._id == item?._id)
+                          backgroundColor: following.some((user) => user._id == item?.id)
                             ? Colors.neutral[800]
                             : Colors.primarySapphire.brand,
                         },
                       ]}
                       btnTextStyle={{
-                        color: following.some((user) => user._id == item?._id)
+                        color: following.some((user) => user._id == item?.id)
                           ? Colors.primary.brand
                           : 'white',
                       }}
                       text={
-                        following.some((user) => user._id == item?._id) ? 'Connected' : 'Connect'
+                        following.some((user) => user._id == item?.id) ? 'Connected' : 'Connect'
                       }
                       onPress={() => {
-                        if (following.some((user) => user._id == item?._id)) {
-                          handleUnSubscribe(item?._id);
-                        } else {
-                          handleSubscribe(item?._id);
+                        if (item?.id) {
+                          if (following.some((user) => user._id == item?.id)) {
+                            handleUnSubscribe(item?.id);
+                          } else {
+                            handleSubscribe(item?.id);
+                          }
                         }
                       }}
                       wrapperViewBtnStyle={{ justifyContent: 'flex-end' }}
@@ -822,18 +826,20 @@ const Explore = ({ navigation }: Props) => {
                       <TouchableOpacity
                         onPress={() => {
                           // navigation.navigate('UserProfile', {
-                          //   id: item?._id,
+                          //   id: item?.id,
                           // })
                           setShowFollowingModal(false);
-                          navigation.navigate('Main', {
-                            screen: 'ExploreTab',
-                            params: {
-                              screen: 'UserProfile',
+                          if (item?.id) {
+                            navigation.navigate('Main', {
+                              screen: 'ExploreTab',
                               params: {
-                                id: item?._id,
+                                screen: 'UserProfile',
+                                params: {
+                                  id: item?.id,
+                                },
                               },
-                            },
-                          });
+                            });
+                          }
                         }}
                         style={{
                           marginBottom: spacing.x24,
@@ -896,7 +902,9 @@ const Explore = ({ navigation }: Props) => {
                           disabledBtnTextStyle={{ color: Colors.neutral[300] }}
                           text="Connected"
                           onPress={() => {
-                            handleUnSubscribe(item?._id);
+                            if (item?.id) {
+                              handleUnSubscribe(item?.id);
+                            }
                           }}
                           disabled={isLoading}
                           wrapperViewBtnStyle={{

@@ -38,10 +38,6 @@ import ForgotPassword from '../screens/forgotPassword';
 import Login from '../screens/login';
 import Signup from '../screens/signup';
 
-import Help from '../screens/main/Help';
-import IndividualSteps from '../screens/main/IndividualSteps';
-import OrgnizationSteps from '../screens/main/OrgnizationSteps';
-
 import {
   HomeStackParamsList,
   MainDrawerParamsList,
@@ -91,7 +87,7 @@ import {
 } from '@giphy/react-native-sdk';
 import { StyledText } from '../components/styled/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import LottieSplashScreen from 'react-native-lottie-splash-screen';
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
@@ -177,6 +173,7 @@ const Main = () => {
     if (user && token) {
       dispatch(setLoginData({ token }));
     }
+    console.log(token);
 
     if (token) {
       dispatch(
@@ -188,6 +185,16 @@ const Main = () => {
 
     if (token == 'unauthorized') {
       if (initializing) setInitializing(false);
+    }
+
+    if (!initializing) {
+      if (Platform.OS == 'android') {
+        LottieSplashScreen.hide();
+      } else {
+        setTimeout(() => {
+          LottieSplashScreen.hide();
+        }, 5000);
+      }
     }
   }, [token, user, initializing]);
 
@@ -306,19 +313,7 @@ const Main = () => {
   const scheme = useColorScheme();
 
   if (initializing) {
-    return (
-      <ImageBackground
-        resizeMode="cover"
-        style={{
-          width: '100%',
-          height: '100%',
-
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-        source={require('@/assets/images/Loading.gif')}
-      ></ImageBackground>
-    );
+    return null;
   }
 
   return (
@@ -347,24 +342,24 @@ const Main = () => {
                   return {
                     // presentation: 'formSheet',
                     title: route.params?.postId ? 'Edit Post' : 'Create Post',
-                    headerLeft: (props) => {
-                      const { dark, colors } = useTheme();
-                      return (
-                        <TouchableOpacity
-                          onPress={() => {
-                            if (props.canGoBack) {
-                              navigation.pop();
-                            }
-                          }}
-                        >
-                          <MaterialCommunityIcons
-                            name="window-close"
-                            size={18}
-                            color={dark ? colors.text : Colors.primary.brand}
-                          />
-                        </TouchableOpacity>
-                      );
-                    },
+                    // headerLeft: (props) => {
+                    //   const { dark, colors } = useTheme();
+                    //   return (
+                    //     <TouchableOpacity
+                    //       onPress={() => {
+                    //         if (props.canGoBack) {
+                    //           navigation.pop();
+                    //         }
+                    //       }}
+                    //     >
+                    //       <MaterialCommunityIcons
+                    //         name="window-close"
+                    //         size={18}
+                    //         color={dark ? colors.text : Colors.primary.brand}
+                    //       />
+                    //     </TouchableOpacity>
+                    //   );
+                    // },
                   };
                 }}
               />

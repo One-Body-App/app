@@ -29,15 +29,16 @@ import { ApiCall } from '@/services/api';
 import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
+
 import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest } from '@/utils/types';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import { useToast } from 'react-native-toast-notifications';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepThree'>;
 
@@ -80,12 +81,6 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
 
   return (
     <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent={true}
-      />
       <ScrollView>
         <View style={styles.innerContainer} key={5}>
           <Text

@@ -47,7 +47,6 @@ const OnboardingInfluencers = ({ route }: Props) => {
 
   const getInfluencers = async (pageNumber: number) => {
     try {
-      console.log(`user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`);
       const res = await ApiCall({
         route: `user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`,
         verb: 'get',

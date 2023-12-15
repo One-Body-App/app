@@ -48,10 +48,12 @@ export const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
+    // flexGrow: 1,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
+
     padding: 12,
     paddingBottom: 5,
   },

@@ -68,6 +68,7 @@ export const StyledSelect: FC<Props> = ({
           backgroundColor: Colors.neutral[700],
           borderColor: Colors.neutral[800],
           borderRadius: borderRadius.xs,
+
           // ...styles.btn3,
           // backgroundColor: scheme == 'dark' ? colors.text : '#E7F0F3',
         }}
@@ -77,6 +78,7 @@ export const StyledSelect: FC<Props> = ({
           paddingVertical: spacing.x16,
         }}
         btnTextStyle={{
+          textTransform: 'capitalize',
           color: selectedItem ? Colors.neutral[200] : Colors.neutral[300],
         }}
         rightIcon={<Ionicons name="chevron-down" color={Colors.neutral[200]} />}
@@ -189,6 +191,7 @@ export const StyledSelect: FC<Props> = ({
                     <StyledText
                       style={{
                         color: Colors.neutral[200],
+                        textTransform: 'capitalize',
                       }}
                       numberOfLines={1}
                     >

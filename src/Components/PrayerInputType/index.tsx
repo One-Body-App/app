@@ -58,20 +58,20 @@ const PrayerInputType = ({ color }) => {
           setPrayer('');
           dispatch(
             getMyPrayer({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );
           dispatch(
             getTestimonies({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );
 
           dispatch(
             getAllPrayer({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );
@@ -101,13 +101,13 @@ const PrayerInputType = ({ color }) => {
 
           dispatch(
             getMyPrayer({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );
           dispatch(
             getAllPrayer({
-              pageno: 1,
+              page: 1,
               token: token,
             })
           );

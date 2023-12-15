@@ -164,6 +164,7 @@ export type SettingsStackParamsList = {
   RemoveAccountConfirmation: { reason: string };
   ConfirmLogin: ConfirmLoginScreen;
   NewPassword: undefined;
+  Saved: undefined;
 };
 
 export type SearchStackParamsList = {
@@ -195,10 +196,24 @@ export type MainDrawerParamsList = {
   Connections: undefined;
   Saved: undefined;
   Settings: NavigatorScreenParams<SettingsStackParamsList>;
+  PrayerWall: undefined;
   Help: undefined;
 };
 
 export type PostStackParamsList = {};
+
+export type PrayerWallStackParamsList = {
+  index: undefined;
+  Prayer?: {
+    postId?: string;
+  };
+  UserProfile: {
+    id: string;
+  };
+  Single: {
+    postId: string;
+  };
+};
 
 export type OnboardingStackParamList = {
   OnboardingIntro: undefined;

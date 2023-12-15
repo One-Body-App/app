@@ -3038,6 +3038,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@phosphor-icons/core@npm:^2.0.2":
+  version: 2.0.3
+  resolution: "@phosphor-icons/core@npm:2.0.3"
+  checksum: fddd61009bcbb7eb4ee87e85bc046493e0b0d89da39f7cd2582559ecb1750a43845cfdd74f09c8c0eb079c53e02d1075ff4c6fc143912c57052bcee6f12ba128
+  languageName: node
+  linkType: hard
+
 "@r0b0t3d/react-native-collapsible@npm:^1.4.3":
   version: 1.4.3
   resolution: "@r0b0t3d/react-native-collapsible@npm:1.4.3"
@@ -5583,6 +5590,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"caniuse-lite@npm:^1.0.30001518":
+  version: 1.0.30001566
+  resolution: "caniuse-lite@npm:1.0.30001566"
+  checksum: 0f9084bf9f7d5c0a9ddb200c2baddb25dd2ad5a2f205f01e7b971f3e98e9a7bb23c2d86bae48237e9bc9782b682cffaaf3406d936937ab9844987dbe2a6401f2
+  languageName: node
+  linkType: hard
+
 "chalk@npm:^2.0.0":
   version: 2.4.2
   resolution: "chalk@npm:2.4.2"
@@ -6189,6 +6203,13 @@ __metadata:
   version: 0.2.2
   resolution: "decode-uri-component@npm:0.2.2"
   checksum: 95476a7d28f267292ce745eac3524a9079058bbb35767b76e3ee87d42e34cd0275d2eb19d9d08c3e167f97556e8a2872747f5e65cbebcac8b0c98d83e285f139
+  languageName: node
+  linkType: hard
+
+"dedent@npm:^0.6.0":
+  version: 0.6.0
+  resolution: "dedent@npm:0.6.0"
+  checksum: fe2c0f5adb0b24407988e4adcd22befa0a27259091d4c40574c72da29fa6a6989e15a522ffc0f934ba6bb511b6498b315e7cdcf4a33a310cfaf1a8555a106484
   languageName: node
   linkType: hard
 
@@ -8157,7 +8178,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"invariant@npm:*, invariant@npm:2.2.4, invariant@npm:^2.2.4":
+"invariant@npm:*, invariant@npm:2.2.4, invariant@npm:^2.2.2, invariant@npm:^2.2.4":
   version: 2.2.4
   resolution: "invariant@npm:2.2.4"
   dependencies:
@@ -9469,6 +9490,58 @@ __metadata:
   bin:
     loose-envify: cli.js
   checksum: 6517e24e0cad87ec9888f500c5b5947032cdfe6ef65e1c1936a0c48a524b81e65542c9c3edc91c97d5bddc806ee2a985dbc79be89215d613b1de5db6d1cfe6f4
+  languageName: node
+  linkType: hard
+
+"lottie-ios@npm:3.2.3":
+  version: 3.2.3
+  resolution: "lottie-ios@npm:3.2.3"
+  checksum: 70d1c2e99c3ff4267168402e7c026a1b912de20fa9424eef13175fe17fcaf0da508c9440197e2bc93ab6bc1640e4dad9124bb2cdd0956b9cec89159905c3f8e7
+  languageName: node
+  linkType: hard
+
+"lottie-ios@npm:^4.3.4":
+  version: 4.3.4
+  resolution: "lottie-ios@npm:4.3.4"
+  checksum: b04f9e55a16424c1d5a104cddbd9dc7c56ec5b6e1ace5572bad30db9a66d0623eff8a2fec55f66c9d1780c37ee19e72d92569f27ebe3806956d32d37cda25aa6
+  languageName: node
+  linkType: hard
+
+"lottie-react-native@npm:^5.1.3":
+  version: 5.1.6
+  resolution: "lottie-react-native@npm:5.1.6"
+  dependencies:
+    invariant: ^2.2.2
+    react-native-safe-modules: ^1.0.3
+  peerDependencies:
+    lottie-ios: ^3.4.0
+    react: "*"
+    react-native: ">=0.46"
+    react-native-windows: ">=0.63.x"
+  peerDependenciesMeta:
+    react-native-windows:
+      optional: true
+  checksum: e051e3c3e50b6d0c766895ac122cdccdd1acb76daec6eac9538a2892d8e52ab9e0b5580ab258c37d04b1924bc9962c9b8fdcced0a81d332a6076bfa045783f50
+  languageName: node
+  linkType: hard
+
+"lottie-react-native@npm:^6.4.1":
+  version: 6.4.1
+  resolution: "lottie-react-native@npm:6.4.1"
+  peerDependencies:
+    "@dotlottie/react-player": ^1.6.1
+    "@lottiefiles/react-lottie-player": ^3.5.3
+    react: "*"
+    react-native: ">=0.46"
+    react-native-windows: ">=0.63.x"
+  peerDependenciesMeta:
+    "@dotlottie/react-player":
+      optional: true
+    "@lottiefiles/react-lottie-player":
+      optional: true
+    react-native-windows:
+      optional: true
+  checksum: 279a817d0bab4d11e2ed0433f06e7b06ad7b84bb629e87f8fb49b79a9d683e22784b4a3b97c60f85bcbe7b363e0782c9c6f6b519866786e3b526b1be710e3471
   languageName: node
   linkType: hard
 
@@ -10937,9 +11010,12 @@ __metadata:
     iconsax-react-native: ^0.0.8
     jest: ^29.6.2
     lodash: ^4.17.21
+    lottie-ios: ^4.3.4
+    lottie-react-native: ^6.4.1
     metro-react-native-babel-preset: ^0.77.0
     node-git-hooks: ^1.0.7
     object-to-formdata: ^4.5.1
+    phosphor-react-native: ^2.0.0
     prettier: ^3.0.0
     react: 18.2.0
     react-native: 0.72.6
@@ -10953,7 +11029,7 @@ __metadata:
     react-native-element-dropdown: ^2.10.0
     react-native-email-link: ^1.14.6
     react-native-fast-image: ^8.6.3
-    react-native-fbsdk-next: ^11.2.1
+    react-native-fbsdk-next: ^12.1.2
     react-native-geolocation-service: ^5.3.1
     react-native-gesture-handler: ^2.12.1
     react-native-gifted-chat: ^1.0.0
@@ -10962,6 +11038,7 @@ __metadata:
     react-native-inappbrowser-reborn: ^3.7.0
     react-native-keyboard-aware-scroll-view: ^0.9.5
     react-native-linear-gradient: ^2.8.3
+    react-native-lottie-splash-screen: ^1.1.2
     react-native-modal: ^13.0.1
     react-native-pager-view: ^6.2.0
     react-native-paper: ^5.10.0
@@ -10980,7 +11057,6 @@ __metadata:
     react-native-sha256: ^1.4.9
     react-native-share: ^9.2.3
     react-native-simple-toast: ^3.0.1
-    react-native-splash-screen: ^3.3.0
     react-native-svg: ^13.13.0
     react-native-svg-transformer: ^1.1.0
     react-native-swipe-list-view: ^3.2.9
@@ -11214,6 +11290,20 @@ __metadata:
   version: 4.0.0
   resolution: "path-type@npm:4.0.0"
   checksum: 5b1e2daa247062061325b8fdbfd1fb56dde0a448fb1455453276ea18c60685bdad23a445dc148cf87bc216be1573357509b7d4060494a6fd768c7efad833ee45
+  languageName: node
+  linkType: hard
+
+"phosphor-react-native@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "phosphor-react-native@npm:2.0.0"
+  dependencies:
+    "@phosphor-icons/core": ^2.0.2
+    caniuse-lite: ^1.0.30001518
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-svg: "*"
+  checksum: 91d866e52de1b604b71bb26ed8cc62471925f6caf055412cb3af5e01a87b5d973981baf41a515b302164bfbab68314a7920525192b13807033875510b39be20e
   languageName: node
   linkType: hard
 
@@ -11697,18 +11787,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-fbsdk-next@npm:^11.2.1":
-  version: 11.2.1
-  resolution: "react-native-fbsdk-next@npm:11.2.1"
-  dependencies:
-    xml2js: ^0.4.23
+"react-native-fbsdk-next@npm:^12.1.2":
+  version: 12.1.2
+  resolution: "react-native-fbsdk-next@npm:12.1.2"
   peerDependencies:
     expo: ">=47.0.0"
     react-native: ">=0.63.3"
   peerDependenciesMeta:
     expo:
       optional: true
-  checksum: e9e27f67212df7c717239d02037bf48ab7f178adfe938b3366d596f32b068326ae0bc4705e4c767d626e85fdbcbd6e1e6861d8979123a5d7f0c01fe5097e6adc
+  checksum: 12a9268a9610b8daf318088ee01c5239695b80021fd78ad4e1c9f8e792dcd9b5ac836ad594014786eff161430d2e79284d023871c03bf4764da4272199fe785b
   languageName: node
   linkType: hard
 
@@ -11833,6 +11921,18 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: f980d324e551bbc475c6406bdc5250a08242020cbe653412fa169bbdf51e28a502e225de105b4d696d6a1a1b733d44782469020f4936d8b3ce0e2c78e51cf58f
+  languageName: node
+  linkType: hard
+
+"react-native-lottie-splash-screen@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "react-native-lottie-splash-screen@npm:1.1.2"
+  dependencies:
+    lottie-ios: 3.2.3
+    lottie-react-native: ^5.1.3
+  peerDependencies:
+    react-native: ">=0.57.0"
+  checksum: 57236b3957059c9ba1af82eff6bf8337fc529de87721d761db26fa2011b621f3d288d52d511c6f2cc3d7bf11edf62f994bee312d5fdfa77d51b8ad47159e6abb
   languageName: node
   linkType: hard
 
@@ -12030,6 +12130,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-safe-modules@npm:^1.0.3":
+  version: 1.0.3
+  resolution: "react-native-safe-modules@npm:1.0.3"
+  dependencies:
+    dedent: ^0.6.0
+  peerDependencies:
+    react-native: "*"
+  checksum: df30e1935dfb32ece9be57cd21ccbbecd058a68942536ff6c543f591e5488cc22f17093131eaabf490b6e187caa78e802a4b2e55c890af1c48a3f012dd57c9f2
+  languageName: node
+  linkType: hard
+
 "react-native-screens@npm:^3.23.0":
   version: 3.23.0
   resolution: "react-native-screens@npm:3.23.0"
@@ -12071,15 +12182,6 @@ __metadata:
     react: "*"
     react-native: ">=0.71.0"
   checksum: 703071268216a3274d76ec3e08467563a9a95ee0a046ec46a55de65a901beac48793996274e2f6ab1aa0b4604d1ded8766a249961d05fa6bfd9277226be64ac7
-  languageName: node
-  linkType: hard
-
-"react-native-splash-screen@npm:^3.3.0":
-  version: 3.3.0
-  resolution: "react-native-splash-screen@npm:3.3.0"
-  peerDependencies:
-    react-native: ">=0.57.0"
-  checksum: 14c565d5d4214f55586dcf6f7abd12d99d3e0667f67de3bda7aa24988971567b283a4187fbc0c6269c83b3c21d59d1950335c61bb0780ec2d065e20b3b9199d0
   languageName: node
   linkType: hard
 
@@ -12773,13 +12875,6 @@ __metadata:
   version: 2.1.2
   resolution: "safer-buffer@npm:2.1.2"
   checksum: cab8f25ae6f1434abee8d80023d7e72b598cf1327164ddab31003c51215526801e40b66c5e65d658a0af1e9d6478cadcb4c745f4bd6751f97d8644786c0978b0
-  languageName: node
-  linkType: hard
-
-"sax@npm:>=0.6.0":
-  version: 1.2.4
-  resolution: "sax@npm:1.2.4"
-  checksum: d3df7d32b897a2c2f28e941f732c71ba90e27c24f62ee918bd4d9a8cfb3553f2f81e5493c7f0be94a11c1911b643a9108f231dd6f60df3fa9586b5d2e3e9e1fe
   languageName: node
   linkType: hard
 
@@ -14273,27 +14368,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xml2js@npm:^0.4.23":
-  version: 0.4.23
-  resolution: "xml2js@npm:0.4.23"
-  dependencies:
-    sax: ">=0.6.0"
-    xmlbuilder: ~11.0.0
-  checksum: ca0cf2dfbf6deeaae878a891c8fbc0db6fd04398087084edf143cdc83d0509ad0fe199b890f62f39c4415cf60268a27a6aed0d343f0658f8779bd7add690fa98
-  languageName: node
-  linkType: hard
-
 "xmlbuilder@npm:^15.1.1":
   version: 15.1.1
   resolution: "xmlbuilder@npm:15.1.1"
   checksum: 14f7302402e28d1f32823583d121594a9dca36408d40320b33f598bd589ca5163a352d076489c9c64d2dc1da19a790926a07bf4191275330d4de2b0d85bb1843
-  languageName: node
-  linkType: hard
-
-"xmlbuilder@npm:~11.0.0":
-  version: 11.0.1
-  resolution: "xmlbuilder@npm:11.0.1"
-  checksum: 7152695e16f1a9976658215abab27e55d08b1b97bca901d58b048d2b6e106b5af31efccbdecf9b07af37c8377d8e7e821b494af10b3a68b0ff4ae60331b415b0
   languageName: node
   linkType: hard
 

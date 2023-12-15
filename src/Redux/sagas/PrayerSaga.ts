@@ -24,7 +24,7 @@ function* GetMyPrayerRequest(params) {
       token: params?.data?.token,
     });
     if (res?.status == '200') {
-      if (params?.data?.pageno == 1) {
+      if (params?.data?.page == 1) {
         yield put(setUserPrayers(res?.response?.data));
       } else {
         const array = [...params?.data?.userPrayers, ...res?.response?.data];
@@ -47,19 +47,20 @@ export function* GetMyPrayerSaga() {
 function* GetAllPrayerRequest(params) {
   try {
     const res = yield ApiCall({
-      route: `prayers/list?page=${params?.data?.pageno}`,
+      route: `prayer/?page=${params?.data?.page}`,
       verb: 'get',
       token: params?.data?.token,
     });
-    if (res?.status == '200') {
-      if (params?.data?.pageno == 1) {
-        yield put(setPrayers(res?.response?.data));
+    console.log(res?.status);
+    if (res?.status == 200) {
+      if (params?.data?.page == 1) {
+        yield put(setPrayers(res?.response));
       } else {
-        const array = [...params?.data?.Prayers, ...res?.response?.data];
+        const array = [...params?.data?.Prayers, ...res?.response];
         yield put(setPrayers(array));
       }
-      yield put(setAllCurrentPage(parseInt(res?.response?.currentPage)));
-      yield put(setAllTotalPage(parseInt(res?.response?.totalPages)));
+      // yield put(setAllCurrentPage(parseInt(res?.response?.currentPage)));
+      // yield put(setAllTotalPage(parseInt(res?.response?.totalPages)));
     } else {
       yield put(setLoader(false));
       console.log('error', res?.response);
@@ -74,12 +75,12 @@ export function* GetAllPrayerSaga() {
 function* GetAllPrayerLiveRequest(params) {
   try {
     const res = yield ApiCall({
-      route: `prayers/list?page=${params?.data?.pageno}`,
+      route: `prayers/list?page=${params?.data?.page}`,
       verb: 'get',
       token: params?.data?.token,
     });
     if (res?.status == '200') {
-      if (params?.data?.pageno == 1) {
+      if (params?.data?.page == 1) {
         yield put(setPrayersLive(res?.response?.data));
       } else {
         const array = [...params?.data?.Prayers, ...res?.response?.data];
@@ -107,7 +108,7 @@ function* GetTestomniesPrayerRequest(params) {
     });
     if (res?.status == '200') {
       console.log('res in Testomnies', res);
-      if (params?.data?.pageno == 1) {
+      if (params?.data?.page == 1) {
         yield put(setTestimonies(res?.response?.data));
       } else {
         const array = [...params?.data?.Testimonies, ...res?.response?.data];

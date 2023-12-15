@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import Header from '@/src/components/Header';
 
 import Save from '@/assets/svg/Save.svg';
@@ -21,7 +20,6 @@ import { RootState } from '@/src/Redux/reducers/rootReducer';
 import FastImage from 'react-native-fast-image';
 import { OpenURLButton } from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { ApiCall } from '@/src/Services/api';
 import { getuserGet } from '@/src/Redux/actions/UserAction';
@@ -36,14 +34,15 @@ import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faBookmark } from '@fortawesome/free-solid-svg-icons';
 import { getProfile } from '@/src/Redux/actions/AuthActions';
-import SocialItem from '@/src/components/ListItems/SocialItem';
-import ArticleItem from '@/src/components/ListItems/ArticleItem';
-import { ArticleType, SavedPost } from '@/utils/types';
-import { PopupItem } from '@/src/components/ListItems/OptionsModal';
+import SocialItem from '@/src/components/listItems/SocialItem';
+import ArticleItem from '@/src/components/listItems/ArticleItem';
+import { ArticleType, PostType, SavedPost } from '@/utils/types';
+import { PopupItem } from '@/src/components/listItems/OptionsModal';
 import { isObject } from 'lodash';
 import Button from '@/src/components/Button';
+import { SettingsStackParamsList } from '@/src/navigator/types';
 
-type Props = DrawerScreenProps<RootStackParamList, 'Saved'>;
+type Props = DrawerScreenProps<SettingsStackParamsList, 'Saved'>;
 
 enum ContentType {
   RSS = 'RSS',
@@ -130,7 +129,7 @@ const Saved = ({ navigation }: Props) => {
     // }
   }, [authState.getProfileSuccess]);
 
-  const removePost = async (link: string) => {
+  const removePost = async (type: string, link: string) => {
     dispatch(setLoader(true));
 
     try {
@@ -140,6 +139,7 @@ const Saved = ({ navigation }: Props) => {
         token: token,
         params: {
           link,
+          type,
         },
       });
 
@@ -160,6 +160,7 @@ const Saved = ({ navigation }: Props) => {
         created: item.created,
         image: item.image,
         externalLink: item.link,
+        type: PostType.rss,
 
         userData: {
           twitterHandler: user?.influencerProfile?.twitterHandler,
@@ -233,7 +234,7 @@ const Saved = ({ navigation }: Props) => {
         </ScrollView>
       ) : null}
       <FlatList
-        data={savedPosts}
+        data={savedPosts.filter((item) => item.type != PostType.prayer)}
         contentContainerStyle={{ flexGrow: 1 }}
         onRefresh={() => {
           setIsRefreshing(true);

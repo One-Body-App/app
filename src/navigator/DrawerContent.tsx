@@ -107,7 +107,7 @@ export default function DrawerContent({
                       { color: dark ? colors.text : Colors.neutral.brand },
                     ]}
                   >
-                    {user?.following.length}{' '}
+                    {user?.followerCount ?? 0}{' '}
                   </StyledText>
                   <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
                     Connectors
@@ -121,7 +121,7 @@ export default function DrawerContent({
                       { color: dark ? colors.text : Colors.neutral.brand },
                     ]}
                   >
-                    {user?.followerCount ?? 0}{' '}
+                    {user?.following?.length ?? 0}{' '}
                   </StyledText>
                   <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
                     Connections
