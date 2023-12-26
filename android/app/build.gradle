@@ -104,7 +104,11 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
-
+configurations.all {
+    resolutionStrategy {
+        forcedModules = ['com.giphy.sdk:ui:2.3.13']
+    }
+}
 
 apply from: "../../node_modules/@sentry/react-native/sentry.gradle"
 android {
