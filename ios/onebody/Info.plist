@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleAllowMixedLocalizations</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -24,7 +26,7 @@
 	<array>
 		<dict>
 			<key>CFBundleIdentifier</key>
-			<string/>
+			<string></string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
@@ -94,26 +96,22 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>localhost</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-			</dict>
-		</dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app uses the location services to personalize the user content shown to the user</string>
 	<key>NSLocationUsageDescription</key>
 	<string>This app uses the location services to personalize the user content shown to the user</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app uses the location services to personalize the user content shown to the user</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app uses the location services to personalize the user content shown to the user</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
-	<key>NSCameraUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
 	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
+	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
 	<key>UIAppFonts</key>
 	<array>
@@ -182,7 +180,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>CFBundleAllowMixedLocalizations</key>
-	<true/>
 </dict>
 </plist>
