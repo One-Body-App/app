@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux';
 
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import { PrayerPost } from '@/utils/types';
 import PrayerItem from '../listItems/PrayerItem';

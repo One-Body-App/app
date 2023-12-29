@@ -19,11 +19,11 @@ import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from '@/src/components/Button';
 
-import { getUserProfile } from '@/redux/actions/UserAction';
-import { ApiCall } from '@/services/api';
+import { getUserProfile } from '@/src/redux/actions/UserAction';
+import { ApiCall } from '@/src/services/api';
 import { styles } from './styles';
 
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import Modal from 'react-native-modal';
 import { Interest, User } from '@/utils/types';
@@ -45,7 +45,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { isNumber } from 'lodash';
-import { NO_PROFILE_IMAGE } from '@/src/Services/constants';
+import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 type Props = CompositeScreenProps<
@@ -494,12 +494,13 @@ const Explore = ({ navigation }: Props) => {
           <FlatList
             data={users}
             keyExtractor={(item) => {
-              return item._id;
+              return item._id ?? item.id;
             }}
             // contentContainerStyle={{
             //   flex: 1,
             // }}
             style={{ flexGrow: 1 }}
+            numColumns={2}
             contentContainerStyle={{ paddingHorizontal: spacing.x24 }}
             scrollIndicatorInsets={{ right: 1 }}
             ListEmptyComponent={() => (
@@ -555,13 +556,13 @@ const Explore = ({ navigation }: Props) => {
                 >
                   <View
                     style={{
-                      flexDirection: 'row',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                     }}
                   >
                     <FastImage
-                      style={profileImageList}
+                      style={[profileImageList, { height: 80, width: 80 }]}
                       resizeMode="contain"
                       source={{
                         uri:
@@ -571,7 +572,14 @@ const Explore = ({ navigation }: Props) => {
                       }}
                     />
 
-                    <View style={{ flex: 2, paddingRight: spacing.x10 }}>
+                    <View
+                      style={{
+                        flex: 2,
+                        paddingRight: spacing.x10,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
                       <StyledText
                         style={[
                           Typography.body.x2,
@@ -579,7 +587,7 @@ const Explore = ({ navigation }: Props) => {
                             color: Colors.neutral.brand,
                           },
                         ]}
-                        numberOfLines={2}
+                        numberOfLines={1}
                       >
                         {item?.name}
                       </StyledText>
@@ -604,6 +612,7 @@ const Explore = ({ navigation }: Props) => {
                     <Button
                       btnStyle={[
                         {
+                          marginTop: spacing.x10,
                           paddingVertical: spacing.x10,
                           paddingHorizontal: spacing.x24,
                           borderRadius: borderRadius.button,
@@ -861,11 +870,12 @@ const Explore = ({ navigation }: Props) => {
                         <View
                           style={{
                             flex: 2,
-                            // justifyContent: 'center',
+                            justifyContent: 'center',
+                            alignItems: 'center',
                             paddingHorizontal: spacing.x10,
                           }}
                         >
-                          <StyledText numberOfLines={2} style={Typography.body.x2}>
+                          <StyledText numberOfLines={1} style={[Typography.body.x2]}>
                             {item?.name}
                           </StyledText>
                           {item.profile?.whatIDo || item.profile?.typeOfOrganization ? (

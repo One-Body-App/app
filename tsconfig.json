@@ -18,9 +18,9 @@
       "@/constants/*": ["src/constants/*"],
       "@/navigation/*": ["src/_Navigation/*"],
       "@/navigator/*": ["src/navigator/*"],
-      "@/redux/*": ["src/Redux/*"],
+      "@/redux/*": ["src/redux/*"],
       "@/screens/*": ["src/screens/*"],
-      "@/services/*": ["src/Services/*"]
+      "@/services/*": ["src/services/*"]
     }
   }
 }

@@ -14,7 +14,7 @@ import { borderRadius } from '@/src/styles/outlines';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationContact'>;
 

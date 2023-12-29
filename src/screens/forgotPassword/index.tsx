@@ -7,9 +7,9 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import { setLoader } from '@/redux//actions/GeneralActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { GeneralStyle } from '../../constants/GeneralStyle';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import Button from '@/src/components/Button';
 import { useDispatch } from 'react-redux';
 import { styles } from './styles';

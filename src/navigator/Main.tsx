@@ -27,8 +27,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
 
-import { RootState } from '../Redux/reducers/rootReducer';
-import { setLoginData, setUserData, getProfile } from '../Redux/actions/AuthActions';
+import { RootState } from '../redux/reducers/rootReducer';
+import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions';
 import { isEqual } from 'lodash';
 import {
   NativeStackNavigationOptions,
@@ -80,14 +80,13 @@ import {
   type GiphyDialogConfig,
   type GiphyMedia,
   GiphyVideoManager,
-  GiphyDialogMediaSelectEventHandler,
-  GiphyDialogEvent,
   GiphyMediaView,
   GiphySDK,
 } from '@giphy/react-native-sdk';
 import { StyledText } from '../components/styled/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
+import SinglePost from '../screens/post/Single';
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
@@ -173,7 +172,7 @@ const Main = () => {
     if (user && token) {
       dispatch(setLoginData({ token }));
     }
-    console.log(token);
+    console.log(user, token);
 
     if (token) {
       dispatch(
@@ -334,6 +333,8 @@ const Main = () => {
                 component={DrawerNav}
                 options={{ headerShown: false }}
               />
+
+              <MainStack.Screen name="SinglePost" component={SinglePost} />
 
               <MainStack.Screen
                 name="Post"

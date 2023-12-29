@@ -16,7 +16,7 @@ import FastImage from 'react-native-fast-image';
 import { Divider } from 'react-native-paper';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Love from '@/assets/svg/redlove.svg';
-import { setPrayers } from '@/redux/actions/GeneralActions';
+import { setPrayers } from '@/src/redux/actions/GeneralActions';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import PrayerInputType from './PrayerInputType';
 import PrayerSocials from './PrayerSocials';

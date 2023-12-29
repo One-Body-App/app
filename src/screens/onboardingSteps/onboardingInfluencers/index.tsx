@@ -10,14 +10,14 @@ import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { ApiCall } from '@/src/Services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/src/services/api';
 import { useToast } from 'react-native-toast-notifications';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fontSize } from '@/src/styles/typography';
-import { orgprofileUpdate, profileUpdate } from '@/src/Redux/actions/AuthActions';
+import { orgprofileUpdate, profileUpdate } from '@/src/redux/actions/AuthActions';
 import SearchIcon from '@/assets/icons/search.svg';
 import { profileImageList } from '@/src/styles/items';
 import { serialize } from 'object-to-formdata';

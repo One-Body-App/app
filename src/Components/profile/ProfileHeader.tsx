@@ -13,8 +13,8 @@ import {
   profileImagesize,
 } from './Profile';
 import { useDispatch, useSelector } from 'react-redux';
-import { getBadges, setUserBadges } from '@/src/Redux/actions/AuthActions';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { MyProfileStackParamsList } from '@/src/navigator/types';
 import { Colors, Spacing, Typography } from '@/src/styles';
@@ -53,7 +53,7 @@ import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, parseISO } from 'date-fns';
-import { OpenURLButton } from '@/src/Services/constants';
+import { OpenURLButton } from '@/src/services/constants';
 
 interface HeaderProps extends ProfileProps {}
 

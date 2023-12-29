@@ -1,4 +1,4 @@
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { User, PostType } from '@/utils/types';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
@@ -32,11 +32,11 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { borderRadius } from '@/src/styles/outlines';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
-import { ApiCall } from '@/src/Services/api';
-import { getProfile } from '@/src/Redux/actions/AuthActions';
+import { ApiCall } from '@/src/services/api';
+import { getProfile } from '@/src/redux/actions/AuthActions';
 import Toast from 'react-native-simple-toast';
 
 type ScreenNavigationProp = CompositeNavigationProp<

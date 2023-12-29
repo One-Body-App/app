@@ -9,11 +9,11 @@ import { styles } from './styles';
 import Header from '@/src/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
 
-import { getUserProfile } from '@/src/Redux/actions/UserAction';
+import { getUserProfile } from '@/src/redux/actions/UserAction';
 
 import { useTheme } from '@react-navigation/native';
 import GoBackIcon from '@/src/components/GoBackIcon';
@@ -28,9 +28,9 @@ import {
   codeChallenge,
   getInstagramAuthToken,
   getTwitterAuthToken,
-} from '@/src/Services/constants';
+} from '@/src/services/constants';
 import axios from 'axios';
-import { getProfile, removeSocialAccountRequest } from '@/src/Redux/actions/AuthActions';
+import { getProfile, removeSocialAccountRequest } from '@/src/redux/actions/AuthActions';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerSettings'>;

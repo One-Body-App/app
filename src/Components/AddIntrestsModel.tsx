@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Modal from 'react-native-modal';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useDispatch, useSelector } from 'react-redux';
-import { getuserAll, getInterests, addUserInterest } from '../Redux/actions/UserAction';
+import { getuserAll, getInterests, addUserInterest } from '../redux/actions/UserAction';
 import GradientButton from './GradientButton';
 import Toast from 'react-native-simple-toast';
 

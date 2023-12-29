@@ -10,7 +10,7 @@ import { MainDrawerParamsList } from './types';
 import OnboardingStack from './OnboardingStack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
-import { RootState } from '../Redux/reducers/rootReducer';
+import { RootState } from '../redux/reducers/rootReducer';
 import {
   Animated,
   Platform,

@@ -15,12 +15,12 @@ import Modal from 'react-native-modal';
 
 import Button from '@/src/components/Button';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/services/api';
-import { setLoader } from '@/redux//actions/GeneralActions';
-import { getuserAll } from '@/redux//actions/UserAction';
+import { ApiCall } from '@/src/services/api';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { getuserAll } from '@/src/redux/actions/UserAction';
 
 import ImageModal from '@dreamwalk-os/react-native-image-modal';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Interest, User } from '@/utils/types';
 
 import { useTheme } from '@react-navigation/native';

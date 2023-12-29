@@ -214,6 +214,8 @@ export interface SocialPost {
   link: string;
   title: string;
   mediaUrl?: string;
+  comments?: CommentPost[];
+  commentNumber?: number;
   attachments?: [
     {
       media_key: string;

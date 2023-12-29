@@ -1,7 +1,15 @@
-import { Platform, TouchableOpacity, View, KeyboardEvent, Keyboard } from 'react-native';
+import {
+  Platform,
+  TouchableOpacity,
+  View,
+  KeyboardEvent,
+  Keyboard,
+  ScrollView,
+  EmitterSubscription,
+} from 'react-native';
 import { StyledTextInput } from '../styled/TextInput';
 import { Colors } from '@/src/styles';
-import { CloseCircle, Send } from 'iconsax-react-native';
+import { CloseCircle, Send, TickCircle } from 'iconsax-react-native';
 import { borderRadius } from '@/src/styles/outlines';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { spacing } from '@/src/styles/spacing';
@@ -13,35 +21,52 @@ interface Props {
   mediaGif: GiphyMedia | null;
   setGif: React.Dispatch<React.SetStateAction<GiphyMedia | null>>;
   publishComment: Function;
+  text?: string;
+  isEditingComment?: boolean;
+  setEditingComment?: (status: boolean) => void;
 }
 
-const CommentField = ({ mediaGif, setGif, publishComment }: Props) => {
+let keyboardWillShowListener: EmitterSubscription;
+let onKeyboardWillHideListener: EmitterSubscription;
+const CommentField = ({
+  mediaGif,
+  setGif,
+  publishComment,
+  text,
+  isEditingComment,
+  setEditingComment,
+}: Props) => {
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(text ?? '');
 
-  const onKeyboardWillShow = (e: KeyboardEvent) => {
-    setKeyboardHeight(e.endCoordinates.height);
-  };
+  // const onKeyboardWillShow = (e: KeyboardEvent) => {
+  //   setKeyboardHeight(e.endCoordinates.height);
+  // };
 
-  const onKeyboardWillHide = () => {
-    setKeyboardHeight(0);
-  };
+  // const onKeyboardWillHide = () => {
+  //   setKeyboardHeight(0);
+  // };
 
-  useEffect(() => {
-    // These listeners on ios are a little more snappy but not available on Android
-    // If you want to use this on Android use keyboardDidShow/Hide
-    if (Platform.OS === 'ios') {
-      Keyboard.addListener('keyboardWillShow', onKeyboardWillShow);
-      Keyboard.addListener('keyboardWillHide', onKeyboardWillHide);
-    }
+  // useEffect(() => {
+  //   if (!isEditingComment) {
+  //     if (Platform.OS === 'ios') {
+  //       // These listeners on ios are a little more snappy but not available on Android
+  //       // If you want to use this on Android use keyboardDidShow/Hide
+  //       keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', onKeyboardWillShow);
+  //       onKeyboardWillHideListener = Keyboard.addListener('keyboardWillHide', onKeyboardWillHide);
+  //     }
 
-    return () => {
-      if (Platform.OS === 'ios') {
-        Keyboard.removeAllListeners('keyboardWillShow');
-        Keyboard.removeAllListeners('keyboardWillHide');
-      }
-    };
-  }, []);
+  //     return () => {
+  //       if (Platform.OS === 'ios') {
+  //         onKeyboardWillHideListener.remove();
+  //         onKeyboardWillHideListener.remove();
+  //         // Keyboard.removeAllListeners('keyboardWillShow');
+
+  //         // Keyboard.removeAllListeners('keyboardWillHide');
+  //       }
+  //     };
+  //   }
+  // }, []);
 
   const submitComment = (content?: string) => {
     if (content || mediaGif) {
@@ -51,122 +76,144 @@ const CommentField = ({ mediaGif, setGif, publishComment }: Props) => {
     }
   };
 
-  const { dark } = useTheme();
+  const { colors } = useTheme();
 
   return (
-    <View
-      style={{
-        position: 'absolute',
-        bottom: Platform.OS === 'ios' ? keyboardHeight : 0,
-        left: 0,
-        right: 0,
-        paddingHorizontal: spacing.x24,
-        paddingVertical: spacing.x16,
-        justifyContent: 'flex-end',
-        backgroundColor: Colors.neutral[700],
-      }}
-    >
-      <StyledTextInput
-        placeholder="Drop your comment here"
-        multiline
-        maxLength={600}
-        value={content}
-        placeholderTextColor={Colors.neutral[300]}
-        onChangeText={(content) => {
-          setContent(content);
+    <>
+      <View
+        style={{
+          backgroundColor: Colors.neutral[700],
+          paddingHorizontal: spacing.x24,
+          paddingVertical: spacing.x16,
         }}
-        onSubmitEditing={() => {
-          submitComment(content);
-        }}
-        backgroundColor={'transparent'}
-        inputWrapperStyle={{
-          borderWidth: 0,
+      >
+        <StyledTextInput
+          placeholder={isEditingComment ? 'Edit Comment' : 'Drop your comment here'}
+          multiline
+          maxLength={600}
+          value={content}
+          placeholderTextColor={Colors.neutral[300]}
+          onChangeText={(content) => {
+            setContent(content);
+          }}
+          onSubmitEditing={() => {
+            submitComment(content);
+          }}
+          backgroundColor={'transparent'}
+          inputWrapperStyle={{
+            borderWidth: 0,
 
-          paddingHorizontal: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-        inputStyle={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingVertical: 0,
-          maxHeight: 80,
-        }}
-        leftIcon={
-          <Button
-            text="GIF"
-            btnStyle={{
-              backgroundColor: Colors.neutral[600],
-              justifyContent: 'center',
-              alignItems: 'center',
+            paddingHorizontal: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          inputStyle={{
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingVertical: 0,
+            maxHeight: 80,
+          }}
+          leftIcon={
+            <Button
+              text="GIF"
+              btnStyle={{
+                backgroundColor: Colors.neutral[600],
+                justifyContent: 'center',
+                alignItems: 'center',
 
-              paddingHorizontal: spacing.x16,
-              margin: spacing.x5,
-              borderRadius: borderRadius.base,
-            }}
-            onPress={() => {
-              // LoginManager.logOut();
-              // dispatch(logout());
-              // await auth().signOut();
-              try {
-                GiphyDialog.show();
-              } catch (e) {
-                console.log(e);
-              }
-            }}
-          />
-        }
-        rightIcon={
-          <View style={{ justifyContent: 'center' }}>
-            <TouchableOpacity
-              onPress={() => {
-                submitComment(content);
+                paddingHorizontal: spacing.x16,
+                margin: spacing.x5,
+                borderRadius: borderRadius.base,
               }}
-            >
-              <Send variant="Bold" color={Colors.primarySapphire.brand} />
-            </TouchableOpacity>
-          </View>
-        }
-      />
+              onPress={() => {
+                // LoginManager.logOut();
+                // dispatch(logout());
+                // await auth().signOut();
+                try {
+                  GiphyDialog.show();
+                } catch (e) {
+                  console.log(e);
+                }
+              }}
+            />
+          }
+          rightIcon={
+            <View style={{ justifyContent: 'center' }}>
+              {isEditingComment ? (
+                <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      submitComment(content);
+                    }}
+                  >
+                    <TickCircle color={Colors.primarySapphire.brand} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (setEditingComment) setEditingComment(false);
+                    }}
+                  >
+                    <CloseCircle color={Colors.primarySapphire.brand} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    submitComment(content);
+                  }}
+                >
+                  <Send variant="Bold" color={Colors.primarySapphire.brand} />
+                </TouchableOpacity>
+              )}
+            </View>
+          }
+        />
+      </View>
       {mediaGif && (
-        <View
+        <ScrollView
           style={{
-            padding: 10,
             height: 100,
-            width: 100,
-            borderRadius: borderRadius.base,
+            backgroundColor: isEditingComment ? undefined : Colors.neutral[700],
           }}
         >
-          <TouchableOpacity
+          <View
             style={{
-              backgroundColor: Colors.primarySapphire.brand,
-              borderRadius: borderRadius.max,
-              position: 'absolute',
-              width: 30,
-              height: 30,
-              top: 0,
-              right: 0,
-              zIndex: 10,
-            }}
-            onPress={() => {
-              setGif(null);
+              padding: 10,
+              width: 100,
+              borderRadius: borderRadius.base,
             }}
           >
-            <CloseCircle size="30" color="#fff" />
-          </TouchableOpacity>
-          <GiphyMediaView
-            media={mediaGif}
-            resizeMode="cover"
-            style={{
-              aspectRatio: mediaGif.aspectRatio,
-              borderRadius: borderRadius.base,
+            <TouchableOpacity
+              style={{
+                backgroundColor: Colors.primarySapphire.brand,
+                borderRadius: borderRadius.max,
+                position: 'absolute',
+                width: 30,
+                height: 30,
+                top: 0,
+                right: 0,
+                zIndex: 10,
+              }}
+              onPress={() => {
+                setGif(null);
+              }}
+            >
+              <CloseCircle size="30" color="#fff" />
+            </TouchableOpacity>
+            <GiphyMediaView
+              media={mediaGif}
+              resizeMode="cover"
+              style={{
+                aspectRatio: mediaGif.aspectRatio,
+                borderRadius: borderRadius.base,
 
-              overflow: 'hidden',
-            }}
-          />
-        </View>
+                overflow: 'hidden',
+              }}
+            />
+          </View>
+        </ScrollView>
       )}
-    </View>
+    </>
   );
 };
 

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, SafeAreaView, Platform, PermissionsAndroid } from 'react-native';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import messaging from '@react-native-firebase/messaging';

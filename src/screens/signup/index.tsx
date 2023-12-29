@@ -14,15 +14,15 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { TextInput } from 'react-native';
 import { validateFields } from '@/utils/validation/validate-fields';
-import { loginSocialRequest, signUp } from '@/redux//actions/AuthActions';
+import { loginSocialRequest, signUp } from '@/src/redux/actions/AuthActions';
 import validator from '@/utils/validation/validator';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 import { useDispatch, useSelector } from 'react-redux';
 import { styles } from './styles';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
-import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/Services/constants';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/services/constants';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useTheme } from '@react-navigation/native';
 import Recaptcha, { RecaptchaHandles } from 'react-native-recaptcha-that-works';
 import { ScrollView } from 'react-native';
@@ -34,13 +34,13 @@ import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { StyledText } from '@/src/components/styled/Text';
-import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
-import { requestUserPermission } from '@/src/Services/Notification/notificationServices';
+import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
+import { requestUserPermission } from '@/src/services/notification/notificationServices';
 import axios from 'axios';
-import { processLogin } from '@/src/Services/login';
+import { processLogin } from '@/src/services/login';
 import SignupButtons from '@/src/components/SignupButtons';
 import Button from '@/src/components/Button';
-import { ApiCall } from '@/src/Services/api';
+import { ApiCall } from '@/src/services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 
