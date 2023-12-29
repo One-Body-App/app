@@ -15,7 +15,7 @@ import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { useTheme } from '@react-navigation/native';
@@ -30,10 +30,10 @@ import { StyledTextInput } from '@/src/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
 import auth from '@react-native-firebase/auth';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
-import { ApiCall } from '@/src/Services/api';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { ApiCall } from '@/src/services/api';
 import { LoginManager } from 'react-native-fbsdk-next';
-import { logout } from '@/src/Redux/actions/AuthActions';
+import { logout } from '@/src/redux/actions/AuthActions';
 import { useToast } from 'react-native-toast-notifications';
 
 type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccount'>;

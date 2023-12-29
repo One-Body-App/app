@@ -17,7 +17,7 @@ import {
   useTheme,
 } from '@react-navigation/native';
 import { styles } from './style';
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
 import FastImage from 'react-native-fast-image';
 
 import Video from 'react-native-video';
@@ -39,14 +39,14 @@ import { spacing } from '@/src/styles/spacing';
 import { Colors, Spacing } from '@/src/styles';
 import BaseItem from './BaseItem';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useReducedMotion } from 'react-native-reanimated';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 
-import { ApiCall } from '@/src/Services/api';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { ApiCall } from '@/src/services/api';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { isArray } from 'lodash';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
@@ -246,6 +246,8 @@ const SocialItem = ({
         location: item.location,
         locationName: item.locationName,
         edited: item.edited,
+        comments: item.comments,
+        commentNumber: item.commentNumber,
       }}
       parentRefreshContent={parentRefreshContent}
       created={item?.created}
@@ -269,7 +271,7 @@ const SocialItem = ({
       }}
       style={socialPostviewStyle}
     >
-      <View style={{ flexGrow: 1, flex: 1 }}>
+      <View style={{ flexGrow: 1 }}>
         {item?.content && (
           <View style={{ flexGrow: 1 }}>
             <StyledText

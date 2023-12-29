@@ -16,8 +16,8 @@ import GoBackIcon from '@/src/components/GoBackIcon';
 import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
-import { ApiCall } from '@/src/Services/api';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ApiCall } from '@/src/services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useSelector } from 'react-redux';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 

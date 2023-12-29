@@ -5,7 +5,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { setAccountType } from '@/redux//actions/GeneralActions';
+import { setAccountType } from '@/src/redux/actions/GeneralActions';
 import GradientHeader from '@/src/components/GradientHeader';
 import Organization from '@/assets/svg/Organization.svg';
 import Button from '@/src/components/Button';

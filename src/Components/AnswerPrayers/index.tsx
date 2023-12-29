@@ -4,11 +4,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
-import { setLoader, setPrayers, setUserPrayers } from '@/redux/actions/GeneralActions';
+import { setLoader, setPrayers, setUserPrayers } from '@/src/redux/actions/GeneralActions';
 import { styles } from './styles';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import Toast from 'react-native-simple-toast';
-import { getAllPrayer, getTestimonies } from '@/redux/actions/PrayerAction';
+import { getAllPrayer, getTestimonies } from '@/src/redux/actions/PrayerAction';
 
 const AnswerPrayers = ({ color }) => {
   const dispatch = useDispatch();

@@ -18,8 +18,8 @@ import { styles } from './styles';
 
 import { useSelector } from 'react-redux';
 
-import { ApiCall } from '@/services/api';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ApiCall } from '@/src/services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
 import SocialItem from '@/src/components/listItems/SocialItem';
@@ -48,7 +48,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 import { fontSize, poppins } from '@/src/styles/typography';
 import { borderWidth } from '@/src/styles/outlines';
 import { GiphyDialog } from '@giphy/react-native-sdk';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 
 enum FeedTypes {
   Connected = 'connected',
@@ -426,21 +426,32 @@ const Home = ({ navigation }: Props) => {
               scrollEnabled={isScrollEnable}
               renderItem={({ item, index }) => {
                 if (item.type == 'social') {
+                  console.log(item.commentNumber);
                   return (
-                    <SocialItem
-                      index={index}
-                      key={`social_${item.id}_${index}`}
-                      onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                      item={item}
-                      visible={
-                        visibleItemsIndex && visibleItemsIndex.length > 0
-                          ? visibleItemsIndex?.indexOf(index) > -1
-                          : false
-                      }
-                      socialPostviewStyle={{ backgroundColor: colors.card }}
-                      removePost={removePost}
-                      editPost={editPost}
-                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (item.postId) {
+                          navigation.navigate('SinglePost', {
+                            postId: item.postId,
+                          });
+                        }
+                      }}
+                    >
+                      <SocialItem
+                        index={index}
+                        key={`social_${item.id}_${index}`}
+                        onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                        item={item}
+                        visible={
+                          visibleItemsIndex && visibleItemsIndex.length > 0
+                            ? visibleItemsIndex?.indexOf(index) > -1
+                            : false
+                        }
+                        socialPostviewStyle={{ backgroundColor: colors.card }}
+                        removePost={removePost}
+                        editPost={editPost}
+                      />
+                    </TouchableOpacity>
                   );
                 }
 

@@ -16,15 +16,15 @@ import Header from '@/src/components/Header';
 import Save from '@/assets/svg/Save.svg';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import FastImage from 'react-native-fast-image';
-import { OpenURLButton } from '@/src/Services/constants';
-import { StackScreenProps } from '@react-navigation/stack';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
-import { ApiCall } from '@/src/Services/api';
-import { getuserGet } from '@/src/Redux/actions/UserAction';
-import { useTheme } from '@react-navigation/native';
-import { DrawerScreenProps } from '@react-navigation/drawer';
+import { OpenURLButton } from '@/src/services/constants';
+import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { ApiCall } from '@/src/services/api';
+import { getuserGet } from '@/src/redux/actions/UserAction';
+import { CompositeNavigationProp, CompositeScreenProps, useTheme } from '@react-navigation/native';
+import { DrawerNavigationProp, DrawerScreenProps } from '@react-navigation/drawer';
 import { StyledText } from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
@@ -33,16 +33,26 @@ import { Bookmark, NotificationBing } from 'iconsax-react-native';
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faBookmark } from '@fortawesome/free-solid-svg-icons';
-import { getProfile } from '@/src/Redux/actions/AuthActions';
+import { getProfile } from '@/src/redux/actions/AuthActions';
 import SocialItem from '@/src/components/listItems/SocialItem';
 import ArticleItem from '@/src/components/listItems/ArticleItem';
 import { ArticleType, PostType, SavedPost } from '@/utils/types';
 import { PopupItem } from '@/src/components/listItems/OptionsModal';
 import { isObject } from 'lodash';
 import Button from '@/src/components/Button';
-import { SettingsStackParamsList } from '@/src/navigator/types';
+import {
+  MainDrawerParamsList,
+  MainStackParamList,
+  SettingsStackParamsList,
+} from '@/src/navigator/types';
 
-type Props = DrawerScreenProps<SettingsStackParamsList, 'Saved'>;
+type Props = CompositeScreenProps<
+  StackScreenProps<SettingsStackParamsList, 'Saved'>,
+  CompositeScreenProps<
+    StackScreenProps<MainStackParamList, 'ConfirmLogin'>,
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>
+  >
+>;
 
 enum ContentType {
   RSS = 'RSS',
@@ -292,13 +302,27 @@ const Saved = ({ navigation }: Props) => {
 
             if (postData) {
               return (
-                <SocialItem
-                  item={postData}
-                  index={index}
-                  onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                  removePost={removePost}
-                  fromSavedPosts
-                />
+                <TouchableOpacity
+                  onPress={() => {
+                    if (postData.postId) {
+                      navigation.navigate('SinglePost', {
+                        postId: postData.postId,
+                      });
+
+                      // navigation.navigate( 'Single', {
+                      //   postId: postData.id,
+                      // });
+                    }
+                  }}
+                >
+                  <SocialItem
+                    item={postData}
+                    index={index}
+                    onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                    removePost={removePost}
+                    fromSavedPosts
+                  />
+                </TouchableOpacity>
               );
             }
           } else if (user && item.created && item.image) {

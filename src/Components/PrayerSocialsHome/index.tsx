@@ -6,7 +6,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Button from '../Button';
-import { setLoader, setPrayers, setPrayersLive } from '@/redux/actions/GeneralActions';
+import { setLoader, setPrayers, setPrayersLive } from '@/src/redux/actions/GeneralActions';
 import Love from '@/assets/svg/heart-white.svg';
 import Loved from '@/assets/svg/loved_white.svg';
 import Pray from '@/assets/svg/pray_white.svg';
@@ -14,7 +14,7 @@ import Praying from '@/assets/svg/prayed_white.svg';
 import Rejoice from '@/assets/svg/rejoice_white.svg';
 import Rejoiced from '@/assets/svg/Rejoiced_white.svg';
 import { styles } from './styles';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import Toast from 'react-native-simple-toast';
 
 const PrayerSocialsHome = ({ item, color }) => {

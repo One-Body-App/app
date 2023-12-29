@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
@@ -36,9 +36,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Feather from 'react-native-vector-icons/Feather';
 import Icon from 'react-native-vector-icons/AntDesign';
 import FastImage from 'react-native-fast-image';
-import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/Services/constants';
-import { ApiCall } from '@/src/Services/api';
-import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
+import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/services/constants';
+import { ApiCall } from '@/src/services/api';
+import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
 
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;

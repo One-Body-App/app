@@ -3,12 +3,12 @@ import { Text, View, ActivityIndicator } from 'react-native';
 import { Switch } from 'react-native-paper';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ApiCall } from '@/src/Services/api';
-import { setUserDataNotifications } from '@/src/Redux/actions/UserAction';
+import { ApiCall } from '@/src/services/api';
+import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
-import { setProfile } from '@/src/Redux/actions/AuthActions';
+import { setProfile } from '@/src/redux/actions/AuthActions';
 import { useTheme } from '@react-navigation/native';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 

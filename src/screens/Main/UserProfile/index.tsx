@@ -3,9 +3,9 @@ import { View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 
-import { setLoader } from '@/redux//actions/GeneralActions';
-import { ApiCall } from '@/services/api';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { ApiCall } from '@/src/services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { User } from '@/utils/types';
 import { StackScreenProps } from '@react-navigation/stack';
 
@@ -19,7 +19,7 @@ import {
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import ProfileComponent from '@/src/components/profile/Profile';
-import { getProfile } from '@/src/Redux/actions/AuthActions';
+import { getProfile } from '@/src/redux/actions/AuthActions';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'UserProfile'>,

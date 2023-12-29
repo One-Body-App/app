@@ -25,15 +25,15 @@ import Button from '@/src/components/Button';
 import { styles } from './styles';
 import { async } from 'validate.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoader } from '@/redux//actions/GeneralActions';
-import { ApiCall } from '@/services/api';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { ApiCall } from '@/src/services/api';
 import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import { StackScreenProps } from '@react-navigation/stack';
 
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepFour'>;

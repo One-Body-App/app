@@ -2,7 +2,7 @@ import React, { createRef, useEffect, useState } from 'react';
 import { View, TouchableOpacity, Share, Platform, FlatList } from 'react-native';
 
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   MainBottomStackParamsList,

@@ -33,18 +33,18 @@ import {
   codeChallenge,
   getInstagramAuthToken,
   getTwitterAuthToken,
-} from '@/src/Services/constants';
+} from '@/src/services/constants';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
-import { getTwitterLoginToken } from '@/src/Services/login';
+import { getTwitterLoginToken } from '@/src/services/login';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import Facebook from '@/assets/svg/Facebook.svg';
-import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/src/Services/constants';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/src/services/constants';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import Twitter from '@/assets/svg/Twitter.svg';
 import qs from 'qs';

@@ -1,5 +1,5 @@
-import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { ApiCall } from '@/src/Services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/src/services/api';
 import Button from '@/src/components/Button';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
 import { StyledText } from '@/src/components/styled/Text';
@@ -26,6 +26,7 @@ import {
   TouchableWithoutFeedback,
   TouchableOpacity,
   RefreshControl,
+  EmitterSubscription,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 
@@ -46,7 +47,8 @@ import CommentItem from '@/src/components/comments/CommentItem';
 import { useToast } from 'react-native-toast-notifications';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
-
+let keyboardWillShowListener: EmitterSubscription;
+let onKeyboardWillHideListener: EmitterSubscription;
 const SinglePrayer = ({ navigation, route }: Props) => {
   const [prayer, setPrayer] = useState<PrayerPost>();
   const [comments, setComments] = useState<CommentPost[]>();
@@ -61,7 +63,36 @@ const SinglePrayer = ({ navigation, route }: Props) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const toast = useToast();
+  const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const onKeyboardWillShow = (e: KeyboardEvent) => {
+    setKeyboardHeight(e.endCoordinates.height);
+  };
 
+  const onKeyboardWillHide = () => {
+    setKeyboardHeight(0);
+  };
+
+  useEffect(() => {
+    if (!isEditingComment) {
+      if (Platform.OS === 'ios') {
+        // These listeners on ios are a little more snappy but not available on Android
+        // If you want to use this on Android use keyboardDidShow/Hide
+        keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', onKeyboardWillShow);
+        onKeyboardWillHideListener = Keyboard.addListener('keyboardWillHide', onKeyboardWillHide);
+      }
+
+      return () => {
+        if (Platform.OS === 'ios') {
+          onKeyboardWillHideListener.remove();
+          onKeyboardWillHideListener.remove();
+          // Keyboard.removeAllListeners('keyboardWillShow');
+
+          // Keyboard.removeAllListeners('keyboardWillHide');
+        }
+      };
+    }
+  }, []);
   const refreshContent = () => {
     setIsEndOfList(false);
     setPage(1);
@@ -76,8 +107,10 @@ const SinglePrayer = ({ navigation, route }: Props) => {
   // Handling GIFs selection in GiphyDialog
   useEffect(() => {
     const handler: GiphyDialogMediaSelectEventHandler = (e) => {
-      setGif(e.media);
-      GiphyDialog.hide();
+      if (!isEditingComment) {
+        setGif(e.media);
+        GiphyDialog.hide();
+      }
     };
     const listener = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
     return () => {
@@ -168,7 +201,6 @@ const SinglePrayer = ({ navigation, route }: Props) => {
 
   const editComment = async (id: string, content: string) => {
     try {
-      console.log(`comments/prayer/${route.params?.postId}/${id}`);
       const res = await ApiCall({
         route: `comments/prayer/${route.params?.postId}/${id}`,
         verb: 'patch',
@@ -219,110 +251,91 @@ const SinglePrayer = ({ navigation, route }: Props) => {
   }, [route.params?.postId]);
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        paddingHorizontal: spacing.x24,
-        backgroundColor: colors.background,
-      }}
-    >
-      {/* <TouchableWithoutFeedback
-        style={{ backgroundColor: 'blue', flexGrow: 1 }}
-        onPress={() => {
-          if (Keyboard.isVisible()) Keyboard.dismiss();
-        }}
-      > */}
-      <View style={{ flexGrow: 1 }}>
-        {/* <KeyboardAvoidingView
-        style={{
-          paddingTop: spacing.x24,
-          paddingBottom: spacing.x48,
-          flex: 1,
-          justifyContent: 'space-between',
-        }}
-        // style={{ flex: 1 }}
-        behavior="position"
-      > */}
-        {/* <ScrollView style={{ flex: 1 }}> */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flex: 1 }}>
         {prayer ? (
           <>
-            <View>
-              <PrayerItem
-                editPost={editPost}
-                removePost={prayer.answered ? undefined : removePost}
-                item={prayer}
-                style={{
-                  borderBottomColor: Colors.neutral[800],
-                  borderBottomWidth: borderWidth.thin,
+            {keyboardHeight == 0 ? (
+              <View>
+                <PrayerItem
+                  editPost={editPost}
+                  removePost={prayer.answered ? undefined : removePost}
+                  item={prayer}
+                  style={{
+                    borderBottomColor: Colors.neutral[800],
+                    borderBottomWidth: borderWidth.thin,
+                  }}
+                />
+              </View>
+            ) : null}
+            <View style={{ flex: 1 }}>
+              <FlatList
+                data={comments}
+                refreshing={isRefreshing}
+                style={{ flexGrow: 1 }}
+                // onEndReachedThreshold={0.5}
+                // onEndReached={() => {
+                //   if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
+                // }}
+                // ListFooterComponent={() => (
+                //   <View>
+                //     {isEndOfList ? (
+                //       <StyledText style={{ textAlign: 'center' }}>
+                //         Not more social posts at this time
+                //       </StyledText>
+                //     ) : null}
+                //   </View>
+                // )}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={isRefreshing}
+                    onRefresh={() => {
+                      refreshContent();
+                    }}
+                  />
+                }
+                ListEmptyComponent={() => <>{isLoading ? <ActivityIndicator /> : null}</>}
+                renderItem={({ item }) => {
+                  let myReaction: SocialPostReaction | undefined = undefined;
+
+                  item.reactions?.forEach((reaction) => {
+                    if (reaction.userId == user?._id) {
+                      myReaction = reaction;
+                    }
+                  });
+
+                  return (
+                    <View>
+                      <CommentItem
+                        setEditingComment={setIsEditingComment}
+                        removePost={prayer.answered ? undefined : removeComment}
+                        editCommentAction={editComment}
+                        onPress={() => {
+                          if (
+                            !prayer.private &&
+                            prayer?.userData._id &&
+                            prayer.userData._id != user?._id
+                          ) {
+                            navigation.navigate('UserProfile', {
+                              id: prayer?.userData._id,
+                            });
+                          }
+                        }}
+                        postData={{
+                          id: item.commentId,
+                          content: item.content,
+                          reactions: item.reactions,
+                          myReaction,
+                          edited: item.edited,
+                          gif: item.gif,
+                        }}
+                        userData={item.userData}
+                      />
+                    </View>
+                  );
                 }}
               />
             </View>
-            <FlatList
-              data={comments}
-              refreshing={isRefreshing}
-              style={{ flexGrow: 1, flex: 1, marginBottom: 80 }}
-              // onEndReachedThreshold={0.5}
-              // onEndReached={() => {
-              //   if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
-              // }}
-              // ListFooterComponent={() => (
-              //   <View>
-              //     {isEndOfList ? (
-              //       <StyledText style={{ textAlign: 'center' }}>
-              //         Not more social posts at this time
-              //       </StyledText>
-              //     ) : null}
-              //   </View>
-              // )}
-              refreshControl={
-                <RefreshControl
-                  refreshing={isRefreshing}
-                  onRefresh={() => {
-                    refreshContent();
-                  }}
-                />
-              }
-              ListEmptyComponent={() => <>{isLoading ? <ActivityIndicator /> : null}</>}
-              renderItem={({ item }) => {
-                let myReaction: SocialPostReaction | undefined = undefined;
-
-                item.reactions?.forEach((reaction) => {
-                  if (reaction.userId == user?._id) {
-                    myReaction = reaction;
-                  }
-                });
-
-                return (
-                  <View>
-                    <CommentItem
-                      removePost={prayer.answered ? undefined : removeComment}
-                      editCommentAction={editComment}
-                      onPress={() => {
-                        if (
-                          !prayer.private &&
-                          prayer?.userData._id &&
-                          prayer.userData._id != user?._id
-                        ) {
-                          navigation.navigate('UserProfile', {
-                            id: prayer?.userData._id,
-                          });
-                        }
-                      }}
-                      postData={{
-                        id: item.commentId,
-                        content: item.content,
-                        reactions: item.reactions,
-                        myReaction,
-                        edited: item.edited,
-                        gif: item.gif,
-                      }}
-                      userData={item.userData}
-                    />
-                  </View>
-                );
-              }}
-            />
-
             {prayer.answered ? (
               <View
                 style={{
@@ -337,7 +350,17 @@ const SinglePrayer = ({ navigation, route }: Props) => {
                 </StyledText>
               </View>
             ) : (
-              <CommentField mediaGif={mediaGif} setGif={setGif} publishComment={publishComment} />
+              <>
+                {!isEditingComment ? (
+                  <View style={{ top: keyboardHeight * -1 }}>
+                    <CommentField
+                      mediaGif={mediaGif}
+                      setGif={setGif}
+                      publishComment={publishComment}
+                    />
+                  </View>
+                ) : null}
+              </>
             )}
           </>
         ) : (

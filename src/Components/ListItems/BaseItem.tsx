@@ -2,7 +2,7 @@ import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import React, { ReactNode, useState } from 'react';
 import { Platform, Share, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { styles } from './style';
-import { NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
+import { NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
 import FastImage from 'react-native-fast-image';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
@@ -19,11 +19,11 @@ import { Heart, Location, Message2 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 
 import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/src/Services/api';
-import { getuserGet } from '@/src/Redux/actions/UserAction';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ApiCall } from '@/src/services/api';
+import { getuserGet } from '@/src/redux/actions/UserAction';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
   AccountType,
   CommentPost,
@@ -730,14 +730,12 @@ const BaseItem = ({
               </View>
 
               <View>
-                {postData.type == PostType.prayer ? (
-                  <View style={{ flexDirection: 'row' }}>
-                    <Message2 color={colors.text} />
-                    <StyledText style={{ marginLeft: spacing.x10 }}>
-                      {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                    </StyledText>
-                  </View>
-                ) : null}
+                <View style={{ flexDirection: 'row' }}>
+                  <Message2 color={colors.text} />
+                  <StyledText style={{ marginLeft: spacing.x10 }}>
+                    {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                  </StyledText>
+                </View>
               </View>
             </View>
             {postData.type == PostType.rss ? (

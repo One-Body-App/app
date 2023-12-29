@@ -20,10 +20,10 @@ import Button from '../../components/Button';
 
 import { validateFields } from '@/utils/validation/validate-fields';
 import LinearGradient from 'react-native-linear-gradient';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
 import { useDispatch } from 'react-redux';
-import { setLoader } from '@/redux/actions/GeneralActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import Toast from 'react-native-simple-toast';
 import GoBackIcon from '@/src/components/GoBackIcon';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
