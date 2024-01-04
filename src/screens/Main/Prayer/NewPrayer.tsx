@@ -1,5 +1,5 @@
-import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { ApiCall } from '@/src/Services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/services/api';
 import Button from '@/src/components/Button';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
 import { StyledText } from '@/src/components/styled/Text';
@@ -59,7 +59,7 @@ import {
   GiphySDK,
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
-import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS, NO_PROFILE_IMAGE } from '@/src/Services/constants';
+import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS, NO_PROFILE_IMAGE } from '@/services/constants';
 import { isArray, isEmpty } from 'lodash';
 import { StyledSelect } from '@/src/components/styled/Select';
 import Toast from 'react-native-simple-toast';

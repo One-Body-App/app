@@ -22,9 +22,9 @@ import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { TabView, SceneMap } from 'react-native-tab-view';
 
 import SearchContainComponent from '@/src/components/SearchContainComponent';
-import { BASE_URL } from '@/src/Services/constants';
-import { ApiCall } from '@/src/Services/api';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { BASE_URL } from '@/services/constants';
+import { ApiCall } from '@/services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import ArticleItem from '@/src/components/listItems/ArticleItem';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 

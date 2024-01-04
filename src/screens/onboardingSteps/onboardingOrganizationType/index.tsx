@@ -7,8 +7,8 @@ import { StyledText } from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { AccountType, Tag } from '@/utils/types';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { ApiCall } from '@/src/Services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/services/api';
 
 import { StyledSelect } from '@/src/components/styled/Select';
 import { StackScreenProps } from '@react-navigation/stack';

@@ -32,7 +32,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import { StackScreenProps } from '@react-navigation/stack';
 
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Interest } from '@/utils/types';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';

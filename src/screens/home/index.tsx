@@ -19,7 +19,7 @@ import { styles } from './styles';
 import { useSelector } from 'react-redux';
 
 import { ApiCall } from '@/services/api';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
 import SocialItem from '@/src/components/listItems/SocialItem';
@@ -48,7 +48,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 import { fontSize, poppins } from '@/src/styles/typography';
 import { borderWidth } from '@/src/styles/outlines';
 import { GiphyDialog } from '@giphy/react-native-sdk';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 
 enum FeedTypes {
   Connected = 'connected',

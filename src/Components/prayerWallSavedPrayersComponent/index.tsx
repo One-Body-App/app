@@ -4,13 +4,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { PostType, PrayerPost, PrayerWallCategory, SavedPost } from '@/utils/types';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
 import { StyledText } from '../styled/Text';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import PrayerItem from '../listItems/PrayerItem';
-import { getProfile } from '@/src/Redux/actions/AuthActions';
+import { getProfile } from '@/src/redux/actions/AuthActions';
 
 const PrayerWallSavedPrayersComponent = () => {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();

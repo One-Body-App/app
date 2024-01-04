@@ -12,7 +12,7 @@ import { logout } from '@/redux//actions/AuthActions';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { LoginManager } from 'react-native-fbsdk-next';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import auth from '@react-native-firebase/auth';

@@ -1,5 +1,5 @@
-import { RootState } from '@/src/Redux/reducers/rootReducer';
-import { ApiCall } from '@/src/Services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/services/api';
 import Button from '@/src/components/Button';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
 import { StyledText } from '@/src/components/styled/Text';

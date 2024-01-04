@@ -1,8 +1,8 @@
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { ApiCall } from '@/src/Services/api';
+import { ApiCall } from '@/services/api';
 import { BASE_URL } from './constants';
 import axios from 'axios';
-import { loginSocialRequest } from '../Redux/actions/AuthActions';
+import { loginSocialRequest } from '../redux/actions/AuthActions';
 import { Dispatch } from '@reduxjs/toolkit';
 
 export const processLogin = async (

@@ -18,7 +18,7 @@ import { ApiCall } from '@/services/api';
 import { getuserAll } from '@/redux/actions/UserAction';
 import FastImage from 'react-native-fast-image';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { RootState } from '../Redux/reducers/rootReducer';
+import { RootState } from '../redux/reducers/rootReducer';
 
 import { RootStackParamList } from '../_Navigation/types';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';

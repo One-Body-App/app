@@ -8,12 +8,12 @@ import Modal from 'react-native-modal';
 import Button from '../Button';
 
 import { styles } from './style';
-import { setLoader } from '@/src/Redux/actions/GeneralActions';
-import { ApiCall } from '@/src/Services/api';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { AccountType, PostType, PostUserData, SocialPostReaction } from '@/utils/types';
-import { getuserGet } from '@/src/Redux/actions/UserAction';
+import { getuserGet } from '@/src/redux/actions/UserAction';
 import {
   ExploreStackParamsList,
   MainDrawerParamsList,

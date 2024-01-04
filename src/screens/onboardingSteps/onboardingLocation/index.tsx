@@ -4,7 +4,7 @@ import Button from '@/src/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';

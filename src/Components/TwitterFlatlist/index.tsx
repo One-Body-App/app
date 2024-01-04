@@ -6,11 +6,11 @@ import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import SocialItem from '../listItems/SocialItem';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SceneRendererProps } from 'react-native-tab-view';
 import { User } from '@/utils/types';
 import Button from '../Button';
-import { OpenURLButton } from '@/src/Services/constants';
+import { OpenURLButton } from '@/services/constants';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { useTheme } from '@react-navigation/native';
 

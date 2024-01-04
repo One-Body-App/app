@@ -27,13 +27,13 @@
           "@/utils": "./utils",
           "@/src": "./src",
           "@/assets": "./src/assets",
-          "@/components": "./src/Components",
+          "@/components": "./src/components",
           "@/constants": "./src/constants",
-          "@/navigation": "./src/Navigation",
+          "@/navigation": "./src/navigation",
           "@/navigator": "./src/navigator",
-          "@/redux": "./src/Redux",
+          "@/redux": "./src/redux",
           "@/screens": "./src/screens",
-          "@/services": "./src/Services"
+          "@/services": "./src/services"
         }
       }
     ],

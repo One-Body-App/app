@@ -23,7 +23,7 @@ import { getUserProfile } from '@/redux/actions/UserAction';
 import { ApiCall } from '@/services/api';
 import { styles } from './styles';
 
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import Modal from 'react-native-modal';
 import { Interest, User } from '@/utils/types';
@@ -45,7 +45,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { isNumber } from 'lodash';
-import { NO_PROFILE_IMAGE } from '@/src/Services/constants';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 type Props = CompositeScreenProps<

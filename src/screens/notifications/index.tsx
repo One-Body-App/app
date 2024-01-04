@@ -19,7 +19,7 @@ import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import { StyledText } from '@/src/components/styled/Text';
-import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { NotificationType } from '@/utils/types';
 import { NotificationBing } from 'iconsax-react-native';
