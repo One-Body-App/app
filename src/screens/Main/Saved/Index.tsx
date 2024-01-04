@@ -23,7 +23,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { getuserGet } from '@/src/redux/actions/UserAction';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { StyledText } from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
