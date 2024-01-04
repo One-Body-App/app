@@ -1,4 +1,4 @@
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 import Toast from 'react-native-simple-toast';
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';

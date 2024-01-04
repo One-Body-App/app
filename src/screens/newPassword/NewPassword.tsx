@@ -16,16 +16,16 @@ import { GeneralStyle } from '../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Button from '../../components/Button';
+import Button from '../../Components/Button';
 
 import { validateFields } from '@/utils/validation/validate-fields';
 import LinearGradient from 'react-native-linear-gradient';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import validator from '@/utils/validation/validator';
 import { useDispatch } from 'react-redux';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import Toast from 'react-native-simple-toast';
-import GoBackIcon from '@/src/components/GoBackIcon';
+import GoBackIcon from '@/src/Components/GoBackIcon';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
@@ -38,8 +38,8 @@ import {
   useTheme,
 } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';

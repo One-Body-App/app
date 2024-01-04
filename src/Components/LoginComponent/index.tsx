@@ -31,20 +31,20 @@ import Button from '../Button';
 
 import { styles } from './styles';
 import { appColor } from '../../constants';
-import { requestUserPermission } from '../../services/notification/notificationServices';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { requestUserPermission } from '../../Services/Notification/notificationServices';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import GradientButton from '../GradientButton';
 import {
   loginSocialRequest,
   logout,
   sendVerificationEmail,
   signUp,
-} from '@/src/redux/actions/AuthActions';
+} from '@/src/Redux/actions/AuthActions';
 
-import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
+import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
 
-import { getTwitterLoginToken, processLogin } from '@/src/services/login';
-import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/services/constants';
+import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
+import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/Services/constants';
 import { useToast } from 'react-native-toast-notifications';
 import G from '@/assets/svg/G.svg';
 import { CompositeScreenProps, useNavigation, useTheme } from '@react-navigation/native';

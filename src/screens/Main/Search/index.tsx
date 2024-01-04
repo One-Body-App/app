@@ -21,11 +21,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { TabView, SceneMap } from 'react-native-tab-view';
 
-import SearchContainComponent from '@/src/components/SearchContainComponent';
-import { BASE_URL } from '@/src/services/constants';
-import { ApiCall } from '@/src/services/api';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import ArticleItem from '@/src/components/listItems/ArticleItem';
+import SearchContainComponent from '@/src/Components/SearchContainComponent';
+import { BASE_URL } from '@/src/Services/constants';
+import { ApiCall } from '@/src/Services/api';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import ArticleItem from '@/src/Components/ListItems/ArticleItem';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
 import { ArticleType } from '@/utils/types';
@@ -38,19 +38,19 @@ import {
 } from '@/src/navigator/types';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { StackScreenProps } from '@react-navigation/stack';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 
 import { Colors, Typography } from '@/src/styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StyledText } from '@/src/components/styled/Text';
-import Button from '@/src/components/Button';
+import { StyledText } from '@/src/Components/styled/Text';
+import Button from '@/src/Components/Button';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import SearchIcon from '@/assets/icons/search.svg';
 import { ArrowRight } from 'iconsax-react-native';
 import FastImage from 'react-native-fast-image';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import UserItem from '@/src/components/listItems/UserItem';
+import UserItem from '@/src/Components/ListItems/UserItem';
 import { header } from '@/src/styles/typography';
 
 // type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;

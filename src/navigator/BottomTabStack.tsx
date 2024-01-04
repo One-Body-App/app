@@ -16,7 +16,7 @@ import { MainBottomStackParamsList, MainDrawerParamsList } from './types';
 import { Colors } from '../styles';
 import SearchStack from './SearchStack';
 import { useSelector } from 'react-redux';
-import { RootState } from '../redux/reducers/rootReducer';
+import { RootState } from '../Redux/reducers/rootReducer';
 import { borderWidth } from '../styles/outlines';
 import { useTheme } from '@react-navigation/native';
 import { AddSquare, Global, Home3, SearchNormal1 } from 'iconsax-react-native';

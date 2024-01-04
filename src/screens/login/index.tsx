@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
 
-import LoginComponent from '@/src/components/loginComponent';
+import LoginComponent from '@/src/Components/LoginComponent';
 
 import { StackScreenProps } from '@react-navigation/stack';
 

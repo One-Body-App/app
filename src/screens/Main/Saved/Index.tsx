@@ -11,21 +11,21 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Header from '@/src/components/Header';
+import Header from '@/src/Components/Header';
 
 import Save from '@/assets/svg/Save.svg';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import FastImage from 'react-native-fast-image';
-import { OpenURLButton } from '@/src/services/constants';
+import { OpenURLButton } from '@/src/Services/constants';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
-import { getuserGet } from '@/src/redux/actions/UserAction';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { ApiCall } from '@/src/Services/api';
+import { getuserGet } from '@/src/Redux/actions/UserAction';
 import { CompositeNavigationProp, CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { DrawerNavigationProp, DrawerScreenProps } from '@react-navigation/drawer';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
@@ -33,13 +33,13 @@ import { Bookmark, NotificationBing } from 'iconsax-react-native';
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faBookmark } from '@fortawesome/free-solid-svg-icons';
-import { getProfile } from '@/src/redux/actions/AuthActions';
-import SocialItem from '@/src/components/listItems/SocialItem';
-import ArticleItem from '@/src/components/listItems/ArticleItem';
+import { getProfile } from '@/src/Redux/actions/AuthActions';
+import SocialItem from '@/src/Components/ListItems/SocialItem';
+import ArticleItem from '@/src/Components/ListItems/ArticleItem';
 import { ArticleType, PostType, SavedPost } from '@/utils/types';
-import { PopupItem } from '@/src/components/listItems/OptionsModal';
+import { PopupItem } from '@/src/Components/ListItems/OptionsModal';
 import { isObject } from 'lodash';
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 import {
   MainDrawerParamsList,
   MainStackParamList,

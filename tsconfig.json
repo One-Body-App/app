@@ -14,13 +14,13 @@
       "@/utils/*": ["utils/*"],
       "@/src/*": ["src/*"],
       "@/assets/*": ["src/assets/*"],
-      "@/components/*": ["src/components/*"],
+      "@/components/*": ["src/Components/*"],
       "@/constants/*": ["src/constants/*"],
       "@/navigation/*": ["src/_Navigation/*"],
       "@/navigator/*": ["src/navigator/*"],
-      "@/redux/*": ["src/redux/*"],
+      "@/redux/*": ["src/Redux/*"],
       "@/screens/*": ["src/screens/*"],
-      "@/services/*": ["src/services/*"]
+      "@/services/*": ["src/Services/*"]
     }
   }
 }

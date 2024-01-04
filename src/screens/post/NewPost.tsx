@@ -1,9 +1,9 @@
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/src/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { StyledText } from '@/src/components/styled/Text';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ApiCall } from '@/src/Services/api';
+import Button from '@/src/Components/Button';
+import MapBox, { MapSuggestion } from '@/src/Components/MapBox';
+import { StyledText } from '@/src/Components/styled/Text';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors, Spacing } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -37,7 +37,7 @@ import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fontSize } from '@/src/styles/typography';
 
-import ImagePickerModal from '@/src/components/ImagePickerModal';
+import ImagePickerModal from '@/src/Components/ImagePickerModal';
 import ImagePicker from 'react-native-image-crop-picker';
 import {
   Asset,
@@ -58,7 +58,7 @@ import {
   GiphySDK,
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
-import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/src/services/constants';
+import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/src/Services/constants';
 import { isArray, isEmpty } from 'lodash';
 
 GiphySDK.configure({

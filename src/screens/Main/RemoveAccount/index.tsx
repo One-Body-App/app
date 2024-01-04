@@ -9,31 +9,31 @@ import {
 } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
+import Header from '@/src/Components/Header';
+import Button from '@/src/Components/Button';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { useTheme } from '@react-navigation/native';
 import { SettingsStackParamsList } from '@/src/navigator/types';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Colors, Spacing, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { RadioButton } from 'react-native-paper';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
 import auth from '@react-native-firebase/auth';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { ApiCall } from '@/src/Services/api';
 import { LoginManager } from 'react-native-fbsdk-next';
-import { logout } from '@/src/redux/actions/AuthActions';
+import { logout } from '@/src/Redux/actions/AuthActions';
 import { useToast } from 'react-native-toast-notifications';
 
 type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccount'>;
@@ -187,8 +187,8 @@ const RemoveAccount = ({ navigation }: Props) => {
                           color: !reason
                             ? colors.text
                             : reason == item.reason
-                            ? Colors.errorFeedback.background
-                            : Colors.neutral[500],
+                              ? Colors.errorFeedback.background
+                              : Colors.neutral[500],
                         },
                       ]}
                       wrapperBtnStyle={{

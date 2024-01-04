@@ -14,7 +14,7 @@ import { Text, TextInput } from 'react-native-paper';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 import { styles } from './styles';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
@@ -33,18 +33,18 @@ import {
   codeChallenge,
   getInstagramAuthToken,
   getTwitterAuthToken,
-} from '@/src/services/constants';
+} from '@/src/Services/constants';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
-import { getTwitterLoginToken } from '@/src/services/login';
+import { getTwitterLoginToken } from '@/src/Services/login';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import Facebook from '@/assets/svg/Facebook.svg';
-import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/src/services/constants';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/src/Services/constants';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import Twitter from '@/assets/svg/Twitter.svg';
 import qs from 'qs';

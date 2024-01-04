@@ -3,14 +3,14 @@ import { View } from 'react-native';
 
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { AccountType, ChurchType } from '@/utils/types';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/src/services/api';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ApiCall } from '@/src/Services/api';
 
-import { StyledSelect } from '@/src/components/styled/Select';
+import { StyledSelect } from '@/src/Components/styled/Select';
 import { StackScreenProps } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { useToast } from 'react-native-toast-notifications';

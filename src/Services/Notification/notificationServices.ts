@@ -1,5 +1,5 @@
 import messaging from '@react-native-firebase/messaging';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 
 export const requestUserPermission = async (token: string, notificationStatus: boolean) => {
   const authStatus = await messaging().requestPermission();

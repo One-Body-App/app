@@ -5,12 +5,12 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { setAccountType } from '@/src/redux/actions/GeneralActions';
-import GradientHeader from '@/src/components/GradientHeader';
+import { setAccountType } from '@/src/Redux/actions/GeneralActions';
+import GradientHeader from '@/src/Components/GradientHeader';
 import Organization from '@/assets/svg/Organization.svg';
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 
-import GoBackIcon from '@/src/components/GoBackIcon';
+import GoBackIcon from '@/src/Components/GoBackIcon';
 import { StackScreenProps } from '@react-navigation/stack';
 // import { ParamListBase } from '@react-navigation/native';
 import { MainStackParamList } from '@/src/navigator/types';
@@ -24,7 +24,7 @@ import { AccountType as AccountTypeType } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 
 type Props = StackScreenProps<MainStackParamList, 'AccountType'>;

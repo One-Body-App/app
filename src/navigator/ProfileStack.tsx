@@ -1,12 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import EditProfile from '../screens/main/editProfile';
+import EditProfile from '../screens/Main/EditProfile';
 
-import MyProfile from '../screens/main/myProfile';
+import MyProfile from '../screens/Main/MyProfile';
 import { MyProfileStackParamsList } from './types';
 import { useTheme } from '@react-navigation/native';
 import { Colors } from '../styles';
-import InviteFriend from '../screens/main/inviteFriend';
+import InviteFriend from '../screens/Main/InviteFriend';
 
 const Stack = createNativeStackNavigator<MyProfileStackParamsList>();
 

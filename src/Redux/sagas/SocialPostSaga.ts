@@ -1,4 +1,4 @@
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import { ACTIONS } from '../action-types';
 
 function* GetTwiterPostRequest(params) {

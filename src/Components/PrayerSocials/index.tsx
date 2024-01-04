@@ -6,7 +6,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Button from '../Button';
-import { setLoader, setPrayers } from '@/src/redux/actions/GeneralActions';
+import { setLoader, setPrayers } from '@/src/Redux/actions/GeneralActions';
 import Love from '@/assets/svg/Love.svg';
 import Loved from '@/assets/svg/Loved.svg';
 import Pray from '@/assets/svg/Pray.svg';
@@ -14,7 +14,7 @@ import Praying from '@/assets/svg/Praying.svg';
 import Rejoice from '@/assets/svg/Rejoice.svg';
 import Rejoiced from '@/assets/svg/Rejoiced.svg';
 import { styles } from './styles';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 
 const PrayerSocials = ({ item, color }) => {
   const dispatch = useDispatch();

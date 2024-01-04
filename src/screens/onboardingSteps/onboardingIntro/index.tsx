@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import { View, SafeAreaView, Platform, PermissionsAndroid } from 'react-native';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import messaging from '@react-native-firebase/messaging';
 import Geolocation from '@react-native-community/geolocation';
 import FastImage from 'react-native-fast-image';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
 

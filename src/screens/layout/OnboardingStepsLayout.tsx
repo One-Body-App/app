@@ -1,5 +1,5 @@
-import Button from '@/src/components/Button';
-import { StyledText } from '@/src/components/styled/Text';
+import Button from '@/src/Components/Button';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Buttons, Colors, Spacing, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { borderRadius } from '@/src/styles/outlines';

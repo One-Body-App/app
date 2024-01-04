@@ -3,9 +3,9 @@ import 'react-native-devsettings/withAsyncStorage';
 
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { persistor, store } from './src/redux/store';
+import { persistor, store } from './src/Redux/store';
 import { Provider, useDispatch } from 'react-redux';
-import Main from '@/navigator/Main';
+import Main from '@/src/navigator/Main';
 import { PersistGate } from 'redux-persist/integration/react';
 // import SplashScreen from 'react-native-splash-screen';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';

@@ -17,8 +17,8 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoader, setPrayers, setUserPrayers } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
+import { setLoader, setPrayers, setUserPrayers } from '@/src/Redux/actions/GeneralActions';
+import { ApiCall } from '@/src/Services/api';
 import { styles } from './styles';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
@@ -27,12 +27,12 @@ import PrayerSocials from '../PrayerSocials';
 import FastImage from 'react-native-fast-image';
 import { AutoScrollFlatList } from 'react-native-autoscroll-flatlist';
 import PrayerInputHome from '../PrayerInputHome';
-import { getAllPrayer, getAllPrayerLive, getMyPrayer } from '@/src/redux/actions/PrayerAction';
+import { getAllPrayer, getAllPrayerLive, getMyPrayer } from '@/src/Redux/actions/PrayerAction';
 import LiveStreamFlatlist from '../LiveStreamFlatlist';
 import LiveStreamFlatlist2 from '../LiveStreamFlatlist2';
 import { useNavigation } from '@react-navigation/native';
-import { TwilioService } from '../../services/Twillio/TwilioServicetjs';
-import { getToken } from '../../services/Twillio/api-service';
+import { TwilioService } from '../../Services/Twillio/TwilioServicetjs';
+import { getToken } from '../../Services/Twillio/api-service';
 
 const PrayerModel = ({ setRequestModel }) => {
   const dispatch = useDispatch();

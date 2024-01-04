@@ -17,13 +17,13 @@ import FastImage from 'react-native-fast-image';
 
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 
-import { getUserProfile } from '@/src/redux/actions/UserAction';
-import { ApiCall } from '@/src/services/api';
+import { getUserProfile } from '@/src/Redux/actions/UserAction';
+import { ApiCall } from '@/src/Services/api';
 import { styles } from './styles';
 
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
 import Modal from 'react-native-modal';
 import { Interest, User } from '@/utils/types';
@@ -35,17 +35,17 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 import { Colors, Typography } from '@/src/styles';
 import SearchIcon from '@/assets/icons/search.svg';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { isNumber } from 'lodash';
-import { NO_PROFILE_IMAGE } from '@/src/services/constants';
+import { NO_PROFILE_IMAGE } from '@/src/Services/constants';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 type Props = CompositeScreenProps<
@@ -603,8 +603,8 @@ const Explore = ({ navigation }: Props) => {
                           {item.profile.whatIDo
                             ? item.profile.whatIDo?.name
                             : item.profile.typeOfOrganization
-                            ? item.profile.typeOfOrganization?.name
-                            : ''}
+                              ? item.profile.typeOfOrganization?.name
+                              : ''}
                         </StyledText>
                       ) : null}
                     </View>
@@ -890,8 +890,8 @@ const Explore = ({ navigation }: Props) => {
                               {item.profile.whatIDo
                                 ? item.profile.whatIDo?.name
                                 : item.profile.typeOfOrganization
-                                ? item.profile.typeOfOrganization?.name
-                                : ''}
+                                  ? item.profile.typeOfOrganization?.name
+                                  : ''}
                             </StyledText>
                           ) : null}
                         </View>

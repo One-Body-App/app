@@ -26,9 +26,9 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
-
-import { RootState } from '../redux/reducers/rootReducer';
-import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions';
+// ../redux/actions/AuthActions
+import { RootState } from '../Redux/reducers/rootReducer';
+import { setLoginData, setUserData, getProfile } from '../Redux/actions/AuthActions';
 import { isEqual } from 'lodash';
 import {
   NativeStackNavigationOptions,
@@ -47,8 +47,8 @@ import {
 } from './types';
 import messaging from '@react-native-firebase/messaging';
 
-import Connections from '../screens/main/connections';
-import Saved from '../screens/main/saved';
+import Connections from '../screens/Main/connections';
+import Saved from '../screens/Main/saved';
 import Intro from '../screens/intro';
 
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -83,7 +83,7 @@ import {
   GiphyMediaView,
   GiphySDK,
 } from '@giphy/react-native-sdk';
-import { StyledText } from '../components/styled/Text';
+import { StyledText } from '../Components/styled/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import SinglePost from '../screens/post/Single';

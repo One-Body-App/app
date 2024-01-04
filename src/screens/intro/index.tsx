@@ -7,8 +7,8 @@ import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import FastImage from 'react-native-fast-image';
-import { StyledText } from '@/src/components/styled/Text';
-import Button from '@/src/components/Button';
+import { StyledText } from '@/src/Components/styled/Text';
+import Button from '@/src/Components/Button';
 import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<MainStackParamList, 'Intro'>;

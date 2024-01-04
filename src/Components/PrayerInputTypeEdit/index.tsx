@@ -4,9 +4,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
-import { setLoader, setPrayers, setUserPrayers } from '@/src/redux/actions/GeneralActions';
+import { setLoader, setPrayers, setUserPrayers } from '@/src/Redux/actions/GeneralActions';
 import { styles } from './styles';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import Toast from 'react-native-simple-toast';
 
 const PrayerInputTypeEdit = ({ color, id, pray, praytype, setCurrentIndex, setIsediting }) => {

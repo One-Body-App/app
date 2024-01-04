@@ -4,7 +4,7 @@ import { setAccountType, setLoader } from '../actions/GeneralActions';
 import { Alert } from 'react-native';
 
 // --------------- ASSETS ---------------
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 // --------------- TYPES ---------------
 import {
   ACTIONS,

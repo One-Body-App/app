@@ -12,7 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import Modal from 'react-native-modal';
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 
 import {
   CameraOptions,
@@ -23,40 +23,40 @@ import {
 } from 'react-native-image-picker';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { profileUpdate } from '@/src/redux/actions/AuthActions';
-import ImagePickerModal from '@/src/components/ImagePickerModal';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { profileUpdate } from '@/src/Redux/actions/AuthActions';
+import ImagePickerModal from '@/src/Components/ImagePickerModal';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import FastImage from 'react-native-fast-image';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Blog from '@/assets/svg/Blog.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import ImagePicker from 'react-native-image-crop-picker';
-import GradientButton from '@/src/components/GradientButton';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import GradientButton from '@/src/Components/GradientButton';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AccountType, ChurchType, Interest, Tag } from '@/utils/types';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { getuserGet, getUserProfile } from '@/src/redux/actions/UserAction';
+import { getuserGet, getUserProfile } from '@/src/Redux/actions/UserAction';
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
+import MapBox, { MapSuggestion } from '@/src/Components/MapBox';
 import { spacing } from '@/src/styles/spacing';
-import { profileImagesize } from '@/src/components/profile/Profile';
+import { profileImagesize } from '@/src/Components/profile/Profile';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { ArrowDown2, Calendar, GalleryEdit, Setting2 } from 'iconsax-react-native';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
-import { StyledSelect } from '@/src/components/styled/Select';
+import { StyledSelect } from '@/src/Components/styled/Select';
 import SearchIcon from '@/assets/icons/search.svg';
 import { iterestListItem } from '@/src/styles/items';
 import { serialize } from 'object-to-formdata';
-import SettingsSheet from '../myProfile/SettingsSheet';
+import SettingsSheet from '../MyProfile/SettingsSheet';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
   MainBottomStackParamsList,
@@ -517,8 +517,8 @@ const EditProfile = ({ navigation }: Props) => {
     churchSubType == 'none'
       ? 'None'
       : selectedChurchSubType.length > 0
-      ? selectedChurchSubType[0].churchType
-      : '';
+        ? selectedChurchSubType[0].churchType
+        : '';
 
   return (
     <SafeAreaView style={{ flex: 1 }}>

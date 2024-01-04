@@ -1,4 +1,4 @@
-import { NO_PROFILE_IMAGE } from '@/src/services/constants';
+import { NO_PROFILE_IMAGE } from '@/src/Services/constants';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
@@ -20,7 +20,7 @@ import { timeSince } from '@/utils/ResponsiveFun';
 import { useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import OptionsModal from '../listItems/OptionsModal';
+import OptionsModal from '../ListItems/OptionsModal';
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
@@ -214,8 +214,8 @@ const CommentItem = ({
                           source == 'twitter'
                             ? userData?.twitterHandler
                             : source == 'instagram'
-                            ? userData?.instagramHandler
-                            : userData?.username
+                              ? userData?.instagramHandler
+                              : userData?.username
                         }`
                       : ''}
 

@@ -12,7 +12,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import Header from '@/src/components/Header';
+import Header from '@/src/Components/Header';
 import { styles } from './styles';
 
 const PrivacyPolicy = ({ navigation }) => {

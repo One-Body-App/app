@@ -7,10 +7,10 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import { GeneralStyle } from '../../constants/GeneralStyle';
-import { ApiCall } from '@/src/services/api';
-import Button from '@/src/components/Button';
+import { ApiCall } from '@/src/Services/api';
+import Button from '@/src/Components/Button';
 import { useDispatch } from 'react-redux';
 import { styles } from './styles';
 import { useTheme } from '@react-navigation/native';
@@ -20,9 +20,9 @@ import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
 type Props = StackScreenProps<MainStackParamList, 'ForgotPassword'>;

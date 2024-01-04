@@ -1,9 +1,9 @@
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/src/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { StyledText } from '@/src/components/styled/Text';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { ApiCall } from '@/src/Services/api';
+import Button from '@/src/Components/Button';
+import MapBox, { MapSuggestion } from '@/src/Components/MapBox';
+import { StyledText } from '@/src/Components/styled/Text';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors, Spacing } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -33,7 +33,7 @@ import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 
 import { Asset } from 'react-native-image-picker';
-import PrayerItem from '@/src/components/listItems/PrayerItem';
+import PrayerItem from '@/src/Components/ListItems/PrayerItem';
 import { CloseCircle, Send } from 'iconsax-react-native';
 import {
   GiphyDialog,
@@ -42,8 +42,8 @@ import {
   GiphyMedia,
   GiphyMediaView,
 } from '@giphy/react-native-sdk';
-import CommentField from '@/src/components/comments/Field';
-import CommentItem from '@/src/components/comments/CommentItem';
+import CommentField from '@/src/Components/comments/Field';
+import CommentItem from '@/src/Components/comments/CommentItem';
 import { useToast } from 'react-native-toast-notifications';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;

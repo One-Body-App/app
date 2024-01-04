@@ -13,8 +13,8 @@ import {
   profileImagesize,
 } from './Profile';
 import { useDispatch, useSelector } from 'react-redux';
-import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { getBadges, setUserBadges } from '@/src/Redux/actions/AuthActions';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { MyProfileStackParamsList } from '@/src/navigator/types';
 import { Colors, Spacing, Typography } from '@/src/styles';
@@ -37,7 +37,7 @@ import FastImage from 'react-native-fast-image';
 
 import Toast from 'react-native-simple-toast';
 
-import { styles } from '../loginComponent/styles';
+import { styles } from '../LoginComponent/styles';
 import { StyledText } from '../styled/Text';
 import Animated, {
   Extrapolation,
@@ -53,7 +53,7 @@ import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, parseISO } from 'date-fns';
-import { OpenURLButton } from '@/src/services/constants';
+import { OpenURLButton } from '@/src/Services/constants';
 
 interface HeaderProps extends ProfileProps {}
 
@@ -639,8 +639,8 @@ const ProfileHeader = ({
             {profileData?.followerCount && profileData?.followerCount > 999
               ? `${(profileData.followerCount / 1000).toFixed(2)}k`
               : profileData?.followerCount && profileData?.followerCount > 999999
-              ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
-              : profileData?.followerCount ?? 0}{' '}
+                ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
+                : profileData?.followerCount ?? 0}{' '}
             <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
           </StyledText>
 
@@ -657,8 +657,8 @@ const ProfileHeader = ({
             {profileData?.following.length > 999
               ? `${(profileData.following.length / 1000).toFixed(2)}k`
               : profileData?.following.length > 999999
-              ? `${(profileData.following.length / 1000000).toFixed(2)}m`
-              : profileData?.following.length ?? 0}{' '}
+                ? `${(profileData.following.length / 1000000).toFixed(2)}m`
+                : profileData?.following.length ?? 0}{' '}
             <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
           </StyledText>
         </Animated.View>

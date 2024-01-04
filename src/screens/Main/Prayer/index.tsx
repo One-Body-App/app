@@ -4,9 +4,9 @@ import { View, TouchableOpacity, SafeAreaView } from 'react-native';
 import { styles } from './styles';
 import { SceneMap, TabView } from 'react-native-tab-view';
 
-import WallComponent from '@/src/components/prayerWallComponent';
-import PrayersComponent from '@/src/components/prayerWallMyPrayersComponent';
-import TestimoniesComponent from '@/src/components/prayerWallTestimoniesComponent';
+import WallComponent from '@/src/Components/prayerWallComponent';
+import PrayersComponent from '@/src/Components/prayerWallMyPrayersComponent';
+import TestimoniesComponent from '@/src/Components/prayerWallTestimoniesComponent';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AddSquare } from 'iconsax-react-native';
@@ -14,9 +14,9 @@ import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { useTheme } from '@react-navigation/native';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { fontSize } from '@/src/styles/typography';
-import PrayerWallSavedPrayersComponent from '@/src/components/prayerWallSavedPrayersComponent';
+import PrayerWallSavedPrayersComponent from '@/src/Components/prayerWallSavedPrayersComponent';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'index'>;
 

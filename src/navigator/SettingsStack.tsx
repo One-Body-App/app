@@ -5,12 +5,12 @@ import {
 import React from 'react';
 
 import { SettingsStackParamsList } from './types';
-import RemoveAccount from '../screens/main/RemoveAccount';
-import NotificationSettings from '../screens/main/notificationSettings';
-import InfluencerSettings from '../screens/main/influencerSettings';
-import Settings from '../screens/main/settings';
-import EmailChange from '../screens/main/emailChange';
-import PasswordChange from '../screens/main/passwordChange';
+import RemoveAccount from '../screens/Main/RemoveAccount';
+import NotificationSettings from '../screens/Main/notificationSettings';
+import InfluencerSettings from '../screens/Main/influencerSettings';
+import Settings from '../screens/Main/settings';
+import EmailChange from '../screens/Main/EmailChange';
+import PasswordChange from '../screens/Main/PasswordChange';
 import InfluencerStepOne from '../screens/influencerApplication/InfluencerStepOne';
 
 import InfluencerStepThree from '../screens/influencerApplication/InfluencerStepThree';

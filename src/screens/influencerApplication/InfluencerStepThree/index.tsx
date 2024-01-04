@@ -19,20 +19,20 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
+import Header from '@/src/Components/Header';
+import Button from '@/src/Components/Button';
 import { styles } from './styles';
 import { async } from 'validate.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { ApiCall } from '@/src/Services/api';
 import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import { StackScreenProps } from '@react-navigation/stack';
 
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest } from '@/utils/types';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';

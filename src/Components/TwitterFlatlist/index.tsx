@@ -4,13 +4,13 @@ import { styles } from './styles';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { useSelector } from 'react-redux';
-import { ApiCall } from '@/src/services/api';
-import SocialItem from '../listItems/SocialItem';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/src/Services/api';
+import SocialItem from '../ListItems/SocialItem';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { SceneRendererProps } from 'react-native-tab-view';
 import { User } from '@/utils/types';
 import Button from '../Button';
-import { OpenURLButton } from '@/src/services/constants';
+import { OpenURLButton } from '@/src/Services/constants';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { useTheme } from '@react-navigation/native';
 

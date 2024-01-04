@@ -7,11 +7,11 @@ import React from 'react';
 import { PrayerWallStackParamsList } from './types';
 import { Colors } from '../styles';
 import { useTheme } from '@react-navigation/native';
-import Prayer from '../screens/main/prayer';
+import Prayer from '../screens/Main/Prayer';
 
-import UserProfile from '../screens/main/userProfile';
-import NewPrayer from '../screens/main/prayer/NewPrayer';
-import SinglePrayer from '../screens/main/prayer/Single';
+import UserProfile from '../screens/Main/UserProfile';
+import NewPrayer from '../screens/Main/Prayer/NewPrayer';
+import SinglePrayer from '../screens/Main/Prayer/Single';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 

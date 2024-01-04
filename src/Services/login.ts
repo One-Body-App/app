@@ -1,10 +1,10 @@
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import { BASE_URL } from './constants';
 import axios from 'axios';
-import { loginSocialRequest } from '../redux/actions/AuthActions';
+import { loginSocialRequest } from '../Redux/actions/AuthActions';
 import { Dispatch } from '@reduxjs/toolkit';
-import { requestUserPermission } from './notification/notificationServices';
+import { requestUserPermission } from './Notification/notificationServices';
 
 export const processLogin = async (
   userCredentials: FirebaseAuthTypes.UserCredential,

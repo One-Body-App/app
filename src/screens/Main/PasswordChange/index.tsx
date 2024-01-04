@@ -3,28 +3,28 @@ import { Text, View, TouchableOpacity, TextInput as TextInputNative } from 'reac
 
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
+import Header from '@/src/Components/Header';
+import Button from '@/src/Components/Button';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import { validateFields } from '@/utils/validation/validate-fields';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 import { useToast } from 'react-native-toast-notifications';
 
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { button } from '@/src/styles/buttons';
 import { Colors } from '@/src/styles';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
+import { StyledText } from '@/src/Components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 
 type Props = StackScreenProps<RootStackParamList, 'PasswordChange'>;

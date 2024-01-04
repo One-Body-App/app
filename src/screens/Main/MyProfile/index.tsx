@@ -2,7 +2,7 @@ import React, { createRef, useEffect, useState } from 'react';
 import { View, TouchableOpacity, Share, Platform, FlatList } from 'react-native';
 
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   MainBottomStackParamsList,
@@ -17,7 +17,7 @@ import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { Setting2 } from 'iconsax-react-native';
 
-import Profile from '@/src/components/profile/Profile';
+import Profile from '@/src/Components/profile/Profile';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { useSelector } from 'react-redux';

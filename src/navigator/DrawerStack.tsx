@@ -5,12 +5,12 @@ import {
 import React from 'react';
 import Explore from '../screens/explore';
 
-import UserProfile from '../screens/main/userProfile';
+import UserProfile from '../screens/Main/userProfile';
 import { MainDrawerParamsList } from './types';
 import OnboardingStack from './OnboardingStack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
-import { RootState } from '../redux/reducers/rootReducer';
+import { RootState } from '../Redux/reducers/rootReducer';
 import {
   Animated,
   Platform,
@@ -31,9 +31,9 @@ import {
   getStateFromPath,
   useTheme,
 } from '@react-navigation/native';
-import Saved from '../screens/main/saved';
+import Saved from '../screens/Main/Saved/Index';
 import Feather from 'react-native-vector-icons/Feather';
-import Connections from '../screens/main/connections';
+import Connections from '../screens/Main/connections';
 import SettingsStack from './SettingsStack';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';

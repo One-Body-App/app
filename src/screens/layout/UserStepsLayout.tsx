@@ -1,4 +1,4 @@
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { ReactElement, useEffect, useState } from 'react';

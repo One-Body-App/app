@@ -19,16 +19,16 @@ import DropDown from 'react-native-paper-dropdown';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
+import Header from '@/src/Components/Header';
+import Button from '@/src/Components/Button';
 import { styles } from './styles';
 import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 // import ZendeskChat from 'react-native-zendesk-chat';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 
-import { setFaqs, setLoader } from '@/src/redux/actions/GeneralActions';
+import { setFaqs, setLoader } from '@/src/Redux/actions/GeneralActions';
 
 const Help = ({ navigation }) => {
   const [sections, setSections] = useState([]);

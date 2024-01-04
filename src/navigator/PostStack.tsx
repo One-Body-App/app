@@ -2,7 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import Explore from '../screens/explore';
 
-import UserProfile from '../screens/main/userProfile';
+import UserProfile from '../screens/Main/userProfile';
 import { ExploreStackParamsList } from './types';
 import { useTheme } from '@react-navigation/native';
 import { Colors } from '../styles';

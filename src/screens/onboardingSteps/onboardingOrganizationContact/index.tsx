@@ -1,20 +1,20 @@
 import React, { useRef, useState } from 'react';
 import { KeyboardAvoidingView, TextInput, View } from 'react-native';
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
+import MapBox, { MapSuggestion } from '@/src/Components/MapBox';
 import { ArrowDown2 } from 'iconsax-react-native';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationContact'>;
 

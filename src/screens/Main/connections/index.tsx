@@ -13,23 +13,23 @@ import {
 
 import Modal from 'react-native-modal';
 
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/src/services/api';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { getuserAll } from '@/src/redux/actions/UserAction';
+import { ApiCall } from '@/src/Services/api';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
+import { getuserAll } from '@/src/Redux/actions/UserAction';
 
 import ImageModal from '@dreamwalk-os/react-native-image-modal';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { Interest, User } from '@/utils/types';
 
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import { StyledTextInput } from '@/src/Components/styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -416,8 +416,8 @@ const Connected = ({ navigation }: Props) => {
                           {item.profile.whatIDo
                             ? item.profile.whatIDo?.name
                             : item.profile.typeOfOrganization
-                            ? item.profile.typeOfOrganization?.name
-                            : ''}
+                              ? item.profile.typeOfOrganization?.name
+                              : ''}
                         </StyledText>
                       ) : null}
                     </View>

@@ -1,7 +1,7 @@
-import { logout } from '@/src/redux/actions/AuthActions';
-import { NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
-import Button from '@/src/components/Button';
-import { StyledText } from '@/src/components/styled/Text';
+import { logout } from '@/src/Redux/actions/AuthActions';
+import { NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
+import Button from '@/src/Components/Button';
+import { StyledText } from '@/src/Components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { profileImageList } from '@/src/styles/items';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';

@@ -7,16 +7,16 @@ import { GeneralStyle } from '../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Button from '../../components/Button';
+import Button from '../../Components/Button';
 import { TextInput } from 'react-native-paper';
 import { validateFields } from '@/utils/validation/validate-fields';
 import LinearGradient from 'react-native-linear-gradient';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import validator from '@/utils/validation/validator';
 import { useDispatch } from 'react-redux';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
 import Toast from 'react-native-simple-toast';
-import GoBackIcon from '@/src/components/GoBackIcon';
+import GoBackIcon from '@/src/Components/GoBackIcon';
 import { TextInput } from 'react-native-gesture-handler';
 
 const ConfirmEmail = ({ navigation, route }) => {

@@ -18,16 +18,16 @@ import { styles } from './styles';
 
 import { useSelector } from 'react-redux';
 
-import { ApiCall } from '@/src/services/api';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/src/Services/api';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
-import SocialItem from '@/src/components/listItems/SocialItem';
-import ArticleItem from '@/src/components/listItems/ArticleItem';
-import ActivityIndicatorContent from '@/src/components/ActivityIndicatorContent';
+import SocialItem from '@/src/Components/ListItems/SocialItem';
+import ArticleItem from '@/src/Components/ListItems/ArticleItem';
+import ActivityIndicatorContent from '@/src/Components/ActivityIndicatorContent';
 import { ArticleType } from '@/utils/types';
-import OptionsModal from '@/src/components/listItems/OptionsModal';
-import { styles as globalStyle } from '@/src/components/listItems/style';
+import OptionsModal from '@/src/Components/ListItems/OptionsModal';
+import { styles as globalStyle } from '@/src/Components/ListItems/style';
 import { useScrollToTop } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -40,7 +40,7 @@ import {
 } from '@/src/navigator/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { StyledText } from '@/src/components/styled/Text';
+import { StyledText } from '@/src/Components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 import { ArrowDown, ArrowDown2, Notification } from 'iconsax-react-native';
@@ -48,7 +48,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 import { fontSize, poppins } from '@/src/styles/typography';
 import { borderWidth } from '@/src/styles/outlines';
 import { GiphyDialog } from '@giphy/react-native-sdk';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { setLoader } from '@/src/Redux/actions/GeneralActions';
 
 enum FeedTypes {
   Connected = 'connected',

@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
-import LoginComponent from '@/src/components/loginComponent';
+import LoginComponent from '@/src/Components/LoginComponent';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import GradientHeader from '@/src/components/GradientHeader';
+import GradientHeader from '@/src/Components/GradientHeader';
 import { appColor } from '../../constants';
 import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
-import GoBackIcon from '@/src/components/GoBackIcon';
+import GoBackIcon from '@/src/Components/GoBackIcon';
 import { RootStackParamList } from '@/src/_Navigation/types';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { setLoginVerificationBackPage } from '@/src/redux/actions/GeneralActions';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { setLoginVerificationBackPage } from '@/src/Redux/actions/GeneralActions';
 import auth from '@react-native-firebase/auth';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import NewPassword from '../newPassword/NewPassword';

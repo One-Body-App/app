@@ -1,4 +1,4 @@
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/Services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { ArticleType, PostType } from '@/utils/types';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
@@ -32,7 +32,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { borderRadius } from '@/src/styles/outlines';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,

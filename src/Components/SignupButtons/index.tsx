@@ -8,13 +8,13 @@ import Facebook from '@/assets/svg/Facebook.svg';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { styles } from './styles';
 
-import { getTwitterLoginToken, processLogin } from '@/src/services/login';
+import { getTwitterLoginToken, processLogin } from '@/src/Services/login';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
-import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/services/constants';
+import { setAccountType, setLoader } from '@/src/Redux/actions/GeneralActions';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
+import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/Services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';

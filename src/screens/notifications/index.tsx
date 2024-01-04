@@ -10,16 +10,16 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 
 import styles from './styles';
 
-import Button from '@/src/components/Button';
+import Button from '@/src/Components/Button';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/src/Services/api';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledText } from '@/src/components/styled/Text';
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import { StyledText } from '@/src/Components/styled/Text';
+import { RootState } from '@/src/Redux/reducers/rootReducer';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { NotificationType } from '@/utils/types';
 import { NotificationBing } from 'iconsax-react-native';
