@@ -41,7 +41,7 @@ import MainTabStack from './BottomTabStack';
 import DrawerContent from './DrawerContent';
 import PrayerWallStack from './PrayerWallStack';
 import { HandsPraying } from 'phosphor-react-native';
-import Saved from '../screens/main/saved/';
+import Saved from '../screens/main/saved';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 type HeaderProps = Omit<TextProps, 'style'> & {
