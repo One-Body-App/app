@@ -730,14 +730,12 @@ const BaseItem = ({
               </View>
 
               <View>
-                {postData.type == PostType.prayer ? (
-                  <View style={{ flexDirection: 'row' }}>
-                    <Message2 color={colors.text} />
-                    <StyledText style={{ marginLeft: spacing.x10 }}>
-                      {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                    </StyledText>
-                  </View>
-                ) : null}
+                <View style={{ flexDirection: 'row' }}>
+                  <Message2 color={colors.text} />
+                  <StyledText style={{ marginLeft: spacing.x10 }}>
+                    {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                  </StyledText>
+                </View>
               </View>
             </View>
             {postData.type == PostType.rss ? (

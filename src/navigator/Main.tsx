@@ -80,14 +80,13 @@ import {
   type GiphyDialogConfig,
   type GiphyMedia,
   GiphyVideoManager,
-  GiphyDialogMediaSelectEventHandler,
-  GiphyDialogEvent,
   GiphyMediaView,
   GiphySDK,
 } from '@giphy/react-native-sdk';
 import { StyledText } from '../components/styled/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
+import SinglePost from '../screens/post/Single';
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
@@ -333,6 +332,8 @@ const Main = () => {
                 component={DrawerNav}
                 options={{ headerShown: false }}
               />
+
+              <MainStack.Screen name="SinglePost" component={SinglePost} />
 
               <MainStack.Screen
                 name="Post"

@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 
-import { setLoader } from '@/redux//actions/GeneralActions';
+import { setLoader } from '@/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { User } from '@/utils/types';

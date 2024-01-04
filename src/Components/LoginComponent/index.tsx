@@ -509,6 +509,7 @@ const LoginComponent: FC<Props> = ({
             navigation.goBack();
           }
         } else {
+          console.log('asdfjkjasdlkfj111');
           await processLogin(userCredentials, setNewUserCredentials, setToken);
         }
       }

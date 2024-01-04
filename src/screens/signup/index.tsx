@@ -14,7 +14,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { TextInput } from 'react-native';
 import { validateFields } from '@/utils/validation/validate-fields';
-import { loginSocialRequest, signUp } from '@/redux//actions/AuthActions';
+import { loginSocialRequest, signUp } from '@/src/redux/actions/AuthActions';
 import validator from '@/utils/validation/validator';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 import { useDispatch, useSelector } from 'react-redux';

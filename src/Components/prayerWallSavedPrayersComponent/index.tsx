@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { PostType, PrayerPost, PrayerWallCategory, SavedPost } from '@/utils/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';

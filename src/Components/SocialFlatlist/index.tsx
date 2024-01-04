@@ -3,8 +3,8 @@ import { FlatList, Image, RefreshControl, TouchableOpacity, View } from 'react-n
 import { styles } from './styles';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/services/api';
-import { SetSocial } from '@/redux/actions/SocialActions';
+import { ApiCall } from '@/src/services/api';
+import { SetSocial } from '@/src/redux/actions/SocialActions';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import SocialItem from '../listItems/SocialItem';

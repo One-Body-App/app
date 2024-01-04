@@ -40,9 +40,19 @@ import { ArticleType, PostType, SavedPost } from '@/utils/types';
 import { PopupItem } from '@/src/components/listItems/OptionsModal';
 import { isObject } from 'lodash';
 import Button from '@/src/components/Button';
-import { SettingsStackParamsList } from '@/src/navigator/types';
+import {
+  MainDrawerParamsList,
+  MainStackParamList,
+  SettingsStackParamsList,
+} from '@/src/navigator/types';
 
-type Props = DrawerScreenProps<SettingsStackParamsList, 'Saved'>;
+type Props = CompositeScreenProps<
+  StackScreenProps<SettingsStackParamsList, 'Saved'>,
+  CompositeScreenProps<
+    StackScreenProps<MainStackParamList, 'ConfirmLogin'>,
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>
+  >
+>;
 
 enum ContentType {
   RSS = 'RSS',
@@ -292,13 +302,27 @@ const Saved = ({ navigation }: Props) => {
 
             if (postData) {
               return (
-                <SocialItem
-                  item={postData}
-                  index={index}
-                  onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                  removePost={removePost}
-                  fromSavedPosts
-                />
+                <TouchableOpacity
+                  onPress={() => {
+                    if (postData.postId) {
+                      navigation.navigate('SinglePost', {
+                        postId: postData.postId,
+                      });
+
+                      // navigation.navigate( 'Single', {
+                      //   postId: postData.id,
+                      // });
+                    }
+                  }}
+                >
+                  <SocialItem
+                    item={postData}
+                    index={index}
+                    onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                    removePost={removePost}
+                    fromSavedPosts
+                  />
+                </TouchableOpacity>
               );
             }
           } else if (user && item.created && item.image) {

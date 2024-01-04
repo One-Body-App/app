@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const getToken = (token) =>
+export const getToken = (token: string) =>
   axios
     .get(`https://one-body.herokuapp.com/api/chat/chat-token`, {
       headers: {

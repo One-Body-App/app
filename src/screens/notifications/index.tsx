@@ -12,7 +12,7 @@ import styles from './styles';
 
 import Button from '@/src/components/Button';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { Colors, Typography } from '@/src/styles';

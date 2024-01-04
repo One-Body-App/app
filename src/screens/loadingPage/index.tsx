@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Image, View, StatusBar, Text, ImageBackground, Platform } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { SetRecentBlog, SetSocial, SetTodayNews } from '@/redux/actions/SocialActions';
-import { ApiCall } from '@/services/api';
+import { SetRecentBlog, SetSocial, SetTodayNews } from '@/src/redux/actions/SocialActions';
+import { ApiCall } from '@/src/services/api';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../Navigation/types';
 import { RootState } from '../redux/reducers/rootReducer';

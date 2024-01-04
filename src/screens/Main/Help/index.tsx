@@ -26,9 +26,9 @@ import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 // import ZendeskChat from 'react-native-zendesk-chat';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 
-import { setFaqs, setLoader } from '@/redux//actions/GeneralActions';
+import { setFaqs, setLoader } from '@/src/redux/actions/GeneralActions';
 
 const Help = ({ navigation }) => {
   const [sections, setSections] = useState([]);

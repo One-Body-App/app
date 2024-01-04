@@ -17,7 +17,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 import FastImage from 'react-native-fast-image';
 import AnswerPrayers from '../AnswerPrayers';
-import { getTestimonies } from '@/redux/actions/PrayerAction';
+import { getTestimonies } from '@/src/redux/actions/PrayerAction';
 import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
 import Love from '@/assets/svg/redlove.svg';
 import { NavigationProp, useNavigation } from '@react-navigation/native';

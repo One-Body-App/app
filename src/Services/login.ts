@@ -4,6 +4,7 @@ import { BASE_URL } from './constants';
 import axios from 'axios';
 import { loginSocialRequest } from '../redux/actions/AuthActions';
 import { Dispatch } from '@reduxjs/toolkit';
+import { requestUserPermission } from './notification/notificationServices';
 
 export const processLogin = async (
   userCredentials: FirebaseAuthTypes.UserCredential,
@@ -37,6 +38,10 @@ export const processLogin = async (
               userCredentials.additionalUserInfo?.profile?.email
             );
           }
+        }
+
+        if (!userProfileResult.response.FCM) {
+          await requestUserPermission(token, userProfileResult.response.pushNotificationsEnabled);
         }
         return userProfileResult.response;
       }

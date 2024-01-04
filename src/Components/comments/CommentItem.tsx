@@ -3,7 +3,16 @@ import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
-import { StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleProp,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { StyledText } from '../styled/Text';
 import { fontSize } from '@/src/styles/typography';
@@ -12,11 +21,12 @@ import { useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import OptionsModal from '../listItems/OptionsModal';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { StyledTextInput } from '../styled/TextInput';
 import { Send } from 'iconsax-react-native';
+import CommentField from './Field';
 
 interface BaseItemProps {
   style?: StyleProp<ViewStyle>;
@@ -54,6 +64,7 @@ interface BaseItemProps {
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
   editCommentAction?: (postId: string, content: string) => void;
+  setEditingComment: (isEditingComment: boolean) => void;
 }
 
 const CommentItem = ({
@@ -71,15 +82,24 @@ const CommentItem = ({
   removePost,
   editPost,
   editCommentAction,
+  setEditingComment,
 }: BaseItemProps) => {
   const [showOptions, setShowOptions] = useState(false);
   const { colors } = useTheme();
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
-  const [commentContent, setCommentContent] = useState<string>(postData.content ?? '');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [mediaGif, setGif] = useState<GiphyMedia | null>(postData.gif ?? null);
 
-  const editComment = () => {
-    setIsEditingComment(true);
+  const editComment = (status: boolean) => {
+    setIsEditingComment(status);
+    setEditingComment(status);
   };
+
+  useEffect(() => {
+    if (postData.gif) {
+      setGif(postData.gif);
+    }
+  }, [postData]);
 
   return (
     <View
@@ -233,44 +253,53 @@ const CommentItem = ({
                   </StyledText>
                 </View>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowOptions(true);
-                }}
-              >
-                <FontAwesomeIcon icon={faEllipsisVertical} color={colors.text} />
-              </TouchableOpacity>
+              {!isEditingComment ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowOptions(true);
+                  }}
+                >
+                  <FontAwesomeIcon icon={faEllipsisVertical} color={colors.text} />
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : null}
           {isEditingComment ? (
-            <View>
-              <StyledTextInput
-                placeholder="Comment"
-                value={commentContent}
-                onChangeText={(value) => {
-                  setCommentContent(value);
-                }}
-                inputStyle={{ marginVertical: spacing.x10 }}
-                rightIcon={
-                  <View style={{ justifyContent: 'center' }}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setIsEditingComment(false);
-                        if (editCommentAction && postData.id) {
-                          editCommentAction(postData.id, commentContent);
-                        }
-                      }}
-                    >
-                      <Send variant="Bold" color={Colors.primarySapphire.brand} />
-                    </TouchableOpacity>
-                  </View>
-                }
-              />
+            <View
+              style={{
+                height: 200,
+              }}
+            >
+              {isLoading ? (
+                <View style={{ justifyContent: 'center' }}>
+                  <ActivityIndicator animating={isLoading} size="small" color={colors.text} />
+                </View>
+              ) : (
+                <CommentField
+                  mediaGif={mediaGif}
+                  setGif={setGif}
+                  isEditingComment={isEditingComment}
+                  setEditingComment={editComment}
+                  text={postData.content}
+                  publishComment={async (value: string) => {
+                    if (editCommentAction && postData.id) {
+                      setIsLoading(true);
+                      await editCommentAction(postData.id, value);
+                      editComment(false);
+                      setIsLoading(false);
+                    }
+                  }}
+                />
+              )}
             </View>
           ) : (
-            <StyledText style={{ marginVertical: spacing.x10 }}>{postData.content}</StyledText>
+            <>
+              {postData.content ? (
+                <StyledText style={{ marginVertical: spacing.x10 }}>{postData.content}</StyledText>
+              ) : null}
+            </>
           )}
-          {postData.gif && (
+          {!isEditingComment && postData.gif && (
             <View
               style={{
                 padding: 10,
@@ -302,7 +331,13 @@ const CommentItem = ({
         removePost={removePost}
         hideShare
         hideSavePost
-        editPost={editPost ?? editComment}
+        editPost={
+          editPost
+            ? editPost
+            : () => {
+                editComment(true);
+              }
+        }
       />
     </View>
   );

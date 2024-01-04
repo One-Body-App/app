@@ -26,6 +26,7 @@ import axios from 'axios';
 const IS_STAGING = false;
 
 export const BASE_URL = PROD_BASE_URL;
+
 // export const BASE_URL = IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 
 export const PRIVACY_POLICY_URL = _PRIVACY_POLICY_URL;

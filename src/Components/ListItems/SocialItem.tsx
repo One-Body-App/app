@@ -246,6 +246,8 @@ const SocialItem = ({
         location: item.location,
         locationName: item.locationName,
         edited: item.edited,
+        comments: item.comments,
+        commentNumber: item.commentNumber,
       }}
       parentRefreshContent={parentRefreshContent}
       created={item?.created}
@@ -269,7 +271,7 @@ const SocialItem = ({
       }}
       style={socialPostviewStyle}
     >
-      <View style={{ flexGrow: 1, flex: 1 }}>
+      <View style={{ flexGrow: 1 }}>
         {item?.content && (
           <View style={{ flexGrow: 1 }}>
             <StyledText

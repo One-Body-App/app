@@ -426,21 +426,32 @@ const Home = ({ navigation }: Props) => {
               scrollEnabled={isScrollEnable}
               renderItem={({ item, index }) => {
                 if (item.type == 'social') {
+                  console.log(item.commentNumber);
                   return (
-                    <SocialItem
-                      index={index}
-                      key={`social_${item.id}_${index}`}
-                      onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                      item={item}
-                      visible={
-                        visibleItemsIndex && visibleItemsIndex.length > 0
-                          ? visibleItemsIndex?.indexOf(index) > -1
-                          : false
-                      }
-                      socialPostviewStyle={{ backgroundColor: colors.card }}
-                      removePost={removePost}
-                      editPost={editPost}
-                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (item.postId) {
+                          navigation.navigate('SinglePost', {
+                            postId: item.postId,
+                          });
+                        }
+                      }}
+                    >
+                      <SocialItem
+                        index={index}
+                        key={`social_${item.id}_${index}`}
+                        onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                        item={item}
+                        visible={
+                          visibleItemsIndex && visibleItemsIndex.length > 0
+                            ? visibleItemsIndex?.indexOf(index) > -1
+                            : false
+                        }
+                        socialPostviewStyle={{ backgroundColor: colors.card }}
+                        removePost={removePost}
+                        editPost={editPost}
+                      />
+                    </TouchableOpacity>
                   );
                 }
 

@@ -8,9 +8,9 @@ import Button from '@/src/components/Button';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import { validateFields } from '@/utils/validation/validate-fields';
-import { setLoader } from '@/redux//actions/GeneralActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 import { useToast } from 'react-native-toast-notifications';
 

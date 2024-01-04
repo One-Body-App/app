@@ -23,15 +23,15 @@ import {
 } from 'react-native-image-picker';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { profileUpdate } from '@/redux/actions/AuthActions';
+import { profileUpdate } from '@/src/redux/actions/AuthActions';
 import ImagePickerModal from '@/src/components/ImagePickerModal';
-import { setLoader } from '@/redux/actions/GeneralActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import FastImage from 'react-native-fast-image';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Blog from '@/assets/svg/Blog.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import ImagePicker from 'react-native-image-crop-picker';
 import GradientButton from '@/src/components/GradientButton';
 import { RootState } from '@/src/redux/reducers/rootReducer';

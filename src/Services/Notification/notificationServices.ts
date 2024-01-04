@@ -1,5 +1,5 @@
 import messaging from '@react-native-firebase/messaging';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 
 export const requestUserPermission = async (token: string, notificationStatus: boolean) => {
   const authStatus = await messaging().requestPermission();
@@ -8,25 +8,22 @@ export const requestUserPermission = async (token: string, notificationStatus: b
     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
   if (enabled && notificationStatus) {
-    console.log('Authorization status:', authStatus);
     getFcmToken(token);
   }
 };
 export const getFcmToken = async (token: string) => {
   try {
     // if (fcmToken == null) {
-    await messaging().registerDeviceForRemoteMessages();
     const fcmtoken = await messaging().getToken();
     sendFcm(token, fcmtoken);
     console.log('fcmToken is genrated', fcmtoken);
 
     // }
-  } catch (error) {
-    console.log('error in featchin fcmToken', error?.message);
-    alert(error?.message);
+  } catch (error: any) {
+    console.log('error in fetching fcmToken', error?.message);
   }
 };
-const sendFcm = async (token, fcmtoken) => {
+const sendFcm = async (token: string, fcmtoken: string) => {
   try {
     const res = await ApiCall({
       route: 'user/set-fcm',
@@ -34,12 +31,12 @@ const sendFcm = async (token, fcmtoken) => {
       params: { FCM: fcmtoken },
       verb: 'patch',
     });
-    if (res?.status == '200') {
+    if (res?.status == 200) {
       console.log('fcm res == 200 ... ', res);
     } else {
       console.log('error', res);
     }
-  } catch (e) {
+  } catch (e: any) {
     console.log('saga error -- ', e.toString());
   }
 };

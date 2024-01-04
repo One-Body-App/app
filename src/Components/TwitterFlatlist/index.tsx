@@ -4,7 +4,7 @@ import { styles } from './styles';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { useSelector } from 'react-redux';
-import { ApiCall } from '@/services/api';
+import { ApiCall } from '@/src/services/api';
 import SocialItem from '../listItems/SocialItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SceneRendererProps } from 'react-native-tab-view';

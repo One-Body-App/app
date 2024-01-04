@@ -287,6 +287,9 @@ export type MainStackParamList = {
   Post?: {
     postId?: string;
   };
+  SinglePost: {
+    postId: string;
+  };
   NewPassword: undefined;
   Intro: undefined;
   AccountType: undefined;
