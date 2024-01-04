@@ -31,7 +31,7 @@ import Button from '../Button';
 
 import { styles } from './styles';
 import { appColor } from '../../constants';
-import { requestUserPermission } from '../../services/notification/notificationServices';
+import { requestUserPermission } from '@/services/notification/notificationServices';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import GradientButton from '../GradientButton';
 import {
@@ -43,8 +43,8 @@ import {
 
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 
-import { getTwitterLoginToken, processLogin } from '@/src/services/login';
-import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/src/services/constants';
+import { getTwitterLoginToken, processLogin } from '@/services/login';
+import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/services/constants';
 import { useToast } from 'react-native-toast-notifications';
 import G from '@/assets/svg/G.svg';
 import { CompositeScreenProps, useNavigation, useTheme } from '@react-navigation/native';

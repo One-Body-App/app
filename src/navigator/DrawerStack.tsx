@@ -31,9 +31,9 @@ import {
   getStateFromPath,
   useTheme,
 } from '@react-navigation/native';
-import Saved from '../screens/main/saved';
+
 import Feather from 'react-native-vector-icons/Feather';
-import Connections from '../screens/main/connections';
+import Connections from '@/screens/main/connections';
 import SettingsStack from './SettingsStack';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
@@ -41,6 +41,7 @@ import MainTabStack from './BottomTabStack';
 import DrawerContent from './DrawerContent';
 import PrayerWallStack from './PrayerWallStack';
 import { HandsPraying } from 'phosphor-react-native';
+import Saved from '../screens/main/saved';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 type HeaderProps = Omit<TextProps, 'style'> & {

@@ -2,7 +2,7 @@ import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import React, { ReactNode, useState } from 'react';
 import { Platform, Share, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { styles } from './style';
-import { NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
+import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import FastImage from 'react-native-fast-image';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
@@ -21,7 +21,7 @@ import { useTheme } from '@react-navigation/native';
 import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { getuserGet } from '@/src/redux/actions/UserAction';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {

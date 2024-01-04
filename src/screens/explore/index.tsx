@@ -45,7 +45,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { isNumber } from 'lodash';
-import { NO_PROFILE_IMAGE } from '@/src/services/constants';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 type Props = CompositeScreenProps<

@@ -1,5 +1,5 @@
 import { logout } from '@/src/redux/actions/AuthActions';
-import { NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
+import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import Button from '@/src/components/Button';
 import { StyledText } from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';

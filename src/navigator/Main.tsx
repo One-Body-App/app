@@ -48,7 +48,7 @@ import {
 import messaging from '@react-native-firebase/messaging';
 
 import Connections from '../screens/main/connections';
-import Saved from '../screens/main/saved';
+
 import Intro from '../screens/intro';
 
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -172,7 +172,6 @@ const Main = () => {
     if (user && token) {
       dispatch(setLoginData({ token }));
     }
-    console.log(user, token);
 
     if (token) {
       dispatch(

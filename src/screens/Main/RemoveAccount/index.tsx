@@ -31,7 +31,7 @@ import { button } from '@/src/styles/buttons';
 
 import auth from '@react-native-firebase/auth';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { logout } from '@/src/redux/actions/AuthActions';
 import { useToast } from 'react-native-toast-notifications';

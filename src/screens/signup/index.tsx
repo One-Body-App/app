@@ -21,7 +21,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { styles } from './styles';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
-import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/services/constants';
+import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useTheme } from '@react-navigation/native';
 import Recaptcha, { RecaptchaHandles } from 'react-native-recaptcha-that-works';
@@ -35,12 +35,12 @@ import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { StyledText } from '@/src/components/styled/Text';
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
-import { requestUserPermission } from '@/src/services/notification/notificationServices';
+import { requestUserPermission } from '@/services/notification/notificationServices';
 import axios from 'axios';
-import { processLogin } from '@/src/services/login';
+import { processLogin } from '@/services/login';
 import SignupButtons from '@/src/components/SignupButtons';
 import Button from '@/src/components/Button';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 
@@ -111,7 +111,6 @@ const SignupForm = ({ navigation, route }: Props) => {
     if (!emailError && !passwordError && !nameError && !cPasswordError && !usernameError) {
       if (password == cPassword) {
         const { email, password, name, cPassword, username } = state;
-
         const data = {
           email,
           name,
@@ -119,20 +118,17 @@ const SignupForm = ({ navigation, route }: Props) => {
           userId: '',
           username,
         };
-
         const userValidation = await ApiCall({
           route: 'user/validateUserInfo',
           params: data,
           verb: 'post',
         });
-
         if (userValidation.status == 200) {
           recaptcha.current?.open();
         } else {
           setIsloading(false);
           setError(userValidation.response.message);
         }
-
         //
       } else {
         setError('Both passwords must match. Please make sure they are identical.');
@@ -208,7 +204,7 @@ const SignupForm = ({ navigation, route }: Props) => {
       if (loading) {
         setIsloading(false);
       }
-      console.log('Register Error', authState?.error);
+
       if (authState?.error && authState?.error.length > 0 && authState?.error[0] != error) {
         setError(authState?.error ? authState?.error[0] : '');
       }
@@ -319,7 +315,7 @@ const SignupForm = ({ navigation, route }: Props) => {
       getTwitterAuthToken();
     }
   }, [route.params]);
-  console.log(state.password, 'state.password');
+
   const headerHeight = useHeaderHeight();
 
   // const insets = useSafeAreaInsets();
@@ -536,7 +532,6 @@ const SignupForm = ({ navigation, route }: Props) => {
             }
             wrapperStyle={{ marginTop: 15 }}
             onFocus={() => {
-              console.log('focussssss');
               setState({ ...state, passwordError: '' });
             }}
             onBlur={() =>
@@ -546,11 +541,9 @@ const SignupForm = ({ navigation, route }: Props) => {
             }
             onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
             onChangeText={(password) => {
-              console.log(password, 'passwordpolo');
               changeHandler('password', password);
             }}
             onEndEditing={(event) => {
-              console.log(event.nativeEvent.text.length, 'event.nativeEvent.text.length ');
               if (event.nativeEvent.text.length === 0) {
                 changeHandler('password', '');
               }

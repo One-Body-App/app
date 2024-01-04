@@ -33,14 +33,14 @@ import {
   codeChallenge,
   getInstagramAuthToken,
   getTwitterAuthToken,
-} from '@/src/services/constants';
+} from '@/services/constants';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
-import { getTwitterLoginToken } from '@/src/services/login';
+import { getTwitterLoginToken } from '@/services/login';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import Facebook from '@/assets/svg/Facebook.svg';
-import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/src/services/constants';
+import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/services/constants';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { useDispatch, useSelector } from 'react-redux';

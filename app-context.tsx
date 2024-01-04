@@ -9,9 +9,9 @@ import React, {
   Dispatch,
 } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getChats, setAllSms } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
-import { appListner } from '@/src/services/notification/notificationServices';
+import { getChats, setAllSms } from '@/redux/actions/GeneralActions';
+import { ApiCall } from '@/services/api';
+import { appListner } from '@/services/notification/notificationServices';
 
 type initialState = {
   channels: string[];

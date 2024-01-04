@@ -53,7 +53,7 @@ import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, parseISO } from 'date-fns';
-import { OpenURLButton } from '@/src/services/constants';
+import { OpenURLButton } from '@/services/constants';
 
 interface HeaderProps extends ProfileProps {}
 

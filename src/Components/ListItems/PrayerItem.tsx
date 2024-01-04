@@ -19,7 +19,7 @@ import {
   useTheme,
 } from '@react-navigation/native';
 import { styles } from './style';
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import FastImage from 'react-native-fast-image';
 
 import Video from 'react-native-video';
@@ -48,7 +48,11 @@ import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionVie
 import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 
+<<<<<<< HEAD
+import { ApiCall } from '@/services/api';
+=======
 import { ApiCall } from '@/src/services/api';
+>>>>>>> main
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { isArray } from 'lodash';
 import Anonymous from '@/assets/svg/anonymous.svg';

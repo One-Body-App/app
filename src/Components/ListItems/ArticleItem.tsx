@@ -1,4 +1,4 @@
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { ArticleType, PostType } from '@/utils/types';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';

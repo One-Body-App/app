@@ -18,7 +18,7 @@ import { styles } from './styles';
 
 import { useSelector } from 'react-redux';
 
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 

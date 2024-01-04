@@ -28,7 +28,7 @@ import {
   codeChallenge,
   getInstagramAuthToken,
   getTwitterAuthToken,
-} from '@/src/services/constants';
+} from '@/services/constants';
 import axios from 'axios';
 import { getProfile, removeSocialAccountRequest } from '@/src/redux/actions/AuthActions';
 import { SettingsStackParamsList } from '@/src/navigator/types';

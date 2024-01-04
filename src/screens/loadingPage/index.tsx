@@ -5,7 +5,7 @@ import { SetRecentBlog, SetSocial, SetTodayNews } from '@/src/redux/actions/Soci
 import { ApiCall } from '@/src/services/api';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../Navigation/types';
-import { RootState } from '../Redux/reducers/rootReducer';
+import { RootState } from '../redux/reducers/rootReducer';
 import auth from '@react-native-firebase/auth';
 import GeneralStatusBar from '../Components/GeneralStatusBar';
 

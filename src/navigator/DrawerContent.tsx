@@ -7,7 +7,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../redux/reducers/rootReducer';
-import { NO_PROFILE_IMAGE, OpenURLButton } from '../services/constants';
+import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { StyledText } from '../components/styled/Text';
 import Button from '../components/Button';
 import FastImage from 'react-native-fast-image';

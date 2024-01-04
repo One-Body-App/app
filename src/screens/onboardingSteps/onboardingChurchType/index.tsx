@@ -8,7 +8,7 @@ import { Colors, Typography } from '@/src/styles';
 import { AccountType, ChurchType } from '@/utils/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 
 import { StyledSelect } from '@/src/components/styled/Select';
 import { StackScreenProps } from '@react-navigation/stack';

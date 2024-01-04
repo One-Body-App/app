@@ -1,4 +1,4 @@
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/src/services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { User, PostType } from '@/utils/types';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
@@ -35,7 +35,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 import Toast from 'react-native-simple-toast';
 

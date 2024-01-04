@@ -36,8 +36,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Feather from 'react-native-vector-icons/Feather';
 import Icon from 'react-native-vector-icons/AntDesign';
 import FastImage from 'react-native-fast-image';
-import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/src/services/constants';
-import { ApiCall } from '@/src/services/api';
+import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
+import { ApiCall } from '@/services/api';
 import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
 

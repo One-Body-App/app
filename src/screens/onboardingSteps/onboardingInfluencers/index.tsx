@@ -11,7 +11,7 @@ import { spacing } from '@/src/styles/spacing';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { useToast } from 'react-native-toast-notifications';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { StyledTextInput } from '@/src/components/styled/TextInput';

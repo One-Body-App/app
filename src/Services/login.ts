@@ -1,5 +1,5 @@
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { BASE_URL } from './constants';
 import axios from 'axios';
 import { loginSocialRequest } from '../redux/actions/AuthActions';

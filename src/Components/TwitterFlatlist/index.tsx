@@ -10,7 +10,7 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SceneRendererProps } from 'react-native-tab-view';
 import { User } from '@/utils/types';
 import Button from '../Button';
-import { OpenURLButton } from '@/src/services/constants';
+import { OpenURLButton } from '@/services/constants';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { useTheme } from '@react-navigation/native';
 

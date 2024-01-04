@@ -31,7 +31,7 @@
   [[FBSDKApplicationDelegate sharedInstance] application:application
                          didFinishLaunchingWithOptions:launchOptions];
 
-  
+
   BOOL success = [super application:application didFinishLaunchingWithOptions:launchOptions];
     // return [super application:application didFinishLaunchingWithOptions:launchOptions];
 
@@ -40,13 +40,13 @@
       //This is where we will put the logic to get access to rootview
       UIView *rootView = self.window.rootViewController.view;
 
-      
-   
-   
+
+
+
       Dynamic *t = [Dynamic new];
       UIView *animationUIView = (UIView *)[t createAnimationViewWithRootView:rootView lottieName:@"logoAnimation"]; // change lottieName to your lottie files name
-  
-      
+
+
             if (@available(iOS 12.0, *)) {
                     switch (UIScreen.mainScreen.traitCollection.userInterfaceStyle) {
                         case UIUserInterfaceStyleDark:
@@ -70,9 +70,9 @@
       // If you want the animation layout to be forced to remove when hide is called, use this code
       [RNSplashScreen setAnimationFinished:true];
     }
-   
+
     return success;
-  
+
 
 }
 
@@ -88,6 +88,10 @@
 }
 
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
+{
+  return [self getBundleURL];
+}
+- (NSURL *)getBundleURL
 {
 #if DEBUG
   return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];

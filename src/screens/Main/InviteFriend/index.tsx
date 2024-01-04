@@ -33,7 +33,7 @@ import { fontSize } from '@/src/styles/typography';
 import FastImage from 'react-native-fast-image';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { NO_PROFILE_IMAGE } from '@/src/services/constants';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { Link, Link1 } from 'iconsax-react-native';
 import { ShareAndroid, ShareIos } from 'iconoir-react-native';
 import Clipboard from '@react-native-clipboard/clipboard';

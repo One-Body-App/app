@@ -9,7 +9,7 @@ import Button from '../Button';
 
 import { styles } from './style';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { AccountType, PostType, PostUserData, SocialPostReaction } from '@/utils/types';

@@ -1,6 +1,6 @@
 // prettier-ignore
 {
-  "extends": "@tsconfig/react-native/tsconfig.json" /* Recommended React Native TSConfig base */,
+  "extends": "@react-native/typescript-config/tsconfig.json" /* Recommended React Native TSConfig base */,
   "include": ["**/*.tsx", "**/*.ts"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
@@ -16,7 +16,7 @@
       "@/assets/*": ["src/assets/*"],
       "@/components/*": ["src/components/*"],
       "@/constants/*": ["src/constants/*"],
-      "@/navigation/*": ["src/_Navigation/*"],
+      "@/navigation/*": ["src/navigation/*"],
       "@/navigator/*": ["src/navigator/*"],
       "@/redux/*": ["src/redux/*"],
       "@/screens/*": ["src/screens/*"],

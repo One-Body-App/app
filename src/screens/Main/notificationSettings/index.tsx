@@ -5,7 +5,7 @@ import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
 import { useToast } from 'react-native-toast-notifications';
 import { setProfile } from '@/src/redux/actions/AuthActions';

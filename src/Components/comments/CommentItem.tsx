@@ -1,4 +1,4 @@
-import { NO_PROFILE_IMAGE } from '@/src/services/constants';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';

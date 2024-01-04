@@ -31,8 +31,8 @@ import { getAllPrayer, getAllPrayerLive, getMyPrayer } from '@/src/redux/actions
 import LiveStreamFlatlist from '../LiveStreamFlatlist';
 import LiveStreamFlatlist2 from '../LiveStreamFlatlist2';
 import { useNavigation } from '@react-navigation/native';
-import { TwilioService } from '../../services/Twillio/TwilioServicetjs';
-import { getToken } from '../../services/Twillio/api-service';
+import { TwilioService } from '@/services/Twillio/TwilioServicetjs';
+import { getToken } from '@/services/Twillio/api-service';
 
 const PrayerModel = ({ setRequestModel }) => {
   const dispatch = useDispatch();

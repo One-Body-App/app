@@ -10,7 +10,7 @@ import { StyledText } from '../styled/Text';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import PrayerItem from '../listItems/PrayerItem';
-import { ApiCall } from '@/src/services/api';
+import { ApiCall } from '@/services/api';
 
 const PrayerWallMyPrayersComponent = () => {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
