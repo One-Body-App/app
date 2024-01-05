@@ -66,7 +66,6 @@ function* updateProfileRequest(params: {
       ]);
     }
   } catch (e) {
-    console.log(e);
     yield put(setLoader(false));
     Alert.alert('Error', 'An error accoured during profile Update', [
       { text: 'Close', onPress: () => console.log('Close Pressed') },
@@ -167,7 +166,7 @@ function* updateOrgProfileRequest(params) {
 //       yield put(setLoader(false));
 //     }
 //   } catch (e) {
-//     console.log(e);
+//
 //     yield put(setLoader(false));
 //     // yield put(setLoader(false));
 //   }

@@ -326,7 +326,7 @@ const Connected = ({ navigation }: Props) => {
                     alignSelf: 'flex-start',
                   }}
                 >
-                  <StyledText>{searchResultsFollowing.length} Connectors</StyledText>
+                  <StyledText>{searchResultsFollowers.length} Connectors</StyledText>
                 </View>
               </TouchableOpacity>
             </View>
@@ -345,7 +345,7 @@ const Connected = ({ navigation }: Props) => {
                     alignSelf: 'flex-start',
                   }}
                 >
-                  <StyledText>{searchResultsFollowers.length} Connected</StyledText>
+                  <StyledText>{searchResultsFollowing.length} Connected</StyledText>
                 </View>
               </TouchableOpacity>
             </View>

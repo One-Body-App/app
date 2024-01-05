@@ -53,7 +53,6 @@ const InstagramFlatlist = ({
       setLoadingMore(false);
       setRefreshing(false);
     } catch (e: any) {
-      console.log(e);
       setLoadingMore(false);
       setRefreshing(false);
     }
