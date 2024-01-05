@@ -143,7 +143,6 @@ const NewPost = ({ navigation, route }: Props) => {
       }
       setIsLoading(false);
     } catch (e) {
-      console.log(e);
       setIsLoading(false);
     }
   };
