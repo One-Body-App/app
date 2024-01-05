@@ -59,8 +59,6 @@ const NotificationSettings = ({ navigation }: Props) => {
       }
     } catch (e) {
       toast.hide(toastId);
-
-      console.log(e);
     }
   };
 
@@ -111,7 +109,6 @@ const NotificationSettings = ({ navigation }: Props) => {
     } catch (e) {
       toast.hide(toastId);
       setIsLoading(false);
-      console.log(e);
     }
   };
 

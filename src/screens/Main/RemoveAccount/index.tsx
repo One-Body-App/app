@@ -13,11 +13,11 @@ import Header from '@/src/components/Header';
 import Button from '@/src/components/Button';
 import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
+
 import { useTheme } from '@react-navigation/native';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import { StyledText } from '@/src/components/styled/Text';

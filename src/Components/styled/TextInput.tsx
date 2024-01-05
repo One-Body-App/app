@@ -72,13 +72,13 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
 
         <TextInput
           ref={ref}
+          {...textInputProps}
           style={[
             { paddingVertical: spacing.x10, color: colors.text },
             styles.input,
             inputStyle,
             poppins.base,
           ]}
-          {...textInputProps}
         />
 
         {rightIcon ? rightIcon : null}

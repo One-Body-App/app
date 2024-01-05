@@ -87,7 +87,7 @@ const PrayerWallComponent = () => {
     await getPrayerPosts(page);
   };
 
-  const removePost = async (id: string) => {
+  const removePost = async (type: string, id: string) => {
     try {
       const res = await ApiCall({
         route: `prayer/${id}`,
@@ -131,7 +131,12 @@ const PrayerWallComponent = () => {
           />
         }
         ListEmptyComponent={() => (
-          <StyledText style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}>
+          <StyledText
+            style={[
+              Typography.body.x2M,
+              { padding: spacing.x16, textAlign: 'center', transform: [{ rotate: '180deg' }] },
+            ]}
+          >
             Nothing here
           </StyledText>
         )}

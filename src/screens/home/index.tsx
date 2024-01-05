@@ -269,7 +269,7 @@ const Home = ({ navigation }: Props) => {
   }, [navigation]);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
 
-  const removePost = async (id: string) => {
+  const removePost = async (type: string, id: string) => {
     try {
       const res = await ApiCall({
         route: `social/remove-post/${id}`,
