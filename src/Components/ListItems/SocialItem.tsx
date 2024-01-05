@@ -366,15 +366,11 @@ const SocialItem = ({
                     >
                       <ImageModal
                         key={index}
-                        resizeMode={image.width > image.height ? 'contain' : 'stretch'}
+                        resizeMode={image.width > image.height ? 'cover' : 'stretch'}
                         style={{
                           borderRadius: borderRadius.small,
-                          flexGrow: 1,
-                          aspectRatio: image.width / image.height,
+                          aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
                           width: 250,
-                          // height: 300,
-                          // borderRadius: 2,
-                          // marginVertical: 10,
                         }}
                         modalImageResizeMode="center"
                         source={{ uri: image?.url }}
