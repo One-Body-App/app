@@ -355,7 +355,6 @@ const SocialItem = ({
             {imageInfo.length > 1 ? (
               <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
                 {imageInfo.map((image, index) => {
-                  console.log(image, image.width > image.height ? 'contain' : 'stretch');
                   return (
                     <View
                       style={{
