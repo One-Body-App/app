@@ -145,7 +145,6 @@ const NewPrayer = ({ navigation, route }: Props) => {
       }
       setIsLoading(false);
     } catch (e) {
-      console.log(e);
       setIsLoading(false);
     }
   };
@@ -191,7 +190,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
       }
     } catch (e: any) {
       error = e.message;
-      console.log(e);
+
       setIsLoading(false);
     }
 
@@ -315,9 +314,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
 
         setPickerModalVisibile(false);
       }, 500);
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   };
 
   const captureImage = async (contentType: MediaType) => {
@@ -494,8 +491,12 @@ const NewPrayer = ({ navigation, route }: Props) => {
             <View style={{ marginBottom: spacing.x32 }}>
               <StyledText style={{ marginBottom: 10 }}>Write Prayer</StyledText>
               <StyledTextInput
-                style={{ height: 200, flexGrow: 1, color: colors.text }}
-                inputStyle={{}}
+                inputStyle={{
+                  height: 200,
+                  flexGrow: 1,
+                  color: colors.text,
+                  textAlignVertical: 'top',
+                }}
                 inputWrapperStyle={{
                   paddingVertical: spacing.x10,
                   borderRadius: borderRadius.base,
@@ -721,7 +722,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
                   try {
                     GiphyDialog.show();
                   } catch (e) {
-                    console.log(e);
+
                   }
                 }}
               />

@@ -485,7 +485,13 @@ const PrayerItem = ({
             maxLength={150}
             value={testinomyContent}
             placeholder="Write something"
-            style={{ flexGrow: 1, height: 100, marginVertical: 10, color: colors.text }}
+            inputStyle={{
+              flexGrow: 1,
+              height: 100,
+              marginVertical: 10,
+              color: colors.text,
+              textAlignVertical: 'top',
+            }}
             wrapperStyle={{ marginVertical: spacing.x10 }}
             onChangeText={(content) => {
               setTestinomyContent(content);

@@ -61,6 +61,7 @@ const SinglePost = ({ navigation, route }: Props) => {
   const [post, setPost] = useState<SocialPost>();
   const [comments, setComments] = useState<CommentPost[]>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isNotFound, setIsNotFound] = useState<boolean>(false);
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
   const [editingCommentId, setEditingCommentId] = useState<string>('');
 
@@ -145,10 +146,17 @@ const SinglePost = ({ navigation, route }: Props) => {
       setIsLoading(false);
 
       if (result.status == 200) {
-        setPost(result.response);
+        if (result.response) {
+          setPost(result.response);
+        } else {
+          setIsNotFound(true);
+        }
+      } else {
+        setIsNotFound(true);
       }
     } catch (e) {
       setIsLoading(false);
+      setIsNotFound(true);
     }
   };
 
@@ -197,7 +205,7 @@ const SinglePost = ({ navigation, route }: Props) => {
     }
   };
 
-  const removePost = async (id: string) => {
+  const removePost = async (type: string, id: string) => {
     try {
       const res = await ApiCall({
         route: `social/${id}`,
@@ -372,7 +380,7 @@ const SinglePost = ({ navigation, route }: Props) => {
                 style={{ marginRight: spacing.x10 }}
               />
             ) : (
-              <StyledText>Not Found</StyledText>
+              <>{isNotFound ? <StyledText>Not Found</StyledText> : null}</>
             )}
           </>
         )}

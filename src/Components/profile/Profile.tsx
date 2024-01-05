@@ -11,6 +11,7 @@ import { MaterialTabBar, TabBarProps, Tabs } from 'react-native-collapsible-tab-
 import { createRef, useCallback, useEffect } from 'react';
 import ProfileHeader from './ProfileHeader';
 import { useTheme } from '@react-navigation/native';
+import PrayerWallMyPrayersComponent from '../prayerWallMyPrayersComponent';
 
 type Route = {
   key: string;
@@ -42,16 +43,16 @@ const Profile = ({
 }: ProfileProps) => {
   const socialList = createRef<RefreshListRef>();
 
+  const onlyOneTab =
+    profileData?.influencerProfile?.influencerStatus != 'approved' ||
+    !profileData?.influencerProfile?.rssUrl;
+
   useEffect(() => {
     if (refreshContent && setRefreshContent) {
       setRefreshContent(false);
       socialList.current?.setRefreshing();
     }
   }, [refreshContent]);
-
-  const onlyOneTab =
-    profileData?.influencerProfile?.influencerStatus != 'approved' ||
-    !profileData?.influencerProfile?.rssUrl;
 
   const { colors } = useTheme();
 
@@ -92,12 +93,12 @@ const Profile = ({
         backgroundColor: colors.card,
         shadowOffset: {
           width: 0,
-          height: onlyOneTab ? 0 : 2,
+          height: Platform.OS == 'ios' || onlyOneTab ? 0 : 2,
         },
-        shadowOpacity: onlyOneTab ? 0 : 0.23,
+        shadowOpacity: Platform.OS == 'ios' || onlyOneTab ? 0 : 0.23,
         shadowRadius: 2.62,
-        borderBottomWidth: Platform.OS == 'ios' ? borderWidth.thin : 0,
-        borderBottomColor: Platform.OS == 'ios' ? Colors.neutral[800] : undefined,
+        borderBottomWidth: Platform.OS == 'ios' || onlyOneTab ? borderWidth.thin : 0,
+        borderBottomColor: Platform.OS == 'ios' || onlyOneTab ? Colors.neutral[800] : undefined,
         // paddingBottom: onlyOneTab ? spacing.x10 : undefined,
       }}
       renderTabBar={onlyOneTab ? () => null : renderTabBar}
@@ -105,6 +106,10 @@ const Profile = ({
       <Tabs.Tab name="social" label="Social">
         <SocialFlatlist ref={socialList} userIdToPullData={profileData._id} />
       </Tabs.Tab>
+
+      {/* <Tabs.Tab name="prayers" label="Prayers">
+        <PrayerWallMyPrayersComponent />
+      </Tabs.Tab> */}
 
       {profileData?.influencerProfile?.influencerStatus == 'approved' &&
       profileData?.influencerProfile?.rssUrl ? (

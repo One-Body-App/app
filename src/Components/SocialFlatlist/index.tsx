@@ -1,5 +1,12 @@
 import React, { FC, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { FlatList, Image, RefreshControl, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  RefreshControl,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { styles } from './styles';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,18 +17,19 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import SocialItem from '../listItems/SocialItem';
 import { isObject } from 'lodash';
 import { Tabs } from 'react-native-collapsible-tab-view';
-import { RefreshListRef } from '@/utils/types';
+import { RefreshListRef, SocialPost } from '@/utils/types';
 import { StyledText } from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
 
 const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>(
   ({ userIdToPullData }, ref) => {
-    const socialPost = useSelector((state: RootState) => state.social.SocialPost);
+    // const socialPost = useSelector((state: RootState) => state.social.SocialPost);
+    const [socialPosts, setSocialPosts] = useState<SocialPost[]>([]);
 
     const token = useSelector((state: RootState) => state.auth.userToken);
     const [hasMore, setHasMore] = useState(true);
-    const dispatch = useDispatch();
+
     const [page, setPage] = useState(1);
     const [isEndOfList, setIsEndOfList] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -70,12 +78,12 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
             posts = res?.response?.content ?? [];
             setIsEndOfList(false);
           } else {
-            posts = [...socialPost, ...(res?.response?.content ?? [])];
+            posts = [...socialPosts, ...(res?.response?.content ?? [])];
             if (res?.response?.content?.length < 1) {
               setIsEndOfList(true);
             }
           }
-          dispatch(SetSocial(posts));
+          setSocialPosts(posts);
         } else {
           console.log('error', res?.response);
         }
@@ -96,19 +104,23 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
       getData();
     }, [page]);
 
+    // useEffect(() => {
+    //   SetSocial([]);
+    // }, []);
+
     useEffect(() => {
       if (isRefreshing) getData();
     }, [isRefreshing]);
     const [isScrollEnable, setIsScrollEnable] = useState(true);
 
-    const removePost = async (id: string) => {
+    const removePost = async (type: string, id: string) => {
       try {
         const res = await ApiCall({
           route: `social/remove-post/${id}`,
           verb: 'delete',
           token: token,
         });
-
+        console.log(res);
         if (res?.status == 200) {
           getData();
         }
@@ -132,16 +144,28 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
       //   console.log('saga error -- ', e.toString());
       // }
     };
+    console.log(isLoading);
 
     return (
       <Tabs.FlatList
-        data={socialPost}
+        data={socialPosts}
         style={{ flex: 1 }}
         keyExtractor={(item, index) => {
           return `${item?.userData?.username}-${item.id ?? item.postId}-${index}`;
         }}
         extraData={isRefreshing}
         scrollEnabled={isScrollEnable}
+        ListHeaderComponent={() => {
+          if (isLoading && socialPosts.length == 0) {
+            return (
+              <View style={{ marginTop: spacing.x10 }}>
+                <ActivityIndicator animating={isLoading} size="small" />
+              </View>
+            );
+          }
+
+          return null;
+        }}
         renderItem={({ item, index }) => (
           <SocialItem
             item={item}

@@ -342,6 +342,7 @@ const Main = () => {
                   return {
                     // presentation: 'formSheet',
                     title: route.params?.postId ? 'Edit Post' : 'Create Post',
+                    headerBackTitleVisible: false,
                     // headerLeft: (props) => {
                     //   const { dark, colors } = useTheme();
                     //   return (

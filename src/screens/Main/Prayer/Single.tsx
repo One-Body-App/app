@@ -183,7 +183,7 @@ const SinglePrayer = ({ navigation, route }: Props) => {
     }
   };
 
-  const removePost = async (id: string) => {
+  const removePost = async (type: string, id: string) => {
     try {
       const res = await ApiCall({
         route: `prayer/${id}`,

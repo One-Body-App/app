@@ -35,7 +35,7 @@ import {
 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { fontSize } from '@/src/styles/typography';
+import { fontSize, lineHeight } from '@/src/styles/typography';
 
 import ImagePickerModal from '@/src/components/ImagePickerModal';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -115,7 +115,7 @@ const NewPost = ({ navigation, route }: Props) => {
             gif: mediaGif,
             location: location
               ? {
-                  coordinates: location?.geometry.coordinates,
+                  coordinates: location?.geometry?.coordinates,
                   name: location?.place_name,
                 }
               : undefined,
@@ -440,12 +440,17 @@ const NewPost = ({ navigation, route }: Props) => {
             ) : null}
 
             <StyledTextInput
-              style={{ height: 200, flexGrow: 1, color: colors.text }}
-              inputStyle={{}}
+              inputStyle={{
+                textAlignVertical: 'top',
+
+                height: 200,
+                flexGrow: 1,
+                color: colors.text,
+              }}
               inputWrapperStyle={{ paddingVertical: spacing.x10, borderRadius: borderRadius.base }}
               value={content}
               multiline
-              returnKeyType="done"
+              returnKeyType="default"
               label={''}
               autoCorrect
               placeholder="What's on your heart?"
