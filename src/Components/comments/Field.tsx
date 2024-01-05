@@ -131,9 +131,7 @@ const CommentField = ({
                 // await auth().signOut();
                 try {
                   GiphyDialog.show();
-                } catch (e) {
-                  console.log(e);
-                }
+                } catch (e) {}
               }}
             />
           }

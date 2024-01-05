@@ -67,7 +67,7 @@ const LoadingPage = ({ navigation }: Props) => {
       }
     } catch (e: any) {
       setIsloadedTodaysNews(true);
-      console.log(e);
+
       console.log('saga error -- ', e.toString());
 
       // navigation.navigate('Bottombar', { tabs: 'Home' });

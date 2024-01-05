@@ -216,9 +216,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
 
       // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       // }
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   };
 
   const scheme = useColorScheme();

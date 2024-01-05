@@ -426,7 +426,6 @@ const Home = ({ navigation }: Props) => {
               scrollEnabled={isScrollEnable}
               renderItem={({ item, index }) => {
                 if (item.type == 'social') {
-                  console.log(item.commentNumber);
                   return (
                     <TouchableOpacity
                       onPress={() => {

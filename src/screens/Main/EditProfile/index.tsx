@@ -449,9 +449,7 @@ const EditProfile = ({ navigation }: Props) => {
           setHeaderImagePickerModalVisibile(false);
         }
       }, 500);
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   };
   const go = () => {
     navigation.goBack();

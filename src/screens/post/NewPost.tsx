@@ -143,7 +143,6 @@ const NewPost = ({ navigation, route }: Props) => {
       }
       setIsLoading(false);
     } catch (e) {
-      console.log(e);
       setIsLoading(false);
     }
   };
@@ -188,7 +187,6 @@ const NewPost = ({ navigation, route }: Props) => {
         });
       }
     } catch (e) {
-      console.log(e);
       setIsLoading(false);
     }
   };
@@ -224,7 +222,6 @@ const NewPost = ({ navigation, route }: Props) => {
         }
       }
     } catch (e) {
-      console.log(e);
       setIsLoading(false);
     }
   };
@@ -306,9 +303,7 @@ const NewPost = ({ navigation, route }: Props) => {
 
         setPickerModalVisibile(false);
       }, 500);
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   };
 
   const captureImage = async (contentType: MediaType) => {
@@ -702,9 +697,7 @@ const NewPost = ({ navigation, route }: Props) => {
                   // await auth().signOut();
                   try {
                     GiphyDialog.show();
-                  } catch (e) {
-                    console.log(e);
-                  }
+                  } catch (e) {}
                 }}
               />
             </View>
@@ -737,7 +730,7 @@ const NewPost = ({ navigation, route }: Props) => {
                 <ActivityIndicator />
               ) : (
                 <StyledText style={{ color: 'white' }}>
-                  {route.params?.postId ? 'Edit Post' : 'Post'}
+                  {route.params?.postId ? 'Update Post' : 'Post'}
                 </StyledText>
               )}
             </>

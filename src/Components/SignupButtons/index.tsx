@@ -112,9 +112,7 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
           'onebodyapp://app.onebodyapp.com/signup/twitter'
         );
       }
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   };
 
   const googleSignIn = async () => {

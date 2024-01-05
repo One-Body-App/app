@@ -51,7 +51,7 @@ function* GetAllPrayerRequest(params) {
       verb: 'get',
       token: params?.data?.token,
     });
-    console.log(res?.status);
+
     if (res?.status == 200) {
       if (params?.data?.page == 1) {
         yield put(setPrayers(res?.response));

@@ -68,9 +68,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
 
       // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       // }
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -159,7 +157,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
   //           dispatch(getUserProfile({ token: token }));
   //         }
   //       } catch (error: any) {
-  //         console.log(error);
+  //         ;
   //       }
   //     };
   //     getInstagramAuthToken();

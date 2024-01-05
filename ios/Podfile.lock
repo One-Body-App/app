@@ -158,7 +158,7 @@ PODS:
   - fmt (6.2.1)
   - Giphy (2.2.7):
     - libwebp
-  - giphy-react-native-sdk (3.2.1):
+  - giphy-react-native-sdk (3.2.2):
     - Giphy (= 2.2.7)
     - glog
     - RCT-Folly (= 2022.05.16.00)
@@ -1790,7 +1790,6 @@ SPEC CHECKSUMS:
   BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
   DoubleConversion: fea03f2699887d960129cc54bba7e52542b6f953
-  DoubleConversion: fea03f2699887d960129cc54bba7e52542b6f953
   FBAEMKit: af2972f39bb0f3f7c45998f435b007833c32ffb2
   FBLazyVector: 39ba45baf4e398618f8b3a4bb6ba8fcdb7fc2133
   FBReactNativeSpec: 20cfca68498e27879514790359289d1df2b52c56
@@ -1819,7 +1818,7 @@ SPEC CHECKSUMS:
   FlipperKit: 37525a5d056ef9b93d1578e04bc3ea1de940094f
   fmt: ff9d55029c625d3757ed641535fd4a75fedc7ce9
   Giphy: dad025aa0c82e4c057e1989cde959034829dfca7
-  giphy-react-native-sdk: 7bf2b627a845e3b749deecb0d5c8d2758f1d2355
+  giphy-react-native-sdk: 9d7b34d68c36a5a07937f3e76be9cc99e468b524
   glog: c5d68082e772fa1c511173d6b30a9de2c05a69a2
   GoogleAppMeasurement: 2d800fab85e7848b1e66a6f8ce5bca06c5aad892
   GoogleDataTransport: 57c22343ab29bc686febbf7cbb13bad167c2d8fe
@@ -1925,5 +1924,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 75d2cd46a200363774bdf52d68f7250f8d8db90c
 
-COCOAPODS: 1.14.3
 COCOAPODS: 1.14.3

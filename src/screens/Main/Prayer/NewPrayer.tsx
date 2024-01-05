@@ -230,7 +230,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
         if (!isEmpty(result.response?.locationName)) {
           setLocationName(result.response?.locationName);
         }
-        console.log(JSON.stringify(result.response));
+
         setPostType(result.response?.category);
       }
     } catch (e) {

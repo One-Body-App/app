@@ -83,7 +83,6 @@ const PasswordChange = ({ navigation, route }: Props) => {
         setState({ ...state, passwordErrorN, passwordErrorC });
       }
     } catch (e: any) {
-      console.log(e);
       route.params.setError(e.message.replace('[auth/requires-recent-login] ', ''));
       if (e.message == '[auth/requires-recent-login]') {
         toast.show('Please login again', {

@@ -124,7 +124,7 @@ export default function DrawerContent({
                     {user?.following?.length ?? 0}{' '}
                   </StyledText>
                   <StyledText style={[Typography.body.x1, { color: Colors.neutral[300] }]}>
-                    Connections
+                    Connected
                   </StyledText>
                 </View>
               </View>
@@ -188,7 +188,7 @@ export default function DrawerContent({
             }}
             leftIcon={<Icon name="customerservice" size={25} color={Colors.neutral[200]} />}
             onPress={() => {
-              OpenURLButton('https://usersuccess.onebodyapp.com/portal/en/kb/one-body-inc');
+              OpenURLButton('https://onebody.tawk.help/');
             }}
           />
         </View>

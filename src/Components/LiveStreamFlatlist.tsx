@@ -65,9 +65,7 @@ export default class LiveStreamFlatlist extends Component {
         this.onPressIn();
         // }, 4000);
       }
-    } catch (error) {
-      console.log(error);
-    }
+    } catch (error) {}
   };
 
   componentWillMount() {
@@ -85,9 +83,7 @@ export default class LiveStreamFlatlist extends Component {
         }.bind(this),
         7000
       );
-    } catch (error) {
-      console.log(error);
-    }
+    } catch (error) {}
   }
 
   render() {

@@ -176,7 +176,6 @@ const LoginComponent: FC<Props> = ({
             setSuccess('Email verification successful. Please Sign in to your account');
           }
         } catch (e: any) {
-          console.log(e);
           seterror('Invalid Verification code, please try again.');
         }
       };
@@ -420,9 +419,7 @@ const LoginComponent: FC<Props> = ({
 
         // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       }
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   };
 
   async function onAppleButtonPress() {
@@ -509,7 +506,6 @@ const LoginComponent: FC<Props> = ({
             navigation.goBack();
           }
         } else {
-          console.log('asdfjkjasdlkfj111');
           await processLogin(userCredentials, setNewUserCredentials, setToken);
         }
       }
@@ -585,12 +581,17 @@ const LoginComponent: FC<Props> = ({
       <View style={{ marginHorizontal: spacing.x16, flex: 1, marginTop: spacing.x24 }}>
         <StyledText style={Typography.header.h1}>Verify your email address</StyledText>
         <StyledText
+          style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+        >
+          You’ll need to verify your email to complete your account activation.
+        </StyledText>
+        <StyledText
           style={[
             Typography.subheader.R,
             { color: Colors.neutral[300], marginTop: spacing.x8, marginBottom: spacing.x48 },
           ]}
         >
-          You’ll need to verify your email to complete your account activation.
+          Check your junk/spam folder if the Verification email is not received
         </StyledText>
         <Button
           text="Go to My Email"

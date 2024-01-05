@@ -157,7 +157,7 @@ const App = () => {
   };
 
   const handleDynamicLink = (link: string) => {
-    console.log(link);
+    // console.log(link);
   };
 
   useEffect(() => {
