@@ -3793,6 +3793,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/jest@npm:^29.5.11":
+  version: 29.5.11
+  resolution: "@types/jest@npm:29.5.11"
+  dependencies:
+    expect: ^29.0.0
+    pretty-format: ^29.0.0
+  checksum: f892a06ec9f0afa9a61cd7fa316ec614e21d4df1ad301b5a837787e046fcb40dfdf7f264a55e813ac6b9b633cb9d366bd5b8d1cea725e84102477b366df23fdd
+  languageName: node
+  linkType: hard
+
 "@types/json-schema@npm:^7.0.12, @types/json-schema@npm:^7.0.9":
   version: 7.0.12
   resolution: "@types/json-schema@npm:7.0.12"
@@ -3857,13 +3867,6 @@ __metadata:
   dependencies:
     ts-toolbelt: ^6.15.1
   checksum: eea577e4a0934849b4103c1452a7c8ddbc9bbf0e2aafb908467212654555145f846a16fe737563b582e8fb5bd6698481ebec1237537e5e662587c47f626e4c92
-  languageName: node
-  linkType: hard
-
-"@types/react-native-dotenv@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@types/react-native-dotenv@npm:0.2.0"
-  checksum: 23d59b8ebd35e8fe693531f9c630f7518cb149c06694c8c35fc3b628ac8e8e26cc602cec9372447873fbbb13bf0c40bbd951ba5306c1b83b169cc3a927cb935f
   languageName: node
   linkType: hard
 
@@ -4886,13 +4889,6 @@ __metadata:
   dependencies:
     "@babel/plugin-syntax-flow": ^7.12.1
   checksum: fd52aef54448e01948a9d1cca0c8f87d064970c8682458962b7a222c372704bc2ce26ae8109e0ab2566e7ea5106856460f04c1a5ed794ab3bcd2f42cae1d9845
-  languageName: node
-  linkType: hard
-
-"babel-plugin-transform-inline-environment-variables@npm:^0.4.4":
-  version: 0.4.4
-  resolution: "babel-plugin-transform-inline-environment-variables@npm:0.4.4"
-  checksum: fa361287411301237fd8ce332aff4f8e8ccb8db30e87a2ddc7224c8bf7cd792eda47aca24dc2e09e70bce4c027bc8cbe22f4999056be37a25d2472945df21ef5
   languageName: node
   linkType: hard
 
@@ -6323,13 +6319,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:^16.3.1":
-  version: 16.3.1
-  resolution: "dotenv@npm:16.3.1"
-  checksum: 15d75e7279018f4bafd0ee9706593dd14455ddb71b3bcba9c52574460b7ccaf67d5cf8b2c08a5af1a9da6db36c956a04a1192b101ee102a3e0cf8817bbcf3dfd
-  languageName: node
-  linkType: hard
-
 "duplexer3@npm:^0.1.4":
   version: 0.1.5
   resolution: "duplexer3@npm:0.1.5"
@@ -7114,7 +7103,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expect@npm:^29.7.0":
+"expect@npm:^29.0.0, expect@npm:^29.7.0":
   version: 29.7.0
   resolution: "expect@npm:29.7.0"
   dependencies:
@@ -8189,6 +8178,13 @@ __metadata:
   version: 2.0.4
   resolution: "inherits@npm:2.0.4"
   checksum: 4a48a733847879d6cf6691860a6b1e3f0f4754176e4d71494c41f3475553768b10f84b5ce1d40fbd0e34e6bfbb864ee35858ad4dd2cf31e02fc4a154b724d7f1
+  languageName: node
+  linkType: hard
+
+"inherits@npm:2.0.3":
+  version: 2.0.3
+  resolution: "inherits@npm:2.0.3"
+  checksum: 78cb8d7d850d20a5e9a7f3620db31483aa00ad5f722ce03a55b110e5a723539b3716a3b463e2b96ce3fe286f33afc7c131fa2f91407528ba80cea98a7545d4c0
   languageName: node
   linkType: hard
 
@@ -10703,11 +10699,11 @@ __metadata:
     "@react-navigation/stack": ^6.3.17
     "@reduxjs/toolkit": ^1.8.3
     "@sentry/react-native": ^5.15.2
+    "@types/jest": ^29.5.11
     "@types/lodash": ^4.14.196
     "@types/node": ^20.4.6
     "@types/qs": ^6.9.7
     "@types/react": ^18.2.46
-    "@types/react-native-dotenv": ^0.2.0
     "@types/react-native-vector-icons": ^6.4.18
     "@types/react-native-video": ^5.0.15
     "@types/react-native-video-player": ^0.10.3
@@ -10718,7 +10714,6 @@ __metadata:
     axios: ^1.6.0
     babel-jest: ^29.6.3
     babel-plugin-module-resolver: ^5.0.0
-    babel-plugin-transform-inline-environment-variables: ^0.4.4
     babel-plugin-transform-remove-console: ^6.9.4
     buffer: ^6.0.3
     color: ^4.2.3
@@ -10740,6 +10735,7 @@ __metadata:
     lottie-react-native: ^6.4.1
     node-git-hooks: ^1.0.7
     object-to-formdata: ^4.5.1
+    path: ^0.12.7
     phosphor-react-native: ^2.0.0
     prettier: ^3.0.0
     react: ^18.2.0
@@ -10747,11 +10743,12 @@ __metadata:
     react-native: 0.73.0
     react-native-animated-progress: ^1.0.2
     react-native-asset: ^2.1.1
+    react-native-clean-project: ^4.0.3
     react-native-collapsible-tab-view: ^6.2.1
+    react-native-config: ^1.5.1
     react-native-date-picker: ^4.2.13
     react-native-device-info: ^10.8.0
     react-native-devsettings: ^1.0.5
-    react-native-dotenv: ^3.4.9
     react-native-element-dropdown: ^2.10.0
     react-native-email-link: ^1.14.6
     react-native-fast-image: ^8.6.3
@@ -11068,6 +11065,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"path@npm:^0.12.7":
+  version: 0.12.7
+  resolution: "path@npm:0.12.7"
+  dependencies:
+    process: ^0.11.1
+    util: ^0.10.3
+  checksum: 5dedb71e78fc008fcba797defc0b4e1cf06c1f18e0a631e03ba5bb505136f587ff017afc14f9a3d481cbe77aeedff7dc0c1d2ce4d820c1ebf3c4281ca49423a1
+  languageName: node
+  linkType: hard
+
 "pend@npm:~1.2.0":
   version: 1.2.0
   resolution: "pend@npm:1.2.0"
@@ -11219,7 +11226,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pretty-format@npm:^29.7.0":
+"pretty-format@npm:^29.0.0, pretty-format@npm:^29.7.0":
   version: 29.7.0
   resolution: "pretty-format@npm:29.7.0"
   dependencies:
@@ -11234,6 +11241,13 @@ __metadata:
   version: 2.0.1
   resolution: "process-nextick-args@npm:2.0.1"
   checksum: 1d38588e520dab7cea67cbbe2efdd86a10cc7a074c09657635e34f035277b59fbb57d09d8638346bf7090f8e8ebc070c96fa5fd183b777fff4f5edff5e9466cf
+  languageName: node
+  linkType: hard
+
+"process@npm:^0.11.1":
+  version: 0.11.10
+  resolution: "process@npm:0.11.10"
+  checksum: bfcce49814f7d172a6e6a14d5fa3ac92cc3d0c3b9feb1279774708a719e19acd673995226351a082a9ae99978254e320ccda4240ddc474ba31a76c79491ca7c3
   languageName: node
   linkType: hard
 
@@ -11531,6 +11545,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-clean-project@npm:^4.0.3":
+  version: 4.0.3
+  resolution: "react-native-clean-project@npm:4.0.3"
+  bin:
+    react-native-clean-project: source/index.js
+  checksum: 7cf9dc6d80b2b0d6d22b66570c4dd1159c293474d0ba247c7d249cd9875b0fa3dc6b8bec21254162d08f9dcb80fdf5a699d77a8b0580ca0eb6f792d08f2b8a3b
+  languageName: node
+  linkType: hard
+
 "react-native-collapsible-tab-view@npm:^6.2.1":
   version: 6.2.1
   resolution: "react-native-collapsible-tab-view@npm:6.2.1"
@@ -11553,6 +11576,18 @@ __metadata:
   version: 2.2.1
   resolution: "react-native-communications@npm:2.2.1"
   checksum: 0b1a63a116a34866d06790b0dd1153ff622aba148a8ad7d87e18e0ba6c2cfa545210be0d04f3428341a72fbcbd09ac95ea38b92197856cb0fda67bca2321e07b
+  languageName: node
+  linkType: hard
+
+"react-native-config@npm:^1.5.1":
+  version: 1.5.1
+  resolution: "react-native-config@npm:1.5.1"
+  peerDependencies:
+    react-native-windows: ">=0.61"
+  peerDependenciesMeta:
+    react-native-windows:
+      optional: true
+  checksum: ae17b750e445310573ce33798db67c9b8c50e55cb2ba136e9a9ef8372dd3f7669ce236bb18bf1fa8a426fd1aa9e6b516fb2f593767bd24688242f6847cd37712
   languageName: node
   linkType: hard
 
@@ -11581,17 +11616,6 @@ __metadata:
   version: 1.0.5
   resolution: "react-native-devsettings@npm:1.0.5"
   checksum: a59be2a07a94d16e8cd6443636ef44ebad15a8ddf6dcb742b737949c9029a9ff295894198e81a5ffd89f5714708be4b02b54b544566656e466e87982ffc89166
-  languageName: node
-  linkType: hard
-
-"react-native-dotenv@npm:^3.4.9":
-  version: 3.4.9
-  resolution: "react-native-dotenv@npm:3.4.9"
-  dependencies:
-    dotenv: ^16.3.1
-  peerDependencies:
-    "@babel/runtime": ^7.20.6
-  checksum: 9727c6a08e1b3e53b31d620ac1e9daedd899b61c0fd5413fb4593a209c0bf73e245506fc02bdb0d3caa4abf4f4145fa8499afff8e48e22bcf317cd90dbe18b87
   languageName: node
   linkType: hard
 
@@ -14177,6 +14201,15 @@ __metadata:
   version: 1.0.2
   resolution: "util-deprecate@npm:1.0.2"
   checksum: 474acf1146cb2701fe3b074892217553dfcf9a031280919ba1b8d651a068c9b15d863b7303cb15bd00a862b498e6cf4ad7b4a08fb134edd5a6f7641681cb54a2
+  languageName: node
+  linkType: hard
+
+"util@npm:^0.10.3":
+  version: 0.10.4
+  resolution: "util@npm:0.10.4"
+  dependencies:
+    inherits: 2.0.3
+  checksum: 913f9a90d05a60e91f91af01b8bd37e06bca4cc02d7b49e01089f9d5b78be2fffd61fb1a41b517de7238c5fc7337fa939c62d1fb4eb82e014894c7bee6637aaf
   languageName: node
   linkType: hard
 

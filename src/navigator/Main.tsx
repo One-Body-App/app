@@ -122,7 +122,7 @@ const Main = () => {
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');
-  console.log(token);
+  // console.log(token);
   useEffect(() => {
     toast.hideAll();
 
@@ -186,13 +186,13 @@ const Main = () => {
     }
 
     if (!initializing) {
-      if (Platform.OS == 'android') {
+      // if (Platform.OS == 'android') {
+      //   LottieSplashScreen.hide();
+      // } else {
+      setTimeout(() => {
         LottieSplashScreen.hide();
-      } else {
-        setTimeout(() => {
-          LottieSplashScreen.hide();
-        }, 5000);
-      }
+      }, 5000);
+      // }
     }
   }, [token, user, initializing]);
 
