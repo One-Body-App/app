@@ -41,6 +41,7 @@ function* updateProfileRequest(params: {
   type: string;
 }) {
   try {
+    yield put(setLoader(true));
     const res: ResponseGenerator = yield ApiCall({
       params: params.data.data,
       route: `user/update-profile`,
@@ -55,7 +56,7 @@ function* updateProfileRequest(params: {
         getProfile.Request({ token: params.data.token, accountType: params.data.accountType })
       );
 
-      yield put(setLoader(false));
+      // yield put(setLoader(false));
       if (params.data.go) {
         params.data.go();
       }
@@ -118,6 +119,7 @@ export function* loginSocialSaga() {
 
 function* updateOrgProfileRequest(params) {
   try {
+    yield put(setLoader(true));
     const res: ResponseGenerator = yield ApiCall({
       params: { ...params.data.data, accountType: 'organization' },
       route: 'user/update-profile',
@@ -332,8 +334,10 @@ function* getProfileSaga({ params }) {
     } else {
       yield put(getProfile.Failed(res?.response));
     }
+    yield put(setLoader(false));
   } catch (e) {
     yield put(getProfile.Failed(e));
+    yield put(setLoader(false));
   }
 }
 

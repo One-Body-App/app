@@ -55,10 +55,11 @@ import { StyledText } from '../styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { openInbox } from 'react-native-email-link';
-import { button } from '@/src/styles/buttons';
+import { button, buttonText } from '@/src/styles/buttons';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { StyledTextInput } from '../styled/TextInput';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { fontSize } from '@/src/styles/typography';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
 
@@ -588,10 +589,15 @@ const LoginComponent: FC<Props> = ({
         <StyledText
           style={[
             Typography.subheader.R,
-            { color: Colors.neutral[300], marginTop: spacing.x8, marginBottom: spacing.x48 },
+            {
+              ...fontSize.x1,
+              color: Colors.primarySapphire[300],
+              marginTop: spacing.x8,
+              marginBottom: spacing.x48,
+            },
           ]}
         >
-          Check your junk/spam folder if the Verification email is not received
+          Check your junk/spam folder if the Verification email is not received.
         </StyledText>
         <Button
           text="Go to My Email"
@@ -604,7 +610,7 @@ const LoginComponent: FC<Props> = ({
           onPress={() => {
             openInbox();
           }}
-          btnTextStyle={{ color: '#FFF' }}
+          btnTextStyle={[{ color: '#fff' }]}
         />
         <Button
           onPress={() => {

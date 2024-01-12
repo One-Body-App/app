@@ -23,7 +23,7 @@ import { sha256 } from 'react-native-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 
-const IS_STAGING = false;
+const IS_STAGING = true;
 
 // export const BASE_URL = PROD_BASE_URL;
 

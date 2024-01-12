@@ -24,7 +24,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useTheme } from '@react-navigation/native';
-import Recaptcha, { RecaptchaHandles } from 'react-native-recaptcha-that-works';
+import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
 import { ScrollView } from 'react-native';
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout, { BottomStepsText } from '../layout/UserStepsLayout';
@@ -64,7 +64,7 @@ const showFullBar = (isShow = true) => {
 };
 
 const SignupForm = ({ navigation, route }: Props) => {
-  const recaptcha = useRef<RecaptchaHandles | null>(null);
+  const recaptcha = useRef<RecaptchaRef | null>(null);
   const scrollView = useRef<ScrollView | null>(null);
   const accountType = route.params.accountType;
   const authState = useSelector((state: RootState) => state.auth);

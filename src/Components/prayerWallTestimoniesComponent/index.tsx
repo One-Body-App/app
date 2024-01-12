@@ -74,6 +74,7 @@ const PrayerWallTestimoniesComponent = () => {
             setIsEndOfList(true);
           }
         }
+
         setTestimonies(posts);
       } else {
         console.log('error', res?.response);

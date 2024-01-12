@@ -122,7 +122,7 @@ const Main = () => {
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');
-
+  console.log(token);
   useEffect(() => {
     toast.hideAll();
 
@@ -333,7 +333,11 @@ const Main = () => {
                 options={{ headerShown: false }}
               />
 
-              <MainStack.Screen name="SinglePost" component={SinglePost} />
+              <MainStack.Screen
+                name="SinglePost"
+                component={SinglePost}
+                options={{ headerBackTitleVisible: false }}
+              />
 
               <MainStack.Screen
                 name="Post"

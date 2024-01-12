@@ -160,6 +160,14 @@ const SinglePost = ({ navigation, route }: Props) => {
     }
   };
 
+  useEffect(() => {
+    if (post) {
+      navigation.setOptions({
+        title: `${post.userData.name}'s Post`,
+      });
+    }
+  }, [post]);
+
   const getComments = async (page: number) => {
     setIsLoading(true);
     try {

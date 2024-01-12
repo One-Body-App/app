@@ -15,17 +15,19 @@ import { ApiCall } from '@/services/api';
 import { useToast } from 'react-native-toast-notifications';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { StyledTextInput } from '@/src/components/styled/TextInput';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fontSize } from '@/src/styles/typography';
 import { orgprofileUpdate, profileUpdate } from '@/src/redux/actions/AuthActions';
 import SearchIcon from '@/assets/icons/search.svg';
 import { profileImageList } from '@/src/styles/items';
 import { serialize } from 'object-to-formdata';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
 const OnboardingInfluencers = ({ route }: Props) => {
+  const { dark } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const isLoading = useSelector((state: RootState) => state.general.loader);
 
   const [influencers, setInfluencers] = useState<User[]>([]);
   const [selectedInfluencers, setselectedInfluencers] = useState<string[]>([]);
@@ -71,6 +73,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
         console.log('error', res?.response);
       }
       setLoadingMore(false);
+      setIsRefreshing(false);
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
       setLoadingMore(false);
@@ -112,23 +115,26 @@ const OnboardingInfluencers = ({ route }: Props) => {
           await addFollowing();
 
           if (route.params.profileType == AccountType.individual) {
-            const data = {
+            const data: Record<string, any> = {
               churchType: route.params.selectedChurchType,
               churchSubType: route.params.selectedChurchSubType,
               oftenChurch: route.params.selectedChurchAttendence,
               dateOfBirth: route.params.dateOfBirth,
-
-              location:
-                route.params.longitude && route.params.latitude && route.params.address
-                  ? {
-                      longitude: route.params.longitude,
-                      latitude: route.params.latitude,
-                      address: route.params.address,
-                    }
-                  : null,
             };
+
+            if (route.params.longitude && route.params.latitude && route.params.address) {
+              data.location = {
+                longitude: route.params.longitude,
+                latitude: route.params.latitude,
+                address: route.params.address,
+              };
+            }
             dispatch(
-              profileUpdate({ data: serialize(data), token, accountType: route.params.profileType })
+              profileUpdate({
+                data: serialize(data),
+                token,
+                accountType: route.params.profileType,
+              })
             );
           } else {
             const data = {
@@ -150,11 +156,17 @@ const OnboardingInfluencers = ({ route }: Props) => {
       }}
       onboardingType={route.params.profileType}
       activeStep={route.params.profileType == AccountType.individual ? 6 : 5}
-      disabled={selectedInfluencers.length == 0}
+      disabled={selectedInfluencers.length == 0 || isLoading}
+      loading={isLoading}
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>
-          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+          <StyledText
+            style={[
+              Typography.header.h1,
+              { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
+            ]}
+          >
             Select Influencers & Organizations to connect to
           </StyledText>
         </View>
@@ -201,6 +213,9 @@ const OnboardingInfluencers = ({ route }: Props) => {
                   }}
                 />
               }
+              keyExtractor={(item) => {
+                return item.id || item._id;
+              }}
               onEndReached={() => {
                 if (!loadingMore && !isRefreshing && !isEndOfList) setPage(page + 1);
               }}

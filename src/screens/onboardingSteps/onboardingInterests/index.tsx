@@ -17,10 +17,12 @@ import { StyledTextInput } from '@/src/components/styled/TextInput';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import SearchIcon from '@/assets/icons/search.svg';
 import { iterestListItem } from '@/src/styles/items';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
 
 const OnboardingInterests = ({ navigation, route }: Props) => {
+  const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [interest, setInterest] = useState<Interest[]>([]);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
@@ -64,6 +66,7 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
       });
 
       if (res?.status == 200) {
+        dispatch(setLoader(false));
         navigation.navigate('OnboardingInfluencers', {
           ...route.params,
         });
@@ -95,9 +98,16 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
       activeStep={route.params.profileType == AccountType.individual ? 5 : 4}
       disabled={selectedInterest.length < 3}
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>
-          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+          <StyledText
+            style={[
+              Typography.header.h1,
+              {
+                color: dark ? Colors.primarySapphire[400] : Colors.primary.brand,
+              },
+            ]}
+          >
             Select a minimum of 3 interests to personalize your feeds
           </StyledText>
         </View>

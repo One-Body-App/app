@@ -63,7 +63,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
       activeStep={3}
       disabled={contactName == '' || contactEmail == '' || contactPhoneNumber == ''}
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1, paddingBottom: 40 }}>
           <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
             Set your Organization primary Contact

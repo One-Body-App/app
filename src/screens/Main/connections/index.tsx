@@ -354,7 +354,7 @@ const Connected = ({ navigation }: Props) => {
 
         <View style={{ flex: 1 }}>
           <FlatList
-            data={filter == 'connectors' ? searchResultsFollowing : searchResultsFollowers}
+            data={filter == 'connectors' ? searchResultsFollowers : searchResultsFollowing}
             contentContainerStyle={{ flexGrow: 1 }}
             renderItem={({ item }) => {
               return (

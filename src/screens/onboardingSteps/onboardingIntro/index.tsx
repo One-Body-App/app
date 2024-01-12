@@ -12,11 +12,13 @@ import { Colors, Typography } from '@/src/styles';
 import Button from '@/src/components/Button';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
 
 const OnboardingIntro = ({ navigation }: Props) => {
   const authState = useSelector((state: RootState) => state.auth);
+  const { dark } = useTheme();
 
   const requestNotificationPermission = async () => {
     await messaging().requestPermission();
@@ -78,7 +80,7 @@ const OnboardingIntro = ({ navigation }: Props) => {
           style={[
             Typography.header.h1,
             {
-              color: Colors.primary.brand,
+              color: dark ? Colors.primarySapphire[400] : Colors.primary.brand,
               marginVertical: spacing.x8,
             },
           ]}
@@ -89,7 +91,7 @@ const OnboardingIntro = ({ navigation }: Props) => {
           style={{
             marginHorizontal: spacing.x16,
             textAlign: 'center',
-            color: Colors.primary.brand,
+            color: dark ? Colors.main.black : Colors.primary.brand,
           }}
         >
           This should only take about 2-3 minutes to complete.
