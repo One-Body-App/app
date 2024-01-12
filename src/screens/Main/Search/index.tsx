@@ -98,7 +98,6 @@ const Search = () => {
       const jsonValue = JSON.stringify(value);
       await AsyncStorage.setItem(keyStorage, jsonValue);
     } catch (e) {
-      console.log(e);
       // saving error
     }
   };
@@ -113,7 +112,6 @@ const Search = () => {
       }
       return [];
     } catch (e) {
-      console.log(e);
       // error reading value
       return [];
     }
@@ -130,7 +128,7 @@ const Search = () => {
       },
     });
     setIsLoading(false);
-
+    console.log(res);
     if (res.status == 200) {
       setResults(res.response);
     }

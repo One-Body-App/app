@@ -9,6 +9,7 @@ import { AccountType } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { ReactElement, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -28,6 +29,7 @@ type Props = {
   onboardingType: AccountType;
   activeStep: number;
   disabled?: boolean;
+  loading?: boolean;
   dontUseScrollView?: boolean;
 };
 
@@ -49,6 +51,7 @@ const OnboardingStepsLayout = ({
   disabled,
   reasonText,
   dontUseScrollView,
+  loading,
 }: Props) => {
   const { colors, dark } = useTheme();
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -106,7 +109,14 @@ const OnboardingStepsLayout = ({
         ) : null}
 
         <Button
-          text={buttonText}
+          text={loading ? '' : buttonText}
+          content={
+            loading ? (
+              <View>
+                <ActivityIndicator animating={loading} size="small" color={colors.text} />
+              </View>
+            ) : null
+          }
           disabled={disabled}
           btnStyle={[
             button.primary,
@@ -165,12 +175,17 @@ const OnboardingStepsLayout = ({
                 <MaterialCommunityIcons
                   name="window-close"
                   size={24}
-                  color={Colors.primary.brand}
+                  color={dark ? Colors.primarySapphire[400] : Colors.primary.brand}
                 />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ flex: 1 }}>
-              <StyledText style={[header.h1, { color: Colors.primary.brand }]}>
+              <StyledText
+                style={[
+                  header.h1,
+                  { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
+                ]}
+              >
                 Why are we asking this?
               </StyledText>
               {reasonText}

@@ -14,10 +14,12 @@ import MapBox, { MapSuggestion } from '@/src/components/MapBox';
 import { ArrowDown2 } from 'iconsax-react-native';
 import { borderRadius } from '@/src/styles/outlines';
 import { header } from '@/src/styles/typography';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
 
 const OnboardingLocation = ({ navigation, route }: Props) => {
+  const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [longitude, setLongitude] = useState<number>();
   const [latitude, setLatitude] = useState<number>();
@@ -39,24 +41,32 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
       activeStep={4}
       reasonText={
         <>
-          <StyledText style={{ color: Colors.primary.brand }}>
+          <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
             Your location info helps us to understand the type of content you would be most
             interested in seeing so that we may enhance your One Body experience.
           </StyledText>
           <StyledText> </StyledText>
-          <StyledText style={{ color: Colors.primary.brand }}>
+          <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
             You can decide if you want this info to be Public or Private in your Profile settings.
           </StyledText>
         </>
       }
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+          <StyledText
+            style={[
+              Typography.header.h1,
+              { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
+            ]}
+          >
             Where are you Located?
           </StyledText>
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+            style={[
+              Typography.subheader.R,
+              { color: dark ? colors.text : Colors.neutral[300], marginTop: spacing.x8 },
+            ]}
           >
             Enter your present City
           </StyledText>

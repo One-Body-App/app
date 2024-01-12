@@ -15,10 +15,12 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { useToast } from 'react-native-toast-notifications';
 import { header } from '@/src/styles/typography';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchType'>;
 
 const OnboardingChurchType = ({ navigation }: Props) => {
+  const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
 
@@ -92,24 +94,32 @@ const OnboardingChurchType = ({ navigation }: Props) => {
       }
       reasonText={
         <>
-          <StyledText style={{ color: Colors.primary.brand }}>
+          <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
             Denomination info helps us to understand the type of content you would be most
             interested in seeing to enhance your One Body experience.
           </StyledText>
           <StyledText> </StyledText>
-          <StyledText style={{ color: Colors.primary.brand }}>
+          <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
             You can decide if you want this info to be Public or Private in your Profile settings.
           </StyledText>
         </>
       }
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+          <StyledText
+            style={[
+              Typography.header.h1,
+              { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
+            ]}
+          >
             What type of Church do you attend?
           </StyledText>
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
+            style={[
+              Typography.subheader.R,
+              { color: dark ? Colors.main.black : Colors.neutral[300], marginTop: spacing.x8 },
+            ]}
           >
             Identify your denomination
           </StyledText>

@@ -63,6 +63,7 @@ import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS, NO_PROFILE_IMAGE } from '@/services/c
 import { isArray, isEmpty } from 'lodash';
 import { StyledSelect } from '@/src/components/styled/Select';
 import Toast from 'react-native-simple-toast';
+import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
 GiphySDK.configure({
   apiKey: Platform.OS == 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID,
@@ -324,53 +325,52 @@ const NewPrayer = ({ navigation, route }: Props) => {
       // noData: true,
     };
     // let isCameraPermitted = await requestCameraPermission();
-    // let isStoragePermitted = await requestExternalWritePermission();
-    // if (isCameraPermitted && isStoragePermitted) {
-    const response = await launchCamera(options);
+    let isStoragePermitted = await requestExternalWritePermission();
+    if (isStoragePermitted) {
+      const response = await launchCamera(options);
 
-    if (response.didCancel) {
-      console.log('User cancelled camera picker');
+      if (response.didCancel) {
+        console.log('User cancelled camera picker');
 
-      return;
-    } else if (response.errorCode == 'camera_unavailable') {
-      console.log('Camera not available on device');
+        return;
+      } else if (response.errorCode == 'camera_unavailable') {
+        console.log('Camera not available on device');
 
-      return;
-    } else if (response.errorCode == 'permission') {
-      console.log('Permission not satisfied');
+        return;
+      } else if (response.errorCode == 'permission') {
+        console.log('Permission not satisfied');
 
-      return;
-    } else if (response.errorCode == 'others') {
-      console.log(response.errorMessage);
+        return;
+      } else if (response.errorCode == 'others') {
+        console.log(response.errorMessage);
 
-      return;
+        return;
+      }
+      // let uri = response?.assets?.at(0)?.uri ?? '';
+      // let type = response?.assets?.at(0)?.type ?? '';
+      // let name = response?.assets?.at(0)?.fileName ?? '';
+
+      // setImageObject({ uri, type, name });
+      // setImagesToUpload(uri);
+
+      // cropimage(uri);
+
+      if (response?.assets && response?.assets.length > 0) {
+        setImagesToUpload(response?.assets);
+        setUploadImagesObject(
+          response?.assets.map((imagesObj) => {
+            return {
+              uri: imagesObj.uri ?? '',
+              type: imagesObj.type ?? '',
+              name: imagesObj?.fileName ?? '',
+            };
+          })
+        );
+      }
+      setHeaderImagePickerModalVisibile(false);
+    } else {
+      // console.log('no ', isCameraPermitted);
     }
-    // let uri = response?.assets?.at(0)?.uri ?? '';
-    // let type = response?.assets?.at(0)?.type ?? '';
-    // let name = response?.assets?.at(0)?.fileName ?? '';
-
-    // setImageObject({ uri, type, name });
-    // setImagesToUpload(uri);
-
-    // cropimage(uri);
-
-    // } else {
-    //   console.log('no ', isCameraPermitted);
-    // }
-
-    if (response?.assets && response?.assets.length > 0) {
-      setImagesToUpload(response?.assets);
-      setUploadImagesObject(
-        response?.assets.map((imagesObj) => {
-          return {
-            uri: imagesObj.uri ?? '',
-            type: imagesObj.type ?? '',
-            name: imagesObj?.fileName ?? '',
-          };
-        })
-      );
-    }
-    setHeaderImagePickerModalVisibile(false);
   };
 
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);

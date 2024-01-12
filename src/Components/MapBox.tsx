@@ -173,7 +173,7 @@ const MapBox = (props: MapBoxProps) => {
           backgroundColor: colors.background,
         }}
       >
-        <View style={{ flex: 2, maxHeight: 80, paddingHorizontal: 18 }}>
+        <View style={{ flex: 2, maxHeight: 110, paddingHorizontal: 18 }}>
           <View
             style={{
               flexDirection: 'row',

@@ -86,8 +86,6 @@ const Settings = ({ navigation }: Props) => {
       }
     } catch (e) {
       // toast.hide(toastId);
-
-      console.log(e);
     }
   };
 
@@ -139,7 +137,6 @@ const Settings = ({ navigation }: Props) => {
     } catch (e) {
       toast.hide(toastId);
       setIsLoading(false);
-      console.log(e);
     }
   };
 
@@ -470,7 +467,7 @@ const Settings = ({ navigation }: Props) => {
                   value={emailNotificationsEnabled}
                   onValueChange={(value) => {
                     setEmailNotificationsEnabled(value);
-                    updateNotifications(pushNotificationsEnabled, value, emailNotificationsEnabled);
+                    updateNotifications(pushNotificationsEnabled, subscribedToNewsletter, value);
                   }}
                 />
               </View>
@@ -516,7 +513,7 @@ const Settings = ({ navigation }: Props) => {
                   value={subscribedToNewsletter}
                   onValueChange={(value) => {
                     setSubscribedToNewsletter(value);
-                    updateNotifications(pushNotificationsEnabled, subscribedToNewsletter, value);
+                    updateNotifications(pushNotificationsEnabled, value, emailNotificationsEnabled);
                   }}
                 />
               </View>

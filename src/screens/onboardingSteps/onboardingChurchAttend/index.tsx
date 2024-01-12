@@ -12,10 +12,12 @@ import { card } from '@/src/styles/items';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { useToast } from 'react-native-toast-notifications';
 import { fontSize, header } from '@/src/styles/typography';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchAttend'>;
 
 const OnboardingChurchAttend = ({ navigation, route }: Props) => {
+  const { dark, colors } = useTheme();
   const [churchAttend, setChurchAttend] = useState<string>('');
   const toast = useToast();
 
@@ -38,7 +40,7 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
       activeStep={2}
       disabled={!churchAttend}
       reasonText={
-        <StyledText style={{ color: Colors.primary.brand }}>
+        <StyledText style={{ color: dark ? Colors.main.black : Colors.primary.brand }}>
           Your frequency of church attendance helps us to understand the type of content you would
           be most interested in seeing to enhance your One Body experience.{' '}
           <StyledText style={{ fontWeight: 'bold', color: Colors.primary.brand }}>
@@ -47,13 +49,21 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
         </StyledText>
       }
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+          <StyledText
+            style={[
+              Typography.header.h1,
+              { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
+            ]}
+          >
             How often do you attend Church?
           </StyledText>
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+            style={[
+              Typography.subheader.R,
+              { color: dark ? Colors.main.black : Colors.neutral[300], marginTop: spacing.x8 },
+            ]}
           >
             Select the rate at which you go to church
           </StyledText>

@@ -324,10 +324,11 @@ const SocialItem = ({
         ) : null}
 
         {media.length > 0 &&
-          media.map((mediaItem) => {
+          media.map((mediaItem, index) => {
             if (mediaItem.type == 'VIDEO') {
               return (
                 <Video
+                  key={`${mediaItem.type}-${index}`}
                   ignoreSilentSwitch="ignore"
                   source={{
                     uri: mediaItem.url,
@@ -357,6 +358,7 @@ const SocialItem = ({
                 {imageInfo.map((image, index) => {
                   return (
                     <View
+                      key={`${index}`}
                       style={{
                         flexGrow: 1,
                         aspectRatio: image.width / image.height,

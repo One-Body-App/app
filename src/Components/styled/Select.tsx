@@ -36,14 +36,12 @@ export const StyledSelect: FC<Props> = ({
   label,
   wrapperStyle,
 }) => {
+  const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [searchedItems, setSearchedItems] = useState<selectedItem[]>([]);
 
-  const { colors } = useTheme();
-
   useEffect(() => {
-    setSearchedItems(items);
     setSearchText('');
   }, [items]);
 
@@ -53,9 +51,10 @@ export const StyledSelect: FC<Props> = ({
       values = items.filter(
         (item) => item.text.toLowerCase().indexOf(searchText.toLowerCase()) > -1
       );
+      setSearchedItems(values);
+    } else {
+      setSearchedItems([]);
     }
-
-    setSearchedItems(values);
   }, [searchText]);
 
   return (
@@ -128,7 +127,7 @@ export const StyledSelect: FC<Props> = ({
                 <MaterialCommunityIcons
                   name="window-close"
                   size={18}
-                  color={Colors.primary.brand}
+                  color={dark ? colors.text : Colors.primary.brand}
                 />
               </TouchableOpacity>
             </View>
@@ -161,9 +160,9 @@ export const StyledSelect: FC<Props> = ({
             </View>
           </View>
 
-          <View style={{ flex: 4 }}>
+          <View style={{ flex: 4, paddingTop: spacing.x10 }}>
             <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
-              {searchedItems.length == 0 ? (
+              {searchedItems.length == 0 && searchText != '' ? (
                 <StyledText style={[Typography.body.x2M, { padding: spacing.x16 }]}>
                   No results found
                 </StyledText>

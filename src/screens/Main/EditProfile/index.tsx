@@ -33,14 +33,12 @@ import Blog from '@/assets/svg/Blog.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 import { ApiCall } from '@/src/services/api';
 import ImagePicker from 'react-native-image-crop-picker';
-import GradientButton from '@/src/components/GradientButton';
+
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AccountType, ChurchType, Interest, Tag } from '@/utils/types';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { getuserGet, getUserProfile } from '@/src/redux/actions/UserAction';
+
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
@@ -65,6 +63,7 @@ import {
 } from '@/src/navigator/types';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
 type Props = CompositeScreenProps<
   StackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
@@ -287,41 +286,40 @@ const EditProfile = ({ navigation }: Props) => {
       // noData: true,
     };
     // let isCameraPermitted = await requestCameraPermission();
-    // let isStoragePermitted = await requestExternalWritePermission();
-    // if (isCameraPermitted && isStoragePermitted) {
-    const response = await launchCamera(options);
+    let isStoragePermitted = await requestExternalWritePermission();
+    if (isStoragePermitted) {
+      const response = await launchCamera(options);
 
-    console.log('Response = ', response);
+      console.log('Response = ', response);
 
-    if (response.didCancel) {
-      console.log('User cancelled camera picker');
+      if (response.didCancel) {
+        console.log('User cancelled camera picker');
 
-      return;
-    } else if (response.errorCode == 'camera_unavailable') {
-      console.log('Camera not available on device');
+        return;
+      } else if (response.errorCode == 'camera_unavailable') {
+        console.log('Camera not available on device');
 
-      return;
-    } else if (response.errorCode == 'permission') {
-      console.log('Permission not satisfied');
+        return;
+      } else if (response.errorCode == 'permission') {
+        console.log('Permission not satisfied');
 
-      return;
-    } else if (response.errorCode == 'others') {
-      console.log(response.errorMessage);
+        return;
+      } else if (response.errorCode == 'others') {
+        console.log(response.errorMessage);
 
-      return;
+        return;
+      }
+      let uri = response?.assets?.at(0)?.uri ?? '';
+      let type = response?.assets?.at(0)?.type ?? '';
+      let name = response?.assets?.at(0)?.fileName ?? '';
+
+      setImageObject({ uri, type, name });
+      setImageToUpload(uri);
+
+      cropimage(uri, imageType);
+    } else {
+      // console.log('no ', isCameraPermitted);
     }
-    let uri = response?.assets?.at(0)?.uri ?? '';
-    let type = response?.assets?.at(0)?.type ?? '';
-    let name = response?.assets?.at(0)?.fileName ?? '';
-
-    setImageObject({ uri, type, name });
-    setImageToUpload(uri);
-
-    cropimage(uri, imageType);
-
-    // } else {
-    //   console.log('no ', isCameraPermitted);
-    // }
   };
   const getWhatIDo = async () => {
     try {

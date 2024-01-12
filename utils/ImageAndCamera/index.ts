@@ -1,22 +1,20 @@
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
-import React from 'react';
-import {Platform, PermissionsAndroid} from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 export const requestCameraPermission = async () => {
   if (Platform.OS === 'android') {
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Camera Permission',
-          message: 'App needs camera permission',
-        },
-      );
+      const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA, {
+        title: 'Camera Permission',
+        message: 'App needs camera permission',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      });
       // If CAMERA Permission is granted
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.warn(err);
-      return false;
     }
+    return false;
   } else return true;
 };
 
@@ -28,13 +26,15 @@ export const requestExternalWritePermission = async () => {
         {
           title: 'External Storage Write Permission',
           message: 'App needs write permission',
-        },
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        }
       );
       // If WRITE_EXTERNAL_STORAGE Permission is granted
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.warn(err);
-      alert('Write permission err', err);
     }
     return false;
   } else return true;

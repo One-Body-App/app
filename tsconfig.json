@@ -7,20 +7,21 @@
 
     /* Completeness */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
-    "baseUrl": ".",
+    // "baseUrl": ".",
 
-    "types": ["node"],
+    "types": ["react-native", "jest", "node"],
+
     "paths": {
-      "@/utils/*": ["utils/*"],
-      "@/src/*": ["src/*"],
-      "@/assets/*": ["src/assets/*"],
-      "@/components/*": ["src/components/*"],
-      "@/constants/*": ["src/constants/*"],
-      "@/navigation/*": ["src/navigation/*"],
-      "@/navigator/*": ["src/navigator/*"],
-      "@/redux/*": ["src/redux/*"],
-      "@/screens/*": ["src/screens/*"],
-      "@/services/*": ["src/services/*"]
+      "@/utils/*": ["./utils/*"],
+      "@/src/*": ["./src/*"],
+      "@/assets/*": ["./src/assets/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/constants/*": ["./src/constants/*"],
+      "@/navigation/*": ["./src/navigation/*"],
+      "@/navigator/*": ["./src/navigator/*"],
+      "@/redux/*": ["./src/redux/*"],
+      "@/screens/*": ["./src/screens/*"],
+      "@/services/*": ["./src/services/*"]
     }
   }
 }

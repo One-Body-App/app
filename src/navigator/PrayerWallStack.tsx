@@ -40,7 +40,7 @@ const PrayerWall = () => {
         component={NewPrayer}
         options={({ navigation, route }) => {
           return {
-            // presentation: 'formSheet',
+            headerBackTitle: 'PrayerWall',
             title: route.params?.postId ? 'Edit Post on Prayer Wall' : 'Post on Prayer Wall',
             // headerLeft: (props) => {
             //   const { dark, colors } = useTheme();

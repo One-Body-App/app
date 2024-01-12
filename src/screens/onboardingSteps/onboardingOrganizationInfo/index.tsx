@@ -54,7 +54,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
       activeStep={2}
       disabled={!longitude || !latitude || !organizationName}
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1 }}>
           <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
             What is your Organizations Name and Location

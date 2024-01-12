@@ -15,10 +15,12 @@ import { format, parse } from 'date-fns';
 import { Calendar } from 'iconsax-react-native';
 import { useToast } from 'react-native-toast-notifications';
 import { header } from '@/src/styles/typography';
+import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
 
 const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
+  const { dark, colors } = useTheme();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<string>();
   const toast = useToast();
@@ -43,7 +45,7 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
       disabled={!date}
       reasonText={
         <>
-          <StyledText style={{ color: Colors.primary.brand }}>
+          <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
             Your date of birth helps us to understand the type of content you would be most
             interested in seeing so that we may enhance your One Body experience.{' '}
             <StyledText style={{ fontWeight: 'bold', color: Colors.primary.brand }}>
@@ -53,13 +55,21 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
         </>
       }
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+          <StyledText
+            style={[
+              Typography.header.h1,
+              { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
+            ]}
+          >
             What is your date of birth?
           </StyledText>
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+            style={[
+              Typography.subheader.R,
+              { color: dark ? Colors.main.black : Colors.neutral[300], marginTop: spacing.x8 },
+            ]}
           >
             Select your date of birth
           </StyledText>
