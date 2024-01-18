@@ -1,7 +1,8 @@
-import {Client} from 'twilio-chat';
+import { Client } from 'twilio-chat';
 
 export class TwilioService {
   static serviceInstance;
+
   static chatClient;
 
   // create a single service instance
@@ -18,7 +19,7 @@ export class TwilioService {
       throw new Error('Twilio token is null or undefined');
     }
     if (!TwilioService.chatClient && twilioToken) {
-      return Client.create(twilioToken).then(client => {
+      return Client.create(twilioToken).then((client) => {
         TwilioService.chatClient = client;
         return TwilioService.chatClient;
       });

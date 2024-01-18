@@ -218,8 +218,8 @@ export const styles = StyleSheet.create({
   socialpostview: {
     flexGrow: 1,
     // alignSelf: 'center',
-    //justifyContent: 'center',
-    //alignItems: 'center',
+    // justifyContent: 'center',
+    // alignItems: 'center',
     // width: '90%',
     // borderRadius: 5,
     // padding: 8,

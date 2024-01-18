@@ -1,7 +1,7 @@
-import { ApiCall } from '@/src/services/api';
-import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 import Toast from 'react-native-simple-toast';
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
+import { ApiCall } from '@/src/services/api';
+import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 import { setChats, setLoader } from '../actions/GeneralActions';
 import {
   setUserAll,
@@ -91,7 +91,7 @@ export function* GetChatSaga() {
   yield takeLatest(ACTIONS.GET_CHATS, GetChatRequest);
 }
 
-//Interests
+// Interests
 function* addUserInterestSaga({ params }) {
   try {
     const res = yield ApiCall({

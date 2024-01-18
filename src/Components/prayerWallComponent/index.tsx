@@ -2,19 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux';
 
+import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { ApiCall } from '@/src/services/api';
 
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import { PrayerPost } from '@/utils/types';
 import PrayerItem from '../listItems/PrayerItem';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
-const PrayerWallComponent = () => {
+function PrayerWallComponent() {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -25,14 +25,6 @@ const PrayerWallComponent = () => {
   const [isScrollEnable, setIsScrollEnable] = useState(true);
 
   const [isEndOfList, setIsEndOfList] = useState(false);
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      setRefreshing(true);
-      getPrayerPosts(1);
-    });
-
-    return unsubscribe;
-  }, [navigation]);
 
   const getPrayerPosts = async (pageNumber: number) => {
     setIsLoading(true);
@@ -44,7 +36,7 @@ const PrayerWallComponent = () => {
         verb: 'get',
       });
       let posts = [];
-      // console.log(res);
+      // console.log(res.response.meta.body.error);
       if (res?.status == 200) {
         if (pageNumber == 1) {
           posts = res?.response ?? [];
@@ -71,6 +63,15 @@ const PrayerWallComponent = () => {
   };
 
   useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setRefreshing(true);
+      getPrayerPosts(1);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  useEffect(() => {
     // getPrayers(currentPage);
     getPrayerPosts(page);
     // dispatch(
@@ -92,7 +93,7 @@ const PrayerWallComponent = () => {
       const res = await ApiCall({
         route: `prayer/${id}`,
         verb: 'delete',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -134,7 +135,11 @@ const PrayerWallComponent = () => {
           <StyledText
             style={[
               Typography.body.x2M,
-              { padding: spacing.x16, textAlign: 'center', transform: [{ rotate: '180deg' }] },
+              {
+                padding: spacing.x16,
+                textAlign: 'center',
+                transform: [{ rotate: '180deg' }, { scaleX: -1 }],
+              },
             ]}
           >
             Nothing here
@@ -164,5 +169,5 @@ const PrayerWallComponent = () => {
       />
     </View>
   );
-};
+}
 export default PrayerWallComponent;

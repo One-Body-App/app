@@ -1,55 +1,44 @@
-import React, { useEffect, useRef, useState } from 'react';
+/* eslint-disable react/no-unstable-nested-components */
+/* eslint-disable react-native/no-inline-styles */
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Avatar, Provider, Searchbar, TextInput } from 'react-native-paper';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
-import { styles } from './styles';
-import { useDispatch, useSelector } from 'react-redux';
-
-import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { TabView, SceneMap } from 'react-native-tab-view';
+import { useSelector } from 'react-redux';
+import { SceneMap } from 'react-native-tab-view';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { StackScreenProps } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ArrowRight } from 'iconsax-react-native';
+import FastImage from 'react-native-fast-image';
 
 import SearchContainComponent from '@/src/components/SearchContainComponent';
-import { BASE_URL } from '@/services/constants';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import ArticleItem from '@/src/components/listItems/ArticleItem';
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
 import { ArticleType } from '@/utils/types';
-import { DrawerScreenProps } from '@react-navigation/drawer';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   HomeStackParamsList,
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { StackScreenProps } from '@react-navigation/stack';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/src/components/styled/TextInput';
 
 import { Colors, Typography } from '@/src/styles';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import Button from '@/src/components/Button';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import SearchIcon from '@/assets/icons/search.svg';
-import { ArrowRight } from 'iconsax-react-native';
-import FastImage from 'react-native-fast-image';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import UserItem from '@/src/components/listItems/UserItem';
 import { header } from '@/src/styles/typography';
 
@@ -68,7 +57,7 @@ enum SearchType {
 
 let timer: NodeJS.Timeout;
 const keyStorage = 'recent-searchs';
-const Search = () => {
+function Search() {
   const [input, setInput] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [recentSearches, setRecentSearches] = useState<
@@ -120,7 +109,7 @@ const Search = () => {
   async function fetchData(text: string, type: String) {
     const res = await ApiCall({
       route: `user/search`,
-      token: token,
+      token,
       verb: 'post',
       params: {
         type,
@@ -143,9 +132,8 @@ const Search = () => {
         fetchData(input, searchType);
       }, 300);
       return () => clearTimeout(timer);
-    } else {
-      setResults([]);
     }
+    setResults([]);
   }, [input, searchType]);
 
   useEffect(() => {
@@ -336,13 +324,13 @@ const Search = () => {
             <FlatList
               contentContainerStyle={{ flexGrow: 1 }}
               data={results}
-              ListEmptyComponent={() => (
-                <>
-                  {!isLoading ? (
-                    <StyledText style={{ textAlign: 'center' }}>No search results</StyledText>
-                  ) : null}
-                </>
-              )}
+              ListEmptyComponent={() => {
+                if (!isLoading) {
+                  return <StyledText style={{ textAlign: 'center' }}>No search results</StyledText>;
+                }
+
+                return null;
+              }}
               renderItem={({ item }) => {
                 if (item.type == 'posts') {
                   return (
@@ -387,6 +375,7 @@ const Search = () => {
             />
           </>
         ) : (
+          // eslint-disable-next-line react/jsx-no-useless-fragment
           <>
             {!input ? (
               <>
@@ -522,5 +511,5 @@ const Search = () => {
       /> */}
     </KeyboardAvoidingView>
   );
-};
+}
 export default Search;

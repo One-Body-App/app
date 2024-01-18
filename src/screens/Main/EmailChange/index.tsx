@@ -1,34 +1,34 @@
 import React, { useRef, useState } from 'react';
 import { Text, View, TextInput as TextInputNative } from 'react-native';
 
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useDispatch, useSelector } from 'react-redux';
+import { useToast } from 'react-native-toast-notifications';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { StackScreenProps } from '@react-navigation/stack';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/src/components/Header';
 import Button from '@/src/components/Button';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from './styles';
-import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/src/services/api';
 import { validateFields } from '@/utils/validation/validate-fields';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
-import { useToast } from 'react-native-toast-notifications';
 
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/src/components/styled/TextInput';
 import { Colors } from '@/src/styles';
 
 type Props = StackScreenProps<RootStackParamList, 'EmailChange'>;
 
-const EmailChange = ({ navigation, route }: Props) => {
+function EmailChange({ navigation, route }: Props) {
   const dispatch = useDispatch();
 
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
@@ -100,12 +100,12 @@ const EmailChange = ({ navigation, route }: Props) => {
         <StyledTextInput
           ref={inputRefs.passwordN}
           value={email}
-          label={'New email'}
+          label="New email"
           autoComplete="email"
           autoCapitalize="none"
           // right={<TextInput.Icon name="eye" size={20} color="#5B7279" />}
 
-          returnKeyType={'next'}
+          returnKeyType="next"
           keyboardType="email-address"
           onSubmitEditing={() => inputRefs.passwordC.current?.focus()}
           onChangeText={(email) => setEmail(email)}
@@ -116,8 +116,8 @@ const EmailChange = ({ navigation, route }: Props) => {
         <StyledTextInput
           ref={inputRefs.passwordC}
           value={emailConfirmation}
-          returnKeyType={'done'}
-          label={'Confirm new email'}
+          returnKeyType="done"
+          label="Confirm new email"
           autoComplete="email"
           autoCapitalize="none"
           keyboardType="email-address"
@@ -163,5 +163,5 @@ const EmailChange = ({ navigation, route }: Props) => {
       </KeyboardAwareScrollView>
     </View>
   );
-};
+}
 export default EmailChange;

@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 
-import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useToast } from 'react-native-toast-notifications';
+import { useTheme } from '@react-navigation/native';
+import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { card } from '@/src/styles/items';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
-import { useToast } from 'react-native-toast-notifications';
 import { fontSize, header } from '@/src/styles/typography';
-import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchAttend'>;
 
-const OnboardingChurchAttend = ({ navigation, route }: Props) => {
+function OnboardingChurchAttend({ navigation, route }: Props) {
   const { dark, colors } = useTheme();
   const [churchAttend, setChurchAttend] = useState<string>('');
   const toast = useToast();
@@ -212,5 +212,5 @@ const OnboardingChurchAttend = ({ navigation, route }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingChurchAttend;

@@ -1,44 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Header from '@/src/components/Header';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTheme } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import auth from '@react-native-firebase/auth';
+import { LoginManager } from 'react-native-fbsdk-next';
+import { useToast } from 'react-native-toast-notifications';
 import Button from '@/src/components/Button';
 import { styles } from './styles';
-import { useDispatch, useSelector } from 'react-redux';
 
-import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { useTheme } from '@react-navigation/native';
 import { SettingsStackParamsList } from '@/src/navigator/types';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Spacing, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { RadioButton } from 'react-native-paper';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/src/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
-import auth from '@react-native-firebase/auth';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
-import { LoginManager } from 'react-native-fbsdk-next';
 import { logout } from '@/src/redux/actions/AuthActions';
-import { useToast } from 'react-native-toast-notifications';
 
 type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccount'>;
 
-const RemoveAccount = ({ navigation }: Props) => {
+function RemoveAccount({ navigation }: Props) {
   const [reason, setReason] = useState<string>('');
   const [comments, setComments] = useState<string>('');
 
@@ -74,7 +62,7 @@ const RemoveAccount = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         params: { reason, comments },
-        token: token,
+        token,
         route: 'user/remove-account',
         verb: 'delete',
       });
@@ -265,5 +253,5 @@ const RemoveAccount = ({ navigation }: Props) => {
       </KeyboardAvoidingView>
     </View>
   );
-};
+}
 export default RemoveAccount;

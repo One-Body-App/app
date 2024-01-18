@@ -9,7 +9,7 @@ type Props = {
   left?: React.ReactNode;
 };
 
-const GradientHeader = ({ title, left }: Props) => {
+function GradientHeader({ title, left }: Props) {
   return (
     <View
       style={{
@@ -69,6 +69,6 @@ const GradientHeader = ({ title, left }: Props) => {
       </LinearGradient>
     </View>
   );
-};
+}
 
 export default GradientHeader;

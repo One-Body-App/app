@@ -1,16 +1,16 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { useTheme } from '@react-navigation/native';
 import EditProfile from '../screens/main/editProfile';
 
 import MyProfile from '../screens/main/myProfile';
 import { MyProfileStackParamsList } from './types';
-import { useTheme } from '@react-navigation/native';
 import { Colors } from '../styles';
 import InviteFriend from '../screens/main/inviteFriend';
 
 const Stack = createNativeStackNavigator<MyProfileStackParamsList>();
 
-const ProfileStack = () => {
+function ProfileStack() {
   const { colors } = useTheme();
   return (
     <Stack.Navigator>
@@ -37,6 +37,6 @@ const ProfileStack = () => {
       />
     </Stack.Navigator>
   );
-};
+}
 
 export default ProfileStack;

@@ -1,23 +1,23 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
+import { SceneRendererProps } from 'react-native-tab-view';
+import { useSelector } from 'react-redux';
+import { useTheme } from '@react-navigation/native';
 import { styles } from './styles';
 import Social from '@/assets/svg/Social.svg';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
-import { SceneRendererProps } from 'react-native-tab-view';
 import { ApiCall } from '@/services/api';
-import { useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { User } from '@/utils/types';
 import SocialItem from '../listItems/SocialItem';
 import { OpenURLButton } from '@/services/constants';
 import Button from '../Button';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
-import { useTheme } from '@react-navigation/native';
 
-const InstagramFlatlist = ({
+function InstagramFlatlist({
   currentUser,
   setScrollPosition,
-}: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) => {
+}: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [page, setPage] = useState<number>(1);
   const [instagramPosts, setInstagramPosts] = useState<any>([]);
@@ -30,7 +30,7 @@ const InstagramFlatlist = ({
       const res = await ApiCall({
         route: `user/get-social/instagram/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -78,7 +78,7 @@ const InstagramFlatlist = ({
         minimumViewTime: 100,
         itemVisiblePercentThreshold: 75,
       },
-      onViewableItemsChanged: onViewableItemsChanged,
+      onViewableItemsChanged,
     },
   ]);
   const { colors } = useTheme();
@@ -112,7 +112,7 @@ const InstagramFlatlist = ({
         }}
         refreshControl={
           <RefreshControl
-            enabled={true}
+            enabled
             refreshing={refreshing}
             onRefresh={async () => {
               setIsEndOfList(false);
@@ -146,8 +146,7 @@ const InstagramFlatlist = ({
         }}
       />
     );
-  } else {
-    return null;
   }
-};
+  return null;
+}
 export default InstagramFlatlist;

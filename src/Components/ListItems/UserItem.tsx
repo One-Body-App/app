@@ -1,6 +1,3 @@
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-import { timeSince } from '@/utils/ResponsiveFun';
-import { User, PostType } from '@/utils/types';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { isObject } from 'lodash';
 import React, { useState } from 'react';
@@ -15,11 +12,19 @@ import {
 } from 'react-native';
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 import Entypo from 'react-native-vector-icons/Entypo';
-import { styles } from './style';
 import { decode } from 'html-entities';
 import { Caption } from 'react-native-paper';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useDispatch, useSelector } from 'react-redux';
+import Toast from 'react-native-simple-toast';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
+import { timeSince } from '@/utils/ResponsiveFun';
+import { User, PostType } from '@/utils/types';
+import { styles } from './style';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { Colors } from '@/src/styles';
 import BaseItem from './BaseItem';
 import {
@@ -27,17 +32,12 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { borderRadius } from '@/src/styles/outlines';
-import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import { ApiCall } from '@/services/api';
 import { getProfile } from '@/src/redux/actions/AuthActions';
-import Toast from 'react-native-simple-toast';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -47,7 +47,7 @@ type ScreenNavigationProp = CompositeNavigationProp<
   >
 >;
 
-const UserItem = ({ item }: { item: User }) => {
+function UserItem({ item }: { item: User }) {
   const { colors } = useTheme();
   const navigation = useNavigation<ScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -60,11 +60,11 @@ const UserItem = ({ item }: { item: User }) => {
     try {
       const res = await ApiCall({
         route: `user/unsubscribe/${id}`,
-        token: token,
+        token,
         verb: 'patch',
       });
       if (res?.status == 200) {
-        dispatch(getProfile.Request({ token: token }));
+        dispatch(getProfile.Request({ token }));
         // Toast.show('unfollowed successfully.', Toast.LONG);
         // dispatch(getuserAll({ token: token }));
         // dispatch(getuserGet({ token: token }));
@@ -82,14 +82,14 @@ const UserItem = ({ item }: { item: User }) => {
     try {
       const res = await ApiCall({
         route: `user/subscribe/${id}`,
-        token: token,
+        token,
         verb: 'patch',
       });
 
       if (res?.status == 200) {
         // dispatch(getuserAll({ token: token }));
         // dispatch(getuserGet({ token: token }));
-        dispatch(getProfile.Request({ token: token }));
+        dispatch(getProfile.Request({ token }));
         // Toast.show('Followed successfully.', Toast.LONG);
       } else {
         Toast.show('Error following, please try again later.', Toast.LONG);
@@ -215,7 +215,7 @@ const UserItem = ({ item }: { item: User }) => {
       </View>
     </TouchableOpacity>
   );
-};
+}
 export default UserItem;
 
 // <TouchableOpacity

@@ -1,7 +1,7 @@
 // --------------- LIBRARIES ---------------
-import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
-import { setAccountType, setLoader } from '../actions/GeneralActions';
+import { put, takeEvery, takeLatest } from 'redux-saga/effects';
 import { Alert } from 'react-native';
+import { setAccountType, setLoader } from '../actions/GeneralActions';
 
 // --------------- ASSETS ---------------
 import { ApiCall } from '@/src/services/api';
@@ -14,16 +14,12 @@ import {
   SignUp,
   SendVerificationEmail,
 } from '../action-types';
-import Toast from 'react-native-simple-toast';
 
 // --------------- ACTIONS ---------------
 import {
-  setSignUpData,
   setLoginData,
-  setOtpData,
   getProfile,
   setProfile,
-  profileUpdate,
   getBadges,
   setUserBadges,
   signUp,
@@ -117,7 +113,10 @@ export function* loginSocialSaga() {
   yield takeLatest(ACTIONS.LOGIN_SOCIAL, loginSocialRequest);
 }
 
-function* updateOrgProfileRequest(params) {
+function* updateOrgProfileRequest(params: {
+  data: { data: Record<string, any> | undefined; token: string; go: () => void };
+  type: string;
+}) {
   try {
     yield put(setLoader(true));
     const res: ResponseGenerator = yield ApiCall({
@@ -176,7 +175,11 @@ function* updateOrgProfileRequest(params) {
 export function* UpdateOrgProfileSaga() {
   yield takeLatest(ACTIONS.ORGProfile_Update, updateOrgProfileRequest);
 }
-function* getUserProfileRequest(params) {
+function* getUserProfileRequest(params: {
+  pullSavedData: any;
+  data: { token: any };
+  type: string;
+}) {
   try {
     const res: ResponseGenerator = yield ApiCall({
       route: `user/my-profile?pullSavedData=${params.pullSavedData ?? false}`,
@@ -201,7 +204,7 @@ export function* GetUserProfileSaga() {
   yield takeLatest(ACTIONS.USER_PROFILE, getUserProfileRequest);
 }
 
-function* removeSocialAccountRequest(params) {
+function* removeSocialAccountRequest(params: { data: { type: any; token: any }; type: string }) {
   try {
     const res: ResponseGenerator = yield ApiCall({
       route: `auth/remove-influencer-social-account/${params.data.type}`,
@@ -210,7 +213,7 @@ function* removeSocialAccountRequest(params) {
     });
 
     if (res?.status == 200) {
-      yield put(getProfile({ token: params.data.token }));
+      yield put(getProfile.Request({ token: params.data.token }));
       yield put(setLoader(false));
     } else {
       console.log('error', res?.response);
@@ -227,7 +230,7 @@ export function* RemoveSocialAccountSaga() {
   yield takeLatest(ACTIONS.REMOVE_SOCIAL_ACCOUNT, removeSocialAccountRequest);
 }
 
-function* signUpSaga({ params }) {
+function* signUpSaga(params: { data: any; token: string; type: string }) {
   try {
     const res: ResponseGenerator = yield ApiCall({
       params: params.data,
@@ -236,8 +239,8 @@ function* signUpSaga({ params }) {
       token: params.token,
     });
 
-    if (res?.status == 200) {
-      yield put(setAccountType(null));
+    if (res?.status === 200) {
+      yield put(setAccountType(''));
       yield put(signUp.Success(res?.response));
     } else {
       yield put(signUp.Failed(res?.response));
@@ -250,7 +253,7 @@ export function* SignUpSaga() {
   yield takeLatest(SignUp.REQUEST, signUpSaga);
 }
 
-function* sendVerificationEmailSaga({ params }) {
+function* sendVerificationEmailSaga(params: { data: any; token: string; type: string }) {
   console.log('SEND VERIFICATION EMAIL SAGA', params);
   try {
     const res: ResponseGenerator = yield ApiCall({
@@ -274,7 +277,7 @@ export function* SendVerificationEmailSaga() {
   yield takeLatest(SendVerificationEmail.REQUEST, sendVerificationEmailSaga);
 }
 
-function* getBadgesSaga({ params }) {
+function* getBadgesSaga(params: { token: string; type: string }) {
   try {
     const res: ResponseGenerator = yield ApiCall({
       route: 'user/badges',
@@ -294,7 +297,7 @@ export function* GetBadgesSaga() {
   yield takeEvery(GetBadges.REQUEST, getBadgesSaga);
 }
 
-function* setUserBadgesSaga({ params }) {
+function* setUserBadgesSaga(params: { token: string; badges: any; type: string }) {
   try {
     const res: ResponseGenerator = yield ApiCall({
       route: 'user/assign-badge',
@@ -303,7 +306,7 @@ function* setUserBadgesSaga({ params }) {
       verb: 'patch',
     });
 
-    if (res?.status == 200) {
+    if (res?.status === 200) {
       yield put(setUserBadges.Success(res?.response?.data));
 
       yield put(
@@ -321,7 +324,7 @@ export function* SetUserBadgesSaga() {
   yield takeEvery(SetUserBadges.REQUEST, setUserBadgesSaga);
 }
 
-function* getProfileSaga({ params }) {
+function* getProfileSaga(params: { pullSavedData: any; token: string; type: string }) {
   try {
     const res: ResponseGenerator = yield ApiCall({
       route: `user/my-profile?pullSavedData=${params.pullSavedData ?? false}`,
@@ -329,7 +332,7 @@ function* getProfileSaga({ params }) {
       verb: 'get',
     });
 
-    if (res?.status == 200) {
+    if (res?.status === 200) {
       yield put(getProfile.Success({ token: params.token, ...res?.response }));
     } else {
       yield put(getProfile.Failed(res?.response));

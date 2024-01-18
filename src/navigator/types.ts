@@ -42,8 +42,8 @@
 //     setError: (errorText: string) => void;
 //   };
 
-import { AccountType } from '@/utils/types';
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { AccountType } from '@/utils/types';
 
 //   RemoveAccount: undefined;
 //   DeactivateAccountConfirm: { reason: string };

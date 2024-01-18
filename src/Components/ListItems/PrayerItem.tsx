@@ -1,4 +1,3 @@
-import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import React, { ReactElement, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,11 +17,25 @@ import {
   useNavigation,
   useTheme,
 } from '@react-navigation/native';
+import FastImage from 'react-native-fast-image';
+import Video from 'react-native-video';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useSelector } from 'react-redux';
+import { useReducedMotion } from 'react-native-reanimated';
+import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
+import ImageModal from '@dreamwalk-os/react-native-image-modal';
+import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+import { isArray } from 'lodash';
+import Modal from 'react-native-modal';
+import Toast, { useToast } from 'react-native-toast-notifications';
+
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import { styles } from './style';
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-import FastImage from 'react-native-fast-image';
 
-import Video from 'react-native-video';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 import { AccountType, PostType, PrayerPost, SocialPost, SocialPostReaction } from '@/utils/types';
@@ -32,34 +45,20 @@ import {
   MainBottomStackParamsList,
   PrayerWallStackParamsList,
 } from '@/src/navigator/types';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { fontSize, header } from '@/src/styles/typography';
 import { spacing } from '@/src/styles/spacing';
 import { Colors, Spacing } from '@/src/styles';
 import BaseItem from './BaseItem';
-import { useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { useReducedMotion } from 'react-native-reanimated';
-import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
-import ImageModal from '@dreamwalk-os/react-native-image-modal';
-import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 
 import { ApiCall } from '@/services/api';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { isArray } from 'lodash';
 import Anonymous from '@/assets/svg/anonymous.svg';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
-import Modal from 'react-native-modal';
-import { StyledTextInput } from '../styled/TextInput';
-
-import Toast, { useToast } from 'react-native-toast-notifications';
-import ToastContainer from 'react-native-toast-notifications';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import StyledTextInput from '../styled/TextInput';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<PrayerWallStackParamsList, 'index'>,
@@ -84,7 +83,7 @@ type PrayerItemProps = {
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
 };
-const PrayerItem = ({
+function PrayerItem({
   removePost,
   editPost,
   item,
@@ -94,13 +93,13 @@ const PrayerItem = ({
   onShowDismissCard,
   parentRefreshContent,
   fromSavedPosts,
-}: PrayerItemProps) => {
+}: PrayerItemProps) {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [media, setMedia] = useState<Media[]>([]);
-  const toastRef = useRef<ToastContainer>(null);
+  const toastRef = useRef<Toast>(null);
   const [imageInfo, setImageInfo] = useState<
     {
       url: string;
@@ -122,7 +121,7 @@ const PrayerItem = ({
       const res = await ApiCall({
         route: `prayer/answered/${item.postId}`,
         verb: 'patch',
-        token: token,
+        token,
         params: {
           testimony: testinomyContent,
           reactions: [],
@@ -157,7 +156,7 @@ const PrayerItem = ({
 
   useEffect(() => {
     setImageInfo([]);
-    let media: Media[] = [];
+    const media: Media[] = [];
 
     if (isArray(item.images) && item.images && item.images.length > 0) {
       item.images?.forEach((attachment) => {
@@ -174,7 +173,7 @@ const PrayerItem = ({
     }
   }, [item]);
 
-  let myReaction: SocialPostReaction | undefined = undefined;
+  let myReaction: SocialPostReaction | undefined;
 
   item.reactions?.forEach((reaction) => {
     if (reaction.userId == user?._id) {
@@ -296,7 +295,7 @@ const PrayerItem = ({
                   resizeMode="cover"
                   paused={!isPlaying}
                   muted={isMuted}
-                  repeat={true}
+                  repeat
                   onTouchEnd={() => {
                     if (!isPlaying) {
                       setIsPlaying(true);
@@ -307,9 +306,12 @@ const PrayerItem = ({
                 />
               );
             }
+
+            return null;
           })}
 
         {imageInfo.length > 0 ? (
+          // eslint-disable-next-line react/jsx-no-useless-fragment
           <>
             {imageInfo.length > 1 ? (
               <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
@@ -429,8 +431,8 @@ const PrayerItem = ({
         onBackdropPress={() => setShowModal(false)}
         onSwipeComplete={() => setShowModal(false)}
         swipeDirection={['down']}
-        propagateSwipe={true}
-        avoidKeyboard={true}
+        propagateSwipe
+        avoidKeyboard
       >
         <View
           style={{
@@ -547,6 +549,6 @@ const PrayerItem = ({
       </Modal>
     </BaseItem>
   );
-};
+}
 
 export default PrayerItem;

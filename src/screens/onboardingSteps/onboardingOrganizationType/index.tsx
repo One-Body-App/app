@@ -1,24 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { useSelector } from 'react-redux';
+import { StackScreenProps } from '@react-navigation/stack';
+import { useToast } from 'react-native-toast-notifications';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { AccountType, Tag } from '@/utils/types';
-import { useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 
-import { StyledSelect } from '@/src/components/styled/Select';
-import { StackScreenProps } from '@react-navigation/stack';
+import StyledSelect from '@/src/components/styled/Select';
 import { OnboardingStackParamList } from '@/src/navigator/types';
-import { useToast } from 'react-native-toast-notifications';
 import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationType'>;
 
-const OnboardingOrganizationType = ({ navigation }: Props) => {
+function OnboardingOrganizationType({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
 
@@ -30,7 +30,7 @@ const OnboardingOrganizationType = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'tags/organization-types',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -62,7 +62,7 @@ const OnboardingOrganizationType = ({ navigation }: Props) => {
       onPress={() => {
         if (selectedOrganizationType) {
           navigation.navigate('OnboardingOrganizationInfo', {
-            selectedOrganizationType: selectedOrganizationType,
+            selectedOrganizationType,
           });
         } else {
           toast.show('Organization type is required', {
@@ -113,5 +113,5 @@ const OnboardingOrganizationType = ({ navigation }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingOrganizationType;

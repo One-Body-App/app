@@ -1,6 +1,3 @@
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-import { timeSince } from '@/utils/ResponsiveFun';
-import { ArticleType, PostType } from '@/utils/types';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { isObject } from 'lodash';
 import React from 'react';
@@ -15,11 +12,15 @@ import {
 } from 'react-native';
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
 import Entypo from 'react-native-vector-icons/Entypo';
-import { styles } from './style';
 import { decode } from 'html-entities';
 import { Caption } from 'react-native-paper';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useSelector } from 'react-redux';
+import { styles } from './style';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { Colors } from '@/src/styles';
 import BaseItem from './BaseItem';
 import {
@@ -27,11 +28,10 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { borderRadius } from '@/src/styles/outlines';
-import { useSelector } from 'react-redux';
+import { ArticleType, PostType } from '@/utils/types';
+import { timeSince } from '@/utils/ResponsiveFun';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 type ScreenNavigationProp = CompositeNavigationProp<
@@ -42,7 +42,7 @@ type ScreenNavigationProp = CompositeNavigationProp<
   >
 >;
 
-const ArticleItem = ({
+function ArticleItem({
   item,
   blogPostStyle,
   blogPostImageStyle,
@@ -64,7 +64,7 @@ const ArticleItem = ({
   hideProfileName?: boolean;
   pillText?: string;
   onPress?: (item: ArticleType) => void;
-}) => {
+}) {
   const { colors } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const navigation = useNavigation<ScreenNavigationProp>();
@@ -175,7 +175,7 @@ const ArticleItem = ({
       </TouchableOpacity>
     </BaseItem>
   );
-};
+}
 export default ArticleItem;
 
 // <TouchableOpacity

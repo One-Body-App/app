@@ -1,24 +1,16 @@
+/* eslint-disable global-require */
 import {
   DarkTheme,
   DefaultTheme,
   LinkingOptions,
   NavigationContainer,
-  Route,
   useTheme,
 } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
-  ImageBackground,
   Linking,
   Platform,
-  StyleProp,
-  StyleSheet,
-  TextProps,
-  TextStyle,
-  TouchableOpacity,
-  View,
   useColorScheme,
   useWindowDimensions,
 } from 'react-native';
@@ -27,74 +19,44 @@ import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
 
-import { RootState } from '../redux/reducers/rootReducer';
-import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions';
 import { isEqual } from 'lodash';
 import {
   NativeStackNavigationOptions,
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
+import messaging from '@react-native-firebase/messaging';
+import FastImage from 'react-native-fast-image';
+import { ReactionProvider } from 'react-native-reactions';
+import { GiphySDK } from '@giphy/react-native-sdk';
+import LottieSplashScreen from 'react-native-lottie-splash-screen';
+import { RootState } from '../redux/reducers/rootReducer';
+import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions';
 import ForgotPassword from '../screens/forgotPassword';
 import Login from '../screens/login';
 import Signup from '../screens/signup';
 
-import {
-  HomeStackParamsList,
-  MainDrawerParamsList,
-  MainStackParamList,
-  OnboardingStackParamList,
-  SettingsStackParamsList,
-} from './types';
-import messaging from '@react-native-firebase/messaging';
-
-import Connections from '../screens/main/connections';
+import { MainStackParamList } from './types';
 
 import Intro from '../screens/intro';
 
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import MainTabStack from './BottomTabStack';
-import DrawerContent from './DrawerContent';
-import Message from '@/assets/icons/message.svg';
-import Notification from '@/assets/icons/notification.svg';
-import Logo from '@/assets/icons/logo.svg';
-import { spacing } from '../styles/spacing';
 import { Colors } from '../styles';
 import AccountType from '../screens/accountType';
-import FastImage from 'react-native-fast-image';
-import SettingsStack from './SettingsStack';
-import NewPassword from '../screens/newPassword/NewPassword';
 import ConfirmLogin from '../screens/login/ConfirmLogin';
-import OnboardingStack from './OnboardingStack';
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
-import Feather from 'react-native-vector-icons/Feather';
-import { Home3, Profile2User } from 'iconsax-react-native';
 
 import DrawerNav from './DrawerStack';
 import NewPost from '../screens/post/NewPost';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { StackScreenProps } from '@react-navigation/stack';
-import { ReactionProvider } from 'react-native-reactions';
 
-import {
-  GiphyDialog,
-  type GiphyDialogConfig,
-  type GiphyMedia,
-  GiphyVideoManager,
-  GiphyMediaView,
-  GiphySDK,
-} from '@giphy/react-native-sdk';
-import { StyledText } from '../components/styled/Text';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import SinglePost from '../screens/post/Single';
+
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 export const headerOptions: NativeStackNavigationOptions = {
-  headerShadowVisible: Platform.OS != 'ios',
-  headerTransparent: Platform.OS == 'ios' ? true : false,
+  headerShadowVisible: Platform.OS !== 'ios',
+  headerTransparent: Platform.OS === 'ios',
   headerBackTitleVisible: false,
   headerTitle() {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { dark } = useTheme();
 
     return (
@@ -111,7 +73,7 @@ export const headerOptions: NativeStackNavigationOptions = {
   },
 };
 
-const Main = () => {
+function Main() {
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
   const authState = useSelector((state: RootState) => state.auth);
@@ -271,7 +233,7 @@ const Main = () => {
 
         if (url) {
           // Any custom logic to check whether the URL needs to be handled
-          //...
+          // ...
 
           // Call the listener to let React Navigation handle the URL
           listener(url);
@@ -323,8 +285,8 @@ const Main = () => {
           {user &&
           token &&
           authState.getProfileData &&
-          (authState.getProfileData?.accountType == 'individual' ||
-            authState.getProfileData?.accountType == 'organization') &&
+          (authState.getProfileData?.accountType === 'individual' ||
+            authState.getProfileData?.accountType === 'organization') &&
           user?.emailVerified ? (
             <>
               <MainStack.Screen
@@ -336,7 +298,7 @@ const Main = () => {
               <MainStack.Screen
                 name="SinglePost"
                 component={SinglePost}
-                options={{ headerBackTitleVisible: false }}
+                options={{ headerBackTitleVisible: false, title: 'Comment' }}
               />
 
               <MainStack.Screen
@@ -429,6 +391,6 @@ const Main = () => {
       </ReactionProvider>
     </NavigationContainer>
   );
-};
+}
 
 export default Main;

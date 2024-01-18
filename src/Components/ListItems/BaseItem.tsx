@@ -1,41 +1,40 @@
-import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import React, { ReactNode, useState } from 'react';
 import { Platform, Share, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
+import FastImage from 'react-native-fast-image';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Heart, Location, Message2 } from 'iconsax-react-native';
+import { useTheme } from '@react-navigation/native';
+import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
+import { Reaction } from 'react-native-reactions';
+import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import { styles } from './style';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-import FastImage from 'react-native-fast-image';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 import PrayerIcon from '@/assets/svg/Prayer.svg';
 import NounHands from '@/assets/svg/NounHands.svg';
 
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { fontSize } from '@/src/styles/typography';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Heart, Location, Message2 } from 'iconsax-react-native';
-import { useTheme } from '@react-navigation/native';
 
-import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/services/api';
 import { getuserGet } from '@/src/redux/actions/UserAction';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
-  AccountType,
   CommentPost,
   PostType,
   PostUserData,
   SocialPostReaction,
   SocialPostReactionType,
 } from '@/utils/types';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import OptionsModal from './OptionsModal';
-import { Reaction } from 'react-native-reactions';
 
 interface BaseItemProps {
   children: ReactNode;
@@ -79,7 +78,7 @@ interface BaseItemProps {
   editPost?: (postId: string) => void;
 }
 
-const BaseItem = ({
+function BaseItem({
   style,
   onPress,
 
@@ -98,7 +97,7 @@ const BaseItem = ({
   removePost,
   editPost,
   fromSavedPosts,
-}: BaseItemProps) => {
+}: BaseItemProps) {
   const { colors } = useTheme();
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -116,7 +115,7 @@ const BaseItem = ({
       const res = await ApiCall({
         route: `${postData.type}/react`,
         verb: 'patch',
-        token: token,
+        token,
         params: {
           postId: postData.id,
           type,
@@ -127,7 +126,7 @@ const BaseItem = ({
         // dispatch(getuserGet({ token }));
         // setMyReaction()
         if (res.response?.reactions?.length > 0) {
-          let myReaction: SocialPostReaction | undefined = undefined;
+          let myReaction: SocialPostReaction | undefined;
           res.response?.reactions.forEach((reaction: SocialPostReaction) => {
             if (reaction.userId == user?._id) {
               myReaction = reaction;
@@ -157,7 +156,7 @@ const BaseItem = ({
       const res = await ApiCall({
         route: `${PostType.social}/remove-reaction`,
         verb: 'patch',
-        token: token,
+        token,
         params: {
           postId: postData.id,
         },
@@ -167,8 +166,8 @@ const BaseItem = ({
         // dispatch(getuserGet({ token }));
 
         if (res.response?.reactions?.length > 0) {
-          let myReaction = undefined;
-          let indexToRemove = -1;
+          let myReaction;
+          const indexToRemove = -1;
           res.response?.reactions.forEach((reaction: any) => {
             if (reaction.userId == user?._id) {
               myReaction = reaction;
@@ -202,7 +201,7 @@ const BaseItem = ({
       const res = await ApiCall({
         route: `user/save-post`,
         verb: 'post',
-        token: token,
+        token,
         params: {
           postId,
 
@@ -231,7 +230,7 @@ const BaseItem = ({
       const res = await ApiCall({
         route: `user/remove-saved-post`,
         verb: 'delete',
-        token: token,
+        token,
         params: {
           id,
           link,
@@ -382,7 +381,7 @@ const BaseItem = ({
                 borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
               }}
-              resizeMode={'contain'}
+              resizeMode="contain"
             />
           )}
         </TouchableOpacity>
@@ -646,10 +645,10 @@ const BaseItem = ({
                           }}
                           onTap={async (item) => {
                             if (item) {
-                              if (myReaction?.type == item['type']) {
+                              if (myReaction?.type == item.type) {
                                 await removeReactPost();
                               } else {
-                                await reactPost(item['type']);
+                                await reactPost(item.type);
                               }
                             }
                           }}
@@ -777,7 +776,7 @@ const BaseItem = ({
       />
     </View>
   );
-};
+}
 
 export default BaseItem;
 

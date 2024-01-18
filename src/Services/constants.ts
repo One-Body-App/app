@@ -1,24 +1,26 @@
 import { unescape } from 'lodash';
 import { Linking } from 'react-native';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import Config from 'react-native-config';
-export const BASE_URL = Config.BASE_URL;
-export const PRIVACY_POLICY_URL = Config.PRIVACY_POLICY_URL;
-export const TERMS_CONDITIONS_URL = Config.TERMS_CONDITIONS_URL;
-export const GOOGLE_LOGIN_CLIENT_ID = Config.GOOGLE_LOGIN_CLIENT_ID;
-export const INSTAGRAM_APP_ID = Config.INSTAGRAM_APP_ID;
-export const INSTAGRAM_LOGIN_REDIRECT = Config.INSTAGRAM_LOGIN_REDIRECT;
-export const INSTAGRAM_CONNECT_REDIRECT = Config.INSTAGRAM_CONNECT_REDIRECT;
-export const INSTAGRAM_RECONNECT_REDIRECT = Config.INSTAGRAM_RECONNECT_REDIRECT;
-export const NO_PROFILE_IMAGE = Config.NO_PROFILE_IMAGE;
-export const NO_POST_IMAGE_URL = Config.NO_POST_IMAGE_URL;
-export const TWITTER_CLIENT_ID = Config.TWITTER_CLIENT_ID;
-export const GIPHY_KEY_IOS = Config.GIPHY_KEY_IOS;
-export const GIPHY_KEY_ANDROID = Config.GIPHY_KEY_ANDROID;
 
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { sha256 } from 'react-native-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
+
+export const { BASE_URL } = Config;
+export const { PRIVACY_POLICY_URL } = Config;
+export const { TERMS_CONDITIONS_URL } = Config;
+export const { GOOGLE_LOGIN_CLIENT_ID } = Config;
+export const { INSTAGRAM_APP_ID } = Config;
+export const { INSTAGRAM_LOGIN_REDIRECT } = Config;
+export const { INSTAGRAM_CONNECT_REDIRECT } = Config;
+export const { INSTAGRAM_RECONNECT_REDIRECT } = Config;
+export const { NO_PROFILE_IMAGE } = Config;
+export const { NO_POST_IMAGE_URL } = Config;
+export const { TWITTER_CLIENT_ID } = Config;
+export const { GIPHY_KEY_IOS } = Config;
+export const { GIPHY_KEY_ANDROID } = Config;
 
 export const OpenURLButton = async (
   url: string,
@@ -33,42 +35,40 @@ export const OpenURLButton = async (
       if (canOpen) {
         if (externalBrowser) {
           Linking.openURL(url);
-        } else {
-          if (isAuthLogin && authRedirect) {
-            const result = await InAppBrowser.openAuth(url, authRedirect, {
-              // iOS Properties
-              ephemeralWebSession: false,
-              // Android Properties
-              showTitle: false,
-              enableUrlBarHiding: true,
-              enableDefaultShare: false,
-            });
+        } else if (isAuthLogin && authRedirect) {
+          const result = await InAppBrowser.openAuth(url, authRedirect, {
+            // iOS Properties
+            ephemeralWebSession: false,
+            // Android Properties
+            showTitle: false,
+            enableUrlBarHiding: true,
+            enableDefaultShare: false,
+          });
 
-            if (result.type == 'success') {
-              Linking.openURL(result.url);
-            }
-          } else {
-            const urlToUse = unescape(decodeURI(decodeHTMLEntities(url)));
-            await InAppBrowser.open(urlToUse, {
-              readerMode: false,
-              animated: true,
-              modalPresentationStyle: 'fullScreen',
-              modalTransitionStyle: 'coverVertical',
-              modalEnabled: true,
-              enableBarCollapsing: false,
-
-              showTitle: true,
-              enableUrlBarHiding: true,
-              enableDefaultShare: true,
-              forceCloseOnRedirection: false,
-              animations: {
-                startEnter: 'slide_in_right',
-                startExit: 'slide_out_left',
-                endEnter: 'slide_in_left',
-                endExit: 'slide_out_right',
-              },
-            });
+          if (result.type == 'success') {
+            Linking.openURL(result.url);
           }
+        } else {
+          const urlToUse = unescape(decodeURI(decodeHTMLEntities(url)));
+          await InAppBrowser.open(urlToUse, {
+            readerMode: false,
+            animated: true,
+            modalPresentationStyle: 'fullScreen',
+            modalTransitionStyle: 'coverVertical',
+            modalEnabled: true,
+            enableBarCollapsing: false,
+
+            showTitle: true,
+            enableUrlBarHiding: true,
+            enableDefaultShare: true,
+            forceCloseOnRedirection: false,
+            animations: {
+              startEnter: 'slide_in_right',
+              startExit: 'slide_out_left',
+              endEnter: 'slide_in_left',
+              endExit: 'slide_out_right',
+            },
+          });
         }
       }
     }
@@ -81,11 +81,12 @@ export const getCloser = (value: number, checkOne: number, checkTwo: number) =>
   Math.abs(value - checkOne) < Math.abs(value - checkTwo) ? checkOne : checkTwo;
 
 export const decodeHTMLEntities = (str: string) => {
+  let newStr = str;
   if (str) {
-    str = str.replace(/&#038/gim, '&');
+    newStr = str.replace(/&#038/gim, '&');
   }
 
-  return str;
+  return newStr;
 };
 
 export const codeChallenge = async () => {
@@ -107,7 +108,7 @@ export const getInstagramAuthToken = async (
       url: `${BASE_URL}/auth/instagram-token`,
       data: {
         redirect_uri: redirectUrl,
-        code: code,
+        code,
         updateUser: true,
       },
       headers: {
@@ -129,7 +130,9 @@ export const getInstagramAuthToken = async (
         instagramToken: result.data?.instagramToken,
       };
     }
-  } catch (error: any) {}
+  } catch (error: any) {
+    console.log(error);
+  }
 };
 
 export const getTwitterAuthToken = async (
@@ -144,7 +147,7 @@ export const getTwitterAuthToken = async (
       url: `${BASE_URL}/auth/twitter-token-oauth-2`,
       data: {
         redirect_uri: redirectUrl,
-        code: code,
+        code,
         codeVerifier: codeConfirmation,
         updateUser: true,
       },

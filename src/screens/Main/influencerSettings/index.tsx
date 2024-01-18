@@ -1,35 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { View, Linking } from 'react-native';
 import { Text } from 'react-native-paper';
-import Button from '../../../components/Button';
 import auth from '@react-native-firebase/auth';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { styles } from './styles';
-import Header from '@/src/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '@/src/_Navigation/types';
-
-import { getUserProfile } from '@/src/redux/actions/UserAction';
-
 import { useTheme } from '@react-navigation/native';
-import GoBackIcon from '@/src/components/GoBackIcon';
+import Button from '../../../components/Button';
+import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
+import { styles } from './styles';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import {
   INSTAGRAM_APP_ID,
   INSTAGRAM_CONNECT_REDIRECT,
   INSTAGRAM_RECONNECT_REDIRECT,
-  BASE_URL,
   OpenURLButton,
   TWITTER_CLIENT_ID,
   codeChallenge,
   getInstagramAuthToken,
   getTwitterAuthToken,
 } from '@/services/constants';
-import axios from 'axios';
 import { getProfile, removeSocialAccountRequest } from '@/src/redux/actions/AuthActions';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
@@ -37,7 +28,7 @@ type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerSettings'>;
 const twitterRedirectUrl = 'onebodyapp://influencer-settings/connect/twitter';
 const instagramRedirectUrl = 'onebodyapp://influencer-settings/connect/instagram';
 
-const InfluencerSettings = ({ navigation, route }: Props) => {
+function InfluencerSettings({ navigation, route }: Props) {
   const userToken = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
@@ -68,7 +59,9 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
 
       // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       // }
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   useEffect(() => {
@@ -81,7 +74,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
           : INSTAGRAM_CONNECT_REDIRECT
       ).then((result) => {
         if (result && result.instagramTokenExpiresAtReal) {
-          setInstagramTokenExpiresAtReal(parseInt(result.instagramTokenExpiresAtReal));
+          setInstagramTokenExpiresAtReal(parseInt(result.instagramTokenExpiresAtReal, 10));
           dispatch(
             getProfile.Request({
               token: userToken,
@@ -104,7 +97,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
         twitterRedirectUrl
       ).then((result) => {
         if (result && result.twitterTokenExpiresAtReal) {
-          setTwitterTokenExpiresAtReal(parseInt(result.twitterTokenExpiresAtReal));
+          setTwitterTokenExpiresAtReal(parseInt(result.twitterTokenExpiresAtReal, 10));
           dispatch(
             getProfile.Request({
               token: userToken,
@@ -235,7 +228,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
           ) : null}
           <Text>Disclamer: Any changes on this form will trigger an approval process</Text>
           <View style={{ flexDirection: 'row', marginTop: getHeight(5), marginBottom: 10 }}>
-            <Ionicons name="logo-instagram" color={'#032F3C'} size={20} />
+            <Ionicons name="logo-instagram" color="#032F3C" size={20} />
             <Text
               style={{
                 color: '#4f6d77',
@@ -264,7 +257,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
             {userProfile?.influencerProfile?.instagramHandler ? (
               <>
                 <Text>{userProfile.influencerProfile?.instagramHandler}</Text>
-                {showInstagramWarning ? (
+                {/* {showInstagramWarning ? (
                   <Button
                     text="Reconnect Account"
                     mode="contained"
@@ -308,33 +301,32 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
                       );
                     }}
                   />
-                )}
+                )} */}
               </>
             ) : (
-              <>
-                <Button
-                  text="Connect Account"
-                  btnTextStyle={btnTextStyle}
-                  mode="contained"
-                  paper
-                  disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
-                  onPress={() => {
-                    OpenURLButton(
-                      `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${INSTAGRAM_CONNECT_REDIRECT}&scope=user_profile,user_media&response_type=code`,
-                      false,
-                      true,
-                      INSTAGRAM_CONNECT_REDIRECT
-                    );
-                  }}
-                />
-              </>
+              // <Button
+              //   text="Connect Account"
+              //   btnTextStyle={btnTextStyle}
+              //   mode="contained"
+              //   paper
+              //   disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
+              //   onPress={() => {
+              //     OpenURLButton(
+              //       `https://api.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${INSTAGRAM_CONNECT_REDIRECT}&scope=user_profile,user_media&response_type=code`,
+              //       false,
+              //       true,
+              //       INSTAGRAM_CONNECT_REDIRECT
+              //     );
+              //   }}
+              // />
+              <View />
             )}
           </View>
         </View>
 
         <View style={{ paddingHorizontal: 25 }}>
           <View style={{ flexDirection: 'row', marginTop: getHeight(5), marginBottom: 10 }}>
-            <Ionicons name="logo-twitter" color={'#032F3C'} size={20} />
+            <Ionicons name="logo-twitter" color="#032F3C" size={20} />
             <Text
               style={{
                 color: '#4f6d77',
@@ -364,7 +356,7 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
             {userProfile?.influencerProfile?.twitterHandler ? (
               <>
                 <Text>{userProfile.influencerProfile?.twitterHandler}</Text>
-                {showTwitterWarning ? (
+                {/* {showTwitterWarning ? (
                   <Button
                     text="Reconnect Account"
                     mode="contained"
@@ -390,22 +382,21 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
                       );
                     }}
                   />
-                )}
+                )} */}
               </>
             ) : (
-              <>
-                <Button
-                  text="Connect Account"
-                  mode="contained"
-                  paper
-                  disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
-                  btnStyle={{
-                    margin: 0,
-                  }}
-                  btnTextStyle={btnTextStyle}
-                  onPress={onTwitterButtonPress}
-                />
-              </>
+              // <Button
+              //   text="Connect Account"
+              //   mode="contained"
+              //   paper
+              //   disabled={userProfile?.influencerProfile?.influencerStatus != 'approved'}
+              //   btnStyle={{
+              //     margin: 0,
+              //   }}
+              //   btnTextStyle={btnTextStyle}
+              //   onPress={onTwitterButtonPress}
+              // />
+              <View />
             )}
           </View>
         </View>
@@ -414,5 +405,5 @@ const InfluencerSettings = ({ navigation, route }: Props) => {
       </View>
     </View>
   );
-};
+}
 export default InfluencerSettings;

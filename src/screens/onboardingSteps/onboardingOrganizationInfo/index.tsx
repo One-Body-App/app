@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
+import { StackScreenProps } from '@react-navigation/stack';
+import { ArrowDown2 } from 'iconsax-react-native';
+import { useToast } from 'react-native-toast-notifications';
 import Button from '@/src/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
-import { StackScreenProps } from '@react-navigation/stack';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { ArrowDown2 } from 'iconsax-react-native';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { useToast } from 'react-native-toast-notifications';
+import StyledTextInput from '@/src/components/styled/TextInput';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationInfo'>;
 
-const OnboardingLocation = ({ navigation, route }: Props) => {
+function OnboardingLocation({ navigation, route }: Props) {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [longitude, setLongitude] = useState<number>();
   const [latitude, setLatitude] = useState<number>();
@@ -26,12 +26,12 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
 
   return (
     <OnboardingStepsLayout
-      buttonText={'Next'}
+      buttonText="Next"
       onPress={() => {
         if (longitude && latitude && locationData && organizationName != '') {
           navigation.navigate('OnboardingOrganizationContact', {
             ...route.params,
-            organizationName: organizationName,
+            organizationName,
             longitude,
             latitude,
             address: locationData?.place_name,
@@ -131,5 +131,5 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingLocation;

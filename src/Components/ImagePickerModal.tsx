@@ -1,31 +1,30 @@
-import React, { useState } from 'react';
-import { Text } from 'react-native';
-import { View } from 'react-native';
-import { TouchableOpacity } from 'react-native';
-import { StyleSheet } from 'react-native';
+import React from 'react';
+import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+
 type Props = {
   visible: boolean;
   hideVisible: () => void;
   galleryImage: () => void;
   cameraImage: () => void;
 };
-const ImagePickerModal = (props: Props) => {
+function ImagePickerModal(props: Props) {
+  const { visible, hideVisible, galleryImage, cameraImage } = props;
   return (
     <Modal
       backdropOpacity={0.3}
-      isVisible={props.visible}
-      onBackdropPress={() => props.hideVisible()}
-      onSwipeComplete={() => props.hideVisible()}
+      isVisible={visible}
+      onBackdropPress={() => hideVisible()}
+      onSwipeComplete={() => hideVisible()}
       swipeDirection={['down']}
       style={styles.bottomView}
     >
       <View style={styles.content2}>
         <View style={styles.headLine} />
         <View style={styles.container}>
-          <TouchableOpacity style={styles.boxes} onPress={props.galleryImage}>
+          <TouchableOpacity style={styles.boxes} onPress={galleryImage}>
             <Icon name="photo-video" size={35} color="#126B87" />
             <Text
               style={{
@@ -38,7 +37,7 @@ const ImagePickerModal = (props: Props) => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.boxes} onPress={props.cameraImage}>
+          <TouchableOpacity style={styles.boxes} onPress={cameraImage}>
             <Icon name="camera-retro" size={35} color="#126B87" />
             <Text
               style={{
@@ -54,7 +53,7 @@ const ImagePickerModal = (props: Props) => {
       </View>
     </Modal>
   );
-};
+}
 
 const styles = StyleSheet.create({
   centeredView: {

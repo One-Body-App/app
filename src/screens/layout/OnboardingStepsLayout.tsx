@@ -1,11 +1,3 @@
-import Button from '@/src/components/Button';
-import { StyledText } from '@/src/components/styled/Text';
-import { Buttons, Colors, Spacing, Typography } from '@/src/styles';
-import { button } from '@/src/styles/buttons';
-import { borderRadius } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
-import { header } from '@/src/styles/typography';
-import { AccountType } from '@/utils/types';
 import { useTheme } from '@react-navigation/native';
 import { ReactElement, useState } from 'react';
 import {
@@ -20,6 +12,14 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Button from '@/src/components/Button';
+import StyledText from '@/src/components/styled/Text';
+import { Buttons, Colors, Spacing, Typography } from '@/src/styles';
+import { button } from '@/src/styles/buttons';
+import { borderRadius } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { header } from '@/src/styles/typography';
+import { AccountType } from '@/utils/types';
 
 type Props = {
   children: ReactElement;
@@ -42,7 +42,7 @@ const indicatorStyle: ViewStyle = {
   opacity: 0.2,
 };
 
-const OnboardingStepsLayout = ({
+function OnboardingStepsLayout({
   children,
   onPress,
   buttonText,
@@ -52,7 +52,7 @@ const OnboardingStepsLayout = ({
   reasonText,
   dontUseScrollView,
   loading,
-}: Props) => {
+}: Props) {
   const { colors, dark } = useTheme();
   const [showModal, setShowModal] = useState<boolean>(false);
   return (
@@ -72,20 +72,20 @@ const OnboardingStepsLayout = ({
                 { marginHorizontal: 0 },
                 activeStep >= 1 ? { opacity: 1 } : null,
               ]}
-            ></View>
-            <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep >= 6 ? { opacity: 1 } : null]}></View>
+            />
+            <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]} />
+            <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]} />
+            <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]} />
+            <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]} />
+            <View style={[indicatorStyle, activeStep >= 6 ? { opacity: 1 } : null]} />
           </View>
         ) : (
           <View style={{ flexDirection: 'row' }}>
-            <View style={[indicatorStyle, activeStep >= 1 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]}></View>
-            <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]}></View>
+            <View style={[indicatorStyle, activeStep >= 1 ? { opacity: 1 } : null]} />
+            <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]} />
+            <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]} />
+            <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]} />
+            <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]} />
           </View>
         )}
       </View>
@@ -195,5 +195,5 @@ const OnboardingStepsLayout = ({
       </Modal>
     </SafeAreaView>
   );
-};
+}
 export default OnboardingStepsLayout;

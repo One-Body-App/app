@@ -1,30 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { View, Image, TouchableOpacity, ScrollView, FlatList, RefreshControl } from 'react-native';
+import { StackScreenProps } from '@react-navigation/stack';
+import { useDispatch, useSelector } from 'react-redux';
+import { useToast } from 'react-native-toast-notifications';
+import { serialize } from 'object-to-formdata';
+import { useTheme } from '@react-navigation/native';
 import { styles } from './styles';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
-import { StackScreenProps } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, User } from '@/utils/types';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
-import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import { useToast } from 'react-native-toast-notifications';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/src/components/styled/TextInput';
 import { fontSize } from '@/src/styles/typography';
 import { orgprofileUpdate, profileUpdate } from '@/src/redux/actions/AuthActions';
 import SearchIcon from '@/assets/icons/search.svg';
 import { profileImageList } from '@/src/styles/items';
-import { serialize } from 'object-to-formdata';
-import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
-const OnboardingInfluencers = ({ route }: Props) => {
+function OnboardingInfluencers({ route }: Props) {
   const { dark } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const isLoading = useSelector((state: RootState) => state.general.loader);
@@ -52,7 +52,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
       const res = await ApiCall({
         route: `user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`,
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -84,7 +84,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/add-following',
-        token: token,
+        token,
         params: { following: selectedInfluencers },
         verb: 'patch',
       });
@@ -108,7 +108,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
 
   return (
     <OnboardingStepsLayout
-      buttonText={'Done'}
+      buttonText="Done"
       dontUseScrollView
       onPress={async () => {
         if (selectedInfluencers.length > 0) {
@@ -203,7 +203,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
               refreshing={isRefreshing}
               refreshControl={
                 <RefreshControl
-                  enabled={true}
+                  enabled
                   refreshing={isRefreshing}
                   onRefresh={() => {
                     setIsRefreshing(true);
@@ -310,5 +310,5 @@ const OnboardingInfluencers = ({ route }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingInfluencers;

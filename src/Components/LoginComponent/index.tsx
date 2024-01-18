@@ -1,14 +1,5 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
-import {
-  View,
-  TouchableOpacity,
-  ScrollView,
-  Linking,
-  useColorScheme,
-  Platform,
-  Text,
-} from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { View, TouchableOpacity, ScrollView, useColorScheme, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,20 +8,23 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Modal from 'react-native-modal';
 import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
 import axios from 'axios';
-import { StackScreenProps } from '@react-navigation/stack';
 
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { useToast } from 'react-native-toast-notifications';
+import { useNavigation, useTheme } from '@react-navigation/native';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { openInbox } from 'react-native-email-link';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { getHeight } from '@/utils/ResponsiveFun';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 import Google from '@/assets/svg/G.svg';
 import Twitter from '@/assets/svg/Twitter.svg';
-import Facebook from '@/assets/svg/Facebook.svg';
 import Apple from '@/assets/svg/Apple.svg';
 import Button from '../Button';
 
 import { styles } from './styles';
-import { appColor } from '../../constants';
 import { requestUserPermission } from '@/services/notification/notificationServices';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import GradientButton from '../GradientButton';
@@ -44,21 +38,14 @@ import {
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 
 import { getTwitterLoginToken, processLogin } from '@/services/login';
-import { BASE_URL, GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/services/constants';
-import { useToast } from 'react-native-toast-notifications';
-import G from '@/assets/svg/G.svg';
-import { CompositeScreenProps, useNavigation, useTheme } from '@react-navigation/native';
-import { appleAuth } from '@invertase/react-native-apple-authentication';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/services/constants';
 import { MainStackParamList } from '@/src/navigator/types';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import { openInbox } from 'react-native-email-link';
-import { button, buttonText } from '@/src/styles/buttons';
+import { button } from '@/src/styles/buttons';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { StyledTextInput } from '../styled/TextInput';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import StyledTextInput from '../styled/TextInput';
 import { fontSize } from '@/src/styles/typography';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
@@ -84,14 +71,13 @@ interface Props {
   enabledLoginProviders?: string[];
 }
 
-const LoginComponent: FC<Props> = ({
+function LoginComponent({
   showConfirmationEmailMessage,
   oauth_token,
   oauth_verifier,
   oobCode,
   mode,
   action,
-  provider,
   verifyAccount,
 
   currentUserEmail,
@@ -99,7 +85,7 @@ const LoginComponent: FC<Props> = ({
   toScreenRouteParams,
   enabledLoginProviders,
   updateParent,
-}) => {
+}: Props) {
   const dispatch = useDispatch();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
 
@@ -221,7 +207,7 @@ const LoginComponent: FC<Props> = ({
           socialData: newUserCredentials?.additionalUserInfo,
           userId: newUserCredentials.user.uid,
           token,
-          accountType: accountType,
+          accountType,
         };
 
         dispatch(loginSocialRequest({ data, seterror, gotoSignup, sendFcm }));
@@ -248,8 +234,8 @@ const LoginComponent: FC<Props> = ({
             method: 'POST',
             url: 'https://api.twitter.com/oauth/access_token',
             params: {
-              oauth_token: oauth_token,
-              oauth_verifier: oauth_verifier,
+              oauth_token,
+              oauth_verifier,
             },
             headers: {
               'Content-Type': 'application/json',
@@ -281,24 +267,22 @@ const LoginComponent: FC<Props> = ({
                 type: 'error',
                 placement: 'top',
               });
-            } else {
-              if (verifyAccount) {
-                if (toScreen) {
-                  navigation.goBack();
+            } else if (verifyAccount) {
+              if (toScreen) {
+                navigation.goBack();
 
-                  navigation.push(toScreen as keyof MainStackParamList, {
-                    // setError: seterror,
-                    ...toScreenParams,
-                  });
-                } else {
-                  if (updateParent) {
-                    updateParent(true);
-                  }
-                  navigation.goBack();
-                }
+                navigation.push(toScreen as keyof MainStackParamList, {
+                  // setError: seterror,
+                  ...toScreenParams,
+                });
               } else {
-                processLogin(userCredentials, setNewUserCredentials, setToken);
+                if (updateParent) {
+                  updateParent(true);
+                }
+                navigation.goBack();
               }
+            } else {
+              processLogin(userCredentials, setNewUserCredentials, setToken);
             }
           }
         } catch (error: any) {
@@ -330,7 +314,7 @@ const LoginComponent: FC<Props> = ({
       seterror('');
 
       if (!!verifyAccount && !!onlyPassword && email !== currentUserEmail) {
-        throw { message: "Please login with the current user's email" };
+        throw new Error("Please login with the current user's email");
       }
 
       if (!emailError && !passwordError) {
@@ -346,29 +330,25 @@ const LoginComponent: FC<Props> = ({
               navigation.pop();
             }
             await processLogin(emailCredential, setNewUserCredentials, setToken);
+          } else if (toScreen) {
+            navigation.goBack();
+            navigation.push(toScreen as keyof MainStackParamList, {
+              // setError: seterror,
+              ...toScreenRouteParams,
+            });
           } else {
-            if (toScreen) {
-              navigation.goBack();
-              navigation.push(toScreen as keyof MainStackParamList, {
-                // setError: seterror,
-                ...toScreenRouteParams,
-              });
-            } else {
-              if (updateParent) {
-                updateParent(true);
-              }
-              navigation.goBack();
+            if (updateParent) {
+              updateParent(true);
             }
+            navigation.goBack();
           }
+        } else if (emailCredential.user.emailVerified) {
+          dispatch(setLoader(false));
         } else {
-          if (emailCredential.user.emailVerified) {
-            dispatch(setLoader(false));
-          } else {
-            setIsVerificationNeeded(true);
-            await processLogin(emailCredential, setNewUserCredentials, setToken);
+          setIsVerificationNeeded(true);
+          await processLogin(emailCredential, setNewUserCredentials, setToken);
 
-            dispatch(setLoader(false));
-          }
+          dispatch(setLoader(false));
         }
 
         // dispatch(loginRequest({ data, seterror, gotoOtp, sendFcm }));
@@ -420,7 +400,9 @@ const LoginComponent: FC<Props> = ({
 
         // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   async function onAppleButtonPress() {
@@ -491,86 +473,28 @@ const LoginComponent: FC<Props> = ({
           type: 'error',
           placement: 'top',
         });
-      } else {
-        if (verifyAccount) {
-          if (toScreen) {
-            navigation.goBack();
+      } else if (verifyAccount) {
+        if (toScreen) {
+          navigation.goBack();
 
-            navigation.push(toScreen as keyof MainStackParamList, {
-              // setError: seterror,
-              ...toScreenParams,
-            });
-          } else {
-            if (updateParent) {
-              updateParent(true);
-            }
-            navigation.goBack();
-          }
+          navigation.push(toScreen as keyof MainStackParamList, {
+            // setError: seterror,
+            ...toScreenParams,
+          });
         } else {
-          await processLogin(userCredentials, setNewUserCredentials, setToken);
+          if (updateParent) {
+            updateParent(true);
+          }
+          navigation.goBack();
         }
+      } else {
+        await processLogin(userCredentials, setNewUserCredentials, setToken);
       }
       dispatch(setLoader(false));
     } catch (error: any) {
       if (!error.message.includes('Code=-5')) {
         seterror(error.message.replace(`[${error.code}]`, ''));
       }
-    }
-  };
-
-  const facebookLogin = async () => {
-    try {
-      seterror('');
-      dispatch(setLoader(true));
-      setState({ ...state, emailError: '', passwordError: '' });
-
-      const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
-
-      if (result.isCancelled) {
-        throw 'User cancelled the login process';
-      }
-
-      // Once signed in, get the users AccesToken
-      const data = await AccessToken.getCurrentAccessToken();
-
-      if (!data) {
-        throw 'Something went wrong obtaining access token';
-      }
-
-      // Create a Firebase credential with the AccessToken
-      const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-
-      const userCredentials = await auth().signInWithCredential(facebookCredential);
-
-      if (!!verifyAccount && !!onlyPassword && userCredentials.user.email !== currentUserEmail) {
-        navigation.goBack();
-        toast.show(`Please login with the current user's email`, {
-          type: 'error',
-          placement: 'top',
-        });
-      } else {
-        if (verifyAccount) {
-          if (toScreen) {
-            navigation.goBack();
-
-            navigation.push(toScreen as keyof MainStackParamList, {
-              // setError: seterror,
-              ...toScreenParams,
-            });
-          } else {
-            if (updateParent) {
-              updateParent(true);
-            }
-            navigation.goBack();
-          }
-        } else {
-          await processLogin(userCredentials, setNewUserCredentials, setToken);
-        }
-      }
-
-      dispatch(setLoader(false));
-    } catch (error: any) {
-      if (error.message) seterror(error.message.replace(`[${error.code}]`, ''));
     }
   };
 
@@ -616,7 +540,7 @@ const LoginComponent: FC<Props> = ({
           onPress={() => {
             dispatch(sendVerificationEmail.Request({ token: userProfile?.token }));
           }}
-          text={'Didn’t receive the mail? '}
+          text="Didn’t receive the mail? "
           wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'center' }}
           btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[300] }]}
           rightIcon={
@@ -714,9 +638,9 @@ const LoginComponent: FC<Props> = ({
                 wrapperStyle={{ flex: 1 }}
                 ref={inputRefs.email}
                 value={state.email}
-                returnKeyType={'next'}
+                returnKeyType="next"
                 keyboardType="email-address"
-                label={'Email'}
+                label="Email"
                 autoCorrect={false}
                 placeholder="Email address"
                 autoComplete="email"
@@ -738,12 +662,12 @@ const LoginComponent: FC<Props> = ({
                 wrapperStyle={{ marginTop: 15, flex: 1 }}
                 ref={inputRefs.password}
                 value={state.password}
-                returnKeyType={'send'}
-                label={'Password'}
+                returnKeyType="send"
+                label="Password"
                 placeholder="Password"
-                autoCapitalize={'none'}
+                autoCapitalize="none"
                 autoCorrect={false}
-                secureTextEntry={hidePass ? true : false}
+                secureTextEntry={!!hidePass}
                 rightIcon={
                   <View style={{ justifyContent: 'center' }}>
                     <MaterialCommunityIcons
@@ -877,16 +801,17 @@ const LoginComponent: FC<Props> = ({
                       <Button
                         onPress={() => googleSignIn()}
                         wrapperViewBtnStyle={{ flex: 1 }}
-                        leftIcon={<Google style={{ alignSelf: 'center' }} fill={'#000'} />}
+                        leftIcon={<Google style={{ alignSelf: 'center' }} fill="#000" />}
                         btnStyle={[getButtonContainer(), { marginHorizontal: 0, flex: 1 }]}
                       />
                     </View>
                   ) : (
+                    // eslint-disable-next-line react/jsx-no-useless-fragment
                     <>
                       {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
                         <Button
-                          text={'Log in with Google'}
-                          leftIcon={<G style={{ marginRight: 7 }} height={getHeight(5)} />}
+                          text="Log in with Google"
+                          leftIcon={<Google style={{ marginRight: 7 }} height={getHeight(5)} />}
                           btnStyle={getButtonContainer()}
                           btnTextStyle={getButtonTextStyle()}
                           onPress={() => googleSignIn()}
@@ -953,10 +878,11 @@ const LoginComponent: FC<Props> = ({
                       />
                     </View>
                   ) : (
+                    // eslint-disable-next-line react/jsx-no-useless-fragment
                     <>
                       {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
                         <Button
-                          text={'Login with Twitter'}
+                          text="Login with Twitter"
                           leftIcon={
                             <Twitter
                               style={{ marginRight: 7 }}
@@ -1001,12 +927,13 @@ const LoginComponent: FC<Props> = ({
                       />
                     </View>
                   ) : (
+                    // eslint-disable-next-line react/jsx-no-useless-fragment
                     <>
                       {enabledLoginProviders &&
                       enabledLoginProviders?.includes('apple') &&
-                      Platform.OS == 'ios' ? (
+                      Platform.OS === 'ios' ? (
                         <Button
-                          text={'Login with Apple'}
+                          text="Login with Apple"
                           leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}
                           btnStyle={getButtonContainer()}
                           btnTextStyle={getButtonTextStyle()}
@@ -1079,7 +1006,7 @@ const LoginComponent: FC<Props> = ({
 
                   {showSendEmailConfirmation ? (
                     <GradientButton
-                      text={'SEND EMAIL CONFIRMATION'}
+                      text="SEND EMAIL CONFIRMATION"
                       btnStyle={styles.btn2}
                       btnTextStyle={styles.btnText2}
                       onPress={() => {
@@ -1098,6 +1025,6 @@ const LoginComponent: FC<Props> = ({
       </View>
     </View>
   );
-};
+}
 
 export default LoginComponent;

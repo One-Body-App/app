@@ -1,53 +1,30 @@
-import { getHeight, timeSince } from '@/utils/ResponsiveFun';
-import React, { ReactElement, useEffect, useState } from 'react';
-import {
-  Dimensions,
-  Image,
-  ScrollView,
-  StyleProp,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
-import {
-  CompositeNavigationProp,
-  CompositeScreenProps,
-  NavigationProp,
-  useNavigation,
-  useTheme,
-} from '@react-navigation/native';
-import { styles } from './style';
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
+import React, { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
-
 import Video from 'react-native-video';
-import Twitter from '@/assets/svg/Twitter.svg';
-import Instagram from '@/assets/svg/Instagram.svg';
-import { AccountType, PostType, SocialPost, SocialPostReaction } from '@/utils/types';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useSelector } from 'react-redux';
+import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
+import ImageModal from '@dreamwalk-os/react-native-image-modal';
+import { GiphyMediaView } from '@giphy/react-native-sdk';
+import { isArray } from 'lodash';
+import { NO_POST_IMAGE_URL, OpenURLButton } from '@/services/constants';
+
+import { PostType, SocialPost, SocialPostReaction } from '@/utils/types';
 import {
   ExploreStackParamsList,
   MainDrawerParamsList,
   MainBottomStackParamsList,
 } from '@/src/navigator/types';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { StyledText } from '../styled/Text';
-import { fontSize } from '@/src/styles/typography';
+import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
-import { Colors, Spacing } from '@/src/styles';
 import BaseItem from './BaseItem';
-import { useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { useReducedMotion } from 'react-native-reanimated';
-import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
-import ImageModal from '@dreamwalk-os/react-native-image-modal';
-import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 
-import { ApiCall } from '@/services/api';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { isArray } from 'lodash';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -79,7 +56,7 @@ type SocialItemProps = {
   editPost?: (postId: string) => void;
   fromSavedPosts?: boolean;
 };
-const SocialItem = ({
+function SocialItem({
   item,
   socialPostviewStyle,
   visible,
@@ -89,7 +66,7 @@ const SocialItem = ({
   removePost,
   editPost,
   fromSavedPosts,
-}: SocialItemProps) => {
+}: SocialItemProps) {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [media, setMedia] = useState<Media[]>([]);
@@ -182,7 +159,7 @@ const SocialItem = ({
     });
   }
 
-  let myReaction: SocialPostReaction | undefined = undefined;
+  let myReaction: SocialPostReaction | undefined;
 
   item.reactions?.forEach((reaction) => {
     if (reaction.userId == user?._id) {
@@ -325,7 +302,7 @@ const SocialItem = ({
 
         {media.length > 0 &&
           media.map((mediaItem, index) => {
-            if (mediaItem.type == 'VIDEO') {
+            if (mediaItem.type === 'VIDEO') {
               return (
                 <Video
                   key={`${mediaItem.type}-${index}`}
@@ -338,7 +315,7 @@ const SocialItem = ({
                   resizeMode="cover"
                   paused={!isPlaying}
                   muted={isMuted}
-                  repeat={true}
+                  repeat
                   onTouchEnd={() => {
                     if (!isPlaying) {
                       setIsPlaying(true);
@@ -349,9 +326,12 @@ const SocialItem = ({
                 />
               );
             }
+
+            return null;
           })}
 
         {imageInfo.length > 0 ? (
+          // eslint-disable-next-line react/jsx-no-useless-fragment
           <>
             {imageInfo.length > 1 ? (
               <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
@@ -424,6 +404,6 @@ const SocialItem = ({
       </View>
     </BaseItem>
   );
-};
+}
 
 export default SocialItem;

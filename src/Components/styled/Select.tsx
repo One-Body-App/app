@@ -2,13 +2,13 @@ import { FC, useEffect, useState } from 'react';
 import { ScrollView, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Modal from 'react-native-modal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { StyledText } from './Text';
+import { useTheme } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import StyledText from './Text';
 import { Colors, Typography } from '@/src/styles';
 import Button from '../Button';
 import { borderRadius } from '@/src/styles/outlines';
-import { useTheme } from '@react-navigation/native';
-import { StyledTextInput } from './TextInput';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import StyledTextInput from './TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import { spacing } from '@/src/styles/spacing';
 
@@ -27,7 +27,7 @@ interface Props {
   wrapperStyle?: ViewStyle;
 }
 
-export const StyledSelect: FC<Props> = ({
+export default function StyledSelect({
   btnText,
   items,
   onChange,
@@ -35,7 +35,7 @@ export const StyledSelect: FC<Props> = ({
   selectedItem,
   label,
   wrapperStyle,
-}) => {
+}: Props) {
   const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -88,7 +88,7 @@ export const StyledSelect: FC<Props> = ({
       <Modal
         backdropOpacity={0.3}
         isVisible={modalVisible}
-        avoidKeyboard={true}
+        avoidKeyboard
         onBackdropPress={() => setModalVisible(false)}
         onSwipeComplete={() => setModalVisible(false)}
         swipeDirection={['down']}
@@ -97,7 +97,7 @@ export const StyledSelect: FC<Props> = ({
           justifyContent: 'flex-end',
           margin: 0,
         }}
-        propagateSwipe={true}
+        propagateSwipe
       >
         <View
           style={{
@@ -136,7 +136,7 @@ export const StyledSelect: FC<Props> = ({
                 clearButtonMode="always"
                 wrapperStyle={{ flex: 1 }}
                 value={searchText}
-                returnKeyType={'search'}
+                returnKeyType="search"
                 placeholder="Search"
                 leftIcon={
                   <View style={{ justifyContent: 'center' }}>
@@ -161,7 +161,7 @@ export const StyledSelect: FC<Props> = ({
           </View>
 
           <View style={{ flex: 4, paddingTop: spacing.x10 }}>
-            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled={true}>
+            <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled>
               {searchedItems.length == 0 && searchText != '' ? (
                 <StyledText style={[Typography.body.x2M, { padding: spacing.x16 }]}>
                   No results found
@@ -208,4 +208,4 @@ export const StyledSelect: FC<Props> = ({
       </Modal>
     </View>
   );
-};
+}

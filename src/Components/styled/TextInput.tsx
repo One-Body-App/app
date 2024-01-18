@@ -1,19 +1,11 @@
-import { poppins } from '@/src/styles/typography';
 import { ReactElement, forwardRef } from 'react';
-import {
-  Platform,
-  StyleSheet,
-  TextInput,
-  TextInputProps,
-  TextStyle,
-  View,
-  ViewStyle,
-} from 'react-native';
-import { StyledText } from './Text';
-import { Colors } from '@/src/styles';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
+import { StyleSheet, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
 import { useTheme } from '@react-navigation/native';
+import { poppins } from '@/src/styles/typography';
+import StyledText from './Text';
+import { Colors } from '@/src/styles';
+import { borderRadius } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
 
 interface Props extends TextInputProps {
   label?: string;
@@ -28,7 +20,7 @@ interface Props extends TextInputProps {
   inputWrapperStyle?: ViewStyle;
 }
 
-export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
+export default forwardRef<TextInput, Props>((props, ref) => {
   const {
     label,
     inputStyle,
@@ -43,9 +35,12 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
     ...textInputProps
   } = props;
   let backgroundColorWrapper = backgroundColor;
+  const {
+    neutral: { 700: color700 },
+  } = Colors;
 
   if (!backgroundColor) {
-    backgroundColorWrapper = Colors.neutral[700];
+    backgroundColorWrapper = color700;
   }
   const { colors } = useTheme();
 
@@ -68,7 +63,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
           inputWrapperStyle,
         ]}
       >
-        {leftIcon ? leftIcon : null}
+        {leftIcon || null}
 
         <TextInput
           ref={ref}
@@ -81,7 +76,7 @@ export const StyledTextInput = forwardRef<TextInput, Props>((props, ref) => {
           ]}
         />
 
-        {rightIcon ? rightIcon : null}
+        {rightIcon || null}
       </View>
       {showCharCounter && textInputProps.maxLength ? (
         <View style={counterContainerStyle}>

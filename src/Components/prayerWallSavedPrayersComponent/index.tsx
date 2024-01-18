@@ -1,18 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/src/services/api';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { ApiCall } from '@/src/services/api';
 import { PostType, PrayerPost, PrayerWallCategory, SavedPost } from '@/utils/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import PrayerItem from '../listItems/PrayerItem';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 
-const PrayerWallSavedPrayersComponent = () => {
+function PrayerWallSavedPrayersComponent() {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,7 +101,7 @@ const PrayerWallSavedPrayersComponent = () => {
       const res = await ApiCall({
         route: `prayer/${id}`,
         verb: 'delete',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -167,5 +167,5 @@ const PrayerWallSavedPrayersComponent = () => {
       />
     </View>
   );
-};
+}
 export default PrayerWallSavedPrayersComponent;

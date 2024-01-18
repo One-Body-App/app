@@ -1,21 +1,13 @@
-import {
-  Platform,
-  TouchableOpacity,
-  View,
-  KeyboardEvent,
-  Keyboard,
-  ScrollView,
-  EmitterSubscription,
-} from 'react-native';
-import { StyledTextInput } from '../styled/TextInput';
-import { Colors } from '@/src/styles';
+import { TouchableOpacity, View, ScrollView, EmitterSubscription } from 'react-native';
 import { CloseCircle, Send, TickCircle } from 'iconsax-react-native';
-import { borderRadius } from '@/src/styles/outlines';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+import { useState } from 'react';
+import { useTheme } from '@react-navigation/native';
+import StyledTextInput from '../styled/TextInput';
+import { Colors } from '@/src/styles';
+import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import Button from '../Button';
-import { useEffect, useState } from 'react';
-import { useTheme } from '@react-navigation/native';
 
 interface Props {
   mediaGif: GiphyMedia | null;
@@ -28,14 +20,14 @@ interface Props {
 
 let keyboardWillShowListener: EmitterSubscription;
 let onKeyboardWillHideListener: EmitterSubscription;
-const CommentField = ({
+function CommentField({
   mediaGif,
   setGif,
   publishComment,
   text,
   isEditingComment,
   setEditingComment,
-}: Props) => {
+}: Props) {
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
   const [content, setContent] = useState(text ?? '');
 
@@ -99,7 +91,7 @@ const CommentField = ({
           onSubmitEditing={() => {
             submitComment(content);
           }}
-          backgroundColor={'transparent'}
+          backgroundColor="transparent"
           inputWrapperStyle={{
             borderWidth: 0,
 
@@ -131,7 +123,9 @@ const CommentField = ({
                 // await auth().signOut();
                 try {
                   GiphyDialog.show();
-                } catch (e) {}
+                } catch (e) {
+                  console.log(e);
+                }
               }}
             />
           }
@@ -213,6 +207,6 @@ const CommentField = ({
       )}
     </>
   );
-};
+}
 
 export default CommentField;

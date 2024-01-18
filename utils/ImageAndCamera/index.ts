@@ -1,4 +1,5 @@
 import { Platform, PermissionsAndroid } from 'react-native';
+
 export const requestCameraPermission = async () => {
   if (Platform.OS === 'android') {
     try {
@@ -15,7 +16,8 @@ export const requestCameraPermission = async () => {
       console.warn(err);
     }
     return false;
-  } else return true;
+  }
+  return true;
 };
 
 export const requestExternalWritePermission = async () => {
@@ -37,5 +39,6 @@ export const requestExternalWritePermission = async () => {
       console.warn(err);
     }
     return false;
-  } else return true;
+  }
+  return true;
 };

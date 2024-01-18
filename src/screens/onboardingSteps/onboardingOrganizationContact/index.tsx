@@ -1,24 +1,24 @@
 import React, { useRef, useState } from 'react';
 import { KeyboardAvoidingView, TextInput, View } from 'react-native';
+import { StackScreenProps } from '@react-navigation/stack';
+import { ArrowDown2 } from 'iconsax-react-native';
+import { useToast } from 'react-native-toast-notifications';
+import { useSelector } from 'react-redux';
 import Button from '@/src/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
-import { StackScreenProps } from '@react-navigation/stack';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { ArrowDown2 } from 'iconsax-react-native';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { useToast } from 'react-native-toast-notifications';
-import { useSelector } from 'react-redux';
+import StyledTextInput from '@/src/components/styled/TextInput';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationContact'>;
 
-const OnboardingLocation = ({ navigation, route }: Props) => {
+function OnboardingLocation({ navigation, route }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const [contactName, setContactName] = useState<string>(user?.name ?? '');
   const [contactEmail, setContactEmail] = useState<string>(user?.email ?? '');
@@ -57,7 +57,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
   };
   return (
     <OnboardingStepsLayout
-      buttonText={'Next'}
+      buttonText="Next"
       onPress={submit}
       onboardingType={AccountType.organization}
       activeStep={3}
@@ -87,7 +87,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
                 setContactName(text);
               }}
               ref={inputRefContactName}
-              returnKeyType={'next'}
+              returnKeyType="next"
               onSubmitEditing={() => inputRefContactEmail.current?.focus()}
             />
           </View>
@@ -102,7 +102,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
                 setContactEmail(text);
               }}
               ref={inputRefContactEmail}
-              returnKeyType={'next'}
+              returnKeyType="next"
               onSubmitEditing={() => inputRefContactPhoneNumber.current?.focus()}
               keyboardType="email-address"
             />
@@ -118,7 +118,7 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
                 setContactPhoneNumber(text);
               }}
               ref={inputRefContactPhoneNumber}
-              returnKeyType={'done'}
+              returnKeyType="done"
               keyboardType="phone-pad"
             />
           </View>
@@ -126,5 +126,5 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingLocation;

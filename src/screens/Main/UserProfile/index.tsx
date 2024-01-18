@@ -3,21 +3,21 @@ import { View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 
+import { StackScreenProps } from '@react-navigation/stack';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { setLoader } from '@/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { User } from '@/utils/types';
-import { StackScreenProps } from '@react-navigation/stack';
 
-import { CompositeScreenProps } from '@react-navigation/native';
 import {
   ExploreStackParamsList,
   MainBottomStackParamsList,
   MainDrawerParamsList,
   PrayerWallStackParamsList,
 } from '@/src/navigator/types';
-import { DrawerScreenProps } from '@react-navigation/drawer';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import ProfileComponent from '@/src/components/profile/Profile';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 
@@ -32,7 +32,7 @@ type Props = CompositeScreenProps<
   >
 >;
 
-const UserProfile = ({ navigation, route }: Props) => {
+function UserProfile({ navigation, route }: Props) {
   const { id } = route.params;
   const dispatch = useDispatch();
   const [user, setUser] = useState<User>();
@@ -99,7 +99,7 @@ const UserProfile = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: `user/${id}`,
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -118,7 +118,7 @@ const UserProfile = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: `user/get-related-users/${id}/1?itemsPerPage=12`,
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -137,11 +137,11 @@ const UserProfile = ({ navigation, route }: Props) => {
     try {
       const res = await ApiCall({
         route: `user/unsubscribe/${id}`,
-        token: token,
+        token,
         verb: 'patch',
       });
       if (res?.status == 200) {
-        dispatch(getProfile.Request({ token: token }));
+        dispatch(getProfile.Request({ token }));
         // Toast.show('unfollowed successfully.', Toast.LONG);
         // dispatch(getuserAll({ token: token }));
         // dispatch(getuserGet({ token: token }));
@@ -157,13 +157,13 @@ const UserProfile = ({ navigation, route }: Props) => {
     try {
       const res = await ApiCall({
         route: `user/subscribe/${id}`,
-        token: token,
+        token,
         verb: 'patch',
       });
       if (res?.status == 200) {
         // dispatch(getuserAll({ token: token }));
         // dispatch(getuserGet({ token: token }));
-        dispatch(getProfile.Request({ token: token }));
+        dispatch(getProfile.Request({ token }));
         // Toast.show('Followed successfully.', Toast.LONG);
       } else {
         Toast.show('Error following, please try again later.', Toast.LONG);
@@ -224,5 +224,5 @@ const UserProfile = ({ navigation, route }: Props) => {
       )}
     </View>
   );
-};
+}
 export default UserProfile;

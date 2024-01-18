@@ -15,8 +15,8 @@ const parseOAuthRequestToken = (response: TokenResponse) => {
 };
 
 const parseOAuthAccessToken = (response: TokenResponse) => {
-  const oauth_token = response.oauth_token;
-  const oauth_token_secret = response.oauth_token_secret;
+  const { oauth_token } = response;
+  const { oauth_token_secret } = response;
 
   return { oauth_token, oauth_token_secret };
 };

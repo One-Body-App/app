@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import Button from '@/src/components/Button';
-import { OnboardingStackParamList } from '@/src/navigator/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
+import { ArrowDown2 } from 'iconsax-react-native';
+import { useTheme } from '@react-navigation/native';
+import Button from '@/src/components/Button';
+import { OnboardingStackParamList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { ArrowDown2 } from 'iconsax-react-native';
 import { borderRadius } from '@/src/styles/outlines';
 import { header } from '@/src/styles/typography';
-import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
 
-const OnboardingLocation = ({ navigation, route }: Props) => {
+function OnboardingLocation({ navigation, route }: Props) {
   const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [longitude, setLongitude] = useState<number>();
@@ -124,5 +124,5 @@ const OnboardingLocation = ({ navigation, route }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingLocation;

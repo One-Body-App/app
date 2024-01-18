@@ -1,4 +1,7 @@
 import { StyleSheet, Platform } from 'react-native';
+import { MaterialTabBar, TabBarProps, Tabs } from 'react-native-collapsible-tab-view';
+import { createRef, useCallback, useEffect } from 'react';
+import { useTheme } from '@react-navigation/native';
 import { Colors } from '../../styles';
 import { borderWidth } from '../../styles/outlines';
 import { spacing } from '../../styles/spacing';
@@ -7,10 +10,7 @@ import { AccountType, Badge, RefreshListRef, User } from '@/utils/types';
 import BlogFlatlist from '../BlogFlatlist';
 import SocialFlatlist from '../SocialFlatlist';
 
-import { MaterialTabBar, TabBarProps, Tabs } from 'react-native-collapsible-tab-view';
-import { createRef, useCallback, useEffect } from 'react';
 import ProfileHeader from './ProfileHeader';
-import { useTheme } from '@react-navigation/native';
 import PrayerWallMyPrayersComponent from '../prayerWallMyPrayersComponent';
 
 type Route = {
@@ -32,7 +32,7 @@ export const profileImagesize = 80;
 export const HEADER_EXPANDED_HEIGHT = 550;
 export const HEADER_COLLAPSED_HEIGHT = 170;
 
-const Profile = ({
+function Profile({
   profileData,
   currentUser,
   relatedUsers,
@@ -40,7 +40,7 @@ const Profile = ({
   handleUnSubscribe,
   refreshContent,
   setRefreshContent,
-}: ProfileProps) => {
+}: ProfileProps) {
   const socialList = createRef<RefreshListRef>();
 
   const onlyOneTab =
@@ -119,7 +119,7 @@ const Profile = ({
       ) : null}
     </Tabs.Container>
   );
-};
+}
 
 const styles = StyleSheet.create({
   bottomView: {

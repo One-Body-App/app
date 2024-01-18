@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Toast from 'react-native-simple-toast';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import { setLoader, setPrayers } from '@/src/redux/actions/GeneralActions';
 import { styles } from './styles';
 import { ApiCall } from '@/src/services/api';
-import Toast from 'react-native-simple-toast';
 import { getAllPrayer, getMyPrayer, getTestimonies } from '@/src/redux/actions/PrayerAction';
 import Send from '@/assets/svg/Send.svg';
 
-const PrayerInputHome = ({ color }) => {
+function PrayerInputHome({ color }) {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
   const user = useSelector((state) => state.auth.getProfileData);
@@ -47,7 +47,7 @@ const PrayerInputHome = ({ color }) => {
       try {
         const res = await ApiCall({
           params: { answer: prayer },
-          token: token,
+          token,
           route: `prayers/answer-prayer`,
           verb: 'patch',
         });
@@ -60,14 +60,14 @@ const PrayerInputHome = ({ color }) => {
           dispatch(
             getMyPrayer({
               page: 1,
-              token: token,
+              token,
             })
           );
 
           dispatch(
             getAllPrayer({
               page: 1,
-              token: token,
+              token,
             })
           );
           //  Toast.show('Answer submit Sucessfuly')
@@ -81,8 +81,8 @@ const PrayerInputHome = ({ color }) => {
     } else {
       try {
         const res = await ApiCall({
-          params: { prayer: prayer, prayerType: payerType },
-          token: token,
+          params: { prayer, prayerType: payerType },
+          token,
           route: 'prayers/new-prayer',
           verb: 'post',
         });
@@ -97,13 +97,13 @@ const PrayerInputHome = ({ color }) => {
           dispatch(
             getMyPrayer({
               page: 1,
-              token: token,
+              token,
             })
           );
           dispatch(
             getAllPrayer({
               page: 1,
-              token: token,
+              token,
             })
           );
         } else {
@@ -119,12 +119,12 @@ const PrayerInputHome = ({ color }) => {
   return (
     <View>
       {prayerTypeShow ? (
-        <ScrollView showsHorizontalScrollIndicator={false} horizontal={true}>
+        <ScrollView showsHorizontalScrollIndicator={false} horizontal>
           <View style={styles.prayerTypeView}>
             <Button
               btnStyle={payerType == 'anonymous' ? styles.btnSelected : styles.btn}
               btnTextStyle={payerType == 'anonymous' ? { color: 'white' } : { color: '#5B7279' }}
-              text={'Anonymous'}
+              text="Anonymous"
               onPress={() => setPrayerType('anonymous')}
             />
             <Button
@@ -132,19 +132,19 @@ const PrayerInputHome = ({ color }) => {
               btnTextStyle={
                 payerType == 'prayer-request' ? { color: 'white' } : { color: '#5B7279' }
               }
-              text={'Prayer Request'}
+              text="Prayer Request"
               onPress={() => setPrayerType('prayer-request')}
             />
             <Button
               btnStyle={payerType == 'exhortation' ? styles.btnSelected : styles.btn}
               btnTextStyle={payerType == 'exhortation' ? { color: 'white' } : { color: '#5B7279' }}
-              text={'Exhortation'}
+              text="Exhortation"
               onPress={() => setPrayerType('exhortation')}
             />
             <Button
               btnStyle={payerType == 'answer' ? styles.btnSelected : styles.btn}
               btnTextStyle={payerType == 'answer' ? { color: 'white' } : { color: '#5B7279' }}
-              text={'Testimonies'}
+              text="Testimonies"
               onPress={() => setPrayerType('answer')}
             />
           </View>
@@ -152,7 +152,7 @@ const PrayerInputHome = ({ color }) => {
       ) : null}
       <View style={styles.ModelInputView}>
         <TextInput
-          placeholderTextColor={'#f6f6f6'}
+          placeholderTextColor="#f6f6f6"
           value={prayer}
           placeholder="  Share what God is doing in your life"
           // onPressIn={() => setPrayerTypeShow(true)}
@@ -161,10 +161,10 @@ const PrayerInputHome = ({ color }) => {
             prayer.length < 150 ? setPrayer(e) : null;
             seterror(null);
           }}
-          multiline={true}
+          multiline
           style={{
             ...styles.TextInput,
-            color: color,
+            color,
             backgroundColor: '#4F6D77',
             borderWidth: 0,
           }}
@@ -183,7 +183,7 @@ const PrayerInputHome = ({ color }) => {
       {prayer != '' && error == null ? (
         <Text
           style={{
-            color: color,
+            color,
             paddingLeft: getWidth(5),
             marginBottom: getHeight(1),
           }}
@@ -193,7 +193,7 @@ const PrayerInputHome = ({ color }) => {
       ) : (
         <View
           style={{
-            color: color,
+            color,
             paddingLeft: getWidth(5),
             marginBottom: getHeight(1),
           }}
@@ -206,5 +206,5 @@ const PrayerInputHome = ({ color }) => {
       ) : null}
     </View>
   );
-};
+}
 export default PrayerInputHome;

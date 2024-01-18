@@ -1,6 +1,6 @@
-import { BASE_URL } from './constants';
 import axios, { AxiosResponse } from 'axios';
 import { firebase } from '@react-native-firebase/auth';
+import { BASE_URL } from './constants';
 
 export const ApiCall = async ({
   params,

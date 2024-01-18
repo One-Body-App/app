@@ -4,9 +4,9 @@ import {
 } from '@react-navigation/native-stack';
 import React from 'react';
 
+import { useTheme } from '@react-navigation/native';
 import { PrayerWallStackParamsList } from './types';
 import { Colors } from '../styles';
-import { useTheme } from '@react-navigation/native';
 import Prayer from '../screens/main/prayer';
 
 import UserProfile from '../screens/main/userProfile';
@@ -15,7 +15,7 @@ import SinglePrayer from '../screens/main/prayer/Single';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 
-const PrayerWall = () => {
+function PrayerWall() {
   const headerOptions: NativeStackNavigationOptions = {
     headerShadowVisible: false,
     headerBackTitleVisible: false,
@@ -40,7 +40,7 @@ const PrayerWall = () => {
         component={NewPrayer}
         options={({ navigation, route }) => {
           return {
-            headerBackTitle: 'PrayerWall',
+            headerBackTitle: 'Back',
             title: route.params?.postId ? 'Edit Post on Prayer Wall' : 'Post on Prayer Wall',
             // headerLeft: (props) => {
             //   const { dark, colors } = useTheme();
@@ -76,6 +76,6 @@ const PrayerWall = () => {
       />
     </Stack.Navigator>
   );
-};
+}
 
 export default PrayerWall;
