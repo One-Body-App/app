@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux';
 
@@ -6,13 +6,13 @@ import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { PrayerPost, PrayerWallCategory } from '@/utils/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import PrayerItem from '../listItems/PrayerItem';
 import { ApiCall } from '@/services/api';
 
-const PrayerWallMyPrayersComponent = () => {
+function PrayerWallMyPrayersComponent() {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +38,7 @@ const PrayerWallMyPrayersComponent = () => {
           posts = res?.response ?? [];
           setIsEndOfList(false);
         } else {
-          posts = [...(myPrayers ? myPrayers : []), ...(res?.response ?? [])];
+          posts = [...(myPrayers || []), ...(res?.response ?? [])];
 
           if (res?.response?.content?.length < 1) {
             setIsEndOfList(true);
@@ -81,7 +81,7 @@ const PrayerWallMyPrayersComponent = () => {
       const res = await ApiCall({
         route: `prayer/${id}`,
         verb: 'delete',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -147,5 +147,5 @@ const PrayerWallMyPrayersComponent = () => {
       />
     </View>
   );
-};
+}
 export default PrayerWallMyPrayersComponent;

@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
-const ActivityIndicatorContent = ({
+function ActivityIndicatorContent({
   animating,
   size,
   style,
@@ -11,7 +11,7 @@ const ActivityIndicatorContent = ({
   animating?: boolean;
   size?: 'small' | 'large' | number;
   style?: StyleProp<ViewStyle>;
-}) => {
+}) {
   const { dark } = useTheme();
   return (
     <ActivityIndicator
@@ -21,5 +21,5 @@ const ActivityIndicatorContent = ({
       style={style}
     />
   );
-};
+}
 export default ActivityIndicatorContent;

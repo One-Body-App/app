@@ -1,37 +1,36 @@
-import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import { CompositeNavigationProp, useTheme } from '@react-navigation/native';
 
 import React, { useRef } from 'react';
 import { View, Share, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Modal from 'react-native-modal';
 
+import { useDispatch, useSelector } from 'react-redux';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { Copy, InfoCircle, Profile } from 'iconsax-react-native';
+import { Bookmark, EditPencil, ShareAndroid, ShareIos, Xmark } from 'iconoir-react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import Toast from 'react-native-toast-notifications';
 import Button from '../Button';
 
 import { styles } from './style';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
-import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { AccountType, PostType, PostUserData, SocialPostReaction } from '@/utils/types';
+import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
 import { getuserGet } from '@/src/redux/actions/UserAction';
 import {
   ExploreStackParamsList,
   MainDrawerParamsList,
   MainBottomStackParamsList,
 } from '@/src/navigator/types';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { Colors } from '@/src/styles';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
-import { Copy, InfoCircle, Profile } from 'iconsax-react-native';
-import { Bookmark, EditPencil, ShareAndroid, ShareIos, Xmark } from 'iconoir-react-native';
 import { body, fontSize, header } from '@/src/styles/typography';
-import Clipboard from '@react-native-clipboard/clipboard';
-import Toast from 'react-native-toast-notifications';
-import ToastContainer from 'react-native-toast-notifications';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -55,7 +54,7 @@ export type PopupItem = {
   myReaction?: SocialPostReaction;
   userData: PostUserData;
 };
-const OptionsModal = ({
+function OptionsModal({
   show,
   setShow,
   currentPopupItem,
@@ -77,12 +76,12 @@ const OptionsModal = ({
   hideSavePost?: boolean;
   hideShare?: boolean;
   isPrivate?: boolean;
-}) => {
+}) {
   const { colors, dark } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
-  const toast = useRef<ToastContainer>(null);
+  const toast = useRef<Toast>(null);
   const loader = useSelector((state: RootState) => state.general.loader);
 
   const removeSavedPost = async (type?: string, link?: string, id?: string) => {
@@ -92,7 +91,7 @@ const OptionsModal = ({
       const res = await ApiCall({
         route: `user/remove-saved-post`,
         verb: 'delete',
-        token: token,
+        token,
         params: {
           id,
           link,
@@ -124,7 +123,7 @@ const OptionsModal = ({
       const res = await ApiCall({
         route: `user/save-post`,
         verb: 'post',
-        token: token,
+        token,
         params: {
           postId,
           type,
@@ -180,8 +179,8 @@ const OptionsModal = ({
       onSwipeComplete={() => setShow(false)}
       swipeDirection={['down']}
       style={styles.bottomView}
-      propagateSwipe={true}
-      coverScreen={true}
+      propagateSwipe
+      coverScreen
       useNativeDriver
     >
       <Toast ref={toast} />
@@ -435,6 +434,6 @@ const OptionsModal = ({
       </View>
     </Modal>
   );
-};
+}
 
 export default OptionsModal;

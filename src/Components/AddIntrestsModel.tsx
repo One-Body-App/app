@@ -1,19 +1,19 @@
 import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Modal from 'react-native-modal';
+import { useDispatch, useSelector } from 'react-redux';
+import Toast from 'react-native-simple-toast';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { useDispatch, useSelector } from 'react-redux';
 import { getuserAll, getInterests, addUserInterest } from '../redux/actions/UserAction';
 import GradientButton from './GradientButton';
-import Toast from 'react-native-simple-toast';
 
 type Route = {
   key: string;
   title: string;
 };
 
-const AddIntrestsModel = (props: any) => {
+function AddIntrestsModel(props: any) {
   const { setShow, show } = props;
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -22,7 +22,7 @@ const AddIntrestsModel = (props: any) => {
   const [selectedIntrest, setSelectedIntrest] = React.useState<Route[]>([]);
 
   useEffect(() => {
-    dispatch(getInterests.Request({ token: token }));
+    dispatch(getInterests.Request({ token }));
   }, []);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ const AddIntrestsModel = (props: any) => {
     if (userState?.addUserInterestSuccess == true) {
       setShow(false);
       setSelectedIntrest([]);
-      dispatch(getuserAll({ token: token }));
+      dispatch(getuserAll({ token }));
     } else if (userState?.addUserInterestSuccess == false) {
       Toast.show('Unable to add interests!', Toast.LONG);
     }
@@ -96,18 +96,16 @@ const AddIntrestsModel = (props: any) => {
             </View>
           </ScrollView>
           <GradientButton
-            text={'ADD INTERESTS'}
+            text="ADD INTERESTS"
             btnStyle={styles.btn2}
             btnTextStyle={styles.btnText2}
-            onPress={() =>
-              dispatch(addUserInterest.Request({ token: token, interests: selectedIntrest }))
-            }
+            onPress={() => dispatch(addUserInterest.Request({ token, interests: selectedIntrest }))}
           />
         </View>
       </View>
     </Modal>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -165,7 +163,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     resizeMode: 'stretch',
     height: 300,
-    //margin: 10,
+    // margin: 10,
     marginVertical: 10,
   },
   content2: {

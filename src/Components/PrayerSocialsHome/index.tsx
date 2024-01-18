@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import Toast from 'react-native-simple-toast';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import { setLoader, setPrayers, setPrayersLive } from '@/src/redux/actions/GeneralActions';
 import Love from '@/assets/svg/heart-white.svg';
@@ -15,9 +16,8 @@ import Rejoice from '@/assets/svg/rejoice_white.svg';
 import Rejoiced from '@/assets/svg/Rejoiced_white.svg';
 import { styles } from './styles';
 import { ApiCall } from '@/src/services/api';
-import Toast from 'react-native-simple-toast';
 
-const PrayerSocialsHome = ({ item, color }) => {
+function PrayerSocialsHome({ item, color }) {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
   const user = useSelector((state) => state.auth.getProfileData);
@@ -27,7 +27,7 @@ const PrayerSocialsHome = ({ item, color }) => {
     try {
       const res = await ApiCall({
         route: `prayers/${type}/${id}`,
-        token: token,
+        token,
         verb: 'patch',
       });
       if (res?.status == '200') {
@@ -46,7 +46,7 @@ const PrayerSocialsHome = ({ item, color }) => {
       const res = await ApiCall({
         route: `prayers/live-wall`,
         verb: 'get',
-        token: token,
+        token,
       });
       if (res?.status == '200') {
         dispatch(setPrayersLive(res?.response?.data));
@@ -59,7 +59,7 @@ const PrayerSocialsHome = ({ item, color }) => {
   };
   const updateList = (id, prayitem) => {
     // const arr = prayers;
-    var index = prayers.findIndex((p) => p?.post?._id == id);
+    const index = prayers.findIndex((p) => p?.post?._id == id);
     prayers[index] = prayitem;
     const arr = prayers;
     dispatch(setPrayers([]));
@@ -69,7 +69,7 @@ const PrayerSocialsHome = ({ item, color }) => {
   const updateList2 = (id, prayitem) => {
     const arr = prayers;
 
-    var index = arr.findIndex((p) => p?.post?._id == id);
+    const index = arr.findIndex((p) => p?.post?._id == id);
     arr[index] = prayitem;
     dispatch(setPrayers([]));
 
@@ -78,9 +78,11 @@ const PrayerSocialsHome = ({ item, color }) => {
   const checkLike = (item, type) => {
     if (type == 'loves') {
       return item?.post?.loves.includes(user?.userID);
-    } else if (type == 'rejoice') {
+    }
+    if (type == 'rejoice') {
       return item?.post?.rejoice.includes(user?.userID);
-    } else if (type == 'praying') {
+    }
+    if (type == 'praying') {
       return item?.post?.praying.includes(user?.userID);
     }
   };
@@ -95,7 +97,7 @@ const PrayerSocialsHome = ({ item, color }) => {
             alignItems: 'center',
           }}
           onPress={() => {
-            let itm = item;
+            const itm = item;
 
             updateList2(item?.post?._id, itm);
             handelLike(item?.post?._id, 'praying');
@@ -109,7 +111,7 @@ const PrayerSocialsHome = ({ item, color }) => {
           <Text
             style={
               checkLike(item, 'praying')
-                ? { color: color, marginTop: 5 }
+                ? { color, marginTop: 5 }
                 : { color: '#e6eaec', marginTop: 5 }
             }
           >
@@ -119,7 +121,7 @@ const PrayerSocialsHome = ({ item, color }) => {
       )}
       <TouchableOpacity
         onPress={() => {
-          let itm = item;
+          const itm = item;
 
           updateList2(item?.post?._id, itm);
           handelLike(item?.post?._id, 'rejoice');
@@ -140,7 +142,7 @@ const PrayerSocialsHome = ({ item, color }) => {
         <Text
           style={
             checkLike(item, 'rejoice')
-              ? { color: color, marginTop: 5 }
+              ? { color, marginTop: 5 }
               : { color: '#e6eaec', marginTop: 5 }
           }
         >
@@ -154,7 +156,7 @@ const PrayerSocialsHome = ({ item, color }) => {
           width: '27%',
         }}
         onPress={() => {
-          let itm = item;
+          const itm = item;
           updateList2(item?.post?._id, itm);
           handelLike(item?.post?._id, 'loves');
         }}
@@ -162,13 +164,11 @@ const PrayerSocialsHome = ({ item, color }) => {
         {checkLike(item, 'loves') ? (
           <Loved style={{ color: '#126B87' }} />
         ) : (
-          <Love color={'#126B87'} style={{ color: '#126B87' }} />
+          <Love color="#126B87" style={{ color: '#126B87' }} />
         )}
         <Text
           style={
-            checkLike(item, 'loves')
-              ? { color: color, marginTop: 5 }
-              : { color: '#e6eaec', marginTop: 5 }
+            checkLike(item, 'loves') ? { color, marginTop: 5 } : { color: '#e6eaec', marginTop: 5 }
           }
         >
           {checkLike(item, 'loves') ? 'Loved' : 'Love'}
@@ -176,5 +176,5 @@ const PrayerSocialsHome = ({ item, color }) => {
       </TouchableOpacity>
     </View>
   );
-};
+}
 export default PrayerSocialsHome;

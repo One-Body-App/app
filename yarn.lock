@@ -3310,6 +3310,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-navigation/elements@npm:^1.3.21":
+  version: 1.3.21
+  resolution: "@react-navigation/elements@npm:1.3.21"
+  peerDependencies:
+    "@react-navigation/native": ^6.0.0
+    react: "*"
+    react-native: "*"
+    react-native-safe-area-context: ">= 3.0.0"
+  checksum: 1bcff98e755a8a946570ba2d09b07b4038aa558e68dda7f93c89dfa6b37ead53a9da9adb1bd6c17ec4f1d1af36a24bd910b9c678c2c928d2ecea87dca080dc39
+  languageName: node
+  linkType: hard
+
 "@react-navigation/material-bottom-tabs@npm:^6.1.1":
   version: 6.2.15
   resolution: "@react-navigation/material-bottom-tabs@npm:6.2.15"
@@ -7112,6 +7124,20 @@ __metadata:
     eslint: ^7.32.0 || ^8.2.0
     eslint-plugin-import: ^2.25.2
   checksum: 38626bad2ce2859fccac86b30cd2b86c9b7d8d71d458331860861dc05290a5b198bded2f4fb89efcb9046ec48f8ab4c4fb00365ba8916f27b172671da28b93ea
+  languageName: node
+  linkType: hard
+
+"eslint-config-airbnb-typescript@npm:^17.1.0":
+  version: 17.1.0
+  resolution: "eslint-config-airbnb-typescript@npm:17.1.0"
+  dependencies:
+    eslint-config-airbnb-base: ^15.0.0
+  peerDependencies:
+    "@typescript-eslint/eslint-plugin": ^5.13.0 || ^6.0.0
+    "@typescript-eslint/parser": ^5.0.0 || ^6.0.0
+    eslint: ^7.32.0 || ^8.2.0
+    eslint-plugin-import: ^2.25.3
+  checksum: cfd26a2782e322ebfdfbf9a64262332c7653f297c4a32d7b951079eb18bb9502a83d67b3f7ef2cc1c5374ae06098eb454ed010784b3416e7274839083022a08c
   languageName: node
   linkType: hard
 
@@ -11523,6 +11549,7 @@ __metadata:
     "@fortawesome/react-native-fontawesome": ^0.3.0
     "@giphy/react-native-sdk": ^3.2.2
     "@invertase/react-native-apple-authentication": ^2.2.2
+    "@jest/globals": ^29.7.0
     "@r0b0t3d/react-native-collapsible": ^1.4.3
     "@react-native-async-storage/async-storage": ^1.21.0
     "@react-native-clipboard/clipboard": ^1.12.1
@@ -11540,6 +11567,7 @@ __metadata:
     "@react-native/typescript-config": ^0.73.1
     "@react-navigation/bottom-tabs": ^6.5.8
     "@react-navigation/drawer": ^6.6.3
+    "@react-navigation/elements": ^1.3.21
     "@react-navigation/material-bottom-tabs": ^6.1.1
     "@react-navigation/native": ^6.1.7
     "@react-navigation/native-stack": ^6.9.13
@@ -11567,6 +11595,7 @@ __metadata:
     date-fns: ^3.2.0
     eslint: ^8.46.0
     eslint-config-airbnb: ^19.0.4
+    eslint-config-airbnb-typescript: ^17.1.0
     eslint-config-prettier: ^9.1.0
     eslint-plugin-import: ^2.29.1
     eslint-plugin-jest: ^27.6.3

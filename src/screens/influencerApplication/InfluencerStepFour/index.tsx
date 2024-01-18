@@ -1,44 +1,23 @@
-import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { Avatar, Checkbox, Provider } from 'react-native-paper';
-import SelectDropdown from 'react-native-select-dropdown';
+/* eslint-disable global-require */
+import React, { useState } from 'react';
+import { Text, View, ImageBackground, TouchableOpacity, ScrollView, Alert } from 'react-native';
 
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
-import { styles } from './styles';
-import { async } from 'validate.js';
 import { useDispatch, useSelector } from 'react-redux';
+import LinearGradient from 'react-native-linear-gradient';
+import { StackScreenProps } from '@react-navigation/stack';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { styles } from './styles';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
-import LinearGradient from 'react-native-linear-gradient';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import Icon from 'react-native-vector-icons/Ionicons';
-
-import { StackScreenProps } from '@react-navigation/stack';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepFour'>;
 
-const InfluencerStepFour = ({ navigation, route }: Props) => {
+function InfluencerStepFour({ navigation, route }: Props) {
   const { data } = route.params;
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -50,7 +29,7 @@ const InfluencerStepFour = ({ navigation, route }: Props) => {
     try {
       const res = await ApiCall({
         params: data,
-        token: token,
+        token,
         route: 'influencer/apply-for-influencer',
         verb: 'post',
       });
@@ -58,7 +37,7 @@ const InfluencerStepFour = ({ navigation, route }: Props) => {
       if (res?.status == 200) {
         dispatch(setLoader(false));
         Alert.alert(res?.response.message);
-        navigation.navigate('Home', {});
+        // navigation.navigate('Home', {});
       } else {
         console.log('error', res?.response.data);
       }
@@ -156,9 +135,14 @@ const InfluencerStepFour = ({ navigation, route }: Props) => {
       </View>
 
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
-        <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={'#4F6D77'} />
+        <Ionicons
+          name="chevron-back"
+          style={{ margin: getFontSize(3) }}
+          size={20}
+          color="#4F6D77"
+        />
       </TouchableOpacity>
     </LinearGradient>
   );
-};
+}
 export default InfluencerStepFour;

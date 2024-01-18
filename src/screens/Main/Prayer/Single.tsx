@@ -1,55 +1,43 @@
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { StyledText } from '@/src/components/styled/Text';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
-import { Colors, Spacing } from '@/src/styles';
-import { button } from '@/src/styles/buttons';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
-import { CommentPost, Location, PrayerPost, SocialPostReaction } from '@/utils/types';
+/* eslint-disable react/jsx-no-useless-fragment */
 import { StackScreenProps } from '@react-navigation/stack';
 import { useEffect, useState } from 'react';
-
 import {
   ActivityIndicator,
   FlatList,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
-  ScrollView,
   View,
   KeyboardEvent,
-  TouchableWithoutFeedback,
-  TouchableOpacity,
   RefreshControl,
   EmitterSubscription,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-
 import { useTheme } from '@react-navigation/native';
-
-import { Asset } from 'react-native-image-picker';
-import PrayerItem from '@/src/components/listItems/PrayerItem';
-import { CloseCircle, Send } from 'iconsax-react-native';
 import {
   GiphyDialog,
   GiphyDialogEvent,
   GiphyDialogMediaSelectEventHandler,
   GiphyMedia,
-  GiphyMediaView,
 } from '@giphy/react-native-sdk';
+import { useToast } from 'react-native-toast-notifications';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/services/api';
+import StyledText from '@/src/components/styled/Text';
+import { PrayerWallStackParamsList } from '@/src/navigator/types';
+import { Colors } from '@/src/styles';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { CommentPost, PrayerPost, SocialPostReaction } from '@/utils/types';
+
+import PrayerItem from '@/src/components/listItems/PrayerItem';
 import CommentField from '@/src/components/comments/Field';
 import CommentItem from '@/src/components/comments/CommentItem';
-import { useToast } from 'react-native-toast-notifications';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
 let keyboardWillShowListener: EmitterSubscription;
 let onKeyboardWillHideListener: EmitterSubscription;
-const SinglePrayer = ({ navigation, route }: Props) => {
+function SinglePrayer({ navigation, route }: Props) {
   const [prayer, setPrayer] = useState<PrayerPost>();
   const [comments, setComments] = useState<CommentPost[]>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -96,12 +84,12 @@ const SinglePrayer = ({ navigation, route }: Props) => {
   const refreshContent = () => {
     setIsEndOfList(false);
     setPage(1);
-    getComments(1);
+    getComments();
     setIsRefreshing(true);
   };
 
   useEffect(() => {
-    getComments(page);
+    getComments();
   }, [page]);
 
   // Handling GIFs selection in GiphyDialog
@@ -123,7 +111,7 @@ const SinglePrayer = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: `prayer/${route.params?.postId}`,
-        token: token,
+        token,
 
         verb: 'get',
       });
@@ -138,12 +126,12 @@ const SinglePrayer = ({ navigation, route }: Props) => {
     }
   };
 
-  const getComments = async (page: number) => {
+  const getComments = async () => {
     setIsLoading(true);
     try {
       const result = await ApiCall({
         route: `comments/prayer/${route.params?.postId}`,
-        token: token,
+        token,
 
         verb: 'get',
       });
@@ -164,7 +152,7 @@ const SinglePrayer = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: `comments/prayer/${route.params?.postId}`,
-        token: token,
+        token,
 
         verb: 'post',
         params: {
@@ -188,7 +176,7 @@ const SinglePrayer = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: `prayer/${id}`,
         verb: 'delete',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -204,7 +192,7 @@ const SinglePrayer = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: `comments/prayer/${route.params?.postId}/${id}`,
         verb: 'patch',
-        token: token,
+        token,
         params: {
           content,
         },
@@ -216,7 +204,7 @@ const SinglePrayer = ({ navigation, route }: Props) => {
           type: 'success',
           placement: 'bottom',
         });
-        await getComments(1);
+        await getComments();
       }
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
@@ -228,11 +216,11 @@ const SinglePrayer = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: `comments/prayer/${route.params?.postId}/${id}`,
         verb: 'delete',
-        token: token,
+        token,
       });
 
-      if (res?.status == 200) {
-        await getComments(1);
+      if (res?.status === 200) {
+        await getComments();
       }
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
@@ -294,9 +282,15 @@ const SinglePrayer = ({ navigation, route }: Props) => {
                     }}
                   />
                 }
-                ListEmptyComponent={() => <>{isLoading ? <ActivityIndicator /> : null}</>}
+                ListEmptyComponent={() => {
+                  if (isLoading) {
+                    return <ActivityIndicator />;
+                  }
+
+                  return null;
+                }}
                 renderItem={({ item }) => {
-                  let myReaction: SocialPostReaction | undefined = undefined;
+                  let myReaction: SocialPostReaction | undefined;
 
                   item.reactions?.forEach((reaction) => {
                     if (reaction.userId == user?._id) {
@@ -383,6 +377,6 @@ const SinglePrayer = ({ navigation, route }: Props) => {
       {/* </TouchableWithoutFeedback> */}
     </SafeAreaView>
   );
-};
+}
 
 export default SinglePrayer;

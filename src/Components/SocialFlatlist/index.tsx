@@ -7,18 +7,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { styles } from './styles';
-
 import { useDispatch, useSelector } from 'react-redux';
-import { ApiCall } from '@/src/services/api';
-import { SetSocial } from '@/src/redux/actions/SocialActions';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import SocialItem from '../listItems/SocialItem';
 import { isObject } from 'lodash';
 import { Tabs } from 'react-native-collapsible-tab-view';
+import { styles } from './styles';
+
+import { ApiCall } from '@/src/services/api';
+import { SetSocial } from '@/src/redux/actions/SocialActions';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import SocialItem from '../listItems/SocialItem';
 import { RefreshListRef, SocialPost } from '@/utils/types';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
 
@@ -47,10 +47,6 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
       if (showRefreshIndicator) {
         setShowRefreshIndicator(true);
       }
-    };
-
-    const getData = async () => {
-      await getSocialPosts(page);
     };
 
     useImperativeHandle(ref, () => ({
@@ -100,6 +96,10 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
       setPage(pageNumber);
     };
 
+    const getData = async () => {
+      await getSocialPosts(page);
+    };
+
     useEffect(() => {
       getData();
     }, [page]);
@@ -118,7 +118,7 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
         const res = await ApiCall({
           route: `social/remove-post/${id}`,
           verb: 'delete',
-          token: token,
+          token,
         });
         console.log(res);
         if (res?.status == 200) {
@@ -144,7 +144,6 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
       //   console.log('saga error -- ', e.toString());
       // }
     };
-    console.log(isLoading);
 
     return (
       <Tabs.FlatList
@@ -191,22 +190,24 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
         )}
         refreshControl={
           <RefreshControl
-            enabled={true}
+            enabled
             refreshing={isRefreshing && showRefreshIndicator}
             onRefresh={() => {
               refreshContent();
             }}
           />
         }
-        ListEmptyComponent={() => (
-          <>
-            {isLoading ? null : (
-              <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
-                Nothing here
-              </StyledText>
-            )}
-          </>
-        )}
+        ListEmptyComponent={() => {
+          if (isLoading) {
+            return null;
+          }
+
+          return (
+            <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
+              Nothing here
+            </StyledText>
+          );
+        }}
       />
       // <>
       //   {socialPost?.map((item, i) => (

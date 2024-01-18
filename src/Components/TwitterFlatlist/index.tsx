@@ -1,23 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
+import { useSelector } from 'react-redux';
+import { SceneRendererProps } from 'react-native-tab-view';
+import { useTheme } from '@react-navigation/native';
 import { styles } from './styles';
 import Twitter from '@/assets/svg/Twitter.svg';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
-import { useSelector } from 'react-redux';
 import { ApiCall } from '@/src/services/api';
 import SocialItem from '../listItems/SocialItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { SceneRendererProps } from 'react-native-tab-view';
 import { User } from '@/utils/types';
 import Button from '../Button';
 import { OpenURLButton } from '@/services/constants';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
-import { useTheme } from '@react-navigation/native';
 
-const TwitterFlatlist = ({
+function TwitterFlatlist({
   currentUser,
   setScrollPosition,
-}: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) => {
+}: SceneRendererProps & { currentUser: User; setScrollPosition: (position: number) => void }) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [page, setPage] = useState<number>(1);
   const [tweets, setTweets] = useState<any>([]);
@@ -30,7 +30,7 @@ const TwitterFlatlist = ({
       const res = await ApiCall({
         route: `user/get-social/twitter/${currentUser._id}/${pageNumber}?itemsPerPage=5`,
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -88,7 +88,7 @@ const TwitterFlatlist = ({
       }}
       refreshControl={
         <RefreshControl
-          enabled={true}
+          enabled
           refreshing={refreshing}
           onRefresh={async () => {
             setIsEndOfList(false);
@@ -127,5 +127,5 @@ const TwitterFlatlist = ({
       }}
     />
   );
-};
+}
 export default TwitterFlatlist;

@@ -8,27 +8,27 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SwipeListView } from 'react-native-swipe-list-view';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 
+import { useSelector } from 'react-redux';
+import { useTheme } from '@react-navigation/native';
+import { NotificationBing } from 'iconsax-react-native';
+import { StackScreenProps } from '@react-navigation/stack';
 import styles from './styles';
 
 import Button from '@/src/components/Button';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { ApiCall } from '@/src/services/api';
-import { useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { NotificationType } from '@/utils/types';
-import { NotificationBing } from 'iconsax-react-native';
-import { StackScreenProps } from '@react-navigation/stack';
 
 // create a component
 type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
 
-const Notification = ({ navigation }: Props) => {
+function Notification({ navigation }: Props) {
   const [DATA, SetDATA] = useState<NotificationType[]>([]);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -44,7 +44,7 @@ const Notification = ({ navigation }: Props) => {
   const FadeIn = () => {
     Animated.timing(startValue, {
       toValue: endValue,
-      duration: duration,
+      duration,
 
       useNativeDriver: true,
     }).start();
@@ -55,7 +55,7 @@ const Notification = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'user/notifications',
         verb: 'get',
-        token: token,
+        token,
       });
       if (res?.status == 200) {
         SetDATA(res?.response?.data);
@@ -87,14 +87,14 @@ const Notification = ({ navigation }: Props) => {
             <View style={styles.view}>
               <View style={styles.congrate}>
                 <StyledText style={styles.title}>Congratulations</StyledText>
-                <Ionicons name="ios-star" size={20} color={'#FB9218'} />
+                <Ionicons name="ios-star" size={20} color="#FB9218" />
               </View>
-              <AntDesign name="delete" size={30} color={'red'} onPress={toggleModal} />
+              <AntDesign name="delete" size={30} color="red" onPress={toggleModal} />
             </View>
             <View style={styles.view}>
               <View style={styles.backicon}>
                 <View style={styles.iconbackground}>
-                  <Ionicons name="md-checkmark-circle-outline" size={40} color={'white'} />
+                  <Ionicons name="md-checkmark-circle-outline" size={40} color="white" />
                 </View>
                 <StyledText style={{ marginHorizontal: 10 }}>Profile Success</StyledText>
               </View>
@@ -117,7 +117,7 @@ const Notification = ({ navigation }: Props) => {
           <View style={styles.Notificationmodal}>
             <View style={styles.modelview}>
               <TouchableOpacity onPress={() => setModal(false)} style={styles.setmodel}>
-                <Ionicons name={'close-circle-outline'} color="#24BFF0" size={35} />
+                <Ionicons name="close-circle-outline" color="#24BFF0" size={35} />
               </TouchableOpacity>
               <StyledText style={styles.modaltext}>“Clear All Notifications” </StyledText>
               <StyledText style={styles.modalok}>Press OK to confirm </StyledText>
@@ -141,7 +141,7 @@ const Notification = ({ navigation }: Props) => {
 
         <SwipeListView
           showsVerticalScrollIndicator={false}
-          useFlatList={true}
+          useFlatList
           data={DATA}
           contentContainerStyle={{ flexGrow: 1 }}
           keyExtractor={(item, index) => item._id}
@@ -152,7 +152,8 @@ const Notification = ({ navigation }: Props) => {
             <TouchableOpacity
               activeOpacity={1}
               onPress={() => {
-                setSelectedIndex(index), setModalVisible(!modalVisible);
+                setSelectedIndex(index);
+                setModalVisible(!modalVisible);
               }}
             >
               {/* <View>
@@ -161,7 +162,7 @@ const Notification = ({ navigation }: Props) => {
               <View style={styles.card}>
                 <View style={styles.RowView}>
                   <View style={styles.Iconbg}>
-                    <MaterialCommunityIcons name={'bell-ring-outline'} size={30} color={'red'} />
+                    <MaterialCommunityIcons name="bell-ring-outline" size={30} color="red" />
                   </View>
                   <View>
                     <StyledText numberOfLines={1} style={styles.heading}>
@@ -185,7 +186,7 @@ const Notification = ({ navigation }: Props) => {
             ({ item, index }) => (
               <Animated.View style={{ ...styles.hideCard, opacity: startValue }}>
                 <TouchableOpacity style={styles.sildeView}>
-                  <Ionicons name="archive-outline" size={getFontSize(5)} color={'white'} />
+                  <Ionicons name="archive-outline" size={getFontSize(5)} color="white" />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
@@ -193,7 +194,7 @@ const Notification = ({ navigation }: Props) => {
                   }}
                 >
                   <View style={{ ...styles.sildeView, backgroundColor: 'red' }}>
-                    <AntDesign name="delete" size={getFontSize(5)} color={'white'} />
+                    <AntDesign name="delete" size={getFontSize(5)} color="white" />
                   </View>
                 </TouchableOpacity>
               </Animated.View>
@@ -248,6 +249,6 @@ const Notification = ({ navigation }: Props) => {
       </View>
     </View>
   );
-};
+}
 
 export default Notification;

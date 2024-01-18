@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Text, View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { useTheme } from '@react-navigation/native';
+import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 
 type Props = {
   title: string;
@@ -9,7 +9,7 @@ type Props = {
   RightView: ReactNode;
 };
 
-const Header = ({ title, leftView, RightView }: Props) => {
+function Header({ title, leftView, RightView }: Props) {
   const { colors, dark } = useTheme();
 
   return (
@@ -36,7 +36,7 @@ const Header = ({ title, leftView, RightView }: Props) => {
       </View>
     </View>
   );
-};
+}
 const styles = StyleSheet.create<{ headview: ViewStyle; titletext: TextStyle }>({
   headview: {
     height: getHeight(5),

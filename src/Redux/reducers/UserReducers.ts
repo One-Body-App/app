@@ -1,5 +1,5 @@
-import { User } from '@/utils/types';
 import { AnyAction, Reducer } from 'redux';
+import { User } from '@/utils/types';
 import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 
 type UserReducers = {
@@ -44,7 +44,7 @@ const userReducers: Reducer<UserReducers> = (state = initialState, action: AnyAc
         allUser: action.data,
       };
 
-    //Interests
+    // Interests
     case AddUserInterest.REQUEST:
       return {
         ...state,

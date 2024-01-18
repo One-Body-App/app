@@ -4,6 +4,7 @@ import {
 } from '@react-navigation/native-stack';
 import React from 'react';
 
+import { useTheme } from '@react-navigation/native';
 import { SettingsStackParamsList } from './types';
 import RemoveAccount from '../screens/main/RemoveAccount';
 import NotificationSettings from '../screens/main/notificationSettings';
@@ -17,12 +18,11 @@ import InfluencerStepThree from '../screens/influencerApplication/InfluencerStep
 import InfluencerStepFour from '../screens/influencerApplication/InfluencerStepFour';
 import NewPassword from '../screens/newPassword/NewPassword';
 import { Colors } from '../styles';
-import { useTheme } from '@react-navigation/native';
 import InfluencerStepTwo from '../screens/influencerApplication/InfluencerStepTwo';
 
 const Stack = createNativeStackNavigator<SettingsStackParamsList>();
 
-const SettingsStack = () => {
+function SettingsStack() {
   const headerOptions: NativeStackNavigationOptions = {
     headerShadowVisible: false,
     headerBackTitleVisible: false,
@@ -102,6 +102,6 @@ const SettingsStack = () => {
       />
     </Stack.Navigator>
   );
-};
+}
 
 export default SettingsStack;

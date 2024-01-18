@@ -1,7 +1,4 @@
-import {
-  NativeStackNavigationOptions,
-  createNativeStackNavigator,
-} from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { OnboardingStackParamList } from './types';
@@ -21,7 +18,7 @@ import { headerOptions } from './Main';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 
-const OnboardingStack = () => {
+function OnboardingStack() {
   return (
     <Stack.Navigator initialRouteName="OnboardingIntro">
       <Stack.Screen name="OnboardingIntro" component={OnboardingIntro} options={headerOptions} />
@@ -72,6 +69,6 @@ const OnboardingStack = () => {
       />
     </Stack.Navigator>
   );
-};
+}
 
 export default OnboardingStack;

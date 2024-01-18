@@ -15,18 +15,18 @@ import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import Header from '@/src/components/Header';
 import { styles } from './styles';
 
-const PrivacyPolicy = ({ navigation }) => {
+function PrivacyPolicy({ navigation }) {
   return (
     <View style={styles.container}>
       <GeneralStatusBar
         backgroundColor="white"
         barStyle="dark-content"
         hidden={false}
-        translucent={true}
+        translucent
       />
 
       <Header
-        title={'Privacy Policy'}
+        title="Privacy Policy"
         leftView={
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back-outline" size={20} />
@@ -98,5 +98,5 @@ const PrivacyPolicy = ({ navigation }) => {
       </ScrollView>
     </View>
   );
-};
+}
 export default PrivacyPolicy;

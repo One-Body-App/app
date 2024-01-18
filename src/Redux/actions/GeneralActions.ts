@@ -1,4 +1,3 @@
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { ACTIONS } from '../action-types';
 import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
 

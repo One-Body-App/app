@@ -1,4 +1,4 @@
-export const ACTIONS = {
+export const ACTIONS: Record<string, string> = {
   LOGOUT: 'LOGOUT',
   LOGIN: 'LOGIN',
   LOGIN_SOCIAL: 'LOGIN_SOCIAL',
@@ -67,7 +67,7 @@ export const ACTIONS = {
   REMOVE_SOCIAL_ACCOUNT: 'REMOVE_SOCIAL_ACCOUNT',
 };
 
-//SignUp Types
+// SignUp Types
 export const SignUp = {
   REQUEST: 'sign_up_request',
   SUCCESS: 'sign_up_success',
@@ -75,14 +75,14 @@ export const SignUp = {
   RESET: 'sign_up_reset',
 };
 
-//Send Verification Email
+// Send Verification Email
 export const SendVerificationEmail = {
   REQUEST: 'send_verification_email_request',
   SUCCESS: 'send_verification_email_success',
   FAILED: 'send_verification_email_failed',
 };
 
-//Badge Types
+// Badge Types
 export const GetBadges = {
   REQUEST: 'get_badges_request',
   SUCCESS: 'get_badges_success',
@@ -96,14 +96,14 @@ export const SetUserBadges = {
   FAILED: 'set_user_badges_failed',
 };
 
-//Profile Types
+// Profile Types
 export const GetProfile = {
   REQUEST: 'get_profile_request',
   SUCCESS: 'get_profile_success',
   FAILED: 'get_profile_failed',
 };
 
-//Interest Types
+// Interest Types
 
 export const GetInterests = {
   REQUEST: 'get_interests_request',

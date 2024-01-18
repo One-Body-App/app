@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, useColorScheme, Platform, StyleProp, ViewStyle } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
+import { StackScreenProps } from '@react-navigation/stack';
+import { useTheme } from '@react-navigation/native';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Button from '../Button';
 import G from '@/assets/svg/G.svg';
 import Facebook from '@/assets/svg/Facebook.svg';
@@ -9,16 +16,9 @@ import Twitter from '@/assets/svg/Twitter.svg';
 import { styles } from './styles';
 
 import { getTwitterLoginToken, processLogin } from '@/services/login';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/services/constants';
-import { StackScreenProps } from '@react-navigation/stack';
-import { useTheme } from '@react-navigation/native';
-import { appleAuth } from '@invertase/react-native-apple-authentication';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { MainStackParamList } from '@/src/navigator/types';
 
 interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
@@ -29,7 +29,7 @@ interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
   wrapperStyles?: ViewStyle;
 }
 
-const SignupButtons = ({ errorFromLogin, socialLogin, disabled, wrapperStyles }: Props) => {
+function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }: Props) {
   const [error, seterror] = useState<string>(errorFromLogin ?? '');
 
   const [state, setState] = useState({
@@ -112,7 +112,9 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
           'onebodyapp://app.onebodyapp.com/signup/twitter'
         );
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const googleSignIn = async () => {
@@ -145,14 +147,14 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
       const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
 
       if (result.isCancelled) {
-        throw 'User cancelled the login process';
+        throw new Error('User cancelled the login process');
       }
 
       // Once signed in, get the users AccesToken
       const data = await AccessToken.getCurrentAccessToken();
 
       if (!data) {
-        throw 'Something went wrong obtaining access token';
+        throw new Error('Something went wrong obtaining access token');
       }
 
       // Create a Firebase credential with the AccessToken
@@ -266,6 +268,6 @@ const SignupButtons = ({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
       ) : null}
     </>
   );
-};
+}
 
 export default SignupButtons;

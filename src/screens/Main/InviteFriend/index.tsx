@@ -1,45 +1,25 @@
-import React, { useRef, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Platform,
-  Share,
-} from 'react-native';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import React from 'react';
+import { View, TouchableOpacity, ScrollView, Platform, Share } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
-import { styles } from './styles';
-
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
-import { Colors } from '@/src/styles';
+import { useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import LinearGradient from 'react-native-linear-gradient';
-import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
-import { fontSize } from '@/src/styles/typography';
 import FastImage from 'react-native-fast-image';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { NO_PROFILE_IMAGE } from '@/services/constants';
-import { Link, Link1 } from 'iconsax-react-native';
+import { Link1 } from 'iconsax-react-native';
 import { ShareAndroid, ShareIos } from 'iconoir-react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
-import ToastContainer, { useToast } from 'react-native-toast-notifications';
+import { useToast } from 'react-native-toast-notifications';
+import { styles } from './styles';
 
-const InviteFriend = () => {
+import { Colors } from '@/src/styles';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { spacing } from '@/src/styles/spacing';
+import StyledText from '@/src/components/styled/Text';
+import { fontSize } from '@/src/styles/typography';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
+
+function InviteFriend() {
   const { dark, colors } = useTheme();
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const shareUrl = `https://www.onebodyapp.com/?u=${userProfile?.userId}`;
@@ -97,8 +77,10 @@ const InviteFriend = () => {
             value={shareUrl}
             logo={
               dark
-                ? require('@/assets/images/logo_header_white.png')
-                : require('@/assets/images/logo.png')
+                ? // eslint-disable-next-line global-require
+                  require('@/assets/images/logo_header_white.png')
+                : // eslint-disable-next-line global-require
+                  require('@/assets/images/logo.png')
             }
             logoSize={30}
             logoMargin={5}
@@ -180,5 +162,5 @@ const InviteFriend = () => {
       </ScrollView>
     </LinearGradient>
   );
-};
+}
 export default InviteFriend;

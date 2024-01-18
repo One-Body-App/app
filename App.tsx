@@ -1,11 +1,8 @@
 import 'react-native-gesture-handler';
 import 'react-native-devsettings/withAsyncStorage';
 
-import React, { useState } from 'react';
-import { useEffect } from 'react';
-import { persistor, store } from './src/redux/store';
+import React, { useState, useEffect } from 'react';
 import { Provider, useDispatch } from 'react-redux';
-import Main from '@/navigator/Main';
 import { PersistGate } from 'redux-persist/integration/react';
 
 // import ZendeskChat from 'react-native-zendesk-chat';
@@ -15,13 +12,15 @@ import { ToastProvider } from 'react-native-toast-notifications';
 
 import * as Sentry from '@sentry/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { persistor, store } from './src/redux/store';
+import Main from '@/navigator/Main';
 
 Sentry.init({
   dsn: 'https://5a54913b45c44079b31e038fc1e7b4aa@o4504958486642688.ingest.sentry.io/4504958800560128',
   enabled: process.env.NODE_ENV == 'production',
 });
 
-const App = () => {
+function App() {
   const handleDynamicLink = (link: string) => {
     // console.log(link);
   };
@@ -78,5 +77,5 @@ const App = () => {
       </ToastProvider>
     </SafeAreaProvider>
   );
-};
+}
 export default Sentry.wrap(App);

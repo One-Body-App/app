@@ -1,14 +1,11 @@
-import { useTheme } from '@react-navigation/native';
-
-import React from 'react';
-import { Appearance, useColorScheme } from 'react-native';
+import { Appearance } from 'react-native';
 
 type ColorVariants = 'brand' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
 
 const isDarkMode = () => {
   const colorScheme = Appearance.getColorScheme();
 
-  return colorScheme == 'dark';
+  return colorScheme === 'dark';
 };
 
 export const primary: Record<ColorVariants, string> = {

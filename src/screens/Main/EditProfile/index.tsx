@@ -12,8 +12,6 @@ import {
   Switch,
 } from 'react-native';
 import Modal from 'react-native-modal';
-import Button from '@/src/components/Button';
-
 import {
   CameraOptions,
   ImageLibraryOptions,
@@ -21,48 +19,50 @@ import {
   launchImageLibrary,
   MediaType,
 } from 'react-native-image-picker';
-import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
+import FastImage from 'react-native-fast-image';
+import ImagePicker from 'react-native-image-crop-picker';
+import { StackScreenProps } from '@react-navigation/stack';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
+import DatePicker from 'react-native-date-picker';
+import { format, parse } from 'date-fns';
+import { ArrowDown2, Calendar, GalleryEdit, Setting2 } from 'iconsax-react-native';
+import { serialize } from 'object-to-formdata';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import Button from '@/src/components/Button';
+
+import { styles } from './styles';
 import { profileUpdate } from '@/src/redux/actions/AuthActions';
 import ImagePickerModal from '@/src/components/ImagePickerModal';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import FastImage from 'react-native-fast-image';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Blog from '@/assets/svg/Blog.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 import { ApiCall } from '@/src/services/api';
-import ImagePicker from 'react-native-image-crop-picker';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { StackScreenProps } from '@react-navigation/stack';
 import { AccountType, ChurchType, Interest, Tag } from '@/utils/types';
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 
-import DatePicker from 'react-native-date-picker';
-import { format, parse } from 'date-fns';
 import MapBox, { MapSuggestion } from '@/src/components/MapBox';
 import { spacing } from '@/src/styles/spacing';
 import { profileImagesize } from '@/src/components/profile/Profile';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { StyledText } from '@/src/components/styled/Text';
-import { ArrowDown2, Calendar, GalleryEdit, Setting2 } from 'iconsax-react-native';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledText from '@/src/components/styled/Text';
+import StyledTextInput from '@/src/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
-import { StyledSelect } from '@/src/components/styled/Select';
+import StyledSelect from '@/src/components/styled/Select';
 import SearchIcon from '@/assets/icons/search.svg';
 import { iterestListItem } from '@/src/styles/items';
-import { serialize } from 'object-to-formdata';
 import SettingsSheet from '../myProfile/SettingsSheet';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
   MyProfileStackParamsList,
 } from '@/src/navigator/types';
-import { DrawerScreenProps } from '@react-navigation/drawer';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
 type Props = CompositeScreenProps<
@@ -106,7 +106,7 @@ type EditProfileDTO = {
   };
 };
 
-const EditProfile = ({ navigation }: Props) => {
+function EditProfile({ navigation }: Props) {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -266,7 +266,7 @@ const EditProfile = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'global/church-type',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -280,13 +280,13 @@ const EditProfile = ({ navigation }: Props) => {
   };
 
   const captureImage = async (contentType: MediaType, imageType: 'header' | 'photo') => {
-    let options: CameraOptions = {
+    const options: CameraOptions = {
       mediaType: contentType,
       quality: 0.8,
       // noData: true,
     };
     // let isCameraPermitted = await requestCameraPermission();
-    let isStoragePermitted = await requestExternalWritePermission();
+    const isStoragePermitted = await requestExternalWritePermission();
     if (isStoragePermitted) {
       const response = await launchCamera(options);
 
@@ -296,22 +296,25 @@ const EditProfile = ({ navigation }: Props) => {
         console.log('User cancelled camera picker');
 
         return;
-      } else if (response.errorCode == 'camera_unavailable') {
+      }
+      if (response.errorCode == 'camera_unavailable') {
         console.log('Camera not available on device');
 
         return;
-      } else if (response.errorCode == 'permission') {
+      }
+      if (response.errorCode == 'permission') {
         console.log('Permission not satisfied');
 
         return;
-      } else if (response.errorCode == 'others') {
+      }
+      if (response.errorCode == 'others') {
         console.log(response.errorMessage);
 
         return;
       }
-      let uri = response?.assets?.at(0)?.uri ?? '';
-      let type = response?.assets?.at(0)?.type ?? '';
-      let name = response?.assets?.at(0)?.fileName ?? '';
+      const uri = response?.assets?.at(0)?.uri ?? '';
+      const type = response?.assets?.at(0)?.type ?? '';
+      const name = response?.assets?.at(0)?.fileName ?? '';
 
       setImageObject({ uri, type, name });
       setImageToUpload(uri);
@@ -325,7 +328,7 @@ const EditProfile = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: 'tags/professions',
-        token: token,
+        token,
         verb: 'get',
       });
       if (res?.status == 200) {
@@ -343,7 +346,7 @@ const EditProfile = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'tags/organization-types',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -360,21 +363,22 @@ const EditProfile = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/add-interests',
-        token: token,
+        token,
         params: { interests: selectedInterest },
         verb: 'patch',
       });
 
-      if (res?.status == 200) {
-      } else {
+      if (res?.status !== 200) {
         dispatch(setLoader(false));
         console.log('error', res);
       }
-    } catch (e: any) {}
+    } catch (e: any) {
+      console.log(e);
+    }
   };
 
   const chooseImageGallery = async (imageType: 'header' | 'photo') => {
-    let options: ImageLibraryOptions = {
+    const options: ImageLibraryOptions = {
       mediaType: 'photo',
 
       // noData: true,
@@ -386,21 +390,24 @@ const EditProfile = ({ navigation }: Props) => {
       console.log('User cancelled camera picker');
 
       return;
-    } else if (response.errorCode == 'camera_unavailable') {
+    }
+    if (response.errorCode == 'camera_unavailable') {
       console.log('Camera not available on device');
 
       return;
-    } else if (response.errorCode == 'permission') {
+    }
+    if (response.errorCode == 'permission') {
       console.log('Permission not satisfied');
 
       return;
-    } else if (response.errorCode == 'others') {
+    }
+    if (response.errorCode == 'others') {
       console.log(response.errorMessage);
       return;
     }
-    let uri = response?.assets ? response?.assets[0]?.uri : '';
-    let type = response?.assets ? response?.assets[0]?.type : '';
-    let name = response?.assets ? response?.assets[0]?.fileName : '';
+    const uri = response?.assets ? response?.assets[0]?.uri : '';
+    const type = response?.assets ? response?.assets[0]?.type : '';
+    const name = response?.assets ? response?.assets[0]?.fileName : '';
     // if (imageType == 'photo') {
     //   setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
     //   setImageToUpload(uri ?? '');
@@ -435,19 +442,21 @@ const EditProfile = ({ navigation }: Props) => {
           setImageToUpload(image?.path);
           setImageObject({
             ...MyObject,
-            name: 'profileImage' + user?._id,
+            name: `profileImage${user?._id}`,
           });
           setPickerModalVisibile(false);
         } else {
           setHeaderImageToUpload(uri ?? '');
           setHeaderImageObject({
             ...MyObject,
-            name: 'headerImage' + user?._id,
+            name: `headerImage${user?._id}`,
           });
           setHeaderImagePickerModalVisibile(false);
         }
       }, 500);
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   };
   const go = () => {
     navigation.goBack();
@@ -481,7 +490,7 @@ const EditProfile = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'tags/interest',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -535,7 +544,7 @@ const EditProfile = ({ navigation }: Props) => {
                   source={{
                     uri: headerImageToUpload,
                   }}
-                  resizeMode={'cover'}
+                  resizeMode="cover"
                 />
               ) : (
                 <View
@@ -665,7 +674,7 @@ const EditProfile = ({ navigation }: Props) => {
                   {user?.accountType} Details
                 </StyledText>
                 <StyledTextInput
-                  onChangeText={(e) => setUsername(e)}
+                  onChangeText={(e) => setUsername(e.toLowerCase().trim().replace(/\s+/g, ''))}
                   wrapperStyle={{ marginTop: spacing.x24 }}
                   value={username}
                   label="Username"
@@ -683,7 +692,7 @@ const EditProfile = ({ navigation }: Props) => {
                 <View style={{ flex: 4, marginTop: spacing.x16 }}>
                   <StyledText style={{ marginBottom: 10 }}>Date of birth</StyledText>
                   <Button
-                    text={date ? date : 'Select'}
+                    text={date || 'Select'}
                     btnStyle={{
                       flex: 1,
                       backgroundColor: Colors.neutral[700],
@@ -1141,10 +1150,10 @@ const EditProfile = ({ navigation }: Props) => {
               style={{ paddingHorizontal: spacing.x24, marginBottom: spacing.x16, width: '100%' }}
             >
               <Button
-                text={'SAVE'}
+                text="SAVE"
                 onPress={async () => {
                   const data: EditProfileDTO = {
-                    churchType: churchType,
+                    churchType,
                     churchSubType: churchSubType == 'none' ? '' : churchSubType,
                     isChurchTypePublic: isPublicChurchTypeEnabled,
                     isLocationPublic: isPublicLocationEnabled,
@@ -1216,5 +1225,5 @@ const EditProfile = ({ navigation }: Props) => {
       ) : null}
     </SafeAreaView>
   );
-};
+}
 export default EditProfile;

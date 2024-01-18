@@ -1,21 +1,21 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { useTheme } from '@react-navigation/native';
 import Explore from '../screens/explore';
 
 import UserProfile from '../screens/main/userProfile';
 import { ExploreStackParamsList } from './types';
-import { useTheme } from '@react-navigation/native';
 import { Colors } from '../styles';
 
 const Stack = createNativeStackNavigator<ExploreStackParamsList>();
 
-const PostStack = () => {
+function PostStack() {
   const { colors } = useTheme();
 
   return (
     <Stack.Navigator>
       <Stack.Screen name="Explore" component={Explore} options={{ headerShown: false }} />
-      {/*<Stack.Screen
+      {/* <Stack.Screen
         name="UserProfile"
         component={UserProfile}
         options={{
@@ -27,6 +27,6 @@ const PostStack = () => {
       /> */}
     </Stack.Navigator>
   );
-};
+}
 
 export default PostStack;

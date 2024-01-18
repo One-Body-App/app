@@ -1,6 +1,6 @@
-import { User } from '@/utils/types';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AnyAction, Reducer } from 'redux';
+import { User } from '@/utils/types';
 import {
   ACTIONS,
   GetBadges,
@@ -62,7 +62,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
     case ACTIONS.FETCH_SIGN_UP:
       return {
         ...state,
-        //otpToken:action.data.token,
+        // otpToken:action.data.token,
         userProfile: action.data,
       };
 
@@ -122,7 +122,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         },
       };
 
-    //SignUp
+    // SignUp
     case SignUp.REQUEST:
       return {
         ...state,
@@ -150,7 +150,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         error: '',
       };
 
-    //Send Verification Email
+    // Send Verification Email
     case SendVerificationEmail.REQUEST:
       return {
         ...state,
@@ -170,7 +170,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         error: action.payload,
       };
 
-    //Badges
+    // Badges
     case GetBadges.REQUEST:
     case GetBadges.RESET:
       return {
@@ -211,7 +211,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         error: action.payload,
       };
 
-    //Profile
+    // Profile
     case GetProfile.REQUEST:
       return {
         ...state,

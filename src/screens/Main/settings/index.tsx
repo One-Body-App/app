@@ -1,27 +1,18 @@
 import React, { useEffect } from 'react';
 import {
-  Text,
   View,
   Linking,
   TouchableOpacity,
   Alert,
   Platform,
   ScrollView,
-  StyleSheet,
   Image,
   Switch,
   ActivityIndicator,
 } from 'react-native';
-import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { SettingsStackParamsList } from '@/src/navigator/types';
-import { borderRadius } from '@/src/styles/outlines';
-import { StyledText } from '@/src/components/styled/Text';
-import { spacing } from '@/src/styles/spacing';
-import { Colors, Typography } from '@/src/styles';
 import {
   Key,
   Note,
@@ -32,18 +23,23 @@ import {
   SmsNotification,
   UserRemove,
 } from 'iconsax-react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import Icon from 'react-native-vector-icons/AntDesign';
-import FastImage from 'react-native-fast-image';
+import { useToast } from 'react-native-toast-notifications';
+import { styles } from './styles';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { SettingsStackParamsList } from '@/src/navigator/types';
+import { borderRadius } from '@/src/styles/outlines';
+import StyledText from '@/src/components/styled/Text';
+import { spacing } from '@/src/styles/spacing';
+import { Colors, Typography } from '@/src/styles';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { ApiCall } from '@/services/api';
 import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
-import { useToast } from 'react-native-toast-notifications';
 
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
 
-const Settings = ({ navigation }: Props) => {
+function Settings({ navigation }: Props) {
   const GOOGLE_PACKAGE_NAME = '';
   const APPLE_STORE_ID = '';
 
@@ -69,7 +65,7 @@ const Settings = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/my-profile',
-        token: token,
+        token,
         verb: 'get',
       });
 
@@ -119,7 +115,7 @@ const Settings = ({ navigation }: Props) => {
       const res = await ApiCall({
         params: notifications,
         route: `user/set-notifications`,
-        token: token,
+        token,
         verb: 'patch',
       });
 
@@ -158,7 +154,7 @@ const Settings = ({ navigation }: Props) => {
     );
   };
   const openStore = () => {
-    //This is the main trick
+    // This is the main trick
     if (Platform.OS != 'ios') {
       Linking.openURL(`market://details?id=${GOOGLE_PACKAGE_NAME}`).catch((err) =>
         // alert('Please check for Google Play Store')
@@ -231,7 +227,7 @@ const Settings = ({ navigation }: Props) => {
             </View>
             <View style={{ flex: 1, flexDirection: 'column' }}>
               <View style={{ flexDirection: 'row', flex: 1 }}>
-                <View style={{ flex: 1 }}></View>
+                <View style={{ flex: 1 }} />
                 <View
                   style={{
                     backgroundColor: Colors.primarySapphire.brand,
@@ -257,6 +253,7 @@ const Settings = ({ navigation }: Props) => {
                     aspectRatio: 1.77,
                     height: null,
                   }}
+                  // eslint-disable-next-line global-require
                   source={require('@/assets/images/influencerIntro.png')}
                 />
               </View>
@@ -774,5 +771,5 @@ const Settings = ({ navigation }: Props) => {
       </ScrollView>
     </View>
   );
-};
+}
 export default Settings;

@@ -1,44 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Touchable,
-  StatusBar,
-  Image,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Header from '@/src/components/Header';
-
-import Save from '@/assets/svg/Save.svg';
-import { styles } from './styles';
+import { View, FlatList, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import FastImage from 'react-native-fast-image';
-import { OpenURLButton } from '@/services/constants';
 import { StackScreenProps } from '@react-navigation/stack';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faBookmark } from '@fortawesome/free-solid-svg-icons';
+import { isObject } from 'lodash';
+
+import { styles } from './styles';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { getuserGet } from '@/src/redux/actions/UserAction';
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
-import { DrawerScreenProps } from '@react-navigation/drawer';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { Bookmark, NotificationBing } from 'iconsax-react-native';
-import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faBookmark } from '@fortawesome/free-solid-svg-icons';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 import SocialItem from '@/src/components/listItems/SocialItem';
 import ArticleItem from '@/src/components/listItems/ArticleItem';
 import { ArticleType, PostType, SavedPost } from '@/utils/types';
 import { PopupItem } from '@/src/components/listItems/OptionsModal';
-import { isObject } from 'lodash';
 import Button from '@/src/components/Button';
 import {
   MainDrawerParamsList,
@@ -60,7 +43,7 @@ enum ContentType {
   All = 'All',
 }
 
-const Saved = ({ navigation }: Props) => {
+function Saved({ navigation }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const authState = useSelector((state: RootState) => state.auth);
@@ -146,7 +129,7 @@ const Saved = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: `user/remove-saved-post`,
         verb: 'delete',
-        token: token,
+        token,
         params: {
           link,
           type,
@@ -344,7 +327,7 @@ const Saved = ({ navigation }: Props) => {
             );
           }
 
-          return <></>;
+          return null;
         }}
         // (
         //   <TouchableOpacity
@@ -395,5 +378,5 @@ const Saved = ({ navigation }: Props) => {
       />
     </SafeAreaView>
   );
-};
+}
 export default Saved;

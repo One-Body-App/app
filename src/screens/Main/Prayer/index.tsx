@@ -1,26 +1,26 @@
 import React from 'react';
 import { View, TouchableOpacity, SafeAreaView } from 'react-native';
 
-import { styles } from './styles';
 import { SceneMap, TabView } from 'react-native-tab-view';
+import { StackScreenProps } from '@react-navigation/stack';
+import { AddSquare } from 'iconsax-react-native';
+import { useTheme } from '@react-navigation/native';
+import { styles } from './styles';
 
 import WallComponent from '@/src/components/prayerWallComponent';
 import PrayersComponent from '@/src/components/prayerWallMyPrayersComponent';
 import TestimoniesComponent from '@/src/components/prayerWallTestimoniesComponent';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
-import { StackScreenProps } from '@react-navigation/stack';
-import { AddSquare } from 'iconsax-react-native';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { useTheme } from '@react-navigation/native';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { fontSize } from '@/src/styles/typography';
 import PrayerWallSavedPrayersComponent from '@/src/components/prayerWallSavedPrayersComponent';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'index'>;
 
-const Prayer = ({ navigation }: Props) => {
+function Prayer({ navigation }: Props) {
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState([
     { key: 'Wall', title: 'Wall' },
@@ -39,10 +39,11 @@ const Prayer = ({ navigation }: Props) => {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingBottom: spacing.x24 }}>
         <TabView
           navigationState={{ index, routes }}
           renderScene={renderScene}
+          sceneContainerStyle={{ paddingBottom: spacing.x48 }}
           renderTabBar={(props) => {
             return (
               <View style={styles.tabBar}>
@@ -95,5 +96,5 @@ const Prayer = ({ navigation }: Props) => {
       </View>
     </SafeAreaView>
   );
-};
+}
 export default Prayer;

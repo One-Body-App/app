@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-useless-fragment */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -5,14 +6,18 @@ import {
   TouchableOpacity,
   Modal,
   TextInput as TextInputNative,
-  Linking,
-  ScrollView,
   useColorScheme,
-  Alert,
 } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { StackScreenProps } from '@react-navigation/stack';
+import { useTheme } from '@react-navigation/native';
+import { Picker } from '@react-native-picker/picker';
+import auth from '@react-native-firebase/auth';
+import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
+import { useDispatch, useSelector } from 'react-redux';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 import Button from '@/src/components/Button';
 import { styles } from './styles';
@@ -20,40 +25,26 @@ import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
 import Logo from '@/assets/svg/LogoBlue.svg';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
-import Icon from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
-
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { StackScreenProps } from '@react-navigation/stack';
 
 import {
-  BASE_URL,
   OpenURLButton,
   TWITTER_CLIENT_ID,
   codeChallenge,
   getInstagramAuthToken,
   getTwitterAuthToken,
+  INSTAGRAM_APP_ID,
+  INSTAGRAM_LOGIN_REDIRECT,
 } from '@/services/constants';
-import axios from 'axios';
-import { useTheme } from '@react-navigation/native';
-import { Picker } from '@react-native-picker/picker';
-import { getTwitterLoginToken } from '@/services/login';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import Facebook from '@/assets/svg/Facebook.svg';
-import { INSTAGRAM_APP_ID, INSTAGRAM_LOGIN_REDIRECT } from '@/services/constants';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
-import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import InAppBrowser from 'react-native-inappbrowser-reborn';
-import Twitter from '@/assets/svg/Twitter.svg';
-import qs from 'qs';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+
 const twitterRedirectUrl = 'onebodyapp://influencer/login/twitter';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepTwo'>;
 
-const InfluencerStepTwo = ({ navigation, route }: Props) => {
+function InfluencerStepTwo({ navigation, route }: Props) {
   const userToken = useSelector((state: RootState) => state.auth.userToken);
   const [twitterStateConfirmation] = useState(Math.random().toString(36).substring(2, 30));
   const [twitterCodeConfirmation, setTwitterCodeConfirmation] = useState<string>('');
@@ -144,7 +135,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
 
     if (!bioError) {
       setModalVisible(true);
-      //navigation.navigate('InfluencerStepThree',{data:{twitterUsername, instagramUsername,twitterHandler,instagramHandler,twitterTitle,instagramTitle,comments}})
+      // navigation.navigate('InfluencerStepThree',{data:{twitterUsername, instagramUsername,twitterHandler,instagramHandler,twitterTitle,instagramTitle,comments}})
     } else {
       setState({
         ...state,
@@ -170,14 +161,14 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
       const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
 
       if (result.isCancelled) {
-        throw 'User cancelled the login process';
+        throw new Error('User cancelled the login process');
       }
 
       // Once signed in, get the users AccesToken
       const data = await AccessToken.getCurrentAccessToken();
 
       if (!data) {
-        throw 'Something went wrong obtaining access token';
+        throw new Error('Something went wrong obtaining access token');
       }
 
       let foundFacebook = false;
@@ -216,7 +207,9 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
 
       // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       // }
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const scheme = useColorScheme();
@@ -265,7 +258,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
     <View style={styles.container}>
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={modalVisible}
         onRequestClose={() => {
           setModalVisible(!modalVisible);
@@ -273,9 +266,9 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
       >
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <Icon
+            <Ionicons
               name="close"
-              color={'#B3C1C5'}
+              color="#B3C1C5"
               style={{ alignSelf: 'flex-end' }}
               onPress={() => setModalVisible(false)}
               size={getFontSize(3)}
@@ -303,7 +296,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                       fontFamily: 'Rubik-Regular',
                     }}
                   >
-                    <Ionicons name="logo-twitter" color={'#032F3C'} size={20} /> Twitter handle
+                    <Ionicons name="logo-twitter" color="#032F3C" size={20} /> Twitter handle
                   </Text>
 
                   <Text
@@ -331,7 +324,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                       fontFamily: 'Rubik-Regular',
                     }}
                   >
-                    <Ionicons name="logo-instagram" color={'#032F3C'} size={20} /> Instagram handle
+                    <Ionicons name="logo-instagram" color="#032F3C" size={20} /> Instagram handle
                   </Text>
                   <Text
                     style={{
@@ -450,7 +443,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               ) : null}
             </View>
             <Button
-              text={'DONE'}
+              text="DONE"
               btnStyle={{ backgroundColor: '#032F3C' }}
               onPress={() => {
                 setModalVisible(false);
@@ -547,16 +540,16 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
             style={{ ...GeneralStyle.input, backgroundColor: colors.background }}
             ref={inputRefs.website}
             value={state.website}
-            returnKeyType={'next'}
+            returnKeyType="next"
             mode="outlined"
             activeOutlineColor={colors.primary}
-            outlineColor={'#9EA1A2'}
+            outlineColor="#9EA1A2"
             theme={{
               roundness: 10,
-              dark: dark,
+              dark,
               colors: { text: colors.text, placeholder: colors.primary },
             }}
-            label={'Website'}
+            label="Website"
             onFocus={() => setState({ ...state, websiteError: '' })}
             onBlur={() =>
               validateFields(state.website, 'website', (error) =>
@@ -581,16 +574,16 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               height: getHeight(12),
             }}
             ref={inputRefs.bio}
-            multiline={true}
+            multiline
             numberOfLines={5}
             value={state.bio}
-            returnKeyType={'next'}
+            returnKeyType="next"
             mode="outlined"
             activeOutlineColor={colors.primary}
-            outlineColor={'#9EA1A2'}
+            outlineColor="#9EA1A2"
             theme={{
               roundness: 10,
-              dark: dark,
+              dark,
               colors: { text: colors.text, placeholder: colors.primary },
             }}
             onFocus={() => setState({ ...state, bioError: '' })}
@@ -611,16 +604,16 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               height: getHeight(12),
             }}
             ref={inputRefs.comments}
-            multiline={true}
+            multiline
             numberOfLines={5}
             value={state.comments}
-            returnKeyType={'done'}
+            returnKeyType="done"
             mode="outlined"
             activeOutlineColor={colors.primary}
-            outlineColor={'#9EA1A2'}
+            outlineColor="#9EA1A2"
             theme={{
               roundness: 10,
-              dark: dark,
+              dark,
               colors: { text: colors.text, placeholder: colors.primary },
             }}
             onFocus={() => setState({ ...state, commentsError: '' })}
@@ -678,7 +671,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 fontFamily: 'Rubik-Regular',
               }}
             >
-              <Ionicons name="logo-instagram" size={15} color={'#032F3C'} /> Instagram
+              <Ionicons name="logo-instagram" size={15} color="#032F3C" /> Instagram
             </Text>
             {state.instagramUsername ? (
               <Text>Logged in as @{state.instagramUsername}</Text>
@@ -686,7 +679,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
               <>
                 {isLoggedInFacebook ? (
                   <Button
-                    text={'Link Instagram Account'}
+                    text="Link Instagram Account"
                     btnStyle={getButtonContainer()}
                     btnTextStyle={getButtonTextStyle()}
                     onPress={() => {
@@ -707,7 +700,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                   />
                 ) : (
                   <Button
-                    text={'Login with Facebook'}
+                    text="Login with Facebook"
                     leftIcon={
                       <Facebook style={{ marginLeft: 5, marginRight: 10 }} fill="#1877f2" />
                     }
@@ -820,16 +813,16 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                 }}
                 ref={inputRefs.rssFeed1}
                 value={state.rssFeed1}
-                returnKeyType={'next'}
+                returnKeyType="next"
                 mode="outlined"
                 activeOutlineColor={colors.primary}
-                outlineColor={'#9EA1A2'}
+                outlineColor="#9EA1A2"
                 theme={{
                   roundness: 10,
-                  dark: dark,
+                  dark,
                   colors: { text: colors.text, placeholder: colors.primary },
                 }}
-                label={'URL'}
+                label="URL"
                 onFocus={() => setState({ ...state, rssFeed1Error: '' })}
                 onSubmitEditing={() => inputRefs.rssFeed1.current?.focus()}
                 onChangeText={(rssFeed1) => changeHandler('rssFeed1', rssFeed1.trim())}
@@ -857,16 +850,16 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
                   }}
                   ref={inputRefs.rssFeed2}
                   value={state.rssFeed2}
-                  returnKeyType={'next'}
+                  returnKeyType="next"
                   mode="outlined"
                   activeOutlineColor={colors.primary}
-                  outlineColor={'#9EA1A2'}
+                  outlineColor="#9EA1A2"
                   theme={{
                     roundness: 10,
-                    dark: dark,
+                    dark,
                     colors: { text: colors.text, placeholder: colors.primary },
                   }}
-                  label={'URL'}
+                  label="URL"
                   onFocus={() => setState({ ...state, rssFeed2Error: '' })}
                   onSubmitEditing={() => inputRefs.rssFeed2.current?.focus()}
                   onChangeText={(rssFeed2) => changeHandler('rssFeed2', rssFeed2.trim())}
@@ -892,6 +885,7 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
         <ImageBackground
           resizeMode="stretch"
           style={styles.wavebgimage}
+          // eslint-disable-next-line global-require
           source={require('@/assets/images/waveBG.png')}
         >
           <TouchableOpacity
@@ -924,5 +918,5 @@ const InfluencerStepTwo = ({ navigation, route }: Props) => {
       </View>
     </View>
   );
-};
+}
 export default InfluencerStepTwo;

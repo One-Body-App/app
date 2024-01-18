@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Toast from 'react-native-simple-toast';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import { setLoader, setPrayers, setUserPrayers } from '@/src/redux/actions/GeneralActions';
 import { styles } from './styles';
 import { ApiCall } from '@/src/services/api';
-import Toast from 'react-native-simple-toast';
 
-const PrayerInputTypeEdit = ({ color, id, pray, praytype, setCurrentIndex, setIsediting }) => {
+function PrayerInputTypeEdit({ color, id, pray, praytype, setCurrentIndex, setIsediting }) {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.userToken);
   const user = useSelector((state) => state.auth.getProfileData);
@@ -42,8 +42,8 @@ const PrayerInputTypeEdit = ({ color, id, pray, praytype, setCurrentIndex, setIs
     dispatch(setLoader(true));
     try {
       const res = await ApiCall({
-        params: { prayer: prayer, prayerType: payerType },
-        token: token,
+        params: { prayer, prayerType: payerType },
+        token,
         route: `prayers/update-prayer/${id}`,
         verb: 'patch',
       });
@@ -71,19 +71,19 @@ const PrayerInputTypeEdit = ({ color, id, pray, praytype, setCurrentIndex, setIs
           <Button
             btnStyle={payerType == 'anonymous' ? styles.btnSelected : styles.btn}
             btnTextStyle={payerType == 'anonymous' ? { color: 'white' } : { color: '#5B7279' }}
-            text={'Anonymous'}
+            text="Anonymous"
             onPress={() => setPrayerType('anonymous')}
           />
           <Button
             btnStyle={payerType == 'prayer-request' ? styles.btnSelected : styles.btn}
             btnTextStyle={payerType == 'prayer-request' ? { color: 'white' } : { color: '#5B7279' }}
-            text={'Prayer Request'}
+            text="Prayer Request"
             onPress={() => setPrayerType('prayer-request')}
           />
           <Button
             btnStyle={payerType == 'exhortation' ? styles.btnSelected : styles.btn}
             btnTextStyle={payerType == 'exhortation' ? { color: 'white' } : { color: '#5B7279' }}
-            text={'Exhortation'}
+            text="Exhortation"
             onPress={() => setPrayerType('exhortation')}
           />
         </View>
@@ -99,8 +99,8 @@ const PrayerInputTypeEdit = ({ color, id, pray, praytype, setCurrentIndex, setIs
             prayer.length <= 150 ? setPrayer(e) : null;
             seterror(null);
           }}
-          multiline={true}
-          style={{ ...styles.TextInput, color: color }}
+          multiline
+          style={{ ...styles.TextInput, color }}
         />
 
         <TouchableOpacity
@@ -113,17 +113,15 @@ const PrayerInputTypeEdit = ({ color, id, pray, praytype, setCurrentIndex, setIs
         </TouchableOpacity>
       </View>
       {prayer != null && error == null ? (
-        <Text style={{ color: color, paddingLeft: getWidth(5) }}>
-          {prayer.length}/150 Characters left
-        </Text>
+        <Text style={{ color, paddingLeft: getWidth(5) }}>{prayer.length}/150 Characters left</Text>
       ) : null}
       {error != null ? (
         <View style={styles.upview}>
-          <View style={styles.sdview}></View>
+          <View style={styles.sdview} />
           <Text style={styles.errortext}>{error}</Text>
         </View>
       ) : null}
     </View>
   );
-};
+}
 export default PrayerInputTypeEdit;

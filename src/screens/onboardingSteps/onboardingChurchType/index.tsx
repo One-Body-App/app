@@ -1,25 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { useSelector } from 'react-redux';
+import { StackScreenProps } from '@react-navigation/stack';
+import { useToast } from 'react-native-toast-notifications';
+import { useTheme } from '@react-navigation/native';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { AccountType, ChurchType } from '@/utils/types';
-import { useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 
-import { StyledSelect } from '@/src/components/styled/Select';
-import { StackScreenProps } from '@react-navigation/stack';
+import StyledSelect from '@/src/components/styled/Select';
 import { OnboardingStackParamList } from '@/src/navigator/types';
-import { useToast } from 'react-native-toast-notifications';
 import { header } from '@/src/styles/typography';
-import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchType'>;
 
-const OnboardingChurchType = ({ navigation }: Props) => {
+function OnboardingChurchType({ navigation }: Props) {
   const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [churchTypes, setChurchTypes] = useState<ChurchType[]>([]);
@@ -33,7 +33,7 @@ const OnboardingChurchType = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'global/church-type',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -165,5 +165,5 @@ const OnboardingChurchType = ({ navigation }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingChurchType;

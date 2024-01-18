@@ -1,3 +1,5 @@
+/* eslint-disable react/jsx-no-useless-fragment */
+/* eslint-disable react/no-unstable-nested-components */
 import { FC, useState } from 'react';
 import FastImage from 'react-native-fast-image';
 
@@ -6,6 +8,9 @@ import { View, Platform } from 'react-native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import FontAwesome from 'react-native-vector-icons/FontAwesome5';
+import { useSelector } from 'react-redux';
+import { useTheme } from '@react-navigation/native';
+import { AddSquare, Global, Home3, SearchNormal1 } from 'iconsax-react-native';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
@@ -15,18 +20,13 @@ import { MainBottomStackParamsList, MainDrawerParamsList } from './types';
 // import Global from '@/assets/icons/global.svg';
 import { Colors } from '../styles';
 import SearchStack from './SearchStack';
-import { useSelector } from 'react-redux';
 import { RootState } from '../redux/reducers/rootReducer';
 import { borderWidth } from '../styles/outlines';
-import { useTheme } from '@react-navigation/native';
-import { AddSquare, Global, Home3, SearchNormal1 } from 'iconsax-react-native';
 import PostStack from './PostStack';
-
-type Props = DrawerScreenProps<MainDrawerParamsList, 'Main'>;
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
-const BottomStack: FC<Props> = () => {
+function BottomStack() {
   const { dark, colors } = useTheme();
 
   const authState = useSelector((state: RootState) => state.auth);
@@ -158,5 +158,5 @@ const BottomStack: FC<Props> = () => {
       />
     </Tab.Navigator>
   );
-};
+}
 export default BottomStack;

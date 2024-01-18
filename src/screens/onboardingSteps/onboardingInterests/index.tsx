@@ -1,27 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 
-import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useDispatch, useSelector } from 'react-redux';
+import { useToast } from 'react-native-toast-notifications';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTheme } from '@react-navigation/native';
+import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, Interest } from '@/utils/types';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import { useToast } from 'react-native-toast-notifications';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import StyledTextInput from '@/src/components/styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import { iterestListItem } from '@/src/styles/items';
-import { useTheme } from '@react-navigation/native';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInterests'>;
 
-const OnboardingInterests = ({ navigation, route }: Props) => {
+function OnboardingInterests({ navigation, route }: Props) {
   const { dark, colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [interest, setInterest] = useState<Interest[]>([]);
@@ -41,7 +41,7 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: 'tags/interest',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -60,7 +60,7 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/add-interests',
-        token: token,
+        token,
         params: { interests: selectedInterest },
         verb: 'patch',
       });
@@ -84,7 +84,7 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
 
   return (
     <OnboardingStepsLayout
-      buttonText={'Next'}
+      buttonText="Next"
       onPress={() => {
         if (selectedInterest.length >= 3) {
           addInterests();
@@ -205,5 +205,5 @@ const OnboardingInterests = ({ navigation, route }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingInterests;

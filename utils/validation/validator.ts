@@ -1,8 +1,8 @@
-import { validation } from './index';
 import validate from 'validate.js';
+import { validation } from './index';
 
 const validator = async (field: string, value: string, extraFieldData?: Object) => {
-  let lang = 'en';
+  const lang = 'en';
 
   let object: any = new Object();
   object[field] = value;
@@ -13,11 +13,11 @@ const validator = async (field: string, value: string, extraFieldData?: Object) 
     };
   }
 
-  let constraint: any = new Object();
+  const constraint: any = new Object();
   constraint[field] = validation(lang)[field];
 
   // Validate against the constraint and hold the error messages
-  var result = validate({}, constraint); //
+  let result = validate({}, constraint); //
   if (value != '' && value != null) {
     result = validate(object, constraint);
   }

@@ -7,6 +7,7 @@
     "@react-native",
     "plugin:react/recommended",
     "airbnb",
+    "airbnb-typescript",
     "airbnb/hooks",
     "plugin:prettier/recommended",
     "plugin:jest/recommended"
@@ -17,14 +18,53 @@
       "jsx": true
     },
     "ecmaVersion": "latest",
-    "sourceType": "module"
+    "sourceType": "module",
+    "project": ["./tsconfig.json"]
   },
   "plugins": ["react", "react-native"],
   "rules": {
-    // prevent eslint to complain about the "styles" variable being used before it was defined
-    "no-use-before-define": ["error", { "variables": false }],
+    "import/extensions": [
+      "error",
+      "never",
+      { "svg": "always", "png": "always", "jpg": "always", "jpeg": "always" }
+    ],
+    "no-new-object": "warn",
+    "eqeqeq": "warn",
+    "import/prefer-default-export": ["warn"],
+    "@typescript-eslint/no-unused-expressions": ["warn"],
+    "@typescript-eslint/no-unused-vars": ["warn"],
+    "consistent-return": "warn",
+    "no-nested-ternary": "warn",
+    "@typescript-eslint/no-shadow": ["warn"],
+    "react-hooks/exhaustive-deps": ["warn"],
+    "react/require-default-props": ["off"],
+    "no-underscore-dangle": ["off"],
+    "react/no-unused-prop-types": ["warn"],
+    "react/no-unstable-nested-components": ["warn"],
+    "react/react-in-jsx-scope": ["off"],
+    "react/jsx-props-no-spreading": ["warn"],
+    "no-plusplus": "off",
+    "react/no-array-index-key": ["warn"],
+    "import/no-cycle": ["warn"],
+    "@typescript-eslint/no-use-before-define": ["error", { "variables": false }],
+    "@typescript-eslint/naming-convention": ["warn"],
+    "class-methods-use-this": "warn",
+    "react/prop-types": ["warn"],
+    "default-param-last": "off",
+    "@typescript-eslint/default-param-last": "off"
 
+    // [
+    //   "error",
+    //   {
+    //     "ignorePackages": true,
+    //     "pattern": {
+    //       "svg": "never"
+    //     }
+    //   }
+    // ],
+
+    // prevent eslint to complain about the "styles" variable being used before it was defined
     // ignore errors for the react-navigation package
-    "react/prop-types": ["error", { "ignore": ["navigation", "navigation.navigate"] }]
+    // "react/prop-types": ["error", { "ignore": ["navigation", "navigation.navigate"] }]
   }
 }

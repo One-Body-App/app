@@ -1,60 +1,25 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, SafeAreaView, Platform, PermissionsAndroid } from 'react-native';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
-import { OnboardingStackParamList } from '@/src/navigator/types';
-import messaging from '@react-native-firebase/messaging';
-import Geolocation from '@react-native-community/geolocation';
 import FastImage from 'react-native-fast-image';
-import { StyledText } from '@/src/components/styled/Text';
+import { useTheme } from '@react-navigation/native';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { OnboardingStackParamList } from '@/src/navigator/types';
+
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import Button from '@/src/components/Button';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
-import { useTheme } from '@react-navigation/native';
+
+const introImage = require('@/assets/images/onboarding_intro.png');
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
 
-const OnboardingIntro = ({ navigation }: Props) => {
+function OnboardingIntro({ navigation }: Props) {
   const authState = useSelector((state: RootState) => state.auth);
   const { dark } = useTheme();
-
-  const requestNotificationPermission = async () => {
-    await messaging().requestPermission();
-  };
-
-  const requestlocationPermison = async () => {
-    try {
-      if (Platform.OS === 'ios') {
-        Geolocation.requestAuthorization();
-
-        // if (permissions == 'granted') {
-        //   Geolocation.getCurrentPosition((info) => {
-        //     getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-        //   });
-        // }
-      } else {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        );
-
-        // if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        //   //To Check, If Permission is granted
-        //   Geolocation.getCurrentPosition((info) => {
-        //     getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-        //   });
-        // }
-      }
-    } catch (err) {
-      console.warn(err);
-    }
-  };
-
-  useEffect(() => {
-    requestNotificationPermission();
-    requestlocationPermison();
-  }, []);
 
   return (
     <SafeAreaView
@@ -74,7 +39,7 @@ const OnboardingIntro = ({ navigation }: Props) => {
         <FastImage
           resizeMode="contain"
           style={{ width: '60%', height: 'auto', aspectRatio: 1, marginBottom: spacing.x32 }}
-          source={require('@/assets/images/onboarding_intro.png')}
+          source={introImage}
         />
         <StyledText
           style={[
@@ -118,5 +83,5 @@ const OnboardingIntro = ({ navigation }: Props) => {
       </View>
     </SafeAreaView>
   );
-};
+}
 export default OnboardingIntro;

@@ -1,26 +1,6 @@
-import {
-  FlatList,
-  TabBarProps,
-  Tabs,
-  useCurrentTabScrollY,
-  useHeaderMeasurements,
-} from 'react-native-collapsible-tab-view';
+import { useCurrentTabScrollY } from 'react-native-collapsible-tab-view';
 
-import {
-  HEADER_COLLAPSED_HEIGHT,
-  HEADER_EXPANDED_HEIGHT,
-  ProfileProps,
-  profileImagesize,
-} from './Profile';
 import { useDispatch, useSelector } from 'react-redux';
-import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
-import { MyProfileStackParamsList } from '@/src/navigator/types';
-import { Colors, Spacing, Typography } from '@/src/styles';
-
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
 import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { Add, Location, Calendar, ShieldTick, HomeHashtag, Link21 } from 'iconsax-react-native';
 import React, { useState } from 'react';
@@ -30,43 +10,44 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
-  Dimensions,
   useWindowDimensions,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
-
 import Toast from 'react-native-simple-toast';
+import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
+import Modal from 'react-native-modal';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { format, parseISO } from 'date-fns';
+import { HEADER_COLLAPSED_HEIGHT, ProfileProps, profileImagesize } from './Profile';
+import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import { MyProfileStackParamsList } from '@/src/navigator/types';
+import { Colors, Typography } from '@/src/styles';
+
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
 
 import { styles } from '../loginComponent/styles';
-import { StyledText } from '../styled/Text';
-import Animated, {
-  Extrapolation,
-  interpolate,
-  useAnimatedStyle,
-  useDerivedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import StyledText from '../styled/Text';
 import { AccountType, Badge } from '@/utils/types';
-import Modal from 'react-native-modal';
 import Selected from '@/assets/svg/Selected.svg';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { format, parseISO } from 'date-fns';
 import { OpenURLButton } from '@/services/constants';
 
 interface HeaderProps extends ProfileProps {}
 
-const ProfileHeader = ({
+function ProfileHeader({
   profileData,
   currentUser,
   relatedUsers,
   handleSubscribe,
   handleUnSubscribe,
   ...props
-}: HeaderProps) => {
+}: HeaderProps) {
   const dispatch = useDispatch();
-  const [requestModel, setRequestModel] = useState<boolean>(false);
+  const [requestModal, setRequestModal] = useState<boolean>(false);
   const [height, setHeight] = useState<number>(0);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const navigation = useNavigation<NavigationProp<MyProfileStackParamsList>>();
@@ -163,13 +144,13 @@ const ProfileHeader = ({
   });
 
   const contentAnimation = useAnimatedStyle(() => {
-    let value = interpolate(
+    const value = interpolate(
       scrollY.value,
       [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
       [0, 0 - HEADER_COLLAPSED_HEIGHT]
     );
 
-    let opacity = interpolate(
+    const opacity = interpolate(
       scrollY.value,
 
       [0, 130],
@@ -177,7 +158,7 @@ const ProfileHeader = ({
     );
 
     return {
-      opacity: opacity,
+      opacity,
       transform: [
         {
           translateY: -1 * value,
@@ -257,7 +238,7 @@ const ProfileHeader = ({
           )}
           {profileData?.accountType == 'individual' &&
           ((profileData?.badgesData?.length > 0 && profileData?._id != currentUser._id) ||
-            (profileData?.badgesData?.length < 3 && profileData?._id == currentUser._id)) ? (
+            (profileData?.badgesData?.length <= 3 && profileData?._id == currentUser._id)) ? (
             <View
               style={{
                 alignSelf: 'flex-end',
@@ -286,9 +267,9 @@ const ProfileHeader = ({
                       marginRight: profileData?.badgesData.length > 0 ? spacing.x10 : 0,
                     }}
                     onPress={() => {
-                      //getBadge();
-                      dispatch(getBadges.Request({ token: token }));
-                      setRequestModel(true);
+                      // getBadge();
+                      dispatch(getBadges.Request({ token }));
+                      setRequestModal(true);
                     }}
                   >
                     <Add color="white" size={20} />
@@ -304,7 +285,7 @@ const ProfileHeader = ({
                           height: 40,
                           borderRadius: borderRadius.max,
                           marginRight:
-                            index == profileData?.badgesData.length - 1 ? 0 : spacing.x10,
+                            index == (profileData?.badgesData.length ?? 0 - 1) ? 0 : spacing.x10,
                         }}
                         source={{
                           uri: item.badge,
@@ -316,9 +297,9 @@ const ProfileHeader = ({
                       <TouchableOpacity
                         style={{ marginHorizontal: spacing.x10 }}
                         onPress={() => {
-                          dispatch(getBadges.Request({ token: token }));
-                          //getBadge();
-                          setRequestModel(true);
+                          dispatch(getBadges.Request({ token }));
+                          // getBadge();
+                          setRequestModal(true);
                         }}
                       >
                         <FastImage
@@ -360,7 +341,7 @@ const ProfileHeader = ({
                 bottom: 10,
                 marginLeft: spacing.x24,
 
-                //animatedStyles
+                // animatedStyles
                 // profileImageAnimation
               },
 
@@ -380,7 +361,7 @@ const ProfileHeader = ({
               source={{
                 uri: profileData?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
               }}
-              resizeMode={'cover'}
+              resizeMode="cover"
             />
           </Animated.View>
         </View>
@@ -475,9 +456,7 @@ const ProfileHeader = ({
                 onPress={() => {
                   if (currentUser?.following.includes(profileData?._id)) {
                     if (handleUnSubscribe) handleUnSubscribe(profileData?._id);
-                  } else {
-                    if (handleSubscribe) handleSubscribe(profileData?._id);
-                  }
+                  } else if (handleSubscribe) handleSubscribe(profileData?._id);
                 }}
                 text={currentUser?.following.includes(profileData?._id) ? 'Connected' : 'Connect'}
                 btnStyle={[
@@ -519,8 +498,7 @@ const ProfileHeader = ({
               },
             ]}
           >
-            {profileData?.profile?.location?.address &&
-            (profileData?._id == currentUser._id || profileData.profile.isLocationPublic) ? (
+            {profileData?.profile?.location?.address && profileData.profile.isLocationPublic ? (
               <View style={{ flexDirection: 'row', flex: 1 }}>
                 <Location size={20} color={Colors.neutral.brand} />
                 <StyledText
@@ -535,8 +513,7 @@ const ProfileHeader = ({
               style={{
                 flexDirection: 'row',
                 paddingLeft:
-                  profileData?.profile?.location?.address &&
-                  (profileData?._id == currentUser._id || profileData.profile.isLocationPublic)
+                  profileData?.profile?.location?.address && profileData.profile.isLocationPublic
                     ? spacing.x16
                     : 0,
                 flex: 1,
@@ -666,9 +643,9 @@ const ProfileHeader = ({
       </View>
       <Modal
         backdropOpacity={0.3}
-        isVisible={requestModel}
-        onBackdropPress={() => setRequestModel(false)}
-        onSwipeComplete={() => setRequestModel(false)}
+        isVisible={requestModal}
+        onBackdropPress={() => setRequestModal(false)}
+        onSwipeComplete={() => setRequestModal(false)}
         swipeDirection={['down']}
         style={styles.bottomView}
         propagateSwipe
@@ -715,15 +692,10 @@ const ProfileHeader = ({
                                       }
                                     );
                                     setSelectedBadges(newSelectedBadges);
+                                  } else if (selectedBadges.length < 3) {
+                                    setSelectedBadges([...selectedBadges, item]);
                                   } else {
-                                    if (selectedBadges.length < 3) {
-                                      setSelectedBadges([...selectedBadges, item]);
-                                    } else {
-                                      Toast.show(
-                                        'You cannot select more then 3 badges!',
-                                        Toast.LONG
-                                      );
-                                    }
+                                    Toast.show('You cannot select more then 3 badges!', Toast.LONG);
                                   }
                                 }
                               }}
@@ -848,8 +820,8 @@ const ProfileHeader = ({
             <View>
               <TouchableOpacity
                 onPress={() => {
-                  dispatch(setUserBadges.Request({ token: token, badges: selectedBadges }));
-                  setRequestModel(false);
+                  dispatch(setUserBadges.Request({ token, badges: selectedBadges }));
+                  setRequestModal(false);
                 }}
                 style={{ ...GeneralStyle.btn, backgroundColor: '#e6eaec' }}
               >
@@ -869,6 +841,6 @@ const ProfileHeader = ({
       </Modal>
     </Animated.View>
   );
-};
+}
 
 export default ProfileHeader;

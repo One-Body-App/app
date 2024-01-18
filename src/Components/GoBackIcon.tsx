@@ -3,7 +3,7 @@ import { TouchableOpacity, ViewStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const GoBackIcon = ({
+function GoBackIcon({
   color,
   goBack,
   style,
@@ -11,7 +11,7 @@ const GoBackIcon = ({
   color: string;
   goBack?: () => void;
   style?: ViewStyle;
-}) => {
+}) {
   const navigation = useNavigation();
   if (!navigation.canGoBack) {
     return null;
@@ -21,6 +21,6 @@ const GoBackIcon = ({
       <Icon name="chevron-back" size={20} color={color} />
     </TouchableOpacity>
   );
-};
+}
 
 export default GoBackIcon;

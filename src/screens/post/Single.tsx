@@ -1,25 +1,5 @@
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/src/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { StyledText } from '@/src/components/styled/Text';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
-import { Colors, Spacing } from '@/src/styles';
-import { button } from '@/src/styles/buttons';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
-import {
-  CommentPost,
-  Location,
-  PostType,
-  PrayerPost,
-  SocialPost,
-  SocialPostReaction,
-} from '@/utils/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useEffect, useState } from 'react';
-
 import {
   ActivityIndicator,
   FlatList,
@@ -36,9 +16,7 @@ import {
   EmitterSubscription,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-
 import { useTheme } from '@react-navigation/native';
-
 import { Asset } from 'react-native-image-picker';
 import { CloseCircle, Send } from 'iconsax-react-native';
 import {
@@ -48,16 +26,36 @@ import {
   GiphyMedia,
   GiphyMediaView,
 } from '@giphy/react-native-sdk';
+import { useToast } from 'react-native-toast-notifications';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/src/services/api';
+import Button from '@/src/components/Button';
+import MapBox, { MapSuggestion } from '@/src/components/MapBox';
+import StyledText from '@/src/components/styled/Text';
+import StyledTextInput from '@/src/components/styled/TextInput';
+import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
+import { Colors, Spacing } from '@/src/styles';
+import { button } from '@/src/styles/buttons';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import {
+  CommentPost,
+  Location,
+  PostType,
+  PrayerPost,
+  SocialPost,
+  SocialPostReaction,
+} from '@/utils/types';
+
 import CommentField from '@/src/components/comments/Field';
 import CommentItem from '@/src/components/comments/CommentItem';
-import { useToast } from 'react-native-toast-notifications';
 import SocialItem from '@/src/components/listItems/SocialItem';
 
 type Props = StackScreenProps<MainStackParamList, 'SinglePost'>;
 
 let keyboardWillShowListener: EmitterSubscription;
 let onKeyboardWillHideListener: EmitterSubscription;
-const SinglePost = ({ navigation, route }: Props) => {
+function SinglePost({ navigation, route }: Props) {
   const [post, setPost] = useState<SocialPost>();
   const [comments, setComments] = useState<CommentPost[]>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -138,7 +136,7 @@ const SinglePost = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: `social/post/${route.params?.postId}`,
-        token: token,
+        token,
 
         verb: 'get',
       });
@@ -160,20 +158,20 @@ const SinglePost = ({ navigation, route }: Props) => {
     }
   };
 
-  useEffect(() => {
-    if (post) {
-      navigation.setOptions({
-        title: `${post.userData.name}'s Post`,
-      });
-    }
-  }, [post]);
+  // useEffect(() => {
+  //   if (post) {
+  //     navigation.setOptions({
+  //       title: `${post.userData.name}'s Post`,
+  //     });
+  //   }
+  // }, [post]);
 
   const getComments = async (page: number) => {
     setIsLoading(true);
     try {
       const result = await ApiCall({
         route: `comments/social/${route.params?.postId}`,
-        token: token,
+        token,
 
         verb: 'get',
       });
@@ -194,7 +192,7 @@ const SinglePost = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: `comments/social/${route.params?.postId}`,
-        token: token,
+        token,
 
         verb: 'post',
         params: {
@@ -218,7 +216,7 @@ const SinglePost = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: `social/${id}`,
         verb: 'delete',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -234,7 +232,7 @@ const SinglePost = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: `comments/social/${route.params?.postId}/${id}`,
         verb: 'patch',
-        token: token,
+        token,
         params: {
           content,
           gif: mediaGif,
@@ -259,7 +257,7 @@ const SinglePost = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: `comments/social/${route.params?.postId}/${id}`,
         verb: 'delete',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -324,9 +322,15 @@ const SinglePost = ({ navigation, route }: Props) => {
                     }}
                   />
                 }
-                ListEmptyComponent={() => <>{isLoading ? <ActivityIndicator /> : null}</>}
+                ListEmptyComponent={() => {
+                  if (isLoading) {
+                    return <ActivityIndicator />;
+                  }
+
+                  return null;
+                }}
                 renderItem={({ item }) => {
-                  let myReaction: SocialPostReaction | undefined = undefined;
+                  let myReaction: SocialPostReaction | undefined;
 
                   item.reactions?.forEach((reaction) => {
                     if (reaction.userId == user?._id) {
@@ -379,6 +383,7 @@ const SinglePost = ({ navigation, route }: Props) => {
             ) : null}
           </>
         ) : (
+          // eslint-disable-next-line react/jsx-no-useless-fragment
           <>
             {isLoading ? (
               <ActivityIndicator
@@ -388,6 +393,7 @@ const SinglePost = ({ navigation, route }: Props) => {
                 style={{ marginRight: spacing.x10 }}
               />
             ) : (
+              // eslint-disable-next-line react/jsx-no-useless-fragment
               <>{isNotFound ? <StyledText>Not Found</StyledText> : null}</>
             )}
           </>
@@ -395,6 +401,6 @@ const SinglePost = ({ navigation, route }: Props) => {
       </View>
     </SafeAreaView>
   );
-};
+}
 
 export default SinglePost;

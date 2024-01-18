@@ -123,7 +123,7 @@ export const signUp = {
   }),
 };
 
-//Send Verification Email Actions
+// Send Verification Email Actions
 export const sendVerificationEmail = {
   Request: (params: any) => ({
     type: SendVerificationEmail.REQUEST,
@@ -139,7 +139,7 @@ export const sendVerificationEmail = {
   }),
 };
 
-//Badge Actions
+// Badge Actions
 
 export const getBadges = {
   Reset: () => ({
@@ -174,7 +174,7 @@ export const setUserBadges = {
   }),
 };
 
-//Profile Actions
+// Profile Actions
 export const getProfile = {
   Request: (params: any) => ({
     type: GetProfile.REQUEST,

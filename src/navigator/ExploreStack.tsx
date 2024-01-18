@@ -1,15 +1,15 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { useTheme } from '@react-navigation/native';
 import Explore from '../screens/explore';
 
 import UserProfile from '../screens/main/userProfile';
 import { ExploreStackParamsList } from './types';
-import { useTheme } from '@react-navigation/native';
 import { Colors } from '../styles';
 
 const Stack = createNativeStackNavigator<ExploreStackParamsList>();
 
-const ExploreStack = () => {
+function ExploreStack() {
   const { colors } = useTheme();
 
   return (
@@ -27,6 +27,6 @@ const ExploreStack = () => {
       />
     </Stack.Navigator>
   );
-};
+}
 
 export default ExploreStack;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, SetStateAction, Dispatch, ReactElement } from 'react';
+import React, { useState, SetStateAction, Dispatch, ReactElement } from 'react';
 import {
   FlatList,
   Platform,
@@ -12,16 +12,13 @@ import Modal from 'react-native-modal';
 import Geolocation from '@react-native-community/geolocation';
 
 import { useTheme } from '@react-navigation/native';
-import { borderRadius } from '../styles/outlines';
-import { StyledText } from './styled/Text';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Gps } from 'iconsax-react-native';
+import { borderRadius } from '../styles/outlines';
+import StyledText from './styled/Text';
 import { Colors, Typography } from '../styles';
-import { StyledTextInput } from './styled/TextInput';
+import StyledTextInput from './styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
-
-const access_token =
-  'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
 
 export enum MapBoxTypes {
   country = 'country',
@@ -62,12 +59,23 @@ export type MapSuggestion = {
 };
 
 let timer: NodeJS.Timeout | null = null;
+const accessToken =
+  'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
+function MapBox({
+  types,
+  countries,
+  setLocation,
+  location,
+  setModalVisible,
+  modalVisible,
+  setLongitude,
+  setLatitude,
+  modalTitle,
+  hideSearchMyLocation,
+}: MapBoxProps) {
+  const { colors } = useTheme();
 
-const MapBox = (props: MapBoxProps) => {
-  const { setLocation, location, setModalVisible, modalVisible, setLongitude, setLatitude } = props;
-  const { colors, dark } = useTheme();
-
-  const [show, setshown] = useState<boolean>(!!location);
+  const [, setshown] = useState<boolean>(!!location);
   const [loading, setLoading] = useState<boolean>(false);
   const [suggetions, setSuggetions] = useState<MapSuggestion[]>(location ? [location] : []);
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
@@ -79,9 +87,9 @@ const MapBox = (props: MapBoxProps) => {
     if (val) {
       timer = setTimeout(() => {
         fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${access_token}${
-            props.types ? `&types=${props.types?.join(',')}` : '&types=place'
-          }${props.countries ? `&country=${props.countries?.join(',')}` : ''}`
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${accessToken}${
+            types ? `&types=${types?.join(',')}` : '&types=place'
+          }${countries ? `&country=${countries?.join(',')}` : ''}`
         )
           .then((response) => response.json())
           .then((data) => {
@@ -118,7 +126,7 @@ const MapBox = (props: MapBoxProps) => {
           }
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          //To Check, If Permission is granted
+          // To Check, If Permission is granted
           Geolocation.getCurrentPosition((info) => {
             getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
           });
@@ -130,9 +138,9 @@ const MapBox = (props: MapBoxProps) => {
   };
   const getcurrentLocation = (longitude: number, latitude: number) => {
     fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${access_token}${
-        props.types ? `&types=${props.types?.join(',')}` : '&types=place'
-      }${props.countries ? `&country=${props.countries?.join(',')}` : ''}`
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${accessToken}${
+        types ? `&types=${types?.join(',')}` : '&types=place'
+      }${countries ? `&country=${countries?.join(',')}` : ''}`
     )
       .then((response) => response.json())
       .then((data) => {
@@ -150,7 +158,7 @@ const MapBox = (props: MapBoxProps) => {
   return (
     <Modal
       swipeDirection={['down']}
-      avoidKeyboard={true}
+      avoidKeyboard
       backdropOpacity={0.3}
       isVisible={modalVisible}
       onBackdropPress={() => onclose()}
@@ -160,8 +168,8 @@ const MapBox = (props: MapBoxProps) => {
         justifyContent: 'flex-end',
         margin: 0,
       }}
-      propagateSwipe={true}
-      coverScreen={true}
+      propagateSwipe
+      coverScreen
       useNativeDriver
     >
       <View
@@ -182,7 +190,7 @@ const MapBox = (props: MapBoxProps) => {
               paddingBottom: 10,
             }}
           >
-            {props.modalTitle}
+            {modalTitle}
 
             <TouchableOpacity
               onPress={() => {
@@ -197,7 +205,7 @@ const MapBox = (props: MapBoxProps) => {
             <StyledTextInput
               wrapperStyle={{ flex: 0 }}
               value={searchLocation}
-              returnKeyType={'search'}
+              returnKeyType="search"
               placeholder="Search"
               onChangeText={(val) => getSuggestion(val)}
               leftIcon={
@@ -215,12 +223,13 @@ const MapBox = (props: MapBoxProps) => {
                 // />
               }
               rightIcon={
-                !props.hideSearchMyLocation ? (
+                !hideSearchMyLocation ? (
                   <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                     {location != null && searchLocation ? null : (
+                      // eslint-disable-next-line react/jsx-no-useless-fragment
                       <>
                         {loading ? (
-                          <ActivityIndicator animating={true} size="small" color={colors.text} />
+                          <ActivityIndicator animating size="small" color={colors.text} />
                         ) : (
                           <TouchableOpacity
                             onPress={() => {
@@ -245,6 +254,7 @@ const MapBox = (props: MapBoxProps) => {
             nestedScrollEnabled
             data={suggetions}
             ListEmptyComponent={
+              // eslint-disable-next-line react/jsx-no-useless-fragment
               <>
                 {searchLocation && !loading ? (
                   <StyledText style={[Typography.body.x2M, { padding: 18, textAlign: 'center' }]}>
@@ -281,6 +291,6 @@ const MapBox = (props: MapBoxProps) => {
       </View>
     </Modal>
   );
-};
+}
 
 export default MapBox;

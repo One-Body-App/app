@@ -1,18 +1,5 @@
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { StyledText } from '@/src/components/styled/Text';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
-import { Colors, Spacing, Typography } from '@/src/styles';
-import { button } from '@/src/styles/buttons';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
-import { Location, PrayerWallCategory } from '@/utils/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useEffect, useState } from 'react';
-import Anonymous from '@/assets/svg/anonymous.svg';
 import {
   ActivityIndicator,
   Dimensions,
@@ -36,9 +23,6 @@ import {
 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { fontSize } from '@/src/styles/typography';
-
-import ImagePickerModal from '@/src/components/ImagePickerModal';
 import ImagePicker from 'react-native-image-crop-picker';
 import {
   Asset,
@@ -59,10 +43,26 @@ import {
   GiphySDK,
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
-import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS, NO_PROFILE_IMAGE } from '@/services/constants';
 import { isArray, isEmpty } from 'lodash';
-import { StyledSelect } from '@/src/components/styled/Select';
 import Toast from 'react-native-simple-toast';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/services/api';
+import Button from '@/src/components/Button';
+import MapBox, { MapSuggestion } from '@/src/components/MapBox';
+import StyledText from '@/src/components/styled/Text';
+import StyledTextInput from '@/src/components/styled/TextInput';
+import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
+import { Colors, Spacing, Typography } from '@/src/styles';
+import { button } from '@/src/styles/buttons';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { Location, PrayerWallCategory } from '@/utils/types';
+import Anonymous from '@/assets/svg/anonymous.svg';
+import { fontSize } from '@/src/styles/typography';
+
+import ImagePickerModal from '@/src/components/ImagePickerModal';
+import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS, NO_PROFILE_IMAGE } from '@/services/constants';
+import StyledSelect from '@/src/components/styled/Select';
 import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
 GiphySDK.configure({
@@ -71,7 +71,7 @@ GiphySDK.configure({
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Prayer'>;
 
-const NewPrayer = ({ navigation, route }: Props) => {
+function NewPrayer({ navigation, route }: Props) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [postType, setPostType] = useState<PrayerWallCategory>();
@@ -113,7 +113,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: `prayer/${route.params?.postId}`,
-        token: token,
+        token,
         params: serialize(
           {
             content,
@@ -156,7 +156,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: 'prayer',
-        token: token,
+        token,
         params: serialize(
           {
             content,
@@ -205,7 +205,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: `prayer/${route.params?.postId}`,
-        token: token,
+        token,
 
         verb: 'get',
       });
@@ -239,7 +239,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
   };
 
   const chooseImageGallery = async () => {
-    let options: ImageLibraryOptions = {
+    const options: ImageLibraryOptions = {
       mediaType: 'photo',
 
       // noData: true,
@@ -251,15 +251,18 @@ const NewPrayer = ({ navigation, route }: Props) => {
       console.log('User cancelled camera picker');
 
       return;
-    } else if (response.errorCode == 'camera_unavailable') {
+    }
+    if (response.errorCode == 'camera_unavailable') {
       console.log('Camera not available on device');
 
       return;
-    } else if (response.errorCode == 'permission') {
+    }
+    if (response.errorCode == 'permission') {
       console.log('Permission not satisfied');
 
       return;
-    } else if (response.errorCode == 'others') {
+    }
+    if (response.errorCode == 'others') {
       console.log(response.errorMessage);
       return;
     }
@@ -315,17 +318,19 @@ const NewPrayer = ({ navigation, route }: Props) => {
 
         setPickerModalVisibile(false);
       }, 500);
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const captureImage = async (contentType: MediaType) => {
-    let options: CameraOptions = {
+    const options: CameraOptions = {
       mediaType: contentType,
       quality: 0.8,
       // noData: true,
     };
     // let isCameraPermitted = await requestCameraPermission();
-    let isStoragePermitted = await requestExternalWritePermission();
+    const isStoragePermitted = await requestExternalWritePermission();
     if (isStoragePermitted) {
       const response = await launchCamera(options);
 
@@ -333,15 +338,18 @@ const NewPrayer = ({ navigation, route }: Props) => {
         console.log('User cancelled camera picker');
 
         return;
-      } else if (response.errorCode == 'camera_unavailable') {
+      }
+      if (response.errorCode == 'camera_unavailable') {
         console.log('Camera not available on device');
 
         return;
-      } else if (response.errorCode == 'permission') {
+      }
+      if (response.errorCode == 'permission') {
         console.log('Permission not satisfied');
 
         return;
-      } else if (response.errorCode == 'others') {
+      }
+      if (response.errorCode == 'others') {
         console.log(response.errorMessage);
 
         return;
@@ -435,7 +443,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
                           borderColor: !user?.profileImage ? '#032F3C' : '#09aadb',
                           borderWidth: borderWidth.thin,
                         }}
-                        resizeMode={'contain'}
+                        resizeMode="contain"
                       />
                     )}
                   </View>
@@ -480,8 +488,8 @@ const NewPrayer = ({ navigation, route }: Props) => {
                     value: PrayerWallCategory.Testimony,
                   },
                 ]}
-                btnText={postType ? postType : 'Prayer Type'}
-                modalTitle={'Select prayer type'}
+                btnText={postType || 'Prayer Type'}
+                modalTitle="Select prayer type"
                 onChange={(item: PrayerWallCategory) => {
                   setPostType(item);
                 }}
@@ -504,7 +512,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
                 value={content}
                 multiline
                 returnKeyType="next"
-                label={''}
+                label=""
                 autoCorrect
                 placeholder="What's on your heart?"
                 placeholderTextColor={Colors.neutral[300]}
@@ -517,12 +525,12 @@ const NewPrayer = ({ navigation, route }: Props) => {
             {imagesToUpload.length > 0 || imagesObject.length > 0 || mediaGif ? (
               <ScrollView
                 style={{ flexDirection: 'row', gap: spacing.x10 }}
-                horizontal={true}
-                alwaysBounceHorizontal={true}
-                bounces={true}
+                horizontal
+                alwaysBounceHorizontal
+                bounces
                 decelerationRate="fast"
                 showsHorizontalScrollIndicator={false}
-                pagingEnabled={true}
+                pagingEnabled
               >
                 {imagesToUpload &&
                   imagesToUpload.map((image, index) => {
@@ -558,7 +566,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
                           source={{
                             uri: image.uri,
                           }}
-                          resizeMode={'cover'}
+                          resizeMode="cover"
                         />
                       </View>
                     );
@@ -599,7 +607,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
                           source={{
                             uri: image,
                           }}
-                          resizeMode={'cover'}
+                          resizeMode="cover"
                         />
                       </View>
                     );
@@ -752,6 +760,7 @@ const NewPrayer = ({ navigation, route }: Props) => {
           disabledBtnStyle={[button.primary, { flex: 1, opacity: 0.5 }]}
           disabledBtnTextStyle={{}}
           content={
+            // eslint-disable-next-line react/jsx-no-useless-fragment
             <>
               {isLoading ? (
                 <ActivityIndicator />
@@ -766,6 +775,6 @@ const NewPrayer = ({ navigation, route }: Props) => {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+}
 
 export default NewPrayer;

@@ -1,35 +1,35 @@
 import React, { useRef, useState } from 'react';
 import { Text, View, TouchableOpacity, TextInput as TextInputNative } from 'react-native';
 
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useDispatch, useSelector } from 'react-redux';
+import { useToast } from 'react-native-toast-notifications';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { StackScreenProps } from '@react-navigation/stack';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/src/components/Header';
 import Button from '@/src/components/Button';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { styles } from './styles';
-import { useDispatch, useSelector } from 'react-redux';
 import { ApiCall } from '@/src/services/api';
 import { validateFields } from '@/utils/validation/validate-fields';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
-import { useToast } from 'react-native-toast-notifications';
 
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { button } from '@/src/styles/buttons';
 import { Colors } from '@/src/styles';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledText from '@/src/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 
 type Props = StackScreenProps<RootStackParamList, 'PasswordChange'>;
 
-const PasswordChange = ({ navigation, route }: Props) => {
+function PasswordChange({ navigation, route }: Props) {
   const dispatch = useDispatch();
   const inputRefs = {
     passwordN: useRef<TextInputNative>(null),
@@ -118,9 +118,9 @@ const PasswordChange = ({ navigation, route }: Props) => {
             wrapperStyle={{ flex: 1 }}
             ref={inputRefs.passwordN}
             value={state.passwordN}
-            returnKeyType={'next'}
-            label={'New Password'}
-            secureTextEntry={hidePassN ? true : false}
+            returnKeyType="next"
+            label="New Password"
+            secureTextEntry={!!hidePassN}
             rightIcon={
               <View style={{ justifyContent: 'center' }}>
                 <MaterialCommunityIcons
@@ -204,9 +204,9 @@ const PasswordChange = ({ navigation, route }: Props) => {
             wrapperStyle={{ flex: 1, marginTop: spacing.x24 }}
             ref={inputRefs.passwordC}
             value={state.passwordC}
-            returnKeyType={'done'}
-            label={'Confirm Password'}
-            secureTextEntry={hidePassC ? true : false}
+            returnKeyType="done"
+            label="Confirm Password"
+            secureTextEntry={!!hidePassC}
             rightIcon={
               <View style={{ justifyContent: 'center' }}>
                 <MaterialCommunityIcons
@@ -263,5 +263,5 @@ const PasswordChange = ({ navigation, route }: Props) => {
       </KeyboardAwareScrollView>
     </View>
   );
-};
+}
 export default PasswordChange;

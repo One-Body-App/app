@@ -1,11 +1,3 @@
-import { logout } from '@/src/redux/actions/AuthActions';
-import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-import Button from '@/src/components/Button';
-import { StyledText } from '@/src/components/styled/Text';
-import { Colors, Typography } from '@/src/styles';
-import { profileImageList } from '@/src/styles/items';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
 import { Edit, Setting2, ProfileAdd, Star1, UserRemove, LogoutCurve } from 'iconsax-react-native';
 import React, { useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
@@ -18,11 +10,19 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import AntDesignIcon from 'react-native-vector-icons/AntDesign';
 import { useDispatch } from 'react-redux';
 import auth from '@react-native-firebase/auth';
-import { User } from '@/utils/types';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
-import { MainDrawerParamsList, MyProfileStackParamsList } from '@/src/navigator/types';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { MainDrawerParamsList, MyProfileStackParamsList } from '@/src/navigator/types';
+import { User } from '@/utils/types';
+import { spacing } from '@/src/styles/spacing';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { profileImageList } from '@/src/styles/items';
+import { Colors, Typography } from '@/src/styles';
+import StyledText from '@/src/components/styled/Text';
+import Button from '@/src/components/Button';
+import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
+import { logout } from '@/src/redux/actions/AuthActions';
 
 const options = {
   AppleAppID: '1637542382',
@@ -41,7 +41,7 @@ type Props = {
   setShowModal: (show: boolean) => void;
 };
 
-const SettingsSheet = ({ setShowModal, showModal, userData }: Props) => {
+function SettingsSheet({ setShowModal, showModal, userData }: Props) {
   const dispatch = useDispatch();
   const { colors } = useTheme();
   const navigation = useNavigation<
@@ -58,7 +58,7 @@ const SettingsSheet = ({ setShowModal, showModal, userData }: Props) => {
   return (
     <Modal
       // swipeDirection={['down']}
-      avoidKeyboard={true}
+      avoidKeyboard
       backdropOpacity={0.3}
       isVisible={showModal}
       onBackdropPress={() => setShowModal(false)}
@@ -68,7 +68,7 @@ const SettingsSheet = ({ setShowModal, showModal, userData }: Props) => {
         justifyContent: 'flex-end',
         margin: 0,
       }}
-      propagateSwipe={true}
+      propagateSwipe
     >
       <View
         style={{
@@ -269,6 +269,6 @@ const SettingsSheet = ({ setShowModal, showModal, userData }: Props) => {
       </View>
     </Modal>
   );
-};
+}
 
 export default SettingsSheet;

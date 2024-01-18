@@ -9,24 +9,24 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { SceneRendererProps } from 'react-native-tab-view';
+import { isObject } from 'lodash';
+import { useTheme } from '@react-navigation/native';
+import { Tabs } from 'react-native-collapsible-tab-view';
 import { styles } from './styles';
 import Social from '@/assets/svg/Social.svg';
 import { getFontSize, getHeight, timeSince } from '@/utils/ResponsiveFun';
-import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import { SceneRendererProps } from 'react-native-tab-view';
 import { ArticleType, PostType, User } from '@/utils/types';
-import { isObject } from 'lodash';
 import { OpenURLButton } from '@/services/constants';
 import ArticleItem from '../listItems/ArticleItem';
-import { useTheme } from '@react-navigation/native';
 import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
 import { styles as globalStyle } from '@/src/components/listItems/style';
 import { spacing } from '@/src/styles/spacing';
-import { Tabs } from 'react-native-collapsible-tab-view';
 
-const BlogFlatlist = ({ userId }: { userId: string }) => {
+function BlogFlatlist({ userId }: { userId: string }) {
   // const offset = useRef(new Animated.Value(0)).current;
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -43,7 +43,7 @@ const BlogFlatlist = ({ userId }: { userId: string }) => {
       const res = await ApiCall({
         route: `user/get-blog-feed/${userId}/${pageNumber}`,
         verb: 'post',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -126,7 +126,7 @@ const BlogFlatlist = ({ userId }: { userId: string }) => {
         height={getHeight(25)}
       />
       <Tabs.FlatList
-        nestedScrollEnabled={true}
+        nestedScrollEnabled
         data={blogs}
         // onScroll={(e) => {
         //   setScrollPosition(e.nativeEvent.contentOffset.y);
@@ -140,7 +140,7 @@ const BlogFlatlist = ({ userId }: { userId: string }) => {
         }}
         refreshControl={
           <RefreshControl
-            enabled={true}
+            enabled
             refreshing={refreshing}
             onRefresh={async () => {
               setIsEndOfList(false);
@@ -212,6 +212,6 @@ const BlogFlatlist = ({ userId }: { userId: string }) => {
       />
     </View>
   );
-};
+}
 
 export default BlogFlatlist;

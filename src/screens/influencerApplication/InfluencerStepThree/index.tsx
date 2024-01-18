@@ -1,48 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Text, View, ImageBackground, TouchableOpacity, ScrollView } from 'react-native';
 import { TextInput } from 'react-native-paper';
-import { Avatar, Checkbox, Provider } from 'react-native-paper';
-import SelectDropdown from 'react-native-select-dropdown';
 
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
-import { styles } from './styles';
-import { async } from 'validate.js';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
 import LinearGradient from 'react-native-linear-gradient';
-import Logo from '@/assets/svg/LogoBlue.svg';
-import Icon from 'react-native-vector-icons/Ionicons';
-
 import { StackScreenProps } from '@react-navigation/stack';
+import EvilIcons from 'react-native-vector-icons/EvilIcons';
+import { useToast } from 'react-native-toast-notifications';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
+import { getFontSize, getWidth } from '@/utils/ResponsiveFun';
+import { styles } from './styles';
+import { ApiCall } from '@/src/services/api';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Interest } from '@/utils/types';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
-import { useToast } from 'react-native-toast-notifications';
 import { SettingsStackParamsList } from '@/src/navigator/types';
-import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepThree'>;
 
-const InfluencerStepThree = ({ navigation, route }: Props) => {
+function InfluencerStepThree({ navigation, route }: Props) {
   const { data } = route.params;
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -59,7 +37,7 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
       const res = await ApiCall({
         route: 'tags/interest',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -112,7 +90,7 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
               <TextInput.Icon
                 icon={() => (
                   <EvilIcons
-                    name={'search'}
+                    name="search"
                     size={getFontSize(4)}
                     color={Colors.primarySapphire[500]}
                     style={{ marginTop: 5 }}
@@ -121,10 +99,9 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
               />
             }
             theme={{ roundness: 40 }}
-            activeOutlinecolor={Colors.primarySapphire[500]}
             outlineColor="#9EA1A2"
-            label={'Search by Interests'}
-            placeholderTextColor={'black'}
+            label="Search by Interests"
+            placeholderTextColor="black"
           />
 
           <ScrollView contentContainerStyle={{ ...styles.flatlistview, marginTop: 35 }}>
@@ -154,6 +131,7 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
         <ImageBackground
           resizeMode="stretch"
           style={styles.imagebackgroundview}
+          // eslint-disable-next-line global-require
           source={require('@/assets/images/waveBG.png')}
         >
           <TouchableOpacity
@@ -199,9 +177,14 @@ const InfluencerStepThree = ({ navigation, route }: Props) => {
       </View>
 
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
-        <Icon name="chevron-back" style={{ margin: getFontSize(3) }} size={20} color={'#4F6D77'} />
+        <Ionicons
+          name="chevron-back"
+          style={{ margin: getFontSize(3) }}
+          size={20}
+          color="#4F6D77"
+        />
       </TouchableOpacity>
     </LinearGradient>
   );
-};
+}
 export default InfluencerStepThree;

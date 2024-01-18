@@ -9,26 +9,13 @@ import {
   Linking,
 } from 'react-native';
 import React, { useRef, useState } from 'react';
-import { appColor, COLORS, THEME } from '../../constants';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import Logo from '@/assets/svg/LogoBlue.svg';
-import { GeneralStyle } from '../../constants/GeneralStyle';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Button from '../../components/Button';
-
-import { validateFields } from '@/utils/validation/validate-fields';
 import LinearGradient from 'react-native-linear-gradient';
-import { ApiCall } from '@/src/services/api';
-import validator from '@/utils/validation/validator';
 import { useDispatch } from 'react-redux';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
 import Toast from 'react-native-simple-toast';
-import GoBackIcon from '@/src/components/GoBackIcon';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   CompositeScreenProps,
@@ -38,20 +25,33 @@ import {
   useTheme,
 } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { StyledText } from '@/src/components/styled/Text';
+import { useToast } from 'react-native-toast-notifications';
+import { appColor, COLORS, THEME } from '../../constants';
+import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+import Logo from '@/assets/svg/LogoBlue.svg';
+import { GeneralStyle } from '../../constants/GeneralStyle';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import Button from '../../components/Button';
+
+import { validateFields } from '@/utils/validation/validate-fields';
+import { ApiCall } from '@/src/services/api';
+import validator from '@/utils/validation/validator';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import GoBackIcon from '@/src/components/GoBackIcon';
+import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
+import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledText from '@/src/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
-import { useToast } from 'react-native-toast-notifications';
 
 type NewPasswordScreenRouteProp = RouteProp<MainStackParamList, 'NewPassword'>;
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'NewPassword'>;
 
 type Props = MainStackParamList['ConfirmLogin'];
 
-const NewPassword = ({ oobCode, ...props }: Props) => {
+function NewPassword({ oobCode, ...props }: Props) {
   const dispatch = useDispatch();
   const inputRefs = {
     passwordN: useRef<TextInput>(null),
@@ -154,9 +154,9 @@ const NewPassword = ({ oobCode, ...props }: Props) => {
             wrapperStyle={{ flex: 1 }}
             ref={inputRefs.passwordN}
             value={state.passwordN}
-            returnKeyType={'next'}
-            label={'New Password'}
-            secureTextEntry={hidePassN ? true : false}
+            returnKeyType="next"
+            label="New Password"
+            secureTextEntry={!!hidePassN}
             rightIcon={
               <View style={{ justifyContent: 'center' }}>
                 <MaterialCommunityIcons
@@ -195,9 +195,9 @@ const NewPassword = ({ oobCode, ...props }: Props) => {
             wrapperStyle={{ flex: 1 }}
             ref={inputRefs.passwordC}
             value={state.passwordC}
-            returnKeyType={'done'}
-            label={'Confirm Password'}
-            secureTextEntry={hidePassC ? true : false}
+            returnKeyType="done"
+            label="Confirm Password"
+            secureTextEntry={!!hidePassC}
             rightIcon={
               <View style={{ justifyContent: 'center' }}>
                 <MaterialCommunityIcons
@@ -260,7 +260,7 @@ const NewPassword = ({ oobCode, ...props }: Props) => {
           }}
         >
           <Button
-            text={'Cancel'}
+            text="Cancel"
             onPress={() => {
               navigation.goBack();
             }}
@@ -359,6 +359,6 @@ const NewPassword = ({ oobCode, ...props }: Props) => {
     //   />
     // </>
   );
-};
+}
 
 export default NewPassword;

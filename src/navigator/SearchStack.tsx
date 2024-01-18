@@ -7,13 +7,13 @@ import UserProfile from '../screens/main/userProfile';
 
 const Stack = createNativeStackNavigator<SearchStackParamsList>();
 
-const SearchStack = () => {
+function SearchStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Search" component={Search} options={{ headerShown: false }} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
     </Stack.Navigator>
   );
-};
+}
 
 export default SearchStack;

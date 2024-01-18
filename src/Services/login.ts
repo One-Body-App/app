@@ -1,9 +1,9 @@
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import axios from 'axios';
+import { Dispatch } from '@reduxjs/toolkit';
 import { ApiCall } from '@/services/api';
 import { BASE_URL } from './constants';
-import axios from 'axios';
 import { loginSocialRequest } from '../redux/actions/AuthActions';
-import { Dispatch } from '@reduxjs/toolkit';
 import { requestUserPermission } from './notification/notificationServices';
 
 export const processLogin = async (
@@ -23,7 +23,7 @@ export const processLogin = async (
     setNewUserCredentials(userCredentials);
   } else {
     userProfileResult = await ApiCall({
-      token: token,
+      token,
       route: 'user/my-profile',
       verb: 'get',
     });
@@ -97,11 +97,7 @@ export const socialLogin = (
 ) => {
   if (newUserCredentials) {
     const emailParts = newUserCredentials?.user.email?.split('@');
-    let username = newUserCredentials?.user.email?.replace('@', '');
-
-    if (emailParts && emailParts[0]) {
-      username = emailParts[0] + new Date().getTime();
-    }
+    const username = newUserCredentials?.user.email?.replace('@', '');
 
     const dataToSend = {
       email: newUserCredentials?.user.email,

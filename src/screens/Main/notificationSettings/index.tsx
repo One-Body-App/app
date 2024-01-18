@@ -1,20 +1,20 @@
 import React, { useEffect } from 'react';
 import { Text, View, ActivityIndicator } from 'react-native';
 import { Switch } from 'react-native-paper';
-import { styles } from './styles';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useToast } from 'react-native-toast-notifications';
+import { useTheme } from '@react-navigation/native';
+import { styles } from './styles';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
-import { useToast } from 'react-native-toast-notifications';
 import { setProfile } from '@/src/redux/actions/AuthActions';
-import { useTheme } from '@react-navigation/native';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'NotificationSettings'>;
 
-const NotificationSettings = ({ navigation }: Props) => {
+function NotificationSettings({ navigation }: Props) {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -40,7 +40,7 @@ const NotificationSettings = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/my-profile',
-        token: token,
+        token,
         verb: 'get',
       });
 
@@ -92,7 +92,7 @@ const NotificationSettings = ({ navigation }: Props) => {
       const res = await ApiCall({
         params: notifications,
         route: `user/set-notifications`,
-        token: token,
+        token,
         verb: 'patch',
       });
 
@@ -196,5 +196,5 @@ const NotificationSettings = ({ navigation }: Props) => {
       </View>
     </View>
   );
-};
+}
 export default NotificationSettings;

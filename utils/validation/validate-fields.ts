@@ -7,7 +7,7 @@ export const validateFields = async (
   func: (error: string) => void,
   extraFieldData?: Object
 ) => {
-  let error = await validator(type, value, extraFieldData);
+  const error = await validator(type, value, extraFieldData);
 
   error ? func(error) : func('');
   return error;

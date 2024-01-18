@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   View,
@@ -13,32 +13,32 @@ import {
 
 import Modal from 'react-native-modal';
 
-import Button from '@/src/components/Button';
 import { useDispatch, useSelector } from 'react-redux';
+import ImageModal from '@dreamwalk-os/react-native-image-modal';
+import { useTheme } from '@react-navigation/native';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Button from '@/src/components/Button';
 import { ApiCall } from '@/src/services/api';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { getuserAll } from '@/src/redux/actions/UserAction';
 
-import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Interest, User } from '@/utils/types';
 
-import { useTheme } from '@react-navigation/native';
-import { DrawerScreenProps } from '@react-navigation/drawer';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/src/components/styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/src/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { MainDrawerParamsList } from '@/src/navigator/types';
 
 type Props = DrawerScreenProps<MainDrawerParamsList, 'Connections'>;
 
-const Connected = ({ navigation }: Props) => {
+function Connected({ navigation }: Props) {
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
 
   const [interests, setInterests] = useState<Interest[]>([]);
@@ -66,7 +66,7 @@ const Connected = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/remove-interests',
-        token: token,
+        token,
         params: {
           interests: selectedInterest.filter((interest) => interest._id != newInterest._id),
         },
@@ -94,7 +94,7 @@ const Connected = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: `user/unsubscribe/${id}`,
-        token: token,
+        token,
         verb: 'patch',
       });
       if (res?.status == 200) {
@@ -114,7 +114,7 @@ const Connected = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'user/get-following',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -154,7 +154,7 @@ const Connected = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'tags/interest',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -174,7 +174,7 @@ const Connected = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/add-interests',
-        token: token,
+        token,
         params: { interests: newInterest },
         verb: 'patch',
       });
@@ -187,7 +187,7 @@ const Connected = ({ navigation }: Props) => {
               })
             )
           : setSelectedInterest([...selectedInterest, newInterest]);
-        dispatch(getuserAll({ token: token }));
+        dispatch(getuserAll({ token }));
       }
       setIsLoading(false);
     } catch (e: any) {
@@ -246,7 +246,7 @@ const Connected = ({ navigation }: Props) => {
       <View style={{ backgroundColor: colors.background, flex: 1 }}>
         <View>
           <Button
-            text={'My Interests'}
+            text="My Interests"
             onPress={() => {
               setShowInterestModal(true);
             }}
@@ -296,8 +296,7 @@ const Connected = ({ navigation }: Props) => {
               flexDirection: 'row',
 
               // paddingHorizontal: 10,
-              marginBottom: spacing.x24,
-              backgroundColor: Colors.neutral[700],
+              // marginBottom: spacing.x24,
 
               paddingHorizontal: spacing.x48,
               paddingTop: spacing.x16,
@@ -387,18 +386,20 @@ const Connected = ({ navigation }: Props) => {
                       justifyContent: 'space-between',
                     }}
                   >
-                    <ImageModal
-                      resizeMode="contain"
-                      style={profileImageList}
-                      source={{
-                        uri:
-                          item?.profileImage && item?.profileImage != ''
-                            ? item?.profileImage
-                            : 'https://cdn.onebodyapp.com/user/no-image.png',
-                      }}
-                    />
+                    <View style={{ paddingVertical: spacing.x10 }}>
+                      <ImageModal
+                        resizeMode="contain"
+                        style={profileImageList}
+                        source={{
+                          uri:
+                            item?.profileImage && item?.profileImage != ''
+                              ? item?.profileImage
+                              : 'https://cdn.onebodyapp.com/user/no-image.png',
+                        }}
+                      />
+                    </View>
 
-                    <View style={{ flex: 2.3 }}>
+                    <View style={{ flex: 2 }}>
                       <StyledText
                         style={{
                           color: Colors.neutral.brand,
@@ -430,7 +431,7 @@ const Connected = ({ navigation }: Props) => {
                         backgroundColor: Colors.neutral[800],
                       }}
                       btnTextStyle={{ color: Colors.neutral[200] }}
-                      text={'Remove'}
+                      text="Remove"
                       onPress={() => {
                         handleUnSubscribe(item?._id);
                       }}
@@ -450,9 +451,9 @@ const Connected = ({ navigation }: Props) => {
           onBackdropPress={() => setShowInterestModal(false)}
           onSwipeComplete={() => setShowInterestModal(false)}
           swipeDirection={['down']}
-          propagateSwipe={true}
+          propagateSwipe
           style={{ margin: 0 }}
-          avoidKeyboard={true}
+          avoidKeyboard
         >
           <SafeAreaView
             style={{
@@ -553,5 +554,5 @@ const Connected = ({ navigation }: Props) => {
       </View>
     </KeyboardAvoidingView>
   );
-};
+}
 export default Connected;

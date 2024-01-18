@@ -1,37 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  FlatList,
-  Text,
-  View,
-  RefreshControl,
-  Keyboard,
-  ActivityIndicator,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
-import { Avatar, Divider } from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
-import Entypo from 'react-native-vector-icons/Entypo';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-
-import FastImage from 'react-native-fast-image';
-import AnswerPrayers from '../AnswerPrayers';
-import { getTestimonies } from '@/src/redux/actions/PrayerAction';
-import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
-import Love from '@/assets/svg/redlove.svg';
+import React, { useEffect, useState } from 'react';
+import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
+import { useSelector } from 'react-redux';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
+
 import PrayerItem from '../listItems/PrayerItem';
 import { ApiCall } from '@/services/api';
 import { PrayerPost, PrayerWallCategory } from '@/utils/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
-import { setPrayers } from '@/src/redux/actions/GeneralActions';
-import { StyledText } from '../styled/Text';
+import StyledText from '../styled/Text';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
-const PrayerWallTestimoniesComponent = () => {
+function PrayerWallTestimoniesComponent() {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -69,7 +50,7 @@ const PrayerWallTestimoniesComponent = () => {
           posts = res?.response ?? [];
           setIsEndOfList(false);
         } else {
-          posts = [...(testimonies ? testimonies : []), ...(res?.response ?? [])];
+          posts = [...(testimonies || []), ...(res?.response ?? [])];
           if (res?.response?.content?.length < 1) {
             setIsEndOfList(true);
           }
@@ -112,7 +93,7 @@ const PrayerWallTestimoniesComponent = () => {
       const res = await ApiCall({
         route: `prayer/${id}`,
         verb: 'delete',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -178,5 +159,5 @@ const PrayerWallTestimoniesComponent = () => {
       />
     </View>
   );
-};
+}
 export default PrayerWallTestimoniesComponent;

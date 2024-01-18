@@ -27,7 +27,7 @@ const sendFcm = async (token: string, fcmtoken: string) => {
   try {
     const res = await ApiCall({
       route: 'user/set-fcm',
-      token: token,
+      token,
       params: { FCM: fcmtoken },
       verb: 'patch',
     });

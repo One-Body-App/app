@@ -1,29 +1,29 @@
 import React from 'react';
 import { Text, View, Alert } from 'react-native';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useDispatch, useSelector } from 'react-redux';
+import { LoginManager } from 'react-native-fbsdk-next';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import auth from '@react-native-firebase/auth';
+import { useToast } from 'react-native-toast-notifications';
+import { useTheme } from '@react-navigation/native';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/src/components/Header';
 import Button from '@/src/components/Button';
 import { styles } from './styles';
-import { useDispatch, useSelector } from 'react-redux';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import { logout } from '@/src/redux/actions/AuthActions';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { LoginManager } from 'react-native-fbsdk-next';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/_Navigation/types';
-import auth from '@react-native-firebase/auth';
-import { useToast } from 'react-native-toast-notifications';
 
 import { SettingsStackParamsList } from '@/src/navigator/types';
-import { useTheme } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccountConfirmation'>;
 
-const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
+function DeactivateAccountConfirm({ navigation, route }: Props) {
   const { reason } = route.params;
 
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -36,7 +36,7 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
     try {
       const res = await ApiCall({
         params: { reason },
-        token: token,
+        token,
         route: 'user/remove-account',
         verb: 'delete',
       });
@@ -67,10 +67,10 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
         backgroundColor="white"
         barStyle="dark-content"
         hidden={false}
-        translucent={true}
+        translucent
       />
       <Header
-        title={'Remove account'}
+        title="Remove account"
         leftView={
           <Ionicons onPress={() => navigation.goBack()} name="chevron-back-outline" size={20} />
         }
@@ -84,7 +84,7 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
         </Text>
         <View style={{ marginTop: getHeight(7), width: '100%' }}>
           <Button
-            text={'REMOVE ACCOUNT'}
+            text="REMOVE ACCOUNT"
             btnStyle={{
               ...GeneralStyle.btn,
               marginHorizontal: 20,
@@ -100,7 +100,7 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
           />
 
           <Button
-            text={'Cancel'}
+            text="Cancel"
             onPress={() => navigation.goBack()}
             btnStyle={{
               ...GeneralStyle.btn,
@@ -119,5 +119,5 @@ const DeactivateAccountConfirm = ({ navigation, route }: Props) => {
       </View>
     </View>
   );
-};
+}
 export default DeactivateAccountConfirm;

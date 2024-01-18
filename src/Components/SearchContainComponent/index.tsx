@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 import React, { useRef, useState } from 'react';
 import {
   FlatList,
@@ -8,17 +9,13 @@ import {
   View,
   TouchableOpacity,
 } from 'react-native';
-import { styles } from './styles';
 import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import { styles } from './styles';
 import Button from '../Button';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-const SearchContainComponent = () => {
-  const [show, setShow] = useState();
-  const toggleModal = () => {
-    setShow(!show);
-  };
+function SearchContainComponent() {
   const Data = [
     { id: 1, image: 'dfafds', name: 'Spirituality', Text: 'fsda' },
     { id: 2, image: 'dfafds', name: 'Bible', Text: 'fsda' },
@@ -54,7 +51,7 @@ const SearchContainComponent = () => {
           <Text style={styles.text}>20+ Results</Text>
           <Text style={{ ...styles.text, color: '#126B87' }}>
             View All{' '}
-            <AntDesign name="right" color={'#126B87'} style={{ marginHorizontal: getWidth(1) }} />
+            <AntDesign name="right" color="#126B87" style={{ marginHorizontal: getWidth(1) }} />
           </Text>
         </View>
         <View style={{ marginTop: getHeight(2.5) }}>
@@ -81,7 +78,7 @@ const SearchContainComponent = () => {
                 >
                   <Image
                     style={styles.image}
-                    resizeMode={'stretch'}
+                    resizeMode="stretch"
                     source={require('@/assets/images/pray.jpeg')}
                   />
                   <View style={{ marginLeft: getWidth(2) }}>
@@ -99,7 +96,7 @@ const SearchContainComponent = () => {
                     </Text>
                   </View>
                 </View>
-                <Entypo name="dots-three-vertical" color={'#a0a3a9'} size={getFontSize(3)} />
+                <Entypo name="dots-three-vertical" color="#a0a3a9" size={getFontSize(3)} />
               </View>
             )}
           />
@@ -109,7 +106,7 @@ const SearchContainComponent = () => {
           <Text style={styles.text}>10 Results</Text>
           <Text style={{ ...styles.text, color: '#126B87' }}>
             View All{' '}
-            <AntDesign name="right" color={'#126B87'} style={{ marginHorizontal: getWidth(1.5) }} />
+            <AntDesign name="right" color="#126B87" style={{ marginHorizontal: getWidth(1.5) }} />
           </Text>
         </View>
         <View style={{ marginTop: getHeight(2.5) }}>
@@ -136,7 +133,7 @@ const SearchContainComponent = () => {
                 >
                   <Image
                     style={styles.image}
-                    resizeMode={'stretch'}
+                    resizeMode="stretch"
                     source={require('@/assets/images/pray.jpeg')}
                   />
                   <View style={{ marginLeft: getWidth(2) }}>
@@ -161,7 +158,7 @@ const SearchContainComponent = () => {
                     </Text>
                   </View>
                 </View>
-                <Entypo name="dots-three-vertical" color={'#a0a3a9'} size={getFontSize(3)} />
+                <Entypo name="dots-three-vertical" color="#a0a3a9" size={getFontSize(3)} />
               </View>
             )}
           />
@@ -169,5 +166,5 @@ const SearchContainComponent = () => {
       </ScrollView>
     </View>
   );
-};
+}
 export default SearchContainComponent;

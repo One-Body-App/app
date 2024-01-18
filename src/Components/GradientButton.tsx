@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-const GradientButton = ({
+function GradientButton({
   text,
   leftIcon,
   RightIcon,
@@ -26,7 +26,7 @@ const GradientButton = ({
   btnStyle: StyleProp<ViewStyle>;
   onPress: (event: GestureResponderEvent) => void;
   disabled?: boolean;
-}) => {
+}) {
   let gradientcolors = ['#126b87', '#032f3c'];
   if (disabled) {
     gradientcolors = ['#4f6d77', '#4f6d77'];
@@ -52,5 +52,5 @@ const GradientButton = ({
       </LinearGradient>
     </View>
   );
-};
+}
 export default GradientButton;

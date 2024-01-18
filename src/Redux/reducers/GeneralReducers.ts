@@ -1,5 +1,5 @@
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { AnyAction, Reducer } from 'redux';
+
 import { ACTIONS } from '../action-types';
 import { MainStackParamList } from '@/src/navigator/types';
 

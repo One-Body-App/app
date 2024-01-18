@@ -2,25 +2,25 @@ import React, { createRef, useEffect, useState } from 'react';
 import { View, TouchableOpacity, Share, Platform, FlatList } from 'react-native';
 
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { StackScreenProps } from '@react-navigation/stack';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+
+import { Setting2 } from 'iconsax-react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSelector } from 'react-redux';
+import { Colors } from '@/src/styles';
+
+import { spacing } from '@/src/styles/spacing';
+
+import Profile from '@/src/components/profile/Profile';
+
 import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
   MyProfileStackParamsList,
 } from '@/src/navigator/types';
-import { DrawerScreenProps } from '@react-navigation/drawer';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-
-import { Colors } from '@/src/styles';
-
-import { spacing } from '@/src/styles/spacing';
-import { Setting2 } from 'iconsax-react-native';
-
-import Profile from '@/src/components/profile/Profile';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-
-import { useSelector } from 'react-redux';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 import SettingsSheet from './SettingsSheet';
 
 type Props = CompositeScreenProps<
@@ -31,7 +31,7 @@ type Props = CompositeScreenProps<
   >
 >;
 
-const MyProfile = ({ navigation, route }: Props) => {
+function MyProfile({ navigation, route }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -129,13 +129,12 @@ const MyProfile = ({ navigation, route }: Props) => {
     };
   }, [navigation, user]);
 
+  const [refresh, setRefresh] = useState(false);
   if (!user) {
     return null;
   }
 
   const socialList = createRef<FlatList>();
-
-  const [refresh, setRefresh] = useState(false);
 
   return (
     <View style={{ flex: 1 }}>
@@ -148,5 +147,5 @@ const MyProfile = ({ navigation, route }: Props) => {
       <SettingsSheet userData={user} showModal={showSettings} setShowModal={setShowSettings} />
     </View>
   );
-};
+}
 export default MyProfile;

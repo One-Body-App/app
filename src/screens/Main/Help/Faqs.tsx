@@ -16,20 +16,19 @@ import {
 } from 'react-native';
 import { Avatar, Provider } from 'react-native-paper';
 import DropDown from 'react-native-paper-dropdown';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
+import { useSelector } from 'react-redux';
+import RenderHtml from 'react-native-render-html';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/src/components/Header';
 import Button from '@/src/components/Button';
 import { styles } from './styles';
-import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
 import GeneralStatusBar from '@/src/components/GeneralStatusBar';
 // import ZendeskChat from 'react-native-zendesk-chat';
-import { useSelector } from 'react-redux';
 
-import RenderHtml from 'react-native-render-html';
-
-const Faqs = ({ navigation }) => {
+function Faqs({ navigation }) {
   const faqs = useSelector((state) => state.general.faqs);
   const [selectedIndex, setSelectedIndex] = useState(null);
 
@@ -39,11 +38,11 @@ const Faqs = ({ navigation }) => {
         backgroundColor="white"
         barStyle="dark-content"
         hidden={false}
-        translucent={true}
+        translucent
       />
 
       <Header
-        title={'FAQs'}
+        title="FAQs"
         leftView={
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={20} />
@@ -113,5 +112,5 @@ const Faqs = ({ navigation }) => {
       </View>
     </View>
   );
-};
+}
 export default Faqs;

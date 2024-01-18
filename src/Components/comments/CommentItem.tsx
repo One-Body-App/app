@@ -1,8 +1,3 @@
-import { NO_PROFILE_IMAGE } from '@/services/constants';
-import { Colors } from '@/src/styles';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
-import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,18 +9,23 @@ import {
   ViewStyle,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import { StyledText } from '../styled/Text';
-import { fontSize } from '@/src/styles/typography';
-import { timeSince } from '@/utils/ResponsiveFun';
 import { useTheme } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import OptionsModal from '../listItems/OptionsModal';
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
-import { StyledTextInput } from '../styled/TextInput';
 import { Send } from 'iconsax-react-native';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
+import { Colors } from '@/src/styles';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
+import StyledText from '../styled/Text';
+import { fontSize } from '@/src/styles/typography';
+import { timeSince } from '@/utils/ResponsiveFun';
+import OptionsModal from '../listItems/OptionsModal';
+import StyledTextInput from '../styled/TextInput';
 import CommentField from './Field';
 
 interface BaseItemProps {
@@ -67,7 +67,7 @@ interface BaseItemProps {
   setEditingComment: (isEditingComment: boolean) => void;
 }
 
-const CommentItem = ({
+function CommentItem({
   style,
   onPress,
   created,
@@ -83,7 +83,7 @@ const CommentItem = ({
   editPost,
   editCommentAction,
   setEditingComment,
-}: BaseItemProps) => {
+}: BaseItemProps) {
   const [showOptions, setShowOptions] = useState(false);
   const { colors } = useTheme();
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
@@ -149,7 +149,7 @@ const CommentItem = ({
                 borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
               }}
-              resizeMode={'contain'}
+              resizeMode="contain"
             />
           )}
         </View>
@@ -293,6 +293,7 @@ const CommentItem = ({
               )}
             </View>
           ) : (
+            // eslint-disable-next-line react/jsx-no-useless-fragment
             <>
               {postData.content ? (
                 <StyledText style={{ marginVertical: spacing.x10 }}>{postData.content}</StyledText>
@@ -332,15 +333,14 @@ const CommentItem = ({
         hideShare
         hideSavePost
         editPost={
-          editPost
-            ? editPost
-            : () => {
-                editComment(true);
-              }
+          editPost ||
+          (() => {
+            editComment(true);
+          })
         }
       />
     </View>
   );
-};
+}
 
 export default CommentItem;
