@@ -45,6 +45,7 @@ import {
 } from '@giphy/react-native-sdk';
 import { isArray, isEmpty } from 'lodash';
 import Toast from 'react-native-simple-toast';
+import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/src/components/Button';
@@ -88,6 +89,7 @@ function NewPrayer({ navigation, route }: Props) {
   const { colors } = useTheme();
   const [imagesObject, setImagesObject] = useState<string[]>([]);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const toast = useToast();
 
   const [uploadImagesObject, setUploadImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
@@ -152,7 +154,7 @@ function NewPrayer({ navigation, route }: Props) {
 
   const postPrayer = async () => {
     setIsLoading(true);
-    let error = '';
+    const error = '';
     try {
       const result = await ApiCall({
         route: 'prayer',
@@ -187,16 +189,29 @@ function NewPrayer({ navigation, route }: Props) {
         navigation.popToTop();
         navigation.navigate('index');
       } else {
-        error = result.response;
+        if (!result.response.moderationPassed) {
+          throw result.response;
+        }
+
+        throw new Error('request unsuccessful');
       }
     } catch (e: any) {
-      error = e.message;
-
       setIsLoading(false);
-    }
+      let message = 'There was a problem on our end. Please try again later.';
+      if (!e.moderationPassed) {
+        if (e.moderationTypeFailure == 'image') {
+          message = 'Photo violates terms of use ';
+        }
 
-    if (error) {
-      Toast.show(`Error saving: ${error}`, Toast.LONG);
+        if (e.moderationTypeFailure == 'text') {
+          message =
+            'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
+        }
+      }
+      toast.show(message, {
+        type: 'danger',
+        placement: 'bottom',
+      });
     }
   };
 

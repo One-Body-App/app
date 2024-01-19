@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, SafeAreaView, Platform, PermissionsAndroid } from 'react-native';
+import { View, SafeAreaView, Platform, PermissionsAndroid, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import FastImage from 'react-native-fast-image';
@@ -29,58 +29,60 @@ function OnboardingIntro({ navigation }: Props) {
         marginBottom: Platform.OS == 'android' ? spacing.x24 : 0,
       }}
     >
-      <View
-        style={{
-          flex: 4,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <FastImage
-          resizeMode="contain"
-          style={{ width: '60%', height: 'auto', aspectRatio: 1, marginBottom: spacing.x32 }}
-          source={introImage}
-        />
-        <StyledText
-          style={[
-            Typography.header.h1,
-            {
-              color: dark ? Colors.primarySapphire[400] : Colors.primary.brand,
-              marginVertical: spacing.x8,
-            },
-          ]}
-        >
-          Let’s Get to Know You
-        </StyledText>
-        <StyledText
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View
           style={{
-            marginHorizontal: spacing.x16,
-            textAlign: 'center',
-            color: dark ? Colors.main.black : Colors.primary.brand,
+            flex: 4,
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          This should only take about 2-3 minutes to complete.
-        </StyledText>
-      </View>
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Button
-          text="Get Started"
-          btnStyle={[
-            button.primary,
-            {
-              flex: 1,
-            },
-          ]}
-          onPress={() => {
-            if (authState.getProfileData?.accountType == 'individual') {
-              navigation.push('OnboardingChurchType');
-            } else {
-              navigation.push('OnboardingOrganizationType');
-            }
-          }}
-          btnTextStyle={{ color: '#FFF' }}
-        />
-      </View>
+          <FastImage
+            resizeMode="contain"
+            style={{ width: '60%', height: 'auto', aspectRatio: 1, marginBottom: spacing.x32 }}
+            source={introImage}
+          />
+          <StyledText
+            style={[
+              Typography.header.h1,
+              {
+                color: dark ? Colors.primarySapphire[400] : Colors.primary.brand,
+                marginVertical: spacing.x8,
+              },
+            ]}
+          >
+            Let’s Get to Know You
+          </StyledText>
+          <StyledText
+            style={{
+              marginHorizontal: spacing.x16,
+              textAlign: 'center',
+              color: dark ? Colors.main.black : Colors.primary.brand,
+            }}
+          >
+            This should only take about 2-3 minutes to complete.
+          </StyledText>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <Button
+            text="Get Started"
+            btnStyle={[
+              button.primary,
+              {
+                flex: 1,
+              },
+            ]}
+            onPress={() => {
+              if (authState.getProfileData?.accountType == 'individual') {
+                navigation.push('OnboardingChurchType');
+              } else {
+                navigation.push('OnboardingOrganizationType');
+              }
+            }}
+            btnTextStyle={{ color: '#FFF' }}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

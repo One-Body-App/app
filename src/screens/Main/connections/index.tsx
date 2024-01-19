@@ -48,7 +48,7 @@ function Connected({ navigation }: Props) {
 
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const userProfile = useSelector((state: RootState) => state.auth.userProfile);
+
   const [filter, setFilter] = useState<'connectors' | 'connected'>('connected');
 
   const [searchChannelsText, setSearchChannelsText] = useState<string>('');
@@ -209,12 +209,12 @@ function Connected({ navigation }: Props) {
 
   useEffect(() => {
     getFollowing();
-    if (userProfile?.isInfluencer) {
+    if (user?.isInfluencer) {
       getFollowers();
     }
 
     getInterests();
-  }, [userProfile]);
+  }, [user]);
 
   useEffect(() => {
     if (searchChannelsText) {
@@ -223,7 +223,7 @@ function Connected({ navigation }: Props) {
       setSearchResultsFollowing(following);
     }
 
-    if (userProfile?.isInfluencer) {
+    if (user?.isInfluencer) {
       if (searchChannelsText) {
         setSearchResultsFollowers(getFilteredUsers(searchResultsFollowers, searchChannelsText));
       } else {
@@ -232,7 +232,7 @@ function Connected({ navigation }: Props) {
     }
 
     setIsLoading(false);
-  }, [searchChannelsText, userProfile]);
+  }, [searchChannelsText, user]);
 
   const { dark } = useTheme();
 
@@ -314,18 +314,26 @@ function Connected({ navigation }: Props) {
             >
               <TouchableOpacity
                 onPress={() => {
-                  if (filter != 'connectors') setFilter('connectors');
+                  if (filter !== 'connectors') setFilter('connectors');
                 }}
               >
                 <View
                   style={{
                     paddingBottom: spacing.x10,
                     borderBottomColor: Colors.neutral.brand,
-                    borderBottomWidth: filter == 'connectors' ? 2 : 0,
+                    borderBottomWidth: filter === 'connectors' ? 2 : 0,
                     alignSelf: 'flex-start',
                   }}
                 >
-                  <StyledText>{searchResultsFollowers.length} Connectors</StyledText>
+                  {/* <StyledText>{searchResultsFollowers.length} Connectors</StyledText> */}
+                  <StyledText style={[Typography.body.x3M]}>
+                    {user?.followerCount && user?.followerCount > 999
+                      ? `${(user.followerCount / 1000).toFixed(2)}k`
+                      : user?.followerCount && user?.followerCount > 999999
+                      ? `${(user.followerCount / 1000000).toFixed(2)}m`
+                      : user?.followerCount ?? 0}{' '}
+                    <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
+                  </StyledText>
                 </View>
               </TouchableOpacity>
             </View>
@@ -344,7 +352,22 @@ function Connected({ navigation }: Props) {
                     alignSelf: 'flex-start',
                   }}
                 >
-                  <StyledText>{searchResultsFollowing.length} Connected</StyledText>
+                  <StyledText
+                    style={[
+                      Typography.body.x3M,
+
+                      {
+                        marginLeft: spacing.x24,
+                      },
+                    ]}
+                  >
+                    {user?.following.length && user?.following.length > 999
+                      ? `${(user.following.length / 1000).toFixed(2)}k`
+                      : user?.following.length && user?.following.length > 999999
+                      ? `${(user.following.length / 1000000).toFixed(2)}m`
+                      : user?.following.length ?? 0}{' '}
+                    <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
+                  </StyledText>
                 </View>
               </TouchableOpacity>
             </View>

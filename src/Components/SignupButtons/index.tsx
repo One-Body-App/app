@@ -205,7 +205,9 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
           btnStyle={getButtonContainer()}
           btnTextStyle={getButtonTextStyle()}
           onPress={() => {
-            disabled != null ? googleSignIn() : null;
+            if (disabled != null) {
+              googleSignIn();
+            }
           }}
           disabledBtnStyle={getDisabledButtonStyle()}
           disabledBtnTextStyle={getDisabledButtonTextStyle()}

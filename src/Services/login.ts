@@ -27,8 +27,7 @@ export const processLogin = async (
       route: 'user/my-profile',
       verb: 'get',
     });
-
-    if (userProfileResult.status == 200) {
+    if (userProfileResult.status === 200) {
       if (userProfileResult.response == '') {
         setNewUserCredentials(userCredentials);
       } else {
@@ -43,6 +42,7 @@ export const processLogin = async (
         if (!userProfileResult.response.FCM) {
           await requestUserPermission(token, userProfileResult.response.pushNotificationsEnabled);
         }
+
         return userProfileResult.response;
       }
     } else {

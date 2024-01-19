@@ -108,7 +108,7 @@ export const removeSocialAccountRequest = (data) => ({
 export const signUp = {
   Request: (params: any) => ({
     type: SignUp.REQUEST,
-    params,
+    ...params,
   }),
   Success: (data: any) => ({
     type: SignUp.SUCCESS,
@@ -127,7 +127,7 @@ export const signUp = {
 export const sendVerificationEmail = {
   Request: (params: any) => ({
     type: SendVerificationEmail.REQUEST,
-    params,
+    ...params,
   }),
   Success: (data: any) => ({
     type: SendVerificationEmail.SUCCESS,
@@ -147,7 +147,7 @@ export const getBadges = {
   }),
   Request: (params: any) => ({
     type: GetBadges.REQUEST,
-    params,
+    ...params,
   }),
   Success: (data: any) => ({
     type: GetBadges.SUCCESS,
@@ -162,7 +162,7 @@ export const getBadges = {
 export const setUserBadges = {
   Request: (params: any) => ({
     type: SetUserBadges.REQUEST,
-    params,
+    ...params,
   }),
   Success: (data: any) => ({
     type: SetUserBadges.SUCCESS,
@@ -178,7 +178,7 @@ export const setUserBadges = {
 export const getProfile = {
   Request: (params: any) => ({
     type: GetProfile.REQUEST,
-    params,
+    ...params,
   }),
   Success: (data: any) => ({
     type: GetProfile.SUCCESS,
