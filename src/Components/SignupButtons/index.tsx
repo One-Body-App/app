@@ -130,7 +130,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
 
       const userCredentials = await auth().signInWithCredential(googleCredential);
-      console.log(userCredentials);
+
       processLogin(userCredentials, setNewUserCredentials);
     } catch (error: any) {
       if (!error.message.includes('Code=-5')) {
