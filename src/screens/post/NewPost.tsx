@@ -203,7 +203,8 @@ function NewPost({ navigation, route }: Props) {
         }
 
         if (e.moderationTypeFailure == 'text') {
-          message = 'This post violates terms of use';
+          message =
+            'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
         }
       }
       toast.show(message, {

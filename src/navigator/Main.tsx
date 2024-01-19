@@ -79,7 +79,6 @@ function Main() {
   const authState = useSelector((state: RootState) => state.auth);
   // console.log(authState);
   const dispatch = useDispatch();
-  const dimensions = useWindowDimensions();
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);

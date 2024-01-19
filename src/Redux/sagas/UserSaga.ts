@@ -22,7 +22,7 @@ function* UserGetRequest(params) {
       verb: 'get',
     });
 
-    if (res?.status == '200') {
+    if (res?.status == 200) {
       if (params.data.get == 'interests') {
         yield put(setLoader(false));
         yield put(setUserIntrest(res?.response?.interests));
