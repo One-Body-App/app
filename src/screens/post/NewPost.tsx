@@ -621,7 +621,6 @@ const NewPost = ({ navigation, route }: Props) => {
               style={{
                 columnGap: spacing.x10,
                 flexDirection: 'row',
-
                 paddingVertical: spacing.x16,
               }}
             >
@@ -632,6 +631,8 @@ const NewPost = ({ navigation, route }: Props) => {
                   backgroundColor: Colors.neutral[700],
                   padding: spacing.x16,
                   borderRadius: borderRadius.base,
+                  // height: 100,
+                  // width: 100,
                   flex: 1,
                 }}
                 wrapperViewBtnStyle={{ flex: 1 }}
@@ -650,23 +651,23 @@ const NewPost = ({ navigation, route }: Props) => {
                 }}
               />
               {/* <Button
-            text="Video"
-            wrapperViewBtnStyle={{ flex: 1 }}
-            btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
-            btnStyle={{
-              backgroundColor: Colors.neutral[700],
-              flex: 1,
-              padding: spacing.x16,
-              borderRadius: borderRadius.base,
-            }}
-            wrapperBtnStyle={{ flexDirection: 'column' }}
-            leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
-            onPress={async () => {
-              // LoginManager.logOut();
-              // dispatch(logout());
-              // await auth().signOut();
-            }}
-          /> */}
+                text="Video"
+                wrapperViewBtnStyle={{ flex: 1 }}
+                btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
+                btnStyle={{
+                  backgroundColor: Colors.neutral[700],
+                  flex: 1,
+                  padding: spacing.x16,
+                  borderRadius: borderRadius.base,
+                }}
+                wrapperBtnStyle={{ flexDirection: 'column' }}
+                leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
+                onPress={async () => {
+                  // LoginManager.logOut();
+                  // dispatch(logout());
+                  // await auth().signOut();
+                }}
+              /> */}
               <Button
                 text="Location"
                 wrapperViewBtnStyle={{ flex: 1 }}
@@ -705,6 +706,30 @@ const NewPost = ({ navigation, route }: Props) => {
                   } catch (e) {
                     console.log(e);
                   }
+                }}
+              />
+            </View>
+            <View
+              style={{
+                columnGap: spacing.x10,
+                flexDirection: 'row',
+                paddingVertical: spacing.x16,
+              }}
+            >
+              <Button
+                text="Video"
+                wrapperViewBtnStyle={{ flex: 1 / 3.2 }}
+                btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
+                btnStyle={{
+                  backgroundColor: Colors.neutral[700],
+                  flex: 1,
+                  padding: spacing.x16,
+                  borderRadius: borderRadius.base,
+                }}
+                wrapperBtnStyle={{ flexDirection: 'column' }}
+                leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
+                onPress={async () => {
+                  navigation.navigate('VideoPost');
                 }}
               />
             </View>

@@ -17,16 +17,18 @@ import {
   TWITTER_CLIENT_ID as _TWITTER_CLIENT_ID,
   GIPHY_KEY_IOS as _GIPHY_KEY_IOS,
   GIPHY_KEY_ANDROID as _GIPHY_KEY_ANDROID,
+  MUX_TOKEN_ID,
+  MUX_SECRET_KEY,
 } from 'react-native-dotenv';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { sha256 } from 'react-native-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 
-const IS_STAGING = false;
+// const IS_STAGING = false;
 
-export const BASE_URL = PROD_BASE_URL;
-
+// export const BASE_URL = PROD_BASE_URL;
+export const BASE_URL = 'localhost:3000/api';
 // export const BASE_URL = IS_STAGING ? STAGING_BASE_URL : PROD_BASE_URL;
 
 export const PRIVACY_POLICY_URL = _PRIVACY_POLICY_URL;
@@ -45,6 +47,8 @@ export const INSTAGRAM_RECONNECT_REDIRECT = _INSTAGRAM_RECONNECT_REDIRECT;
 export const TWITTER_CLIENT_ID = _TWITTER_CLIENT_ID;
 export const GIPHY_KEY_ANDROID = _GIPHY_KEY_ANDROID;
 export const GIPHY_KEY_IOS = _GIPHY_KEY_IOS;
+export const _MUX_TOKEN_ID = MUX_TOKEN_ID;
+export const _MUX_SECRET_KEY = MUX_SECRET_KEY;
 
 export const OpenURLButton = async (
   url: string,

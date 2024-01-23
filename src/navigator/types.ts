@@ -314,8 +314,8 @@ export type MainStackParamList = {
   };
 
   ForgotPassword: undefined;
-
   ConfirmLogin: ConfirmLoginScreen;
+  VideoPost: undefined;
 };
 
 type ConfirmLoginScreen = {

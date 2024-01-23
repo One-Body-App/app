@@ -18,4 +18,7 @@ declare module 'react-native-dotenv' {
   export const TWITTER_CLIENT_ID: string;
   export const GIPHY_KEY_IOS: string;
   export const GIPHY_KEY_ANDROID: string;
+
+  export const MUX_TOKEN_ID: string;
+  export const MUX_SECRET_KEY: string;
 }

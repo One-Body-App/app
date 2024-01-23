@@ -332,12 +332,10 @@ const LoginComponent: FC<Props> = ({
       if (!!verifyAccount && !!onlyPassword && email !== currentUserEmail) {
         throw { message: "Please login with the current user's email" };
       }
-
       if (!emailError && !passwordError) {
         dispatch(setLoader(true));
 
         const emailCredential = await auth().signInWithEmailAndPassword(email, password);
-
         if (verifyAccount) {
           setState({ ...state, password: '' });
 

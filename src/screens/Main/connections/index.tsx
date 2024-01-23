@@ -291,7 +291,7 @@ const Connected = ({ navigation }: Props) => {
               }
             />
           </View>
-          <View
+          {/* <View
             style={{
               flexDirection: 'row',
 
@@ -349,7 +349,7 @@ const Connected = ({ navigation }: Props) => {
                 </View>
               </TouchableOpacity>
             </View>
-          </View>
+          </View> */}
         </View>
 
         <View style={{ flex: 1 }}>
@@ -442,6 +442,61 @@ const Connected = ({ navigation }: Props) => {
             }}
             scrollIndicatorInsets={{ right: 1 }}
           />
+        </View>
+        <View
+          style={{
+            flexDirection: 'row',
+            marginBottom: spacing.x32,
+            backgroundColor: Colors.neutral[700],
+            paddingHorizontal: spacing.x48,
+            paddingTop: spacing.x16,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              flex: 1,
+
+              alignItems: 'center',
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                if (filter != 'connectors') setFilter('connectors');
+              }}
+            >
+              <View
+                style={{
+                  paddingBottom: spacing.x10,
+                  borderBottomColor: Colors.neutral.brand,
+                  borderBottomWidth: filter == 'connectors' ? 2 : 0,
+                  alignSelf: 'flex-start',
+                }}
+              >
+                <StyledText>{searchResultsFollowing.length} Connectors</StyledText>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => {
+                if (filter != 'connected') setFilter('connected');
+              }}
+            >
+              <View
+                style={{
+                  paddingBottom: spacing.x10,
+                  borderBottomColor: Colors.neutral.brand,
+                  borderBottomWidth: filter == 'connected' ? 2 : 0,
+                  alignSelf: 'flex-start',
+                }}
+              >
+                <StyledText>{searchResultsFollowers.length} Connected</StyledText>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <Modal

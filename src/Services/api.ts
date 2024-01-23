@@ -28,6 +28,7 @@ export const ApiCall = async ({
 
     let url = null;
     if (baseurl) {
+      console.log('BASE_URL==');
       url = `${baseurl}/${route}`;
     } else {
       //
@@ -36,16 +37,17 @@ export const ApiCall = async ({
     }
 
     let response: AxiosResponse<any, any> | null = null;
-
+    // console.log(verb, 'PARAMS+++++===>', params);
     switch (verb) {
       case 'get':
         response = await axios.get(
           url,
           token ? { headers: { Authorization: `Bearer ${tokenToUse}` } } : undefined
         );
-
+        console.log('get===', response?.data);
         break;
       case 'post':
+        console.log('API+_____', url);
         response = await axios.post(
           url,
           params,
@@ -57,6 +59,7 @@ export const ApiCall = async ({
               }
             : undefined
         );
+        console.log('POST===', response?.data);
         break;
       case 'patch':
         response = await axios.patch(
@@ -81,6 +84,7 @@ export const ApiCall = async ({
         break;
 
       default:
+        console.log('Error===', response?.data);
         return { status: 400, response: 'method not found' };
     }
 

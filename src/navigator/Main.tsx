@@ -87,6 +87,7 @@ import { StyledText } from '../Components/styled/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import SinglePost from '../screens/post/Single';
+import VideoPost from '../screens/post/VideoPost';
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
@@ -418,6 +419,11 @@ const Main = () => {
             name="ConfirmLogin"
             component={ConfirmLogin}
             options={{ presentation: 'modal', ...headerOptions }}
+          />
+          <MainStack.Screen
+            name="VideoPost"
+            component={VideoPost}
+            options={{ headerShown: false }}
           />
         </MainStack.Navigator>
 
