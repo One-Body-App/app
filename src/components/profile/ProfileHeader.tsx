@@ -637,50 +637,6 @@ function ProfileHeader({
           <TouchableOpacity
             onPress={() => {
               navigation.navigate('Connections');
-              // navigation.dispatch((state) => {
-              //   // Remove all the screens after `Profile`
-              //   const index = state.routes.findIndex((r) => r.name === 'MyProfile');
-              //   const routes = state.routes.slice(0, index + 1);
-
-              //   return CommonActions.reset({
-              //     // ...state,
-              //     // routes,
-              //     // index: routes.length - 1,
-              //     // ...state,
-              //     routes: [
-              //       {
-              //         name: 'MainRoot',
-              //         state: {
-              //           routes: [
-              //             {
-              //               name: 'Main',
-              //               state: {
-              //                 routes: [
-              //                   {
-              //                     name: 'MyProfileTab',
-              //                     state: {
-              //                       routes: [
-              //                         {
-              //                           name: 'MyProfile',
-              //                         },
-              //                       ],
-              //                     },
-              //                   },
-              //                 ],
-              //               },
-              //             },
-              //           ],
-              //         },
-              //       },
-              //       {
-              //         name: 'MainRoot',
-              //         state: {
-              //           routes: [{ name: 'Connections' }],
-              //         },
-              //       },
-              //     ],
-              //   });
-              // });
             }}
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
           >
