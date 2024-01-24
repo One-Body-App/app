@@ -23,7 +23,7 @@ import OnboardingStack from './OnboardingStack';
 import { RootState } from '../redux/reducers/rootReducer';
 import { Colors } from '../styles';
 
-import Connections from '@/screens/main/connections';
+import Connections from '@/src/screens/main/connections';
 import SettingsStack from './SettingsStack';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
