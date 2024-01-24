@@ -30,7 +30,16 @@ function SettingsStack() {
   const { colors } = useTheme();
 
   return (
-    <Stack.Navigator initialRouteName="SettingsMain">
+    <Stack.Navigator
+      initialRouteName="SettingsMain"
+      // screenOptions={{
+      //   headerLeft: (props) => {
+      //     console.log(props);
+
+      //     return null;
+      //   },
+      // }}
+    >
       <Stack.Screen
         name="SettingsMain"
         component={Settings}

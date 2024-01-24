@@ -1,7 +1,13 @@
 import { useCurrentTabScrollY } from 'react-native-collapsible-tab-view';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import {
+  CommonActions,
+  CompositeNavigationProp,
+  NavigationProp,
+  useNavigation,
+  useTheme,
+} from '@react-navigation/native';
 import { Add, Location, Calendar, ShieldTick, HomeHashtag, Link21 } from 'iconsax-react-native';
 import React, { useState } from 'react';
 import {
@@ -18,11 +24,18 @@ import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, parseISO } from 'date-fns';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { HEADER_COLLAPSED_HEIGHT, ProfileProps, profileImagesize } from './Profile';
 import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
-import { MyProfileStackParamsList } from '@/src/navigator/types';
+import {
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+  MyProfileStackParamsList,
+} from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
 
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
@@ -38,6 +51,14 @@ import { OpenURLButton } from '@/services/constants';
 
 interface HeaderProps extends ProfileProps {}
 
+type ScreenNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<MyProfileStackParamsList, 'MyProfile'>,
+  CompositeNavigationProp<
+    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
+    BottomTabNavigationProp<MainBottomStackParamsList, 'MyProfileTab'>
+  >
+>;
+
 function ProfileHeader({
   profileData,
   currentUser,
@@ -50,7 +71,7 @@ function ProfileHeader({
   const [requestModal, setRequestModal] = useState<boolean>(false);
   const [height, setHeight] = useState<number>(0);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const navigation = useNavigation<NavigationProp<MyProfileStackParamsList>>();
+  const navigation = useNavigation<ScreenNavigationProp>();
   const authState = useSelector((state: RootState) => state.auth);
   const { width } = useWindowDimensions();
   // const { top, height } = useHeaderMeasurements();
@@ -611,34 +632,41 @@ function ProfileHeader({
             },
             connectedConnectorsContent,
           ]}
-          pointerEvents="none"
+          pointerEvents="box-none"
         >
-          <StyledText style={[Typography.body.x3M, { flex: 1 }]}>
-            {profileData?.followerCount && profileData?.followerCount > 999
-              ? `${(profileData.followerCount / 1000).toFixed(2)}k`
-              : profileData?.followerCount && profileData?.followerCount > 999999
-              ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
-              : profileData?.followerCount ?? 0}{' '}
-            <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
-          </StyledText>
-
-          <StyledText
-            style={[
-              Typography.body.x3M,
-
-              {
-                marginLeft: spacing.x24,
-                flex: 1,
-              },
-            ]}
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('Connections');
+            }}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
           >
-            {profileData?.following.length > 999
-              ? `${(profileData.following.length / 1000).toFixed(2)}k`
-              : profileData?.following.length > 999999
-              ? `${(profileData.following.length / 1000000).toFixed(2)}m`
-              : profileData?.following.length ?? 0}{' '}
-            <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
-          </StyledText>
+            <StyledText style={[Typography.body.x3M, { flex: 1 }]}>
+              {profileData?.followerCount && profileData?.followerCount > 999
+                ? `${(profileData.followerCount / 1000).toFixed(2)}k`
+                : profileData?.followerCount && profileData?.followerCount > 999999
+                ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
+                : profileData?.followerCount ?? 0}{' '}
+              <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
+            </StyledText>
+
+            <StyledText
+              style={[
+                Typography.body.x3M,
+
+                {
+                  marginLeft: spacing.x24,
+                  flex: 1,
+                },
+              ]}
+            >
+              {profileData?.following.length > 999
+                ? `${(profileData.following.length / 1000).toFixed(2)}k`
+                : profileData?.following.length > 999999
+                ? `${(profileData.following.length / 1000000).toFixed(2)}m`
+                : profileData?.following.length ?? 0}{' '}
+              <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
+            </StyledText>
+          </TouchableOpacity>
         </Animated.View>
       </View>
       <Modal

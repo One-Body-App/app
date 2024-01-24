@@ -166,14 +166,24 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
           return null;
         }}
         renderItem={({ item, index }) => (
-          <SocialItem
-            item={item}
-            onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-            index={index}
-            parentRefreshContent={refreshContent}
-            removePost={removePost}
-            editPost={editPost}
-          />
+          <TouchableOpacity
+            onPress={() => {
+              if (item.postId) {
+                navigation.navigate('SinglePost', {
+                  postId: item.postId,
+                });
+              }
+            }}
+          >
+            <SocialItem
+              item={item}
+              onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+              index={index}
+              parentRefreshContent={refreshContent}
+              removePost={removePost}
+              editPost={editPost}
+            />
+          </TouchableOpacity>
         )}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
