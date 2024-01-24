@@ -1,5 +1,9 @@
 import React, { useEffect } from 'react';
-import { createDrawerNavigator } from '@react-navigation/drawer';
+import {
+  DrawerToggleButton,
+  createDrawerNavigator,
+  getDrawerStatusFromState,
+} from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
 import {
   Animated,
@@ -18,6 +22,7 @@ import { HandsPraying } from 'phosphor-react-native';
 
 import Geolocation from '@react-native-community/geolocation';
 import messaging from '@react-native-firebase/messaging';
+import { HeaderBackButton } from '@react-navigation/elements';
 import { MainDrawerParamsList } from './types';
 import OnboardingStack from './OnboardingStack';
 import { RootState } from '../redux/reducers/rootReducer';
@@ -106,12 +111,25 @@ function DrawerNav() {
     }
     return (
       <DrawerStack.Navigator
-        screenOptions={{
-          drawerType,
-          headerTintColor: dark ? colors.text : Colors.primary.brand,
+        // backBehavior="history"
+        screenOptions={({ navigation }) => {
+          return {
+            drawerType,
+            headerTintColor: dark ? colors.text : Colors.primary.brand,
 
-          drawerActiveBackgroundColor: Colors.neutral[600],
-          drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
+            drawerActiveBackgroundColor: Colors.neutral[600],
+            drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
+            headerLeft: (props) => {
+              const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
+
+              if (navigation.canGoBack() && !isDrawerOpen) {
+                return (
+                  <HeaderBackButton labelVisible={false} onPress={() => navigation.goBack()} />
+                );
+              }
+              return <DrawerToggleButton {...props} />;
+            },
+          };
         }}
         drawerContent={(props) => <DrawerContent {...props} />}
       >
@@ -124,6 +142,8 @@ function DrawerNav() {
               drawerIcon: ({ color, size }) => {
                 return <Home3 size={size} color={color} />;
               },
+
+              headerLeft: (props) => <DrawerToggleButton {...props} />,
 
               headerTitleAlign:
                 getHeaderTitle(route) === 'Home' || Platform.OS === 'ios' ? 'center' : 'left',
@@ -176,11 +196,13 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="Connections"
           component={Connections}
-          options={{
-            title: 'My Connections',
-            drawerIcon: ({ color, size }) => {
-              return <Profile2User size={size} color={color} />;
-            },
+          options={({ navigation }) => {
+            return {
+              title: 'My Connections',
+              drawerIcon: ({ color, size }) => {
+                return <Profile2User size={size} color={color} />;
+              },
+            };
           }}
         />
 
@@ -198,8 +220,10 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="Settings"
           component={SettingsStack}
-          options={{
-            drawerItemStyle: { height: 0 },
+          options={({ navigation }) => {
+            return {
+              drawerItemStyle: { height: 0 },
+            };
           }}
         />
 

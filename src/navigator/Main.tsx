@@ -303,7 +303,7 @@ function Main() {
               <MainStack.Screen
                 name="Post"
                 component={NewPost}
-                options={({ navigation, route }) => {
+                options={({ route }) => {
                   return {
                     // presentation: 'formSheet',
                     title: route.params?.postId ? 'Edit Post' : 'Create Post',

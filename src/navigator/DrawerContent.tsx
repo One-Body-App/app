@@ -54,6 +54,12 @@ export default function DrawerContent({
       <View style={styles.drawerContent}>
         <View>
           <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('Main', {
+                screen: 'MyProfileTab',
+                params: { screen: 'MyProfile' },
+              });
+            }}
             style={{
               paddingHorizontal: spacing.x16,
               paddingVertical: spacing.x10,
