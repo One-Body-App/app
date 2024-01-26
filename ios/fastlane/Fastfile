@@ -15,11 +15,35 @@
 
 default_platform(:ios)
 
+before_all do
+  # ensure_git_branch
+  # ensure_git_status_clean
+  # git_pull
+end
+
+
 platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :beta do
-    increment_build_number(xcodeproj: "onebody.xcodeproj")
-    build_app(workspace: "onebody.xcworkspace", scheme: "onebody")
+    setup_ci if ENV['CI']
+    match( type: 'appstore', readonly: is_ci)
+    #  currentBuildNumber = latest_testflight_build_number(
+    #   version: ENV["VERSION_NUMBER"],
+    #   # api_key: ENV["APPLE_API_KEY"]
+    # )
+
+    # nextBuildNumber = currentBuildNumber + 1
+
+    # increment_build_number(build_number: nextBuildNumber)
+    # increment_version_number(version_number: ENV["VERSION_NUMBER"])
+
+    # increment_build_number(xcodeproj: "onebody.xcodeproj")
+    build_app(export_method: "app-store", export_options: {
+        testFlightInternalTestingOnly: true
+    })
     upload_to_testflight
+
+    # commit_version_bump(message: 'Bump build', xcodeproj: 'onebody.xcodeproj')
+    # push_to_git_remote
   end
 end

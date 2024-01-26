@@ -57,7 +57,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>62</string>
 	<key>FacebookAppID</key>
 	<string>1977514759116109</string>
 	<key>FacebookClientToken</key>

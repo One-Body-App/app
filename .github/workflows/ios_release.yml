@@ -1,0 +1,27 @@
+name: build-ios-app
+on:
+  push:
+    branches:
+      - 'staging'
+jobs:
+  build:
+    runs-on: macos-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: 'Create env file'
+        run: |
+          echo "${{ vars.ENV_VARS }}" > .env
+          cat .env
+          echo "${{ secrets.ENV_SECRET_VARS }}" > .env
+      - run: cd ios && fastlane ios beta
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY: ${{ secrets.APP_STORE_CONNECT_KEY }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Bump version [skip ci]
