@@ -9,12 +9,18 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v2
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
       - name: 'Create env file'
         run: |
           echo "${{ vars.ENV_VARS }}" > .env
           cat .env
           echo "${{ secrets.ENV_SECRET_VARS }}" > .env
-      - run: cd ios && fastlane ios beta
+      - run: cd ios && bundle exec fastlane ios beta
         env:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
