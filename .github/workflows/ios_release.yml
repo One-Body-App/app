@@ -1,15 +1,15 @@
-name: build-ios-app
+name: build ios app for production
 on:
   push:
     branches:
-      - 'staging'
+      - 'main'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
     runs-on: macos-13
-    environment: staging
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v2
@@ -22,20 +22,17 @@ jobs:
         with:
           node-version: 18
           cache: 'yarn'
-      - uses: actions/cache@v2
+      - uses: ruby/setup-ruby@v1
         with:
-          path: ios/vendor/bundle
-          key: ${{ runner.os }}-gems-${{ hashFiles('ios/**/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-ios-gems-
+          bundler-cache: true
       - name: 'Create env file'
         run: |
           echo "${{ vars.ENV_VARS }}" > .env
           cat .env
           echo "${{ secrets.ENV_SECRET_VARS }}" > .env
       - run: yarn install
-      - run: cd ios && bundle install
-      - run: cd ios && bundle exec fastlane ios beta
+      - run: bundle install
+      - run: bundle exec fastlane ios prod
         env:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
@@ -45,4 +42,4 @@ jobs:
           MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: Bump version [skip ci]
+          commit_message: 'chore: Bump ios version for prod [skip ci]'

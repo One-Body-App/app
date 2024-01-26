@@ -114,3 +114,6 @@ AuthKey.json
 
 # scan temporary files
 **/fastlane/test_output
+
+one-body-app-75cd2-a0bf70b6874e.json
+**/key.properties
