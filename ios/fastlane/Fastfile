@@ -27,6 +27,12 @@ platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :beta do
     setup_ci if ENV['CI']
+    api_key = app_store_connect_api_key(
+        key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
+        issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+        key_content: ENV["APP_STORE_CONNECT_KEY"],
+        duration: 1200,
+      )
     match( type: 'appstore', readonly: is_ci)
     #  currentBuildNumber = latest_testflight_build_number(
     #   version: ENV["VERSION_NUMBER"],
@@ -42,7 +48,7 @@ platform :ios do
     build_app(export_method: "app-store", export_options: {
         testFlightInternalTestingOnly: true
     })
-    upload_to_testflight
+     upload_to_testflight(skip_waiting_for_build_processing: true)
 
     # commit_version_bump(message: 'Bump build', xcodeproj: 'onebody.xcodeproj')
     # push_to_git_remote
