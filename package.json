@@ -151,7 +151,6 @@
     "path": "^0.12.7",
     "prettier": "^3.0.0",
     "react-devtools": "^5.0.0",
-    "react-native-asset": "^2.1.1",
     "react-native-clean-project": "^4.0.3",
     "react-native-config": "^1.5.1",
     "react-native-svg-transformer": "^1.2.0",
