@@ -27,9 +27,9 @@ jobs:
           bundler-cache: true
       - name: 'Create env file'
         run: |
-          echo "${{ vars.ENV_VARS }}" > .env
+          echo "${{ vars.ENV_VARS }}" >> .env
           cat .env
-          echo "${{ secrets.ENV_SECRET_VARS }}" > .env
+          echo "${{ secrets.ENV_SECRET_VARS }}" >> .env
       - run: yarn install
       - run: bundle install
       - run: bundle exec fastlane ios prod
