@@ -1,4 +1,4 @@
-name: build ios app for testing
+name: build android app for testing
 on:
   push:
     branches:
