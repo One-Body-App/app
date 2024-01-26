@@ -21,7 +21,7 @@ jobs:
           cat .env
           echo "${{ secrets.ENV_SECRET_VARS }}" > .env
       - run: cd ios && bundle install
-      - run: cd ios && bundle exec pod install && bundle exec fastlane ios beta
+      - run: cd ios && bundle exec fastlane ios beta
         env:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
