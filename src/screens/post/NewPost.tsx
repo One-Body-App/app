@@ -740,6 +740,30 @@ function NewPost({ navigation, route }: Props) {
               />
             </View>
           </View>
+          <View
+            style={{
+              columnGap: spacing.x10,
+              flexDirection: 'row',
+              paddingVertical: spacing.x16,
+            }}
+          >
+            <Button
+              text="Video"
+              wrapperViewBtnStyle={{ flex: 1 / 3.2 }}
+              btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
+              btnStyle={{
+                backgroundColor: Colors.neutral[700],
+                flex: 1,
+                padding: spacing.x16,
+                borderRadius: borderRadius.base,
+              }}
+              wrapperBtnStyle={{ flexDirection: 'column' }}
+              leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
+              onPress={async () => {
+                navigation.navigate('VideoPost');
+              }}
+            />
+          </View>
         </ScrollView>
 
         <Button
