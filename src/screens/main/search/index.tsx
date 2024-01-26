@@ -20,10 +20,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowRight } from 'iconsax-react-native';
 import FastImage from 'react-native-fast-image';
 
-import SearchContainComponent from '@/src/components/SearchContainComponent';
+import SearchContainComponent from '@/components/SearchContainComponent';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import ArticleItem from '@/src/components/listItems/ArticleItem';
+import ArticleItem from '@/components/listItems/ArticleItem';
 
 import { ArticleType } from '@/utils/types';
 import {
@@ -31,15 +31,15 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 
 import { Colors, Typography } from '@/src/styles';
-import StyledText from '@/src/components/styled/Text';
-import Button from '@/src/components/Button';
+import StyledText from '@/components/styled/Text';
+import Button from '@/components/Button';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import SearchIcon from '@/assets/icons/search.svg';
-import UserItem from '@/src/components/listItems/UserItem';
+import UserItem from '@/components/listItems/UserItem';
 import { header } from '@/src/styles/typography';
 
 // type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;

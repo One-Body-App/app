@@ -9,13 +9,13 @@ import { useTheme } from '@react-navigation/native';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, Interest } from '@/utils/types';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import { iterestListItem } from '@/src/styles/items';
 

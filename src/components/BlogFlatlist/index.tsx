@@ -23,7 +23,7 @@ import { ArticleType, PostType, User } from '@/utils/types';
 import { OpenURLButton } from '@/services/constants';
 import ArticleItem from '../listItems/ArticleItem';
 import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
-import { styles as globalStyle } from '@/src/components/listItems/style';
+import { styles as globalStyle } from '@/components/listItems/style';
 import { spacing } from '@/src/styles/spacing';
 
 function BlogFlatlist({ userId }: { userId: string }) {

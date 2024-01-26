@@ -10,10 +10,10 @@ import { useTheme } from '@react-navigation/native';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors, Typography } from '@/src/styles';
-import Button from '@/src/components/Button';
+import Button from '@/components/Button';
 import { borderRadius } from '@/src/styles/outlines';
 import { header } from '@/src/styles/typography';
 

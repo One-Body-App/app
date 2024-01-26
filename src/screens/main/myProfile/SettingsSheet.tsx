@@ -19,8 +19,8 @@ import { spacing } from '@/src/styles/spacing';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { profileImageList } from '@/src/styles/items';
 import { Colors, Typography } from '@/src/styles';
-import StyledText from '@/src/components/styled/Text';
-import Button from '@/src/components/Button';
+import StyledText from '@/components/styled/Text';
+import Button from '@/components/Button';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { logout } from '@/src/redux/actions/AuthActions';
 

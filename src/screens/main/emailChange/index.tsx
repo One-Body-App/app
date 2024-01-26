@@ -8,22 +8,22 @@ import { useToast } from 'react-native-toast-notifications';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StackScreenProps } from '@react-navigation/stack';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
+import Header from '@/components/Header';
+import Button from '@/components/Button';
 import { styles } from './styles';
 import { ApiCall } from '@/src/services/api';
 import { validateFields } from '@/utils/validation/validate-fields';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 import { Colors } from '@/src/styles';
 
 type Props = StackScreenProps<RootStackParamList, 'EmailChange'>;

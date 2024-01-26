@@ -7,16 +7,16 @@ import { AddSquare } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import { styles } from './styles';
 
-import WallComponent from '@/src/components/prayerWallComponent';
-import PrayersComponent from '@/src/components/prayerWallMyPrayersComponent';
-import TestimoniesComponent from '@/src/components/prayerWallTestimoniesComponent';
+import WallComponent from '@/components/prayerWallComponent';
+import PrayersComponent from '@/components/prayerWallMyPrayersComponent';
+import TestimoniesComponent from '@/components/prayerWallTestimoniesComponent';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { fontSize } from '@/src/styles/typography';
-import PrayerWallSavedPrayersComponent from '@/src/components/prayerWallSavedPrayersComponent';
+import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'index'>;
 

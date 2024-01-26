@@ -6,13 +6,13 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { useToast } from 'react-native-toast-notifications';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { AccountType, Tag } from '@/utils/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 
-import StyledSelect from '@/src/components/styled/Select';
+import StyledSelect from '@/components/styled/Select';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { header } from '@/src/styles/typography';
 

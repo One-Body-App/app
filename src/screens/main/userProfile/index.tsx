@@ -18,7 +18,7 @@ import {
   MainDrawerParamsList,
   PrayerWallStackParamsList,
 } from '@/src/navigator/types';
-import ProfileComponent from '@/src/components/profile/Profile';
+import ProfileComponent from '@/components/profile/Profile';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 
 type Props = CompositeScreenProps<

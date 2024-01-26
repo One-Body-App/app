@@ -23,7 +23,7 @@ import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { isNumber } from 'lodash';
-import Button from '@/src/components/Button';
+import Button from '@/components/Button';
 
 import { getUserProfile } from '@/src/redux/actions/UserAction';
 import { ApiCall } from '@/src/services/api';
@@ -37,11 +37,11 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 import { Colors, Typography } from '@/src/styles';
 import SearchIcon from '@/assets/icons/search.svg';
 import { borderRadius } from '@/src/styles/outlines';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { iterestListItem, profileImageList } from '@/src/styles/items';

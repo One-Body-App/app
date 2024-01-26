@@ -3,16 +3,16 @@ import { View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { ArrowDown2 } from 'iconsax-react-native';
 import { useToast } from 'react-native-toast-notifications';
-import Button from '@/src/components/Button';
+import Button from '@/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
+import MapBox, { MapSuggestion } from '@/components/MapBox';
 import { borderRadius } from '@/src/styles/outlines';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationInfo'>;
 

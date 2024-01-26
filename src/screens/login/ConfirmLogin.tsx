@@ -5,7 +5,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
 import auth from '@react-native-firebase/auth';
 import { useTheme } from '@react-navigation/native';
-import LoginComponent from '@/src/components/loginComponent';
+import LoginComponent from '@/components/loginComponent';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { setLoginVerificationBackPage } from '@/src/redux/actions/GeneralActions';

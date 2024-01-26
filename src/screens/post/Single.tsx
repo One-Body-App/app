@@ -29,10 +29,10 @@ import {
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import StyledText from '@/src/components/styled/Text';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import Button from '@/components/Button';
+import MapBox, { MapSuggestion } from '@/components/MapBox';
+import StyledText from '@/components/styled/Text';
+import StyledTextInput from '@/components/styled/TextInput';
 import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors, Spacing } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -47,9 +47,9 @@ import {
   SocialPostReaction,
 } from '@/utils/types';
 
-import CommentField from '@/src/components/comments/Field';
-import CommentItem from '@/src/components/comments/CommentItem';
-import SocialItem from '@/src/components/listItems/SocialItem';
+import CommentField from '@/components/comments/Field';
+import CommentItem from '@/components/comments/CommentItem';
+import SocialItem from '@/components/listItems/SocialItem';
 
 type Props = StackScreenProps<MainStackParamList, 'SinglePost'>;
 

@@ -13,7 +13,7 @@ import { card } from '@/src/styles/items';
 import { AccountType as AccountTypeType } from '@/utils/types';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 
 type Props = StackScreenProps<MainStackParamList, 'AccountType'>;

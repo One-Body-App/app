@@ -7,9 +7,9 @@ import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import Button from '@/src/components/Button';
+import Button from '@/components/Button';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
 

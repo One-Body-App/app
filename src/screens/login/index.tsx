@@ -3,7 +3,7 @@ import { ScrollView } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
-import LoginComponent from '@/src/components/loginComponent';
+import LoginComponent from '@/components/loginComponent';
 
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
