@@ -15,11 +15,21 @@ jobs:
           key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
           restore-keys: |
             ${{ runner.os }}-pods-
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+      - name: ruby setup
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.0
+          bundler-cache: true
       - name: 'Create env file'
         run: |
           echo "${{ vars.ENV_VARS }}" > .env
           cat .env
           echo "${{ secrets.ENV_SECRET_VARS }}" > .env
+      - run: yarn install --frozen-lockfile
       - run: cd ios && bundle install
       - run: cd ios && bundle exec fastlane ios beta
         env:
