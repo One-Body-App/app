@@ -29,6 +29,9 @@ jobs:
           echo "${{ vars.ENV_VARS }}" >> .env
           cat .env
           echo "${{ secrets.ENV_SECRET_VARS }}" >> .env
+      - name: 'Create key properties'
+          run: |
+            echo "${{secrets.ANDROID_KEY_PROPERTIES}}" >> android/key.properties
       - run: yarn install
       - run: bundle install
       - run: bundle exec fastlane android beta
