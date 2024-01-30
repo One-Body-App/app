@@ -157,6 +157,7 @@ GEM
       xcpretty-travis-formatter (>= 0.0.3)
     fastlane-plugin-android_versioning (0.5.5)
     fastlane-plugin-semantic_release (1.18.2)
+    fastlane-plugin-versioning_android (0.1.1)
     ffi (1.16.3)
     fourflusher (2.3.1)
     fuzzy_match (2.0.4)
@@ -277,6 +278,7 @@ DEPENDENCIES
   fastlane
   fastlane-plugin-android_versioning
   fastlane-plugin-semantic_release
+  fastlane-plugin-versioning_android
 
 BUNDLED WITH
    2.5.5

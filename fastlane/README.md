@@ -19,7 +19,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane prod
 ```
 
-Push a new beta build to Release TestFlight
+Push a new build to Release TestFlight
 
 ----
 
