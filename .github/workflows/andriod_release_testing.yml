@@ -12,6 +12,8 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{secrets.GH_TOKEN}}
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
@@ -24,6 +26,9 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
+      - name: 'Create json file'
+        run: |
+          echo "${{ secrets.KEY_ANDROID_JSON }}" >> one-body-app-75cd2-a0bf70b6874e.json
       - name: 'Create env file'
         run: |
           echo "${{ vars.ENV_VARS }}" >> .env

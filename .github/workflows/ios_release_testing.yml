@@ -12,6 +12,8 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{secrets.GH_TOKEN}}
       - uses: actions/cache@v2
         with:
           path: ios/Pods
