@@ -28,12 +28,12 @@ import { styles } from './styles';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
-import SocialItem from '@/src/components/listItems/SocialItem';
-import ArticleItem from '@/src/components/listItems/ArticleItem';
-import ActivityIndicatorContent from '@/src/components/ActivityIndicatorContent';
+import SocialItem from '@/components/listItems/SocialItem';
+import ArticleItem from '@/components/listItems/ArticleItem';
+import ActivityIndicatorContent from '@/components/ActivityIndicatorContent';
 import { ArticleType } from '@/utils/types';
-import OptionsModal from '@/src/components/listItems/OptionsModal';
-import { styles as globalStyle } from '@/src/components/listItems/style';
+import OptionsModal from '@/components/listItems/OptionsModal';
+import { styles as globalStyle } from '@/components/listItems/style';
 
 import {
   HomeStackParamsList,
@@ -41,7 +41,7 @@ import {
   MainDrawerParamsList,
   MainStackParamList,
 } from '@/src/navigator/types';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 import { fontSize, poppins } from '@/src/styles/typography';

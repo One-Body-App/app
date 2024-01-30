@@ -100,3 +100,20 @@ android/app/release/*
 **/fastlane/test_output
 
 onebody.app.dSYM.zip
+
+AuthKey.json
+
+# fastlane specific
+**/fastlane/report.xml
+
+# deliver temporary files
+**/fastlane/Preview.html
+
+# snapshot generated screenshots
+**/fastlane/screenshots
+
+# scan temporary files
+**/fastlane/test_output
+
+one-body-app-75cd2-a0bf70b6874e.json
+**/key.properties

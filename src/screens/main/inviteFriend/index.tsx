@@ -14,7 +14,7 @@ import { styles } from './styles';
 import { Colors } from '@/src/styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { spacing } from '@/src/styles/spacing';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { fontSize } from '@/src/styles/typography';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { NO_PROFILE_IMAGE } from '@/services/constants';

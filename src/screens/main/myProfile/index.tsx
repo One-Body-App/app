@@ -13,7 +13,7 @@ import { Colors } from '@/src/styles';
 
 import { spacing } from '@/src/styles/spacing';
 
-import Profile from '@/src/components/profile/Profile';
+import Profile from '@/components/profile/Profile';
 
 import {
   MainBottomStackParamsList,

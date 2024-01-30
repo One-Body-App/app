@@ -8,8 +8,8 @@ import { header, subheader } from '@/src/styles/typography';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import UserStepsLayout from '../layout/UserStepsLayout';
-import StyledText from '@/src/components/styled/Text';
-import Button from '@/src/components/Button';
+import StyledText from '@/components/styled/Text';
+import Button from '@/components/Button';
 import { spacing } from '@/src/styles/spacing';
 
 type Props = StackScreenProps<MainStackParamList, 'Intro'>;

@@ -47,10 +47,10 @@ import { isArray, isEmpty } from 'lodash';
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import StyledText from '@/src/components/styled/Text';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import Button from '@/components/Button';
+import MapBox, { MapSuggestion } from '@/components/MapBox';
+import StyledText from '@/components/styled/Text';
+import StyledTextInput from '@/components/styled/TextInput';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors, Spacing } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -59,7 +59,7 @@ import { spacing } from '@/src/styles/spacing';
 import { Location } from '@/utils/types';
 import { fontSize, lineHeight } from '@/src/styles/typography';
 
-import ImagePickerModal from '@/src/components/ImagePickerModal';
+import ImagePickerModal from '@/components/ImagePickerModal';
 import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/services/constants';
 import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
 

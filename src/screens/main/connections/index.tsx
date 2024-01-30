@@ -18,7 +18,7 @@ import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Button from '@/src/components/Button';
+import Button from '@/components/Button';
 import { ApiCall } from '@/src/services/api';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { getuserAll } from '@/src/redux/actions/UserAction';
@@ -28,9 +28,9 @@ import { Interest, User } from '@/utils/types';
 
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 
 import { iterestListItem, profileImageList } from '@/src/styles/items';

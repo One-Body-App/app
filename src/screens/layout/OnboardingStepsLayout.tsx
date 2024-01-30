@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Button from '@/src/components/Button';
-import StyledText from '@/src/components/styled/Text';
+import Button from '@/components/Button';
+import StyledText from '@/components/styled/Text';
 import { Buttons, Colors, Spacing, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { borderRadius } from '@/src/styles/outlines';

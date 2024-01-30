@@ -23,16 +23,16 @@ import {
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { CommentPost, PrayerPost, SocialPostReaction } from '@/utils/types';
 
-import PrayerItem from '@/src/components/listItems/PrayerItem';
-import CommentField from '@/src/components/comments/Field';
-import CommentItem from '@/src/components/comments/CommentItem';
+import PrayerItem from '@/components/listItems/PrayerItem';
+import CommentField from '@/components/comments/Field';
+import CommentItem from '@/components/comments/CommentItem';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
 let keyboardWillShowListener: EmitterSubscription;

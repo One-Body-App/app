@@ -14,13 +14,13 @@ import { NotificationBing } from 'iconsax-react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import styles from './styles';
 
-import Button from '@/src/components/Button';
+import Button from '@/components/Button';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { ApiCall } from '@/src/services/api';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { NotificationType } from '@/utils/types';

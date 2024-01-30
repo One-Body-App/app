@@ -22,10 +22,10 @@ import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar
 import { useSelector } from 'react-redux';
 import RenderHtml from 'react-native-render-html';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Header from '@/src/components/Header';
-import Button from '@/src/components/Button';
+import Header from '@/components/Header';
+import Button from '@/components/Button';
 import { styles } from './styles';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
+import GeneralStatusBar from '@/components/GeneralStatusBar';
 // import ZendeskChat from 'react-native-zendesk-chat';
 
 function Faqs({ navigation }) {

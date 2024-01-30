@@ -16,7 +16,7 @@ import { useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { styles } from './styles';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import GoBackIcon from '@/src/components/GoBackIcon';
+import GoBackIcon from '@/components/GoBackIcon';
 
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';

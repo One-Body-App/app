@@ -30,7 +30,7 @@ import { styles } from './styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import { borderRadius } from '@/src/styles/outlines';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors, Typography } from '@/src/styles';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';

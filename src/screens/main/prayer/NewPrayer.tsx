@@ -48,10 +48,10 @@ import Toast from 'react-native-simple-toast';
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import StyledText from '@/src/components/styled/Text';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import Button from '@/components/Button';
+import MapBox, { MapSuggestion } from '@/components/MapBox';
+import StyledText from '@/components/styled/Text';
+import StyledTextInput from '@/components/styled/TextInput';
 import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors, Spacing, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -61,9 +61,9 @@ import { Location, PrayerWallCategory } from '@/utils/types';
 import Anonymous from '@/assets/svg/anonymous.svg';
 import { fontSize } from '@/src/styles/typography';
 
-import ImagePickerModal from '@/src/components/ImagePickerModal';
+import ImagePickerModal from '@/components/ImagePickerModal';
 import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS, NO_PROFILE_IMAGE } from '@/services/constants';
-import StyledSelect from '@/src/components/styled/Select';
+import StyledSelect from '@/components/styled/Select';
 import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
 GiphySDK.configure({

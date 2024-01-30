@@ -19,7 +19,7 @@ import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-import Button from '@/src/components/Button';
+import Button from '@/components/Button';
 import { styles } from './styles';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';

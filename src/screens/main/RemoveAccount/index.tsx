@@ -7,17 +7,17 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import auth from '@react-native-firebase/auth';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { useToast } from 'react-native-toast-notifications';
-import Button from '@/src/components/Button';
+import Button from '@/components/Button';
 import { styles } from './styles';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import { SettingsStackParamsList } from '@/src/navigator/types';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { Colors, Spacing, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import StyledTextInput from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
 import { setLoader } from '@/src/redux/actions/GeneralActions';

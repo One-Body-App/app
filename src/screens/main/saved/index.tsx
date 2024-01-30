@@ -13,16 +13,16 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { getuserGet } from '@/src/redux/actions/UserAction';
-import StyledText from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { getProfile } from '@/src/redux/actions/AuthActions';
-import SocialItem from '@/src/components/listItems/SocialItem';
-import ArticleItem from '@/src/components/listItems/ArticleItem';
+import SocialItem from '@/components/listItems/SocialItem';
+import ArticleItem from '@/components/listItems/ArticleItem';
 import { ArticleType, PostType, SavedPost } from '@/utils/types';
-import { PopupItem } from '@/src/components/listItems/OptionsModal';
-import Button from '@/src/components/Button';
+import { PopupItem } from '@/components/listItems/OptionsModal';
+import Button from '@/components/Button';
 import {
   MainDrawerParamsList,
   MainStackParamList,
