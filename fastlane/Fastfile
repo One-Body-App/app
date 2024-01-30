@@ -85,8 +85,12 @@ platform :android do
     gradle(task: 'clean', project_dir: './android')
     increment_version_code('app_project_dir': './android/app')
     gradle(task: 'bundle', build_type: 'Release', project_dir: './android')
-    supply(track: 'internal')
 
+    if ENV['CI']
+      supply(track: 'internal', json_key_data: ENV['KEY_ANDROID_JSON_DATA'])
+    else
+      supply(track: 'internal', json_key_file: "./one-body-app-75cd2-a0bf70b6874e.json")
+    end
 
   end
 

@@ -26,9 +26,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - name: 'Create json file'
-        run: |
-          echo "${{ secrets.KEY_ANDROID_JSON }}" >> one-body-app-75cd2-a0bf70b6874e.json
+
       - name: 'Create env file'
         run: |
           echo "${{ vars.ENV_VARS }}" >> .env
@@ -44,6 +42,7 @@ jobs:
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
+          KEY_ANDROID_JSON_DATA: ${{ secrets.KEY_ANDROID_JSON }}
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'chore: bump android version for testing [skip ci]'

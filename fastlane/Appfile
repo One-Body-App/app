@@ -3,7 +3,7 @@ app_identifier("com.onebodyapp") # The bundle identifier of your app
 itc_team_id("124082789") # App Store Connect Team ID
 team_id("9N63S64RJ2") # Developer Portal Team ID
 
-json_key_file("./one-body-app-75cd2-a0bf70b6874e.json")
+# json_key_file("./one-body-app-75cd2-a0bf70b6874e.json")
 package_name("com.onebody")
 
 # For more information about the Appfile, see:
