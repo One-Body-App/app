@@ -47,6 +47,7 @@ import DrawerNav from './DrawerStack';
 import NewPost from '../screens/post/NewPost';
 
 import SinglePost from '../screens/post/Single';
+import VideoPost from '../screens/post/VideoPost';
 
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
@@ -384,8 +385,12 @@ function Main() {
             component={ConfirmLogin}
             options={{ presentation: 'modal', ...headerOptions }}
           />
+          <MainStack.Screen
+            name="VideoPost"
+            component={VideoPost}
+            options={{ headerShown: false }}
+          />
         </MainStack.Navigator>
-
         {/* </AppProvider> */}
       </ReactionProvider>
     </NavigationContainer>

@@ -17,6 +17,9 @@ declare module 'react-native-config' {
     TWITTER_CLIENT_ID: string;
     GIPHY_KEY_IOS: string;
     GIPHY_KEY_ANDROID: string;
+
+    MUX_TOKEN_ID: string;
+    MUX_SECRET_KEY: string;
   }
 
   export const Config: NativeConfig;
