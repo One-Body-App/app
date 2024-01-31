@@ -61,7 +61,7 @@ type FeedOptions = {
   page: number;
 };
 
-const feedTypes: FeedTypes[] = [FeedTypes.Read];
+const feedTypes: FeedTypes[] = [FeedTypes.Read, FeedTypes.Watch];
 
 type Props = CompositeScreenProps<
   StackScreenProps<HomeStackParamsList, 'Home'>,
@@ -345,8 +345,8 @@ function Home({ navigation }: Props) {
                 {feedOptions.type == FeedTypes.Read
                   ? 'Feed'
                   : feedSubType == FeedTypes.Connected
-                  ? 'Connected'
-                  : 'For You'}
+                    ? 'Connected'
+                    : 'For You'}
               </StyledText>
               {feedOptions.type == FeedTypes.Read ? null : (
                 <ArrowDown2

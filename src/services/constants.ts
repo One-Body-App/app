@@ -8,6 +8,7 @@ import { sha256 } from 'react-native-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 
+console.log(`${Config.BASE_URL}///////`);
 export const { BASE_URL } = Config;
 export const { PRIVACY_POLICY_URL } = Config;
 export const { TERMS_CONDITIONS_URL } = Config;

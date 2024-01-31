@@ -126,7 +126,7 @@ function LoginComponent({
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
-      offlineAccess: true,
+      offlineAccess: false,
       forceCodeForRefreshToken: true,
     });
 
