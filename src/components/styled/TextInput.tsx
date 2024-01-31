@@ -18,6 +18,7 @@ interface Props extends TextInputProps {
   counterContainerStyle?: ViewStyle;
   counterTextStyleStyle?: TextStyle;
   inputWrapperStyle?: ViewStyle;
+  maxLengthErrorMessage?: string;
 }
 
 export default forwardRef<TextInput, Props>((props, ref) => {
@@ -32,6 +33,7 @@ export default forwardRef<TextInput, Props>((props, ref) => {
     showCharCounter,
     counterContainerStyle,
     counterTextStyleStyle,
+    maxLengthErrorMessage,
     ...textInputProps
   } = props;
   let backgroundColorWrapper = backgroundColor;
@@ -80,8 +82,29 @@ export default forwardRef<TextInput, Props>((props, ref) => {
       </View>
       {showCharCounter && textInputProps.maxLength ? (
         <View style={counterContainerStyle}>
-          <StyledText style={counterTextStyleStyle}>
-            {textInputProps.value?.length || '0'}/{textInputProps.maxLength}
+          <StyledText
+            style={[
+              counterTextStyleStyle,
+              {
+                color:
+                  (textInputProps.value?.length ?? 0) >= textInputProps.maxLength
+                    ? Colors.errorFeedback[200]
+                    : colors.text,
+              },
+            ]}
+          >
+            {textInputProps.value?.length || '0'}/{textInputProps.maxLength}{' '}
+            {(textInputProps.value?.length ?? 0) >= textInputProps.maxLength &&
+            maxLengthErrorMessage ? (
+              <StyledText
+                style={[
+                  counterTextStyleStyle,
+                  { marginLeft: spacing.x10, color: Colors.errorFeedback[200] },
+                ]}
+              >
+                {maxLengthErrorMessage}
+              </StyledText>
+            ) : null}
           </StyledText>
         </View>
       ) : null}

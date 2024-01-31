@@ -14,25 +14,40 @@ function ProfileStack() {
   const { colors } = useTheme();
   return (
     <Stack.Navigator>
-      <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="MyProfile"
+        component={MyProfile}
+        options={({ navigation }) => {
+          navigation.getParent().getParent().setOptions({ headerShown: true });
+          return {
+            headerShown: false,
+          };
+        }}
+      />
       <Stack.Screen
         name="EditProfile"
         component={EditProfile}
-        options={{
-          headerBackTitleVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          title: 'Edit Profile',
-          contentStyle: { backgroundColor: Colors.neutral[700] },
+        options={({ navigation }) => {
+          navigation.getParent().getParent().setOptions({ headerShown: false });
+          return {
+            headerBackTitleVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+            title: 'Edit Profile',
+            contentStyle: { backgroundColor: Colors.neutral[700] },
+          };
         }}
       />
       <Stack.Screen
         name="InviteFriends"
         component={InviteFriend}
-        options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTintColor: '#fff',
-          title: 'Invite',
+        options={({ navigation }) => {
+          navigation.getParent().getParent().setOptions({ headerShown: false });
+          return {
+            headerShown: true,
+            headerTransparent: true,
+            headerTintColor: '#fff',
+            title: 'Invite',
+          };
         }}
       />
     </Stack.Navigator>

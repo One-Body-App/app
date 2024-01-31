@@ -508,6 +508,7 @@ function NewPrayer({ navigation, route }: Props) {
                 onChange={(item: PrayerWallCategory) => {
                   setPostType(item);
                 }}
+                hideSearch
               />
             </View>
 
