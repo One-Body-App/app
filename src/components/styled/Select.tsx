@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Modal from 'react-native-modal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -25,6 +25,7 @@ interface Props {
   selectedItem?: string;
   label?: string;
   wrapperStyle?: ViewStyle;
+  hideSearch?: boolean;
 }
 
 export default function StyledSelect({
@@ -35,15 +36,19 @@ export default function StyledSelect({
   selectedItem,
   label,
   wrapperStyle,
+  hideSearch,
 }: Props) {
   const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [searchedItems, setSearchedItems] = useState<selectedItem[]>([]);
-
+  const [searchedItems, setSearchedItems] = useState<selectedItem[]>(hideSearch ? items : []);
   useEffect(() => {
     setSearchText('');
-  }, [items]);
+
+    if (hideSearch) {
+      setSearchedItems(items);
+    }
+  }, [items, hideSearch]);
 
   useEffect(() => {
     let values = items;
@@ -53,7 +58,7 @@ export default function StyledSelect({
       );
       setSearchedItems(values);
     } else {
-      setSearchedItems([]);
+      setSearchedItems(hideSearch ? items : []);
     }
   }, [searchText]);
 
@@ -104,16 +109,18 @@ export default function StyledSelect({
             paddingVertical: spacing.x16,
             borderTopRightRadius: borderRadius.large,
             borderTopLeftRadius: borderRadius.large,
-            height: '60%',
+            // height: '90%',
+            flex: 1,
+            marginTop: spacing.x48,
             backgroundColor: colors.background,
           }}
         >
-          <View style={{ flex: 1.5, maxHeight: 90, paddingHorizontal: spacing.x16 }}>
+          <View style={{ paddingHorizontal: spacing.x16, paddingBottom: spacing.x10 }}>
             <View
               style={{
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                flex: 1,
+                // flex: 1,
               }}
             >
               <StyledText style={Typography.fontSize.x4}>{modalTitle}</StyledText>
@@ -131,36 +138,43 @@ export default function StyledSelect({
                 />
               </TouchableOpacity>
             </View>
-            <View style={{ flex: 1 }}>
-              <StyledTextInput
-                clearButtonMode="always"
-                wrapperStyle={{ flex: 1 }}
-                value={searchText}
-                returnKeyType="search"
-                placeholder="Search"
-                leftIcon={
-                  <View style={{ justifyContent: 'center' }}>
-                    <SearchIcon
-                      style={{ height: 15, width: 15, marginRight: spacing.x10 }}
-                      stroke={Colors.neutral[200]}
-                    />
-                  </View>
-                  // <MaterialCommunityIcons
-                  //   name="magnify"
-                  //   size={15}
-                  //   style={{ marginRight: 10 }}
-                  //   color={Colors.neutral[200]}
-                  // />
-                }
-                onChangeText={(text) => {
-                  setSearchText(text);
-                  // changeHandler('password', password.trim())
-                }}
-              />
-            </View>
+            {!hideSearch ? (
+              <View style={{ flex: 1 }}>
+                <StyledTextInput
+                  clearButtonMode="always"
+                  wrapperStyle={{ flex: 1 }}
+                  value={searchText}
+                  returnKeyType="search"
+                  placeholder="Search"
+                  leftIcon={
+                    <View style={{ justifyContent: 'center' }}>
+                      <SearchIcon
+                        style={{ height: 15, width: 15, marginRight: spacing.x10 }}
+                        stroke={Colors.neutral[200]}
+                      />
+                    </View>
+                    // <MaterialCommunityIcons
+                    //   name="magnify"
+                    //   size={15}
+                    //   style={{ marginRight: 10 }}
+                    //   color={Colors.neutral[200]}
+                    // />
+                  }
+                  onChangeText={(text) => {
+                    setSearchText(text);
+                    // changeHandler('password', password.trim())
+                  }}
+                />
+              </View>
+            ) : null}
           </View>
 
-          <View style={{ flex: 4, paddingTop: spacing.x10 }}>
+          <View
+            style={{
+              paddingTop: spacing.x10,
+              flex: 1,
+            }}
+          >
             <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled>
               {searchedItems.length == 0 && searchText != '' ? (
                 <StyledText style={[Typography.body.x2M, { padding: spacing.x16 }]}>

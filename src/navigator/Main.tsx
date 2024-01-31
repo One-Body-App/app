@@ -219,7 +219,7 @@ function Main() {
 
       // Get the `url` property from the notification which corresponds to a screen
       // This property needs to be set on the notification payload when sending it
-      return message?.data?.url;
+      return message?.data?.url as string;
     },
     subscribe(listener) {
       const onReceiveURL = ({ url }: { url: string }) => listener(url);
@@ -229,7 +229,7 @@ function Main() {
 
       // Listen to firebase push notifications
       const unsubscribeNotification = messaging().onNotificationOpenedApp((message) => {
-        const url = message.data?.url;
+        const url = message.data?.url as string;
 
         if (url) {
           // Any custom logic to check whether the URL needs to be handled

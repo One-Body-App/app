@@ -16,30 +16,41 @@ import SinglePrayer from '../screens/main/prayer/Single';
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 
 function PrayerWall() {
-  const headerOptions: NativeStackNavigationOptions = {
-    headerShadowVisible: false,
-    headerBackTitleVisible: false,
-  };
   const { colors } = useTheme();
 
   return (
     <Stack.Navigator>
-      <Stack.Screen name="index" component={Prayer} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="index"
+        component={Prayer}
+        options={({ navigation }) => {
+          navigation.getParent().setOptions({ headerShown: true });
+          return {
+            headerShown: false,
+          };
+        }}
+      />
       <Stack.Screen
         name="UserProfile"
         component={UserProfile}
-        options={{
-          headerBackTitleVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          title: '',
-          contentStyle: { backgroundColor: Colors.neutral[700] },
+        options={({ navigation }) => {
+          navigation.getParent().setOptions({ headerShown: false });
+
+          return {
+            headerBackTitleVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+            title: '',
+            contentStyle: { backgroundColor: Colors.neutral[700] },
+          };
         }}
       />
       <Stack.Screen
         name="Prayer"
         component={NewPrayer}
         options={({ navigation, route }) => {
+          navigation.getParent().setOptions({ headerShown: false });
           return {
+            headerBackTitleVisible: false,
             headerBackTitle: 'Back',
             title: route.params?.postId ? 'Edit Post on Prayer Wall' : 'Post on Prayer Wall',
             // headerLeft: (props) => {
@@ -67,11 +78,15 @@ function PrayerWall() {
       <Stack.Screen
         name="Single"
         component={SinglePrayer}
-        options={{
-          headerBackTitleVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          title: 'Post',
-          contentStyle: { backgroundColor: Colors.neutral[700] },
+        options={({ navigation }) => {
+          navigation.getParent().setOptions({ headerShown: false });
+          return {
+            headerBackTitleVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+
+            title: 'Post',
+            contentStyle: { backgroundColor: Colors.neutral[700] },
+          };
         }}
       />
     </Stack.Navigator>

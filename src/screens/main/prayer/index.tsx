@@ -52,12 +52,12 @@ function Prayer({ navigation }: Props) {
                     <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
                       {props?.navigationState?.index == i ? (
                         <StyledText
-                          style={{ color: colors.text, fontWeight: 'bold', ...fontSize.x1 }}
+                          style={{ color: colors.text, fontWeight: 'bold', ...fontSize.x092 }}
                         >
                           {route.title}
                         </StyledText>
                       ) : (
-                        <StyledText style={{ color: colors.text, ...fontSize.x1 }}>
+                        <StyledText style={{ color: colors.text, ...fontSize.x092 }}>
                           {route.title}
                         </StyledText>
                       )}

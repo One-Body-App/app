@@ -1,8 +1,11 @@
 import { TextStyle, Platform, PixelRatio } from 'react-native';
 import { systemWeights } from 'react-native-typography';
 
-type FontSize = 'x1' | 'x2' | 'x3' | 'x4' | 'x5' | 'x6' | 'x7';
+type FontSize = 'x092' | 'x1' | 'x2' | 'x3' | 'x4' | 'x5' | 'x6' | 'x7';
 export const fontSize: Record<FontSize, TextStyle> = {
+  x092: {
+    fontSize: PixelRatio.getFontScale() * 11,
+  },
   x1: {
     fontSize: PixelRatio.getFontScale() * 12,
   },

@@ -112,7 +112,7 @@ function DrawerNav() {
     return (
       <DrawerStack.Navigator
         // backBehavior="history"
-        screenOptions={({ navigation }) => {
+        screenOptions={({ navigation, route }) => {
           return {
             drawerType,
             headerTintColor: dark ? colors.text : Colors.primary.brand,
@@ -139,6 +139,7 @@ function DrawerNav() {
           options={({ route }) => {
             return {
               title: 'Home',
+
               drawerIcon: ({ color, size }) => {
                 return <Home3 size={size} color={color} />;
               },
@@ -209,11 +210,14 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="PrayerWall"
           component={PrayerWallStack}
-          options={{
-            title: 'Prayer Wall',
-            drawerIcon: ({ color, size }) => {
-              return <HandsPraying size={size} color={color} />;
-            },
+          options={({ navigation }) => {
+            return {
+              title: 'Prayer Wall',
+
+              drawerIcon: ({ color, size }) => {
+                return <HandsPraying size={size} color={color} />;
+              },
+            };
           }}
         />
 
