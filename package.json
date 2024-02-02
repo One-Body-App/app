@@ -45,6 +45,7 @@
     "@react-navigation/stack": "^6.3.17",
     "@reduxjs/toolkit": "^1.8.3",
     "@sentry/react-native": "^5.15.2",
+    "@svanboxel/visibility-sensor-react-native": "^1.0.2",
     "auto-changelog": "^2.4.0",
     "axios": "^1.6.0",
     "buffer": "^6.0.3",
