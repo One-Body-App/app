@@ -91,7 +91,7 @@ function CommentField({
           onSubmitEditing={() => {
             submitComment(content);
           }}
-          backgroundColor="transparent"
+          // backgroundColor="transparent"
           inputWrapperStyle={{
             borderWidth: 0,
 
@@ -102,8 +102,13 @@ function CommentField({
           inputStyle={{
             justifyContent: 'center',
             alignItems: 'center',
-            paddingVertical: 0,
+            paddingVertical: spacing.x5,
             maxHeight: 80,
+            paddingHorizontal: spacing.x10,
+            marginHorizontal: spacing.x5,
+
+            borderColor: Colors.neutral[600],
+            borderWidth: 1,
           }}
           leftIcon={
             <Button

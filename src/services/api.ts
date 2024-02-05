@@ -52,6 +52,9 @@ export const ApiCall = async ({
           token
             ? {
                 headers: {
+                  'Content-Type': isFormUrlEncode
+                    ? 'multipart/form-data'
+                    : 'application/x-www-form-urlencoded',
                   Authorization: `Bearer ${tokenToUse}`,
                 },
               }
@@ -66,7 +69,9 @@ export const ApiCall = async ({
           token
             ? {
                 headers: {
-                  // 'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                  'Content-Type': isFormUrlEncode
+                    ? 'multipart/form-data'
+                    : 'application/x-www-form-urlencoded',
                   Authorization: `Bearer ${tokenToUse}`,
                 },
               }
@@ -88,6 +93,6 @@ export const ApiCall = async ({
   } catch (e: any) {
     //
     // handle error
-    return { status: 400, response: e.response.data };
+    return { status: 400, response: e?.response?.data ?? e.message };
   }
 };
