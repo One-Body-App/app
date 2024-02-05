@@ -471,7 +471,7 @@ function Explore({ navigation }: Props) {
                 },
               ]}
               btnTextStyle={[{ color: sort == SortType.geo ? 'white' : Colors.neutral[200] }]}
-              text="Location"
+              text="Nearby"
               onPress={() => {
                 if (sort != SortType.geo) setSort(SortType.geo);
               }}
@@ -604,8 +604,8 @@ function Explore({ navigation }: Props) {
                           {item.profile.whatIDo
                             ? item.profile.whatIDo?.name
                             : item.profile.typeOfOrganization
-                            ? item.profile.typeOfOrganization?.name
-                            : ''}
+                              ? item.profile.typeOfOrganization?.name
+                              : ''}
                         </StyledText>
                       ) : null}
                     </View>
@@ -891,8 +891,8 @@ function Explore({ navigation }: Props) {
                               {item.profile.whatIDo
                                 ? item.profile.whatIDo?.name
                                 : item.profile.typeOfOrganization
-                                ? item.profile.typeOfOrganization?.name
-                                : ''}
+                                  ? item.profile.typeOfOrganization?.name
+                                  : ''}
                             </StyledText>
                           ) : null}
                         </View>
