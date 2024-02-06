@@ -1,0 +1,118 @@
+export const ACTIONS: Record<string, string> = {
+  LOGOUT: 'LOGOUT',
+  LOGIN: 'LOGIN',
+  LOGIN_SOCIAL: 'LOGIN_SOCIAL',
+  FETCH_LOGIN_DATA: 'FETCH_LOGIN_DATA',
+  SIGN_UP: 'SIGN_UP',
+  FcmToken: 'FcmToken',
+  FETCH_SIGN_UP: 'FETCH_SIGN_UP',
+  GET_FETCH_PROFILE: 'GET_FETCH_PROFILE',
+  FETCH_PROFILE: 'FETCH_PROFILE',
+  Profile_Update: 'Profile_Update',
+  ORGProfile_Update: 'ORGProfile_Update',
+  USER_PROFILE: 'USER_PROFILE',
+  USER_DATA: 'USER_DATA',
+  SET_USER_PROFILE: 'SET_USER_PROFILE',
+  ERRORS: 'ERRORS',
+  OTP: 'OTP',
+  FETCH_OTP: 'FETCH_OTP',
+  LOGIN_ERRORS: 'LOGIN_ERRORS',
+  COMEBACK: 'COMEBACK',
+  SET_INTERNET: 'SET_INTERNET',
+  SET_LOADER: 'SET_LOADER',
+  CHANGE_PASSWORD: 'CHANGE_PASSWORD',
+  UPDATE_PASSWORD: 'UPDATE_PASSWORD',
+  UPDATE_PROFILE: 'UPDATE_PROFILE',
+  UPDATE_USER: 'UPDATE_USER',
+  SET_User_INTREST: 'SET_User_INTREST',
+  GET_User_GET: 'GET_User_GET',
+  SET_User_SUBSCRIBE: 'SET_User_SUBSCRIBE',
+  GET_PRAYERS: 'GET_PRAYERS',
+  SET_PRAYERS: 'SET_PRAYERS',
+  SET_PRAYERS_Live: 'SET_PRAYERS_Live',
+  SET_USERPRAYERS: 'SET_USERPRAYERS',
+  FIRST_LUNCH: 'FIRST_LUNCH',
+  Set_ALLUSER: 'Set_ALLUSER',
+  Get_ALLUSER: 'Get_ALLUSER',
+  SET_ACCOUNTTYPE: 'SET_ACCOUNTTYPE',
+  GET_MY_PRAYER: 'GET_MY_PRAYER',
+  MY_PRAYER_CurrentPage: 'MY_PRAYER_CurrentPage',
+  MY_PRAYER_TotalPaga: 'MY_PRAYER_TotalPaga',
+  GET_ALL_PRAYER: 'GET_ALL_PRAYER',
+  GET_ALL_PRAYER_LIVE: 'GET_ALL_PRAYER_LIVE',
+  ALL_PRAYER_CurrentPage: 'ALL_PRAYER_CurrentPage',
+  ALL_PRAYER_TotalPaga: 'ALL_PRAYER_TotalPaga',
+  ALL_Live_PRAYER_CurrentPage: 'ALL_Live_PRAYER_CurrentPage',
+  ALL_Live_PRAYER_TotalPaga: 'ALL_Live_PRAYER_TotalPaga',
+  SET_TESTIMONIES: 'GET_TESTIMONIES',
+  GET_TESTIMONIES: 'GET_TESTIMONIES',
+  TESTIMONIES_CurrentPage: 'TESTIMONIES_CurrentPage',
+  TESTIMONIES_TotalPaga: 'TESTIMONIES_TotalPaga',
+  SET_ALLSMS: 'SET_ALLSMS',
+  GET_CHATS: 'GET_CHATS',
+  SET_CHATS: 'SET_CHATS',
+  GET_SOCIAL: 'GET_SOCIAL',
+  SET_SOCIAL: 'SET_SOCIAL',
+  SET_TODAY_NEWS: 'SET_TODAY_NEWS',
+  SET_ALL_NEWS: 'SET_ALL_NEWS',
+  SET_LOCAL_NEWS: 'SET_LOCAL_NEWS',
+  SET_ALL_BLOG: 'SET_ALL_BLOG',
+  SET_RECENT_BLOG: 'SET_RECENT_BLOG',
+  SET_FAQS: 'SET_FAQS',
+
+  SET_USER_NOTIFICATIONS: 'SET_USER_NOTIFICATIONS',
+  UPDATE_USER_NOTIFICATIONS: 'UPDATE_USER_NOTIFICATIONS',
+
+  SET_LOGIN_VERIFICATION_BACK_PAGE: 'SET_LOGIN_VERIFICATION_BACK_PAGE',
+  REMOVE_SOCIAL_ACCOUNT: 'REMOVE_SOCIAL_ACCOUNT',
+};
+
+// SignUp Types
+export const SignUp = {
+  REQUEST: 'sign_up_request',
+  SUCCESS: 'sign_up_success',
+  FAILED: 'sign_up_failed',
+  RESET: 'sign_up_reset',
+};
+
+// Send Verification Email
+export const SendVerificationEmail = {
+  REQUEST: 'send_verification_email_request',
+  SUCCESS: 'send_verification_email_success',
+  FAILED: 'send_verification_email_failed',
+};
+
+// Badge Types
+export const GetBadges = {
+  REQUEST: 'get_badges_request',
+  SUCCESS: 'get_badges_success',
+  FAILED: 'get_badges_failed',
+  RESET: 'get_badges_reset',
+};
+
+export const SetUserBadges = {
+  REQUEST: 'set_user_badges_request',
+  SUCCESS: 'set_user_badges_success',
+  FAILED: 'set_user_badges_failed',
+};
+
+// Profile Types
+export const GetProfile = {
+  REQUEST: 'get_profile_request',
+  SUCCESS: 'get_profile_success',
+  FAILED: 'get_profile_failed',
+};
+
+// Interest Types
+
+export const GetInterests = {
+  REQUEST: 'get_interests_request',
+  SUCCESS: 'get_interests_success',
+  FAILED: 'get_interests_failed',
+};
+
+export const AddUserInterest = {
+  REQUEST: 'add_user_interest_request',
+  SUCCESS: 'add_user_interest_success',
+  FAILED: 'add_user_interest_failed',
+};

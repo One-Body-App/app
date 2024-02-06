@@ -1,16 +1,10 @@
+import React, { useEffect } from 'react';
 import {
-  NativeStackNavigationOptions,
-  createNativeStackNavigator,
-} from '@react-navigation/native-stack';
-import React from 'react';
-import Explore from '../screens/explore';
-
-import UserProfile from '../screens/main/userProfile';
-import { MainDrawerParamsList } from './types';
-import OnboardingStack from './OnboardingStack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
+  DrawerToggleButton,
+  createDrawerNavigator,
+  getDrawerStatusFromState,
+} from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
-import { RootState } from '../redux/reducers/rootReducer';
 import {
   Animated,
   Platform,
@@ -18,29 +12,29 @@ import {
   StyleSheet,
   TextProps,
   TextStyle,
-  TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Colors } from '../styles';
-import { Home3, Notification, Profile2User, Setting2 } from 'iconsax-react-native';
-import {
-  CommonActions,
-  Route,
-  getFocusedRouteNameFromRoute,
-  getStateFromPath,
-  useTheme,
-} from '@react-navigation/native';
-
+import { Home3, Profile2User } from 'iconsax-react-native';
+import { Route, getFocusedRouteNameFromRoute, useTheme } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
-import Connections from '@/screens/main/connections';
+import { HandsPraying } from 'phosphor-react-native';
+
+import Geolocation from '@react-native-community/geolocation';
+import messaging from '@react-native-firebase/messaging';
+import { HeaderBackButton } from '@react-navigation/elements';
+import { MainDrawerParamsList } from './types';
+import OnboardingStack from './OnboardingStack';
+import { RootState } from '../redux/reducers/rootReducer';
+import { Colors } from '../styles';
+
+import Connections from '@/src/screens/main/connections';
 import SettingsStack from './SettingsStack';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
 import MainTabStack from './BottomTabStack';
 import DrawerContent from './DrawerContent';
 import PrayerWallStack from './PrayerWallStack';
-import { HandsPraying } from 'phosphor-react-native';
 import Saved from '../screens/main/saved';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
@@ -64,125 +58,186 @@ function getHeaderTitle(route: Partial<Route<string>>) {
       return 'Discover Accounts';
     case 'MyProfileTab':
       return 'Profile';
+    default:
+      return '';
   }
 }
 
-const DrawerNav = () => {
+function DrawerNav() {
   const authState = useSelector((state: RootState) => state.auth);
   const dimensions = useWindowDimensions();
 
   const { dark, colors } = useTheme();
 
-  return (
-    <>
-      {authState.getProfileData?.isProfileCompleted ? (
-        <DrawerStack.Navigator
-          screenOptions={{
-            drawerType:
-              dimensions.width >= 768 ? 'permanent' : Platform.OS == 'ios' ? 'slide' : 'front',
+  const requestNotificationPermission = async () => {
+    await messaging().requestPermission();
+  };
+
+  const requestlocationPermison = async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        Geolocation.requestAuthorization();
+
+        // if (permissions == 'granted') {
+        //   Geolocation.getCurrentPosition((info) => {
+        //     getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+        //   });
+        // }
+      } else {
+        // if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        //   //To Check, If Permission is granted
+        //   Geolocation.getCurrentPosition((info) => {
+        //     getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+        //   });
+        // }
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
+  useEffect(() => {
+    requestNotificationPermission();
+    requestlocationPermison();
+  }, []);
+
+  if (authState.getProfileData?.isProfileCompleted) {
+    let drawerType: 'front' | 'back' | 'slide' | 'permanent' = 'front';
+
+    if (dimensions.width >= 768) {
+      drawerType = 'permanent';
+    } else if (Platform.OS === 'ios') {
+      drawerType = 'slide';
+    }
+    return (
+      <DrawerStack.Navigator
+        // backBehavior="history"
+        screenOptions={({ navigation, route }) => {
+          return {
+            drawerType,
             headerTintColor: dark ? colors.text : Colors.primary.brand,
 
             drawerActiveBackgroundColor: Colors.neutral[600],
             drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
-          }}
-          drawerContent={(props) => <DrawerContent {...props} />}
-        >
-          <DrawerStack.Screen
-            name="Main"
-            component={MainTabStack}
-            options={({ route }) => {
-              return {
-                title: 'Home',
-                drawerIcon: ({ color, size, focused }) => {
-                  return <Home3 size={size} color={color} />;
-                },
+            headerLeft: (props) => {
+              const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
 
-                headerTitleAlign:
-                  getHeaderTitle(route) == 'Home' || Platform.OS == 'ios' ? 'center' : 'left',
-                headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
-                  const { colors } = useTheme();
-                  const title = getHeaderTitle(route);
+              if (navigation.canGoBack() && !isDrawerOpen) {
+                return (
+                  <HeaderBackButton labelVisible={false} onPress={() => navigation.goBack()} />
+                );
+              }
+              return <DrawerToggleButton {...props} />;
+            },
+          };
+        }}
+        drawerContent={(props) => <DrawerContent {...props} />}
+      >
+        <DrawerStack.Screen
+          name="Main"
+          component={MainTabStack}
+          options={({ route }) => {
+            return {
+              title: 'Home',
 
-                  if (title == 'Home') {
-                    return (
-                      <View style={{ height: 28, width: 28 }}>
-                        {dark ? (
-                          <LogoWhite style={{ height: 28, width: 28 }} />
-                        ) : (
-                          <Logo style={{ height: 28, width: 28 }} />
-                        )}
-                      </View>
-                    );
-                  }
-
-                  return (
-                    <Animated.Text
-                      accessibilityRole="header"
-                      aria-level="1"
-                      numberOfLines={1}
-                      children={title}
-                      {...rest}
-                      style={[
-                        styles.title,
-                        { color: tintColor === undefined ? colors.text : tintColor },
-                        style,
-                      ]}
-                    />
-                  );
-                },
-              };
-            }}
-          />
-
-          <DrawerStack.Screen
-            name="Saved"
-            component={Saved}
-            options={{
-              title: 'Saved Posts',
               drawerIcon: ({ color, size }) => {
-                return <Feather name="bookmark" size={size} color={color} />;
+                return <Home3 size={size} color={color} />;
               },
-            }}
-          />
 
-          <DrawerStack.Screen
-            name="Connections"
-            component={Connections}
-            options={{
+              headerLeft: (props) => <DrawerToggleButton {...props} />,
+
+              headerTitleAlign:
+                getHeaderTitle(route) === 'Home' || Platform.OS === 'ios' ? 'center' : 'left',
+              headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
+                const title = getHeaderTitle(route);
+
+                if (title == 'Home') {
+                  return (
+                    <View style={{ height: 28, width: 28 }}>
+                      {dark ? (
+                        <LogoWhite style={{ height: 28, width: 28 }} />
+                      ) : (
+                        <Logo style={{ height: 28, width: 28 }} />
+                      )}
+                    </View>
+                  );
+                }
+
+                return (
+                  <Animated.Text
+                    accessibilityRole="header"
+                    aria-level="1"
+                    numberOfLines={1}
+                    // eslint-disable-next-line react/no-children-prop
+                    children={title}
+                    {...rest}
+                    style={[
+                      styles.title,
+                      { color: tintColor === undefined ? colors.text : tintColor },
+                      style,
+                    ]}
+                  />
+                );
+              },
+            };
+          }}
+        />
+
+        <DrawerStack.Screen
+          name="Saved"
+          component={Saved}
+          options={{
+            title: 'Saved Posts',
+            drawerIcon: ({ color, size }) => {
+              return <Feather name="bookmark" size={size} color={color} />;
+            },
+          }}
+        />
+
+        <DrawerStack.Screen
+          name="Connections"
+          component={Connections}
+          options={({ navigation }) => {
+            return {
               title: 'My Connections',
               drawerIcon: ({ color, size }) => {
                 return <Profile2User size={size} color={color} />;
               },
-            }}
-          />
+            };
+          }}
+        />
 
-          <DrawerStack.Screen
-            name="PrayerWall"
-            component={PrayerWallStack}
-            options={{
+        <DrawerStack.Screen
+          name="PrayerWall"
+          component={PrayerWallStack}
+          options={({ navigation }) => {
+            return {
               title: 'Prayer Wall',
+
               drawerIcon: ({ color, size }) => {
                 return <HandsPraying size={size} color={color} />;
               },
-            }}
-          />
+            };
+          }}
+        />
 
-          <DrawerStack.Screen
-            name="Settings"
-            component={SettingsStack}
-            options={{
+        <DrawerStack.Screen
+          name="Settings"
+          component={SettingsStack}
+          options={({ navigation }) => {
+            return {
               drawerItemStyle: { height: 0 },
-            }}
-          />
+            };
+          }}
+        />
 
-          {/* <DrawerStack.Screen name="Help" component={Help} /> */}
-        </DrawerStack.Navigator>
-      ) : (
-        <OnboardingStack />
-      )}
-    </>
-  );
-};
+        {/* <DrawerStack.Screen name="Help" component={Help} /> */}
+      </DrawerStack.Navigator>
+    );
+  }
+
+  return <OnboardingStack />;
+}
 
 export default DrawerNav;
 

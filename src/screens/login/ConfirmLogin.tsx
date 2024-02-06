@@ -1,28 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 
-import LoginComponent from '@/src/components/loginComponent';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import GradientHeader from '@/src/components/GradientHeader';
-import { appColor } from '../../constants';
-import { styles } from './styles';
 import { StackScreenProps } from '@react-navigation/stack';
-import GoBackIcon from '@/src/components/GoBackIcon';
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { useDispatch, useSelector } from 'react-redux';
+import auth from '@react-native-firebase/auth';
+import { useTheme } from '@react-navigation/native';
+import LoginComponent from '@/components/loginComponent';
+
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { setLoginVerificationBackPage } from '@/src/redux/actions/GeneralActions';
-import auth from '@react-native-firebase/auth';
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import NewPassword from '../newPassword/NewPassword';
-import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
-const ConfirmLogin = ({ route, navigation }: Props) => {
+function ConfirmLogin({ route, navigation }: Props) {
   const [enabledLoginProviders, setEnabledLoginProviders] = useState<string[]>();
 
   const authReducer = useSelector((state: RootState) => state.auth);
@@ -60,7 +55,7 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
         ) : (
           <LoginComponent
             showConfirmationEmailMessage={false}
-            verifyAccount={true}
+            verifyAccount
             currentUserEmail={userData?.email ?? ''}
             enabledLoginProviders={enabledLoginProviders}
             {...route.params}
@@ -69,6 +64,6 @@ const ConfirmLogin = ({ route, navigation }: Props) => {
       </ScrollView>
     </UserStepsLayout>
   );
-};
+}
 
 export default ConfirmLogin;

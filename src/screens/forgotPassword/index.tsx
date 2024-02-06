@@ -1,48 +1,39 @@
 import React from 'react';
-import {
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  ScrollView,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { Linking, ScrollView, useColorScheme, View } from 'react-native';
+import { useDispatch } from 'react-redux';
+import { useTheme } from '@react-navigation/native';
+import { StackScreenProps } from '@react-navigation/stack';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { GeneralStyle } from '../../constants/GeneralStyle';
 import { ApiCall } from '@/src/services/api';
-import Button from '@/src/components/Button';
-import { useDispatch } from 'react-redux';
-import { styles } from './styles';
-import { useTheme } from '@react-navigation/native';
+import Button from '@/components/Button';
 
-import { StackScreenProps } from '@react-navigation/stack';
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 import { button } from '@/src/styles/buttons';
 
 type Props = StackScreenProps<MainStackParamList, 'ForgotPassword'>;
 
-const ForgotPassword = ({ navigation }: Props) => {
+function ForgotPassword({ navigation }: Props) {
   const [email, setEmail] = React.useState<string>('');
   const [emailError, setEmailError] = React.useState<boolean>();
   const [error, seterror] = React.useState<string>('');
   const [showSuccess, setShowSuccess] = React.useState<boolean>(false);
-  const scheme = useColorScheme();
+
   const { colors } = useTheme();
 
   const emailvalidate = (text: string) => {
-    let reg = /^\w+([\.\-\+]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
+    const reg = /^\w+([.\-+]?\w+)*@\w+([.-]?\w+)*(\.\w\w+)+$/;
 
     if (reg.test(text) === false) {
       return true;
-    } else {
-      return false;
     }
+    return false;
   };
   const dispatch = useDispatch();
   const forget = async () => {
@@ -53,7 +44,7 @@ const ForgotPassword = ({ navigation }: Props) => {
       try {
         const res = await ApiCall({
           route: 'auth/forgot-password',
-          params: { email: email },
+          params: { email },
           verb: 'patch',
         });
         if (res?.status == 200) {
@@ -120,12 +111,13 @@ const ForgotPassword = ({ navigation }: Props) => {
                 wrapperStyle={{ flex: 1 }}
                 value={email}
                 keyboardType="email-address"
-                label={'Email'}
+                label="Email"
                 placeholder="Email address"
                 autoComplete="email"
                 autoCapitalize="none"
                 onChangeText={(e) => {
-                  setEmail(e), setEmailError(false);
+                  setEmail(e);
+                  setEmailError(false);
                 }}
               />
               {error != null ? (
@@ -160,7 +152,7 @@ const ForgotPassword = ({ navigation }: Props) => {
               onPress={() => {
                 Linking.openURL('mailto:support@onebodyapp.com');
               }}
-              text={'Still having issues? '}
+              text="Still having issues? "
               wrapperViewBtnStyle={{ marginTop: spacing.x32 }}
               btnTextStyle={[Typography.subheader.R, { color: Colors.neutral[200] }]}
               rightIcon={
@@ -213,6 +205,6 @@ const ForgotPassword = ({ navigation }: Props) => {
       </ScrollView>
     </UserStepsLayout>
   );
-};
+}
 
 export default ForgotPassword;

@@ -4,9 +4,9 @@ import {
 } from '@react-navigation/native-stack';
 import React from 'react';
 
+import { useTheme } from '@react-navigation/native';
 import { PrayerWallStackParamsList } from './types';
 import { Colors } from '../styles';
-import { useTheme } from '@react-navigation/native';
 import Prayer from '../screens/main/prayer';
 
 import UserProfile from '../screens/main/userProfile';
@@ -15,32 +15,43 @@ import SinglePrayer from '../screens/main/prayer/Single';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 
-const PrayerWall = () => {
-  const headerOptions: NativeStackNavigationOptions = {
-    headerShadowVisible: false,
-    headerBackTitleVisible: false,
-  };
+function PrayerWall() {
   const { colors } = useTheme();
 
   return (
     <Stack.Navigator>
-      <Stack.Screen name="index" component={Prayer} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="index"
+        component={Prayer}
+        options={({ navigation }) => {
+          navigation.getParent().setOptions({ headerShown: true });
+          return {
+            headerShown: false,
+          };
+        }}
+      />
       <Stack.Screen
         name="UserProfile"
         component={UserProfile}
-        options={{
-          headerBackTitleVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          title: '',
-          contentStyle: { backgroundColor: Colors.neutral[700] },
+        options={({ navigation }) => {
+          navigation.getParent().setOptions({ headerShown: false });
+
+          return {
+            headerBackTitleVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+            title: '',
+            contentStyle: { backgroundColor: Colors.neutral[700] },
+          };
         }}
       />
       <Stack.Screen
         name="Prayer"
         component={NewPrayer}
         options={({ navigation, route }) => {
+          navigation.getParent().setOptions({ headerShown: false });
           return {
-            // presentation: 'formSheet',
+            headerBackTitleVisible: false,
+            headerBackTitle: 'Back',
             title: route.params?.postId ? 'Edit Post on Prayer Wall' : 'Post on Prayer Wall',
             // headerLeft: (props) => {
             //   const { dark, colors } = useTheme();
@@ -67,15 +78,19 @@ const PrayerWall = () => {
       <Stack.Screen
         name="Single"
         component={SinglePrayer}
-        options={{
-          headerBackTitleVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          title: 'Post',
-          contentStyle: { backgroundColor: Colors.neutral[700] },
+        options={({ navigation }) => {
+          navigation.getParent().setOptions({ headerShown: false });
+          return {
+            headerBackTitleVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+
+            title: 'Post',
+            contentStyle: { backgroundColor: Colors.neutral[700] },
+          };
         }}
       />
     </Stack.Navigator>
   );
-};
+}
 
 export default PrayerWall;

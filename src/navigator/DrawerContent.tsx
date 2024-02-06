@@ -6,21 +6,21 @@ import {
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
+import FastImage from 'react-native-fast-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Logout, LogoutCurve, Setting2 } from 'iconsax-react-native';
+import { LoginManager } from 'react-native-fbsdk-next';
+import Icon from 'react-native-vector-icons/AntDesign';
+import { useTheme } from '@react-navigation/native';
 import { RootState } from '../redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-import { StyledText } from '../components/styled/Text';
+import StyledText from '../components/styled/Text';
 import Button from '../components/Button';
-import FastImage from 'react-native-fast-image';
 import { spacing } from '../styles/spacing';
 import { profileImageList } from '../styles/items';
 import { Colors, Typography } from '../styles';
 import { borderRadius, borderWidth } from '../styles/outlines';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Logout, LogoutCurve, Setting2 } from 'iconsax-react-native';
-import { LoginManager } from 'react-native-fbsdk-next';
 import { logout } from '../redux/actions/AuthActions';
-import Icon from 'react-native-vector-icons/AntDesign';
-import { useTheme } from '@react-navigation/native';
 
 export default function DrawerContent({
   descriptors,
@@ -54,6 +54,12 @@ export default function DrawerContent({
       <View style={styles.drawerContent}>
         <View>
           <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('Main', {
+                screen: 'MyProfileTab',
+                params: { screen: 'MyProfile' },
+              });
+            }}
             style={{
               paddingHorizontal: spacing.x16,
               paddingVertical: spacing.x10,
@@ -141,7 +147,7 @@ export default function DrawerContent({
           style={{
             // borderTopColor: Colors.neutral[800],
             // borderTopWidth: borderWidth.base,
-            borderTopColor: colors.border, //Colors.neutral[900],
+            borderTopColor: colors.border, // Colors.neutral[900],
             borderTopWidth: borderWidth.thin,
             paddingHorizontal: spacing.x16,
             flexDirection: 'row',

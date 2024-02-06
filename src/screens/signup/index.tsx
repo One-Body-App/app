@@ -9,40 +9,40 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   StatusBar,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { TextInput } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { StackScreenProps } from '@react-navigation/stack';
+import { useTheme } from '@react-navigation/native';
+import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
+import axios from 'axios';
+
+import { useHeaderHeight } from '@react-navigation/elements';
 import { validateFields } from '@/utils/validation/validate-fields';
 import { loginSocialRequest, signUp } from '@/src/redux/actions/AuthActions';
 import validator from '@/utils/validation/validator';
 import { GeneralStyle } from '../../constants/GeneralStyle';
-import { useDispatch, useSelector } from 'react-redux';
-import { styles } from './styles';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { StackScreenProps } from '@react-navigation/stack';
+
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { useTheme } from '@react-navigation/native';
-import Recaptcha, { RecaptchaHandles } from 'react-native-recaptcha-that-works';
-import { ScrollView } from 'react-native';
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout, { BottomStepsText } from '../layout/UserStepsLayout';
 import { button } from '@/src/styles/buttons';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 import { requestUserPermission } from '@/services/notification/notificationServices';
-import axios from 'axios';
 import { processLogin } from '@/services/login';
-import SignupButtons from '@/src/components/SignupButtons';
-import Button from '@/src/components/Button';
+import SignupButtons from '@/components/SignupButtons';
+import Button from '@/components/Button';
 import { ApiCall } from '@/services/api';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHeaderHeight } from '@react-navigation/elements';
 
 const { width: wWidth } = Dimensions.get('window');
 
@@ -63,10 +63,10 @@ const showFullBar = (isShow = true) => {
   }).start();
 };
 
-const SignupForm = ({ navigation, route }: Props) => {
-  const recaptcha = useRef<RecaptchaHandles | null>(null);
+function SignupForm({ navigation, route }: Props) {
+  const recaptcha = useRef<RecaptchaRef | null>(null);
   const scrollView = useRef<ScrollView | null>(null);
-  const accountType = route.params.accountType;
+  const { accountType } = route.params;
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [token, setToken] = useState('');
@@ -178,7 +178,7 @@ const SignupForm = ({ navigation, route }: Props) => {
         data.userId = user.user.uid;
 
         // dispatch(setLoginData({ token: await user.user.getIdToken() }));
-        dispatch(signUp.Request({ data: data, token: token }));
+        dispatch(signUp.Request({ data, token }));
       })
       .catch((error) => {
         setIsloading(false);
@@ -252,24 +252,21 @@ const SignupForm = ({ navigation, route }: Props) => {
   const socialLogin = (newUserCredentials: FirebaseAuthTypes.UserCredential | null) => {
     if (newUserCredentials) {
       const emailParts = newUserCredentials?.user.email?.split('@');
-      let username = newUserCredentials?.user.email?.replace('@', '');
 
       if (emailParts && emailParts[0]) {
-        username = emailParts[0] + new Date().getTime();
+        const data = {
+          email: newUserCredentials?.user.email,
+          name: newUserCredentials?.user.displayName,
+          socialData: newUserCredentials?.additionalUserInfo,
+          userId: newUserCredentials.user.uid,
+          username: emailParts[0],
+
+          accountType,
+          token,
+        };
+
+        dispatch(loginSocialRequest({ data, seterror: setSocialError, gotoSignup, sendFcm }));
       }
-
-      const data = {
-        email: newUserCredentials?.user.email,
-        name: newUserCredentials?.user.displayName,
-        socialData: newUserCredentials?.additionalUserInfo,
-        userId: newUserCredentials.user.uid,
-        username,
-
-        accountType: accountType,
-        token,
-      };
-
-      dispatch(loginSocialRequest({ data, seterror: setSocialError, gotoSignup, sendFcm }));
     }
   };
 
@@ -335,7 +332,7 @@ const SignupForm = ({ navigation, route }: Props) => {
       keyboardVerticalOffset={
         headerHeight + (Platform.OS == 'ios' ? 0 : 150) + (StatusBar.currentHeight ?? 0)
       }
-      hideBottomText={true}
+      hideBottomText
     >
       <ScrollView
         ref={scrollView}
@@ -358,8 +355,9 @@ const SignupForm = ({ navigation, route }: Props) => {
           <StyledText style={[Typography.header.h1]}>
             Create an account (
             {route.params.accountType
-              ? route.params.accountType?.charAt(0).toUpperCase() +
-                route.params.accountType?.slice(1)
+              ? `${route.params.accountType
+                  ?.charAt(0)
+                  .toUpperCase()}${route.params.accountType?.slice(1)}`
               : ''}
             )
           </StyledText>
@@ -396,7 +394,7 @@ const SignupForm = ({ navigation, route }: Props) => {
               navigation={navigation}
               route={route}
               errorFromLogin={socialError}
-              disabled={!!!accountType}
+              disabled={!accountType}
             />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
@@ -423,10 +421,10 @@ const SignupForm = ({ navigation, route }: Props) => {
             wrapperStyle={{ marginTop: spacing.x16 }}
             ref={inputRefs.username}
             value={state.username}
-            returnKeyType={'next'}
+            returnKeyType="next"
             returnKeyLabel="next"
             label="Username"
-            autoCapitalize={'none'}
+            autoCapitalize="none"
             onFocus={() => setState({ ...state, usernameError: '' })}
             placeholder="Enter username"
             onBlur={
@@ -454,7 +452,7 @@ const SignupForm = ({ navigation, route }: Props) => {
             label="Full Name"
             placeholder="Enter your full name"
             value={state.name}
-            returnKeyType={'next'}
+            returnKeyType="next"
             returnKeyLabel="next"
             onFocus={() => setState({ ...state, nameError: '' })}
             onBlur={
@@ -480,7 +478,7 @@ const SignupForm = ({ navigation, route }: Props) => {
             value={state.email}
             label="Email"
             placeholder="Enter your email"
-            returnKeyType={'next'}
+            returnKeyType="next"
             returnKeyLabel="next"
             keyboardType="email-address"
             autoCorrect={false}
@@ -507,11 +505,11 @@ const SignupForm = ({ navigation, route }: Props) => {
             ref={inputRefs.password}
             value={state.password}
             label="Password"
-            returnKeyType={'next'}
+            returnKeyType="next"
             returnKeyLabel="next"
-            secureTextEntry={hidePass ? true : false}
-            textContentType={'newPassword'}
-            autoCapitalize={'none'}
+            secureTextEntry={!!hidePass}
+            textContentType="newPassword"
+            autoCapitalize="none"
             autoCorrect={false}
             passwordRules="minlength: 6; required: digit; required: special; allowed: upper,lower;"
             autoComplete="password-new"
@@ -613,13 +611,13 @@ const SignupForm = ({ navigation, route }: Props) => {
           <StyledTextInput
             ref={inputRefs.cPassword}
             value={state.cPassword}
-            returnKeyType={'done'}
+            returnKeyType="done"
             returnKeyLabel="done"
             label="Confirm Password"
-            autoCapitalize={'none'}
+            autoCapitalize="none"
             autoCorrect={false}
             placeholder="Confirm your password"
-            secureTextEntry={chidePass ? true : false}
+            secureTextEntry={!!chidePass}
             blurOnSubmit={false}
             rightIcon={
               <View style={{ justifyContent: 'center' }}>
@@ -728,6 +726,6 @@ const SignupForm = ({ navigation, route }: Props) => {
       </ScrollView>
     </UserStepsLayout>
   );
-};
+}
 
 export default SignupForm;

@@ -1,24 +1,26 @@
 import React, { useRef, useState } from 'react';
 import { View, Platform } from 'react-native';
 
-import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { StackScreenProps } from '@react-navigation/stack';
-import { OnboardingStackParamList } from '@/src/navigator/types';
-import { AccountType } from '@/utils/types';
-import { StyledText } from '@/src/components/styled/Text';
-import { spacing } from '@/src/styles/spacing';
-import { Colors, Typography } from '@/src/styles';
-import Button from '@/src/components/Button';
-import { borderRadius } from '@/src/styles/outlines';
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
 import { Calendar } from 'iconsax-react-native';
 import { useToast } from 'react-native-toast-notifications';
+import { useTheme } from '@react-navigation/native';
+import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
+import { OnboardingStackParamList } from '@/src/navigator/types';
+import { AccountType } from '@/utils/types';
+import StyledText from '@/components/styled/Text';
+import { spacing } from '@/src/styles/spacing';
+import { Colors, Typography } from '@/src/styles';
+import Button from '@/components/Button';
+import { borderRadius } from '@/src/styles/outlines';
 import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
 
-const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
+function OnboardingDateOfBirth({ navigation, route }: Props) {
+  const { dark, colors } = useTheme();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<string>();
   const toast = useToast();
@@ -42,24 +44,30 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
       activeStep={3}
       disabled={!date}
       reasonText={
-        <>
-          <StyledText style={{ color: Colors.primary.brand }}>
-            Your date of birth helps us to understand the type of content you would be most
-            interested in seeing so that we may enhance your One Body experience.{' '}
-            <StyledText style={{ fontWeight: 'bold', color: Colors.primary.brand }}>
-              We do NOT publicly display this information.
-            </StyledText>
+        <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
+          Your date of birth helps us to understand the type of content you would be most interested
+          in seeing so that we may enhance your One Body experience.{' '}
+          <StyledText style={{ fontWeight: 'bold', color: Colors.primary.brand }}>
+            We do NOT publicly display this information.
           </StyledText>
-        </>
+        </StyledText>
       }
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+          <StyledText
+            style={[
+              Typography.header.h1,
+              { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
+            ]}
+          >
             What is your date of birth?
           </StyledText>
           <StyledText
-            style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+            style={[
+              Typography.subheader.R,
+              { color: dark ? Colors.main.black : Colors.neutral[300], marginTop: spacing.x8 },
+            ]}
           >
             Select your date of birth
           </StyledText>
@@ -68,7 +76,7 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
         <View style={{ flex: 4, marginTop: spacing.x32 }}>
           <StyledText style={{ marginBottom: 10 }}>Date of birth</StyledText>
           <Button
-            text={date ? date : 'Select'}
+            text={date || 'Select'}
             btnStyle={{
               flex: 1,
               backgroundColor: Colors.neutral[700],
@@ -117,5 +125,5 @@ const OnboardingDateOfBirth = ({ navigation, route }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingDateOfBirth;

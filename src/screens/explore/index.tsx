@@ -17,7 +17,13 @@ import FastImage from 'react-native-fast-image';
 
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
-import Button from '@/src/components/Button';
+import Modal from 'react-native-modal';
+import { StackScreenProps } from '@react-navigation/stack';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { isNumber } from 'lodash';
+import Button from '@/components/Button';
 
 import { getUserProfile } from '@/src/redux/actions/UserAction';
 import { ApiCall } from '@/src/services/api';
@@ -25,26 +31,20 @@ import { styles } from './styles';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
-import Modal from 'react-native-modal';
 import { Interest, User } from '@/utils/types';
-import { StackScreenProps } from '@react-navigation/stack';
-import { DrawerScreenProps } from '@react-navigation/drawer';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import {
   ExploreStackParamsList,
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
+import StyledTextInput from '@/components/styled/TextInput';
 import { Colors, Typography } from '@/src/styles';
 import SearchIcon from '@/assets/icons/search.svg';
 import { borderRadius } from '@/src/styles/outlines';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { iterestListItem, profileImageList } from '@/src/styles/items';
-import { isNumber } from 'lodash';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
@@ -63,7 +63,7 @@ enum SortType {
   forMe = 'forMe',
 }
 
-const Explore = ({ navigation }: Props) => {
+function Explore({ navigation }: Props) {
   const dispatch = useDispatch();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -98,7 +98,7 @@ const Explore = ({ navigation }: Props) => {
   const getAllUserRequest = async (pageNumber: number) => {
     try {
       const res = await ApiCall({
-        token: token,
+        token,
         route: `user/get-users-to-subscribe/${pageNumber}?term=${searchChannelsToFollowText}&itemsPerPage=50&sort=${
           sort == SortType.forMe ? '' : sort
         }`,
@@ -145,7 +145,7 @@ const Explore = ({ navigation }: Props) => {
 
   useEffect(() => {
     getAllUserRequest(1);
-    dispatch(getUserProfile({ token: token }));
+    dispatch(getUserProfile({ token }));
     getInterests();
     getFollowing();
   }, []);
@@ -164,7 +164,7 @@ const Explore = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/add-interests',
-        token: token,
+        token,
         params: { interests: newInterest },
         verb: 'patch',
       });
@@ -192,7 +192,7 @@ const Explore = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/remove-interests',
-        token: token,
+        token,
         params: { interests: removeInterest._id },
         verb: 'patch',
       });
@@ -219,7 +219,7 @@ const Explore = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'tags/interest',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -240,7 +240,7 @@ const Explore = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: 'user/get-following',
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -260,7 +260,7 @@ const Explore = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: `user/subscribe/${id}`,
-        token: token,
+        token,
         verb: 'patch',
       });
       if (res?.status == 200) {
@@ -271,7 +271,7 @@ const Explore = ({ navigation }: Props) => {
       } else {
         const result = following.filter((item) => item._id != id);
         // setSubscibe(result);
-        Toast.show(' ' + res?.response, Toast.LONG);
+        Toast.show(` ${res?.response}`, Toast.LONG);
       }
       setIsLoading(false);
     } catch (e) {
@@ -284,7 +284,7 @@ const Explore = ({ navigation }: Props) => {
     try {
       const res = await ApiCall({
         route: `user/unsubscribe/${id}`,
-        token: token,
+        token,
         verb: 'patch',
       });
       if (res?.status == 200) {
@@ -296,7 +296,7 @@ const Explore = ({ navigation }: Props) => {
       } else {
         const result = following.filter((item) => item._id != id);
         // setSubscibe(result);
-        Toast.show(' ' + res?.response, Toast.LONG);
+        Toast.show(` ${res?.response}`, Toast.LONG);
       }
       setIsLoading(false);
     } catch (e) {
@@ -321,7 +321,7 @@ const Explore = ({ navigation }: Props) => {
       <View style={{ paddingHorizontal: spacing.x24 }}>
         <View style={{ flexDirection: 'row' }}>
           <Button
-            text={'My Connections'}
+            text="My Connections"
             onPress={() => {
               setShowFollowingModal(true);
             }}
@@ -337,7 +337,7 @@ const Explore = ({ navigation }: Props) => {
             wrapperViewBtnStyle={[styles.mainButtonWrapper, { marginRight: spacing.x10 }]}
           />
           <Button
-            text={'My Interests'}
+            text="My Interests"
             onPress={() => {
               setShowInterestModal(true);
             }}
@@ -471,7 +471,7 @@ const Explore = ({ navigation }: Props) => {
                 },
               ]}
               btnTextStyle={[{ color: sort == SortType.geo ? 'white' : Colors.neutral[200] }]}
-              text="Location"
+              text="Nearby"
               onPress={() => {
                 if (sort != SortType.geo) setSort(SortType.geo);
               }}
@@ -503,9 +503,9 @@ const Explore = ({ navigation }: Props) => {
             numColumns={2}
             contentContainerStyle={{ paddingHorizontal: spacing.x24 }}
             scrollIndicatorInsets={{ right: 1 }}
-            ListEmptyComponent={() => (
-              <>
-                {!isRefreshing && !isLoading ? (
+            ListEmptyComponent={() => {
+              if (!isRefreshing && !isLoading) {
+                return (
                   <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <StyledText style={{ margin: spacing.x16 }}>
                       {searchChannelsToFollowText
@@ -513,13 +513,14 @@ const Explore = ({ navigation }: Props) => {
                         : 'Looks like you haven’t selected any interests'}
                     </StyledText>
                   </View>
-                ) : null}
-              </>
-            )}
+                );
+              }
+              return null;
+            }}
             refreshing={isRefreshing}
             refreshControl={
               <RefreshControl
-                enabled={true}
+                enabled
                 refreshing={isRefreshing}
                 onRefresh={() => {
                   setIsRefreshing(true);
@@ -603,8 +604,8 @@ const Explore = ({ navigation }: Props) => {
                           {item.profile.whatIDo
                             ? item.profile.whatIDo?.name
                             : item.profile.typeOfOrganization
-                            ? item.profile.typeOfOrganization?.name
-                            : ''}
+                              ? item.profile.typeOfOrganization?.name
+                              : ''}
                         </StyledText>
                       ) : null}
                     </View>
@@ -653,9 +654,9 @@ const Explore = ({ navigation }: Props) => {
           onBackdropPress={() => setShowInterestModal(false)}
           onSwipeComplete={() => setShowInterestModal(false)}
           swipeDirection={['down']}
-          propagateSwipe={true}
+          propagateSwipe
           style={{ margin: 0 }}
-          avoidKeyboard={true}
+          avoidKeyboard
         >
           <SafeAreaView
             style={{
@@ -753,8 +754,8 @@ const Explore = ({ navigation }: Props) => {
           onSwipeComplete={() => setShowFollowingModal(false)}
           swipeDirection={['down']}
           style={{ margin: 0 }}
-          propagateSwipe={true}
-          avoidKeyboard={true}
+          propagateSwipe
+          avoidKeyboard
         >
           <SafeAreaView
             style={{
@@ -792,7 +793,7 @@ const Explore = ({ navigation }: Props) => {
               <View style={{ marginBottom: spacing.x24 }}>
                 <StyledTextInput
                   clearButtonMode="always"
-                  returnKeyType={'search'}
+                  returnKeyType="search"
                   placeholder="Search"
                   onChangeText={(text) => {
                     const newSearchChannels = [];
@@ -871,7 +872,7 @@ const Explore = ({ navigation }: Props) => {
                           style={{
                             flex: 2,
                             justifyContent: 'center',
-                            alignItems: 'center',
+
                             paddingHorizontal: spacing.x10,
                           }}
                         >
@@ -890,8 +891,8 @@ const Explore = ({ navigation }: Props) => {
                               {item.profile.whatIDo
                                 ? item.profile.whatIDo?.name
                                 : item.profile.typeOfOrganization
-                                ? item.profile.typeOfOrganization?.name
-                                : ''}
+                                  ? item.profile.typeOfOrganization?.name
+                                  : ''}
                             </StyledText>
                           ) : null}
                         </View>
@@ -910,7 +911,7 @@ const Explore = ({ navigation }: Props) => {
                           }}
                           btnTextStyle={{ color: Colors.neutral[200] }}
                           disabledBtnTextStyle={{ color: Colors.neutral[300] }}
-                          text="Connected"
+                          text="Remove"
                           onPress={() => {
                             if (item?.id) {
                               handleUnSubscribe(item?.id);
@@ -934,5 +935,5 @@ const Explore = ({ navigation }: Props) => {
       </View>
     </KeyboardAvoidingView>
   );
-};
+}
 export default Explore;

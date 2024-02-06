@@ -1,35 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { View, Image, TouchableOpacity, SafeAreaView, StyleSheet } from 'react-native';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import LinearGradient from 'react-native-linear-gradient';
-import { useDispatch, useSelector } from 'react-redux';
-import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
-import GeneralStatusBar from '@/src/components/GeneralStatusBar';
-import { setAccountType } from '@/src/redux/actions/GeneralActions';
-import GradientHeader from '@/src/components/GradientHeader';
-import Organization from '@/assets/svg/Organization.svg';
-import Button from '@/src/components/Button';
-
-import GoBackIcon from '@/src/components/GoBackIcon';
+import React, { useState } from 'react';
+import { View, TouchableOpacity } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
+import { Profile, People } from 'iconsax-react-native';
+import { useTheme } from '@react-navigation/native';
+
 // import { ParamListBase } from '@react-navigation/native';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
 import UserStepsLayout from '../layout/UserStepsLayout';
-import { fontWeight } from '@/src/styles/typography';
 import { button } from '@/src/styles/buttons';
 import { card } from '@/src/styles/items';
-import { Profile, People } from 'iconsax-react-native';
 import { AccountType as AccountTypeType } from '@/utils/types';
-import { useTheme } from '@react-navigation/native';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
 
 type Props = StackScreenProps<MainStackParamList, 'AccountType'>;
 
-const AccountType = ({ route, navigation }: Props) => {
+function AccountType({ route, navigation }: Props) {
   const [accountType, setAccountType] = useState<AccountTypeType | null>(null);
   const { dark, colors } = useTheme();
 
@@ -46,7 +35,7 @@ const AccountType = ({ route, navigation }: Props) => {
               { color: Colors.neutral[300], marginTop: 15, marginBottom: 25 },
             ]}
           >
-            Get started on your experience in connecting with others. Let's setup your account
+            Get started on your experience in connecting with others. Let&#39;s setup your account
           </StyledText>
 
           <TouchableOpacity
@@ -207,5 +196,5 @@ const AccountType = ({ route, navigation }: Props) => {
       </View>
     </UserStepsLayout>
   );
-};
+}
 export default AccountType;

@@ -1,5 +1,4 @@
-import { ImageStyle, StyleProp, ViewStyle } from 'react-native';
-import { Colors } from '.';
+import { ViewStyle } from 'react-native';
 import { borderRadius, borderWidth } from './outlines';
 import { spacing } from './spacing';
 

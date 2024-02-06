@@ -1,15 +1,3 @@
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/services/api';
-import Button from '@/src/components/Button';
-import MapBox, { MapSuggestion } from '@/src/components/MapBox';
-import { StyledText } from '@/src/components/styled/Text';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import { MainStackParamList } from '@/src/navigator/types';
-import { Colors, Spacing } from '@/src/styles';
-import { button } from '@/src/styles/buttons';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
-import { Location } from '@/utils/types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useEffect, useState } from 'react';
 import {
@@ -35,9 +23,6 @@ import {
 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { fontSize, lineHeight } from '@/src/styles/typography';
-
-import ImagePickerModal from '@/src/components/ImagePickerModal';
 import ImagePicker from 'react-native-image-crop-picker';
 import {
   Asset,
@@ -58,8 +43,25 @@ import {
   GiphySDK,
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
-import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/services/constants';
 import { isArray, isEmpty } from 'lodash';
+import { useToast } from 'react-native-toast-notifications';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/services/api';
+import Button from '@/components/Button';
+import MapBox, { MapSuggestion } from '@/components/MapBox';
+import StyledText from '@/components/styled/Text';
+import StyledTextInput from '@/components/styled/TextInput';
+import { MainStackParamList } from '@/src/navigator/types';
+import { Colors, Spacing } from '@/src/styles';
+import { button } from '@/src/styles/buttons';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import { Location } from '@/utils/types';
+import { fontSize, lineHeight } from '@/src/styles/typography';
+
+import ImagePickerModal from '@/components/ImagePickerModal';
+import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/services/constants';
+import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
 GiphySDK.configure({
   apiKey: Platform.OS == 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID,
@@ -67,7 +69,7 @@ GiphySDK.configure({
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
 
-const NewPost = ({ navigation, route }: Props) => {
+function NewPost({ navigation, route }: Props) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -81,7 +83,7 @@ const NewPost = ({ navigation, route }: Props) => {
   const [imagesToUpload, setImagesToUpload] = useState<Asset[]>([]);
   const { colors } = useTheme();
   const [imagesObject, setImagesObject] = useState<string[]>([]);
-
+  const toast = useToast();
   const [uploadImagesObject, setUploadImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
 
@@ -106,7 +108,7 @@ const NewPost = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: `social/post/${route.params?.postId}`,
-        token: token,
+        token,
         params: serialize(
           {
             content,
@@ -152,7 +154,7 @@ const NewPost = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: 'social/post',
-        token: token,
+        token,
         params: serialize(
           {
             content,
@@ -176,7 +178,7 @@ const NewPost = ({ navigation, route }: Props) => {
 
       setIsLoading(false);
 
-      if (result.status == 200) {
+      if (result.status === 200) {
         setContent('');
         navigation.popToTop();
         navigation.navigate('MainRoot', {
@@ -185,9 +187,33 @@ const NewPost = ({ navigation, route }: Props) => {
             screen: 'MyProfileTab',
           },
         });
+      } else {
+        if (result?.response?.moderationPassed === false) {
+          throw result.response;
+        }
+
+        throw new Error(result.response);
       }
-    } catch (e) {
+    } catch (e: any) {
       setIsLoading(false);
+
+      let message = 'There was a problem on our end. Please try again later.';
+      if (e?.moderationPassed === false) {
+        if (e.moderationTypeFailure == 'image') {
+          message = 'Photo violates terms of use ';
+        }
+
+        if (e.moderationTypeFailure == 'text') {
+          message =
+            'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
+        }
+      } else if (e.message == 'Network Error') {
+        message = 'Network Error. Please try again later.';
+      }
+      toast.show(message, {
+        type: 'danger',
+        placement: 'bottom',
+      });
     }
   };
 
@@ -196,7 +222,7 @@ const NewPost = ({ navigation, route }: Props) => {
     try {
       const result = await ApiCall({
         route: `social/post/${route.params?.postId}`,
-        token: token,
+        token,
 
         verb: 'get',
       });
@@ -227,7 +253,7 @@ const NewPost = ({ navigation, route }: Props) => {
   };
 
   const chooseImageGallery = async () => {
-    let options: ImageLibraryOptions = {
+    const options: ImageLibraryOptions = {
       mediaType: 'photo',
 
       // noData: true,
@@ -239,15 +265,18 @@ const NewPost = ({ navigation, route }: Props) => {
       console.log('User cancelled camera picker');
 
       return;
-    } else if (response.errorCode == 'camera_unavailable') {
+    }
+    if (response.errorCode == 'camera_unavailable') {
       console.log('Camera not available on device');
 
       return;
-    } else if (response.errorCode == 'permission') {
+    }
+    if (response.errorCode == 'permission') {
       console.log('Permission not satisfied');
 
       return;
-    } else if (response.errorCode == 'others') {
+    }
+    if (response.errorCode == 'others') {
       console.log(response.errorMessage);
       return;
     }
@@ -303,65 +332,67 @@ const NewPost = ({ navigation, route }: Props) => {
 
         setPickerModalVisibile(false);
       }, 500);
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const captureImage = async (contentType: MediaType) => {
-    let options: CameraOptions = {
+    const options: CameraOptions = {
       mediaType: contentType,
       quality: 0.8,
       // noData: true,
     };
     // let isCameraPermitted = await requestCameraPermission();
-    // let isStoragePermitted = await requestExternalWritePermission();
-    // if (isCameraPermitted && isStoragePermitted) {
-    const response = await launchCamera(options);
+    const isStoragePermitted = await requestExternalWritePermission();
+    if (isStoragePermitted) {
+      const response = await launchCamera(options);
 
-    console.log('Response = ', response);
+      if (response.didCancel) {
+        console.log('User cancelled camera picker');
 
-    if (response.didCancel) {
-      console.log('User cancelled camera picker');
+        return;
+      }
+      if (response.errorCode == 'camera_unavailable') {
+        console.log('Camera not available on device');
 
-      return;
-    } else if (response.errorCode == 'camera_unavailable') {
-      console.log('Camera not available on device');
+        return;
+      }
+      if (response.errorCode == 'permission') {
+        console.log('Permission not satisfied');
 
-      return;
-    } else if (response.errorCode == 'permission') {
-      console.log('Permission not satisfied');
+        return;
+      }
+      if (response.errorCode == 'others') {
+        console.log(response.errorMessage);
 
-      return;
-    } else if (response.errorCode == 'others') {
-      console.log(response.errorMessage);
+        return;
+      }
+      // let uri = response?.assets?.at(0)?.uri ?? '';
+      // let type = response?.assets?.at(0)?.type ?? '';
+      // let name = response?.assets?.at(0)?.fileName ?? '';
 
-      return;
+      // setImageObject({ uri, type, name });
+      // setImagesToUpload(uri);
+
+      // cropimage(uri);
+
+      if (response?.assets && response?.assets.length > 0) {
+        setImagesToUpload(response?.assets);
+        setUploadImagesObject(
+          response?.assets.map((imagesObj) => {
+            return {
+              uri: imagesObj.uri ?? '',
+              type: imagesObj.type ?? '',
+              name: imagesObj?.fileName ?? '',
+            };
+          })
+        );
+      }
+      setHeaderImagePickerModalVisibile(false);
+    } else {
+      // console.log('no ', isCameraPermitted);
     }
-    // let uri = response?.assets?.at(0)?.uri ?? '';
-    // let type = response?.assets?.at(0)?.type ?? '';
-    // let name = response?.assets?.at(0)?.fileName ?? '';
-
-    // setImageObject({ uri, type, name });
-    // setImagesToUpload(uri);
-
-    // cropimage(uri);
-
-    // } else {
-    //   console.log('no ', isCameraPermitted);
-    // }
-
-    if (response?.assets && response?.assets.length > 0) {
-      setImagesToUpload(response?.assets);
-      setUploadImagesObject(
-        response?.assets.map((imagesObj) => {
-          return {
-            uri: imagesObj.uri ?? '',
-            type: imagesObj.type ?? '',
-            name: imagesObj?.fileName ?? '',
-          };
-        })
-      );
-    }
-    setHeaderImagePickerModalVisibile(false);
   };
 
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
@@ -449,9 +480,13 @@ const NewPost = ({ navigation, route }: Props) => {
               }}
               inputWrapperStyle={{ paddingVertical: spacing.x10, borderRadius: borderRadius.base }}
               value={content}
+              maxLength={200}
+              maxLengthErrorMessage="This message exceeds the character limit."
+              numberOfLines={4}
+              showCharCounter
               multiline
               returnKeyType="default"
-              label={''}
+              label=""
               autoCorrect
               placeholder="What's on your heart?"
               placeholderTextColor={Colors.neutral[300]}
@@ -463,12 +498,12 @@ const NewPost = ({ navigation, route }: Props) => {
             {imagesToUpload.length > 0 || imagesObject.length > 0 || mediaGif ? (
               <ScrollView
                 style={{ flexDirection: 'row', gap: spacing.x10, marginTop: spacing.x16 }}
-                horizontal={true}
-                alwaysBounceHorizontal={true}
-                bounces={true}
+                horizontal
+                alwaysBounceHorizontal
+                bounces
                 decelerationRate="fast"
                 showsHorizontalScrollIndicator={false}
-                pagingEnabled={true}
+                pagingEnabled
               >
                 {imagesToUpload &&
                   imagesToUpload.map((image, index) => {
@@ -504,7 +539,7 @@ const NewPost = ({ navigation, route }: Props) => {
                           source={{
                             uri: image.uri,
                           }}
-                          resizeMode={'cover'}
+                          resizeMode="cover"
                         />
                       </View>
                     );
@@ -545,7 +580,7 @@ const NewPost = ({ navigation, route }: Props) => {
                           source={{
                             uri: image,
                           }}
-                          resizeMode={'cover'}
+                          resizeMode="cover"
                         />
                       </View>
                     );
@@ -702,17 +737,43 @@ const NewPost = ({ navigation, route }: Props) => {
                   // await auth().signOut();
                   try {
                     GiphyDialog.show();
-                  } catch (e) {}
+                  } catch (e) {
+                    console.log(e);
+                  }
                 }}
               />
             </View>
           </View>
+          {/* <View
+            style={{
+              columnGap: spacing.x10,
+              flexDirection: 'row',
+              paddingVertical: spacing.x16,
+            }}
+          >
+            <Button
+              text="Video"
+              wrapperViewBtnStyle={{ flex: 1 / 3.2 }}
+              btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
+              btnStyle={{
+                backgroundColor: Colors.neutral[700],
+                flex: 1,
+                padding: spacing.x16,
+                borderRadius: borderRadius.base,
+              }}
+              wrapperBtnStyle={{ flexDirection: 'column' }}
+              leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
+              onPress={async () => {
+                navigation.navigate('VideoPost');
+              }}
+            />
+          </View> */}
         </ScrollView>
 
         <Button
           disabled={
             isLoading ||
-            (!location && !content && !uploadImagesObject && !imagesObject && !mediaGif)
+            (!location && !content && !uploadImagesObject && imagesObject.length == 0 && !mediaGif)
           }
           onPress={() => {
             if (route.params?.postId) {
@@ -730,6 +791,7 @@ const NewPost = ({ navigation, route }: Props) => {
           disabledBtnStyle={[button.primary, { flex: 1, opacity: 0.5 }]}
           disabledBtnTextStyle={{}}
           content={
+            // eslint-disable-next-line react/jsx-no-useless-fragment
             <>
               {isLoading ? (
                 <ActivityIndicator />
@@ -744,6 +806,6 @@ const NewPost = ({ navigation, route }: Props) => {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+}
 
 export default NewPost;

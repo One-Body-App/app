@@ -1,19 +1,20 @@
 import React from 'react';
-import { MainStackParamList } from '@/src/navigator/types';
-import { header, subheader } from '@/src/styles/typography';
 import { StackScreenProps } from '@react-navigation/stack';
 import { ScrollView, View } from 'react-native';
+import FastImage from 'react-native-fast-image';
+import { useTheme } from '@react-navigation/native';
+import { MainStackParamList } from '@/src/navigator/types';
+import { header, subheader } from '@/src/styles/typography';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import UserStepsLayout from '../layout/UserStepsLayout';
-import FastImage from 'react-native-fast-image';
-import { StyledText } from '@/src/components/styled/Text';
-import Button from '@/src/components/Button';
-import { useTheme } from '@react-navigation/native';
+import StyledText from '@/components/styled/Text';
+import Button from '@/components/Button';
+import { spacing } from '@/src/styles/spacing';
 
 type Props = StackScreenProps<MainStackParamList, 'Intro'>;
 
-const IntroScreen = ({ route, navigation }: Props) => {
+function IntroScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
 
   return (
@@ -30,12 +31,15 @@ const IntroScreen = ({ route, navigation }: Props) => {
             flexGrow: 1,
             flexShrink: 0,
             flexBasis: 300,
-            marginTop: 40,
+            marginTop: spacing.x32,
+            paddingHorizontal: spacing.x16,
+            height: 400,
           }}
         >
           <FastImage
             resizeMode="contain"
             style={{ height: '100%', width: '100%' }}
+            // eslint-disable-next-line global-require
             source={require('@/assets/images/introImage.png')}
           />
         </View>
@@ -102,6 +106,6 @@ const IntroScreen = ({ route, navigation }: Props) => {
       </View>
     </UserStepsLayout>
   );
-};
+}
 
 export default IntroScreen;

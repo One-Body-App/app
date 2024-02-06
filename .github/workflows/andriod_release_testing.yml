@@ -1,0 +1,48 @@
+name: build android app for testing
+on:
+  push:
+    branches:
+      - 'staging'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{secrets.GH_TOKEN}}
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: 17
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: 'Create env file'
+        run: |
+          echo "${{ vars.ENV_VARS }}" >> .env
+          cat .env
+          echo "${{ secrets.ENV_SECRET_VARS }}" >> .env
+      - name: 'Create key properties'
+        run: |
+          echo "${{secrets.ANDROID_KEY_PROPERTIES}}" >> android/key.properties
+      - run: yarn install
+      - run: bundle install
+      - run: bundle exec fastlane android beta
+        env:
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
+          KEY_ANDROID_JSON_DATA: ${{ secrets.KEY_ANDROID_JSON }}
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: bump android version for testing [skip ci]'

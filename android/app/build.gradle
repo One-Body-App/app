@@ -2,6 +2,7 @@ apply plugin: "com.android.application"
 apply plugin: 'com.google.gms.google-services'
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
 
 
 import groovy.json.JsonSlurper
@@ -16,23 +17,6 @@ def getVersionFromNpm() {
     println ("Version Name: " +  packageJson["version"]);
     // Return the version, you can get any value this way
     return packageJson["version"]
-}
-
-// Convert version name to a version number
-def getNumericVersionFromNpm() {
-
-    def versionName =  getVersionFromNpm()
-    def parts = versionName.split("\\.")
-
-
-    int hotfix = parts[2] as int
-    int minor = parts[1] as int
-    int major = parts[0] as int
-
-    def numericVersion =  major*100000 + minor*1001 + hotfix
-    println('Version Code: ' + numericVersion)
-
-    return numericVersion
 }
 
 /**
@@ -111,6 +95,13 @@ configurations.all {
 }
 
 apply from: "../../node_modules/@sentry/react-native/sentry.gradle"
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+   keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -122,8 +113,8 @@ android {
         applicationId "com.onebody"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode getNumericVersionFromNpm()
-        versionName getVersionFromNpm()
+        versionCode 200382
+        versionName "2.0.4"
 
         resConfigs "en", "es"
     }
@@ -136,13 +127,20 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        //  release {
+        //     if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
+        //         storeFile file(MYAPP_UPLOAD_STORE_FILE)
+        //         storePassword MYAPP_UPLOAD_STORE_PASSWORD
+        //         keyAlias MYAPP_UPLOAD_KEY_ALIAS
+        //         keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+        //     }
+        // }
+
          release {
-            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-                storeFile file(MYAPP_UPLOAD_STORE_FILE)
-                storePassword MYAPP_UPLOAD_STORE_PASSWORD
-                keyAlias MYAPP_UPLOAD_KEY_ALIAS
-                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
-            }
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+        storePassword keystoreProperties['storePassword']
         }
     }
     buildTypes {

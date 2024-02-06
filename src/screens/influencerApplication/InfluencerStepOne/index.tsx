@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-useless-fragment */
 import React, { useEffect, useState } from 'react';
 import {
   Text,
@@ -8,22 +9,22 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { styles } from './styles';
-import Logo from '@/assets/svg/LogoBlue.svg';
-import GoBackIcon from '@/src/components/GoBackIcon';
 import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useSelector } from 'react-redux';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { styles } from './styles';
+import Logo from '@/assets/svg/LogoBlue.svg';
+import GoBackIcon from '@/components/GoBackIcon';
 
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { useSelector } from 'react-redux';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepOne'>;
 
-const InfluencerStepOne = ({ navigation }: Props) => {
+function InfluencerStepOne({ navigation }: Props) {
   const { colors } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +35,7 @@ const InfluencerStepOne = ({ navigation }: Props) => {
       const res = await ApiCall({
         route: `influencer/has-pending-request`,
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -162,6 +163,7 @@ const InfluencerStepOne = ({ navigation }: Props) => {
                 <ImageBackground
                   resizeMode="stretch"
                   style={styles.backgroundimagestyle}
+                  // eslint-disable-next-line global-require
                   source={require('@/assets/images/waveBG.png')}
                 >
                   <View style={{ width: getWidth(10) }} />
@@ -188,5 +190,5 @@ const InfluencerStepOne = ({ navigation }: Props) => {
       )}
     </SafeAreaView>
   );
-};
+}
 export default InfluencerStepOne;

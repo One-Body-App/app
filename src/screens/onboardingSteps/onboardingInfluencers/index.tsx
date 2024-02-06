@@ -1,31 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { View, Image, TouchableOpacity, ScrollView, FlatList, RefreshControl } from 'react-native';
+import { StackScreenProps } from '@react-navigation/stack';
+import { useDispatch, useSelector } from 'react-redux';
+import { useToast } from 'react-native-toast-notifications';
+import { serialize } from 'object-to-formdata';
+import { useTheme } from '@react-navigation/native';
 import { styles } from './styles';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
-import { StackScreenProps } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, User } from '@/utils/types';
-import { StyledText } from '@/src/components/styled/Text';
+import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
-import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import { useToast } from 'react-native-toast-notifications';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { StyledTextInput } from '@/src/components/styled/TextInput';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import StyledTextInput from '@/components/styled/TextInput';
 import { fontSize } from '@/src/styles/typography';
 import { orgprofileUpdate, profileUpdate } from '@/src/redux/actions/AuthActions';
 import SearchIcon from '@/assets/icons/search.svg';
 import { profileImageList } from '@/src/styles/items';
-import { serialize } from 'object-to-formdata';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
-const OnboardingInfluencers = ({ route }: Props) => {
+function OnboardingInfluencers({ route }: Props) {
+  const { dark } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const isLoading = useSelector((state: RootState) => state.general.loader);
 
   const [influencers, setInfluencers] = useState<User[]>([]);
   const [selectedInfluencers, setselectedInfluencers] = useState<string[]>([]);
@@ -50,7 +52,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
       const res = await ApiCall({
         route: `user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`,
         verb: 'get',
-        token: token,
+        token,
       });
 
       if (res?.status == 200) {
@@ -71,6 +73,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
         console.log('error', res?.response);
       }
       setLoadingMore(false);
+      setIsRefreshing(false);
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
       setLoadingMore(false);
@@ -81,7 +84,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
     try {
       const res = await ApiCall({
         route: 'user/add-following',
-        token: token,
+        token,
         params: { following: selectedInfluencers },
         verb: 'patch',
       });
@@ -105,30 +108,33 @@ const OnboardingInfluencers = ({ route }: Props) => {
 
   return (
     <OnboardingStepsLayout
-      buttonText={'Done'}
+      buttonText="Done"
       dontUseScrollView
       onPress={async () => {
         if (selectedInfluencers.length > 0) {
           await addFollowing();
 
           if (route.params.profileType == AccountType.individual) {
-            const data = {
+            const data: Record<string, any> = {
               churchType: route.params.selectedChurchType,
               churchSubType: route.params.selectedChurchSubType,
               oftenChurch: route.params.selectedChurchAttendence,
               dateOfBirth: route.params.dateOfBirth,
-
-              location:
-                route.params.longitude && route.params.latitude && route.params.address
-                  ? {
-                      longitude: route.params.longitude,
-                      latitude: route.params.latitude,
-                      address: route.params.address,
-                    }
-                  : null,
             };
+
+            if (route.params.longitude && route.params.latitude && route.params.address) {
+              data.location = {
+                longitude: route.params.longitude,
+                latitude: route.params.latitude,
+                address: route.params.address,
+              };
+            }
             dispatch(
-              profileUpdate({ data: serialize(data), token, accountType: route.params.profileType })
+              profileUpdate({
+                data: serialize(data),
+                token,
+                accountType: route.params.profileType,
+              })
             );
           } else {
             const data = {
@@ -150,11 +156,17 @@ const OnboardingInfluencers = ({ route }: Props) => {
       }}
       onboardingType={route.params.profileType}
       activeStep={route.params.profileType == AccountType.individual ? 6 : 5}
-      disabled={selectedInfluencers.length == 0}
+      disabled={selectedInfluencers.length == 0 || isLoading}
+      loading={isLoading}
     >
-      <View style={{ marginVertical: spacing.x48, flex: 1 }}>
+      <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>
-          <StyledText style={[Typography.header.h1, { color: Colors.primary.brand }]}>
+          <StyledText
+            style={[
+              Typography.header.h1,
+              { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
+            ]}
+          >
             Select Influencers & Organizations to connect to
           </StyledText>
         </View>
@@ -191,7 +203,7 @@ const OnboardingInfluencers = ({ route }: Props) => {
               refreshing={isRefreshing}
               refreshControl={
                 <RefreshControl
-                  enabled={true}
+                  enabled
                   refreshing={isRefreshing}
                   onRefresh={() => {
                     setIsRefreshing(true);
@@ -201,6 +213,9 @@ const OnboardingInfluencers = ({ route }: Props) => {
                   }}
                 />
               }
+              keyExtractor={(item) => {
+                return item.id || item._id;
+              }}
               onEndReached={() => {
                 if (!loadingMore && !isRefreshing && !isEndOfList) setPage(page + 1);
               }}
@@ -295,5 +310,5 @@ const OnboardingInfluencers = ({ route }: Props) => {
       </View>
     </OnboardingStepsLayout>
   );
-};
+}
 export default OnboardingInfluencers;

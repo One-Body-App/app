@@ -1,15 +1,15 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
+import { useTheme } from '@react-navigation/native';
 import Home from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Notifications from '../screens/notifications';
-import { useTheme } from '@react-navigation/native';
 import { Colors } from '../styles';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
-const HomeStack = () => {
+function HomeStack() {
   const { colors } = useTheme();
 
   return (
@@ -33,6 +33,6 @@ const HomeStack = () => {
       />
     </Stack.Navigator>
   );
-};
+}
 
 export default HomeStack;

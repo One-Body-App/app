@@ -1,25 +1,24 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
 
-import LoginComponent from '@/src/components/loginComponent';
-
 import { StackScreenProps } from '@react-navigation/stack';
+import { useTheme } from '@react-navigation/native';
+import LoginComponent from '@/components/loginComponent';
 
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
-import { useTheme } from '@react-navigation/native';
 import { Colors } from '@/src/styles';
 
 type Props = StackScreenProps<MainStackParamList, 'Login'>;
 
-const Login = ({ route, navigation }: Props) => {
+function Login({ route, navigation }: Props) {
   const loginProviders = ['password', 'google.com', 'facebook.com', 'twitter.com', 'apple'];
   const { dark, colors } = useTheme();
 
   return (
     <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
       <ScrollView
-        keyboardShouldPersistTaps={'always'}
+        keyboardShouldPersistTaps="always"
         removeClippedSubviews={false}
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -32,6 +31,6 @@ const Login = ({ route, navigation }: Props) => {
       </ScrollView>
     </UserStepsLayout>
   );
-};
+}
 
 export default Login;
