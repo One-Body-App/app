@@ -74,7 +74,7 @@ platform :ios do
     match( type: 'appstore', readonly: is_ci)
 
     increment_build_number(xcodeproj: "./ios/onebody.xcodeproj")
-    increment_version_number(version_number: ENV["p"], xcodeproj: "./ios/onebody.xcodeproj")
+    increment_version_number(version_number: ENV["VERSION_NUMBER"], xcodeproj: "./ios/onebody.xcodeproj")
      build_app(export_method: "app-store",  workspace: "./ios/onebody.xcworkspace")
      upload_to_testflight(skip_waiting_for_build_processing: true)
 
