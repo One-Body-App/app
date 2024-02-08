@@ -13,17 +13,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 # Available Actions
 
-### prod
-
-```sh
-[bundle exec] fastlane prod
-```
-
-Push a new build to Release TestFlight
-
-----
-
-
 ## iOS
 
 ### ios beta
@@ -33,6 +22,14 @@ Push a new build to Release TestFlight
 ```
 
 Push a new beta build to TestFlight
+
+### ios prod
+
+```sh
+[bundle exec] fastlane ios prod
+```
+
+Push a new build to Release TestFlight
 
 ----
 
@@ -53,7 +50,7 @@ Push a new beta build to the play store
 [bundle exec] fastlane android prod
 ```
 
-Push a new beta build for release to the play store
+Push a new prod build for release to the play store
 
 ----
 
