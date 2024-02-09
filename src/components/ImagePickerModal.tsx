@@ -1,8 +1,10 @@
 import React from 'react';
-import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { Colors } from '../styles';
+import StyledText from './styled/Text';
 
 type Props = {
   visible: boolean;
@@ -22,11 +24,11 @@ function ImagePickerModal(props: Props) {
       style={styles.bottomView}
     >
       <View style={styles.content2}>
-        <View style={styles.headLine} />
-        <View style={styles.container}>
+        <View style={[styles.headLine, { backgroundColor: Colors.neutral[600] }]} />
+        <View style={[styles.container, { backgroundColor: Colors.neutral[800] }]}>
           <TouchableOpacity style={styles.boxes} onPress={galleryImage}>
             <Icon name="photo-video" size={35} color="#126B87" />
-            <Text
+            <StyledText
               style={{
                 width: '50%',
                 textAlign: 'center',
@@ -34,12 +36,12 @@ function ImagePickerModal(props: Props) {
               }}
             >
               Choose From Gallery
-            </Text>
+            </StyledText>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.boxes} onPress={cameraImage}>
             <Icon name="camera-retro" size={35} color="#126B87" />
-            <Text
+            <StyledText
               style={{
                 width: '50%',
                 textAlign: 'center',
@@ -47,7 +49,7 @@ function ImagePickerModal(props: Props) {
               }}
             >
               Open Camera
-            </Text>
+            </StyledText>
           </TouchableOpacity>
         </View>
       </View>
@@ -88,7 +90,6 @@ const styles = StyleSheet.create({
   },
   content2: {
     alignItems: 'center',
-    padding: 13,
     borderTopRightRadius: 17,
     borderTopLeftRadius: 17,
     height: getHeight(25),
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
     height: 6,
     width: 55,
     borderRadius: 5,
-    backgroundColor: '#EAEAEA',
+
     marginBottom: 5,
   },
   container: {
@@ -105,7 +106,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
 
     flexDirection: 'row',
-    backgroundColor: 'white',
   },
   modalView: {
     borderTopWidth: 3,

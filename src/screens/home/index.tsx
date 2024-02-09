@@ -1,28 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  View,
-  SafeAreaView,
-  TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  Dimensions,
-  Modal,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  ViewStyle,
-  TouchableHighlight,
-} from 'react-native';
+import { View, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
 
 import { useSelector } from 'react-redux';
 import { CompositeScreenProps, useTheme, useScrollToTop } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { ArrowDown, ArrowDown2, Notification } from 'iconsax-react-native';
-import { Dropdown } from 'react-native-element-dropdown';
-import { GiphyDialog } from '@giphy/react-native-sdk';
-import { getHeight } from '@/utils/ResponsiveFun';
+import { ArrowDown2, Notification } from 'iconsax-react-native';
 import { styles } from './styles';
 
 import { ApiCall } from '@/services/api';
@@ -32,7 +15,6 @@ import SocialItem from '@/components/listItems/SocialItem';
 import ArticleItem from '@/components/listItems/ArticleItem';
 import ActivityIndicatorContent from '@/components/ActivityIndicatorContent';
 import { ArticleType } from '@/utils/types';
-import OptionsModal from '@/components/listItems/OptionsModal';
 import { styles as globalStyle } from '@/components/listItems/style';
 
 import {
@@ -44,9 +26,6 @@ import {
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import { fontSize, poppins } from '@/src/styles/typography';
-import { borderWidth } from '@/src/styles/outlines';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
 import Watch from './watch';
 
 enum FeedTypes {
@@ -62,7 +41,7 @@ type FeedOptions = {
   page: number;
 };
 
-const feedTypes: FeedTypes[] = [FeedTypes.Read, FeedTypes.Watch];
+const feedTypes: FeedTypes[] = [FeedTypes.Read, FeedTypes.Pray, FeedTypes.Watch];
 
 type Props = CompositeScreenProps<
   StackScreenProps<HomeStackParamsList, 'Home'>,
@@ -310,7 +289,7 @@ function Home({ navigation }: Props) {
           // marginBottom: 20,
         }}
       >
-        <View style={{ flex: 1 }} key="main">
+        <View style={{ flex: 1.5 }} key="main">
           <TouchableOpacity
             onPress={() => {
               if (feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou) {
@@ -375,6 +354,10 @@ function Home({ navigation }: Props) {
                     (feedType == FeedTypes.Connected || feedType == FeedTypes.ForYou)
                   ) {
                     setSelectVisible(true);
+                  } else if (feedType == FeedTypes.Pray) {
+                    navigation.navigate('MainRoot', {
+                      screen: 'PrayerWall',
+                    });
                   } else if (feedOptions.type != feedType) {
                     filterUpdate(feedType);
                   }

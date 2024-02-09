@@ -148,7 +148,7 @@ function ProfileHeader({
     }
 
     const maxValueX = width / 4;
-    if (valueTranslateY > maxValueX) {
+    if (valueTranslateX > maxValueX) {
       valueTranslateX = maxValueX;
     }
 
@@ -400,12 +400,20 @@ function ProfileHeader({
           pointerEvents="box-none"
         >
           <Animated.View style={[{ flex: 1, height: 75 }, nameAnimation]}>
-            <View style={{ flexDirection: 'row' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                overflow: 'hidden',
+                paddingRight: spacing.x5,
+                alignItems: 'center',
+              }}
+            >
               <StyledText
                 numberOfLines={2}
                 style={[
                   Typography.header.h3,
                   {
+                    flex: 1,
                     marginRight: spacing.x10,
                   },
                   // {
@@ -538,10 +546,16 @@ function ProfileHeader({
                     ? spacing.x16
                     : 0,
                 flex: 1,
+                marginTop: spacing.x10,
               }}
             >
               <Calendar size={20} color={Colors.neutral.brand} />
-              <StyledText style={{ ...Typography.fontWeight.light, marginLeft: spacing.x10 }}>
+              <StyledText
+                style={{
+                  ...Typography.fontWeight.light,
+                  marginLeft: spacing.x10,
+                }}
+              >
                 Joined{' '}
                 <StyledText style={{ ...Typography.fontWeight.light }}>
                   {format(parseISO(profileData?.createdAt ?? ''), 'MMM yyyy')}
@@ -644,8 +658,8 @@ function ProfileHeader({
               {profileData?.followerCount && profileData?.followerCount > 999
                 ? `${(profileData.followerCount / 1000).toFixed(2)}k`
                 : profileData?.followerCount && profileData?.followerCount > 999999
-                ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
-                : profileData?.followerCount ?? 0}{' '}
+                  ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
+                  : profileData?.followerCount ?? 0}{' '}
               <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
             </StyledText>
 
@@ -662,8 +676,8 @@ function ProfileHeader({
               {profileData?.following.length > 999
                 ? `${(profileData.following.length / 1000).toFixed(2)}k`
                 : profileData?.following.length > 999999
-                ? `${(profileData.following.length / 1000000).toFixed(2)}m`
-                : profileData?.following.length ?? 0}{' '}
+                  ? `${(profileData.following.length / 1000000).toFixed(2)}m`
+                  : profileData?.following.length ?? 0}{' '}
               <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
             </StyledText>
           </TouchableOpacity>

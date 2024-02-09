@@ -189,16 +189,17 @@ function NewPrayer({ navigation, route }: Props) {
         navigation.popToTop();
         navigation.navigate('index');
       } else {
-        if (!result.response.moderationPassed) {
+        if (result?.response?.moderationPassed === false) {
           throw result.response;
         }
 
-        throw new Error('request unsuccessful');
+        throw new Error(result.response);
       }
     } catch (e: any) {
       setIsLoading(false);
+
       let message = 'There was a problem on our end. Please try again later.';
-      if (!e.moderationPassed) {
+      if (e?.moderationPassed === false) {
         if (e.moderationTypeFailure == 'image') {
           message = 'Photo violates terms of use ';
         }
@@ -207,6 +208,8 @@ function NewPrayer({ navigation, route }: Props) {
           message =
             'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
         }
+      } else if (e.message == 'Network Error') {
+        message = 'Network Error. Please try again later.';
       }
       toast.show(message, {
         type: 'danger',
@@ -757,7 +760,11 @@ function NewPrayer({ navigation, route }: Props) {
         <Button
           disabled={
             isLoading ||
-            (!location && !content && !uploadImagesObject && !imagesObject && !mediaGif) ||
+            (!location &&
+              !content &&
+              !uploadImagesObject &&
+              imagesObject.length == 0 &&
+              !mediaGif) ||
             !postType
           }
           onPress={() => {
