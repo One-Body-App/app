@@ -52,7 +52,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
-      offlineAccess: false,
+      offlineAccess: true,
       forceCodeForRefreshToken: true,
     });
   }, []);
