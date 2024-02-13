@@ -745,9 +745,11 @@ function BaseItem({
 
               {postData.type !== PostType.rss ? (
                 <View>
-                  <View style={{ flexDirection: 'row', marginTop: 5, marginEnd: 0 }}>
+                  <View
+                    style={{ flexDirection: 'row', marginTop: spacing.x5, marginEnd: spacing.x5 }}
+                  >
                     <Message2 color={colors.text} />
-                    <StyledText style={{ marginLeft: spacing.x10, marginVertical: 3 }}>
+                    <StyledText style={{ marginLeft: spacing.x10, marginVertical: spacing.x5 }}>
                       {postData?.commentNumber ?? postData.comments?.length ?? '0'}
                     </StyledText>
                   </View>
@@ -759,9 +761,9 @@ function BaseItem({
                 style={{
                   flex: 1,
                   alignItems: 'flex-end',
-                  marginTop: 8,
-                  marginEnd: 4,
-                  marginVertical: 5,
+                  marginTop: spacing.x5,
+                  marginEnd: spacing.x5,
+                  marginVertical: spacing.x5,
                 }}
               >
                 <TouchableOpacity

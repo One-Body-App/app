@@ -215,7 +215,7 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
     flexDirection: 'row',
     borderBottomWidth: borderWidth.thick * 2,
-    padding: 5,
+    padding: spacing.x5,
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
   },
