@@ -1187,7 +1187,7 @@ PODS:
     - React-Core
   - react-native-video/Video (5.2.1):
     - React-Core
-  - react-native-webview (13.7.1):
+  - react-native-webview (13.7.0):
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
@@ -1396,7 +1396,7 @@ PODS:
     - FirebaseCoreExtension (= 10.20.0)
     - React-Core
     - RNFBApp
-  - RNGestureHandler (2.15.0):
+  - RNGestureHandler (2.14.1):
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
@@ -1902,7 +1902,7 @@ SPEC CHECKSUMS:
   react-native-simple-toast: 2079d417c52fc3ca295edba094d5632f7720e68d
   react-native-video: c26780b224543c62d5e1b2a7244a5cd1b50e8253
   react-native-video-trim: 448439816bf060dfdb6773b2ec654bfb40affa12
-  react-native-webview: d35380fcc2e1385cebc5b90fb96eebcdd1f2548e
+  react-native-webview: f109b7da3efc6ea7a6d61a3cff3907edb6237b6a
   React-nativeconfig: a063483672b8add47a4875b0281e202908ff6747
   React-NativeModulesApple: 169506a5fd708ab22811f76ee06a976595c367a1
   React-perflogger: b61e5db8e5167f5e70366e820766c492847c082e
@@ -1936,7 +1936,7 @@ SPEC CHECKSUMS:
   RNFBAuth: bd014d486a51b5414b642dd155763c5873a2b3e4
   RNFBDynamicLinks: 77cccfac365229b763b6749949f2fac32d2ee87c
   RNFBMessaging: 1e7415390ae579c5949505a0709686a2de8a47e5
-  RNGestureHandler: deda62b8339496ba721a45e0f3e2d7a319932cee
+  RNGestureHandler: 25b969a1ffc806b9f9ad2e170d4a3b049c6af85e
   RNGoogleSignin: aac5c1ec73422109dec1da770247a1e410dcc620
   RNImageCropPicker: d9616a0cb9b72e8551ff94a7a5021fbd29050aa5
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
@@ -1960,4 +1960,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 793da1ed0e8bcc06e3b1177f48e39240e6478fe0
 
-COCOAPODS: 1.15.0
+COCOAPODS: 1.15.2
