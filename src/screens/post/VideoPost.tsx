@@ -26,6 +26,7 @@ import RNFetchBlob from 'rn-fetch-blob';
 
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { styles } from './styles';
 import { MainStackParamList } from '@/src/navigator/types';
 import { button } from '@/src/styles/buttons';
@@ -35,6 +36,8 @@ import { Colors, Spacing } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import StyledTextInput from '@/src/components/styled/TextInput';
+import { ApiCall } from '@/src/services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
 const closeIcon = require('@/assets/images/close.png');
 const createWatch = require('@/assets/images/CreateWatch.png');
@@ -43,6 +46,7 @@ const cameraIos = require('@/assets/icons/camera-ios.png');
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
 function VideoPost({ navigation }: Props) {
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const [isFrontCamera, setIsFrontCamera] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordedVideo, setRecordedVideo] = useState<any>('');
@@ -181,12 +185,14 @@ function VideoPost({ navigation }: Props) {
     outputRange: ['white', 'red'],
   });
   const uploadToMux = async () => {
+    const res = await ApiCall({
+      route: `watch/authenticated-link/mux`,
+      verb: 'get',
+      token,
+    });
     const data = RNFetchBlob.wrap(VideoPath);
-    const uploadUrl =
-      'https://storage.googleapis.com/video-storage-gcp-us-east4-vop1-uploads/Tacj90ifhok9mMvZ0XAY4C?Expires=1705679876&GoogleAccessId=uploads-gcp-us-east1-vop1%40mux-video-production.iam.gserviceaccount.com&Signature=ymuYwiOsK6y6zCDJzBjKXxEabEtM%2BGfgjRJvkFpAlZUcP1zC%2BzorN6kvMmnDNzXxy1%2B1wYcdJV5g9g8136FZ8gmZONIDCtt3D2AepAxzcWQQiWketLp0bPnBxRXNOTwM9DuOjUgWTRej%2FjAyAKxMxs%2BYs48TgfsZWgw4R%2FhHBi09ptW%2BfmBfhnw%2BiR%2FbLo4DRa4evdKNRMddaZLq7n8qKZOh%2BJT4vw%2B%2BhC35ua7I4rYGjLV72GtuZ17nxYDJEbTxuBTc4gN6C3QJjRRPlRNYWzvQ1qOu7aCJ1w5fKb6jLw2MHNX5m0MEPxaLwUZ%2BHqsdcSDyyvS7tC6KHlKErRrgUw%3D%3D&upload_id=ABPtcPpqiEYbjcjaAghMfcKCOVfFLun0ylxjXDNfVrtB0qXHL60IGJXrBej0aJZ_NJFW4MjStbPgNtKaD7soygyvccvysOOpkWt6i2aAGvDf0o_O0Q';
     try {
-      const resp = await RNFetchBlob.fetch('PUT', uploadUrl, undefined, data);
-      console.log('MUX   Upload is complete', resp);
+      const resp = await RNFetchBlob.fetch('PUT', res.response?.url, undefined, data);
     } catch (error) {
       console.error(error);
     }
@@ -257,7 +263,7 @@ function VideoPost({ navigation }: Props) {
           ) : (
             <View style={{ flex: 1 }}>
               <Video
-                source={{ uri: VideoPath ? `file:///${VideoPath}` : '' }}
+                source={{ uri: VideoPath || '' }}
                 resizeMode="cover"
                 repeat
                 // controls
