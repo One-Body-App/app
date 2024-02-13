@@ -3853,6 +3853,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@svanboxel/visibility-sensor-react-native@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "@svanboxel/visibility-sensor-react-native@npm:1.0.2"
+  peerDependencies:
+    react: ^16.9.0
+    react-native: ^0.62.0
+  checksum: 10/80fd6ed7c2cbc09f8778653f7acda498b464a09802e7f49b79cac50f99b78a7636ca2f80deb12b75943219c14ffa79c456fc75144b401fb9c0b708a75fac6b07
+  languageName: node
+  linkType: hard
+
 "@svgr/babel-plugin-add-jsx-attribute@npm:8.0.0":
   version: 8.0.0
   resolution: "@svgr/babel-plugin-add-jsx-attribute@npm:8.0.0"
@@ -11405,6 +11415,7 @@ __metadata:
     "@react-navigation/stack": "npm:^6.3.17"
     "@reduxjs/toolkit": "npm:^1.8.3"
     "@sentry/react-native": "npm:^5.15.2"
+    "@svanboxel/visibility-sensor-react-native": "npm:^1.0.2"
     "@types/jest": "npm:^29.5.11"
     "@types/lodash": "npm:^4.14.196"
     "@types/node": "npm:^20.4.6"

@@ -129,23 +129,25 @@ function Connected({ navigation }: Props) {
   };
 
   const getFollowers = async () => {
-    // try {
-    //   const res = await ApiCall({
-    //     route: 'user/get-following',
-    //     verb: 'get',
-    //     token: token,
-    //   });
+    try {
+      const res = await ApiCall({
+        route: 'user/get-followers',
+        verb: 'get',
+        token,
+      });
 
-    //   if (res?.status == 200) {
-    //     setFollowing(res?.response?.data);
-    //   } else {
-    //     console.log('error', res?.response);
-    //   }
-    // } catch (e: any) {
-    //   console.log('saga error -- ', e.toString());
-    // }
-    setFollowers([]);
-    setSearchResultsFollowers([]);
+      if (res?.status == 200) {
+        setFollowers(res?.response?.data);
+        setSearchResultsFollowers(res?.response?.data);
+      } else {
+        console.log('error', res?.response);
+      }
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+    // console.log(user);
+    // setFollowers([]);
+    // setSearchResultsFollowers([]);
   };
 
   const getInterests = async () => {
@@ -209,9 +211,7 @@ function Connected({ navigation }: Props) {
 
   useEffect(() => {
     getFollowing();
-    if (user?.isInfluencer) {
-      getFollowers();
-    }
+    getFollowers();
 
     getInterests();
   }, [user]);
@@ -223,18 +223,14 @@ function Connected({ navigation }: Props) {
       setSearchResultsFollowing(following);
     }
 
-    if (user?.isInfluencer) {
-      if (searchChannelsText) {
-        setSearchResultsFollowers(getFilteredUsers(searchResultsFollowers, searchChannelsText));
-      } else {
-        setSearchResultsFollowers(following);
-      }
+    if (searchChannelsText) {
+      setSearchResultsFollowers(getFilteredUsers(searchResultsFollowers, searchChannelsText));
+    } else {
+      setSearchResultsFollowers(followers);
     }
 
     setIsLoading(false);
   }, [searchChannelsText, user]);
-
-  const { dark } = useTheme();
 
   const { colors } = useTheme();
 
@@ -330,8 +326,8 @@ function Connected({ navigation }: Props) {
                     {user?.followerCount && user?.followerCount > 999
                       ? `${(user.followerCount / 1000).toFixed(2)}k`
                       : user?.followerCount && user?.followerCount > 999999
-                      ? `${(user.followerCount / 1000000).toFixed(2)}m`
-                      : user?.followerCount ?? 0}{' '}
+                        ? `${(user.followerCount / 1000000).toFixed(2)}m`
+                        : user?.followerCount ?? 0}{' '}
                     <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
                   </StyledText>
                 </View>
@@ -364,8 +360,8 @@ function Connected({ navigation }: Props) {
                     {user?.following.length && user?.following.length > 999
                       ? `${(user.following.length / 1000).toFixed(2)}k`
                       : user?.following.length && user?.following.length > 999999
-                      ? `${(user.following.length / 1000000).toFixed(2)}m`
-                      : user?.following.length ?? 0}{' '}
+                        ? `${(user.following.length / 1000000).toFixed(2)}m`
+                        : user?.following.length ?? 0}{' '}
                     <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
                   </StyledText>
                 </View>
@@ -440,26 +436,28 @@ function Connected({ navigation }: Props) {
                           {item.profile.whatIDo
                             ? item.profile.whatIDo?.name
                             : item.profile.typeOfOrganization
-                            ? item.profile.typeOfOrganization?.name
-                            : ''}
+                              ? item.profile.typeOfOrganization?.name
+                              : ''}
                         </StyledText>
                       ) : null}
                     </View>
 
-                    <Button
-                      btnStyle={{
-                        paddingVertical: spacing.x10,
-                        paddingHorizontal: spacing.x24,
-                        borderRadius: borderRadius.button,
-                        backgroundColor: Colors.neutral[800],
-                      }}
-                      btnTextStyle={{ color: Colors.neutral[200] }}
-                      text="Remove"
-                      onPress={() => {
-                        handleUnSubscribe(item?._id);
-                      }}
-                      wrapperViewBtnStyle={{ flex: 1.25, justifyContent: 'flex-end' }}
-                    />
+                    {filter == 'connected' ? (
+                      <Button
+                        btnStyle={{
+                          paddingVertical: spacing.x10,
+                          paddingHorizontal: spacing.x24,
+                          borderRadius: borderRadius.button,
+                          backgroundColor: Colors.neutral[800],
+                        }}
+                        btnTextStyle={{ color: Colors.neutral[200] }}
+                        text="Remove"
+                        onPress={() => {
+                          handleUnSubscribe(item?._id);
+                        }}
+                        wrapperViewBtnStyle={{ flex: 1.25, justifyContent: 'flex-end' }}
+                      />
+                    ) : null}
                   </View>
                 </TouchableOpacity>
               );

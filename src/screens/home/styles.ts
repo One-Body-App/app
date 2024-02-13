@@ -1,11 +1,12 @@
 import { StyleSheet, TextStyle, ViewStyle } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { Colors } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
 
 const menuItemText: TextStyle = {
   // color: '#126B87',
 
-  fontSize: 15,
+  fontSize: 14,
   textAlign: 'center',
   fontWeight: '500',
   textTransform: 'capitalize',
@@ -13,7 +14,6 @@ const menuItemText: TextStyle = {
 
 const menuItem: ViewStyle = {
   paddingVertical: 10,
-  marginHorizontal: 15,
   justifyContent: 'center',
   alignItems: 'center',
 };
