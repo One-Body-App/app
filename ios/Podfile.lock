@@ -1187,7 +1187,7 @@ PODS:
     - React-Core
   - react-native-video/Video (5.2.1):
     - React-Core
-  - react-native-webview (13.7.0):
+  - react-native-webview (13.7.1):
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
@@ -1427,7 +1427,6 @@ PODS:
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
-  - RNSentry (5.18.0):
   - RNSentry (5.18.0):
     - hermes-engine
     - React-Core
@@ -1903,7 +1902,7 @@ SPEC CHECKSUMS:
   react-native-simple-toast: 2079d417c52fc3ca295edba094d5632f7720e68d
   react-native-video: c26780b224543c62d5e1b2a7244a5cd1b50e8253
   react-native-video-trim: 448439816bf060dfdb6773b2ec654bfb40affa12
-  react-native-webview: f109b7da3efc6ea7a6d61a3cff3907edb6237b6a
+  react-native-webview: d35380fcc2e1385cebc5b90fb96eebcdd1f2548e
   React-nativeconfig: a063483672b8add47a4875b0281e202908ff6747
   React-NativeModulesApple: 169506a5fd708ab22811f76ee06a976595c367a1
   React-perflogger: b61e5db8e5167f5e70366e820766c492847c082e
@@ -1942,11 +1941,9 @@ SPEC CHECKSUMS:
   RNImageCropPicker: d9616a0cb9b72e8551ff94a7a5021fbd29050aa5
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
   RNPermissions: 42c88de83087063600b3bb211062120476e87b4f
-  RNPermissions: 42c88de83087063600b3bb211062120476e87b4f
   RNRate: ef3bcff84f39bb1d1e41c5593d3eea4aab2bd73a
   RNReanimated: 5589be82dc26b3f94738eb7c6b1f942787532b25
   RNScreens: b582cb834dc4133307562e930e8fa914b8c04ef2
-  RNSentry: eefa12fa65b37dd71f54371720f9fcddcd17be2f
   RNSentry: eefa12fa65b37dd71f54371720f9fcddcd17be2f
   RNSha256: a6bc3640a34eb41907e363828b9ec742c274298d
   RNShare: 859ff710211285676b0bcedd156c12437ea1d564
