@@ -366,7 +366,7 @@ function SocialItem({
                 key={index}
                 resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
                 style={{
-                  borderRadius: borderRadius.small,
+                  borderRadius: 5,
                   // flexGrow: 1,
                   aspectRatio: imageInfo[0].width / imageInfo[0].height,
                   width: '100%',
@@ -383,7 +383,9 @@ function SocialItem({
         {item.gif && (
           <View
             style={{
-              padding: 10,
+              marginTop: 10,
+              marginLeft: 1,
+              marginRight: 1,
               // height: 100,
               // width: 100,
               borderRadius: borderRadius.small,

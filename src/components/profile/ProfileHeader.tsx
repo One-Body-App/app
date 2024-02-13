@@ -427,7 +427,12 @@ function ProfileHeader({
               </StyledText>
 
               {profileData?.influencerProfile?.influencerStatus == 'approved' ? (
-                <Icon name="check-decagram" size={20} color={Colors.primarySapphire.brand} />
+                <Icon
+                  name="check-decagram"
+                  size={20}
+                  color={Colors.primarySapphire.brand}
+                  style={{ marginRight: 225, marginTop: 5 }}
+                />
               ) : null}
             </View>
             <Animated.View style={{ flex: 1 }}>
