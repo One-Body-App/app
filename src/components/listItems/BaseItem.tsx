@@ -509,7 +509,7 @@ function BaseItem({
                 <FontAwesomeIcon
                   icon={faEllipsisVertical}
                   color={colors.text}
-                  style={{ marginTop: 10, marginRight: -5 }}
+                  style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
                 />
               </TouchableOpacity>
             </View>
