@@ -406,6 +406,7 @@ function ProfileHeader({
                 overflow: 'hidden',
                 paddingRight: spacing.x5,
                 alignItems: 'center',
+                flex: 1,
               }}
             >
               <StyledText
@@ -413,7 +414,7 @@ function ProfileHeader({
                 style={[
                   Typography.header.h3,
                   {
-                    flex: 1,
+                    // flex: 1,
                     marginRight: spacing.x10,
                   },
                   // {

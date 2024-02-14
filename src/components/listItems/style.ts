@@ -211,9 +211,13 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   postView: {
+    flex: 1,
     flexGrow: 1,
+    flexDirection: 'row',
     borderBottomWidth: borderWidth.thick * 2,
-    padding: spacing.x16,
+    padding: spacing.x5,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
   },
   socialpostview: {
     flexGrow: 1,

@@ -345,6 +345,7 @@ function BaseItem({
           flexDirection: 'row',
           alignItems: 'flex-start',
           gap: spacing.x10,
+          marginRight: spacing.x10,
         }}
       >
         <TouchableOpacity
@@ -355,6 +356,8 @@ function BaseItem({
             flexDirection: 'row',
             justifyContent: 'flex-start',
             alignItems: 'center',
+            maxWidth: 0,
+            marginTop: spacing.x5,
           }}
         >
           {userData.profileIcon && !userData.profileImage ? (
@@ -377,9 +380,10 @@ function BaseItem({
                 width: 40,
                 height: 40,
                 borderRadius: borderRadius.max,
-                // marginBottom: 5,
+                marginBottom: spacing.x5,
                 borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
+                marginLeft: spacing.x10,
               }}
               resizeMode="contain"
             />
@@ -410,6 +414,8 @@ function BaseItem({
                         color: Colors.neutral.brand,
                         alignItems: 'center',
                         ...fontSize.x1,
+                        marginLeft: spacing.x48,
+                        marginTop: spacing.x5,
                       }}
                       numberOfLines={2}
                     >
@@ -418,8 +424,8 @@ function BaseItem({
                     {isApprovedInfluencer ? (
                       <Icon
                         name="check-decagram"
-                        size={20}
-                        style={{ marginLeft: spacing.x8 }}
+                        size={spacing.x16}
+                        style={{ marginLeft: spacing.x8, marginTop: spacing.x8 }}
                         color={Colors.primarySapphire.brand}
                       />
                     ) : null}
@@ -430,6 +436,8 @@ function BaseItem({
                       color: Colors.neutral[300],
                       alignItems: 'center',
                       ...fontSize.x1,
+                      marginLeft: spacing.x48,
+                      marginTop: 0,
                     }}
                   >
                     {(source == 'twitter' && userData?.twitterHandler) ||
@@ -482,9 +490,11 @@ function BaseItem({
                       <Location
                         size={15}
                         color={Colors.neutral[300]}
-                        style={{ marginRight: spacing.x5 }}
+                        style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
                       />
-                      <StyledText style={[fontSize.x1, { color: Colors.neutral[300] }]}>
+                      <StyledText
+                        style={[fontSize.x1, { color: Colors.neutral[300], marginTop: 0 }]}
+                      >
                         {postData.locationName}
                       </StyledText>
                     </View>
@@ -496,12 +506,16 @@ function BaseItem({
                   setShowOptions(true);
                 }}
               >
-                <FontAwesomeIcon icon={faEllipsisVertical} color={colors.text} />
+                <FontAwesomeIcon
+                  icon={faEllipsisVertical}
+                  color={colors.text}
+                  style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
+                />
               </TouchableOpacity>
             </View>
           ) : null}
 
-          <View style={{ marginTop: spacing.x16 }}>{children}</View>
+          <View style={{ marginTop: spacing.x20 }}>{children}</View>
           {(postData.type == PostType.social || postData.type == PostType.prayer) &&
           !postData.externalLink ? (
             <View style={{ flexDirection: 'row' }}>
@@ -666,6 +680,7 @@ function BaseItem({
                             size={25}
                             color={myReaction ? Colors.errorFeedback[200] : colors.text}
                             variant={myReaction ? 'Bold' : 'Linear'}
+                            style={{ marginVertical: spacing.x10 }}
                           />
                         </Reaction>
 
@@ -730,9 +745,11 @@ function BaseItem({
 
               {postData.type !== PostType.rss ? (
                 <View>
-                  <View style={{ flexDirection: 'row' }}>
+                  <View
+                    style={{ flexDirection: 'row', marginTop: spacing.x5, marginEnd: spacing.x5 }}
+                  >
                     <Message2 color={colors.text} />
-                    <StyledText style={{ marginLeft: spacing.x10 }}>
+                    <StyledText style={{ marginLeft: spacing.x10, marginVertical: spacing.x5 }}>
                       {postData?.commentNumber ?? postData.comments?.length ?? '0'}
                     </StyledText>
                   </View>
@@ -740,7 +757,15 @@ function BaseItem({
               ) : null}
             </View>
             {postData.type == PostType.rss ? (
-              <View style={{ flex: 1, alignItems: 'flex-end', marginTop: spacing.x10 }}>
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: 'flex-end',
+                  marginTop: spacing.x5,
+                  marginEnd: spacing.x5,
+                  marginVertical: spacing.x5,
+                }}
+              >
                 <TouchableOpacity
                   onPress={() => {
                     Share.share({
