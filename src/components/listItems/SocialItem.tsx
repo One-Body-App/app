@@ -388,7 +388,7 @@ function SocialItem({
               marginRight: 1,
               // height: 100,
               // width: 100,
-              borderRadius: borderRadius.small,
+              borderRadius: borderRadius.xs,
             }}
           >
             <GiphyMediaView
@@ -396,7 +396,7 @@ function SocialItem({
               resizeMode="cover"
               style={{
                 aspectRatio: item.gif.aspectRatio,
-                borderRadius: borderRadius.small,
+                borderRadius: borderRadius.xs,
 
                 overflow: 'hidden',
               }}
