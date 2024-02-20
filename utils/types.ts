@@ -145,6 +145,8 @@ export type ArticleType = {
   created: Date;
   image?: { url: string };
   title: string | { a: any };
+  comments?: CommentPost[];
+  commentNumber?: number;
   userData: {
     _id: string;
     name: string;

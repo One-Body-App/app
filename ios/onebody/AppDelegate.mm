@@ -13,6 +13,8 @@
 #import <FBSDKCoreKit/FBSDKCoreKit-Swift.h>
 #import "RNSplashScreen.h"
 #import "Onebody-Swift.h"
+#import "SDImageCodersManager.h"
+#import <SDWebImageWebPCoder/SDImageWebPCoder.h>
 
 @implementation AppDelegate
 
@@ -31,7 +33,8 @@
   [[FBSDKApplicationDelegate sharedInstance] application:application
                          didFinishLaunchingWithOptions:launchOptions];
 
-
+  // Register WebP format support
+  [SDImageCodersManager.sharedManager addCoder:SDImageWebPCoder.sharedCoder];
   BOOL success = [super application:application didFinishLaunchingWithOptions:launchOptions];
     // return [super application:application didFinishLaunchingWithOptions:launchOptions];
 

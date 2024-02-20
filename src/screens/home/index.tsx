@@ -233,6 +233,7 @@ function Home({ navigation }: Props) {
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       addHeaderButtons();
+      setIsRefreshing(true);
     });
 
     return unsubscribe;
@@ -467,30 +468,40 @@ function Home({ navigation }: Props) {
                         )}
                       /> */}
 
-                      <ArticleItem
-                        pillText="Taste Breakers"
-                        key={`article_${item.id}`}
-                        item={item.items[0]}
-                        imageSizeType="cover"
-                        // blogPostStyle={{
-                        //   ...globalStyle.blogpostview,
-                        //   backgroundColor: cardSecondaryColor,
-                        // }}
-                        // blogPostImageStyle={globalStyle.newspostimage}
-                        // blogPostTitleStyle={{
-                        //   flexWrap: 'wrap',
-                        // }}
-                        blogPostStyle={{
-                          ...globalStyle.blogpostview,
-                          backgroundColor: cardSecondaryColor,
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (item.id) {
+                            navigation.navigate('SingleRss', {
+                              postId: item.id,
+                            });
+                          }
                         }}
-                        blogPostImageStyle={globalStyle.newspostimage}
-                        blogPostTitleStyle={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                        }}
-                        showModal={showModal}
-                      />
+                      >
+                        <ArticleItem
+                          pillText="Taste Breakers"
+                          key={`article_${item.id}`}
+                          item={item.items[0]}
+                          imageSizeType="cover"
+                          // blogPostStyle={{
+                          //   ...globalStyle.blogpostview,
+                          //   backgroundColor: cardSecondaryColor,
+                          // }}
+                          // blogPostImageStyle={globalStyle.newspostimage}
+                          // blogPostTitleStyle={{
+                          //   flexWrap: 'wrap',
+                          // }}
+                          blogPostStyle={{
+                            ...globalStyle.blogpostview,
+                            backgroundColor: cardSecondaryColor,
+                          }}
+                          blogPostImageStyle={globalStyle.newspostimage}
+                          blogPostTitleStyle={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                          }}
+                          showModal={showModal}
+                        />
+                      </TouchableOpacity>
                     </View>
                   );
                 }
@@ -498,37 +509,58 @@ function Home({ navigation }: Props) {
                 if (item.type == 'relatedContent') {
                   return (
                     <View style={{ paddingHorizontal: 10 }}>
-                      <ArticleItem
-                        pillText="Suggested"
-                        key={`relatedContent_${item.id}`}
-                        item={item.item}
-                        imageSizeType="cover"
-                        blogPostStyle={{
-                          ...globalStyle.blogpostview,
-                          backgroundColor: cardSecondaryColor,
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (item.id) {
+                            navigation.navigate('SingleRss', {
+                              postId: item.id,
+                            });
+                          }
                         }}
-                        blogPostImageStyle={globalStyle.newspostimage}
-                        blogPostTitleStyle={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                        }}
-                        showModal={showModal}
-                      />
+                      >
+                        <ArticleItem
+                          pillText="Suggested"
+                          key={`relatedContent_${item.id}`}
+                          item={item.item}
+                          imageSizeType="cover"
+                          blogPostStyle={{
+                            ...globalStyle.blogpostview,
+                            backgroundColor: cardSecondaryColor,
+                          }}
+                          blogPostImageStyle={globalStyle.newspostimage}
+                          blogPostTitleStyle={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                          }}
+                          showModal={showModal}
+                        />
+                      </TouchableOpacity>
                     </View>
                   );
                 }
                 return (
-                  <ArticleItem
-                    key={`article_${item.id}`}
-                    item={item}
-                    imageSizeType="cover"
-                    blogPostImageStyle={globalStyle.newspostimage}
-                    blogPostTitleStyle={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
+                  <TouchableOpacity
+                    onPress={() => {
+                      console.log(item, 'item');
+                      if (item.id) {
+                        navigation.navigate('SingleRss', {
+                          postId: item.id,
+                        });
+                      }
                     }}
-                    showModal={showModal}
-                  />
+                  >
+                    <ArticleItem
+                      key={`article_${item.id}`}
+                      item={item}
+                      imageSizeType="cover"
+                      blogPostImageStyle={globalStyle.newspostimage}
+                      blogPostTitleStyle={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                      }}
+                      showModal={showModal}
+                    />
+                  </TouchableOpacity>
                 );
               }}
               refreshing={isLoading}
