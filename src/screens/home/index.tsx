@@ -503,10 +503,7 @@ function Home({ navigation }: Props) {
                         key={`relatedContent_${item.id}`}
                         item={item.item}
                         imageSizeType="cover"
-                        blogPostStyle={{
-                          ...globalStyle.blogpostview,
-                          backgroundColor: cardSecondaryColor,
-                        }}
+                        blogPostStyle={globalStyle.blogpostview}
                         blogPostImageStyle={globalStyle.newspostimage}
                         blogPostTitleStyle={{
                           flexDirection: 'row',
