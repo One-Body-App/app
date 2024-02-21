@@ -613,7 +613,7 @@ function BaseItem({
             ) : null}
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row' }}>
             {postData.externalLink ? (
               <TouchableOpacity
                 onPress={() => {
@@ -636,50 +636,49 @@ function BaseItem({
             <View
               style={{
                 flexDirection: 'row',
-                flex: 3,
+
                 alignItems: 'center',
                 marginTop: spacing.x10,
-                justifyContent: 'space-between',
+                // alignContent: 'space-between',
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Reaction
-                  items={ReactionItems}
-                  type="modal"
-                  cardStyle={{
-                    padding: spacing.x5,
-                    shadowOpacity: 0.2,
-                    marginTop: spacing.x16,
-                    borderRadius: borderRadius.base,
-                  }}
-                  onTap={async (item) => {
-                    if (item) {
-                      if (myReaction?.type == item.type) {
-                        await removeReactPost();
-                      } else {
-                        await reactPost(item.type);
-                      }
-                    }
-                  }}
-                  itemIndex={index}
-                  onShowDismissCard={onShowDismissCard}
-                  onPress={() => {
-                    if (myReaction) {
-                      removeReactPost();
+              <Reaction
+                items={ReactionItems}
+                type="modal"
+                cardStyle={{
+                  padding: spacing.x5,
+                  shadowOpacity: 0.2,
+                  marginTop: spacing.x16,
+                  borderRadius: borderRadius.base,
+                }}
+                onTap={async (item) => {
+                  if (item) {
+                    if (myReaction?.type == item.type) {
+                      await removeReactPost();
                     } else {
-                      reactPost(SocialPostReactionType.love);
+                      await reactPost(item.type);
                     }
-                  }}
-                >
-                  <Heart
-                    size={25}
-                    color={myReaction ? Colors.errorFeedback[200] : colors.text}
-                    variant={myReaction ? 'Bold' : 'Linear'}
-                    style={{ marginVertical: spacing.x10 }}
-                  />
-                </Reaction>
+                  }
+                }}
+                itemIndex={index}
+                onShowDismissCard={onShowDismissCard}
+                onPress={() => {
+                  if (myReaction) {
+                    removeReactPost();
+                  } else {
+                    reactPost(SocialPostReactionType.love);
+                  }
+                }}
+              >
+                <Heart
+                  size={25}
+                  color={myReaction ? Colors.errorFeedback[200] : colors.text}
+                  variant={myReaction ? 'Bold' : 'Linear'}
+                  style={{ marginVertical: spacing.x10 }}
+                />
+              </Reaction>
 
-                {/* <TouchableOpacity
+              {/* <TouchableOpacity
                         onLongPress={() => {
                           if (!myReaction) {
                             setShowActions(!showActions);
@@ -706,41 +705,40 @@ function BaseItem({
                         />
                       </TouchableOpacity> */}
 
-                <TouchableOpacity
-                  onPress={() => {
-                    if (isThisPostSaved) {
-                      if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
-                      else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
-                    } else {
-                      savePost(
-                        postData?.id,
-                        postData?.type,
-                        postData.title,
-                        created,
-                        userData?._id,
-                        postData?.postlink,
-                        postData?.image?.url
-                      );
-                    }
-                  }}
-                >
-                  <Bookmark
-                    style={{ marginRight: 3 }}
-                    width={25}
-                    height={25}
-                    color={colors.text}
-                    fill={isThisPostSaved ? colors.text : colors.background}
-                  />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  if (isThisPostSaved) {
+                    if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                    else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
+                  } else {
+                    savePost(
+                      postData?.id,
+                      postData?.type,
+                      postData.title,
+                      created,
+                      userData?._id,
+                      postData?.postlink,
+                      postData?.image?.url
+                    );
+                  }
+                }}
+                style={{ marginEnd: spacing.x10, marginStart: spacing.x10 }}
+              >
+                <Bookmark
+                  style={{ marginRight: 3 }}
+                  width={25}
+                  height={25}
+                  color={colors.text}
+                  fill={isThisPostSaved ? colors.text : colors.background}
+                />
+              </TouchableOpacity>
 
               {postData.type == PostType.rss ? (
                 <View
                   style={{
-                    flex: 1,
-                    alignItems: 'flex-end',
+                    // alignItems: 'flex-end',
                     marginTop: spacing.x5,
-                    marginEnd: spacing.x5,
+                    marginEnd: spacing.x10,
                     marginVertical: spacing.x5,
                   }}
                 >
@@ -762,15 +760,18 @@ function BaseItem({
                   </TouchableOpacity>
                 </View>
               ) : null}
-              <View>
-                <View
-                  style={{ flexDirection: 'row', marginTop: spacing.x5, marginLeft: spacing.x5 }}
-                >
-                  <Message2 color={colors.text} />
-                  <StyledText style={{ marginLeft: spacing.x10, marginVertical: spacing.x5 }}>
-                    {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                  </StyledText>
-                </View>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  marginTop: spacing.x5,
+                  // marginLeft: spacing.x5,
+                }}
+              >
+                <Message2 color={colors.text} />
+                <StyledText style={{ marginLeft: spacing.x10, marginVertical: spacing.x5 }}>
+                  {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                </StyledText>
               </View>
             </View>
           </View>

@@ -13,12 +13,7 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
-import {
-  GiphyDialog,
-  GiphyDialogEvent,
-  GiphyDialogMediaSelectEventHandler,
-  GiphyMedia,
-} from '@giphy/react-native-sdk';
+import { GiphyMedia } from '@giphy/react-native-sdk';
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
@@ -26,13 +21,12 @@ import StyledText from '@/components/styled/Text';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 
-import { borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { ArticleType, CommentPost, SocialPost, SocialPostReaction } from '@/utils/types';
 
 import CommentField from '@/components/comments/Field';
 import CommentItem from '@/components/comments/CommentItem';
-import SocialItem from '@/components/listItems/SocialItem';
+
 import ArticleItem from '@/src/components/listItems/ArticleItem';
 import { styles as globalStyle } from '@/components/listItems/style';
 
