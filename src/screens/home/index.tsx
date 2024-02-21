@@ -516,21 +516,17 @@ function Home({ navigation }: Props) {
                               postId: item.id,
                             });
                           }
-                        }}
-                      >
-                        <ArticleItem
-                          pillText="Suggested"
-                          key={`relatedContent_${item.id}`}
-                          item={item.item}
-                          imageSizeType="cover"
-                          blogPostStyle={{
-                            ...globalStyle.blogpostview,
-                            backgroundColor: cardSecondaryColor,
-                          }}
-                          blogPostImageStyle={globalStyle.newspostimage}
-                          blogPostTitleStyle={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
+
+                      <ArticleItem
+                        pillText="Suggested"
+                        key={`relatedContent_${item.id}`}
+                        item={item.item}
+                        imageSizeType="cover"
+                        blogPostStyle={globalStyle.blogpostview}
+                        blogPostImageStyle={globalStyle.newspostimage}
+                        blogPostTitleStyle={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
                           }}
                           showModal={showModal}
                         />

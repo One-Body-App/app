@@ -81,7 +81,6 @@ interface BaseItemProps {
 function BaseItem({
   style,
   onPress,
-
   children,
   created,
   updated,
@@ -363,10 +362,17 @@ function BaseItem({
           {userData.profileIcon && !userData.profileImage ? (
             <View
               style={{
+                width: 40,
+                height: 40,
                 borderRadius: borderRadius.max,
                 borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
                 padding: spacing.x5,
+                marginBottom: spacing.x5,
+                marginLeft: spacing.x10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
               {userData.profileIcon}
@@ -374,7 +380,7 @@ function BaseItem({
           ) : (
             <FastImage
               source={{
-                uri: userData.profileImage != '' ? userData.profileImage : NO_PROFILE_IMAGE,
+                uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
               }}
               style={{
                 width: 40,

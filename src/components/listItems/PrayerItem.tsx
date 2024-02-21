@@ -1,8 +1,6 @@
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
-  GestureResponderEvent,
   Image,
   ScrollView,
   StyleProp,
@@ -10,51 +8,38 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import {
-  CompositeNavigationProp,
-  CompositeScreenProps,
-  NavigationProp,
-  useNavigation,
-  useTheme,
-} from '@react-navigation/native';
-import FastImage from 'react-native-fast-image';
+import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import Video from 'react-native-video';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import { useReducedMotion } from 'react-native-reanimated';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
+
 import ImageView from 'react-native-image-viewing';
 import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+
 import { isArray } from 'lodash';
 import Modal from 'react-native-modal';
 import Toast, { useToast } from 'react-native-toast-notifications';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getHeight, timeSince } from '@/utils/ResponsiveFun';
-import { styles } from './style';
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-
-import Twitter from '@/assets/svg/Twitter.svg';
-import Instagram from '@/assets/svg/Instagram.svg';
-import { AccountType, PostType, PrayerPost, SocialPost, SocialPostReaction } from '@/utils/types';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
+import { PostType, PrayerPost, SocialPostReaction } from '@/utils/types';
 import {
-  ExploreStackParamsList,
   MainDrawerParamsList,
   MainBottomStackParamsList,
   PrayerWallStackParamsList,
 } from '@/src/navigator/types';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { borderRadius } from '@/src/styles/outlines';
 import StyledText from '../styled/Text';
 import { fontSize, header } from '@/src/styles/typography';
 import { spacing } from '@/src/styles/spacing';
-import { Colors, Spacing } from '@/src/styles';
+import { Colors } from '@/src/styles';
 import BaseItem from './BaseItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import { ApiCall } from '@/services/api';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
 import Anonymous from '@/assets/svg/anonymous.svg';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
@@ -250,7 +235,7 @@ function PrayerItem({
           : {
               ...item.userData,
               profileImage:
-                item?.userData?.profileImage && item?.userData?.profileImage != ''
+                item?.userData?.profileImage && item?.userData?.profileImage !== ''
                   ? item?.userData?.profileImage
                   : NO_PROFILE_IMAGE,
             }

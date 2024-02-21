@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux';
 
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { ApiCall } from '@/src/services/api';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -37,8 +37,8 @@ function PrayerWallComponent() {
       });
       let posts = [];
       // console.log(res.response.meta.body.error);
-      if (res?.status == 200) {
-        if (pageNumber == 1) {
+      if (res?.status === 200) {
+        if (pageNumber === 1) {
           posts = res?.response ?? [];
           setIsEndOfList(false);
         } else {
