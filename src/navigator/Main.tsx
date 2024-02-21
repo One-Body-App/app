@@ -48,6 +48,7 @@ import NewPost from '../screens/post/NewPost';
 
 import SinglePost from '../screens/post/Single';
 import VideoPost from '../screens/post/VideoPost';
+import RssPost from '../screens/post/RssPost';
 
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
@@ -298,6 +299,12 @@ function Main() {
               <MainStack.Screen
                 name="SinglePost"
                 component={SinglePost}
+                options={{ headerBackTitleVisible: false, title: 'Comment' }}
+              />
+
+              <MainStack.Screen
+                name="SingleRss"
+                component={RssPost}
                 options={{ headerBackTitleVisible: false, title: 'Comment' }}
               />
 

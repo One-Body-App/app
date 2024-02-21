@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
+import {
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleProp,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import Video from 'react-native-video';
@@ -8,7 +16,8 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
-import ImageModal from '@dreamwalk-os/react-native-image-modal';
+
+import ImageView from 'react-native-image-viewing';
 import { GiphyMediaView } from '@giphy/react-native-sdk';
 import { isArray } from 'lodash';
 import { NO_POST_IMAGE_URL, OpenURLButton } from '@/services/constants';
@@ -80,6 +89,7 @@ function SocialItem({
   >([]);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
+  const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
   const navigation = useNavigation<ScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   let url = '';
@@ -331,52 +341,89 @@ function SocialItem({
           })}
 
         {imageInfo.length > 0 ? (
-          // eslint-disable-next-line react/jsx-no-useless-fragment
           <>
+            <ImageView
+              images={imageInfo.map((item) => ({
+                uri: item.url,
+              }))}
+              presentationStyle="overFullScreen"
+              imageIndex={imageModalIndexVisible}
+              visible={imageModalIndexVisible > -1}
+              onRequestClose={() => {
+                setImageModalIndexVisible(-1);
+              }}
+            />
+
             {imageInfo.length > 1 ? (
               <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
                 {imageInfo.map((image, index) => {
                   return (
-                    <View
+                    <TouchableOpacity
                       key={`${index}`}
                       style={{
                         flexGrow: 1,
-                        aspectRatio: image.width / image.height,
 
                         padding: spacing.x10,
                       }}
+                      onPress={() => {
+                        setImageModalIndexVisible(index);
+                      }}
                     >
-                      <ImageModal
+                      {/* <ImageView
+                        images={images}
+                        imageIndex={0}
+                        visible={visible}
+                        onRequestClose={() => setIsVisible(false)}
+                      /> */}
+                      <Image
                         key={index}
-                        resizeMode={image.width > image.height ? 'cover' : 'stretch'}
+                        // resizeMode={image.width > image.height ? 'cover' : 'stretch'}
                         style={{
                           borderRadius: borderRadius.small,
                           aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
                           width: 250,
+                          maxHeight: 300,
                         }}
-                        modalImageResizeMode="center"
+                        // modalImageResizeMode="center"
+                        // modalImageResizeMode="cover"
+                        // modalImageStyle={{
+                        //   flexGrow: 1,
+                        //   aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
+                        // }}
                         source={{ uri: image?.url }}
                       />
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </ScrollView>
             ) : (
-              <ImageModal
-                key={index}
-                resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
+              <TouchableOpacity
+                key={`${index}`}
                 style={{
-                  borderRadius: borderRadius.xs,
-                  // flexGrow: 1,
-                  aspectRatio: imageInfo[0].width / imageInfo[0].height,
-                  width: '100%',
-                  // height: 300,
-                  // borderRadius: 2,
-                  // marginVertical: 10,
+                  flexGrow: 1,
+
+                  padding: spacing.x10,
                 }}
-                modalImageResizeMode="center"
-                source={{ uri: imageInfo[0]?.url }}
-              />
+                onPress={() => {
+                  setImageModalIndexVisible(0);
+                }}
+              >
+                <Image
+                  key={index}
+                  resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
+                  style={{
+                    borderRadius: borderRadius.small,
+                    // flexGrow: 1,
+                    aspectRatio: imageInfo[0].width / imageInfo[0].height,
+                    width: '100%',
+                    // height: 300,
+                    // borderRadius: 2,
+                    // marginVertical: 10,
+                  }}
+                  // modalImageResizeMode="center"
+                  source={{ uri: imageInfo[0]?.url }}
+                />
+              </TouchableOpacity>
             )}
           </>
         ) : null}

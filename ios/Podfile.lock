@@ -1489,6 +1489,7 @@ DEPENDENCIES:
   - GoogleUtilities
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - libevent (~> 2.1.12)
+  - libwebp (= 1.3.2)
   - lottie-ios (from `../node_modules/lottie-ios`)
   - lottie-react-native (from `../node_modules/lottie-react-native`)
   - OpenSSL-Universal (= 1.1.1100)
@@ -1575,6 +1576,7 @@ DEPENDENCIES:
   - RNSha256 (from `../node_modules/react-native-sha256`)
   - RNShare (from `../node_modules/react-native-share`)
   - RNSVG (from `../node_modules/react-native-svg`)
+  - SDWebImageWebPCoder
   - VisionCamera (from `../node_modules/react-native-vision-camera`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -1958,6 +1960,6 @@ SPEC CHECKSUMS:
   VisionCamera: 4b98b273902ac18491bb68481b6601f1f0da0f2d
   Yoga: 44003f970aa541b79dfdd59cf236fda41bd5890f
 
-PODFILE CHECKSUM: 793da1ed0e8bcc06e3b1177f48e39240e6478fe0
+PODFILE CHECKSUM: f1e4f85245ac28676bad675ca36d758cd0c70759
 
 COCOAPODS: 1.14.3

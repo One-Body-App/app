@@ -211,7 +211,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   postView: {
-    flex: 1,
+    // flex: 1,
     flexGrow: 1,
     flexDirection: 'row',
     borderBottomWidth: borderWidth.thick * 2,

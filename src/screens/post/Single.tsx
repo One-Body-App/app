@@ -57,7 +57,7 @@ let keyboardWillShowListener: EmitterSubscription;
 let onKeyboardWillHideListener: EmitterSubscription;
 function SinglePost({ navigation, route }: Props) {
   const [post, setPost] = useState<SocialPost>();
-  const [comments, setComments] = useState<CommentPost[]>();
+  const [comments, setComments] = useState<CommentPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
@@ -170,7 +170,7 @@ function SinglePost({ navigation, route }: Props) {
     setIsLoading(true);
     try {
       const result = await ApiCall({
-        route: `comments/social/${route.params?.postId}`,
+        route: `comments/social/${route.params?.postId}?page=${page}`,
         token,
 
         verb: 'get',
@@ -178,8 +178,20 @@ function SinglePost({ navigation, route }: Props) {
 
       setIsLoading(false);
       setIsRefreshing(false);
+      let newComments = [];
       if (result.status == 200) {
-        setComments(result.response.content);
+        if (page == 1) {
+          newComments = result?.response.content ?? [];
+
+          setIsEndOfList(false);
+        } else {
+          newComments = [...comments, ...(result?.response.content ?? [])];
+          if (result?.response.content.length < 1) {
+            setIsEndOfList(true);
+          }
+        }
+
+        setComments(newComments);
       }
     } catch (e) {
       setIsRefreshing(false);
@@ -283,7 +295,7 @@ function SinglePost({ navigation, route }: Props) {
       <View style={{ flex: 1, top: -1 * keyboardHeight }}>
         {post ? (
           <>
-            <View>
+            <View style={{ overflow: 'hidden' }}>
               <SocialItem
                 editPost={editPost}
                 removePost={removePost}

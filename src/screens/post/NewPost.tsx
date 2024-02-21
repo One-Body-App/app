@@ -2,25 +2,15 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
-  TouchableHighlight,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import {
-  ArrowDown2,
-  CloseCircle,
-  Gallery,
-  Location as LocationIcon,
-  Setting2,
-  VideoPlay,
-} from 'iconsax-react-native';
+import { CloseCircle, Gallery, Location as LocationIcon, VideoPlay } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -57,7 +47,7 @@ import { button } from '@/src/styles/buttons';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { Location } from '@/utils/types';
-import { fontSize, lineHeight } from '@/src/styles/typography';
+import { fontSize } from '@/src/styles/typography';
 
 import ImagePickerModal from '@/components/ImagePickerModal';
 import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/services/constants';
@@ -78,7 +68,6 @@ function NewPost({ navigation, route }: Props) {
   const [location, setLocation] = useState<MapSuggestion | null>(null);
   const [locationName, setLocationName] = useState<string | null>(null);
   const [locationSelector, setLocationSelector] = useState<boolean>(false);
-  const [headerImagePickerModalVisibile, setHeaderImagePickerModalVisibile] = useState(false);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
   const [imagesToUpload, setImagesToUpload] = useState<Asset[]>([]);
   const { colors } = useTheme();
@@ -86,12 +75,6 @@ function NewPost({ navigation, route }: Props) {
   const toast = useToast();
   const [uploadImagesObject, setUploadImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
-
-  const [headerImageObject, setHeaderImageObject] = useState<{
-    uri: string;
-    type: string;
-    name: string;
-  }>();
 
   useEffect(() => {
     GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
@@ -112,7 +95,6 @@ function NewPost({ navigation, route }: Props) {
         params: serialize(
           {
             content,
-            uploadImages: uploadImagesObject,
             images: imagesObject,
             gif: mediaGif,
             location: location
@@ -151,6 +133,26 @@ function NewPost({ navigation, route }: Props) {
 
   const postSocial = async () => {
     setIsLoading(true);
+    console.log(
+      serialize(
+        {
+          content,
+          images: uploadImagesObject,
+          gif: mediaGif,
+          location: location
+            ? {
+                coordinates: location?.geometry.coordinates,
+                name: location?.place_name,
+              }
+            : undefined,
+        },
+        {
+          noAttributesWithArrayNotation: true,
+          noFilesWithArrayNotation: true,
+        }
+      ),
+      'uploadImagesObject'
+    );
     try {
       const result = await ApiCall({
         route: 'social/post',
@@ -177,7 +179,7 @@ function NewPost({ navigation, route }: Props) {
       });
 
       setIsLoading(false);
-
+      console.log(result);
       if (result.status === 200) {
         setContent('');
         navigation.popToTop();
@@ -253,88 +255,45 @@ function NewPost({ navigation, route }: Props) {
   };
 
   const chooseImageGallery = async () => {
-    const options: ImageLibraryOptions = {
-      mediaType: 'photo',
+    const results = await ImagePicker.openPicker({
+      multiple: true,
+      compressImageQuality: 0.5,
+    }).then(async (images) => {
+      const result = [];
 
-      // noData: true,
-      selectionLimit: 0.8,
-    };
-    const response = await launchImageLibrary(options);
-
-    if (response.didCancel) {
-      console.log('User cancelled camera picker');
-
-      return;
-    }
-    if (response.errorCode == 'camera_unavailable') {
-      console.log('Camera not available on device');
-
-      return;
-    }
-    if (response.errorCode == 'permission') {
-      console.log('Permission not satisfied');
-
-      return;
-    }
-    if (response.errorCode == 'others') {
-      console.log(response.errorMessage);
-      return;
-    }
-
-    if (response?.assets && response?.assets.length > 0) {
-      setImagesToUpload(response?.assets);
-      //   for (let i = 0; i < response?.assets?.length; i++) {
-
-      //   }
-    }
-    setHeaderImagePickerModalVisibile(false);
-
-    if (response?.assets && response?.assets.length > 0) {
-      setImagesToUpload(response?.assets);
-      setUploadImagesObject(
-        response?.assets.map((imagesObj) => {
-          return {
-            uri: imagesObj.uri ?? '',
-            type: imagesObj.type ?? '',
-            name: imagesObj?.fileName ?? '',
-          };
-        })
-      );
-    }
-
-    // cropimage(uri ?? '', imageType);
-  };
-
-  const cropimage = async (uri: string, imageType: 'header' | 'photo') => {
-    try {
-      setTimeout(async () => {
-        const image = await ImagePicker.openCropper({
-          height: imageType == 'header' ? (Dimensions.get('screen').width * 9) / 16 : undefined,
-          width: imageType == 'header' ? Dimensions.get('screen').width : undefined,
+      // eslint-disable-next-line no-restricted-syntax
+      for await (const image of images) {
+        const img = await ImagePicker.openCropper({
           mediaType: 'photo',
-          cropperCircleOverlay: imageType == 'photo',
-          path: uri,
+          path: image.path,
+
           forceJpg: true,
           maxFiles: 1,
-          compressImageMaxHeight: 150,
+          compressImageQuality: 0.8,
+
+          freeStyleCropEnabled: true,
+          width: 1920,
+          height: 1080,
+          smartAlbums: ['UserLibrary', 'PhotoStream'],
         });
+        result.push(img);
+      }
+      console.log(result);
+      return result;
+    });
 
-        const MyObject = {
-          uri: image?.path,
-          type: image?.mime,
-        };
+    const images = results.map((imagesObj, index) => {
+      return {
+        uri: `file://${imagesObj.path ?? ''}`,
+        type: imagesObj.mime ?? '',
+        name: imagesObj.filename ?? `image_${index}`,
+      };
+    });
 
-        // setImagesToUpload(image?.path);
-        // setImageObject({
-        //   ...MyObject,
-        //   name: 'profileImage' + user?._id,
-        // });
+    setImagesToUpload(images);
+    setPickerModalVisibile(false);
 
-        setPickerModalVisibile(false);
-      }, 500);
-    } catch (e) {
-      console.log(e);
-    }
+    setUploadImagesObject(images);
   };
 
   const captureImage = async (contentType: MediaType) => {
@@ -389,7 +348,7 @@ function NewPost({ navigation, route }: Props) {
           })
         );
       }
-      setHeaderImagePickerModalVisibile(false);
+      setPickerModalVisibile(false);
     } else {
       // console.log('no ', isCameraPermitted);
     }
@@ -646,8 +605,8 @@ function NewPost({ navigation, route }: Props) {
             />
 
             <ImagePickerModal
-              visible={headerImagePickerModalVisibile}
-              hideVisible={() => setHeaderImagePickerModalVisibile(false)}
+              visible={pickerModalVisibile}
+              hideVisible={() => setPickerModalVisibile(false)}
               galleryImage={() => chooseImageGallery()}
               cameraImage={() => captureImage('photo')}
             />
@@ -677,11 +636,7 @@ function NewPost({ navigation, route }: Props) {
                 }}
                 leftIcon={<Gallery color={Colors.primary.brand} size={32} />}
                 onPress={async () => {
-                  // setCamera(true);
-                  setHeaderImagePickerModalVisibile(true);
-                  // LoginManager.logOut();
-                  // dispatch(logout());
-                  // await auth().signOut();
+                  setPickerModalVisibile(true);
                 }}
               />
               {/* <Button

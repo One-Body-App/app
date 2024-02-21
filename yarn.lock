@@ -11598,8 +11598,9 @@ __metadata:
     react-native-fbsdk-next: "npm:^12.1.2"
     react-native-gesture-handler: "npm:^2.14.0"
     react-native-gifted-chat: "npm:^1.0.0"
-    react-native-image-crop-picker: "npm:^0.40.0"
+    react-native-image-crop-picker: "npm:^0.40.3"
     react-native-image-picker: "npm:^7.1.0"
+    react-native-image-viewing: "npm:^0.2.2"
     react-native-inappbrowser-reborn: "npm:^3.7.0"
     react-native-keyboard-aware-scroll-view: "npm:^0.9.5"
     react-native-linear-gradient: "npm:^2.8.3"
@@ -12579,12 +12580,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-image-crop-picker@npm:^0.40.0":
-  version: 0.40.2
-  resolution: "react-native-image-crop-picker@npm:0.40.2"
+"react-native-image-crop-picker@npm:^0.40.3":
+  version: 0.40.3
+  resolution: "react-native-image-crop-picker@npm:0.40.3"
   peerDependencies:
     react-native: ">=0.40.0"
-  checksum: 10/188dfeb131a0fb8231748938ace38c9a79f730ccc561d9ac8cd6a8376cadf882c83809c64f7d7bf428233aa022a35ca6156a42096a4fd6854248e81412c3dd14
+  checksum: 10/5242a682cf14a70befe98b45686e8919badc7daf282fe05f1325c3f7bf415429c9547319a46a13e82f5c9961bad29395a457451c07d8cd88b09624b8f90f2290
   languageName: node
   linkType: hard
 
@@ -12595,6 +12596,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/e8dd2ae04cf620f7d7c29e6ee7a0f959ba4f76ee7f8e2244e5809cebc82558e03790682df57ced1a8dad272ecc0cc2446e5d26cad0381432d1b428c5955416e0
+  languageName: node
+  linkType: hard
+
+"react-native-image-viewing@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "react-native-image-viewing@npm:0.2.2"
+  peerDependencies:
+    react: ">=16.11.0"
+    react-native: ">=0.61.3"
+  checksum: 10/9097d7b82676279fa0a690e808fbf95ea5a0c629dcef9f28833783c6a82c839af253897f33dcc8a41615d04e3411472b7c6eaf54ea80f185306bcb3a43c1f957
   languageName: node
   linkType: hard
 

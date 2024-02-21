@@ -115,7 +115,17 @@ export default function StyledSelect({
             backgroundColor: colors.background,
           }}
         >
-          <View style={{ paddingHorizontal: spacing.x16, paddingBottom: spacing.x10 }}>
+          {/* <View style={{ paddingHorizontal: spacing.x16, paddingBottom: spacing.x10 }}> */}
+          <View
+            style={{
+              flex: hideSearch ? 0 : 1.5,
+
+              maxHeight: 90,
+              paddingHorizontal: spacing.x16,
+
+              // paddingBottom: hideSearch ? spacing.x10 : 0,
+            }}
+          >
             <View
               style={{
                 flexDirection: 'row',
@@ -123,7 +133,9 @@ export default function StyledSelect({
                 // flex: 1,
               }}
             >
-              <StyledText style={Typography.fontSize.x4}>{modalTitle}</StyledText>
+              <StyledText style={[Typography.fontSize.x4, { paddingBottom: spacing.x10 }]}>
+                {modalTitle}
+              </StyledText>
 
               <TouchableOpacity
                 onPress={() => {
@@ -171,8 +183,8 @@ export default function StyledSelect({
 
           <View
             style={{
-              paddingTop: spacing.x10,
               flex: 1,
+              paddingHorizontal: hideSearch ? 0 : spacing.x8,
             }}
           >
             <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled>

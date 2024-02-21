@@ -15,8 +15,10 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
-import ImageModal from '@dreamwalk-os/react-native-image-modal';
-import { GiphyMediaView } from '@giphy/react-native-sdk';
+
+import ImageView from 'react-native-image-viewing';
+import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+
 import { isArray } from 'lodash';
 import Modal from 'react-native-modal';
 import Toast, { useToast } from 'react-native-toast-notifications';
@@ -83,6 +85,7 @@ function PrayerItem({
   const [showModal, setShowModal] = useState<boolean>(false);
   const [media, setMedia] = useState<Media[]>([]);
   const toastRef = useRef<Toast>(null);
+  const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
   const [imageInfo, setImageInfo] = useState<
     {
       url: string;
@@ -294,21 +297,34 @@ function PrayerItem({
           })}
 
         {imageInfo.length > 0 ? (
-          // eslint-disable-next-line react/jsx-no-useless-fragment
           <>
+            <ImageView
+              images={imageInfo.map((item) => ({
+                uri: item.url,
+              }))}
+              presentationStyle="overFullScreen"
+              imageIndex={imageModalIndexVisible}
+              visible={imageModalIndexVisible > -1}
+              onRequestClose={() => {
+                setImageModalIndexVisible(-1);
+              }}
+            />
             {imageInfo.length > 1 ? (
               <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
                 {imageInfo.map((image, index) => {
                   return (
-                    <View
+                    <TouchableOpacity
+                      key={`${index}`}
                       style={{
                         flexGrow: 1,
-                        aspectRatio: image.width / image.height,
 
                         padding: spacing.x10,
                       }}
+                      onPress={() => {
+                        setImageModalIndexVisible(index);
+                      }}
                     >
-                      <ImageModal
+                      <Image
                         key={index}
                         resizeMode={image.width > image.height ? 'contain' : 'stretch'}
                         style={{
@@ -320,29 +336,39 @@ function PrayerItem({
                           // borderRadius: 2,
                           // marginVertical: 10,
                         }}
-                        modalImageResizeMode="center"
                         source={{ uri: image?.url }}
                       />
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </ScrollView>
             ) : (
-              <ImageModal
-                key={index}
-                resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
+              <TouchableOpacity
+                key={`${index}`}
                 style={{
-                  borderRadius: borderRadius.small,
-                  // flexGrow: 1,
-                  aspectRatio: imageInfo[0].width / imageInfo[0].height,
-                  width: '100%',
-                  // height: 300,
-                  // borderRadius: 2,
-                  // marginVertical: 10,
+                  flexGrow: 1,
+
+                  padding: spacing.x10,
                 }}
-                modalImageResizeMode="center"
-                source={{ uri: imageInfo[0]?.url }}
-              />
+                onPress={() => {
+                  setImageModalIndexVisible(0);
+                }}
+              >
+                <Image
+                  key={index}
+                  resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
+                  style={{
+                    borderRadius: borderRadius.small,
+                    // flexGrow: 1,
+                    aspectRatio: imageInfo[0].width / imageInfo[0].height,
+                    width: '100%',
+                    // height: 300,
+                    // borderRadius: 2,
+                    // marginVertical: 10,
+                  }}
+                  source={{ uri: imageInfo[0]?.url }}
+                />
+              </TouchableOpacity>
             )}
           </>
         ) : null}
