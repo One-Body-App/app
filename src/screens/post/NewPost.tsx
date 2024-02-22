@@ -439,7 +439,7 @@ function NewPost({ navigation, route }: Props) {
               }}
               inputWrapperStyle={{ paddingVertical: spacing.x10, borderRadius: borderRadius.base }}
               value={content}
-              maxLength={200}
+              maxLength={300}
               maxLengthErrorMessage="This message exceeds the character limit."
               numberOfLines={4}
               showCharCounter
