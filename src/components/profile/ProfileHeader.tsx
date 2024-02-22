@@ -1,13 +1,7 @@
 import { useCurrentTabScrollY } from 'react-native-collapsible-tab-view';
 
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  CommonActions,
-  CompositeNavigationProp,
-  NavigationProp,
-  useNavigation,
-  useTheme,
-} from '@react-navigation/native';
+import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { Add, Location, Calendar, ShieldTick, HomeHashtag, Link21 } from 'iconsax-react-native';
 import React, { useState } from 'react';
 import {
@@ -170,14 +164,7 @@ function ProfileHeader({
       [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
       [0, 0 - HEADER_COLLAPSED_HEIGHT]
     );
-
-    const opacity = interpolate(
-      scrollY.value,
-
-      [0, 130],
-      [1, 0]
-    );
-
+    const opacity = interpolate(scrollY.value, [0, 130], [1, 0]);
     return {
       opacity,
       transform: [
@@ -194,12 +181,7 @@ function ProfileHeader({
       [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
       [0, 0 - 300]
     );
-    let width = interpolate(
-      scrollY.value,
-
-      [0, 0 - 300],
-      [0, 35]
-    );
+    let width = interpolate(scrollY.value, [0, 0 - 300], [0, 35]);
 
     const maxValue = height - HEADER_COLLAPSED_HEIGHT - (height - 190);
 
@@ -224,9 +206,8 @@ function ProfileHeader({
     <Animated.View
       pointerEvents="box-none"
       onLayout={({ nativeEvent }) => {
-        const { x, y, width, height } = nativeEvent.layout;
-
-        setHeight(height);
+        const { height: divHeight } = nativeEvent.layout;
+        setHeight(divHeight);
       }}
     >
       <Animated.View pointerEvents="box-none">
@@ -257,9 +238,9 @@ function ProfileHeader({
               pointerEvents="none"
             />
           )}
-          {profileData?.accountType == 'individual' &&
-          ((profileData?.badgesData?.length > 0 && profileData?._id != currentUser._id) ||
-            (profileData?.badgesData?.length <= 3 && profileData?._id == currentUser._id)) ? (
+          {profileData?.accountType === 'individual' &&
+          ((profileData?.badgesData?.length > 0 && profileData?._id !== currentUser._id) ||
+            (profileData?.badgesData?.length <= 3 && profileData?._id === currentUser._id)) ? (
             <View
               style={{
                 alignSelf: 'flex-end',
@@ -278,7 +259,7 @@ function ProfileHeader({
                   flexDirection: 'row',
                 }}
               >
-                {profileData?.badgesData?.length < 3 && profileData?._id == currentUser._id && (
+                {profileData?.badgesData?.length < 3 && profileData?._id === currentUser._id && (
                   <TouchableOpacity
                     style={{
                       borderColor: 'white',
@@ -466,7 +447,7 @@ function ProfileHeader({
             ]}
             pointerEvents="box-none"
           >
-            {profileData?._id == currentUser._id ? (
+            {profileData?._id === currentUser._id ? (
               <Button
                 onPress={() => {
                   navigation.navigate('EditProfile');
@@ -510,7 +491,7 @@ function ProfileHeader({
         </Animated.View>
 
         <Animated.View style={[contentAnimation]} pointerEvents="box-none">
-          {profileData?.influencerProfile?.influencerStatus == 'approved' && profileData?.bio ? (
+          {profileData?.influencerProfile?.influencerStatus === 'approved' && profileData?.bio ? (
             <View style={{ marginBottom: spacing.x16 }} pointerEvents="box-none">
               <StyledText numberOfLines={3} style={{ color: Colors.neutral[200] }}>
                 {profileData?.bio}
@@ -580,8 +561,8 @@ function ProfileHeader({
             </StyledText>
           </View>
 
-          {profileData.accountType == AccountType.individual &&
-          (profileData?._id == currentUser._id || profileData.profile?.isChurchTypePublic) ? (
+          {profileData.accountType === AccountType.individual &&
+          (profileData?._id === currentUser._id || profileData.profile?.isChurchTypePublic) ? (
             <View
               style={{
                 flexDirection: 'row',
@@ -642,7 +623,7 @@ function ProfileHeader({
               // marginBottom: spacing.x10,
               // width: '65%',
               overflow: 'hidden',
-              height: 60,
+              height: 58,
               paddingTop: spacing.x5,
             },
             connectedConnectorsContent,
@@ -667,7 +648,6 @@ function ProfileHeader({
             <StyledText
               style={[
                 Typography.body.x3M,
-
                 {
                   marginLeft: spacing.x24,
                   flex: 1,
