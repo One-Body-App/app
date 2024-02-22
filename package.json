@@ -51,6 +51,7 @@
     "buffer": "^6.0.3",
     "color": "^4.2.3",
     "date-fns": "^3.2.0",
+    "deprecated-react-native-prop-types": "^5.0.0",
     "html-entities": "^2.4.0",
     "iconoir-react-native": "^7.0.0",
     "iconsax-react-native": "^0.0.8",
@@ -103,11 +104,12 @@
     "react-native-toast-message": "^2.1.6",
     "react-native-toast-notifications": "^3.3.1",
     "react-native-typography": "^1.4.1",
-    "react-native-vector-icons": "^10.0.0",
+    "react-native-vector-icons": "^10.0.3",
     "react-native-video": "^5.2.1",
     "react-native-video-trim": "^1.0.10",
     "react-native-vision-camera": "^3.8.2",
     "react-native-webview": "^13.6.3",
+    "react-native-youtube": "^2.0.2",
     "react-redux": "^9.0.4",
     "redux": "^5.0.1",
     "redux-persist": "^6.0.0",
@@ -174,5 +176,5 @@
       "eslint --fix --quiet"
     ]
   },
-  "packageManager": "yarn@4.0.2"
+  "packageManager": "yarn@4.1.0"
 }
