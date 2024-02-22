@@ -286,28 +286,31 @@ function Home({ navigation }: Props) {
       <View
         style={{
           flexDirection: 'row',
-
+          marginHorizontal: spacing.x5,
           // marginBottom: 20,
         }}
       >
-        <View style={{ flex: 1.5 }} key="main">
+        <View style={{ flex: 1.4 }} key="main">
           <TouchableOpacity
             onPress={() => {
-              if (feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou) {
+              if (
+                feedOptions.type === FeedTypes.Connected ||
+                feedOptions.type === FeedTypes.ForYou
+              ) {
                 setFeedSubType(
-                  feedOptions.type == FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
+                  feedOptions.type === FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
                 );
                 filterUpdate(
-                  feedOptions.type == FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
+                  feedOptions.type === FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
                 );
               } else {
                 filterUpdate(
-                  feedSubType == FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
+                  feedSubType === FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
                 );
               }
             }}
             style={
-              feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou
+              feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou
                 ? [styles.menuItemSelected]
                 : [styles.menuItem]
             }
@@ -315,7 +318,7 @@ function Home({ navigation }: Props) {
             <View style={{ flexDirection: 'row' }}>
               <StyledText
                 style={
-                  feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou
+                  feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou
                     ? [
                         styles.menuItemText,
                         { fontWeight: 'bold', color: Colors.primarySapphire.brand },
@@ -323,69 +326,83 @@ function Home({ navigation }: Props) {
                     : [styles.menuItemText, { color: Colors.neutral[400] }]
                 }
               >
-                {feedOptions.type == FeedTypes.Read
+                {feedOptions.type === FeedTypes.Read
                   ? 'Feed'
-                  : feedSubType == FeedTypes.Connected
+                  : feedSubType === FeedTypes.Connected
                     ? 'Connected'
                     : 'For You'}
               </StyledText>
-              {feedOptions.type == FeedTypes.Read ? null : (
+              {feedOptions.type === FeedTypes.Read ? null : (
                 <ArrowDown2
                   size={20}
                   color={
-                    feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou
+                    feedOptions.type === FeedTypes.Connected ||
+                    feedOptions.type === FeedTypes.ForYou
                       ? Colors.primarySapphire.brand
                       : Colors.neutral[400]
                   }
-                  style={{ marginLeft: spacing.x10 }}
+                  style={{ marginLeft: spacing.x5 }}
                 />
               )}
             </View>
           </TouchableOpacity>
         </View>
 
-        {feedTypes.map((feedType) => {
-          return (
-            <View style={{ flex: 1 }} key={feedType}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (
-                    (feedOptions.type == FeedTypes.Connected ||
-                      feedOptions.type == FeedTypes.ForYou) &&
-                    (feedType == FeedTypes.Connected || feedType == FeedTypes.ForYou)
-                  ) {
-                    setSelectVisible(true);
-                  } else if (feedType == FeedTypes.Pray) {
-                    navigation.navigate('MainRoot', {
-                      screen: 'PrayerWall',
-                    });
-                  } else if (feedOptions.type != feedType) {
-                    filterUpdate(feedType);
-                  }
-                }}
+        {feedTypes.map((feedType, index) => (
+          <View style={{ flex: index === 2 ? 1.3 : 0.8 }} key={feedType}>
+            <TouchableOpacity
+              onPress={() => {
+                if (
+                  (feedOptions.type === FeedTypes.Connected ||
+                    feedOptions.type === FeedTypes.ForYou) &&
+                  (feedType === FeedTypes.Connected || feedType === FeedTypes.ForYou)
+                ) {
+                  setSelectVisible(true);
+                } else if (feedType === FeedTypes.Pray) {
+                  navigation.navigate('MainRoot', {
+                    screen: 'PrayerWall',
+                  });
+                } else if (feedOptions.type !== feedType) {
+                  filterUpdate(feedType);
+                }
+              }}
+              style={
+                feedOptions.type === feedType ||
+                (feedType === FeedTypes.Connected && feedOptions.type === FeedTypes.ForYou)
+                  ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
+                  : [
+                      styles.menuItem,
+                      {
+                        marginLeft: 0,
+                      },
+                    ]
+              }
+            >
+              <StyledText
                 style={
-                  feedOptions.type == feedType ||
-                  (feedType == FeedTypes.Connected && feedOptions.type == FeedTypes.ForYou)
-                    ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
-                    : [styles.menuItem]
+                  feedOptions.type === feedType
+                    ? [
+                        styles.menuItemText,
+                        {
+                          fontWeight: 'bold',
+                          color: Colors.primarySapphire.brand,
+                          textAlign: 'left',
+                        },
+                      ]
+                    : [
+                        styles.menuItemText,
+                        {
+                          color: Colors.neutral[400],
+                          textAlign: 'left',
+                        },
+                      ]
                 }
               >
-                <StyledText
-                  style={
-                    feedOptions.type == feedType
-                      ? [
-                          styles.menuItemText,
-                          { fontWeight: 'bold', color: Colors.primarySapphire.brand },
-                        ]
-                      : [styles.menuItemText, { color: Colors.neutral[400] }]
-                  }
-                >
-                  {feedType}
-                </StyledText>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
+                {feedType}
+              </StyledText>
+            </TouchableOpacity>
+          </View>
+        ))}
       </View>
 
       {isLoading && feedOptions.page == 1 && !isRefreshing ? (
