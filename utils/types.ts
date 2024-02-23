@@ -154,6 +154,7 @@ export type ArticleType = {
     accountType: AccountType;
     profileImage?: string;
   };
+  reactions: SocialPostReaction[];
 };
 
 export enum AccountType {

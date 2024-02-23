@@ -21,7 +21,7 @@ import {
   MainDrawerParamsList,
 } from '@/src/navigator/types';
 import { borderRadius } from '@/src/styles/outlines';
-import { ArticleType, PostType } from '@/utils/types';
+import { ArticleType, PostType, SocialPostReaction } from '@/utils/types';
 
 import { NO_POST_IMAGE_URL, OpenURLButton } from '@/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -45,6 +45,7 @@ function ArticleItem({
   hideProfileName,
   pillText,
   onPress,
+  parentRefreshContent,
 }: {
   item: ArticleType;
   blogPostStyle?: StyleProp<ViewStyle>;
@@ -56,6 +57,7 @@ function ArticleItem({
   hideProfileName?: boolean;
   pillText?: string;
   onPress?: (item: ArticleType) => void;
+  parentRefreshContent?: Function;
 }) {
   const { colors } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -65,6 +67,12 @@ function ArticleItem({
   useEffect(() => {
     setItemData(item);
   }, [item]);
+  let myReaction: SocialPostReaction | undefined;
+  item.reactions?.forEach((reaction) => {
+    if (reaction.userId == user?._id) {
+      myReaction = reaction;
+    }
+  });
 
   return (
     <BaseItem
@@ -77,6 +85,8 @@ function ArticleItem({
         image: item.image,
         commentNumber: item.commentNumber,
         comments: item.comments,
+        reactions: item.reactions ?? [],
+        myReaction,
       }}
       created={itemData?.created}
       userData={item.userData}
@@ -95,6 +105,7 @@ function ArticleItem({
         }
       }}
       style={blogPostStyle}
+      parentRefreshContent={parentRefreshContent}
     >
       <TouchableOpacity
         onPress={() => {

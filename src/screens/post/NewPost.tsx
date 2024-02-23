@@ -258,42 +258,48 @@ function NewPost({ navigation, route }: Props) {
     const results = await ImagePicker.openPicker({
       multiple: true,
       compressImageQuality: 0.5,
-    }).then(async (images) => {
-      const result = [];
+    })
+      .then(async (images) => {
+        const result = [];
 
-      // eslint-disable-next-line no-restricted-syntax
-      for await (const image of images) {
-        const img = await ImagePicker.openCropper({
-          mediaType: 'photo',
-          path: image.path,
+        // eslint-disable-next-line no-restricted-syntax
+        for await (const image of images) {
+          const img = await ImagePicker.openCropper({
+            mediaType: 'photo',
+            path: image.path,
 
-          forceJpg: true,
-          maxFiles: 1,
-          compressImageQuality: 0.8,
+            forceJpg: true,
+            maxFiles: 1,
+            compressImageQuality: 0.8,
 
-          freeStyleCropEnabled: true,
-          width: 1920,
-          height: 1080,
-          smartAlbums: ['UserLibrary', 'PhotoStream'],
-        });
-        result.push(img);
-      }
-      console.log(result);
-      return result;
-    });
+            freeStyleCropEnabled: true,
+            width: 1920,
+            height: 1080,
+            smartAlbums: ['UserLibrary', 'PhotoStream'],
+          });
+          result.push(img);
+        }
 
-    const images = results.map((imagesObj, index) => {
-      return {
-        uri: `file://${imagesObj.path ?? ''}`,
-        type: imagesObj.mime ?? '',
-        name: imagesObj.filename ?? `image_${index}`,
-      };
-    });
+        return result;
+      })
+      .catch(() => {
+        return [];
+      });
 
-    setImagesToUpload(images);
-    setPickerModalVisibile(false);
+    if (results.length > 0) {
+      const images = results.map((imagesObj, index) => {
+        return {
+          uri: `file://${imagesObj.path ?? ''}`,
+          type: imagesObj.mime ?? '',
+          name: imagesObj.filename ?? `image_${index}`,
+        };
+      });
 
-    setUploadImagesObject(images);
+      setImagesToUpload(images);
+      setPickerModalVisibile(false);
+
+      setUploadImagesObject(images);
+    }
   };
 
   const captureImage = async (contentType: MediaType) => {
