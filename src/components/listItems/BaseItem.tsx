@@ -120,7 +120,7 @@ function BaseItem({
           type,
         },
       });
-      console.log(res.response?.reactions);
+
       if (res?.status == 200) {
         // dispatch(getuserGet({ token }));
         // setMyReaction()
