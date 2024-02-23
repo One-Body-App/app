@@ -83,6 +83,7 @@ function CommentField({
           placeholder={isEditingComment ? 'Edit Comment' : 'Drop your comment here'}
           multiline
           maxLength={600}
+          enforceMaxLength
           value={content}
           placeholderTextColor={Colors.neutral[300]}
           onChangeText={(content) => {

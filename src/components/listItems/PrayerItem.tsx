@@ -494,6 +494,7 @@ function PrayerItem({
             multiline
             showCharCounter
             maxLength={150}
+            enforceMaxLength
             value={testinomyContent}
             placeholder="Write something"
             inputStyle={{

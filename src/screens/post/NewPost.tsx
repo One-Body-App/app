@@ -60,6 +60,7 @@ GiphySDK.configure({
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
 
 function NewPost({ navigation, route }: Props) {
+  const MAX_CONTENT_LENGHT = 300;
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -445,7 +446,7 @@ function NewPost({ navigation, route }: Props) {
               }}
               inputWrapperStyle={{ paddingVertical: spacing.x10, borderRadius: borderRadius.base }}
               value={content}
-              maxLength={300}
+              maxLength={MAX_CONTENT_LENGHT}
               maxLengthErrorMessage="This message exceeds the character limit."
               numberOfLines={4}
               showCharCounter
@@ -734,7 +735,12 @@ function NewPost({ navigation, route }: Props) {
         <Button
           disabled={
             isLoading ||
-            (!location && !content && !uploadImagesObject && imagesObject.length == 0 && !mediaGif)
+            (!location &&
+              !content &&
+              !uploadImagesObject &&
+              imagesObject.length == 0 &&
+              !mediaGif) ||
+            (!!content && content.length > MAX_CONTENT_LENGHT)
           }
           onPress={() => {
             if (route.params?.postId) {
