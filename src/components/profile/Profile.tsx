@@ -30,7 +30,7 @@ export interface ProfileProps {
 
 export const profileImagesize = 80;
 export const HEADER_EXPANDED_HEIGHT = 550;
-export const HEADER_COLLAPSED_HEIGHT = 170;
+export const HEADER_COLLAPSED_HEIGHT = 168;
 
 function Profile({
   profileData,
@@ -44,7 +44,7 @@ function Profile({
   const socialList = createRef<RefreshListRef>();
 
   const onlyOneTab =
-    profileData?.influencerProfile?.influencerStatus != 'approved' ||
+    profileData?.influencerProfile?.influencerStatus !== 'approved' ||
     !profileData?.influencerProfile?.rssUrl;
 
   useEffect(() => {
@@ -93,12 +93,12 @@ function Profile({
         backgroundColor: colors.card,
         shadowOffset: {
           width: 0,
-          height: Platform.OS == 'ios' || onlyOneTab ? 0 : 2,
+          height: Platform.OS === 'ios' || onlyOneTab ? 0 : 2,
         },
-        shadowOpacity: Platform.OS == 'ios' || onlyOneTab ? 0 : 0.23,
+        shadowOpacity: Platform.OS === 'ios' || onlyOneTab ? 0 : 0.23,
         shadowRadius: 2.62,
-        borderBottomWidth: Platform.OS == 'ios' || onlyOneTab ? borderWidth.thin : 0,
-        borderBottomColor: Platform.OS == 'ios' || onlyOneTab ? Colors.neutral[800] : undefined,
+        borderBottomWidth: Platform.OS === 'ios' || onlyOneTab ? borderWidth.thin : 0,
+        borderBottomColor: Platform.OS === 'ios' || onlyOneTab ? Colors.neutral[800] : undefined,
         // paddingBottom: onlyOneTab ? spacing.x10 : undefined,
       }}
       renderTabBar={onlyOneTab ? () => null : renderTabBar}
@@ -111,7 +111,7 @@ function Profile({
         <PrayerWallMyPrayersComponent />
       </Tabs.Tab> */}
 
-      {profileData?.influencerProfile?.influencerStatus == 'approved' &&
+      {profileData?.influencerProfile?.influencerStatus === 'approved' &&
       profileData?.influencerProfile?.rssUrl ? (
         <Tabs.Tab name="blog" label="Blog/News">
           <BlogFlatlist userId={profileData._id} />

@@ -48,7 +48,7 @@ export default forwardRef<TextInput, Props>((props, ref) => {
 
   return (
     <View style={wrapperStyle}>
-      {label && label != '' ? (
+      {label && label !== '' ? (
         <StyledText style={{ marginBottom: 15, color: Colors.neutral.brand }}>{label}</StyledText>
       ) : null}
       <View
@@ -86,6 +86,8 @@ export default forwardRef<TextInput, Props>((props, ref) => {
             style={[
               counterTextStyleStyle,
               {
+                marginTop: spacing.x5,
+
                 color:
                   (textInputProps.value?.length ?? 0) >= textInputProps.maxLength
                     ? Colors.errorFeedback[200]
@@ -93,7 +95,6 @@ export default forwardRef<TextInput, Props>((props, ref) => {
               },
             ]}
           >
-            {textInputProps.value?.length || '0'}/{textInputProps.maxLength}{' '}
             {(textInputProps.value?.length ?? 0) >= textInputProps.maxLength &&
             maxLengthErrorMessage ? (
               <StyledText
@@ -102,6 +103,7 @@ export default forwardRef<TextInput, Props>((props, ref) => {
                   { marginLeft: spacing.x10, color: Colors.errorFeedback[200] },
                 ]}
               >
+                {textInputProps.value?.length || '0'}/{textInputProps.maxLength}{' '}
                 {maxLengthErrorMessage}
               </StyledText>
             ) : null}
