@@ -16,6 +16,7 @@ import { Heart, Message2, Share as ShareIcon } from 'iconsax-react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { useSelector } from 'react-redux';
 import MuxPlayer from '@mux/mux-player-react';
+import Video from 'react-native-video';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { spacing } from '@/src/styles/spacing';
 
@@ -48,6 +49,11 @@ function Watch() {
       videoUrl: 'https://stream.mux.com/3OyLQ9njVCRCzZ7y00ap002IOElax4mVXVXKe027Dx9uic.m3u8',
       description: 'Description video 3',
     },
+    {
+      id: 4,
+      videoUrl: 'https://stream.mux.com/3OyLQ9njVCRCzZ7y00ap002IOElax4mVXVXKe027Dx9uic.m3u8',
+      description: 'Description video 4',
+    },
   ];
 
   const handleShare = () => {
@@ -72,9 +78,6 @@ function Watch() {
       const firstVisibleVideo = viewableItems.find((item) => item.index !== undefined);
       if (firstVisibleVideo) {
         const { index } = viewableItems[0];
-        setSharedVideoUrl(
-          `https://stream.mux.com/3OyLQ9njVCRCzZ7y00ap002IOElax4mVXVXKe027Dx9uic.m3u8${videos[index].id}`
-        );
       }
     }
   }).current;
@@ -82,6 +85,13 @@ function Watch() {
   const renderVideoItem = ({ item }) => {
     return (
       <View style={styles.videoContainer}>
+        <Video
+          source={{ uri: item.videoUrl }}
+          resizeMode="cover"
+          style={styles.videoContainer}
+          controls
+        />
+
         <View style={styles.videoInfo}>
           <View style={styles.userInfoContainer}>
             <View style={styles.userInfo}>
