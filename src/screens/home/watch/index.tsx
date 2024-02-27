@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   FlatList,
@@ -19,9 +19,16 @@ import Video from 'react-native-video';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { styles } from '@/screens/home/watch/styles';
 import { spacing } from '@/src/styles/spacing';
+import { ApiCall } from '@/services/api';
+import { FeedTypes } from '@/screens/home';
 
 function Watch() {
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const [feedData, setFeedData] = useState<any>();
+  const [isEndOfList, setIsEndOfList] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [sharedVideoUrl, setSharedVideoUrl] = useState('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [likesCount, setLikesCount] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
   const [savesCount, setSavesCount] = useState(0);
@@ -54,9 +61,48 @@ function Watch() {
     },
   ];
 
-  const handleShare = () => {
+  const getFeedData = async (type: FeedTypes, pageNumber: number) => {
+    setIsLoading(true);
+    try {
+      const res = await ApiCall({
+        route: `user/get-following-feed/${type}/${pageNumber}`,
+        token,
+        verb: 'get',
+      });
+      let newFeedData = [];
+
+      if (res?.status === 200) {
+        newFeedData = [];
+
+        if (pageNumber === 1) {
+          newFeedData = res?.response ?? [];
+
+          setIsEndOfList(false);
+        } else {
+          newFeedData = [...feedData, ...(res?.response ?? [])];
+          if (res?.response.length < 1) {
+            setIsEndOfList(true);
+          }
+        }
+
+        setFeedData(newFeedData);
+      } else {
+        // console.log('error', res?.response);
+        setFeedData([]);
+        setIsEndOfList(true);
+      }
+    } catch (e: any) {
+      setFeedData([]);
+      // console.log(`saga get twitter timline  error -- `, e.toString());
+    }
+
+    setIsLoading(false);
+    setIsRefreshing(false);
+  };
+
+  const handleShare = (id: number) => {
     // Lógica para compartir el video
-    setSharedVideoUrl(`https://www.example.com/video/`);
+    setSharedVideoUrl(`https://www.example.com/video/${id}`);
     setSharesCount(sharesCount + 1);
   };
 
@@ -70,13 +116,17 @@ function Watch() {
     setSavesCount(savesCount + 1);
   };
 
-  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0) {
       const { index } = viewableItems[0];
     }
   }).current;
 
-  const renderVideoItem = ({ item }) => {
+  const renderVideoItem = ({
+    item,
+  }: {
+    item: { id: number; videoUrl: string; description: string };
+  }) => {
     return (
       <View style={styles.videoContainer}>
         <Video source={{ uri: item.videoUrl }} resizeMode="cover" style={styles.video} />
@@ -127,6 +177,9 @@ function Watch() {
     );
   };
 
+  useEffect(() => {
+    getFeedData(FeedTypes.Watch, 1);
+  }, []);
   return (
     <View style={styles.container}>
       <FlatList

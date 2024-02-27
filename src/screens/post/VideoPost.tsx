@@ -164,6 +164,7 @@ function VideoPost({ navigation }: Props) {
       console.error(error);
     }
   };
+
   const handleSelectionFromGallery = async () => {
     const options: ImageLibraryOptions = {
       mediaType: 'video',

@@ -26,9 +26,9 @@ import {
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import Watch from './watch';
+import WatchComponent from '@/screens/home/watch';
 
-enum FeedTypes {
+export enum FeedTypes {
   Connected = 'connected',
   ForYou = 'foryou',
   Read = 'read',
@@ -113,10 +113,10 @@ function Home({ navigation }: Props) {
       });
       let newFeedData = [];
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         newFeedData = [];
 
-        if (pageNumber == 1) {
+        if (pageNumber === 1) {
           newFeedData = res?.response ?? [];
 
           setIsEndOfList(false);
@@ -565,7 +565,7 @@ function Home({ navigation }: Props) {
           </View>
         )
       )}
-      {feedOptions.type === 'watch' && <Watch />}
+      {feedOptions.type === 'watch' && <WatchComponent />}
     </View>
   );
 }
