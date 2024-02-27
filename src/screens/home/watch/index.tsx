@@ -21,6 +21,8 @@ import { styles } from '@/screens/home/watch/styles';
 import { spacing } from '@/src/styles/spacing';
 import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
+import BaseItem from '@/src/components/listItems/BaseItem';
+import { AccountType } from '@/utils/types';
 
 function Watch() {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -122,7 +124,7 @@ function Watch() {
     }
   }).current;
 
-  const renderVideoItem = ({
+  const renderVideoItem2 = ({
     item,
   }: {
     item: { id: number; videoUrl: string; description: string };
@@ -130,85 +132,39 @@ function Watch() {
     return (
       <View style={styles.videoContainer}>
         <Video source={{ uri: item.videoUrl }} resizeMode="cover" style={styles.video} />
-
-        <View style={styles.videoInfo}>
-          {/* Footer */}
-          <View style={styles.userInfo}>
-            {/* Usario */}
-            <Image source={{ uri: user?.profileImage }} style={styles.profilePhoto} />
-            <Text style={styles.userName}>{user?.name}</Text>
-            <Text style={styles.usertime}>{new Date().toLocaleTimeString()}</Text>
-            <FontAwesome name="ellipsis-v" size={15} color="white" style={styles.ellipsisIcon} />
-          </View>
-
+        <BaseItem
+          style={styles.videoInfo}
+          postData={{
+            commentNumber: undefined,
+            comments: undefined,
+            id: '85a4ff3c57c705d8328120cf580c23851fd32a432b5a8ecf2a199493bdfe82ce',
+            image: { url: 'https://cdn.onebodyapp.com/no-image-post.jpg' },
+            myReaction: undefined,
+            postlink: 'https://www1.cbn.com/content/sword-spirit-family-discussion-guide',
+            reactions: [],
+            title: 'Sword of the Spirit Family Discussion Guide',
+            type: 'rss',
+          }}
+          created={new Date('2024-02-26T19:28:12.000Z')}
+          userData={{
+            _id: '63898902e2db37cc5f4abad0',
+            accountType: AccountType.organization,
+            instagramHandler: '',
+            interests: [],
+            name: 'The Christian Broadcasting Network',
+            profileImage: '',
+            twitterHandler: '',
+            username: 'the - christian - broadcasting - network',
+            website: 'https://www1.cbn.com/',
+          }}
+          isApprovedInfluencer={false}
+          onPress={() => {}}
+          parentRefreshContent={undefined}
+        >
           <View>
-            {/* Descripcion */}
             <Text style={styles.videoDescription}>{item.description}</Text>
           </View>
-
-          <View>
-            {/* reacciones */}
-            <View>
-              <TouchableOpacity
-                style={styles.reactionsContainer}
-                onPress={() =>
-                  setReactionCounts({ ...reactionCounts, love: reactionCounts.love + 1 })
-                }
-              >
-                <Text>Love: {reactionCounts.love}</Text>
-                <Text>❤️</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.reactionsContainer}
-                onPress={() =>
-                  setReactionCounts({ ...reactionCounts, praying: reactionCounts.praying + 1 })
-                }
-              >
-                <Text>Praying: {reactionCounts.praying}</Text>
-                <Text>🙏</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.reactionsContainer}
-                onPress={() =>
-                  setReactionCounts({ ...reactionCounts, happy: reactionCounts.happy + 1 })
-                }
-              >
-                <Text>Happy: {reactionCounts.happy}</Text>
-                <Text>😊</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* botones */}
-            <View style={styles.iconsContainer}>
-              <TouchableOpacity
-                style={styles.icons}
-                onPress={() =>
-                  setReactionCounts({ ...reactionCounts, love: reactionCounts.love + 1 })
-                }
-              >
-                <Heart size={24} color="white" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.icons} onPress={handleComment}>
-                <Message2 size={24} color="white" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.icons} onPress={handleSave}>
-                <FontAwesome name="bookmark-o" size={24} color="white" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.icons, { marginLeft: 195 }]}
-                onPress={() => handleShare(item.id)}
-              >
-                {Platform.OS === 'android' ? (
-                  <ShareIcon size={24} color="white" />
-                ) : (
-                  <ShareIcon color="white" height={25} width={25} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        </BaseItem>
       </View>
     );
   };
@@ -221,7 +177,7 @@ function Watch() {
       <FlatList
         ref={flatListRef}
         data={videos}
-        renderItem={renderVideoItem}
+        renderItem={renderVideoItem2}
         keyExtractor={(item) => item.id.toString()}
         pagingEnabled
         decelerationRate="fast"

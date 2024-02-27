@@ -17,8 +17,9 @@ export const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(250, 250, 250, 1)',
     padding: spacing.x5,
+    flex: 1,
   },
   video: {
     ...StyleSheet.absoluteFillObject,
@@ -41,17 +42,17 @@ export const styles = StyleSheet.create({
     height: spacing.x32,
     borderRadius: spacing.x16,
     marginRight: spacing.x10,
-    marginLeft: spacing.x10,
+    marginLeft: spacing.x5,
   },
   ellipsisIcon: {
     marginLeft: 275,
   },
   videoDescription: {
-    color: 'white',
-    fontSize: spacing.x16,
+    color: 'black',
+    fontSize: spacing.x13,
     left: spacing.x5,
-    marginTop: spacing.x20,
-    marginLeft: spacing.x10,
+    marginTop: spacing.x5,
+    marginLeft: spacing.x5,
     marginBottom: spacing.x5,
   },
   icons: {
