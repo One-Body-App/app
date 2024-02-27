@@ -522,8 +522,8 @@ function EditProfile({ navigation }: Props) {
     churchSubType == 'none'
       ? 'None'
       : selectedChurchSubType.length > 0
-      ? selectedChurchSubType[0].churchType
-      : '';
+        ? selectedChurchSubType[0].churchType
+        : '';
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -781,6 +781,7 @@ function EditProfile({ navigation }: Props) {
                     multiline
                     numberOfLines={3}
                     maxLength={150}
+                    enforceMaxLength
                     label="Bio"
                     inputStyle={{ minHeight: 80 }}
                     showCharCounter

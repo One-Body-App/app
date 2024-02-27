@@ -170,7 +170,7 @@ function Saved({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView>
+    <View style={{ paddingBottom: spacing.x104 }}>
       {savedPosts.length > 0 ? (
         <ScrollView
           horizontal
@@ -376,7 +376,7 @@ function Saved({ navigation }: Props) {
         //   </TouchableOpacity>
         // )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 export default Saved;

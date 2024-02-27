@@ -290,6 +290,9 @@ export type MainStackParamList = {
   SinglePost: {
     postId: string;
   };
+  SingleRss: {
+    postId: string;
+  };
   NewPassword: undefined;
   Intro: undefined;
   AccountType: undefined;

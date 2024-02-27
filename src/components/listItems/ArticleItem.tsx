@@ -1,17 +1,9 @@
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { isObject } from 'lodash';
-import React from 'react';
-import {
-  Dimensions,
-  Image,
-  StyleProp,
-  TextStyle,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleProp, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
-import Entypo from 'react-native-vector-icons/Entypo';
+
 import { decode } from 'html-entities';
 import { Caption } from 'react-native-paper';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -29,9 +21,9 @@ import {
   MainDrawerParamsList,
 } from '@/src/navigator/types';
 import { borderRadius } from '@/src/styles/outlines';
-import { ArticleType, PostType } from '@/utils/types';
-import { timeSince } from '@/utils/ResponsiveFun';
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
+import { ArticleType, PostType, SocialPostReaction } from '@/utils/types';
+
+import { NO_POST_IMAGE_URL, OpenURLButton } from '@/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 type ScreenNavigationProp = CompositeNavigationProp<
@@ -53,10 +45,11 @@ function ArticleItem({
   hideProfileName,
   pillText,
   onPress,
+  parentRefreshContent,
 }: {
   item: ArticleType;
   blogPostStyle?: StyleProp<ViewStyle>;
-  blogPostImageStyle?: StyleProp<ImageStyle>;
+  blogPostImageStyle?: ImageStyle;
   blogPostTitleStyle?: StyleProp<TextStyle>;
   imageSizeType: ResizeMode;
   iconSize?: number;
@@ -64,22 +57,38 @@ function ArticleItem({
   hideProfileName?: boolean;
   pillText?: string;
   onPress?: (item: ArticleType) => void;
+  parentRefreshContent?: Function;
 }) {
   const { colors } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const navigation = useNavigation<ScreenNavigationProp>();
+  const [itemData, setItemData] = useState(item);
+
+  useEffect(() => {
+    setItemData(item);
+  }, [item]);
+  let myReaction: SocialPostReaction | undefined;
+  item.reactions?.forEach((reaction) => {
+    if (reaction.userId == user?._id) {
+      myReaction = reaction;
+    }
+  });
 
   return (
     <BaseItem
       postData={{
-        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
+        title: isObject(itemData?.title) ? itemData?.title?.a.$text : itemData?.title,
 
         id: item.id,
         type: PostType.rss,
         postlink: item.link,
         image: item.image,
+        commentNumber: item.commentNumber,
+        comments: item.comments,
+        reactions: item.reactions ?? [],
+        myReaction,
       }}
-      created={item?.created}
+      created={itemData?.created}
       userData={item.userData}
       isApprovedInfluencer={user?.influencerProfile?.influencerStatus == 'approved'}
       onPress={() => {
@@ -96,10 +105,11 @@ function ArticleItem({
         }
       }}
       style={blogPostStyle}
+      parentRefreshContent={parentRefreshContent}
     >
       <TouchableOpacity
         onPress={() => {
-          if (item?.link) OpenURLButton(item?.link);
+          if (itemData?.link) OpenURLButton(itemData?.link);
           if (onPress) onPress(item);
         }}
       >
@@ -120,9 +130,20 @@ function ArticleItem({
         ) : null}
 
         <FastImage
-          style={[styles.blogpostimage, blogPostImageStyle]}
+          style={
+            blogPostImageStyle ? [styles.blogpostimage, blogPostImageStyle] : [styles.blogpostimage]
+          }
           resizeMode={imageSizeType}
-          source={{ uri: item?.image?.url ?? NO_POST_IMAGE_URL }}
+          source={{ uri: itemData?.image?.url ?? NO_POST_IMAGE_URL }}
+          onError={() => {
+            // console.log('error', itemData?.image?.url, error);
+            setItemData({
+              ...itemData,
+              image: {
+                url: NO_POST_IMAGE_URL,
+              },
+            });
+          }}
         />
 
         <View
@@ -147,13 +168,15 @@ function ArticleItem({
               }}
             >
               <StyledText numberOfLines={2} style={[{ color: colors.text }, blogPostTitleStyle]}>
-                {isObject(item?.title) ? decode(item?.title?.a.$text) : decode(item?.title)}
+                {isObject(itemData?.title)
+                  ? decode(itemData?.title?.a.$text)
+                  : decode(itemData?.title)}
               </StyledText>
               <StyledText
                 numberOfLines={1}
                 style={[{ color: Colors.neutral[500] }, blogPostTitleStyle]}
               >
-                {item?.link}
+                {itemData?.link}
               </StyledText>
             </View>
             {/* <View style={{ flex: 0, justifyContent: 'center' }}>
@@ -180,19 +203,19 @@ export default ArticleItem;
 
 // <TouchableOpacity
 //   onPress={() => {
-//     OpenURLButton(item?.link);
+//     OpenURLButton(itemData?.link);
 //   }}
 // >
 //   <View style={styles.blogpostview}>
 //     <Image
 //       style={styles.blogpostimage}
 //       resizeMode="cover"
-//       source={{ uri: item?.image?.url }}
+//       source={{ uri: itemData?.image?.url }}
 //     />
 //     <Text numberOfLines={2} style={styles.blogpostpara}>
-//       {isObject(item?.title) ? item?.title?.a.$text : item?.title}
+//       {isObject(itemData?.title) ? itemData?.title?.a.$text : itemData?.title}
 //     </Text>
 
-//     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
+//     <Text style={styles.blogposthour}>{timeSince(itemData?.created)} ago</Text>
 //   </View>
 // </TouchableOpacity>

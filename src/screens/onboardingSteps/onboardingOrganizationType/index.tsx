@@ -105,6 +105,7 @@ function OnboardingOrganizationType({ navigation }: Props) {
             selectedItem={selectedOrganizationType}
             btnText={selectedOrganizationType == '' ? 'Select' : selectedOrganizationTypeName}
             modalTitle="Select organization Type"
+            hideSearch
             onChange={(item) => {
               setSelectedOrganizationType(item);
             }}

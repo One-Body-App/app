@@ -64,6 +64,8 @@ pod 'rn-fetch-blob',
   pod 'Firebase', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
   pod 'GoogleUtilities', :modular_headers => true
+  pod 'SDWebImageWebPCoder'
+  pod 'libwebp', '1.3.2', :source => 'https://cdn.cocoapods.org/'
   $RNFirebaseAsStaticFramework = true
 
 

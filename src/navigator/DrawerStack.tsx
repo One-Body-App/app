@@ -139,13 +139,10 @@ function DrawerNav() {
           options={({ route }) => {
             return {
               title: 'Home',
-
               drawerIcon: ({ color, size }) => {
                 return <Home3 size={size} color={color} />;
               },
-
               headerLeft: (props) => <DrawerToggleButton {...props} />,
-
               headerTitleAlign:
                 getHeaderTitle(route) === 'Home' || Platform.OS === 'ios' ? 'center' : 'left',
               headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {

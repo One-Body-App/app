@@ -166,7 +166,7 @@ export default function DrawerContent({
             onPress={() => {
               Alert.alert(
                 'Signing Out',
-                'Are you suyre you want to sign out?',
+                'Are you sure you want to sign out?',
                 [
                   {
                     text: 'Cancel',

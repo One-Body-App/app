@@ -1,8 +1,6 @@
-import React, { ReactElement, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
-  GestureResponderEvent,
   Image,
   ScrollView,
   StyleProp,
@@ -10,51 +8,38 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import {
-  CompositeNavigationProp,
-  CompositeScreenProps,
-  NavigationProp,
-  useNavigation,
-  useTheme,
-} from '@react-navigation/native';
-import FastImage from 'react-native-fast-image';
+import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import Video from 'react-native-video';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import { useReducedMotion } from 'react-native-reanimated';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
-import ImageModal from '@dreamwalk-os/react-native-image-modal';
+
+import ImageView from 'react-native-image-viewing';
 import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+
 import { isArray } from 'lodash';
 import Modal from 'react-native-modal';
 import Toast, { useToast } from 'react-native-toast-notifications';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getHeight, timeSince } from '@/utils/ResponsiveFun';
-import { styles } from './style';
-import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-
-import Twitter from '@/assets/svg/Twitter.svg';
-import Instagram from '@/assets/svg/Instagram.svg';
-import { AccountType, PostType, PrayerPost, SocialPost, SocialPostReaction } from '@/utils/types';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
+import { PostType, PrayerPost, SocialPostReaction } from '@/utils/types';
 import {
-  ExploreStackParamsList,
   MainDrawerParamsList,
   MainBottomStackParamsList,
   PrayerWallStackParamsList,
 } from '@/src/navigator/types';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { borderRadius } from '@/src/styles/outlines';
 import StyledText from '../styled/Text';
 import { fontSize, header } from '@/src/styles/typography';
 import { spacing } from '@/src/styles/spacing';
-import { Colors, Spacing } from '@/src/styles';
+import { Colors } from '@/src/styles';
 import BaseItem from './BaseItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import { ApiCall } from '@/services/api';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
 import Anonymous from '@/assets/svg/anonymous.svg';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
@@ -100,6 +85,7 @@ function PrayerItem({
   const [showModal, setShowModal] = useState<boolean>(false);
   const [media, setMedia] = useState<Media[]>([]);
   const toastRef = useRef<Toast>(null);
+  const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
   const [imageInfo, setImageInfo] = useState<
     {
       url: string;
@@ -249,7 +235,7 @@ function PrayerItem({
           : {
               ...item.userData,
               profileImage:
-                item?.userData?.profileImage && item?.userData?.profileImage != ''
+                item?.userData?.profileImage && item?.userData?.profileImage !== ''
                   ? item?.userData?.profileImage
                   : NO_PROFILE_IMAGE,
             }
@@ -311,21 +297,34 @@ function PrayerItem({
           })}
 
         {imageInfo.length > 0 ? (
-          // eslint-disable-next-line react/jsx-no-useless-fragment
           <>
+            <ImageView
+              images={imageInfo.map((item) => ({
+                uri: item.url,
+              }))}
+              presentationStyle="overFullScreen"
+              imageIndex={imageModalIndexVisible}
+              visible={imageModalIndexVisible > -1}
+              onRequestClose={() => {
+                setImageModalIndexVisible(-1);
+              }}
+            />
             {imageInfo.length > 1 ? (
               <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
                 {imageInfo.map((image, index) => {
                   return (
-                    <View
+                    <TouchableOpacity
+                      key={`${index}`}
                       style={{
                         flexGrow: 1,
-                        aspectRatio: image.width / image.height,
 
                         padding: spacing.x10,
                       }}
+                      onPress={() => {
+                        setImageModalIndexVisible(index);
+                      }}
                     >
-                      <ImageModal
+                      <Image
                         key={index}
                         resizeMode={image.width > image.height ? 'contain' : 'stretch'}
                         style={{
@@ -337,29 +336,39 @@ function PrayerItem({
                           // borderRadius: 2,
                           // marginVertical: 10,
                         }}
-                        modalImageResizeMode="center"
                         source={{ uri: image?.url }}
                       />
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </ScrollView>
             ) : (
-              <ImageModal
-                key={index}
-                resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
+              <TouchableOpacity
+                key={`${index}`}
                 style={{
-                  borderRadius: borderRadius.small,
-                  // flexGrow: 1,
-                  aspectRatio: imageInfo[0].width / imageInfo[0].height,
-                  width: '100%',
-                  // height: 300,
-                  // borderRadius: 2,
-                  // marginVertical: 10,
+                  flexGrow: 1,
+
+                  padding: spacing.x10,
                 }}
-                modalImageResizeMode="center"
-                source={{ uri: imageInfo[0]?.url }}
-              />
+                onPress={() => {
+                  setImageModalIndexVisible(0);
+                }}
+              >
+                <Image
+                  key={index}
+                  resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
+                  style={{
+                    borderRadius: borderRadius.small,
+                    // flexGrow: 1,
+                    aspectRatio: imageInfo[0].width / imageInfo[0].height,
+                    width: '100%',
+                    // height: 300,
+                    // borderRadius: 2,
+                    // marginVertical: 10,
+                  }}
+                  source={{ uri: imageInfo[0]?.url }}
+                />
+              </TouchableOpacity>
             )}
           </>
         ) : null}
@@ -485,6 +494,7 @@ function PrayerItem({
             multiline
             showCharCounter
             maxLength={150}
+            enforceMaxLength
             value={testinomyContent}
             placeholder="Write something"
             inputStyle={{

@@ -1403,12 +1403,12 @@ PODS:
   - RNGoogleSignin (10.1.1):
     - GoogleSignIn (~> 7.0)
     - React-Core
-  - RNImageCropPicker (0.40.2):
+  - RNImageCropPicker (0.40.3):
     - React-Core
     - React-RCTImage
-    - RNImageCropPicker/QBImagePickerController (= 0.40.2)
+    - RNImageCropPicker/QBImagePickerController (= 0.40.3)
     - TOCropViewController
-  - RNImageCropPicker/QBImagePickerController (0.40.2):
+  - RNImageCropPicker/QBImagePickerController (0.40.3):
     - React-Core
     - React-RCTImage
     - TOCropViewController
@@ -1489,6 +1489,7 @@ DEPENDENCIES:
   - GoogleUtilities
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - libevent (~> 2.1.12)
+  - libwebp (= 1.3.2)
   - lottie-ios (from `../node_modules/lottie-ios`)
   - lottie-react-native (from `../node_modules/lottie-react-native`)
   - OpenSSL-Universal (= 1.1.1100)
@@ -1575,6 +1576,7 @@ DEPENDENCIES:
   - RNSha256 (from `../node_modules/react-native-sha256`)
   - RNShare (from `../node_modules/react-native-share`)
   - RNSVG (from `../node_modules/react-native-svg`)
+  - SDWebImageWebPCoder
   - VisionCamera (from `../node_modules/react-native-vision-camera`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -1938,7 +1940,7 @@ SPEC CHECKSUMS:
   RNFBMessaging: 1e7415390ae579c5949505a0709686a2de8a47e5
   RNGestureHandler: 25b969a1ffc806b9f9ad2e170d4a3b049c6af85e
   RNGoogleSignin: aac5c1ec73422109dec1da770247a1e410dcc620
-  RNImageCropPicker: d9616a0cb9b72e8551ff94a7a5021fbd29050aa5
+  RNImageCropPicker: e7ab6fb43d2fc3e84651e786ef4a080d63b0ed3d
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
   RNPermissions: 42c88de83087063600b3bb211062120476e87b4f
   RNRate: ef3bcff84f39bb1d1e41c5593d3eea4aab2bd73a
@@ -1958,6 +1960,6 @@ SPEC CHECKSUMS:
   VisionCamera: 4b98b273902ac18491bb68481b6601f1f0da0f2d
   Yoga: 44003f970aa541b79dfdd59cf236fda41bd5890f
 
-PODFILE CHECKSUM: 793da1ed0e8bcc06e3b1177f48e39240e6478fe0
+PODFILE CHECKSUM: f1e4f85245ac28676bad675ca36d758cd0c70759
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.14.3

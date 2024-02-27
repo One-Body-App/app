@@ -155,7 +155,6 @@ GEM
       xcodeproj (>= 1.13.0, < 2.0.0)
       xcpretty (~> 0.3.0)
       xcpretty-travis-formatter (>= 0.0.3)
-    fastlane-plugin-android_versioning (0.5.5)
     fastlane-plugin-semantic_release (1.18.2)
     fastlane-plugin-versioning_android (0.1.1)
     ffi (1.16.3)
@@ -271,12 +270,12 @@ GEM
 PLATFORMS
   arm64-darwin-23
   ruby
+  x86_64-linux
 
 DEPENDENCIES
   activesupport (>= 6.1.7.3, < 7.1.0)
   cocoapods
   fastlane
-  fastlane-plugin-android_versioning
   fastlane-plugin-semantic_release
   fastlane-plugin-versioning_android
 
