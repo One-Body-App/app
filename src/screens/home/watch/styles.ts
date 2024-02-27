@@ -1,4 +1,5 @@
 import { StyleSheet, Dimensions } from 'react-native';
+import { User } from '../../../../utils/types';
 import { spacing } from '@/src/styles/spacing';
 
 const windowHeight = Dimensions.get('window').height;
@@ -28,6 +29,12 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.x5,
     marginLeft: spacing.x10,
     marginVertical: spacing.x10,
+    flexDirection: 'row',
+  },
+  usertime: {
+    flexDirection: 'row',
+    color: 'white',
+    fontSize: spacing.x16,
   },
   profilePhoto: {
     width: spacing.x32,
@@ -65,6 +72,13 @@ export const styles = StyleSheet.create({
     right: spacing.x5,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  reactionsContainer: {
+    bottom: spacing.x5,
+    left: spacing.x5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: spacing.x48,
   },
   modalContainer: {
     flex: 1,

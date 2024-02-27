@@ -40,22 +40,22 @@ function Watch() {
   // Accede al estado del usuario
   const user = useSelector((state: RootState) => state.auth.getProfileData);
 
-  const reactionTypes = {
+  const [reactionCounts, setReactionCounts] = useState({
     love: 0,
     praying: 0,
     happy: 0,
-  };
+  });
 
   const videos = [
     {
       id: 1,
-      videoUrl: 'https://stream.mux.com/3OyLQ9njVCRCzZ7y00ap002IOElax4mVXVXKe027Dx9uic.m3u8',
+      videoUrl: 'https://stream.mux.com/eqUdOeBMowIAY02UnO2IYq82wJjeYR4nmmCn4y8tjuT4.m3u8',
       description:
         'Explorando las bellezas naturales de la costa, descubrimos la magia de la naturaleza en su máximo esplendor',
     },
     {
       id: 2,
-      videoUrl: 'https://stream.mux.com/3OyLQ9njVCRCzZ7y00ap002IOElax4mVXVXKe027Dx9uic.m3u8',
+      videoUrl: 'https://stream.mux.com/eqUdOeBMowIAY02UnO2IYq82wJjeYR4nmmCn4y8tjuT4.m3u8',
       description:
         'Explorando las bellezas naturales de la costa, descubrimos la magia de la naturaleza en su máximo esplendor',
     },
@@ -137,6 +137,7 @@ function Watch() {
             {/* Usario */}
             <Image source={{ uri: user?.profileImage }} style={styles.profilePhoto} />
             <Text style={styles.userName}>{user?.name}</Text>
+            <Text style={styles.usertime}>{new Date().toLocaleTimeString()}</Text>
             <FontAwesome name="ellipsis-v" size={15} color="white" style={styles.ellipsisIcon} />
           </View>
 
@@ -147,11 +148,46 @@ function Watch() {
 
           <View>
             {/* reacciones */}
-            <View />
+            <View>
+              <TouchableOpacity
+                style={styles.reactionsContainer}
+                onPress={() =>
+                  setReactionCounts({ ...reactionCounts, love: reactionCounts.love + 1 })
+                }
+              >
+                <Text>Love: {reactionCounts.love}</Text>
+                <Text>❤️</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.reactionsContainer}
+                onPress={() =>
+                  setReactionCounts({ ...reactionCounts, praying: reactionCounts.praying + 1 })
+                }
+              >
+                <Text>Praying: {reactionCounts.praying}</Text>
+                <Text>🙏</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.reactionsContainer}
+                onPress={() =>
+                  setReactionCounts({ ...reactionCounts, happy: reactionCounts.happy + 1 })
+                }
+              >
+                <Text>Happy: {reactionCounts.happy}</Text>
+                <Text>😊</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* botones */}
             <View style={styles.iconsContainer}>
-              <TouchableOpacity style={styles.icons} onPress={() => setLikesCount(likesCount + 1)}>
+              <TouchableOpacity
+                style={styles.icons}
+                onPress={() =>
+                  setReactionCounts({ ...reactionCounts, love: reactionCounts.love + 1 })
+                }
+              >
                 <Heart size={24} color="white" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.icons} onPress={handleComment}>
