@@ -22,7 +22,7 @@ import { spacing } from '@/src/styles/spacing';
 import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
 import BaseItem from '@/src/components/listItems/BaseItem';
-import { AccountType } from '@/utils/types';
+import { AccountType, PostType } from '@/utils/types';
 
 function Watch() {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -48,21 +48,6 @@ function Watch() {
     happy: 0,
   });
 
-  const videos = [
-    {
-      id: 1,
-      videoUrl: 'https://stream.mux.com/eqUdOeBMowIAY02UnO2IYq82wJjeYR4nmmCn4y8tjuT4.m3u8',
-      description:
-        'Explorando las bellezas naturales de la costa, descubrimos la magia de la naturaleza en su máximo esplendor',
-    },
-    {
-      id: 2,
-      videoUrl: 'https://stream.mux.com/eqUdOeBMowIAY02UnO2IYq82wJjeYR4nmmCn4y8tjuT4.m3u8',
-      description:
-        'Explorando las bellezas naturales de la costa, descubrimos la magia de la naturaleza en su máximo esplendor',
-    },
-  ];
-
   const getFeedData = async (type: FeedTypes, pageNumber: number) => {
     setIsLoading(true);
     try {
@@ -75,13 +60,23 @@ function Watch() {
 
       if (res?.status === 200) {
         newFeedData = [];
-
+        const feedPosts = res.response
+          .filter((i: any) => !!i.playBackId)
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.created);
+            const dateB = new Date(b.created);
+            return dateB.getTime() - dateA.getTime(); // Newest first
+          });
         if (pageNumber === 1) {
-          newFeedData = res?.response ?? [];
+          newFeedData = feedPosts ?? [];
 
           setIsEndOfList(false);
         } else {
-          newFeedData = [...feedData, ...(res?.response ?? [])];
+          newFeedData = [...feedData, ...(feedPosts ?? [])].sort((a: any, b: any) => {
+            const dateA = new Date(a.created);
+            const dateB = new Date(b.created);
+            return dateB.getTime() - dateA.getTime(); // Newest first
+          });
           if (res?.response.length < 1) {
             setIsEndOfList(true);
           }
@@ -127,42 +122,60 @@ function Watch() {
   const renderVideoItem2 = ({
     item,
   }: {
-    item: { id: number; videoUrl: string; description: string };
+    item: {
+      id: number;
+      videoUrl: string;
+      content: string;
+      videoId: string;
+      playBackId: string;
+      userData: any;
+      comments: any[];
+      created: string;
+      isApprovedInfluencer: boolean;
+    };
   }) => {
     return (
       <View style={styles.videoContainer}>
-        <Video source={{ uri: item.videoUrl }} resizeMode="cover" style={styles.video} />
+        <Video
+          source={{ uri: `https://stream.mux.com/${item.playBackId}` }}
+          resizeMode="cover"
+          style={styles.video}
+        />
         <BaseItem
           style={styles.videoInfo}
           postData={{
-            commentNumber: undefined,
-            comments: undefined,
-            id: '85a4ff3c57c705d8328120cf580c23851fd32a432b5a8ecf2a199493bdfe82ce',
+            commentNumber: item.comments.length,
+            comments: item.comments,
+            id: item.id.toString(),
             image: { url: 'https://cdn.onebodyapp.com/no-image-post.jpg' },
             myReaction: undefined,
             postlink: 'https://www1.cbn.com/content/sword-spirit-family-discussion-guide',
             reactions: [],
-            title: 'Sword of the Spirit Family Discussion Guide',
-            type: 'rss',
+            title: item.content,
+            type: PostType.rss,
           }}
-          created={new Date('2024-02-26T19:28:12.000Z')}
-          userData={{
-            _id: '63898902e2db37cc5f4abad0',
-            accountType: AccountType.organization,
-            instagramHandler: '',
-            interests: [],
-            name: 'The Christian Broadcasting Network',
-            profileImage: '',
-            twitterHandler: '',
-            username: 'the - christian - broadcasting - network',
-            website: 'https://www1.cbn.com/',
-          }}
-          isApprovedInfluencer={false}
+          created={new Date(item.created)}
+          userData={
+            item.userData
+              ? item.userData
+              : {
+                  _id: '63898902e2db37cc5f4abad0',
+                  accountType: AccountType.organization,
+                  instagramHandler: '',
+                  interests: [],
+                  name: 'The Christian Broadcasting Network',
+                  profileImage: '',
+                  twitterHandler: '',
+                  username: 'the - christian - broadcasting - network',
+                  website: 'https://www1.cbn.com/',
+                }
+          }
+          isApprovedInfluencer={item.userData.isApprovedInfluencer}
           onPress={() => {}}
           parentRefreshContent={undefined}
         >
           <View>
-            <Text style={styles.videoDescription}>{item.description}</Text>
+            <Text style={styles.videoDescription}>{item.content}</Text>
           </View>
         </BaseItem>
       </View>
@@ -176,7 +189,7 @@ function Watch() {
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
-        data={videos}
+        data={feedData}
         renderItem={renderVideoItem2}
         keyExtractor={(item) => item.id.toString()}
         pagingEnabled

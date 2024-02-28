@@ -706,7 +706,7 @@ function NewPost({ navigation, route }: Props) {
               />
             </View>
           </View>
-          {/* <View
+          <View
             style={{
               columnGap: spacing.x10,
               flexDirection: 'row',
@@ -729,7 +729,7 @@ function NewPost({ navigation, route }: Props) {
                 navigation.navigate('VideoPost');
               }}
             />
-          </View> */}
+          </View>
         </ScrollView>
 
         <Button

@@ -287,6 +287,9 @@ PODS:
     - FBLazyVector (= 0.73.0)
     - RCTRequired (= 0.73.0)
     - React-Core (= 0.73.0)
+  - RCTYouTube (2.0.2):
+    - React
+    - YoutubePlayer-in-WKWebView (~> 0.3.1)
   - React (0.73.0):
     - React-Core (= 0.73.0)
     - React-Core/DevSupport (= 0.73.0)
@@ -1455,6 +1458,7 @@ PODS:
     - React-callinvoker
     - React-Core
   - Yoga (1.14.0)
+  - YoutubePlayer-in-WKWebView (0.3.8)
 
 DEPENDENCIES:
   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
@@ -1497,6 +1501,7 @@ DEPENDENCIES:
   - RCT-Folly/Fabric (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTRequired (from `../node_modules/react-native/Libraries/RCTRequired`)
   - RCTTypeSafety (from `../node_modules/react-native/Libraries/TypeSafety`)
+  - RCTYouTube (from `../node_modules/react-native-youtube`)
   - React (from `../node_modules/react-native/`)
   - React-callinvoker (from `../node_modules/react-native/ReactCommon/callinvoker`)
   - React-Codegen (from `build/generated/ios`)
@@ -1630,6 +1635,7 @@ SPEC REPOS:
     - SocketRocket
     - Toast
     - TOCropViewController
+    - YoutubePlayer-in-WKWebView
 
 EXTERNAL SOURCES:
   boost:
@@ -1659,6 +1665,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/Libraries/RCTRequired"
   RCTTypeSafety:
     :path: "../node_modules/react-native/Libraries/TypeSafety"
+  RCTYouTube:
+    :path: "../node_modules/react-native-youtube"
   React:
     :path: "../node_modules/react-native/"
   React-callinvoker:
@@ -1872,6 +1880,7 @@ SPEC CHECKSUMS:
   RCT-Folly: 7169b2b1c44399c76a47b5deaaba715eeeb476c0
   RCTRequired: 5e3631b27c08716986980ef23eed8abdee1cdcaf
   RCTTypeSafety: 02a64828b0b428eb4f63de1397d44fb2d0747e85
+  RCTYouTube: a8bb45705622a6fc9decf64be04128d3658ed411
   React: df5dbfbd10c5bd8d4bcb49bd9830551533e11c7e
   React-callinvoker: dc0dff59e8d3d1fe4cd9fb5f120f82a775d2a325
   React-Codegen: 88bf5d1e29db28c1c9b88fe909f073be6c9f769d
@@ -1959,6 +1968,7 @@ SPEC CHECKSUMS:
   TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
   VisionCamera: 4b98b273902ac18491bb68481b6601f1f0da0f2d
   Yoga: 44003f970aa541b79dfdd59cf236fda41bd5890f
+  YoutubePlayer-in-WKWebView: 4fca3b4f6f09940077bfbae7bddb771f2b43aacd
 
 PODFILE CHECKSUM: f1e4f85245ac28676bad675ca36d758cd0c70759
 

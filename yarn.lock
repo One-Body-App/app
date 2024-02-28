@@ -4171,6 +4171,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/base-64@npm:^1":
+  version: 1.0.2
+  resolution: "@types/base-64@npm:1.0.2"
+  checksum: 10/bb7593c6de16c88a1bfed73a37c3be2e940921261bb7a160ab6d671f66d976b5426334ae9ce59553a10086db11e52af348813271a8b636e4f88e4cab8f27a3e4
+  languageName: node
+  linkType: hard
+
 "@types/cacheable-request@npm:^6.0.1":
   version: 6.0.3
   resolution: "@types/cacheable-request@npm:6.0.3"
@@ -4331,6 +4338,13 @@ __metadata:
   dependencies:
     ts-toolbelt: "npm:^6.15.1"
   checksum: 10/67283614add1c9ce4a0711e97a3254f2e9d1a1ccc77eb5ef1558b7a9aea16c5c54d10d497578706c8bc4c192a3f4fe9b5d797cb5f12e22f042a25171a62d7ca8
+  languageName: node
+  linkType: hard
+
+"@types/react-native-base64@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "@types/react-native-base64@npm:0.2.2"
+  checksum: 10/fa3b730b21cff86d026c3a867e3dabe59482db02d128dd69a42e69016a699d426938b48d3b935a47ae6493e9c9de73ba75a5ce2bef8608c2b94254e5a0debbb1
   languageName: node
   linkType: hard
 
@@ -5357,6 +5371,13 @@ __metadata:
   version: 0.1.0
   resolution: "base-64@npm:0.1.0"
   checksum: 10/5a42938f82372ab5392cbacc85a5a78115cbbd9dbef9f7540fa47d78763a3a8bd7d598475f0d92341f66285afd377509851a9bb5c67bbecb89686e9255d5b3eb
+  languageName: node
+  linkType: hard
+
+"base-64@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "base-64@npm:1.0.0"
+  checksum: 10/d10b64a1fc9b2c5a5f39f1ce1e6c9d1c5b249222bbfa3a0604c592d90623caf74419983feadd8a170f27dc0c3389704f72faafa3e645aeb56bfc030c93ff074a
   languageName: node
   linkType: hard
 
@@ -11538,11 +11559,13 @@ __metadata:
     "@reduxjs/toolkit": "npm:^1.8.3"
     "@sentry/react-native": "npm:^5.15.2"
     "@svanboxel/visibility-sensor-react-native": "npm:^1.0.2"
+    "@types/base-64": "npm:^1"
     "@types/jest": "npm:^29.5.11"
     "@types/lodash": "npm:^4.14.196"
     "@types/node": "npm:^20.4.6"
     "@types/qs": "npm:^6.9.7"
     "@types/react": "npm:^18.2.46"
+    "@types/react-native-base64": "npm:^0.2.2"
     "@types/react-native-vector-icons": "npm:^6.4.18"
     "@types/react-native-video": "npm:^5.0.15"
     "@types/react-native-video-player": "npm:^0.10.3"
@@ -11554,6 +11577,7 @@ __metadata:
     babel-jest: "npm:^29.6.3"
     babel-plugin-module-resolver: "npm:^5.0.0"
     babel-plugin-transform-remove-console: "npm:^6.9.4"
+    base-64: "npm:^1.0.0"
     buffer: "npm:^6.0.3"
     color: "npm:^4.2.3"
     date-fns: "npm:^3.2.0"
@@ -11587,6 +11611,7 @@ __metadata:
     react-devtools: "npm:^5.0.0"
     react-native: "npm:0.73.0"
     react-native-animated-progress: "npm:^1.0.2"
+    react-native-base64: "npm:^0.2.1"
     react-native-clean-project: "npm:^4.0.3"
     react-native-collapsible-tab-view: "npm:^6.2.1"
     react-native-config: "npm:^1.5.1"
@@ -12417,6 +12442,13 @@ __metadata:
   version: 1.0.2
   resolution: "react-native-animated-progress@npm:1.0.2"
   checksum: 10/e55a9da411e5033ccb8c6f11658ed80547af0f29e0e8c174954c51bf7acc4b41479970f1a214a6324c7df8f2061bfc74756b011c99ee4c5f25516adbf269a3e3
+  languageName: node
+  linkType: hard
+
+"react-native-base64@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "react-native-base64@npm:0.2.1"
+  checksum: 10/0dd8b122e9afacb715c0e82b91f429f2fc68de19301dc23b189801f707bc7216a3c3aea5230d2a3c0cfb2fde2e6d832df83782bf5406d8cca6c195d14832b8c5
   languageName: node
   linkType: hard
 

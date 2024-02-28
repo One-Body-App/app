@@ -23,7 +23,7 @@ import { CameraRoll, PhotoIdentifier } from '@react-native-camera-roll/camera-ro
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
 
 import RNFetchBlob from 'rn-fetch-blob';
-
+import base64 from 'base-64';
 import axios from 'axios';
 import { useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -38,6 +38,7 @@ import { borderRadius } from '@/src/styles/outlines';
 import StyledTextInput from '@/src/components/styled/TextInput';
 import { ApiCall } from '@/src/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
+import { MUX_SECRET_KEY, MUX_TOKEN_ID } from '@/src/services/constants';
 
 const closeIcon = require('@/assets/images/close.png');
 const createWatch = require('@/assets/images/CreateWatch.png');
@@ -186,14 +187,70 @@ function VideoPost({ navigation }: Props) {
     outputRange: ['white', 'red'],
   });
   const uploadToMux = async () => {
-    const res = await ApiCall({
+    const muxLink = await ApiCall({
       route: `watch/authenticated-link/mux`,
       verb: 'get',
       token,
     });
-    const data = RNFetchBlob.wrap(VideoPath);
+
     try {
-      const resp = await RNFetchBlob.fetch('PUT', res.response?.url, undefined, data);
+      console.log('🚀 ~ uploadToMux ~ muxLink:', muxLink.response);
+      const imageResponse = await fetch(VideoPath, {
+        method: 'GET',
+      });
+      const blob = await imageResponse.blob();
+      await fetch(muxLink.response?.url, {
+        method: 'PUT',
+        body: blob,
+        headers: { 'content-type': blob.type },
+      }).then(async () => {
+        const authString = `${MUX_TOKEN_ID}:${MUX_SECRET_KEY}`;
+        const response = await axios
+          .get(`https://api.mux.com/video/v1/uploads/${muxLink.response.id}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Basic ${base64.encode(authString)}`,
+            },
+          })
+          .then(async (response) => {
+            if (response.data.data.status === 'waiting') {
+              setTimeout(async () => {
+                const responseAsset = await axios.get(
+                  `https://api.mux.com/video/v1/assets/${response.data.data.asset_id}`,
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Basic ${base64.encode(authString)}`,
+                    },
+                  }
+                );
+              }, 3600);
+            } else {
+              const responseAsset = await axios.get(
+                `https://api.mux.com/video/v1/assets/${response.data.data.asset_id}`,
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Basic ${base64.encode(authString)}`,
+                  },
+                }
+              );
+              if (responseAsset.data.data.playback_ids[0].id) {
+                const postVideo = await ApiCall({
+                  route: `watch/post`,
+                  verb: 'post',
+                  params: {
+                    content,
+                    videoId: muxLink.response.id,
+                    playBackId: responseAsset.data.data.playback_ids[0].id,
+                  },
+                  token,
+                });
+                navigation.navigate('Home', {});
+              }
+            }
+          });
+      });
     } catch (error) {
       console.error(error);
     }
