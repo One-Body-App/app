@@ -1,24 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  FlatList,
-  Text,
-  TouchableOpacity,
-  Platform,
-  Modal,
-  TextInput,
-  Button,
-  Image,
-  Dimensions,
-} from 'react-native';
-import { Heart, Message2, Share as ShareIcon } from 'iconsax-react-native';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { View, FlatList, Text } from 'react-native';
 import { useSelector } from 'react-redux';
 import MuxPlayer from '@mux/mux-player-react';
 import Video from 'react-native-video';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { styles } from '@/screens/home/watch/styles';
-import { spacing } from '@/src/styles/spacing';
 import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
 import BaseItem from '@/src/components/listItems/BaseItem';
@@ -51,12 +37,19 @@ function Watch() {
   const videos = [
     {
       id: 1,
-      videoUrl: 'https://stream.mux.com/eqUdOeBMowIAY02UnO2IYq82wJjeYR4nmmCn4y8tjuT4.m3u8',
+      videoUrl:
+        'https://stream.mux.com/1Db/WPHizo81LQ6B0Oa8NJ1BJiBzUY+hLPUBX29Gd3295QL0+MOaH/nbwu7/Tt3e8h1n4RqCU85.m3u8',
       description:
         'Explorando las bellezas naturales de la costa, descubrimos la magia de la naturaleza en su máximo esplendor',
     },
     {
       id: 2,
+      videoUrl: 'https://stream.mux.com/eqUdOeBMowIAY02UnO2IYq82wJjeYR4nmmCn4y8tjuT4.m3u8',
+      description:
+        'Explorando las bellezas naturales de la costa, descubrimos la magia de la naturaleza en su máximo esplendor',
+    },
+    {
+      id: 3,
       videoUrl: 'https://stream.mux.com/eqUdOeBMowIAY02UnO2IYq82wJjeYR4nmmCn4y8tjuT4.m3u8',
       description:
         'Explorando las bellezas naturales de la costa, descubrimos la magia de la naturaleza en su máximo esplendor',

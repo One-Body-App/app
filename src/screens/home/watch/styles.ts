@@ -1,5 +1,4 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import { User } from '../../../../utils/types';
 import { spacing } from '@/src/styles/spacing';
 
 const windowHeight = Dimensions.get('window').height;
