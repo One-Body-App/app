@@ -642,9 +642,9 @@ function BaseItem({
             <View
               style={{
                 flexDirection: 'row',
-
                 alignItems: 'center',
-                marginTop: spacing.x10,
+                marginTop: spacing.x5,
+                marginEnd: spacing.x10,
                 // alignContent: 'space-between',
               }}
             >
@@ -684,32 +684,14 @@ function BaseItem({
                 />
               </Reaction>
 
-              {/* <TouchableOpacity
-                        onLongPress={() => {
-                          if (!myReaction) {
-                            setShowActions(!showActions);
-                          }
-                        }}
-                        onPress={() => {
-                          if (showActions) {
-                            setShowActions(!showActions);
-                          } else {
-                            if (myReaction) {
-                              removeReactPost();
-                            } else {
-                              reactPost(SocialPostReactionType.love);
-                            }
-                          }
-                          // setShowActions(!showActions);
-                        }}
-                        ref={refs.setReference}
-                      >
-                        <Heart
-                          size={25}
-                          color={myReaction ? Colors.errorFeedback[200] : colors.text}
-                          variant={myReaction ? 'Bold' : 'Linear'}
-                        />
-                      </TouchableOpacity> */}
+              <View
+                style={{ flexDirection: 'row', marginTop: spacing.x5, marginLeft: spacing.x24 }}
+              >
+                <Message2 color={colors.text} />
+                <StyledText style={{ marginLeft: spacing.x10, marginVertical: spacing.x5 }}>
+                  {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                </StyledText>
+              </View>
 
               <TouchableOpacity
                 onPress={() => {
@@ -744,7 +726,7 @@ function BaseItem({
                   style={{
                     // alignItems: 'flex-end',
                     marginTop: spacing.x5,
-                    marginEnd: spacing.x10,
+                    marginLeft: 270,
                     marginVertical: spacing.x5,
                   }}
                 >
@@ -766,19 +748,6 @@ function BaseItem({
                   </TouchableOpacity>
                 </View>
               ) : null}
-
-              <View
-                style={{
-                  flexDirection: 'row',
-                  marginTop: spacing.x5,
-                  // marginLeft: spacing.x5,
-                }}
-              >
-                <Message2 color={colors.text} />
-                <StyledText style={{ marginLeft: spacing.x10, marginVertical: spacing.x5 }}>
-                  {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                </StyledText>
-              </View>
             </View>
           </View>
         </View>
