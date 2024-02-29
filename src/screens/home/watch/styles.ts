@@ -9,16 +9,15 @@ export const styles = StyleSheet.create({
   },
   videoContainer: {
     backgroundColor: 'black',
-    height: windowHeight * 0.85,
+    height: windowHeight * 0.9,
   },
   videoInfo: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(250, 250, 250, 1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     padding: spacing.x5,
-    flex: 1,
   },
   video: {
     ...StyleSheet.absoluteFillObject,
