@@ -18,7 +18,10 @@ export const styles = StyleSheet.create({
   continer: {
     flex: 1,
   },
-  contview: { flex: 1, justifyContent: 'space-around' },
+  contview: {
+    flex: 1,
+    justifyContent: 'space-around',
+  },
 
   title: {
     fontSize: 20,

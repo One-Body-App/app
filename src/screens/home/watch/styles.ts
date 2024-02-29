@@ -1,5 +1,7 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { spacing } from '@/src/styles/spacing';
+import StyledText from '@/src/components/styled/Text';
+import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
 const windowHeight = Dimensions.get('window').height;
 
@@ -8,19 +10,23 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   videoContainer: {
-    backgroundColor: 'black',
-    height: windowHeight * 0.9,
+    flex: 1,
+    width: getWidth(100),
+    height: getHeight(85),
+    backgroundColor: '#E6EAEC',
   },
   videoInfo: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: spacing.x5,
+    backgroundColor: 'transparent',
+    color: '#FFF',
+    fontSize: 16,
+    padding: spacing.x10,
   },
   video: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
   },
   userName: {
     color: 'white',
@@ -46,8 +52,8 @@ export const styles = StyleSheet.create({
     marginLeft: 275,
   },
   videoDescription: {
-    color: 'black',
-    fontSize: spacing.x13,
+    color: 'white',
+    fontSize: spacing.x16,
     left: spacing.x5,
     marginTop: spacing.x5,
     marginLeft: spacing.x5,

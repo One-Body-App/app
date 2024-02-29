@@ -9,6 +9,7 @@ import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import { AccountType, PostType } from '@/utils/types';
+import StyledText from '@/src/components/styled/Text';
 
 function Watch() {
   const token = useSelector((state: RootState) => state.auth.userToken);
