@@ -1,19 +1,17 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { spacing } from '@/src/styles/spacing';
-import StyledText from '@/src/components/styled/Text';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-const windowHeight = Dimensions.get('window').height;
-
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
+    height: getHeight(74.2),
     flex: 1,
   },
   videoContainer: {
     flex: 1,
+    overflow: 'hidden',
+    height: getHeight(74.2),
     width: getWidth(100),
-    height: getHeight(100),
-    backgroundColor: '#E6EAEC',
   },
   videoInfo: {
     position: 'absolute',
@@ -21,6 +19,7 @@ export const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
+    paddingTop: 230,
     color: '#FFF',
     fontSize: 16,
   },
@@ -51,7 +50,6 @@ export const styles = StyleSheet.create({
     marginLeft: 275,
   },
   videoDescription: {
-    color: 'white',
     fontSize: spacing.x16,
     left: spacing.x5,
     marginTop: spacing.x5,
@@ -106,3 +104,5 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export default styles;

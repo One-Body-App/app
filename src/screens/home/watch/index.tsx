@@ -1,17 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, FlatList, Text } from 'react-native';
+import { View, FlatList, Text, Appearance } from 'react-native';
 import { useSelector } from 'react-redux';
 import MuxPlayer from '@mux/mux-player-react';
 import Video from 'react-native-video';
+import LinearGradient from 'react-native-linear-gradient';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { styles } from '@/screens/home/watch/styles';
+import styles from '@/screens/home/watch/styles';
 import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import { AccountType, PostType } from '@/utils/types';
 import StyledText from '@/src/components/styled/Text';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { isDarkMode } from '@/src/styles/colors';
 
 function Watch() {
+  const darkMode = Appearance.getColorScheme() === 'dark';
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [feedData, setFeedData] = useState<any>();
   const [isEndOfList, setIsEndOfList] = useState(false);
@@ -106,7 +110,7 @@ function Watch() {
     }
   }).current;
 
-  const renderVideoItem2 = ({
+  const renderVideoItem = ({
     item,
   }: {
     item: {
@@ -128,57 +132,73 @@ function Watch() {
           resizeMode="cover"
           style={styles.video}
         />
-        <BaseItem
-          style={styles.videoInfo}
-          postData={{
-            commentNumber: item.comments.length,
-            comments: item.comments,
-            id: item.id.toString(),
-            image: { url: 'https://cdn.onebodyapp.com/no-image-post.jpg' },
-            myReaction: undefined,
-            postlink: 'https://www1.cbn.com/content/sword-spirit-family-discussion-guide',
-            reactions: [],
-            title: item.content,
-            type: PostType.rss,
-          }}
-          created={new Date(item.created)}
-          userData={
-            item.userData
-              ? item.userData
-              : {
-                  _id: '63898902e2db37cc5f4abad0',
-                  accountType: AccountType.organization,
-                  instagramHandler: '',
-                  interests: [],
-                  name: 'The Christian Broadcasting Network',
-                  profileImage: '',
-                  twitterHandler: '',
-                  username: 'the - christian - broadcasting - network',
-                  website: 'https://www1.cbn.com/',
-                }
+        <LinearGradient
+          colors={
+            darkMode
+              ? ['transparent', '#00000040', '#000000']
+              : ['transparent', '#ffffff40', '#ffffff']
           }
-          isApprovedInfluencer={item.userData.isApprovedInfluencer}
-          onPress={() => {}}
-          parentRefreshContent={undefined}
+          style={styles.videoInfo}
         >
-          <View>
-            <Text style={styles.videoDescription}>{item.content}</Text>
-          </View>
-        </BaseItem>
+          <BaseItem
+            postData={{
+              commentNumber: item.comments.length,
+              comments: item.comments,
+              id: item.id.toString(),
+              image: { url: 'https://cdn.onebodyapp.com/no-image-post.jpg' },
+              myReaction: undefined,
+              postlink: 'https://www1.cbn.com/content/sword-spirit-family-discussion-guide',
+              reactions: [],
+              title: item.content,
+              type: PostType.rss,
+            }}
+            created={new Date(item.created)}
+            userData={
+              item.userData
+                ? item.userData
+                : {
+                    _id: '63898902e2db37cc5f4abad0',
+                    accountType: AccountType.organization,
+                    instagramHandler: '',
+                    interests: [],
+                    name: 'The Christian Broadcasting Network',
+                    profileImage: '',
+                    twitterHandler: '',
+                    username: 'the - christian - broadcasting - network',
+                    website: 'https://www1.cbn.com/',
+                  }
+            }
+            isApprovedInfluencer={item.userData.isApprovedInfluencer}
+            onPress={() => {}}
+            parentRefreshContent={undefined}
+          >
+            <View>
+              <Text style={[{ color: darkMode ? 'white' : 'black' }, styles.videoDescription]}>
+                {item.content}
+              </Text>
+            </View>
+          </BaseItem>
+        </LinearGradient>
       </View>
     );
   };
 
   useEffect(() => {
     getFeedData(FeedTypes.Watch, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
         data={feedData}
-        renderItem={renderVideoItem2}
+        renderItem={renderVideoItem}
         keyExtractor={(item) => item.id.toString()}
+        getItemLayout={(data, index) => ({
+          length: getHeight(74.2), // Adjust height as needed
+          offset: getHeight(74.2) * index,
+          index,
+        })}
         pagingEnabled
         decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}

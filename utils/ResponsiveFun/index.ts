@@ -16,8 +16,8 @@ export function getFontSize(font: number) {
   const deviceHeight = isIphoneX()
     ? height * 0.9
     : Platform.OS === 'android'
-    ? height - (StatusBar.currentHeight ?? 0)
-    : height;
+      ? height - (StatusBar.currentHeight ?? 0)
+      : height;
   const deviceHeightPercent = (font * deviceHeight) / 100;
   return Math.round(deviceHeightPercent);
 }
