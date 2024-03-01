@@ -55,11 +55,11 @@ type Props = CompositeScreenProps<
   >
 >;
 
-function Home({ navigation }: Props) {
+function Home({ navigation, route }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
 
   const [feedOptions, setFeedOptions] = useState<FeedOptions>({
-    type: FeedTypes.Connected,
+    type: route.params?.selectedTab ?? FeedTypes.Watch,
     page: 1,
   });
 
@@ -149,6 +149,15 @@ function Home({ navigation }: Props) {
     // getData(page);
     getFeedData(feedOptions.type, feedOptions.page);
   }, [feedOptions]);
+
+  useEffect(() => {
+    if (route.params?.selectedTab) {
+      setFeedOptions({
+        type: route.params?.selectedTab,
+        page: 1,
+      });
+    }
+  }, [route.params]);
 
   useEffect(() => {
     // getData(page);
@@ -286,6 +295,7 @@ function Home({ navigation }: Props) {
     <View style={{ flex: 1 }}>
       <View
         style={{
+          flex: 0,
           flexDirection: 'row',
           marginHorizontal: spacing.x5,
           // marginBottom: 20,
@@ -407,7 +417,6 @@ function Home({ navigation }: Props) {
           </View>
         ))}
       </View>
-
       {isLoading && feedOptions.page == 1 && !isRefreshing ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicatorContent size="small" />
@@ -614,7 +623,12 @@ function Home({ navigation }: Props) {
           </View>
         )
       )}
-      {feedOptions.type === 'watch' && <WatchComponent />}
+
+      {feedOptions.type === 'watch' && (
+        <View style={{ flex: 1, marginBottom: 0 }}>
+          <WatchComponent />
+        </View>
+      )}
     </View>
   );
 }

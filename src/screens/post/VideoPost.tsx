@@ -25,10 +25,16 @@ import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-pick
 import RNFetchBlob from 'rn-fetch-blob';
 import base64 from 'base-64';
 import axios from 'axios';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
+import { DrawerScreenProps } from '@react-navigation/drawer';
 import { styles } from './styles';
-import { MainStackParamList } from '@/src/navigator/types';
+import {
+  HomeStackParamsList,
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+  MainStackParamList,
+} from '@/src/navigator/types';
 import { button } from '@/src/styles/buttons';
 import Button from '@/src/components/Button';
 import StyledText from '@/src/components/styled/Text';
@@ -39,12 +45,24 @@ import StyledTextInput from '@/src/components/styled/TextInput';
 import { ApiCall } from '@/src/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MUX_SECRET_KEY, MUX_TOKEN_ID } from '@/src/services/constants';
+import { FeedTypes } from '../home';
 
 const closeIcon = require('@/assets/images/close.png');
 const createWatch = require('@/assets/images/CreateWatch.png');
 const cameraIos = require('@/assets/icons/camera-ios.png');
 
-type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
+// type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
+
+type Props = CompositeScreenProps<
+  StackScreenProps<MainStackParamList, 'VideoPost'>,
+  CompositeScreenProps<
+    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
+    CompositeScreenProps<
+      DrawerScreenProps<MainBottomStackParamsList, 'HomeTab'>,
+      StackScreenProps<MainStackParamList, 'MainRoot'>
+    >
+  >
+>;
 
 function VideoPost({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -246,7 +264,18 @@ function VideoPost({ navigation }: Props) {
                   },
                   token,
                 });
-                navigation.navigate('Home', {});
+                navigation.navigate('MainRoot', {
+                  screen: 'Main',
+                  params: {
+                    screen: 'HomeTab',
+                    params: {
+                      screen: 'Home',
+                      params: {
+                        selectedTab: FeedTypes.Watch,
+                      },
+                    },
+                  },
+                });
               }
             }
           });

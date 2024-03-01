@@ -1,9 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, FlatList, Text, Appearance } from 'react-native';
+
+import { View, FlatList, Text, RefreshControl, useWindowDimensions,  Appearance } from 'react-native';
+
 import { useSelector } from 'react-redux';
-import MuxPlayer from '@mux/mux-player-react';
+
 import Video from 'react-native-video';
+
+import { useTheme } from '@react-navigation/native';
+
 import LinearGradient from 'react-native-linear-gradient';
+
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import styles from '@/screens/home/watch/styles';
 import { ApiCall } from '@/services/api';
@@ -11,13 +17,20 @@ import { FeedTypes } from '@/screens/home';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import { AccountType, PostType } from '@/utils/types';
 import StyledText from '@/src/components/styled/Text';
+
+import { Colors } from '@/src/styles';
+import { NO_POST_IMAGE_URL } from '@/src/services/constants';
+
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { isDarkMode } from '@/src/styles/colors';
+
 
 function Watch() {
   const darkMode = Appearance.getColorScheme() === 'dark';
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [feedData, setFeedData] = useState<any>();
+  const [page, setPage] = useState<number>(1);
+  const [viewHeight, setViewHeight] = useState<number>(1);
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sharedVideoUrl, setSharedVideoUrl] = useState('');
@@ -28,10 +41,12 @@ function Watch() {
   const [sharesCount, setSharesCount] = useState(0);
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList>(null);
+
+  const { height, width } = useWindowDimensions();
 
   // Accede al estado del usuario
-  const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const { dark } = useTheme();
 
   const [reactionCounts, setReactionCounts] = useState({
     love: 0,
@@ -39,11 +54,19 @@ function Watch() {
     happy: 0,
   });
 
-  const getFeedData = async (type: FeedTypes, pageNumber: number) => {
+  useEffect(() => {
+    // getData(page);
+    if (isRefreshing) {
+      setPage(1);
+      setIsEndOfList(false);
+    }
+  }, [isRefreshing]);
+
+  const getFeedData = async () => {
     setIsLoading(true);
     try {
       const res = await ApiCall({
-        route: `user/get-following-feed/${type}/${pageNumber}`,
+        route: `user/get-following-feed/${FeedTypes.Watch}/${page}`,
         token,
         verb: 'get',
       });
@@ -58,7 +81,7 @@ function Watch() {
             const dateB = new Date(b.created);
             return dateB.getTime() - dateA.getTime(); // Newest first
           });
-        if (pageNumber === 1) {
+        if (page === 1) {
           newFeedData = feedPosts ?? [];
 
           setIsEndOfList(false);
@@ -126,12 +149,13 @@ function Watch() {
     };
   }) => {
     return (
-      <View style={styles.videoContainer}>
+      <View style={[styles.videoContainer, { height: viewHeight, width }]}>
         <Video
           source={{ uri: `https://stream.mux.com/${item.playBackId}` }}
           resizeMode="cover"
           style={styles.video}
         />
+
         <LinearGradient
           colors={
             darkMode
@@ -141,58 +165,56 @@ function Watch() {
           style={styles.videoInfo}
         >
           <BaseItem
+            
+          style={styles.videoInfo}
+          transparency
             postData={{
-              commentNumber: item.comments.length,
-              comments: item.comments,
-              id: item.id.toString(),
-              image: { url: 'https://cdn.onebodyapp.com/no-image-post.jpg' },
-              myReaction: undefined,
-              postlink: 'https://www1.cbn.com/content/sword-spirit-family-discussion-guide',
-              reactions: [],
-              title: item.content,
-              type: PostType.rss,
+            commentNumber: item.comments.length,
+            comments: item.comments,
+            id: item.id.toString(),
+            image: { url: NO_POST_IMAGE_URL },
+            myReaction: undefined,
+            reactions: [],
+            title: item.content,
+            type: PostType.rss,
             }}
             created={new Date(item.created)}
-            userData={
-              item.userData
-                ? item.userData
-                : {
-                    _id: '63898902e2db37cc5f4abad0',
-                    accountType: AccountType.organization,
-                    instagramHandler: '',
-                    interests: [],
-                    name: 'The Christian Broadcasting Network',
-                    profileImage: '',
-                    twitterHandler: '',
-                    username: 'the - christian - broadcasting - network',
-                    website: 'https://www1.cbn.com/',
-                  }
-            }
+            userData={item.userData}
             isApprovedInfluencer={item.userData.isApprovedInfluencer}
             onPress={() => {}}
             parentRefreshContent={undefined}
+          parentRefreshContent={undefined}
           >
             <View>
-              <Text style={[{ color: darkMode ? 'white' : 'black' }, styles.videoDescription]}>
+              <Text style={[styles.videoDescription, { color: Colors.neutral[600] }]}>
                 {item.content}
               </Text>
             </View>
           </BaseItem>
         </LinearGradient>
+
       </View>
     );
   };
 
   useEffect(() => {
-    getFeedData(FeedTypes.Watch, 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    getFeedData();
+  }, [page]);
+
   return (
-    <View style={styles.container}>
+    <View
+      style={{ flex: 1 }}
+      onLayout={(event) => {
+        const { height } = event.nativeEvent.layout;
+        setViewHeight(height);
+      }}
+    >
       <FlatList
         ref={flatListRef}
         data={feedData}
+        contentContainerStyle={{ flexGrow: 1 }}
         renderItem={renderVideoItem}
+
         keyExtractor={(item) => item.id.toString()}
         getItemLayout={(data, index) => ({
           length: getHeight(74.2), // Adjust height as needed
@@ -205,6 +227,31 @@ function Watch() {
         viewabilityConfig={{
           itemVisiblePercentThreshold: 50,
         }}
+        onEndReachedThreshold={0.5}
+        onEndReached={() => {
+          if (!isLoading && !isRefreshing && !isEndOfList) {
+            setPage(page + 1);
+          }
+        }}
+        refreshing={isLoading}
+        refreshControl={
+          <RefreshControl
+            enabled
+            refreshing={isRefreshing}
+            colors={
+              dark
+                ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
+                : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
+            }
+            tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
+            onRefresh={() => {
+              setIsRefreshing(true);
+            }}
+          />
+        }
+        // CellRendererComponent={({ children, style, onLayout, onFocusCapture }) => (
+        //   <View style={[style, { flex: 1 }]}>{children}</View>
+        // )}
       />
     </View>
   );
