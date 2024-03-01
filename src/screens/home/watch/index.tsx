@@ -1,38 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-import {
-  View,
-  FlatList,
-  Text,
-  RefreshControl,
-  useWindowDimensions,
-  Appearance,
-} from 'react-native';
+import { View, FlatList, RefreshControl, useWindowDimensions } from 'react-native';
 
 import { useSelector } from 'react-redux';
 
-import Video from 'react-native-video';
-
 import { useTheme } from '@react-navigation/native';
 
-import LinearGradient from 'react-native-linear-gradient';
-
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import styles from '@/screens/home/watch/styles';
+
 import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
-import BaseItem from '@/src/components/listItems/BaseItem';
-import { PostType } from '@/utils/types';
-import StyledText from '@/src/components/styled/Text';
-
-import { Colors } from '@/src/styles';
-import { NO_POST_IMAGE_URL } from '@/src/services/constants';
 
 import { getHeight } from '@/utils/ResponsiveFun';
+import VideoItem from './VideoItem';
+import { WatchPost } from '@/utils/types';
 
 function Watch() {
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [feedData, setFeedData] = useState<any>();
+  const [feedData, setFeedData] = useState<WatchPost[]>([]);
   const [page, setPage] = useState<number>(1);
   const [viewHeight, setViewHeight] = useState<number>(1);
   const [isEndOfList, setIsEndOfList] = useState(false);
@@ -61,7 +46,11 @@ function Watch() {
   useEffect(() => {
     // getData(page);
     if (isRefreshing) {
-      setPage(1);
+      if (page == 1) {
+        getFeedData();
+      } else {
+        setPage(1);
+      }
       setIsEndOfList(false);
     }
   }, [isRefreshing]);
@@ -74,7 +63,7 @@ function Watch() {
         token,
         verb: 'get',
       });
-      let newFeedData = [];
+      let newFeedData: WatchPost[] = [];
 
       if (res?.status === 200) {
         newFeedData = [];
@@ -85,6 +74,7 @@ function Watch() {
             const dateB = new Date(b.created);
             return dateB.getTime() - dateA.getTime(); // Newest first
           });
+
         if (page === 1) {
           newFeedData = feedPosts ?? [];
 
@@ -106,13 +96,13 @@ function Watch() {
         setFeedData([]);
         setIsEndOfList(true);
       }
+
+      setIsLoading(false);
+      setIsRefreshing(false);
     } catch (e: any) {
       setFeedData([]);
       // console.log(`saga get twitter timline  error -- `, e.toString());
     }
-
-    setIsLoading(false);
-    setIsRefreshing(false);
   };
 
   const handleShare = (id: number) => {
@@ -137,60 +127,6 @@ function Watch() {
     }
   }).current;
 
-  const renderVideoItem = ({
-    item,
-  }: {
-    item: {
-      id: number;
-      videoUrl: string;
-      content: string;
-      videoId: string;
-      playBackId: string;
-      userData: any;
-      comments: any[];
-      created: string;
-      isApprovedInfluencer: boolean;
-    };
-  }) => {
-    return (
-      <View style={[styles.videoContainer, { height: viewHeight, width }]}>
-        <Video
-          source={{ uri: `https://stream.mux.com/${item.playBackId}` }}
-          resizeMode="cover"
-          style={styles.video}
-        />
-
-        <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
-          <BaseItem
-            style={styles.videoInfo}
-            transparency
-            postData={{
-              commentNumber: item.comments.length,
-              comments: item.comments,
-              id: item.id.toString(),
-              image: { url: NO_POST_IMAGE_URL },
-              myReaction: undefined,
-              reactions: [],
-              title: item.content,
-              type: PostType.rss,
-            }}
-            created={new Date(item.created)}
-            userData={item.userData}
-            isApprovedInfluencer={item.userData.isApprovedInfluencer}
-            onPress={() => {}}
-            parentRefreshContent={undefined}
-          >
-            <View>
-              <Text style={[styles.videoDescription, { color: Colors.neutral[600] }]}>
-                {item.content}
-              </Text>
-            </View>
-          </BaseItem>
-        </LinearGradient>
-      </View>
-    );
-  };
-
   useEffect(() => {
     getFeedData();
   }, [page]);
@@ -207,7 +143,20 @@ function Watch() {
         ref={flatListRef}
         data={feedData}
         contentContainerStyle={{ flexGrow: 1 }}
-        renderItem={renderVideoItem}
+        renderItem={({ item, index }) => {
+          return (
+            <VideoItem
+              index={index}
+              item={item}
+              viewHeight={viewHeight}
+              width={width}
+              fromSavedPosts={false}
+              onShowDismissCard={(e?: boolean) => {
+                // setIsScrollEnable(!e)
+              }}
+            />
+          );
+        }}
         keyExtractor={(item) => item.id.toString()}
         getItemLayout={(data, index) => ({
           length: getHeight(74.2), // Adjust height as needed
@@ -226,7 +175,7 @@ function Watch() {
             setPage(page + 1);
           }
         }}
-        refreshing={isLoading}
+        refreshing={isRefreshing}
         refreshControl={
           <RefreshControl
             enabled

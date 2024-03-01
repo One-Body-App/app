@@ -21,7 +21,7 @@ import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledText from '../styled/Text';
 import { fontSize } from '@/src/styles/typography';
 import { spacing } from '@/src/styles/spacing';
-import { Colors } from '@/src/styles';
+import { Colors, Spacing } from '@/src/styles';
 
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
@@ -634,9 +634,14 @@ function BaseItem({
           </View>
 
           <View
-            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: spacing.x10,
+            }}
           >
-            <View>
+            <View style={{ justifyContent: 'center' }}>
               {postData.externalLink ? (
                 <TouchableOpacity
                   onPress={() => {
@@ -662,7 +667,7 @@ function BaseItem({
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  marginTop: spacing.x10,
+                  // marginTop: spacing.x10,
                   // alignContent: 'space-between',
                 }}
               >
@@ -709,13 +714,17 @@ function BaseItem({
                 </Reaction>
 
                 <View
-                  style={{ flexDirection: 'row', marginTop: spacing.x5, marginLeft: spacing.x10 }}
+                  style={{
+                    flexDirection: 'row',
+                    marginLeft: spacing.x10,
+                    alignItems: 'center',
+                  }}
                 >
                   <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
                   <StyledText
                     style={{
                       marginLeft: spacing.x10,
-                      marginVertical: spacing.x5,
+                      // marginVertical: spacing.x5,
                       color: transparency ? Colors.neutral[600] : colors.text,
                     }}
                   >
@@ -763,13 +772,15 @@ function BaseItem({
             <View style={{ alignItems: 'center' }}>
               {postData.type == PostType.rss ? (
                 <View
-                  style={{
-                    // alignItems: 'flex-end',
-                    marginTop: spacing.x5,
-                    // marginEnd: spacing.x10,
-                    // marginLeft: 270,
-                    marginVertical: spacing.x5,
-                  }}
+                  style={
+                    {
+                      // alignItems: 'flex-end',
+                      // marginTop: spacing.x5,
+                      // marginEnd: spacing.x10,
+                      // marginLeft: 270,
+                      // marginVertical: spacing.x5,
+                    }
+                  }
                 >
                   <TouchableOpacity
                     onPress={() => {

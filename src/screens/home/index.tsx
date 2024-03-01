@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
+import { View, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 
 import { useSelector } from 'react-redux';
 import { CompositeScreenProps, useTheme, useScrollToTop } from '@react-navigation/native';
@@ -13,7 +13,7 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import SocialItem from '@/components/listItems/SocialItem';
 import ArticleItem from '@/components/listItems/ArticleItem';
-import ActivityIndicatorContent from '@/components/ActivityIndicatorContent';
+
 import { ArticleType } from '@/utils/types';
 import { styles as globalStyle } from '@/components/listItems/style';
 
@@ -419,7 +419,7 @@ function Home({ navigation, route }: Props) {
       </View>
       {isLoading && feedOptions.page == 1 && !isRefreshing ? (
         <View style={{ marginTop: 10 }}>
-          <ActivityIndicatorContent size="small" />
+          <ActivityIndicator size="small" />
         </View>
       ) : (
         feedOptions.type !== 'watch' && (
@@ -567,7 +567,6 @@ function Home({ navigation, route }: Props) {
                 return (
                   <TouchableOpacity
                     onPress={() => {
-                      console.log(item, 'item');
                       if (item.id) {
                         navigation.navigate('SingleRss', {
                           postId: item.id,
@@ -616,7 +615,7 @@ function Home({ navigation, route }: Props) {
               }}
               ListFooterComponent={() => (
                 <View>
-                  {isLoading && !isRefreshing ? <ActivityIndicatorContent size="small" /> : null}
+                  {isLoading && !isRefreshing ? <ActivityIndicator size="small" /> : null}
                 </View>
               )}
             />
