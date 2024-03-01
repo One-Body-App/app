@@ -180,7 +180,7 @@ function NewPost({ navigation, route }: Props) {
       });
 
       setIsLoading(false);
-      console.log(result);
+
       if (result.status === 200) {
         setContent('');
         navigation.popToTop();

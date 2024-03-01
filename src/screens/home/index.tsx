@@ -59,7 +59,7 @@ function Home({ navigation, route }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
 
   const [feedOptions, setFeedOptions] = useState<FeedOptions>({
-    type: route.params?.selectedTab ?? FeedTypes.Watch,
+    type: route.params?.selectedTab ?? FeedTypes.Connected,
     page: 1,
   });
 

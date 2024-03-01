@@ -51,18 +51,7 @@ const closeIcon = require('@/assets/images/close.png');
 const createWatch = require('@/assets/images/CreateWatch.png');
 const cameraIos = require('@/assets/icons/camera-ios.png');
 
-// type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
-
-type Props = CompositeScreenProps<
-  StackScreenProps<MainStackParamList, 'VideoPost'>,
-  CompositeScreenProps<
-    DrawerScreenProps<MainDrawerParamsList, 'Main'>,
-    CompositeScreenProps<
-      DrawerScreenProps<MainBottomStackParamsList, 'HomeTab'>,
-      StackScreenProps<MainStackParamList, 'MainRoot'>
-    >
-  >
->;
+type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
 function VideoPost({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -91,7 +80,7 @@ function VideoPost({ navigation }: Props) {
       first: 1,
     });
     const image_url = res?.edges[0]?.node?.image;
-    console.log(image_url);
+
     setLatestGalleryImg(image_url?.uri);
   }, []);
 
@@ -99,8 +88,7 @@ function VideoPost({ navigation }: Props) {
     async function getPermissions() {
       const cameraPermission = await Camera.requestCameraPermission();
       const microphonePermission = await Camera.requestMicrophonePermission();
-      console.log(`Camera Permission Status: ${cameraPermission}`);
-      console.log(`Microphone Permission Status: ${microphonePermission}`);
+
       if (cameraPermission === 'denied' || microphonePermission === 'denied') {
         // await Linking.openSettings();
       }
@@ -112,12 +100,11 @@ function VideoPost({ navigation }: Props) {
       switch (event.name) {
         case 'onFinishTrimming': {
           // on trimming is done
-          console.log('onFinishTrimming', event);
+
           setVideoPath(event?.outputPath);
           break;
         }
         case 'onError': {
-          console.log('onError', event);
           break;
         }
         default:
@@ -153,7 +140,7 @@ function VideoPost({ navigation }: Props) {
             onRecordingFinished: (video) => {
               setRecordedVideo(video);
               isValidVideo(video?.path || '').then((res) => console.log(res));
-              console.log('Video _Path', video?.path);
+
               showEditor(video?.path || '', {
                 saveToPhoto: false,
                 maxDuration: 60,
@@ -212,7 +199,6 @@ function VideoPost({ navigation }: Props) {
     });
 
     try {
-      console.log('🚀 ~ uploadToMux ~ muxLink:', muxLink.response);
       const imageResponse = await fetch(VideoPath, {
         method: 'GET',
       });
