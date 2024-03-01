@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-import { View, FlatList, Text, RefreshControl, useWindowDimensions,  Appearance } from 'react-native';
+import {
+  View,
+  FlatList,
+  Text,
+  RefreshControl,
+  useWindowDimensions,
+  Appearance,
+} from 'react-native';
 
 import { useSelector } from 'react-redux';
 
@@ -15,18 +22,15 @@ import styles from '@/screens/home/watch/styles';
 import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
 import BaseItem from '@/src/components/listItems/BaseItem';
-import { AccountType, PostType } from '@/utils/types';
+import { PostType } from '@/utils/types';
 import StyledText from '@/src/components/styled/Text';
 
 import { Colors } from '@/src/styles';
 import { NO_POST_IMAGE_URL } from '@/src/services/constants';
 
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { isDarkMode } from '@/src/styles/colors';
-
+import { getHeight } from '@/utils/ResponsiveFun';
 
 function Watch() {
-  const darkMode = Appearance.getColorScheme() === 'dark';
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [feedData, setFeedData] = useState<any>();
   const [page, setPage] = useState<number>(1);
@@ -156,34 +160,25 @@ function Watch() {
           style={styles.video}
         />
 
-        <LinearGradient
-          colors={
-            darkMode
-              ? ['transparent', '#00000040', '#000000']
-              : ['transparent', '#ffffff40', '#ffffff']
-          }
-          style={styles.videoInfo}
-        >
+        <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
           <BaseItem
-            
-          style={styles.videoInfo}
-          transparency
+            style={styles.videoInfo}
+            transparency
             postData={{
-            commentNumber: item.comments.length,
-            comments: item.comments,
-            id: item.id.toString(),
-            image: { url: NO_POST_IMAGE_URL },
-            myReaction: undefined,
-            reactions: [],
-            title: item.content,
-            type: PostType.rss,
+              commentNumber: item.comments.length,
+              comments: item.comments,
+              id: item.id.toString(),
+              image: { url: NO_POST_IMAGE_URL },
+              myReaction: undefined,
+              reactions: [],
+              title: item.content,
+              type: PostType.rss,
             }}
             created={new Date(item.created)}
             userData={item.userData}
             isApprovedInfluencer={item.userData.isApprovedInfluencer}
             onPress={() => {}}
             parentRefreshContent={undefined}
-          parentRefreshContent={undefined}
           >
             <View>
               <Text style={[styles.videoDescription, { color: Colors.neutral[600] }]}>
@@ -192,7 +187,6 @@ function Watch() {
             </View>
           </BaseItem>
         </LinearGradient>
-
       </View>
     );
   };
@@ -214,7 +208,6 @@ function Watch() {
         data={feedData}
         contentContainerStyle={{ flexGrow: 1 }}
         renderItem={renderVideoItem}
-
         keyExtractor={(item) => item.id.toString()}
         getItemLayout={(data, index) => ({
           length: getHeight(74.2), // Adjust height as needed

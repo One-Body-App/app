@@ -8,18 +8,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   videoContainer: {
-
     // width: '100%',
     // height: '100%',
     // width: getWidth(100),
     // height: getHeight(100),
     // backgroundColor: '#E6EAEC',
 
-    //flex: 1,
-    //overflow: 'hidden',
-    //height: getHeight(74.2),
-    //width: getWidth(100),
-
+    flex: 1,
+    overflow: 'hidden',
+    height: getHeight(74.2),
+    width: getWidth(100),
   },
   videoInfo: {
     position: 'absolute',
@@ -27,12 +25,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
 
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: 'transparent',
     // color: '#FFF',
-
-    //backgroundColor: 'transparent',
-    //paddingTop: 230,
-    //color: '#FFF',
+    paddingTop: 230,
+    color: '#FFF',
 
     fontSize: 16,
   },
