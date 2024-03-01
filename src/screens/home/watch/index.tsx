@@ -11,6 +11,8 @@ import { FeedTypes } from '@/screens/home';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import { AccountType, PostType } from '@/utils/types';
 import StyledText from '@/src/components/styled/Text';
+import { Colors } from '@/src/styles';
+import { NO_POST_IMAGE_URL } from '@/src/services/constants';
 
 function Watch() {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -148,35 +150,22 @@ function Watch() {
             commentNumber: item.comments.length,
             comments: item.comments,
             id: item.id.toString(),
-            image: { url: 'https://cdn.onebodyapp.com/no-image-post.jpg' },
+            image: { url: NO_POST_IMAGE_URL },
             myReaction: undefined,
-            postlink: 'https://www1.cbn.com/content/sword-spirit-family-discussion-guide',
             reactions: [],
             title: item.content,
             type: PostType.rss,
           }}
           created={new Date(item.created)}
-          userData={
-            item.userData
-              ? item.userData
-              : {
-                  _id: '63898902e2db37cc5f4abad0',
-                  accountType: AccountType.organization,
-                  instagramHandler: '',
-                  interests: [],
-                  name: 'The Christian Broadcasting Network',
-                  profileImage: '',
-                  twitterHandler: '',
-                  username: 'the - christian - broadcasting - network',
-                  website: 'https://www1.cbn.com/',
-                }
-          }
+          userData={item.userData}
           isApprovedInfluencer={item.userData.isApprovedInfluencer}
           onPress={() => {}}
           parentRefreshContent={undefined}
         >
           <View>
-            <Text style={styles.videoDescription}>{item.content}</Text>
+            <Text style={[styles.videoDescription, { color: Colors.neutral[600] }]}>
+              {item.content}
+            </Text>
           </View>
         </BaseItem>
       </View>

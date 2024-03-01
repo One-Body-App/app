@@ -419,7 +419,7 @@ function BaseItem({
                   <View style={{ flexDirection: 'row' }}>
                     <StyledText
                       style={{
-                        color: transparency ? Colors.neutral[700] : Colors.neutral.brand,
+                        color: transparency ? Colors.neutral[500] : Colors.neutral.brand,
                         alignItems: 'center',
                         ...fontSize.x1,
                         marginLeft: spacing.x48,
@@ -441,7 +441,7 @@ function BaseItem({
                   <StyledText
                     numberOfLines={2}
                     style={{
-                      color: transparency ? Colors.neutral[800] : Colors.neutral[300],
+                      color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                       alignItems: 'center',
                       ...fontSize.x1,
                       marginLeft: spacing.x48,
@@ -471,7 +471,7 @@ function BaseItem({
                           style={[
                             fontSize.x1,
                             {
-                              color: transparency ? Colors.neutral[800] : Colors.neutral[300],
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                               alignItems: 'center',
                             },
                           ]}
@@ -488,7 +488,7 @@ function BaseItem({
                           style={[
                             fontSize.x1,
                             {
-                              color: transparency ? Colors.neutral[800] : Colors.neutral[300],
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                               alignItems: 'center',
                             },
                           ]}
@@ -510,7 +510,7 @@ function BaseItem({
                         style={[
                           fontSize.x1,
                           {
-                            color: transparency ? Colors.neutral[800] : Colors.neutral[300],
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                             marginTop: 0,
                           },
                         ]}
@@ -528,7 +528,7 @@ function BaseItem({
               >
                 <FontAwesomeIcon
                   icon={faEllipsisVertical}
-                  color={colors.text}
+                  color={transparency ? Colors.neutral[600] : colors.text}
                   style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
                 />
               </TouchableOpacity>
@@ -564,7 +564,7 @@ function BaseItem({
                       style={[
                         fontSize.x2,
                         {
-                          color: transparency ? Colors.neutral[800] : Colors.neutral[300],
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                           marginRight: spacing.x5,
                         },
                       ]}
@@ -592,7 +592,7 @@ function BaseItem({
                       style={[
                         fontSize.x2,
                         {
-                          color: transparency ? Colors.neutral[800] : Colors.neutral[300],
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                           marginRight: spacing.x5,
                         },
                       ]}
@@ -620,7 +620,7 @@ function BaseItem({
                       style={[
                         fontSize.x2,
                         {
-                          color: transparency ? Colors.neutral[800] : Colors.neutral[300],
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                           marginRight: spacing.x5,
                         },
                       ]}
@@ -700,7 +700,7 @@ function BaseItem({
                       myReaction
                         ? Colors.errorFeedback[200]
                         : transparency
-                          ? Colors.neutral[800]
+                          ? Colors.neutral[600]
                           : colors.text
                     }
                     variant={myReaction ? 'Bold' : 'Linear'}
@@ -711,12 +711,12 @@ function BaseItem({
                 <View
                   style={{ flexDirection: 'row', marginTop: spacing.x5, marginLeft: spacing.x10 }}
                 >
-                  <Message2 color={transparency ? Colors.neutral[800] : colors.text} />
+                  <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
                   <StyledText
                     style={{
                       marginLeft: spacing.x10,
                       marginVertical: spacing.x5,
-                      color: transparency ? Colors.neutral[800] : colors.text,
+                      color: transparency ? Colors.neutral[600] : colors.text,
                     }}
                   >
                     {postData?.commentNumber ?? postData.comments?.length ?? '0'}
@@ -746,11 +746,11 @@ function BaseItem({
                     style={{ marginRight: 3 }}
                     width={25}
                     height={25}
-                    color={transparency ? Colors.neutral[800] : colors.text}
+                    color={transparency ? Colors.neutral[600] : colors.text}
                     fill={
                       isThisPostSaved
                         ? transparency
-                          ? Colors.neutral[800]
+                          ? Colors.neutral[600]
                           : colors.text
                         : transparency
                           ? 'transparent'
@@ -782,9 +782,17 @@ function BaseItem({
                     }}
                   >
                     {Platform.OS == 'android' ? (
-                      <ShareAndroid color={colors.text} height={25} width={25} />
+                      <ShareAndroid
+                        color={transparency ? Colors.neutral[600] : colors.text}
+                        height={25}
+                        width={25}
+                      />
                     ) : (
-                      <ShareIos color={colors.text} height={25} width={25} />
+                      <ShareIos
+                        color={transparency ? Colors.neutral[600] : colors.text}
+                        height={25}
+                        width={25}
+                      />
                     )}
                   </TouchableOpacity>
                 </View>

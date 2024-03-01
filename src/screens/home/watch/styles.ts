@@ -21,7 +21,7 @@ export const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.9)',
     // color: '#FFF',
     fontSize: 16,
   },
@@ -52,7 +52,6 @@ export const styles = StyleSheet.create({
     marginLeft: 275,
   },
   videoDescription: {
-    color: 'white',
     fontSize: spacing.x16,
     left: spacing.x5,
     marginTop: spacing.x5,
