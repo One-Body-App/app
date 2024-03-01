@@ -21,8 +21,8 @@ export const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'transparent',
-    color: '#FFF',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    // color: '#FFF',
     fontSize: 16,
   },
   video: {

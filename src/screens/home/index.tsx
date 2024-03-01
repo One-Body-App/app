@@ -620,9 +620,12 @@ function Home({ navigation, route }: Props) {
           </View>
         )
       )}
-      <View style={{ flex: 1, marginBottom: 20 }}>
-        {feedOptions.type === 'watch' && <WatchComponent />}
-      </View>
+
+      {feedOptions.type === 'watch' && (
+        <View style={{ flex: 1, marginBottom: 20 }}>
+          <WatchComponent />
+        </View>
+      )}
     </View>
   );
 }

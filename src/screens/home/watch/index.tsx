@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, FlatList, Text, RefreshControl, useWindowDimensions } from 'react-native';
 import { useSelector } from 'react-redux';
-import MuxPlayer from '@mux/mux-player-react';
+
 import Video from 'react-native-video';
 import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -143,6 +143,7 @@ function Watch() {
         />
         <BaseItem
           style={styles.videoInfo}
+          transparency
           postData={{
             commentNumber: item.comments.length,
             comments: item.comments,
