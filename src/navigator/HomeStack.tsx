@@ -7,6 +7,7 @@ import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Notifications from '../screens/notifications';
 import { Colors } from '../styles';
+import { getHeight } from '@/utils/ResponsiveFun';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
 function HomeStack() {
@@ -14,7 +15,13 @@ function HomeStack() {
 
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="Home"
+        component={Home}
+        options={{
+          headerShown: false,
+        }}
+      />
       <Stack.Screen
         name="Notifications"
         component={Notifications}

@@ -26,9 +26,10 @@ import {
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import Watch from './watch';
+import WatchComponent from '@/screens/home/watch';
+import { getHeight } from '@/utils/ResponsiveFun';
 
-enum FeedTypes {
+export enum FeedTypes {
   Connected = 'connected',
   ForYou = 'foryou',
   Read = 'read',
@@ -54,11 +55,11 @@ type Props = CompositeScreenProps<
   >
 >;
 
-function Home({ navigation }: Props) {
+function Home({ navigation, route }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
 
   const [feedOptions, setFeedOptions] = useState<FeedOptions>({
-    type: FeedTypes.Connected,
+    type: route.params?.selectedTab ?? FeedTypes.Connected,
     page: 1,
   });
 
@@ -113,10 +114,10 @@ function Home({ navigation }: Props) {
       });
       let newFeedData = [];
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         newFeedData = [];
 
-        if (pageNumber == 1) {
+        if (pageNumber === 1) {
           newFeedData = res?.response ?? [];
 
           setIsEndOfList(false);
@@ -148,6 +149,15 @@ function Home({ navigation }: Props) {
     // getData(page);
     getFeedData(feedOptions.type, feedOptions.page);
   }, [feedOptions]);
+
+  useEffect(() => {
+    if (route.params?.selectedTab) {
+      setFeedOptions({
+        type: route.params?.selectedTab,
+        page: 1,
+      });
+    }
+  }, [route.params]);
 
   useEffect(() => {
     // getData(page);
@@ -285,9 +295,12 @@ function Home({ navigation }: Props) {
     <View style={{ flex: 1 }}>
       <View
         style={{
+          flex: 0,
           flexDirection: 'row',
           marginHorizontal: spacing.x5,
           // marginBottom: 20,
+
+          height: getHeight(5.8),
         }}
       >
         <View style={{ flex: 1.4 }} key="main">
@@ -404,7 +417,6 @@ function Home({ navigation }: Props) {
           </View>
         ))}
       </View>
-
       {isLoading && feedOptions.page == 1 && !isRefreshing ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicatorContent size="small" />
@@ -611,7 +623,12 @@ function Home({ navigation }: Props) {
           </View>
         )
       )}
-      {feedOptions.type === 'watch' && <Watch />}
+
+      {feedOptions.type === 'watch' && (
+        <View style={{ flex: 1, marginBottom: 0 }}>
+          <WatchComponent />
+        </View>
+      )}
     </View>
   );
 }

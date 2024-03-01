@@ -23,12 +23,18 @@ import { CameraRoll, PhotoIdentifier } from '@react-native-camera-roll/camera-ro
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
 
 import RNFetchBlob from 'rn-fetch-blob';
-
+import base64 from 'base-64';
 import axios from 'axios';
-import { useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
+import { DrawerScreenProps } from '@react-navigation/drawer';
 import { styles } from './styles';
-import { MainStackParamList } from '@/src/navigator/types';
+import {
+  HomeStackParamsList,
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+  MainStackParamList,
+} from '@/src/navigator/types';
 import { button } from '@/src/styles/buttons';
 import Button from '@/src/components/Button';
 import StyledText from '@/src/components/styled/Text';
@@ -38,6 +44,8 @@ import { borderRadius } from '@/src/styles/outlines';
 import StyledTextInput from '@/src/components/styled/TextInput';
 import { ApiCall } from '@/src/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
+import { MUX_SECRET_KEY, MUX_TOKEN_ID } from '@/src/services/constants';
+import { FeedTypes } from '../home';
 
 const closeIcon = require('@/assets/images/close.png');
 const createWatch = require('@/assets/images/CreateWatch.png');
@@ -72,7 +80,7 @@ function VideoPost({ navigation }: Props) {
       first: 1,
     });
     const image_url = res?.edges[0]?.node?.image;
-    console.log(image_url);
+
     setLatestGalleryImg(image_url?.uri);
   }, []);
 
@@ -80,8 +88,7 @@ function VideoPost({ navigation }: Props) {
     async function getPermissions() {
       const cameraPermission = await Camera.requestCameraPermission();
       const microphonePermission = await Camera.requestMicrophonePermission();
-      console.log(`Camera Permission Status: ${cameraPermission}`);
-      console.log(`Microphone Permission Status: ${microphonePermission}`);
+
       if (cameraPermission === 'denied' || microphonePermission === 'denied') {
         // await Linking.openSettings();
       }
@@ -93,12 +100,11 @@ function VideoPost({ navigation }: Props) {
       switch (event.name) {
         case 'onFinishTrimming': {
           // on trimming is done
-          console.log('onFinishTrimming', event);
+
           setVideoPath(event?.outputPath);
           break;
         }
         case 'onError': {
-          console.log('onError', event);
           break;
         }
         default:
@@ -134,7 +140,7 @@ function VideoPost({ navigation }: Props) {
             onRecordingFinished: (video) => {
               setRecordedVideo(video);
               isValidVideo(video?.path || '').then((res) => console.log(res));
-              console.log('Video _Path', video?.path);
+
               showEditor(video?.path || '', {
                 saveToPhoto: false,
                 maxDuration: 60,
@@ -164,6 +170,7 @@ function VideoPost({ navigation }: Props) {
       console.error(error);
     }
   };
+
   const handleSelectionFromGallery = async () => {
     const options: ImageLibraryOptions = {
       mediaType: 'video',
@@ -185,14 +192,80 @@ function VideoPost({ navigation }: Props) {
     outputRange: ['white', 'red'],
   });
   const uploadToMux = async () => {
-    const res = await ApiCall({
+    const muxLink = await ApiCall({
       route: `watch/authenticated-link/mux`,
       verb: 'get',
       token,
     });
-    const data = RNFetchBlob.wrap(VideoPath);
+
     try {
-      const resp = await RNFetchBlob.fetch('PUT', res.response?.url, undefined, data);
+      const imageResponse = await fetch(VideoPath, {
+        method: 'GET',
+      });
+      const blob = await imageResponse.blob();
+      await fetch(muxLink.response?.url, {
+        method: 'PUT',
+        body: blob,
+        headers: { 'content-type': blob.type },
+      }).then(async () => {
+        const authString = `${MUX_TOKEN_ID}:${MUX_SECRET_KEY}`;
+        const response = await axios
+          .get(`https://api.mux.com/video/v1/uploads/${muxLink.response.id}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Basic ${base64.encode(authString)}`,
+            },
+          })
+          .then(async (response) => {
+            if (response.data.data.status === 'waiting') {
+              setTimeout(async () => {
+                const responseAsset = await axios.get(
+                  `https://api.mux.com/video/v1/assets/${response.data.data.asset_id}`,
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Basic ${base64.encode(authString)}`,
+                    },
+                  }
+                );
+              }, 3600);
+            } else {
+              const responseAsset = await axios.get(
+                `https://api.mux.com/video/v1/assets/${response.data.data.asset_id}`,
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Basic ${base64.encode(authString)}`,
+                  },
+                }
+              );
+              if (responseAsset.data.data.playback_ids[0].id) {
+                const postVideo = await ApiCall({
+                  route: `watch/post`,
+                  verb: 'post',
+                  params: {
+                    content,
+                    videoId: muxLink.response.id,
+                    playBackId: responseAsset.data.data.playback_ids[0].id,
+                  },
+                  token,
+                });
+                navigation.navigate('MainRoot', {
+                  screen: 'Main',
+                  params: {
+                    screen: 'HomeTab',
+                    params: {
+                      screen: 'Home',
+                      params: {
+                        selectedTab: FeedTypes.Watch,
+                      },
+                    },
+                  },
+                });
+              }
+            }
+          });
+      });
     } catch (error) {
       console.error(error);
     }

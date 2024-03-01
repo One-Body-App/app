@@ -38,6 +38,7 @@ import OptionsModal from './OptionsModal';
 
 interface BaseItemProps {
   children: ReactNode;
+  transparency?: boolean;
   style?: StyleProp<ViewStyle>;
   onPress: Function;
   created?: Date;
@@ -79,6 +80,7 @@ interface BaseItemProps {
 }
 
 function BaseItem({
+  transparency,
   style,
   onPress,
   children,
@@ -417,7 +419,7 @@ function BaseItem({
                   <View style={{ flexDirection: 'row' }}>
                     <StyledText
                       style={{
-                        color: Colors.neutral.brand,
+                        color: transparency ? Colors.neutral[500] : Colors.neutral.brand,
                         alignItems: 'center',
                         ...fontSize.x1,
                         marginLeft: spacing.x48,
@@ -439,7 +441,7 @@ function BaseItem({
                   <StyledText
                     numberOfLines={2}
                     style={{
-                      color: Colors.neutral[300],
+                      color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                       alignItems: 'center',
                       ...fontSize.x1,
                       marginLeft: spacing.x48,
@@ -468,7 +470,10 @@ function BaseItem({
                         <StyledText
                           style={[
                             fontSize.x1,
-                            { color: Colors.neutral[300], alignItems: 'center' },
+                            {
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              alignItems: 'center',
+                            },
                           ]}
                         >
                           {timeSince(created)} ago
@@ -482,7 +487,10 @@ function BaseItem({
                         <StyledText
                           style={[
                             fontSize.x1,
-                            { color: Colors.neutral[300], alignItems: 'center' },
+                            {
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              alignItems: 'center',
+                            },
                           ]}
                         >
                           {timeSince(updated)} ago
@@ -499,7 +507,13 @@ function BaseItem({
                         style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
                       />
                       <StyledText
-                        style={[fontSize.x1, { color: Colors.neutral[300], marginTop: 0 }]}
+                        style={[
+                          fontSize.x1,
+                          {
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                            marginTop: 0,
+                          },
+                        ]}
                       >
                         {postData.locationName}
                       </StyledText>
@@ -514,7 +528,7 @@ function BaseItem({
               >
                 <FontAwesomeIcon
                   icon={faEllipsisVertical}
-                  color={colors.text}
+                  color={transparency ? Colors.neutral[600] : colors.text}
                   style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
                 />
               </TouchableOpacity>
@@ -550,7 +564,7 @@ function BaseItem({
                       style={[
                         fontSize.x2,
                         {
-                          color: Colors.neutral[300],
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                           marginRight: spacing.x5,
                         },
                       ]}
@@ -578,7 +592,7 @@ function BaseItem({
                       style={[
                         fontSize.x2,
                         {
-                          color: Colors.neutral[300],
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                           marginRight: spacing.x5,
                         },
                       ]}
@@ -606,7 +620,7 @@ function BaseItem({
                       style={[
                         fontSize.x2,
                         {
-                          color: Colors.neutral[300],
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                           marginRight: spacing.x5,
                         },
                       ]}
@@ -619,132 +633,141 @@ function BaseItem({
             ) : null}
           </View>
 
-          <View style={{ flexDirection: 'row' }}>
-            {postData.externalLink ? (
-              <TouchableOpacity
-                onPress={() => {
-                  if (postData.externalLink) OpenURLButton(postData.externalLink);
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
-              >
-                <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
-                  {source == 'instagram' ? (
-                    <Instagram height={getHeight(2.5)} fill="#00acee" />
-                  ) : null}
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <View>
+              {postData.externalLink ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    if (postData.externalLink) OpenURLButton(postData.externalLink);
+                  }}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
+                >
+                  <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
+                    {source == 'instagram' ? (
+                      <Instagram height={getHeight(2.5)} fill="#00acee" />
+                    ) : null}
 
-                  {source == 'twitter' ? <Twitter height={getHeight(2.5)} fill="#00acee" /> : null}
+                    {source == 'twitter' ? (
+                      <Twitter height={getHeight(2.5)} fill="#00acee" />
+                    ) : null}
+                  </View>
+
+                  <StyledText style={{ color: Colors.primarySapphire.brand }}>View Post</StyledText>
+                </TouchableOpacity>
+              ) : null}
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginTop: spacing.x10,
+                  // alignContent: 'space-between',
+                }}
+              >
+                <Reaction
+                  items={ReactionItems}
+                  type="modal"
+                  cardStyle={{
+                    padding: spacing.x5,
+                    shadowOpacity: 0.2,
+                    marginTop: spacing.x16,
+                    borderRadius: borderRadius.base,
+                  }}
+                  onTap={async (item) => {
+                    if (item) {
+                      if (myReaction?.type == item.type) {
+                        await removeReactPost();
+                      } else {
+                        await reactPost(item.type);
+                      }
+                    }
+                  }}
+                  itemIndex={index}
+                  onShowDismissCard={onShowDismissCard}
+                  onPress={() => {
+                    if (myReaction) {
+                      removeReactPost();
+                    } else {
+                      reactPost(SocialPostReactionType.love);
+                    }
+                  }}
+                >
+                  <Heart
+                    size={25}
+                    color={
+                      myReaction
+                        ? Colors.errorFeedback[200]
+                        : transparency
+                          ? Colors.neutral[600]
+                          : colors.text
+                    }
+                    variant={myReaction ? 'Bold' : 'Linear'}
+                    style={{ marginVertical: spacing.x10 }}
+                  />
+                </Reaction>
+
+                <View
+                  style={{ flexDirection: 'row', marginTop: spacing.x5, marginLeft: spacing.x10 }}
+                >
+                  <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
+                  <StyledText
+                    style={{
+                      marginLeft: spacing.x10,
+                      marginVertical: spacing.x5,
+                      color: transparency ? Colors.neutral[600] : colors.text,
+                    }}
+                  >
+                    {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                  </StyledText>
                 </View>
 
-                <StyledText style={{ color: Colors.primarySapphire.brand }}>View Post</StyledText>
-              </TouchableOpacity>
-            ) : null}
-
-            <View
-              style={{
-                flexDirection: 'row',
-
-                alignItems: 'center',
-                marginTop: spacing.x10,
-                // alignContent: 'space-between',
-              }}
-            >
-              <Reaction
-                items={ReactionItems}
-                type="modal"
-                cardStyle={{
-                  padding: spacing.x5,
-                  shadowOpacity: 0.2,
-                  marginTop: spacing.x16,
-                  borderRadius: borderRadius.base,
-                }}
-                onTap={async (item) => {
-                  if (item) {
-                    if (myReaction?.type == item.type) {
-                      await removeReactPost();
+                <TouchableOpacity
+                  onPress={() => {
+                    if (isThisPostSaved) {
+                      if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                      else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
                     } else {
-                      await reactPost(item.type);
+                      savePost(
+                        postData?.id,
+                        postData?.type,
+                        postData.title,
+                        created,
+                        userData?._id,
+                        postData?.postlink,
+                        postData?.image?.url
+                      );
                     }
-                  }
-                }}
-                itemIndex={index}
-                onShowDismissCard={onShowDismissCard}
-                onPress={() => {
-                  if (myReaction) {
-                    removeReactPost();
-                  } else {
-                    reactPost(SocialPostReactionType.love);
-                  }
-                }}
-              >
-                <Heart
-                  size={25}
-                  color={myReaction ? Colors.errorFeedback[200] : colors.text}
-                  variant={myReaction ? 'Bold' : 'Linear'}
-                  style={{ marginVertical: spacing.x10 }}
-                />
-              </Reaction>
-
-              {/* <TouchableOpacity
-                        onLongPress={() => {
-                          if (!myReaction) {
-                            setShowActions(!showActions);
-                          }
-                        }}
-                        onPress={() => {
-                          if (showActions) {
-                            setShowActions(!showActions);
-                          } else {
-                            if (myReaction) {
-                              removeReactPost();
-                            } else {
-                              reactPost(SocialPostReactionType.love);
-                            }
-                          }
-                          // setShowActions(!showActions);
-                        }}
-                        ref={refs.setReference}
-                      >
-                        <Heart
-                          size={25}
-                          color={myReaction ? Colors.errorFeedback[200] : colors.text}
-                          variant={myReaction ? 'Bold' : 'Linear'}
-                        />
-                      </TouchableOpacity> */}
-
-              <TouchableOpacity
-                onPress={() => {
-                  if (isThisPostSaved) {
-                    if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
-                    else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
-                  } else {
-                    savePost(
-                      postData?.id,
-                      postData?.type,
-                      postData.title,
-                      created,
-                      userData?._id,
-                      postData?.postlink,
-                      postData?.image?.url
-                    );
-                  }
-                }}
-                style={{ marginEnd: spacing.x10, marginStart: spacing.x10 }}
-              >
-                <Bookmark
-                  style={{ marginRight: 3 }}
-                  width={25}
-                  height={25}
-                  color={colors.text}
-                  fill={isThisPostSaved ? colors.text : colors.background}
-                />
-              </TouchableOpacity>
-
+                  }}
+                  style={{ marginEnd: spacing.x10, marginStart: spacing.x10 }}
+                >
+                  <Bookmark
+                    style={{ marginRight: 3 }}
+                    width={25}
+                    height={25}
+                    color={transparency ? Colors.neutral[600] : colors.text}
+                    fill={
+                      isThisPostSaved
+                        ? transparency
+                          ? Colors.neutral[600]
+                          : colors.text
+                        : transparency
+                          ? 'transparent'
+                          : colors.background
+                    }
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={{ alignItems: 'center' }}>
               {postData.type == PostType.rss ? (
                 <View
                   style={{
                     // alignItems: 'flex-end',
                     marginTop: spacing.x5,
-                    marginEnd: spacing.x10,
+                    // marginEnd: spacing.x10,
+                    // marginLeft: 270,
                     marginVertical: spacing.x5,
                   }}
                 >
@@ -759,26 +782,21 @@ function BaseItem({
                     }}
                   >
                     {Platform.OS == 'android' ? (
-                      <ShareAndroid color={colors.text} height={25} width={25} />
+                      <ShareAndroid
+                        color={transparency ? Colors.neutral[600] : colors.text}
+                        height={25}
+                        width={25}
+                      />
                     ) : (
-                      <ShareIos color={colors.text} height={25} width={25} />
+                      <ShareIos
+                        color={transparency ? Colors.neutral[600] : colors.text}
+                        height={25}
+                        width={25}
+                      />
                     )}
                   </TouchableOpacity>
                 </View>
               ) : null}
-
-              <View
-                style={{
-                  flexDirection: 'row',
-                  marginTop: spacing.x5,
-                  // marginLeft: spacing.x5,
-                }}
-              >
-                <Message2 color={colors.text} />
-                <StyledText style={{ marginLeft: spacing.x10, marginVertical: spacing.x5 }}>
-                  {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                </StyledText>
-              </View>
             </View>
           </View>
         </View>

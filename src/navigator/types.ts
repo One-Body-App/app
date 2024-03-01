@@ -44,6 +44,7 @@
 
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { AccountType } from '@/utils/types';
+import { FeedTypes } from '../screens/home';
 
 //   RemoveAccount: undefined;
 //   DeactivateAccountConfirm: { reason: string };
@@ -89,6 +90,7 @@ import { AccountType } from '@/utils/types';
 export type HomeStackParamsList = {
   Home: {
     tabs?: string;
+    selectedTab?: FeedTypes;
   };
   InfluencerSettings: {
     code?: string;
