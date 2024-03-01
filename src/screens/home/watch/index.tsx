@@ -1,20 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, FlatList, Text, RefreshControl, useWindowDimensions } from 'react-native';
+
+import { View, FlatList, Text, RefreshControl, useWindowDimensions,  Appearance } from 'react-native';
+
 import { useSelector } from 'react-redux';
 
 import Video from 'react-native-video';
+
 import { useTheme } from '@react-navigation/native';
+
+import LinearGradient from 'react-native-linear-gradient';
+
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { styles } from '@/screens/home/watch/styles';
+import styles from '@/screens/home/watch/styles';
 import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import { AccountType, PostType } from '@/utils/types';
 import StyledText from '@/src/components/styled/Text';
+
 import { Colors } from '@/src/styles';
 import { NO_POST_IMAGE_URL } from '@/src/services/constants';
 
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { isDarkMode } from '@/src/styles/colors';
+
+
 function Watch() {
+  const darkMode = Appearance.getColorScheme() === 'dark';
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [feedData, setFeedData] = useState<any>();
   const [page, setPage] = useState<number>(1);
@@ -121,7 +133,7 @@ function Watch() {
     }
   }).current;
 
-  const renderVideoItem2 = ({
+  const renderVideoItem = ({
     item,
   }: {
     item: {
@@ -143,10 +155,20 @@ function Watch() {
           resizeMode="cover"
           style={styles.video}
         />
-        <BaseItem
+
+        <LinearGradient
+          colors={
+            darkMode
+              ? ['transparent', '#00000040', '#000000']
+              : ['transparent', '#ffffff40', '#ffffff']
+          }
+          style={styles.videoInfo}
+        >
+          <BaseItem
+            
           style={styles.videoInfo}
           transparency
-          postData={{
+            postData={{
             commentNumber: item.comments.length,
             comments: item.comments,
             id: item.id.toString(),
@@ -155,19 +177,22 @@ function Watch() {
             reactions: [],
             title: item.content,
             type: PostType.rss,
-          }}
-          created={new Date(item.created)}
-          userData={item.userData}
-          isApprovedInfluencer={item.userData.isApprovedInfluencer}
-          onPress={() => {}}
+            }}
+            created={new Date(item.created)}
+            userData={item.userData}
+            isApprovedInfluencer={item.userData.isApprovedInfluencer}
+            onPress={() => {}}
+            parentRefreshContent={undefined}
           parentRefreshContent={undefined}
-        >
-          <View>
-            <Text style={[styles.videoDescription, { color: Colors.neutral[600] }]}>
-              {item.content}
-            </Text>
-          </View>
-        </BaseItem>
+          >
+            <View>
+              <Text style={[styles.videoDescription, { color: Colors.neutral[600] }]}>
+                {item.content}
+              </Text>
+            </View>
+          </BaseItem>
+        </LinearGradient>
+
       </View>
     );
   };
@@ -175,6 +200,7 @@ function Watch() {
   useEffect(() => {
     getFeedData();
   }, [page]);
+
   return (
     <View
       style={{ flex: 1 }}
@@ -187,8 +213,14 @@ function Watch() {
         ref={flatListRef}
         data={feedData}
         contentContainerStyle={{ flexGrow: 1 }}
-        renderItem={renderVideoItem2}
+        renderItem={renderVideoItem}
+
         keyExtractor={(item) => item.id.toString()}
+        getItemLayout={(data, index) => ({
+          length: getHeight(74.2), // Adjust height as needed
+          offset: getHeight(74.2) * index,
+          index,
+        })}
         pagingEnabled
         decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}

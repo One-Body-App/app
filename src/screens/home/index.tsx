@@ -27,6 +27,7 @@ import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 import WatchComponent from '@/screens/home/watch';
+import { getHeight } from '@/utils/ResponsiveFun';
 
 export enum FeedTypes {
   Connected = 'connected',
@@ -298,6 +299,8 @@ function Home({ navigation, route }: Props) {
           flexDirection: 'row',
           marginHorizontal: spacing.x5,
           // marginBottom: 20,
+
+          height: getHeight(5.8),
         }}
       >
         <View style={{ flex: 1.4 }} key="main">

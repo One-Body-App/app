@@ -23,6 +23,7 @@ import SearchStack from './SearchStack';
 import { RootState } from '../redux/reducers/rootReducer';
 import { borderWidth } from '../styles/outlines';
 import PostStack from './PostStack';
+import { getHeight } from '@/utils/ResponsiveFun';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -46,6 +47,7 @@ function BottomStack() {
 
         tabBarLabelStyle: { paddingTop: 4 },
         tabBarStyle: {
+          height: getHeight(9),
           borderTopWidth: 1,
           borderTopColor: colors.border,
         },
@@ -58,7 +60,6 @@ function BottomStack() {
         component={HomeStack}
         options={{
           tabBarLabel: 'Home',
-
           tabBarIcon: (props) => {
             return (
               <>

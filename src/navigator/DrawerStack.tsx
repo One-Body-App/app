@@ -36,6 +36,7 @@ import MainTabStack from './BottomTabStack';
 import DrawerContent from './DrawerContent';
 import PrayerWallStack from './PrayerWallStack';
 import Saved from '../screens/main/saved';
+import { getHeight } from '@/utils/ResponsiveFun';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 type HeaderProps = Omit<TextProps, 'style'> & {
@@ -138,6 +139,9 @@ function DrawerNav() {
           component={MainTabStack}
           options={({ route }) => {
             return {
+              headerStyle: {
+                height: getHeight(11),
+              },
               title: 'Home',
               drawerIcon: ({ color, size }) => {
                 return <Home3 size={size} color={color} />;
