@@ -10,10 +10,11 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   videoContainer: {
-    flex: 1,
-    width: getWidth(100),
-    height: getHeight(100),
-    backgroundColor: '#E6EAEC',
+    // width: '100%',
+    // height: '100%',
+    // width: getWidth(100),
+    // height: getHeight(100),
+    // backgroundColor: '#E6EAEC',
   },
   videoInfo: {
     position: 'absolute',
@@ -25,7 +26,7 @@ export const styles = StyleSheet.create({
     fontSize: 16,
   },
   video: {
-    flex: 1,
+    flexGrow: 1,
   },
   userName: {
     color: 'white',

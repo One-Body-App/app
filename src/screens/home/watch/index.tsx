@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, FlatList, Text } from 'react-native';
+import { View, FlatList, Text, RefreshControl, useWindowDimensions } from 'react-native';
 import { useSelector } from 'react-redux';
 import MuxPlayer from '@mux/mux-player-react';
 import Video from 'react-native-video';
+import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { styles } from '@/screens/home/watch/styles';
 import { ApiCall } from '@/services/api';
@@ -14,6 +15,8 @@ import StyledText from '@/src/components/styled/Text';
 function Watch() {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [feedData, setFeedData] = useState<any>();
+  const [page, setPage] = useState<number>(1);
+  const [viewHeight, setViewHeight] = useState<number>(1);
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sharedVideoUrl, setSharedVideoUrl] = useState('');
@@ -24,10 +27,12 @@ function Watch() {
   const [sharesCount, setSharesCount] = useState(0);
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList>(null);
+
+  const { height, width } = useWindowDimensions();
 
   // Accede al estado del usuario
-  const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const { dark } = useTheme();
 
   const [reactionCounts, setReactionCounts] = useState({
     love: 0,
@@ -35,11 +40,19 @@ function Watch() {
     happy: 0,
   });
 
-  const getFeedData = async (type: FeedTypes, pageNumber: number) => {
+  useEffect(() => {
+    // getData(page);
+    if (isRefreshing) {
+      setPage(1);
+      setIsEndOfList(false);
+    }
+  }, [isRefreshing]);
+
+  const getFeedData = async () => {
     setIsLoading(true);
     try {
       const res = await ApiCall({
-        route: `user/get-following-feed/${type}/${pageNumber}`,
+        route: `user/get-following-feed/${FeedTypes.Watch}/${page}`,
         token,
         verb: 'get',
       });
@@ -54,7 +67,7 @@ function Watch() {
             const dateB = new Date(b.created);
             return dateB.getTime() - dateA.getTime(); // Newest first
           });
-        if (pageNumber === 1) {
+        if (page === 1) {
           newFeedData = feedPosts ?? [];
 
           setIsEndOfList(false);
@@ -122,7 +135,7 @@ function Watch() {
     };
   }) => {
     return (
-      <View style={styles.videoContainer}>
+      <View style={[styles.videoContainer, { height: viewHeight, width }]}>
         <Video
           source={{ uri: `https://stream.mux.com/${item.playBackId}` }}
           resizeMode="cover"
@@ -170,13 +183,20 @@ function Watch() {
   };
 
   useEffect(() => {
-    getFeedData(FeedTypes.Watch, 1);
-  }, []);
+    getFeedData();
+  }, [page]);
   return (
-    <View style={styles.container}>
+    <View
+      style={{ flex: 1 }}
+      onLayout={(event) => {
+        const { height } = event.nativeEvent.layout;
+        setViewHeight(height);
+      }}
+    >
       <FlatList
         ref={flatListRef}
         data={feedData}
+        contentContainerStyle={{ flexGrow: 1 }}
         renderItem={renderVideoItem2}
         keyExtractor={(item) => item.id.toString()}
         pagingEnabled
@@ -185,6 +205,31 @@ function Watch() {
         viewabilityConfig={{
           itemVisiblePercentThreshold: 50,
         }}
+        onEndReachedThreshold={0.5}
+        onEndReached={() => {
+          if (!isLoading && !isRefreshing && !isEndOfList) {
+            setPage(page + 1);
+          }
+        }}
+        refreshing={isLoading}
+        refreshControl={
+          <RefreshControl
+            enabled
+            refreshing={isRefreshing}
+            colors={
+              dark
+                ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
+                : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
+            }
+            tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
+            onRefresh={() => {
+              setIsRefreshing(true);
+            }}
+          />
+        }
+        // CellRendererComponent={({ children, style, onLayout, onFocusCapture }) => (
+        //   <View style={[style, { flex: 1 }]}>{children}</View>
+        // )}
       />
     </View>
   );
