@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
   videoContainer: {
     flex: 1,
     width: getWidth(100),
-    height: getHeight(82.5),
+    height: getHeight(100),
     backgroundColor: '#E6EAEC',
   },
   videoInfo: {
