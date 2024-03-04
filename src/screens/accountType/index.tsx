@@ -4,6 +4,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { Profile, People } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 
+// Text commit
 // import { ParamListBase } from '@react-navigation/native';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
