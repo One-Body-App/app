@@ -37,6 +37,7 @@ import DrawerContent from './DrawerContent';
 import PrayerWallStack from './PrayerWallStack';
 import Saved from '../screens/main/saved';
 import { getHeight } from '@/utils/ResponsiveFun';
+import ConnectPortal from './ConnectPortal';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 type HeaderProps = Omit<TextProps, 'style'> & {
@@ -229,6 +230,18 @@ function DrawerNav() {
             return {
               drawerItemStyle: { height: 0 },
             };
+          }}
+        />
+
+        {/* Boton connectPortal */}
+        <DrawerStack.Screen
+          name="Connect Portal"
+          component={ConnectPortal}
+          options={{
+            title: 'Connect Portal',
+            drawerIcon: ({ color, size }) => {
+              return <Connections size={size} color={color} />;
+            },
           }}
         />
 
