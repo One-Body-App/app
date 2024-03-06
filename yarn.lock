@@ -4190,6 +4190,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/geojson@npm:^7946.0.13":
+  version: 7946.0.14
+  resolution: "@types/geojson@npm:7946.0.14"
+  checksum: 10/ae511bee6488ae3bd5a3a3347aedb0371e997b14225b8983679284e22fa4ebd88627c6e3ff8b08bf4cc35068cb29310c89427311ffc9322c255615821a922e71
+  languageName: node
+  linkType: hard
+
 "@types/graceful-fs@npm:^4.1.3":
   version: 4.1.9
   resolution: "@types/graceful-fs@npm:4.1.9"
@@ -11631,6 +11638,7 @@ __metadata:
     react-native-keyboard-aware-scroll-view: "npm:^0.9.5"
     react-native-linear-gradient: "npm:^2.8.3"
     react-native-lottie-splash-screen: "npm:^1.1.2"
+    react-native-maps: "npm:^1.10.3"
     react-native-modal: "npm:^13.0.1"
     react-native-mov-to-mp4: "npm:^0.2.2"
     react-native-pager-view: "npm:^6.2.0"
@@ -12705,6 +12713,22 @@ __metadata:
   peerDependencies:
     react-native: ">=0.57.0"
   checksum: 10/ce2f8d4628c23d54f65c48c188b35fd35f46c0e9ea646f3b33419c944f2ffd31dc581f1043f8ddfd83ea18db9e62bdca55b03b8b0389af47f7300878c2ec7e77
+  languageName: node
+  linkType: hard
+
+"react-native-maps@npm:^1.10.3":
+  version: 1.10.3
+  resolution: "react-native-maps@npm:1.10.3"
+  dependencies:
+    "@types/geojson": "npm:^7946.0.13"
+  peerDependencies:
+    react: ">= 17.0.1"
+    react-native: ">= 0.64.3"
+    react-native-web: ">= 0.11"
+  peerDependenciesMeta:
+    react-native-web:
+      optional: true
+  checksum: 10/9508e0337404e43ae2a133ffc265ee63d0eb3b9c306a0a83a90526ef96130097ea880a2a0b100047fbf602bbb9c7f9ada953ce971fa8aa902425adce7643686c
   languageName: node
   linkType: hard
 
