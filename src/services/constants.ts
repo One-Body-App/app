@@ -23,6 +23,7 @@ export const { GIPHY_KEY_IOS } = Config;
 export const { GIPHY_KEY_ANDROID } = Config;
 export const { MUX_TOKEN_ID } = Config;
 export const { MUX_SECRET_KEY } = Config;
+export const { GOOGLE_MAPS_API_KEY } = Config;
 
 export const OpenURLButton = async (
   url: string,

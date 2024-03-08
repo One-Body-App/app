@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { styles } from './connectPortalStyles';
+import { GOOGLE_MAPS_API_KEY } from '../services/constants';
 
 type types = 'Explore' | 'My Places';
 
@@ -54,7 +55,6 @@ function ConnectPortal() {
         provider={PROVIDER_GOOGLE}
         initialRegion={region}
         onRegionChangeComplete={(region) => setRegion(region)}
-        apiKey={Config.GOOGLE_MAPS_API_KEY}
       >
         <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
       </MapView>
