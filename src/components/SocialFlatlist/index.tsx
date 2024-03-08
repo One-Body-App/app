@@ -176,7 +176,7 @@ const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>
             }}
           >
             <SocialItem
-              item={item}
+              itemData={item}
               onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
               index={index}
               parentRefreshContent={refreshContent}

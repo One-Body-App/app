@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Dimensions,
+  FlatList,
   Image,
   SafeAreaView,
   ScrollView,
@@ -33,6 +35,7 @@ import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import BaseItem from './BaseItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
+import ImageSlider, { ImageForSlider } from '../imageSlider/ImageSlider';
 
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
@@ -53,7 +56,7 @@ type LinkData = {
 type SocialItemProps = {
   currentPopupItemId?: string;
   visible?: boolean;
-  item: SocialPost;
+  itemData: SocialPost;
   socialPostviewStyle?: StyleProp<ViewStyle>;
   selectedEmoji?: EmojiItemProp;
 
@@ -66,7 +69,7 @@ type SocialItemProps = {
   fromSavedPosts?: boolean;
 };
 function SocialItem({
-  item,
+  itemData,
   socialPostviewStyle,
   visible,
   index,
@@ -91,12 +94,14 @@ function SocialItem({
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
   const navigation = useNavigation<ScreenNavigationProp>();
+  const [width, setWidth] = useState<number>();
+
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   let url = '';
-  if (item?.source == 'twitter') {
-    url = `https://twitter.com/${item?.handler}/status/${item?.id}`;
+  if (itemData?.source == 'twitter') {
+    url = `https://twitter.com/${itemData?.handler}/status/${itemData?.id}`;
   } else {
-    url = item?.permalink || '';
+    url = itemData?.permalink || '';
   }
 
   const getDomainName = (url: string) => {
@@ -120,15 +125,15 @@ function SocialItem({
     setImageInfo([]);
     let media: Media[] = [];
 
-    if (item?.mediaUrl) {
+    if (itemData?.mediaUrl) {
       media = [
         {
-          type: item.mediaType ?? '',
-          url: item.mediaUrl,
+          type: itemData.mediaType ?? '',
+          url: itemData.mediaUrl,
         },
       ];
-    } else if (item.attachments && item.attachments.length > 0) {
-      item.attachments.forEach((attachment) => {
+    } else if (itemData?.attachments && itemData?.attachments.length > 0) {
+      itemData.attachments.forEach((attachment) => {
         if (attachment.type == 'photo' || attachment.type == 'video') {
           media?.push({
             type: attachment.type,
@@ -136,8 +141,8 @@ function SocialItem({
           });
         }
       });
-    } else if (isArray(item.images) && item.images && item.images.length > 0) {
-      item.images?.forEach((attachment) => {
+    } else if (isArray(itemData.images) && itemData.images && itemData.images.length > 0) {
+      itemData.images?.forEach((attachment) => {
         media.push({
           type: 'photo',
           url: attachment,
@@ -149,13 +154,13 @@ function SocialItem({
       setMedia(media);
       getMediaInfo(media);
     }
-  }, [item]);
+  }, [itemData]);
 
   let linkData: LinkData;
   let hasLink = false;
 
-  if (item.attachments && item.attachments.length > 0) {
-    item.attachments.forEach((attachment) => {
+  if (itemData?.attachments && itemData?.attachments.length > 0) {
+    itemData.attachments.forEach((attachment) => {
       if (attachment.type == 'link') {
         hasLink = true;
         linkData = {
@@ -171,7 +176,7 @@ function SocialItem({
 
   let myReaction: SocialPostReaction | undefined;
 
-  item.reactions?.forEach((reaction) => {
+  itemData?.reactions?.forEach((reaction) => {
     if (reaction.userId == user?._id) {
       myReaction = reaction;
     }
@@ -214,43 +219,64 @@ function SocialItem({
     }
   };
 
+  const images: ImageForSlider[] = [];
+  if (imageInfo && imageInfo.length > 0) {
+    for (let i = 0; i < imageInfo.length; i++) {
+      images.push({
+        ...imageInfo[i],
+        type: 'image',
+      });
+    }
+  }
+
+  if (itemData.gif) {
+    images.push({
+      url: itemData.gif.url,
+      width: itemData.gif.data.images.original.width,
+      height: itemData.gif.data.images.original.height,
+
+      type: 'gif',
+    });
+  }
+
   return (
     <BaseItem
       removePost={removePost}
       editPost={editPost}
-      edited={item.edited}
-      updated={item.updated}
+      edited={itemData.edited}
+      updated={itemData.updated}
       fromSavedPosts={fromSavedPosts}
       postData={{
-        title: item?.title,
-        id: item.postId ?? item.id ?? item._id,
+        title: itemData?.title,
+        id: itemData.postId ?? itemData.id ?? itemData._id,
         type: PostType.social,
-        postlink: item.link,
-        image: item.images && item.images.length > 0 ? { url: item.images[0] } : undefined,
+        postlink: itemData.link,
+        image:
+          itemData.images && itemData.images.length > 0 ? { url: itemData.images[0] } : undefined,
         externalLink: url,
-        reactions: item.reactions ?? [],
+        reactions: itemData.reactions ?? [],
         myReaction,
-        location: item.location,
-        locationName: item.locationName,
-        edited: item.edited,
-        comments: item.comments,
-        commentNumber: item.commentNumber,
+        location: itemData.location,
+        locationName: itemData.locationName,
+        edited: itemData.edited,
+        comments: itemData.comments,
+        commentNumber: itemData.commentNumber,
       }}
       parentRefreshContent={parentRefreshContent}
-      created={item?.created}
-      source={item.source}
-      userData={item.userData}
-      isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
+      created={itemData?.created}
+      source={itemData.source}
+      userData={itemData.userData}
+      isApprovedInfluencer={itemData.userData?.isApprovedInfluencer ?? false}
       onShowDismissCard={onShowDismissCard}
       index={index}
       onPress={() => {
-        if (item.userData._id != user?._id) {
+        if (itemData.userData._id != user?._id) {
           navigation.navigate('Main', {
             screen: 'HomeTab',
             params: {
               screen: 'UserProfile',
               params: {
-                id: item?.userData._id,
+                id: itemData?.userData._id,
               },
             },
           });
@@ -258,8 +284,13 @@ function SocialItem({
       }}
       style={socialPostviewStyle}
     >
-      <View style={{ flexGrow: 1 }}>
-        {item?.content && (
+      <View
+        style={{ flexGrow: 1 }}
+        onLayout={({ nativeEvent }) => {
+          setWidth(nativeEvent.layout.width);
+        }}
+      >
+        {itemData?.content && (
           <View style={{ flexGrow: 1 }}>
             <StyledText
               style={{
@@ -268,7 +299,7 @@ function SocialItem({
                 flexGrow: 1,
               }}
             >
-              {item?.content}
+              {itemData?.content}
             </StyledText>
           </View>
         )}
@@ -354,102 +385,15 @@ function SocialItem({
               }}
             />
 
-            {imageInfo.length > 1 ? (
-              <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
-                {imageInfo.map((image, index) => {
-                  return (
-                    <TouchableOpacity
-                      key={`${index}`}
-                      style={{
-                        flexGrow: 1,
-
-                        padding: spacing.x10,
-                      }}
-                      onPress={() => {
-                        setImageModalIndexVisible(index);
-                      }}
-                    >
-                      {/* <ImageView
-                        images={images}
-                        imageIndex={0}
-                        visible={visible}
-                        onRequestClose={() => setIsVisible(false)}
-                      /> */}
-                      <Image
-                        key={index}
-                        // resizeMode={image.width > image.height ? 'cover' : 'stretch'}
-                        style={{
-                          borderRadius: borderRadius.small,
-                          aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
-                          width: 250,
-                          maxHeight: 300,
-                        }}
-                        // modalImageResizeMode="center"
-                        // modalImageResizeMode="cover"
-                        // modalImageStyle={{
-                        //   flexGrow: 1,
-                        //   aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
-                        // }}
-                        source={{ uri: image?.url }}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            ) : (
-              <TouchableOpacity
-                key={`${index}`}
-                style={{
-                  flexGrow: 1,
-
-                  padding: spacing.x10,
-                }}
-                onPress={() => {
-                  setImageModalIndexVisible(0);
-                }}
-              >
-                <Image
-                  key={index}
-                  resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
-                  style={{
-                    borderRadius: borderRadius.small,
-                    // flexGrow: 1,
-                    aspectRatio: imageInfo[0].width / imageInfo[0].height,
-                    width: '100%',
-                    // height: 300,
-                    // borderRadius: 2,
-                    // marginVertical: 10,
-                  }}
-                  // modalImageResizeMode="center"
-                  source={{ uri: imageInfo[0]?.url }}
-                />
-              </TouchableOpacity>
-            )}
-          </>
-        ) : null}
-        {item.gif && (
-          <View
-            style={{
-              marginTop: spacing.x10,
-              marginLeft: 1,
-              marginRight: 1,
-              // height: 100,
-              // width: 100,
-              borderRadius: borderRadius.xs,
-            }}
-          >
-            <GiphyMediaView
-              media={item.gif}
-              resizeMode="cover"
-              style={{
-                aspectRatio: item.gif.aspectRatio,
-                borderRadius: borderRadius.xs,
-
-                overflow: 'hidden',
+            <ImageSlider
+              width={width ?? 0}
+              images={images}
+              setImageModalIndexVisible={(item) => {
+                setImageModalIndexVisible(item);
               }}
             />
-          </View>
-        )}
+          </>
+        ) : null}
       </View>
     </BaseItem>
   );

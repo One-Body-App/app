@@ -105,6 +105,7 @@ function Explore({ navigation }: Props) {
         verb: 'get',
       });
       setIsRefreshing(false);
+      setLoadingMore(false);
 
       if (res?.status == 200) {
         let userData = [];
@@ -531,9 +532,11 @@ function Explore({ navigation }: Props) {
               />
             }
             onEndReached={() => {
-              if (!loadingMore && !isRefreshing && !isEndOfList) setPage(page + 1);
+              if (!loadingMore && !isRefreshing && !isEndOfList) {
+                setPage(page + 1);
+              }
             }}
-            onEndReachedThreshold={0.8}
+            onEndReachedThreshold={0.5}
             renderItem={({ item }) => {
               return (
                 <TouchableOpacity

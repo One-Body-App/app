@@ -43,6 +43,7 @@
 //   };
 
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { Animated, StyleProp, TextProps, TextStyle } from 'react-native';
 import { AccountType } from '@/utils/types';
 import { FeedTypes } from '../screens/home';
 
@@ -336,4 +337,9 @@ type ConfirmLoginScreen = {
   action?: string;
   apiKey?: string;
   lang?: string;
+};
+
+export type HeaderProps = Omit<TextProps, 'style'> & {
+  tintColor?: string;
+  style?: Animated.WithAnimatedValue<StyleProp<TextStyle>>;
 };

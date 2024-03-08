@@ -299,7 +299,7 @@ function SinglePost({ navigation, route }: Props) {
               <SocialItem
                 editPost={editPost}
                 removePost={removePost}
-                item={post}
+                itemData={post}
                 socialPostviewStyle={{
                   borderBottomColor: Colors.neutral[800],
                   borderBottomWidth: borderWidth.thin,

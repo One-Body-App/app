@@ -112,24 +112,26 @@ function DrawerNav() {
     }
     return (
       <DrawerStack.Navigator
-        // backBehavior="history"
-        screenOptions={({ navigation, route }) => {
+        backBehavior="history"
+        screenOptions={() => {
           return {
             drawerType,
+            headerShown: false,
             headerTintColor: dark ? colors.text : Colors.primary.brand,
 
             drawerActiveBackgroundColor: Colors.neutral[600],
             drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
-            headerLeft: (props) => {
-              const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
 
-              if (navigation.canGoBack() && !isDrawerOpen) {
-                return (
-                  <HeaderBackButton labelVisible={false} onPress={() => navigation.goBack()} />
-                );
-              }
-              return <DrawerToggleButton {...props} />;
-            },
+            // headerLeft: (props) => {
+            //   const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
+
+            //   if (navigation.canGoBack() && !isDrawerOpen) {
+            //     return (
+            //       <HeaderBackButton labelVisible={false} onPress={() => navigation.goBack()} />
+            //     );
+            //   }
+            //   return <DrawerToggleButton {...props} />;
+            // },
           };
         }}
         drawerContent={(props) => <DrawerContent {...props} />}
@@ -137,48 +139,11 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="Main"
           component={MainTabStack}
-          options={({ route }) => {
+          options={() => {
             return {
-              headerStyle: {
-                height: getHeight(11),
-              },
               title: 'Home',
               drawerIcon: ({ color, size }) => {
                 return <Home3 size={size} color={color} />;
-              },
-              headerLeft: (props) => <DrawerToggleButton {...props} />,
-              headerTitleAlign:
-                getHeaderTitle(route) === 'Home' || Platform.OS === 'ios' ? 'center' : 'left',
-              headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
-                const title = getHeaderTitle(route);
-
-                if (title == 'Home') {
-                  return (
-                    <View style={{ height: 28, width: 28 }}>
-                      {dark ? (
-                        <LogoWhite style={{ height: 28, width: 28 }} />
-                      ) : (
-                        <Logo style={{ height: 28, width: 28 }} />
-                      )}
-                    </View>
-                  );
-                }
-
-                return (
-                  <Animated.Text
-                    accessibilityRole="header"
-                    aria-level="1"
-                    numberOfLines={1}
-                    // eslint-disable-next-line react/no-children-prop
-                    children={title}
-                    {...rest}
-                    style={[
-                      styles.title,
-                      { color: tintColor === undefined ? colors.text : tintColor },
-                      style,
-                    ]}
-                  />
-                );
               },
             };
           }}
@@ -188,6 +153,7 @@ function DrawerNav() {
           name="Saved"
           component={Saved}
           options={{
+            headerShown: true,
             title: 'Saved Posts',
             drawerIcon: ({ color, size }) => {
               return <Feather name="bookmark" size={size} color={color} />;
@@ -200,6 +166,7 @@ function DrawerNav() {
           component={Connections}
           options={({ navigation }) => {
             return {
+              headerShown: true,
               title: 'My Connections',
               drawerIcon: ({ color, size }) => {
                 return <Profile2User size={size} color={color} />;
@@ -241,21 +208,3 @@ function DrawerNav() {
 }
 
 export default DrawerNav;
-
-const styles = StyleSheet.create({
-  title: Platform.select({
-    ios: {
-      fontSize: 17,
-      fontWeight: '600',
-    },
-    android: {
-      fontSize: 20,
-      fontFamily: 'sans-serif-medium',
-      fontWeight: 'normal',
-    },
-    default: {
-      fontSize: 18,
-      fontWeight: '500',
-    },
-  }),
-});
