@@ -15,7 +15,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Home3, Profile2User, GlobalSearch } from 'iconsax-react-native';
+import { GlobalSearch, Home3, Profile2User } from 'iconsax-react-native';
 import { Route, getFocusedRouteNameFromRoute, useTheme } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import { HandsPraying } from 'phosphor-react-native';

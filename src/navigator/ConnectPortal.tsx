@@ -1,12 +1,25 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { styles } from './connectPortalStyles';
 
-type string = 'Explore' | 'My Places';
+type types = 'Explore' | 'My Places';
+
 function ConnectPortal() {
-  const [selectedOption, setSelectedOption] = useState<string>('Explore');
+  const [selectedOption, setSelectedOption] = useState<types>('Explore');
+  const [region, setRegion] = useState<{
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  }>({
+    latitude: 37.78825,
+    longitude: -122.4324,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
 
-  const handleOptionSelect = (option: string) => {
+  const handleOptionSelect = (option: types) => {
     setSelectedOption(option);
   };
 
@@ -36,54 +49,17 @@ function ConnectPortal() {
         <TextInput placeholder="Search..." style={styles.input} />
       </View>
 
-      {/* Mapa */}
-      <View style={styles.mapContainer}>
-        <MapView provider={PROVIDER_GOOGLE} />
-      </View>
+      <MapView
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={region}
+        onRegionChangeComplete={(region) => setRegion(region)}
+        apiKey={Config.GOOGLE_MAPS_API_KEY}
+      >
+        <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
+      </MapView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  optionContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    backgroundColor: '#ccc',
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  option: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  selectedOption: {
-    borderBottomWidth: 2,
-    borderBottomColor: 'black',
-  },
-  searchBar: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-  },
-  input: {
-    fontSize: 16,
-    paddingVertical: 10,
-  },
-  mapContainer: {
-    flex: 1,
-  },
-});
 
 export default ConnectPortal;

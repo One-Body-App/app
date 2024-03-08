@@ -1,7 +1,5 @@
 import { StyleSheet, TextStyle, ViewStyle } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { Colors } from '@/src/styles';
-import { spacing } from '@/src/styles/spacing';
 
 const menuItemText: TextStyle = {
   // color: '#126B87',
