@@ -273,8 +273,8 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  activesupport (>= 6.1.7.3, < 7.1.0)
-  cocoapods
+  activesupport (>= 6.1.7.5, < 7.1.0)
+  cocoapods (>= 1.13, < 1.15)
   fastlane
   fastlane-plugin-semantic_release
   fastlane-plugin-versioning_android

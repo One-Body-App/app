@@ -185,35 +185,7 @@ function EditProfile({ navigation }: Props) {
 
   const oftenChurchOptions = ['Weekly', 'Bi-Weekly', 'Once a month', 'I only watch at home'];
 
-  // React.useEffect(() => {
-  //   navigation.setOptions({
-  //     headerRight: () => (
-  //       <View style={{ flexDirection: 'row', padding: spacing.x5 }}>
-  //         <Button
-  //           onPress={() => {}}
-  //           text="Save"
-  //           btnTextStyle={{ color: Colors.primarySapphire.brand }}
-  //           btnStyle={[
-  //             button.outline,
-  //             {
-  //               paddingHorizontal: spacing.x24,
-  //               paddingVertical: spacing.x5,
-  //               borderColor: Colors.primarySapphire.brand,
-  //             },
-  //           ]}
-  //         />
-  //       </View>
-  //     ),
-  //   });
-  // }, [navigation]);
-
   const { colors } = useTheme();
-
-  // useEffect(() => {
-  //   if (navigation) {
-  //     navigation?.getParent()?.getParent()?.setOptions({ headerShown: false });
-  //   }
-  // }, [navigation]);
 
   useEffect(() => {
     if (newLocation && latitude && longitude) {
@@ -225,47 +197,44 @@ function EditProfile({ navigation }: Props) {
     }
   }, [newLocation, longitude, latitude]);
 
-  useEffect(() => {
-    navigation
-      .getParent()
-      ?.getParent()
-      ?.setOptions({
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-            <TouchableOpacity
-              style={{ marginRight: spacing.x16 }}
-              onPress={() => {
-                Share.share({
-                  title:
-                    // profileData?._id == currentUser._id ?
-                    `Check my profile on One Body App`,
-                  // : 'Check this profile on One Body App`',
-                  // message: `Check my profile in One Body App`,
-                  url: `https://app.onebodyapp.com/profile/${user?.username}`,
-                });
-              }}
-            >
-              {Platform.OS == 'android' ? (
-                <Ionicons name="share-social-outline" size={24} color={Colors.primary.brand} />
-              ) : (
-                <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setShowSettings(true);
-              }}
-            >
-              <Setting2
-                style={{ height: 24, width: 24 }}
-                color={Colors.primary.brand}
-                strokeWidth={0.2}
-              />
-            </TouchableOpacity>
-          </View>
-        ),
-      });
-  }, [navigation, user]);
+  // useEffect(() => {
+  //   navigation.setOptions({
+  //     headerRight: () => (
+  //       <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
+  //         <TouchableOpacity
+  //           style={{ marginRight: spacing.x16 }}
+  //           onPress={() => {
+  //             Share.share({
+  //               title:
+  //                 // profileData?._id == currentUser._id ?
+  //                 `Check my profile on One Body App`,
+  //               // : 'Check this profile on One Body App`',
+  //               // message: `Check my profile in One Body App`,
+  //               url: `https://app.onebodyapp.com/profile/${user?.username}`,
+  //             });
+  //           }}
+  //         >
+  //           {Platform.OS == 'android' ? (
+  //             <Ionicons name="share-social-outline" size={24} color={Colors.primary.brand} />
+  //           ) : (
+  //             <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
+  //           )}
+  //         </TouchableOpacity>
+  //         <TouchableOpacity
+  //           onPress={() => {
+  //             setShowSettings(true);
+  //           }}
+  //         >
+  //           <Setting2
+  //             style={{ height: 24, width: 24 }}
+  //             color={Colors.primary.brand}
+  //             strokeWidth={0.2}
+  //           />
+  //         </TouchableOpacity>
+  //       </View>
+  //     ),
+  //   });
+  // }, [navigation, user]);
 
   const getChurchTypes = async () => {
     try {

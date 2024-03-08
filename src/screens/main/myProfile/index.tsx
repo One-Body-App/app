@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 import React, { createRef, useEffect, useState } from 'react';
 import { View, TouchableOpacity, Share, Platform, FlatList } from 'react-native';
 
@@ -36,98 +37,60 @@ function MyProfile({ navigation, route }: Props) {
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const { dark, colors } = useTheme();
-
-  const addHeaderButtons = () => {
-    navigation
-      .getParent()
-      ?.getParent()
-      ?.setOptions({
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-            <TouchableOpacity
-              style={{ marginRight: spacing.x16 }}
-              onPress={() => {
-                Share.share({
-                  title:
-                    // profileData?._id == currentUser._id ?
-                    `Check my profile on One Body App`,
-                  // : 'Check this profile on One Body App`',
-                  // message: `Check my profile in One Body App`,
-                  url: `https://app.onebodyapp.com/profile/${user?.username}`,
-                });
-              }}
-            >
-              {Platform.OS == 'android' ? (
-                <Ionicons
-                  name="share-social-outline"
-                  size={24}
-                  color={dark ? colors.text : Colors.primary.brand}
-                />
-              ) : (
-                <Ionicons
-                  name="share-outline"
-                  size={24}
-                  color={dark ? colors.text : Colors.primary.brand}
-                />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setShowSettings(true);
-              }}
-            >
-              <Setting2
-                style={{ height: 24, width: 24 }}
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity
+            style={{ marginRight: spacing.x16 }}
+            onPress={() => {
+              Share.share({
+                title:
+                  // profileData?._id == currentUser._id ?
+                  `Check my profile on One Body App`,
+                // : 'Check this profile on One Body App`',
+                // message: `Check my profile in One Body App`,
+                url: `https://app.onebodyapp.com/profile/${user?.username}`,
+              });
+            }}
+          >
+            {Platform.OS == 'android' ? (
+              <Ionicons
+                name="share-social-outline"
+                size={24}
                 color={dark ? colors.text : Colors.primary.brand}
-                strokeWidth={0.2}
               />
-            </TouchableOpacity>
-          </View>
-        ),
-      });
-
-    return () => {
-      navigation
-        .getParent()
-        ?.getParent()
-        ?.setOptions({
-          headerRight: () => <View />,
-        });
-    };
-  };
-
-  const removeHeaderButtons = () => {
-    navigation
-      .getParent()
-      ?.getParent()
-      ?.setOptions({
-        headerRight: () => <View />,
-      });
-  };
+            ) : (
+              <Ionicons
+                name="share-outline"
+                size={24}
+                color={dark ? colors.text : Colors.primary.brand}
+              />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setShowSettings(true);
+            }}
+          >
+            <Setting2
+              style={{ height: 24, width: 24 }}
+              color={dark ? colors.text : Colors.primary.brand}
+              strokeWidth={0.2}
+            />
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, user]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      addHeaderButtons();
       setRefresh(true);
     });
 
     return unsubscribe;
   }, [navigation]);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      removeHeaderButtons();
-    });
-
-    return unsubscribe;
-  }, [navigation]);
-
-  useEffect(() => {
-    addHeaderButtons();
-    return () => {
-      removeHeaderButtons();
-    };
-  }, [navigation, user]);
 
   const [refresh, setRefresh] = useState(false);
   if (!user) {

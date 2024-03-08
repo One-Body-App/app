@@ -12,19 +12,20 @@ import mainPageOptions from './global';
 const Stack = createNativeStackNavigator<MyProfileStackParamsList>();
 
 function ProfileStack() {
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
   return (
     <Stack.Navigator>
       <Stack.Screen
         name="MyProfile"
         component={MyProfile}
-        options={({ navigation }) => mainPageOptions(navigation, colors.text, 'Profile')}
+        options={({ navigation }) =>
+          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Profile')
+        }
       />
       <Stack.Screen
         name="EditProfile"
         component={EditProfile}
-        options={({ navigation }) => {
-          // navigation.getParent().getParent().setOptions({ headerShown: false });
+        options={() => {
           return {
             // headerShown: false,
             headerBackTitleVisible: false,
@@ -37,9 +38,9 @@ function ProfileStack() {
       <Stack.Screen
         name="InviteFriends"
         component={InviteFriend}
-        options={({ navigation }) => {
-          navigation.getParent().getParent().setOptions({ headerShown: false });
+        options={() => {
           return {
+            headerBackTitleVisible: false,
             headerShown: true,
             headerTransparent: true,
             headerTintColor: '#fff',

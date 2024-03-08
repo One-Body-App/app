@@ -1,10 +1,10 @@
+/* eslint-disable react/no-unstable-nested-components */
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
-import { DrawerToggleButton, getDrawerStatusFromState } from '@react-navigation/drawer';
-import { HeaderBackButton } from '@react-navigation/elements';
-import { Animated, StyleProp, TextProps, TextStyle, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import { Notification } from 'iconsax-react-native';
 import Home from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
@@ -15,34 +15,19 @@ import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
 import mainPageOptions from './global';
 
-type HeaderProps = Omit<TextProps, 'style'> & {
-  tintColor?: string;
-  style?: Animated.WithAnimatedValue<StyleProp<TextStyle>>;
-};
-
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
 function HomeStack() {
-  // const { colors } = useTheme();
   const { dark, colors } = useTheme();
 
   return (
     <Stack.Navigator
-      screenOptions={({ navigation }) => {
+      screenOptions={() => {
         return {
           // drawerType,
           headerTintColor: dark ? colors.text : Colors.primary.brand,
 
           drawerActiveBackgroundColor: Colors.neutral[600],
           drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
-          headerLeft: (props) => {
-            const isDrawerOpen =
-              getDrawerStatusFromState(navigation.getParent().getState()) === 'open';
-
-            if (navigation.canGoBack() && !isDrawerOpen) {
-              return <HeaderBackButton labelVisible={false} onPress={() => navigation.goBack()} />;
-            }
-            return <DrawerToggleButton {...props} />;
-          },
         };
       }}
     >
@@ -51,11 +36,11 @@ function HomeStack() {
         component={Home}
         options={({ navigation }) => {
           return {
-            ...mainPageOptions(navigation, colors.text, 'Home'),
+            ...mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Home'),
             title: 'Home',
 
             headerTitleAlign: 'center',
-            headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
+            headerTitle: () => {
               return (
                 <View style={{ height: 28, width: 28 }}>
                   {dark ? (
@@ -66,36 +51,31 @@ function HomeStack() {
                 </View>
               );
             },
-            //   const title = getHeaderTitle(route);
-
-            //   if (title == 'Home') {
-            //     return (
-            //       <View style={{ height: 28, width: 28 }}>
-            //         {dark ? (
-            //           <LogoWhite style={{ height: 28, width: 28 }} />
-            //         ) : (
-            //           <Logo style={{ height: 28, width: 28 }} />
-            //         )}
-            //       </View>
-            //     );
-            //   }
-
-            //   return (
-            //     <Animated.Text
-            //       accessibilityRole="header"
-            //       aria-level="1"
-            //       numberOfLines={1}
-            //       // eslint-disable-next-line react/no-children-prop
-            //       children={title}
-            //       {...rest}
-            //       style={[
-            //         styles.title,
-            //         { color: tintColor === undefined ? colors.text : tintColor },
-            //         style,
-            //       ]}
-            //     />
-            //   );
-            // },
+            headerRight: () => (
+              <View style={{ flexDirection: 'row' }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.navigate('MainRoot', {
+                      screen: 'Main',
+                      params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
+                    });
+                  }}
+                >
+                  <Notification
+                    style={{ height: 24, width: 24 }}
+                    color={Colors.primary.brand}
+                    strokeWidth={0.2}
+                  />
+                </TouchableOpacity>
+                {/* <TouchableOpacity onPress={() => {}}>
+                            <Message
+                              style={{ height: 24, width: 24 }}
+                              stroke={Colors.primary.brand}
+                              strokeWidth={0.2}
+                            />
+                          </TouchableOpacity> */}
+              </View>
+            ),
           };
         }}
       />
