@@ -1,9 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import { getHeight } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
@@ -116,3 +115,5 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export default styles;
