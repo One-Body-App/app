@@ -4,7 +4,7 @@ import { Linking } from 'react-native';
 import Config from 'react-native-config';
 
 import InAppBrowser from 'react-native-inappbrowser-reborn';
-import { sha256 } from 'react-native-sha256';
+import { sha256 } from 'js-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 

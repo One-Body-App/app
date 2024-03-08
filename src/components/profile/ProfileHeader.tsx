@@ -615,6 +615,7 @@ function ProfileHeader({
             </View>
           ) : null}
         </Animated.View>
+
         <Animated.View
           style={[
             {

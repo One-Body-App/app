@@ -451,7 +451,7 @@ function Home({ navigation, route }: Props) {
                         index={index}
                         key={`social_${item.id}_${index}`}
                         onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                        item={item}
+                        itemData={item}
                         visible={
                           visibleItemsIndex && visibleItemsIndex.length > 0
                             ? visibleItemsIndex?.indexOf(index) > -1

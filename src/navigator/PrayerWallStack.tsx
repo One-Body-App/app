@@ -12,6 +12,7 @@ import Prayer from '../screens/main/prayer';
 import UserProfile from '../screens/main/userProfile';
 import NewPrayer from '../screens/main/prayer/NewPrayer';
 import SinglePrayer from '../screens/main/prayer/Single';
+import mainPageOptions from './global';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 
@@ -23,18 +24,13 @@ function PrayerWall() {
       <Stack.Screen
         name="index"
         component={Prayer}
-        options={({ navigation }) => {
-          navigation.getParent().setOptions({ headerShown: true });
-          return {
-            headerShown: false,
-          };
-        }}
+        options={({ navigation }) => mainPageOptions(navigation, colors.text, 'Prayer Wall')}
       />
       <Stack.Screen
         name="UserProfile"
         component={UserProfile}
-        options={({ navigation }) => {
-          navigation.getParent().setOptions({ headerShown: false });
+        options={() => {
+          // navigation.getParent().setOptions({ headerShown: false });
 
           return {
             headerBackTitleVisible: false,
@@ -47,8 +43,8 @@ function PrayerWall() {
       <Stack.Screen
         name="Prayer"
         component={NewPrayer}
-        options={({ navigation, route }) => {
-          navigation.getParent().setOptions({ headerShown: false });
+        options={({ route }) => {
+          // navigation.getParent().setOptions({ headerShown: false });
           return {
             headerBackTitleVisible: false,
             headerBackTitle: 'Back',
@@ -79,7 +75,7 @@ function PrayerWall() {
         name="Single"
         component={SinglePrayer}
         options={({ navigation }) => {
-          navigation.getParent().setOptions({ headerShown: false });
+          // navigation.getParent().setOptions({ headerShown: false });
           return {
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },

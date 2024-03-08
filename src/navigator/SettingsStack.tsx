@@ -19,6 +19,7 @@ import InfluencerStepFour from '../screens/influencerApplication/InfluencerStepF
 import NewPassword from '../screens/newPassword/NewPassword';
 import { Colors } from '../styles';
 import InfluencerStepTwo from '../screens/influencerApplication/InfluencerStepTwo';
+import mainPageOptions from './global';
 
 const Stack = createNativeStackNavigator<SettingsStackParamsList>();
 
@@ -30,20 +31,12 @@ function SettingsStack() {
   const { colors } = useTheme();
 
   return (
-    <Stack.Navigator
-      initialRouteName="SettingsMain"
-      // screenOptions={{
-      //   headerLeft: (props) => {
-      //     console.log(props);
-
-      //     return null;
-      //   },
-      // }}
-    >
+    <Stack.Navigator initialRouteName="SettingsMain">
       <Stack.Screen
         name="SettingsMain"
         component={Settings}
-        options={{ headerShown: false, contentStyle: { backgroundColor: Colors.neutral[700] } }}
+        options={({ navigation }) => mainPageOptions(navigation, colors.text, 'Settings')}
+        // options={{ contentStyle: { backgroundColor: Colors.neutral[700] } }}
       />
       {/* <Stack.Screen
         name="ConfirmLogin"

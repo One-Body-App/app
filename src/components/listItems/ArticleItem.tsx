@@ -167,7 +167,10 @@ function ArticleItem({
                 flex: 1,
               }}
             >
-              <StyledText numberOfLines={2} style={[{ color: colors.text }, blogPostTitleStyle]}>
+              <StyledText
+                numberOfLines={2}
+                style={[{ color: colors.text, fontWeight: 'bold' }, blogPostTitleStyle]}
+              >
                 {isObject(itemData?.title)
                   ? decode(itemData?.title?.a.$text)
                   : decode(itemData?.title)}
