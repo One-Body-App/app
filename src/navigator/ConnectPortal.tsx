@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { styles } from './connectPortalStyles';
 import { GOOGLE_MAPS_API_KEY } from '../services/constants';
 
@@ -52,7 +52,7 @@ function ConnectPortal() {
 
       <MapView
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
+        provider={PROVIDER_DEFAULT}
         initialRegion={region}
         onRegionChangeComplete={(region) => setRegion(region)}
       >
