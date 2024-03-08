@@ -573,7 +573,7 @@ function ProfileHeader({
             >
               <HomeHashtag size={20} color={Colors.neutral.brand} />
 
-              <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
+              <StyledText style={[{ marginHorizontal: spacing.x10 }, Typography.body.x2M]}>
                 Denomination
                 <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
                 <StyledText>

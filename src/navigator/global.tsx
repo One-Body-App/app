@@ -3,7 +3,7 @@ import { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { PlatformPressable } from '@react-navigation/elements';
 import { DrawerActions } from '@react-navigation/native';
 import { Platform } from 'react-native';
-import { HambergerMenu } from 'iconsax-react-native';
+import { Menu } from 'iconoir-react-native';
 import { HeaderProps } from './types';
 import { styles } from './styles';
 
@@ -13,31 +13,31 @@ export default function mainPageOptions(
   title: string
 ): NativeStackNavigationOptions {
   return {
-    headerShadowVisible: false,
-    // headerLeft: (props) => {
-    //   return (
-    //     <PlatformPressable
-    //       accessible
-    //       accessibilityRole="button"
-    //       android_ripple={{ borderless: true }}
-    //       onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-    //       // style={styles.touchable}
-    //       hitSlop={Platform.select({
-    //         ios: undefined,
-    //         default: { top: 16, right: 16, bottom: 16, left: 16 },
-    //       })}
-    //     >
-    //       <HambergerMenu color={props.tintColor ? props.tintColor : textColor} />
-    //       {/* <Image
-    //         style={[styles.icon, tintColor ? { tintColor } : null]}
-    //         source={require('./assets/toggle-drawer-icon.png')}
-    //         fadeDuration={0}
-    //       /> */}
-    //     </PlatformPressable>
-    //   );
+    headerLeft: (props) => {
+      return (
+        <PlatformPressable
+          accessible
+          accessibilityRole="button"
+          android_ripple={{ borderless: true }}
+          onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+          // style={styles.touchable}
+          hitSlop={Platform.select({
+            ios: undefined,
+            default: { top: 16, right: 16, bottom: 16, left: 16 },
+          })}
+        >
+          <Menu color={textColor} height={25} width={25} />
+          {/* <HambergerMenu color={props.tintColor ? props.tintColor : textColor} /> */}
+          {/* <Image
+            style={[styles.icon, tintColor ? { tintColor } : null]}
+            source={require('./assets/toggle-drawer-icon.png')}
+            fadeDuration={0}
+          /> */}
+        </PlatformPressable>
+      );
 
-    //   // <DrawerToggleButton {...props} />
-    // },
+      // <DrawerToggleButton {...props} />
+    },
     headerTitleAlign: 'center',
     headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
       return (

@@ -35,7 +35,7 @@ import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import BaseItem from './BaseItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import ImageSlider from './ImageSlider';
+import ImageSlider, { ImageForSlider } from '../imageSlider/ImageSlider';
 
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
@@ -94,10 +94,12 @@ function SocialItem({
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
   const navigation = useNavigation<ScreenNavigationProp>();
+  const [width, setWidth] = useState<number>();
+
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   let url = '';
   if (itemData?.source == 'twitter') {
-    url = `https://twitter.com/${item?.handler}/status/${item?.id}`;
+    url = `https://twitter.com/${itemData?.handler}/status/${itemData?.id}`;
   } else {
     url = itemData?.permalink || '';
   }
@@ -217,6 +219,26 @@ function SocialItem({
     }
   };
 
+  const images: ImageForSlider[] = [];
+  if (imageInfo && imageInfo.length > 0) {
+    for (let i = 0; i < imageInfo.length; i++) {
+      images.push({
+        ...imageInfo[i],
+        type: 'image',
+      });
+    }
+  }
+
+  if (itemData.gif) {
+    images.push({
+      url: itemData.gif.url,
+      width: itemData.gif.data.images.original.width,
+      height: itemData.gif.data.images.original.height,
+
+      type: 'gif',
+    });
+  }
+
   return (
     <BaseItem
       removePost={removePost}
@@ -262,7 +284,12 @@ function SocialItem({
       }}
       style={socialPostviewStyle}
     >
-      <View style={{ flexGrow: 1 }}>
+      <View
+        style={{ flexGrow: 1 }}
+        onLayout={({ nativeEvent }) => {
+          setWidth(nativeEvent.layout.width);
+        }}
+      >
         {itemData?.content && (
           <View style={{ flexGrow: 1 }}>
             <StyledText
@@ -358,161 +385,13 @@ function SocialItem({
               }}
             />
 
-            {imageInfo.length > 1 || itemData.gif ? (
-              // <FlatList
-              //   contentContainerStyle={{ flexGrow: 1 }}
-              //   horizontal
-              //   data={imageInfo}
-              //   renderItem={({ index, item }) => {
-              //     let imageAspectRatio = item.width > item.height ? 16 / 9 : 9 / 16;
-              //     if (itemData.gif?.aspectRatio) {
-              //       imageAspectRatio = itemData.gif?.aspectRatio;
-              //     }
-
-              //     return (
-              //       <TouchableOpacity
-              //         key={`${index}`}
-              //         style={{
-              //           flexGrow: 1,
-
-              //           padding: spacing.x10,
-              //         }}
-              //         onPress={() => {
-              //           setImageModalIndexVisible(index);
-              //         }}
-              //       >
-              //         {/* <ImageView
-              //           images={images}
-              //           imageIndex={0}
-              //           visible={visible}
-              //           onRequestClose={() => setIsVisible(false)}
-              //         /> */}
-              //         <Image
-              //           key={index}
-              //           // resizeMode={image.width > image.height ? 'cover' : 'stretch'}
-              //           style={{
-              //             borderRadius: borderRadius.small,
-              //             aspectRatio: imageAspectRatio,
-              //             width: 250,
-              //             maxHeight: 300,
-              //           }}
-              //           // modalImageResizeMode="center"
-              //           // modalImageResizeMode="cover"
-              //           // modalImageStyle={{
-              //           //   flexGrow: 1,
-              //           //   aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
-              //           // }}
-              //           source={{ uri: item?.url }}
-              //         />
-              //       </TouchableOpacity>
-              //     );
-              //   }}
-              // />
-              <ImageSlider
-                images={imageInfo}
-                setImageModalIndexVisible={(item) => {
-                  setImageModalIndexVisible(item);
-                }}
-              />
-            ) : (
-              //   {/* {item.gif && (
-              //     <View
-              //       style={{
-              //         marginTop: spacing.x10,
-              //         marginLeft: 1,
-              //         flexGrow: 1,
-              //         marginRight: 1,
-              //         // height: 100,
-              //         // width: 100,
-              //         borderRadius: borderRadius.xs,
-              //       }}
-              //     >
-              //       <GiphyMediaView
-              //         media={item.gif}
-              //         resizeMode="cover"
-              //         style={{
-              //           aspectRatio: item.gif.aspectRatio,
-              //           borderRadius: borderRadius.xs,
-              //           width: 250,
-              //           maxHeight: 300,
-              //           overflow: 'hidden',
-              //         }}
-              //       />
-              //     </View>
-              //   )} */}
-              //   {/* {imageInfo.map((image, index) => {
-              //     let imageAspectRatio = image.width > image.height ? 16 / 9 : 9 / 16;
-              //     if (item.gif?.aspectRatio) {
-              //       imageAspectRatio = item.gif?.aspectRatio;
-              //     }
-
-              //     return (
-              //       <TouchableOpacity
-              //         key={`${index}`}
-              //         style={{
-              //           flexGrow: 1,
-
-              //           padding: spacing.x10,
-              //         }}
-              //         onPress={() => {
-              //           setImageModalIndexVisible(index);
-              //         }}
-              //       >
-              //         {/* <ImageView
-              //           images={images}
-              //           imageIndex={0}
-              //           visible={visible}
-              //           onRequestClose={() => setIsVisible(false)}
-              // //         /> */}
-              // //         <Image
-              // //           key={index}
-              // //           // resizeMode={image.width > image.height ? 'cover' : 'stretch'}
-              // //           style={{
-              // //             borderRadius: borderRadius.small,
-              // //             aspectRatio: imageAspectRatio,
-              // //             width: 250,
-              // //             maxHeight: 300,
-              // //           }}
-              // //           // modalImageResizeMode="center"
-              // //           // modalImageResizeMode="cover"
-              // //           // modalImageStyle={{
-              // //           //   flexGrow: 1,
-              // //           //   aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
-              // //           // }}
-              // //           source={{ uri: image?.url }}
-              // //         />
-              // //       </TouchableOpacity>
-              // //     );
-              // //   })}
-              // // </ScrollView> */}
-              <TouchableOpacity
-                key={`${index}`}
-                style={{
-                  flexGrow: 1,
-
-                  padding: spacing.x10,
-                }}
-                onPress={() => {
-                  setImageModalIndexVisible(0);
-                }}
-              >
-                <Image
-                  key={index}
-                  resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
-                  style={{
-                    borderRadius: borderRadius.small,
-                    // flexGrow: 1,
-                    aspectRatio: imageInfo[0].width / imageInfo[0].height,
-                    width: '100%',
-                    // height: 300,
-                    // borderRadius: 2,
-                    // marginVertical: 10,
-                  }}
-                  // modalImageResizeMode="center"
-                  source={{ uri: imageInfo[0]?.url }}
-                />
-              </TouchableOpacity>
-            )}
+            <ImageSlider
+              width={width ?? 0}
+              images={images}
+              setImageModalIndexVisible={(item) => {
+                setImageModalIndexVisible(item);
+              }}
+            />
           </>
         ) : null}
       </View>

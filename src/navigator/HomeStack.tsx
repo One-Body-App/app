@@ -13,6 +13,7 @@ import { Colors } from '../styles';
 
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
+import mainPageOptions from './global';
 
 type HeaderProps = Omit<TextProps, 'style'> & {
   tintColor?: string;
@@ -48,10 +49,11 @@ function HomeStack() {
       <Stack.Screen
         name="Home"
         component={Home}
-        options={() => {
+        options={({ navigation }) => {
           return {
+            ...mainPageOptions(navigation, colors.text, 'Home'),
             title: 'Home',
-            headerLeft: (props) => <DrawerToggleButton {...props} />,
+
             headerTitleAlign: 'center',
             headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
               return (
