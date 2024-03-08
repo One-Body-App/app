@@ -8,7 +8,7 @@ type types = 'Explore' | 'My Places';
 
 function ConnectPortal() {
   const [selectedOption, setSelectedOption] = useState<types>('Explore');
-  const [region, setRegion] = useState<{
+  /* const [region, setRegion] = useState<{
     latitude: number;
     longitude: number;
     latitudeDelta: number;
@@ -18,7 +18,7 @@ function ConnectPortal() {
     longitude: -122.4324,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
-  });
+  }); */
 
   const handleOptionSelect = (option: types) => {
     setSelectedOption(option);
@@ -53,10 +53,14 @@ function ConnectPortal() {
       <MapView
         style={styles.map}
         provider={PROVIDER_DEFAULT}
-        initialRegion={region}
-        onRegionChangeComplete={(region) => setRegion(region)}
+        initialRegion={{
+          latitude: 37.78825,
+          longitude: -122.4324,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
       >
-        <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
+        <Marker coordinate={{ latitude: 37.78825, longitude: -122.4324 }} />
       </MapView>
     </View>
   );
