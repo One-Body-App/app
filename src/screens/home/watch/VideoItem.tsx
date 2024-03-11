@@ -73,7 +73,7 @@ function VideoItem({
         style={styles.video}
       >
         <Video
-          source={{ uri: `https://stream.mux.com/${item.playBackId}` }}
+          source={{ uri: `https://stream.mux.com/${item.playBackId!}` }}
           resizeMode="cover"
           style={styles.video}
           onLoad={() => {
@@ -125,11 +125,13 @@ function VideoItem({
             // }
           }}
         >
-          <View>
-            <StyledText style={[styles.videoDescription, { color: 'white' }]}>
-              {item.content}
-            </StyledText>
-          </View>
+          {item.content && (
+            <View>
+              <StyledText style={[styles.videoDescription, { color: 'white' }]}>
+                {item.content}
+              </StyledText>
+            </View>
+          )}
         </BaseItem>
       </LinearGradient>
     </View>

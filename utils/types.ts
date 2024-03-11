@@ -261,6 +261,7 @@ export interface SocialPost {
 
 export interface WatchPost {
   _id?: string;
+  playBackId?: string;
   postId?: string;
   content: string;
   date: string;

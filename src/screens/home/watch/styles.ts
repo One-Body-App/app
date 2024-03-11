@@ -19,9 +19,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
-    paddingTop: 230,
+    paddingTop: 300,
     color: '#FFF',
-
     fontSize: 16,
   },
   video: {

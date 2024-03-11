@@ -356,10 +356,11 @@ function BaseItem({
         <View
           style={{
             position: 'absolute',
-            top: 0,
+            top: reelLayout ? -165 : 0,
             left: 0,
             zIndex: 2,
             maxWidth: 48,
+            flexDirection: 'column',
           }}
         >
           <TouchableOpacity
@@ -369,7 +370,6 @@ function BaseItem({
             style={{
               flexDirection: 'row',
               justifyContent: 'flex-start',
-              backgroundColor: 'red',
               alignItems: 'center',
               marginTop: spacing.x5,
             }}
@@ -384,7 +384,7 @@ function BaseItem({
                   borderWidth: borderWidth.thin,
                   padding: spacing.x5,
                   marginBottom: spacing.x5,
-                  marginLeft: spacing.x5,
+                  marginLeft: 0,
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -404,14 +404,125 @@ function BaseItem({
                   marginBottom: spacing.x5,
                   borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                   borderWidth: borderWidth.thin,
-                  marginLeft: spacing.x5,
+                  marginLeft: 0,
                 }}
                 resizeMode="contain"
               />
             )}
           </TouchableOpacity>
+          {reelLayout && (
+            <View
+              style={{
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: spacing.x16,
+                marginLeft: 7,
+                marginTop: 5,
+                alignContent: 'space-between',
+              }}
+            >
+              <Reaction
+                items={ReactionItems}
+                type="modal"
+                cardStyle={{
+                  padding: spacing.x5,
+                  shadowOpacity: 0.2,
+                  marginTop: spacing.x16,
+                  width: 40,
+                  height: 40,
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: borderRadius.base,
+                }}
+                onTap={async (item) => {
+                  if (item) {
+                    if (myReaction?.type == item.type) {
+                      await removeReactPost();
+                    } else {
+                      await reactPost(item.type);
+                    }
+                  }
+                }}
+                itemIndex={index}
+                onShowDismissCard={onShowDismissCard}
+                onPress={() => {
+                  if (myReaction) {
+                    removeReactPost();
+                  } else {
+                    reactPost(SocialPostReactionType.love);
+                  }
+                }}
+              >
+                <Heart
+                  size={25}
+                  color={
+                    myReaction
+                      ? Colors.errorFeedback[200]
+                      : transparency
+                        ? Colors.neutral[600]
+                        : colors.text
+                  }
+                  variant={myReaction ? 'Bold' : 'Linear'}
+                />
+              </Reaction>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
+                <StyledText
+                  style={{
+                    marginLeft: spacing.x10,
+                    // marginVertical: spacing.x5,
+                    color: transparency ? Colors.neutral[600] : colors.text,
+                  }}
+                >
+                  {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                </StyledText>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => {
+                  if (isThisPostSaved) {
+                    if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                    else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
+                  } else {
+                    savePost(
+                      postData?.id,
+                      postData?.type,
+                      postData.title,
+                      created,
+                      userData?._id,
+                      postData?.postlink,
+                      postData?.image?.url
+                    );
+                  }
+                }}
+              >
+                <Bookmark
+                  style={{ marginRight: 3 }}
+                  width={25}
+                  height={25}
+                  color={transparency ? Colors.neutral[600] : colors.text}
+                  fill={
+                    isThisPostSaved
+                      ? transparency
+                        ? Colors.neutral[600]
+                        : colors.text
+                      : transparency
+                        ? 'transparent'
+                        : colors.background
+                  }
+                />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-        <View style={{ flexGrow: 1, flex: 1, backgroundColor: 'green' }}>
+        <View style={{ flexGrow: 1, flex: 1 }}>
           {userData ? (
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <TouchableOpacity
@@ -436,7 +547,7 @@ function BaseItem({
                         color: transparency ? Colors.neutral[500] : Colors.neutral.brand,
                         alignItems: 'center',
                         ...fontSize.x1,
-                        marginLeft: spacing.x48,
+                        marginLeft: reelLayout ? spacing.x5 : spacing.x48,
                         marginTop: spacing.x5,
                       }}
                       numberOfLines={2}
@@ -458,7 +569,7 @@ function BaseItem({
                       color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                       alignItems: 'center',
                       ...fontSize.x1,
-                      marginLeft: spacing.x48,
+                      marginLeft: reelLayout ? spacing.x5 : spacing.x48,
                       marginTop: 0,
                     }}
                   >
@@ -678,111 +789,114 @@ function BaseItem({
                 </TouchableOpacity>
               ) : null}
               {/* Action Items  */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  // marginTop: spacing.x10,
-                  // alignContent: 'space-between',
-                }}
-              >
-                <Reaction
-                  items={ReactionItems}
-                  type="modal"
-                  cardStyle={{
-                    padding: spacing.x5,
-                    shadowOpacity: 0.2,
-                    marginTop: spacing.x16,
-                    borderRadius: borderRadius.base,
-                  }}
-                  onTap={async (item) => {
-                    if (item) {
-                      if (myReaction?.type == item.type) {
-                        await removeReactPost();
-                      } else {
-                        await reactPost(item.type);
-                      }
-                    }
-                  }}
-                  itemIndex={index}
-                  onShowDismissCard={onShowDismissCard}
-                  onPress={() => {
-                    if (myReaction) {
-                      removeReactPost();
-                    } else {
-                      reactPost(SocialPostReactionType.love);
-                    }
-                  }}
-                >
-                  <Heart
-                    size={25}
-                    color={
-                      myReaction
-                        ? Colors.errorFeedback[200]
-                        : transparency
-                          ? Colors.neutral[600]
-                          : colors.text
-                    }
-                    variant={myReaction ? 'Bold' : 'Linear'}
-                    style={{ marginVertical: spacing.x10 }}
-                  />
-                </Reaction>
-
+              {!reelLayout && (
                 <View
                   style={{
                     flexDirection: 'row',
-                    marginLeft: spacing.x10,
                     alignItems: 'center',
+                    // marginTop: spacing.x10,
+                    // alignContent: 'space-between',
                   }}
                 >
-                  <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
-                  <StyledText
-                    style={{
-                      marginLeft: spacing.x10,
-                      // marginVertical: spacing.x5,
-                      color: transparency ? Colors.neutral[600] : colors.text,
+                  <Reaction
+                    items={ReactionItems}
+                    type="modal"
+                    cardStyle={{
+                      padding: spacing.x5,
+                      shadowOpacity: 0.2,
+                      marginTop: spacing.x16,
+                      borderRadius: borderRadius.base,
+                    }}
+                    onTap={async (item) => {
+                      if (item) {
+                        if (myReaction?.type == item.type) {
+                          await removeReactPost();
+                        } else {
+                          await reactPost(item.type);
+                        }
+                      }
+                    }}
+                    itemIndex={index}
+                    onShowDismissCard={onShowDismissCard}
+                    onPress={() => {
+                      if (myReaction) {
+                        removeReactPost();
+                      } else {
+                        reactPost(SocialPostReactionType.love);
+                      }
                     }}
                   >
-                    {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                  </StyledText>
-                </View>
+                    <Heart
+                      size={25}
+                      color={
+                        myReaction
+                          ? Colors.errorFeedback[200]
+                          : transparency
+                            ? Colors.neutral[600]
+                            : colors.text
+                      }
+                      variant={myReaction ? 'Bold' : 'Linear'}
+                      style={{ marginVertical: spacing.x10 }}
+                    />
+                  </Reaction>
 
-                <TouchableOpacity
-                  onPress={() => {
-                    if (isThisPostSaved) {
-                      if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
-                      else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
-                    } else {
-                      savePost(
-                        postData?.id,
-                        postData?.type,
-                        postData.title,
-                        created,
-                        userData?._id,
-                        postData?.postlink,
-                        postData?.image?.url
-                      );
-                    }
-                  }}
-                  style={{ marginEnd: spacing.x10, marginStart: spacing.x10 }}
-                >
-                  <Bookmark
-                    style={{ marginRight: 3 }}
-                    width={25}
-                    height={25}
-                    color={transparency ? Colors.neutral[600] : colors.text}
-                    fill={
-                      isThisPostSaved
-                        ? transparency
-                          ? Colors.neutral[600]
-                          : colors.text
-                        : transparency
-                          ? 'transparent'
-                          : colors.background
-                    }
-                  />
-                </TouchableOpacity>
-              </View>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      marginLeft: spacing.x10,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
+                    <StyledText
+                      style={{
+                        marginLeft: spacing.x10,
+                        // marginVertical: spacing.x5,
+                        color: transparency ? Colors.neutral[600] : colors.text,
+                      }}
+                    >
+                      {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                    </StyledText>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (isThisPostSaved) {
+                        if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                        else if (postData.postlink)
+                          removeSavedPost(postData.type, postData.postlink);
+                      } else {
+                        savePost(
+                          postData?.id,
+                          postData?.type,
+                          postData.title,
+                          created,
+                          userData?._id,
+                          postData?.postlink,
+                          postData?.image?.url
+                        );
+                      }
+                    }}
+                    style={{ marginEnd: spacing.x10, marginStart: spacing.x10 }}
+                  >
+                    <Bookmark
+                      style={{ marginRight: 3 }}
+                      width={25}
+                      height={25}
+                      color={transparency ? Colors.neutral[600] : colors.text}
+                      fill={
+                        isThisPostSaved
+                          ? transparency
+                            ? Colors.neutral[600]
+                            : colors.text
+                          : transparency
+                            ? 'transparent'
+                            : colors.background
+                      }
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
             <View style={{ alignItems: 'center' }}>
               {postData.type == PostType.rss ? (
