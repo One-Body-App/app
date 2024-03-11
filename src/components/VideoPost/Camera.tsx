@@ -60,12 +60,6 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
       try {
         if (camera.current) {
           setIsRecording(true);
-
-          //   Animated.timing(animatedColor, {
-          //     toValue: 100,
-          //     duration: 5,
-          //     useNativeDriver: false, // You can set it to true if using Reanimated 2
-          //   }).start();
           camera.current.startRecording({
             onRecordingFinished: (video) => {
               setRecordedVideo(video);
