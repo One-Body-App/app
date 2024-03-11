@@ -1970,6 +1970,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@expo/vector-icons@npm:^13.0.0":
+  version: 13.0.0
+  resolution: "@expo/vector-icons@npm:13.0.0"
+  checksum: 10/88e8a77f14eea19c675a3b95c9805f1df76662ea62d2e0022f5a8f5e85293ce2e02e7286678243c56772f7e5d7abfd23b3475df05ce59378353178e1c2b23f6e
+  languageName: node
+  linkType: hard
+
 "@fastify/busboy@npm:^2.0.0":
   version: 2.1.0
   resolution: "@fastify/busboy@npm:2.1.0"
@@ -11537,6 +11544,7 @@ __metadata:
     "@commitlint/config-conventional": "npm:^18.4.4"
     "@dreamwalk-os/react-native-image-modal": "npm:^2.2.0"
     "@elastic/elasticsearch": "npm:^8.9.0"
+    "@expo/vector-icons": "npm:^13.0.0"
     "@fortawesome/fontawesome-svg-core": "npm:^6.4.2"
     "@fortawesome/free-brands-svg-icons": "npm:^6.4.2"
     "@fortawesome/free-regular-svg-icons": "npm:^6.4.2"
@@ -11639,6 +11647,7 @@ __metadata:
     react-native-fbsdk-next: "npm:^12.1.2"
     react-native-gesture-handler: "npm:^2.14.0"
     react-native-gifted-chat: "npm:^1.0.0"
+    react-native-google-places-autocomplete: "npm:^2.5.6"
     react-native-image-crop-picker: "npm:^0.40.3"
     react-native-image-picker: "npm:^7.1.0"
     react-native-image-viewing: "npm:^0.2.2"
@@ -12294,6 +12303,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"qs@npm:~6.9.1":
+  version: 6.9.7
+  resolution: "qs@npm:6.9.7"
+  checksum: 10/fb364b54bf4f092a095554968f5abf06036cfe359c9aba258a81b0c0366f625a46098fe1224b2a71ee2f88642470af391c7a8a1496508eca29c37093293f91a9
+  languageName: node
+  linkType: hard
+
 "query-string@npm:^7.1.3":
   version: 7.1.3
   resolution: "query-string@npm:7.1.3"
@@ -12626,6 +12642,19 @@ __metadata:
     react-native-safe-area-context: "*"
     react-native-typing-animation: "*"
   checksum: 10/b699f649c40e80482f958b11a078603f7a8788d27399129c9887e3552d05f7315627b1eb3fd283939146ecb4d4ed06d530c8fb02b72fdb099e44052e50f7e3d9
+  languageName: node
+  linkType: hard
+
+"react-native-google-places-autocomplete@npm:^2.5.6":
+  version: 2.5.6
+  resolution: "react-native-google-places-autocomplete@npm:2.5.6"
+  dependencies:
+    lodash.debounce: "npm:^4.0.8"
+    prop-types: "npm:^15.7.2"
+    qs: "npm:~6.9.1"
+  peerDependencies:
+    react-native: ">= 0.59"
+  checksum: 10/f8a0e85225c3e13c086b29e92c5cd93bfb8515c0d7ef6483f78e6215cfa0ebaa7e4ea8db9a2e65971d2ff45912d9386c1e9ba52bdc31e1739c44a8762e4c3ee2
   languageName: node
   linkType: hard
 
