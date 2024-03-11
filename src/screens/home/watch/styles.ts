@@ -8,12 +8,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   videoContainer: {
-    // width: '100%',
-    // height: '100%',
-    // width: getWidth(100),
-    // height: getHeight(100),
-    // backgroundColor: '#E6EAEC',
-
     flex: 1,
     overflow: 'hidden',
     height: getHeight(74.2),
@@ -24,9 +18,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-
     backgroundColor: 'transparent',
-    // color: '#FFF',
     paddingTop: 230,
     color: '#FFF',
 

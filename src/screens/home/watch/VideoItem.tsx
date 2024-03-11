@@ -80,7 +80,6 @@ function VideoItem({
       <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
         <BaseItem
           style={styles.videoInfo}
-          transparency
           userData={item.userData}
           edited={item.edited}
           updated={item.updated}
@@ -116,7 +115,7 @@ function VideoItem({
           }}
         >
           <View>
-            <StyledText style={[styles.videoDescription, { color: Colors.neutral[600] }]}>
+            <StyledText style={[styles.videoDescription, { color: 'white' }]}>
               {item.content}
             </StyledText>
           </View>
