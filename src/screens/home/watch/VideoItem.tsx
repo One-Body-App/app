@@ -1,7 +1,7 @@
 import { ActivityIndicator, TouchableHighlight, View } from 'react-native';
 import Video from 'react-native-video';
 import LinearGradient from 'react-native-linear-gradient';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import StyledText from '@/src/components/styled/Text';
@@ -20,7 +20,6 @@ function VideoItem({
   fromSavedPosts,
   parentRefreshContent,
   onShowDismissCard,
-  activeInScreenIndex,
 }: {
   item: WatchPost;
   viewHeight: number;
@@ -29,7 +28,6 @@ function VideoItem({
   fromSavedPosts: boolean;
   parentRefreshContent?: Function;
   onShowDismissCard?: (e?: boolean) => void;
-  activeInScreenIndex: number;
 }) {
   const [isLoading, setIsloading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
@@ -42,14 +40,6 @@ function VideoItem({
       myReaction = reaction;
     }
   });
-
-  useEffect(() => {
-    if (index === activeInScreenIndex) {
-      setIsPaused(false);
-    } else {
-      setIsPaused(true);
-    }
-  }, [activeInScreenIndex]);
 
   return (
     <View style={[styles.videoContainer, { height: viewHeight, width }]}>
@@ -89,7 +79,6 @@ function VideoItem({
 
       <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
         <BaseItem
-          reelLayout
           style={styles.videoInfo}
           userData={item.userData}
           edited={item.edited}

@@ -77,7 +77,6 @@ interface BaseItemProps {
   parentRefreshContent?: Function;
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
-  reelLayout?: boolean;
 }
 
 function BaseItem({
@@ -99,7 +98,6 @@ function BaseItem({
   removePost,
   editPost,
   fromSavedPosts,
-  reelLayout = false,
 }: BaseItemProps) {
   const { colors } = useTheme();
   const dispatch = useDispatch();
@@ -345,73 +343,61 @@ function BaseItem({
     <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
       <View
         style={{
-          flex: 1,
-          flexDirection: 'column',
-          // alignItems: 'flex-start',
+          flexDirection: 'row',
+          alignItems: 'flex-start',
           gap: spacing.x10,
           marginRight: spacing.x10,
-          position: 'relative',
         }}
       >
-        <View
+        <TouchableOpacity
+          onPress={() => {
+            onPress();
+          }}
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            zIndex: 2,
-            maxWidth: 48,
+            flexDirection: 'row',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            maxWidth: 0,
+            marginTop: spacing.x5,
           }}
         >
-          <TouchableOpacity
-            onPress={() => {
-              onPress();
-            }}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'flex-start',
-              backgroundColor: 'red',
-              alignItems: 'center',
-              marginTop: spacing.x5,
-            }}
-          >
-            {userData.profileIcon && !userData.profileImage ? (
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: borderRadius.max,
-                  borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                  borderWidth: borderWidth.thin,
-                  padding: spacing.x5,
-                  marginBottom: spacing.x5,
-                  marginLeft: spacing.x5,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                {userData.profileIcon}
-              </View>
-            ) : (
-              <FastImage
-                source={{
-                  uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
-                }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: borderRadius.max,
-                  marginBottom: spacing.x5,
-                  borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                  borderWidth: borderWidth.thin,
-                  marginLeft: spacing.x5,
-                }}
-                resizeMode="contain"
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-        <View style={{ flexGrow: 1, flex: 1, backgroundColor: 'green' }}>
+          {userData.profileIcon && !userData.profileImage ? (
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: borderRadius.max,
+                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderWidth: borderWidth.thin,
+                padding: spacing.x5,
+                marginBottom: spacing.x5,
+                marginLeft: spacing.x10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              {userData.profileIcon}
+            </View>
+          ) : (
+            <FastImage
+              source={{
+                uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: borderRadius.max,
+                marginBottom: spacing.x5,
+                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderWidth: borderWidth.thin,
+                marginLeft: spacing.x10,
+              }}
+              resizeMode="contain"
+            />
+          )}
+        </TouchableOpacity>
+        <View style={{ flexGrow: 1, flex: 1 }}>
           {userData ? (
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <TouchableOpacity
@@ -466,9 +452,9 @@ function BaseItem({
                     (source == 'instagram' && userData?.instagramHandler) ||
                     userData?.username
                       ? `@${
-                          source === 'twitter'
+                          source == 'twitter'
                             ? userData?.twitterHandler
-                            : source === 'instagram'
+                            : source == 'instagram'
                               ? userData?.instagramHandler
                               : userData?.username
                         }`
@@ -476,8 +462,8 @@ function BaseItem({
 
                     {created ? (
                       <>
-                        {(source === 'twitter' && userData?.twitterHandler) ||
-                        (source === 'instagram' && userData?.instagramHandler) ||
+                        {(source == 'twitter' && userData?.twitterHandler) ||
+                        (source == 'instagram' && userData?.instagramHandler) ||
                         userData?.username
                           ? ` • `
                           : ''}
@@ -548,9 +534,8 @@ function BaseItem({
               </TouchableOpacity>
             </View>
           ) : null}
-        </View>
-        <View style={{ flexGrow: 1, flex: 1 }}>
-          {children && <View style={{ marginTop: spacing.x20 }}>{children}</View>}
+
+          <View style={{ marginTop: spacing.x20 }}>{children}</View>
 
           <View style={{ flexDirection: 'row' }}>
             {postData?.reactions && postData.reactions.length > 0 ? (
@@ -677,7 +662,7 @@ function BaseItem({
                   <StyledText style={{ color: Colors.primarySapphire.brand }}>View Post</StyledText>
                 </TouchableOpacity>
               ) : null}
-              {/* Action Items  */}
+
               <View
                 style={{
                   flexDirection: 'row',

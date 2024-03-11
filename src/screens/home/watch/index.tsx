@@ -19,7 +19,6 @@ function Watch() {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [feedData, setFeedData] = useState<WatchPost[]>([]);
   const [page, setPage] = useState<number>(1);
-  const [activeWatchReel, setActiveWatchReel] = useState<number>(0);
   const [viewHeight, setViewHeight] = useState<number>(1);
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -137,7 +136,6 @@ function Watch() {
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0) {
       const { index } = viewableItems[0];
-      setActiveWatchReel(index);
     }
   }).current;
 
@@ -157,12 +155,10 @@ function Watch() {
         ref={flatListRef}
         data={feedData}
         contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => {
           return (
             <VideoItem
               index={index}
-              activeInScreenIndex={activeWatchReel}
               item={item}
               viewHeight={viewHeight}
               width={width}
