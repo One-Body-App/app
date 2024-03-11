@@ -17,21 +17,21 @@ import mainPageOptions from './global';
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 
 function PrayerWall() {
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
 
   return (
     <Stack.Navigator>
       <Stack.Screen
         name="index"
         component={Prayer}
-        options={({ navigation }) => mainPageOptions(navigation, colors.text, 'Prayer Wall')}
+        options={({ navigation }) =>
+          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Prayer Wall')
+        }
       />
       <Stack.Screen
         name="UserProfile"
         component={UserProfile}
         options={() => {
-          // navigation.getParent().setOptions({ headerShown: false });
-
           return {
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },
@@ -44,7 +44,6 @@ function PrayerWall() {
         name="Prayer"
         component={NewPrayer}
         options={({ route }) => {
-          // navigation.getParent().setOptions({ headerShown: false });
           return {
             headerBackTitleVisible: false,
             headerBackTitle: 'Back',
@@ -74,8 +73,7 @@ function PrayerWall() {
       <Stack.Screen
         name="Single"
         component={SinglePrayer}
-        options={({ navigation }) => {
-          // navigation.getParent().setOptions({ headerShown: false });
+        options={() => {
           return {
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },

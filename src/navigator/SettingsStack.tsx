@@ -28,15 +28,16 @@ function SettingsStack() {
     headerShadowVisible: false,
     headerBackTitleVisible: false,
   };
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
 
   return (
     <Stack.Navigator initialRouteName="SettingsMain">
       <Stack.Screen
         name="SettingsMain"
         component={Settings}
-        options={({ navigation }) => mainPageOptions(navigation, colors.text, 'Settings')}
-        // options={{ contentStyle: { backgroundColor: Colors.neutral[700] } }}
+        options={({ navigation }) =>
+          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Settings')
+        }
       />
       {/* <Stack.Screen
         name="ConfirmLogin"

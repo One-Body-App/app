@@ -13,8 +13,7 @@ import OnboardingLocation from '../screens/onboardingSteps/onboardingLocation';
 import OnboardingOrganizationContact from '../screens/onboardingSteps/onboardingOrganizationContact';
 import OnboardingOrganizationInfo from '../screens/onboardingSteps/onboardingOrganizationInfo';
 import OnboardingOrganizationType from '../screens/onboardingSteps/onboardingOrganizationType';
-
-import { headerOptions } from './Main';
+import { headerOptions } from './global';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 

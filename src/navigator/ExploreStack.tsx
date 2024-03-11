@@ -11,14 +11,16 @@ import mainPageOptions from './global';
 const Stack = createNativeStackNavigator<ExploreStackParamsList>();
 
 function ExploreStack() {
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
 
   return (
     <Stack.Navigator>
       <Stack.Screen
         name="Explore"
         component={Explore}
-        options={({ navigation }) => mainPageOptions(navigation, colors.text, 'Explore')}
+        options={({ navigation }) =>
+          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Explore')
+        }
       />
       <Stack.Screen
         name="UserProfile"

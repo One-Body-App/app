@@ -6,17 +6,20 @@ import { SearchStackParamsList } from './types';
 import Search from '../screens/main/search';
 import UserProfile from '../screens/main/userProfile';
 import mainPageOptions from './global';
+import { Colors } from '../styles';
 
 const Stack = createNativeStackNavigator<SearchStackParamsList>();
 
 function SearchStack() {
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
   return (
     <Stack.Navigator>
       <Stack.Screen
         name="Search"
         component={Search}
-        options={({ navigation }) => mainPageOptions(navigation, colors.text, 'Search')}
+        options={({ navigation }) =>
+          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Search')
+        }
       />
       <Stack.Screen name="UserProfile" component={UserProfile} />
     </Stack.Navigator>
