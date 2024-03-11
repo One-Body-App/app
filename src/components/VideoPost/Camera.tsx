@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import React, { Dispatch, PropsWithChildren, SetStateAction, useRef, useState } from 'react';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
 import { isValidVideo, showEditor } from 'react-native-video-trim';
 import videoPostStyles from './styles';
+import { spacing } from '@/src/styles/spacing';
 
 const cameraIos = require('@/assets/icons/camera-ios.png');
 
@@ -16,16 +17,11 @@ type Props = {
 function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildren<Props>) {
   const camera = useRef<Camera>(null);
   const [isFrontCamera, setIsFrontCamera] = useState<boolean>(false);
-  const [latestGalleryImg, setLatestGalleryImg] = useState<any>('');
+  const [latestGalleryImg, setLatestGalleryImg] = useState<any>('/');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordedVideo, setRecordedVideo] = useState<any>('');
   const devices = useCameraDevice(isFrontCamera ? 'front' : 'back');
-  const animatedColor = new Animated.Value(0);
 
-  const backgroundColor = animatedColor.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['white', 'red'],
-  });
   const handleSelectionFromGallery = async () => {
     const options: ImageLibraryOptions = {
       mediaType: 'video',
@@ -34,7 +30,7 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
     const response = await launchImageLibrary(options);
     if (response?.assets && response?.assets.length > 0) {
       setRecordedVideo(response?.assets[0]?.uri);
-      isValidVideo(response?.assets[0]?.uri || '').then((res) => {});
+      isValidVideo(response?.assets[0]?.uri || 'xxxx');
       showEditor(response?.assets[0]?.uri || '', {
         saveToPhoto: false,
         maxDuration: 60,
@@ -47,22 +43,25 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
       try {
         if (camera.current) {
           setIsRecording(true);
-          Animated.timing(animatedColor, {
-            toValue: 100,
-            duration: 5,
-            useNativeDriver: false, // You can set it to true if using Reanimated 2
-          }).start();
+
+          //   Animated.timing(animatedColor, {
+          //     toValue: 100,
+          //     duration: 5,
+          //     useNativeDriver: false, // You can set it to true if using Reanimated 2
+          //   }).start();
           camera.current.startRecording({
             onRecordingFinished: (video) => {
               setRecordedVideo(video);
-              isValidVideo(video?.path || '').then((res) => console.log(res));
+              isValidVideo(video?.path || '');
 
               showEditor(video?.path || '', {
                 saveToPhoto: false,
                 maxDuration: 60,
               });
             },
-            onRecordingError: (error) => console.error(error),
+            onRecordingError: (error) => {
+              console.error(error);
+            },
           });
         }
       } catch (error) {
@@ -102,10 +101,16 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
           </TouchableOpacity>
           <TouchableOpacity style={videoPostStyles.recordButton} onPress={handleStartRecording}>
             <View
-              style={[videoPostStyles.recordBtnView, { backgroundColor: `${backgroundColor}` }]}
+              style={[
+                videoPostStyles.recordBtnView,
+                {
+                  margin: isRecording ? spacing.x10 : 3,
+                  borderRadius: isRecording ? 8 : 30,
+                  transform: [{ scale: isRecording ? 0.8 : 1 }],
+                },
+              ]}
             />
           </TouchableOpacity>
-
           <TouchableOpacity
             style={{ justifyContent: 'center' }}
             onPress={() => {
