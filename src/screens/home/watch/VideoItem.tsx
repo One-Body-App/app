@@ -36,7 +36,7 @@ function VideoItem({
   let myReaction: SocialPostReaction | undefined;
 
   item.reactions?.forEach((reaction) => {
-    if (reaction.userId == user?._id) {
+    if (reaction.userId === user?._id) {
       myReaction = reaction;
     }
   });

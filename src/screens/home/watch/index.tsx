@@ -46,7 +46,7 @@ function Watch() {
   useEffect(() => {
     // getData(page);
     if (isRefreshing) {
-      if (page == 1) {
+      if (page === 1) {
         getFeedData();
       } else {
         setPage(1);
@@ -67,8 +67,20 @@ function Watch() {
 
       if (res?.status === 200) {
         newFeedData = [];
-        const feedPosts = res.response
-          .filter((i: any) => !!i.playBackId)
+        const validPosts = res.response.map(async (i: any) => {
+          try {
+            const a = await fetch(`https://stream.mux.com/${i.playBackId}`);
+            if (a.ok) {
+              return i;
+            }
+            return null;
+          } catch (error) {
+            return null;
+          }
+        });
+        const validPostsArray = await Promise.all(validPosts);
+        const feedPosts = validPostsArray
+          .filter((i: any) => !!i?.playBackId)
           .sort((a: any, b: any) => {
             const dateA = new Date(a.created);
             const dateB = new Date(b.created);
