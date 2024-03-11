@@ -24,6 +24,7 @@ import { RootState } from '../redux/reducers/rootReducer';
 import { borderWidth } from '../styles/outlines';
 import PostStack from './PostStack';
 import { getHeight } from '@/utils/ResponsiveFun';
+import { FeedTypes } from '../screens/home';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -58,6 +59,12 @@ function BottomStack() {
       <Tab.Screen
         name="HomeTab"
         component={HomeStack}
+        initialParams={{
+          screen: 'Home',
+          params: {
+            selectedTab: FeedTypes.Connected,
+          },
+        }}
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: (props) => {

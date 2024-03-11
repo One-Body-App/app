@@ -117,7 +117,7 @@ export type HomeStackParamsList = {
   };
   Search: undefined;
   Notifications: undefined;
-
+  WatchPortal: undefined;
   UserProfile: {
     id: string;
   };

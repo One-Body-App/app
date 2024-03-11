@@ -105,10 +105,7 @@ function VideoPost({ navigation }: Props) {
                   params: {
                     screen: 'HomeTab',
                     params: {
-                      screen: 'Home',
-                      params: {
-                        selectedTab: FeedTypes.Watch,
-                      },
+                      screen: 'WatchPortal',
                     },
                   },
                 });

@@ -26,7 +26,6 @@ import {
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import WatchComponent from '@/screens/home/watch';
 import { getHeight } from '@/utils/ResponsiveFun';
 
 export enum FeedTypes {
@@ -148,6 +147,15 @@ function Home({ navigation, route }: Props) {
   useEffect(() => {
     // getData(page);
     getFeedData(feedOptions.type, feedOptions.page);
+    if (feedOptions.type === FeedTypes.Watch) {
+      navigation.setOptions({
+        headerShown: false,
+      });
+    } else {
+      navigation.setOptions({
+        headerShown: true,
+      });
+    }
   }, [feedOptions]);
 
   useEffect(() => {
@@ -266,7 +274,7 @@ function Home({ navigation, route }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         getFeedData(feedOptions.type, feedOptions.page);
       }
     } catch (e: any) {
@@ -375,6 +383,16 @@ function Home({ navigation, route }: Props) {
                   navigation.navigate('MainRoot', {
                     screen: 'PrayerWall',
                   });
+                } else if (feedType === FeedTypes.Watch) {
+                  navigation.navigate('MainRoot', {
+                    screen: 'Main',
+                    params: {
+                      screen: 'HomeTab',
+                      params: {
+                        screen: 'WatchPortal',
+                      },
+                    },
+                  });
                 } else if (feedOptions.type !== feedType) {
                   filterUpdate(feedType);
                 }
@@ -417,6 +435,7 @@ function Home({ navigation, route }: Props) {
           </View>
         ))}
       </View>
+
       {isLoading && feedOptions.page == 1 && !isRefreshing ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicator size="small" />
@@ -621,12 +640,6 @@ function Home({ navigation, route }: Props) {
             />
           </View>
         )
-      )}
-
-      {feedOptions.type === 'watch' && (
-        <View style={{ flex: 1, marginBottom: 0 }}>
-          <WatchComponent />
-        </View>
       )}
     </View>
   );

@@ -5,7 +5,7 @@ import { useTheme } from '@react-navigation/native';
 import { DrawerToggleButton, getDrawerStatusFromState } from '@react-navigation/drawer';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { Animated, StyleProp, TextProps, TextStyle, View } from 'react-native';
-import Home from '../screens/home';
+import Home, { FeedTypes } from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
 import Notifications from '../screens/notifications';
@@ -14,6 +14,7 @@ import { Colors } from '../styles';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
 import mainPageOptions from './global';
+import Watch from '../screens/home/watch';
 
 type HeaderProps = Omit<TextProps, 'style'> & {
   tintColor?: string;
@@ -49,11 +50,13 @@ function HomeStack() {
       <Stack.Screen
         name="Home"
         component={Home}
+        initialParams={{
+          selectedTab: FeedTypes.Connected,
+        }}
         options={({ navigation }) => {
           return {
             ...mainPageOptions(navigation, colors.text, 'Home'),
             title: 'Home',
-
             headerTitleAlign: 'center',
             headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
               return (
@@ -103,6 +106,14 @@ function HomeStack() {
         name="Notifications"
         component={Notifications}
         options={{ presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="WatchPortal"
+        component={Watch}
+        options={{
+          presentation: 'card',
+          headerShown: false,
+        }}
       />
 
       <Stack.Screen
