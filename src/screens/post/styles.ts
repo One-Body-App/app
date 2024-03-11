@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   imgPreview: { flex: 1, borderRadius: 8 },
   bottomContainer: {
-    flex: 0.4,
+    flex: 1,
     marginHorizontal: spacing.x16,
     marginTop: 20,
   },

@@ -1,5 +1,22 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import React, { Dispatch, PropsWithChildren, SetStateAction, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  NativeModules,
+  NativeEventEmitter,
+  Image,
+} from 'react-native';
+import React, {
+  Dispatch,
+  PropsWithChildren,
+  SetStateAction,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
+import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
@@ -72,6 +89,48 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
       camera.current?.stopRecording();
     }
   };
+
+  const fetchPhotos = useCallback(async () => {
+    const res = await CameraRoll.getPhotos({
+      first: 1,
+    });
+    const image_url = res?.edges[0]?.node?.image;
+
+    setLatestGalleryImg(image_url?.uri);
+  }, []);
+
+  const getPermissions = async () => {
+    const cameraPermission = await Camera.requestCameraPermission();
+    const microphonePermission = await Camera.requestMicrophonePermission();
+
+    if (cameraPermission === 'denied' || microphonePermission === 'denied') {
+      // await Linking.openSettings();
+    }
+  };
+
+  useEffect(() => {
+    getPermissions();
+    fetchPhotos();
+    const eventEmitter = new NativeEventEmitter(NativeModules.VideoTrim);
+    const subscription = eventEmitter.addListener('VideoTrim', (event) => {
+      switch (event.name) {
+        case 'onFinishTrimming': {
+          // on trimming is done
+
+          setVideoPath(event?.outputPath);
+          break;
+        }
+        case 'onError': {
+          break;
+        }
+        default:
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   if (devices == null) {
     return (
