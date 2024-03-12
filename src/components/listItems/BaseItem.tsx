@@ -349,7 +349,7 @@ function BaseItem({
           flexDirection: 'column',
           // alignItems: 'flex-start',
           gap: spacing.x10,
-          marginRight: spacing.x10,
+          // marginRight: spacing.x10,
           position: 'relative',
         }}
       >
