@@ -437,7 +437,7 @@ function BaseItem({
                 }}
                 onTap={async (item) => {
                   if (item) {
-                    if (myReaction?.type == item.type) {
+                    if (myReaction?.type === item.type) {
                       await removeReactPost();
                     } else {
                       await reactPost(item.type);
@@ -461,7 +461,7 @@ function BaseItem({
                       ? Colors.errorFeedback[200]
                       : transparency
                         ? Colors.neutral[600]
-                        : colors.text
+                        : 'white'
                   }
                   variant={myReaction ? 'Bold' : 'Linear'}
                 />
@@ -473,12 +473,12 @@ function BaseItem({
                   alignItems: 'center',
                 }}
               >
-                <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
+                <Message2 color={transparency ? Colors.neutral[600] : 'white'} />
                 <StyledText
                   style={{
                     marginLeft: spacing.x10,
                     // marginVertical: spacing.x5,
-                    color: transparency ? Colors.neutral[600] : colors.text,
+                    color: transparency ? Colors.neutral[600] : 'white',
                   }}
                 >
                   {postData?.commentNumber ?? postData.comments?.length ?? '0'}
@@ -507,15 +507,15 @@ function BaseItem({
                   style={{ marginRight: 3 }}
                   width={25}
                   height={25}
-                  color={transparency ? Colors.neutral[600] : colors.text}
+                  color={transparency ? Colors.neutral[600] : 'white'}
                   fill={
                     isThisPostSaved
                       ? transparency
                         ? Colors.neutral[600]
-                        : colors.text
+                        : 'white'
                       : transparency
                         ? 'transparent'
-                        : colors.background
+                        : 'transparent'
                   }
                 />
               </TouchableOpacity>
@@ -544,7 +544,11 @@ function BaseItem({
                   <View style={{ flexDirection: 'row' }}>
                     <StyledText
                       style={{
-                        color: transparency ? Colors.neutral[500] : Colors.neutral.brand,
+                        color: reelLayout
+                          ? 'white'
+                          : transparency
+                            ? Colors.neutral[500]
+                            : Colors.neutral.brand,
                         alignItems: 'center',
                         ...fontSize.x1,
                         marginLeft: reelLayout ? spacing.x5 : spacing.x48,
@@ -559,14 +563,18 @@ function BaseItem({
                         name="check-decagram"
                         size={spacing.x16}
                         style={{ marginLeft: spacing.x8, marginTop: spacing.x8 }}
-                        color={Colors.primarySapphire.brand}
+                        color={reelLayout ? 'white' : Colors.primarySapphire.brand}
                       />
                     ) : null}
                   </View>
                   <StyledText
                     numberOfLines={2}
                     style={{
-                      color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                      color: reelLayout
+                        ? 'white'
+                        : transparency
+                          ? Colors.neutral[600]
+                          : Colors.neutral[300],
                       alignItems: 'center',
                       ...fontSize.x1,
                       marginLeft: reelLayout ? spacing.x5 : spacing.x48,
@@ -596,7 +604,11 @@ function BaseItem({
                           style={[
                             fontSize.x1,
                             {
-                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              color: reelLayout
+                                ? 'white'
+                                : transparency
+                                  ? Colors.neutral[600]
+                                  : Colors.neutral[300],
                               alignItems: 'center',
                             },
                           ]}
@@ -613,7 +625,11 @@ function BaseItem({
                           style={[
                             fontSize.x1,
                             {
-                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              color: reelLayout
+                                ? 'white'
+                                : transparency
+                                  ? Colors.neutral[600]
+                                  : Colors.neutral[300],
                               alignItems: 'center',
                             },
                           ]}
@@ -628,14 +644,18 @@ function BaseItem({
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Location
                         size={15}
-                        color={Colors.neutral[300]}
+                        color={reelLayout ? 'white' : Colors.neutral[300]}
                         style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
                       />
                       <StyledText
                         style={[
                           fontSize.x1,
                           {
-                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                            color: reelLayout
+                              ? 'white'
+                              : transparency
+                                ? Colors.neutral[600]
+                                : Colors.neutral[300],
                             marginTop: 0,
                           },
                         ]}
@@ -653,7 +673,7 @@ function BaseItem({
               >
                 <FontAwesomeIcon
                   icon={faEllipsisVertical}
-                  color={transparency ? Colors.neutral[600] : colors.text}
+                  color={reelLayout ? 'white' : transparency ? Colors.neutral[600] : colors.text}
                   style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
                 />
               </TouchableOpacity>
@@ -661,7 +681,9 @@ function BaseItem({
           ) : null}
         </View>
         <View style={{ flexGrow: 1, flex: 1 }}>
-          {children && <View style={{ marginTop: spacing.x20 }}>{children}</View>}
+          {children && (
+            <View style={{ marginTop: reelLayout ? spacing.x5 : spacing.x20 }}>{children}</View>
+          )}
 
           <View style={{ flexDirection: 'row' }}>
             {postData?.reactions && postData.reactions.length > 0 ? (

@@ -1,7 +1,7 @@
 import { ActivityIndicator, TouchableHighlight, View } from 'react-native';
 import Video from 'react-native-video';
 import LinearGradient from 'react-native-linear-gradient';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, PropsWithChildren } from 'react';
 import { useSelector } from 'react-redux';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import StyledText from '@/src/components/styled/Text';
@@ -9,8 +9,18 @@ import styles from '@/screens/home/watch/styles';
 import { PostType, SocialPostReaction, WatchPost } from '@/utils/types';
 
 import { Colors } from '@/src/styles';
-import { NO_POST_IMAGE_URL } from '@/src/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
+
+type VideoItemProps = {
+  item: WatchPost;
+  viewHeight: number;
+  width: number;
+  index: number;
+  fromSavedPosts: boolean;
+  parentRefreshContent?: Function;
+  onShowDismissCard?: (e?: boolean) => void;
+  activeInScreenIndex: number;
+};
 
 function VideoItem({
   item,
@@ -21,16 +31,7 @@ function VideoItem({
   parentRefreshContent,
   onShowDismissCard,
   activeInScreenIndex,
-}: {
-  item: WatchPost;
-  viewHeight: number;
-  width: number;
-  index: number;
-  fromSavedPosts: boolean;
-  parentRefreshContent?: Function;
-  onShowDismissCard?: (e?: boolean) => void;
-  activeInScreenIndex: number;
-}) {
+}: PropsWithChildren<VideoItemProps>) {
   const [isLoading, setIsloading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [playedTimes, setPlayedTimes] = useState<number>(0);
@@ -52,7 +53,12 @@ function VideoItem({
   }, [activeInScreenIndex]);
 
   return (
-    <View style={[styles.videoContainer, { height: viewHeight, width }]}>
+    <View
+      style={[
+        styles.videoContainer,
+        { height: viewHeight, width, position: 'relative', zIndex: 2 },
+      ]}
+    >
       {isLoading ? (
         <View
           style={{
@@ -86,7 +92,6 @@ function VideoItem({
           }}
         />
       </TouchableHighlight>
-
       <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
         <BaseItem
           reelLayout

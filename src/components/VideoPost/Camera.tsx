@@ -50,6 +50,7 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
       isValidVideo(response?.assets[0]?.uri || 'xxxx');
       showEditor(response?.assets[0]?.uri || '', {
         saveToPhoto: false,
+        enableSaveDialog: false,
         maxDuration: 60,
       });
     }
@@ -68,6 +69,7 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
               showEditor(video?.path || '', {
                 saveToPhoto: false,
                 maxDuration: 60,
+                enableSaveDialog: false,
               });
             },
             onRecordingError: (error) => {

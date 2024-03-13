@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-import { View, FlatList, RefreshControl, useWindowDimensions } from 'react-native';
+import { View, FlatList, RefreshControl, useWindowDimensions, StyleSheet } from 'react-native';
 
 import { useSelector } from 'react-redux';
 
 import { useTheme } from '@react-navigation/native';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+import FastImage from 'react-native-fast-image';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
@@ -14,8 +16,11 @@ import { FeedTypes } from '@/screens/home';
 import { getHeight } from '@/utils/ResponsiveFun';
 import VideoItem from './VideoItem';
 import { WatchPost } from '@/utils/types';
+import { spacing } from '@/src/styles/spacing';
 
-function Watch() {
+const backIcon = require('@/assets/icons/back.png');
+
+function Watch({ navigation }: any) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [feedData, setFeedData] = useState<WatchPost[]>([]);
   const [page, setPage] = useState<number>(1);
@@ -147,7 +152,7 @@ function Watch() {
 
   return (
     <View
-      style={{ flex: 1 }}
+      style={{ flex: 1, position: 'relative' }}
       onLayout={(event) => {
         const { height } = event.nativeEvent.layout;
         setViewHeight(height);
@@ -156,7 +161,7 @@ function Watch() {
       <FlatList
         ref={flatListRef}
         data={feedData}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, position: 'absolute' }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => {
           return (
@@ -211,6 +216,20 @@ function Watch() {
         //   <View style={[style, { flex: 1 }]}>{children}</View>
         // )}
       />
+
+      <View style={[{ position: 'absolute', top: spacing.x60, left: spacing.x17, flexGrow: 1 }]}>
+        <TouchableOpacity
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
+          <FastImage
+            style={{ width: spacing.x17, height: spacing.x17 }}
+            resizeMode={FastImage.resizeMode.contain}
+            source={backIcon}
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

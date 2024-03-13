@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   TouchableOpacity,
   KeyboardAvoidingView,
+  SafeAreaView,
 } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -146,7 +147,12 @@ function VideoPost({ navigation }: Props) {
               </View>
             </CameraComponent>
           ) : (
-            <View style={{ flex: 1 }}>
+            <SafeAreaView
+              style={{
+                flex: 1,
+                paddingTop: spacing.x10,
+              }}
+            >
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <View
                   style={{
@@ -155,6 +161,7 @@ function VideoPost({ navigation }: Props) {
                     overflow: 'hidden',
                     aspectRatio: '9/16',
                     margin: 'auto',
+                    marginTop: spacing.x30,
                   }}
                 >
                   <Video
@@ -223,7 +230,7 @@ function VideoPost({ navigation }: Props) {
                   }
                 />
               </KeyboardAvoidingView>
-            </View>
+            </SafeAreaView>
           )}
         </View>
       </View>
