@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -10,6 +10,7 @@ import {
   Dimensions,
   Share,
   Switch,
+  TextInput,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import {
@@ -128,6 +129,7 @@ function EditProfile({ navigation }: Props) {
 
   const [username, setUsername] = useState<string>(user?.username ?? '');
   const [website, setWebsite] = useState<string>(user?.website ?? '');
+  const [isValidWebsite, setIsValidWebsite] = useState<boolean | null>(null);
   const [bio, setBio] = useState<string>(user?.bio ?? '');
   const [whatIDo, setWhatIDo] = useState<string>(user?.profile.whatIDo?._id || '');
   const [organizationType, setOrganizationType] = useState<Tag | null>(
@@ -500,6 +502,8 @@ function EditProfile({ navigation }: Props) {
         ? selectedChurchSubType[0].churchType
         : '';
 
+  const websiteRef = useRef<TextInput>(null);
+  const urlRegex = /^[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$/i;
   return (
     <>
       {/* <SafeAreaView style={{ flex: 1, backgroundColor: 'blue' }}> */}
@@ -861,9 +865,25 @@ function EditProfile({ navigation }: Props) {
                 autoCorrect={false}
                 autoCapitalize="none"
                 placeholder="www.website.com"
-                onChangeText={(e) => setWebsite(e)}
+                onChangeText={(value) => {
+                  setWebsite(value);
+                }}
+                onBlur={() => {
+                  if (urlRegex.test(website)) {
+                    setIsValidWebsite(true);
+                  } else {
+                    setIsValidWebsite(false);
+                  }
+                }}
                 wrapperStyle={{ marginTop: spacing.x16 }}
+                ref={websiteRef}
               />
+
+              {website && isValidWebsite === false ? (
+                <StyledText style={{ color: Colors.errorFeedback[200], marginTop: spacing.x8 }}>
+                  Please enter a valid URL
+                </StyledText>
+              ) : null}
             </View>
 
             {user?.accountType == 'individual' ? (
@@ -1116,71 +1136,90 @@ function EditProfile({ navigation }: Props) {
           >
             <Button
               text="SAVE"
+              disabled={website != '' && isValidWebsite === false}
               onPress={async () => {
-                const data: EditProfileDTO = {
-                  churchType,
-                  churchSubType: churchSubType == 'none' ? '' : churchSubType,
-                  isChurchTypePublic: isPublicChurchTypeEnabled,
-                  isLocationPublic: isPublicLocationEnabled,
-                };
+                let validWebsite = null;
 
-                if (fullname && user?.accountType == 'individual') data.name = fullname;
-                if (fullname && user?.accountType == 'organization') data.companyName = fullname;
+                if (urlRegex.test(website)) {
+                  validWebsite = true;
+                } else {
+                  validWebsite = false;
+                }
 
-                if (organizationContactEmail && user?.accountType == 'organization')
-                  data.contactEmail = organizationContactEmail;
-                if (organizationContactName && user?.accountType == 'organization')
-                  data.contactName = organizationContactName;
-                if (organizationContactPhone && user?.accountType == 'organization')
-                  data.contactPhoneNumber = organizationContactPhone;
-
-                if (gender) data.gender = gender;
-                if (whatIDo) data.whatIDo = whatIDo;
-                if (organizationType && organizationType._id)
-                  data.typeOfOrganization = organizationType?._id;
-                if (website) data.website = website;
-                if (imageObject) data.photo = imageObject;
-                if (headerImageObject) data.headerImage = headerImageObject;
-                if (bio) data.bio = bio;
-                if (username) data.username = username;
-
-                if (oftenChurch) data.oftenChurch = oftenChurch;
-
-                if (location && location.longitude && location.latitude && location.address)
-                  data.location = {
-                    longitude: location.longitude,
-                    latitude: location.latitude,
-                    address: location.address,
+                if (!website || (website && validWebsite === true)) {
+                  const data: EditProfileDTO = {
+                    churchType,
+                    churchSubType: churchSubType == 'none' ? '' : churchSubType,
+                    isChurchTypePublic: isPublicChurchTypeEnabled,
+                    isLocationPublic: isPublicLocationEnabled,
                   };
 
-                dispatch(setLoader(true));
+                  if (fullname && user?.accountType == 'individual') data.name = fullname;
+                  if (fullname && user?.accountType == 'organization') data.companyName = fullname;
 
-                if (selectedInterest.length > 0) await addInterests();
+                  if (organizationContactEmail && user?.accountType == 'organization')
+                    data.contactEmail = organizationContactEmail;
+                  if (organizationContactName && user?.accountType == 'organization')
+                    data.contactName = organizationContactName;
+                  if (organizationContactPhone && user?.accountType == 'organization')
+                    data.contactPhoneNumber = organizationContactPhone;
 
-                if (user?.accountType == AccountType.individual) {
-                  dispatch(
-                    profileUpdate({
-                      data: serialize(data),
-                      token,
-                      accountType: AccountType.individual,
-                      go,
-                    })
-                  );
+                  if (gender) data.gender = gender;
+                  if (whatIDo) data.whatIDo = whatIDo;
+                  if (organizationType && organizationType._id)
+                    data.typeOfOrganization = organizationType?._id;
+                  if (website) data.website = website;
+                  if (imageObject) data.photo = imageObject;
+                  if (headerImageObject) data.headerImage = headerImageObject;
+                  if (bio) data.bio = bio;
+                  if (username) data.username = username;
+
+                  if (oftenChurch) data.oftenChurch = oftenChurch;
+
+                  if (location && location.longitude && location.latitude && location.address)
+                    data.location = {
+                      longitude: location.longitude,
+                      latitude: location.latitude,
+                      address: location.address,
+                    };
+
+                  dispatch(setLoader(true));
+
+                  if (selectedInterest.length > 0) await addInterests();
+
+                  if (user?.accountType == AccountType.individual) {
+                    dispatch(
+                      profileUpdate({
+                        data: serialize(data),
+                        token,
+                        accountType: AccountType.individual,
+                        go,
+                      })
+                    );
+                  } else {
+                    dispatch(
+                      profileUpdate({
+                        data: serialize(data),
+                        token,
+                        accountType: AccountType.organization,
+                        go,
+                      })
+                    );
+                  }
                 } else {
-                  dispatch(
-                    profileUpdate({
-                      data: serialize(data),
-                      token,
-                      accountType: AccountType.organization,
-                      go,
-                    })
-                  );
+                  setIsValidWebsite(validWebsite);
+                  websiteRef.current?.focus();
                 }
               }}
               btnStyle={[button.primary, { flex: 1 }]}
               disabledBtnStyle={[button.primary, { flex: 1, opacity: 0.5 }]}
               btnTextStyle={{ color: 'white' }}
             />
+            {website && isValidWebsite === false ? (
+              <StyledText style={{ color: Colors.errorFeedback[200], marginTop: spacing.x8 }}>
+                Please correct all the fields with errors
+              </StyledText>
+            ) : null}
           </View>
         </View>
       </ScrollView>

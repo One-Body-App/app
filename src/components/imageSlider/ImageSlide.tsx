@@ -1,4 +1,5 @@
 import { Image, TouchableOpacity, View } from 'react-native';
+import { GiphyMediaView } from '@giphy/react-native-sdk';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { ImageForSlider } from './ImageSlider';
@@ -39,15 +40,29 @@ function ImageSlide({
           alignItems: 'center',
         }}
       >
-        <Image
-          style={{
-            borderRadius: borderRadius.small,
-            aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
-            width: image.width > image.height ? width : undefined,
-            height: image.width > image.height ? undefined : maxHeight,
-          }}
-          source={{ uri: image?.url }}
-        />
+        {image.type == 'gif' ? (
+          <GiphyMediaView
+            media={{ ...image, id: image.id ?? '' }}
+            resizeMode="cover"
+            style={{
+              flexGrow: 1,
+              aspectRatio: image.gifAspectRatio,
+              borderRadius: borderRadius.small,
+
+              overflow: 'hidden',
+            }}
+          />
+        ) : (
+          <Image
+            style={{
+              borderRadius: borderRadius.small,
+              aspectRatio: image.width > image.height ? 16 / 9 : 9 / 16,
+              width: image.width > image.height ? width : undefined,
+              height: image.width > image.height ? undefined : maxHeight,
+            }}
+            source={{ uri: image?.url }}
+          />
+        )}
       </View>
     </TouchableOpacity>
   );
