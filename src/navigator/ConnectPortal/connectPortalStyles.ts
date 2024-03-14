@@ -17,8 +17,9 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: spacing.x20,
     backgroundColor: '#F2F3F3',
-    paddingVertical: spacing.x10,
+    paddingVertical: spacing.x20,
     borderRadius: spacing.x5,
+    justifyContent: 'space-between',
   },
   option: {
     flex: 1,
@@ -156,5 +157,49 @@ export const styles = StyleSheet.create({
   applyFilterText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 1,
+  },
+  tabContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  image: {
+    width: 300,
+    height: 300,
+    marginBottom: 10,
+    marginLeft: 10,
+    borderRadius: 10,
+    alignSelf: 'center',
+    justifyContent: 'center',
+  },
+  summaryText: {
+    textAlign: 'center',
+    paddingVertical: 30,
+    flexWrap: 'wrap',
+    color: '#5A5C5B',
+    fontSize: 25,
+    paddingHorizontal: 5,
+  },
+  indicatorActive: {
+    backgroundColor: '#032F3C',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    justifyContent: 'center',
+    marginTop: 5,
+  },
+  indicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'gray',
+    marginHorizontal: 5,
   },
 });

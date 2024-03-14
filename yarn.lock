@@ -2061,6 +2061,40 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@gorhom/bottom-sheet@npm:^4.6.1":
+  version: 4.6.1
+  resolution: "@gorhom/bottom-sheet@npm:4.6.1"
+  dependencies:
+    "@gorhom/portal": "npm:1.0.14"
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-native": "*"
+    react: "*"
+    react-native: "*"
+    react-native-gesture-handler: ">=1.10.1"
+    react-native-reanimated: ">=2.2.0"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    "@types/react-native":
+      optional: true
+  checksum: 10/c378f3722afec4ef94dc0e7cfedaee4c64b55fa81f5b7135ffe129e3a1e1cc6498d168ba93690125527cd5c1a5655105d38024215294ca0a5fe32ebefe6df094
+  languageName: node
+  linkType: hard
+
+"@gorhom/portal@npm:1.0.14":
+  version: 1.0.14
+  resolution: "@gorhom/portal@npm:1.0.14"
+  dependencies:
+    nanoid: "npm:^3.3.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/e0fa06be88b850cccdc6a1417a86e5ac21d82e3bfd1cec7eb05eccf7f3b595babe305541f278fdcbde34f3a9db465097dca2c785445c28bafb83b744e235da0c
+  languageName: node
+  linkType: hard
+
 "@hapi/hoek@npm:^9.0.0, @hapi/hoek@npm:^9.3.0":
   version: 9.3.0
   resolution: "@hapi/hoek@npm:9.3.0"
@@ -11171,7 +11205,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^3.1.23":
+"nanoid@npm:^3.1.23, nanoid@npm:^3.3.1":
   version: 3.3.7
   resolution: "nanoid@npm:3.3.7"
   bin:
@@ -11551,6 +11585,7 @@ __metadata:
     "@fortawesome/free-solid-svg-icons": "npm:^6.4.2"
     "@fortawesome/react-native-fontawesome": "npm:^0.3.0"
     "@giphy/react-native-sdk": "npm:^3.2.2"
+    "@gorhom/bottom-sheet": "npm:^4.6.1"
     "@invertase/react-native-apple-authentication": "npm:^2.2.2"
     "@jest/globals": "npm:^29.7.0"
     "@mux/mux-data-react-native-video": "npm:^0.15.0"
@@ -11657,6 +11692,7 @@ __metadata:
     react-native-lottie-splash-screen: "npm:^1.1.2"
     react-native-maps: "npm:^1.10.3"
     react-native-modal: "npm:^13.0.1"
+    react-native-modalize: "npm:^2.1.1"
     react-native-mov-to-mp4: "npm:^0.2.2"
     react-native-pager-view: "npm:^6.2.0"
     react-native-paper: "npm:^5.10.0"
@@ -12778,6 +12814,17 @@ __metadata:
     react: "*"
     react-native: ">=0.65.0"
   checksum: 10/7b9096127f5195e28bf8016bed5e8760e060e533358ba41f829605233b7f0e9e7e94941884c9fdb0d14d288c02a2944b516754477af24b0173c57777f2aa5018
+  languageName: node
+  linkType: hard
+
+"react-native-modalize@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "react-native-modalize@npm:2.1.1"
+  peerDependencies:
+    react: "> 15.0.0"
+    react-native: "> 0.50.0"
+    react-native-gesture-handler: "> 1.0.0"
+  checksum: 10/35fdce956a8f5f5dbb0295d119df3c58852803c77c95932d9b0b22de27b2464ef218bc12be033383174a6b0277ae04d5d0c6a10359332dc5e1b89769ccfa4c93
   languageName: node
   linkType: hard
 

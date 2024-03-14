@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, Modal } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -10,11 +10,10 @@ import {
   faMapMarker,
   faTimes,
 } from '@fortawesome/free-solid-svg-icons';
-
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { styles } from './connectPortalStyles';
+import LobbyConnectPortal from './LobbyConnectPortal';
 
-type types = 'Explore' | 'My Places' | 'Filter' | 'List' | 'Map';
+type types = 'Explore' | 'My Place' | 'Filter' | 'List' | 'Map' | 'People/Places';
 
 interface Organization {
   id: number;
@@ -72,10 +71,10 @@ function ConnectPortal() {
     longitudeDelta: 0.0421,
   });
 
-  // importar organizaciones
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizations, setOrganizations] = useState<Organization[]>(() => []);
 
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [lobbyModalVisible, setLobbyModalVisible] = useState(false);
 
   const handleOptionSelect = (option: types) => {
     setSelectedOption(option);
@@ -83,6 +82,10 @@ function ConnectPortal() {
 
   const toggleFilterModal = () => {
     setFilterModalVisible(!filterModalVisible);
+  };
+
+  const toggleLobbyModal = () => {
+    setLobbyModalVisible(!lobbyModalVisible);
   };
 
   const renderOrganizationItem = ({ item }: { item: Organization }) => (
@@ -102,10 +105,14 @@ function ConnectPortal() {
     </View>
   );
 
+  useEffect(() => {
+    setLobbyModalVisible(true);
+  }, []);
+
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.header}>PLACES</Text>
+        <Text style={styles.header}>People/Places</Text>
 
         <View style={styles.optionContainer}>
           <TouchableOpacity
@@ -116,10 +123,17 @@ function ConnectPortal() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.option, selectedOption === 'My Places' && styles.selectedOption]}
-            onPress={() => handleOptionSelect('My Places')}
+            style={[styles.option, selectedOption === 'My Place' && styles.selectedOption]}
+            onPress={() => handleOptionSelect('My Place')}
           >
-            <Text>My Places</Text>
+            <Text>My Place</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.option, selectedOption === 'People/Places' && styles.selectedOption]}
+            onPress={() => handleOptionSelect('People/Places')}
+          >
+            <Text>People/Places</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -194,6 +208,17 @@ function ConnectPortal() {
       )}
 
       <FilterModal visible={filterModalVisible} onClose={toggleFilterModal} />
+
+      <TouchableOpacity onPress={toggleLobbyModal}>
+        <Text>Open Lobby Modal</Text>
+      </TouchableOpacity>
+      <Modal
+        visible={lobbyModalVisible}
+        animationType="slide"
+        onRequestClose={() => setLobbyModalVisible(false)}
+      >
+        <LobbyConnectPortal onClose={() => setLobbyModalVisible(false)} />
+      </Modal>
     </View>
   );
 }
