@@ -123,8 +123,6 @@ function LobbyConnectPortal({ onClose }: LobbyProps) {
   );
 }
 
-export default LobbyConnectPortal;
-
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
