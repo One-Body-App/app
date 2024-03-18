@@ -13,6 +13,8 @@ interface LobbyProps {
   onClose: () => void;
 }
 
+const SNAP_POINTS = [0, '85%'];
+
 const PaginationIndicator = ({ count, currentIndex }) => {
   const renderIndicators = () => {
     const indicators = [];
@@ -32,7 +34,7 @@ const PaginationIndicator = ({ count, currentIndex }) => {
 
 const GoTab = ({ onNext }: { onNext: () => void }) => {
   return (
-    <View style={styles.container}>
+    <View>
       <View>
         <Text style={styles.textTab}>Go!</Text>
         <Text style={styles.summaryText} numberOfLines={2}>
@@ -49,7 +51,7 @@ const GoTab = ({ onNext }: { onNext: () => void }) => {
 
 const ServeTab = ({ onNext }: { onNext: () => void }) => {
   return (
-    <View style={styles.container}>
+    <View>
       <View>
         <Text style={styles.textTab}>Serve</Text>
         <Text style={styles.summaryText} numberOfLines={2}>
@@ -66,7 +68,7 @@ const ServeTab = ({ onNext }: { onNext: () => void }) => {
 
 const PeoplePlacesTab = () => {
   return (
-    <View style={styles.container}>
+    <View>
       <View>
         <Text style={styles.textTab}>Peolple/Places</Text>
         <Text style={styles.summaryText} numberOfLines={2}>
@@ -97,7 +99,13 @@ function LobbyConnectPortal({ onClose }: LobbyProps) {
       if (gestureState.dy > 50) {
         onClose();
       } else {
-        Animated.spring(pan, { toValue: 0, useNativeDriver: false }).start();
+        const toValue = SNAP_POINTS.reduce((acc, point) => {
+          if (gestureState.dy > acc && gestureState.dy < point) {
+            return acc;
+          }
+          return point;
+        }, SNAP_POINTS[0]);
+        Animated.spring(pan, { toValue, useNativeDriver: false }).start();
       }
     },
   });
@@ -129,17 +137,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalContainer: {
-    backgroundColor: 'transparente',
+    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 20,
-    height: '70%',
+    height: '85%',
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     paddingTop: 10,
+    zIndex: 1000,
+    justifyContent: 'flex-end',
+    flex: 1,
   },
   closeButton: {
     position: 'absolute',
@@ -153,8 +164,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   image: {
-    width: 350,
-    height: 350,
+    width: 400,
+    height: 400,
     marginBottom: 10,
     marginLeft: 10,
     borderRadius: 10,
@@ -205,3 +216,5 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
 });
+
+export default LobbyConnectPortal;

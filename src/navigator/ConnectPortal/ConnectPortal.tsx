@@ -10,8 +10,8 @@ import {
   faMapMarker,
   faTimes,
 } from '@fortawesome/free-solid-svg-icons';
-import { styles } from './connectPortalStyles';
-import LobbyConnectPortal from './LobbyConnectPortal';
+import { styles } from '../../components/ConnectPortal/connectPortalStyles';
+import LobbyConnectPortal from '@/src/components/ConnectPortal/LobbyConnectPortal';
 
 type types = 'Explore' | 'My Place' | 'Filter' | 'List' | 'Map' | 'People/Places';
 
@@ -20,41 +20,6 @@ interface Organization {
   name: string;
   type: string;
   location: string;
-  image: any;
-}
-
-function FilterModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  return (
-    <Modal visible={visible} animationType="slide">
-      <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Filter</Text>
-          <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-            <FontAwesomeIcon icon={faTimes} size={24} color="black" />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.modalContent}>
-          {/* Location, Distance, Organization Type, Denomination */}
-          <View style={styles.filterItem}>
-            <Text style={styles.filterLabel}>Location</Text>
-            <TextInput style={styles.input} placeholder="Select" />
-          </View>
-          <View style={styles.filterItem}>
-            <Text style={styles.filterLabel}>Distance (Mi)</Text>
-          </View>
-          <View style={styles.filterItem}>
-            <Text style={styles.filterLabel}>Organization Type</Text>
-          </View>
-          <View style={styles.filterItem}>
-            <Text style={styles.filterLabel}>Denomination</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.applyFilterButton}>
-          <Text style={styles.applyFilterText}>Apply Filter</Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-  );
 }
 
 function ConnectPortal() {
@@ -71,7 +36,32 @@ function ConnectPortal() {
     longitudeDelta: 0.0421,
   });
 
-  const [organizations, setOrganizations] = useState<Organization[]>(() => []);
+  const [organizations, setOrganizations] = useState<Organization[]>(() => [
+    {
+      id: 1,
+      name: 'Example Church',
+      type: 'Church',
+      location: 'Toronto',
+    },
+    {
+      id: 2,
+      name: 'Another Church',
+      type: 'Church',
+      location: 'New York',
+    },
+    {
+      id: 3,
+      name: 'Another Church',
+      type: 'Church',
+      location: 'Miami',
+    },
+    {
+      id: 4,
+      name: 'Another Church',
+      type: 'Houst',
+      location: 'Houston texas',
+    },
+  ]);
 
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [lobbyModalVisible, setLobbyModalVisible] = useState(false);
@@ -111,6 +101,18 @@ function ConnectPortal() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity onPress={toggleLobbyModal}>
+        <Text>Open Lobby Modal</Text>
+      </TouchableOpacity>
+      <Modal
+        visible={lobbyModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setLobbyModalVisible(false)}
+      >
+        <LobbyConnectPortal onClose={() => setLobbyModalVisible(false)} />
+      </Modal>
+
       <View>
         <Text style={styles.header}>People/Places</Text>
 
@@ -206,19 +208,6 @@ function ConnectPortal() {
           keyExtractor={(item) => item.id.toString()}
         />
       )}
-
-      <FilterModal visible={filterModalVisible} onClose={toggleFilterModal} />
-
-      <TouchableOpacity onPress={toggleLobbyModal}>
-        <Text>Open Lobby Modal</Text>
-      </TouchableOpacity>
-      <Modal
-        visible={lobbyModalVisible}
-        animationType="slide"
-        onRequestClose={() => setLobbyModalVisible(false)}
-      >
-        <LobbyConnectPortal onClose={() => setLobbyModalVisible(false)} />
-      </Modal>
     </View>
   );
 }
