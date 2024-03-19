@@ -14,7 +14,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch } from 'react-redux';
 import Toast from 'react-native-simple-toast';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import {

@@ -11654,6 +11654,7 @@ __metadata:
     react-native-image-viewing: "npm:^0.2.2"
     react-native-inappbrowser-reborn: "npm:^3.7.0"
     react-native-keyboard-aware-scroll-view: "npm:^0.9.5"
+    react-native-keyboard-controller: "npm:^1.11.3"
     react-native-linear-gradient: "npm:^2.8.3"
     react-native-lottie-splash-screen: "npm:^1.1.2"
     react-native-modal: "npm:^13.0.1"
@@ -12697,6 +12698,17 @@ __metadata:
   peerDependencies:
     react-native: ">=0.48.4"
   checksum: 10/95d8ed8a46426b16e819713495d64766a3eed5d63a03fb4feca0351cce55d74197f75d8b01dd3f2c491cda29c155bb71c8063d2fba23e8a0044208aad03d0d91
+  languageName: node
+  linkType: hard
+
+"react-native-keyboard-controller@npm:^1.11.3":
+  version: 1.11.3
+  resolution: "react-native-keyboard-controller@npm:1.11.3"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-reanimated: ">=2.3.0"
+  checksum: 10/8d6b2675790272239ee6373e48ac7a2f24004de8fec4ab81d69958d5dc3f1a969eca8f4364a72e0e2a1dd99ff56e42ef67d4da25826457605d4003db17add650
   languageName: node
   linkType: hard
 

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
