@@ -17,7 +17,7 @@ import React, {
   useCallback,
 } from 'react';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
-import { Camera, useCameraDevice } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
 import { isValidVideo, showEditor } from 'react-native-video-trim';
@@ -27,11 +27,11 @@ import { spacing } from '@/src/styles/spacing';
 const cameraIos = require('@/assets/icons/camera-ios.png');
 
 type Props = {
-  videoPath?: string;
   setVideoPath: Dispatch<SetStateAction<string | undefined>>;
 };
 
-function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildren<Props>) {
+function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
+  const permission = useCameraPermission();
   const camera = useRef<Camera>(null);
   const [isFrontCamera, setIsFrontCamera] = useState<boolean>(false);
   const [latestGalleryImg, setLatestGalleryImg] = useState<any>('/');
@@ -73,6 +73,7 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
               });
             },
             onRecordingError: (error) => {
+              console.log('🚀 ~ handleStartRecording ~ error:', error);
               console.error(error);
             },
           });
@@ -101,6 +102,7 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
 
     if (cameraPermission === 'denied' || microphonePermission === 'denied') {
       // await Linking.openSettings();
+      await permission.requestPermission();
     }
   };
 
@@ -109,6 +111,7 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
     fetchPhotos();
     const eventEmitter = new NativeEventEmitter(NativeModules.VideoTrim);
     const subscription = eventEmitter.addListener('VideoTrim', (event) => {
+      console.log('🚀 ~ subscription ~ event:', event);
       switch (event.name) {
         case 'onFinishTrimming': {
           // on trimming is done
@@ -117,6 +120,7 @@ function CameraComponent({ videoPath, setVideoPath, children }: PropsWithChildre
           break;
         }
         case 'onError': {
+          console.log('🚀 ~ handleStartRecording ~ error:', event);
           break;
         }
         default:

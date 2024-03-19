@@ -145,8 +145,11 @@ function LoginComponent({
     if (token) {
       auth().currentUser?.reload();
 
-      if (Platform.OS == 'android') {
-        navigation.replace('MainRoot');
+      if (Platform.OS === 'android') {
+        navigation.replace('MainRoot', {
+          screen: 'Main',
+          params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
+        });
       }
     }
   }, [token]);

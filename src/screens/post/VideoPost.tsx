@@ -28,7 +28,6 @@ import { MainStackParamList } from '@/src/navigator/types';
 import CameraComponent from '@/src/components/VideoPost/Camera';
 import { spacing } from '@/src/styles/spacing';
 import { MUX_SECRET_KEY, MUX_TOKEN_ID } from '@/src/services/constants';
-import { FeedTypes } from '../home';
 
 const closeIcon = require('@/assets/images/close.png');
 const createWatch = require('@/assets/images/CreateWatch.png');
@@ -116,7 +115,7 @@ function VideoPost({ navigation }: Props) {
       });
       setLoading(false);
     } catch (error) {
-      console.error(error);
+      console.log('🚀 ~ uploadToMux ~ response:', error);
       setLoading(false);
     }
   };
@@ -125,7 +124,7 @@ function VideoPost({ navigation }: Props) {
       <View style={styles.container}>
         <View style={styles.subContainer}>
           {!VideoPath ? (
-            <CameraComponent videoPath={VideoPath} setVideoPath={setVideoPath}>
+            <CameraComponent setVideoPath={setVideoPath}>
               <View style={styles.cameraView}>
                 <TouchableOpacity
                   onPress={() => {

@@ -42,16 +42,15 @@ import MapBox, { MapSuggestion } from '@/components/MapBox';
 import StyledText from '@/components/styled/Text';
 import StyledTextInput from '@/components/styled/TextInput';
 import { MainStackParamList } from '@/src/navigator/types';
-import { Colors, Spacing } from '@/src/styles';
+import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { Location } from '@/utils/types';
 import { fontSize } from '@/src/styles/typography';
 
 import ImagePickerModal from '@/components/ImagePickerModal';
 import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/services/constants';
-import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
+import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
 GiphySDK.configure({
   apiKey: Platform.OS == 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID,
