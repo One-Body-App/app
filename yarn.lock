@@ -11685,7 +11685,7 @@ __metadata:
     react-native-vector-icons: "npm:^10.0.3"
     react-native-video: "npm:^5.2.1"
     react-native-video-trim: "npm:^1.0.10"
-    react-native-vision-camera: "npm:^3.8.2"
+    react-native-vision-camera: "npm:^3.9.1"
     react-native-webview: "npm:^13.6.3"
     react-native-youtube: "npm:^2.0.2"
     react-redux: "npm:^9.0.4"
@@ -13119,9 +13119,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-vision-camera@npm:^3.8.2":
-  version: 3.8.2
-  resolution: "react-native-vision-camera@npm:3.8.2"
+"react-native-vision-camera@npm:^3.9.1":
+  version: 3.9.1
+  resolution: "react-native-vision-camera@npm:3.9.1"
   peerDependencies:
     react: "*"
     react-native: "*"
@@ -13129,7 +13129,7 @@ __metadata:
   peerDependenciesMeta:
     react-native-worklets-core:
       optional: true
-  checksum: 10/ed183bc4dc58c16cfdde50608527a1350c252511183b86ad729b5781286539e05c728b3f357f4877a19a99d8987312984a44430d707a0058f30f63ace2ec8e1e
+  checksum: 10/042de4ff04256497192470170d23b00e8f992eaa1f68541d4c1a3531d56ddf33ce1ec8a4489f6c3db2a96bb32338054e297af2e631ad0ae660f009f92ee6459f
   languageName: node
   linkType: hard
 

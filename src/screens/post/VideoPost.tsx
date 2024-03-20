@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -30,7 +31,6 @@ import { spacing } from '@/src/styles/spacing';
 import { MUX_SECRET_KEY, MUX_TOKEN_ID } from '@/src/services/constants';
 
 const closeIcon = require('@/assets/images/close.png');
-const createWatch = require('@/assets/images/CreateWatch.png');
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
@@ -121,30 +121,10 @@ function VideoPost({ navigation }: Props) {
   };
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
+      <View style={[styles.container, { marginVertical: Platform.OS == 'ios' ? 50 : 0 }]}>
         <View style={styles.subContainer}>
           {!VideoPath ? (
-            <CameraComponent setVideoPath={setVideoPath}>
-              <View style={styles.cameraView}>
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.goBack();
-                  }}
-                >
-                  <FastImage
-                    style={styles.closeImg}
-                    resizeMode={FastImage.resizeMode.contain}
-                    source={closeIcon}
-                  />
-                </TouchableOpacity>
-                <FastImage
-                  style={{ width: 145 }}
-                  resizeMode={FastImage.resizeMode.contain}
-                  source={createWatch}
-                />
-                <View />
-              </View>
-            </CameraComponent>
+            <CameraComponent setVideoPath={setVideoPath} />
           ) : (
             <SafeAreaView
               style={{
@@ -152,7 +132,7 @@ function VideoPost({ navigation }: Props) {
                 paddingTop: spacing.x10,
               }}
             >
-              <View style={{ flex: 1, alignItems: 'center' }}>
+              <View style={{ flex: 1, alignItems: 'center', paddingTop: 50 }}>
                 <View
                   style={{
                     flex: 1,
@@ -173,25 +153,6 @@ function VideoPost({ navigation }: Props) {
                 </View>
               </View>
 
-              <View style={styles.banner}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setVideoPath('');
-                  }}
-                >
-                  <FastImage
-                    style={{ width: 15, height: 15 }}
-                    resizeMode={FastImage.resizeMode.contain}
-                    source={closeIcon}
-                  />
-                </TouchableOpacity>
-                <FastImage
-                  style={{ width: 145 }}
-                  resizeMode={FastImage.resizeMode.contain}
-                  source={createWatch}
-                />
-                <View />
-              </View>
               <KeyboardAvoidingView style={styles.bottomContainer}>
                 <StyledTextInput
                   style={{ height: 100, flexGrow: 1, color: colors.text }}

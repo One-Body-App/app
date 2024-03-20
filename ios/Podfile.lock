@@ -1397,7 +1397,7 @@ PODS:
   - SocketRocket (0.6.1)
   - Toast (4.1.0)
   - TOCropViewController (2.6.1)
-  - VisionCamera (3.8.2):
+  - VisionCamera (3.9.1):
     - React
     - React-callinvoker
     - React-Core
@@ -1868,7 +1868,7 @@ SPEC CHECKSUMS:
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   Toast: ec33c32b8688982cecc6348adeae667c1b9938da
   TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
-  VisionCamera: 4b98b273902ac18491bb68481b6601f1f0da0f2d
+  VisionCamera: 52f98e7628f9deea3e311c3b6d4870bb44445e05
   Yoga: a716eea57d0d3430219c0a5a233e1e93ee931eb7
   YoutubePlayer-in-WKWebView: 4fca3b4f6f09940077bfbae7bddb771f2b43aacd
 

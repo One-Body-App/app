@@ -5,7 +5,7 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, useColorScheme } from 'react-native';
+import { ActivityIndicator, Linking, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -17,6 +17,8 @@ import messaging from '@react-native-firebase/messaging';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
+import FastImage from 'react-native-fast-image';
+import { HeaderBackButton } from '@react-navigation/elements';
 import { RootState } from '../redux/reducers/rootReducer';
 import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions';
 import ForgotPassword from '../screens/forgotPassword';
@@ -38,6 +40,8 @@ import SinglePost from '../screens/post/Single';
 import VideoPost from '../screens/post/VideoPost';
 import RssPost from '../screens/post/RssPost';
 import { headerOptions } from './global';
+
+const closeIcon = require('@/assets/images/close.png');
 
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
@@ -362,7 +366,15 @@ function Main() {
           <MainStack.Screen
             name="VideoPost"
             component={VideoPost}
-            options={{ headerShown: false }}
+            options={{
+              headerShown: true,
+              headerTransparent: true,
+              title: 'Create Watch',
+              headerBackImageSource: closeIcon,
+              headerTitleAlign: 'center',
+              headerBackTitleVisible: false,
+              headerTintColor: 'white',
+            }}
           />
         </MainStack.Navigator>
         {/* </AppProvider> */}

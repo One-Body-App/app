@@ -6,13 +6,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
+
     // justifyContent: 'center',
     // alignItems: 'center',
   },
   subContainer: {
-    flex: 0.9,
-    borderWidth: 1,
-    marginTop: 44,
+    flex: 1,
+    // borderWidth: 1,
+    // marginTop: 44,
   },
   button: {
     backgroundColor: 'gray',
@@ -28,7 +29,8 @@ const styles = StyleSheet.create({
   cameraView: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: spacing.x17,
+
+    // marginTop: spacing.x17,
   },
   buttonContainer: {
     backgroundColor: 'pink',
@@ -100,8 +102,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: spacing.x17,
-    position: 'absolute',
+    // position: 'absolute',
     width: '100%',
+    backgroundColor: 'red',
   },
   imgPreview: { flex: 1, borderRadius: 8 },
   bottomContainer: {
