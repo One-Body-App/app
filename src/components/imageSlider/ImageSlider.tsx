@@ -16,6 +16,8 @@ export type ImageForSlider = {
   height: number;
   width: number;
   type: ImageType;
+  gifAspectRatio?: number;
+  id?: string;
 };
 function ImageSlider({
   images,

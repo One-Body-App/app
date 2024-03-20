@@ -151,8 +151,8 @@ function ArticleItem({
             paddingHorizontal: spacing.x10,
             paddingVertical: spacing.x10,
             backgroundColor: Colors.neutral[900],
-            borderEndEndRadius: borderRadius.base,
-            borderEndStartRadius: borderRadius.base,
+            borderBottomEndRadius: borderRadius.base,
+            borderBottomStartRadius: borderRadius.base,
           }}
         >
           <View

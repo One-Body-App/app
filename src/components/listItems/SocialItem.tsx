@@ -1,15 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Dimensions,
-  FlatList,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleProp,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { Image, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import Video from 'react-native-video';
@@ -20,7 +10,7 @@ import { useSelector } from 'react-redux';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 
 import ImageView from 'react-native-image-viewing';
-import { GiphyMediaView } from '@giphy/react-native-sdk';
+
 import { isArray } from 'lodash';
 import { NO_POST_IMAGE_URL, OpenURLButton } from '@/services/constants';
 
@@ -234,7 +224,8 @@ function SocialItem({
       url: itemData.gif.url,
       width: itemData.gif.data.images.original.width,
       height: itemData.gif.data.images.original.height,
-
+      id: itemData.gif.id,
+      gifAspectRatio: itemData.gif.aspectRatio,
       type: 'gif',
     });
   }
@@ -371,10 +362,10 @@ function SocialItem({
             return null;
           })}
 
-        {imageInfo.length > 0 ? (
+        {images.length > 0 ? (
           <>
             <ImageView
-              images={imageInfo.map((item) => ({
+              images={images.map((item) => ({
                 uri: item.url,
               }))}
               presentationStyle="overFullScreen"

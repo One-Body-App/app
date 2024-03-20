@@ -1,33 +1,26 @@
 import React, { useRef, useState } from 'react';
-import { Text, View, TouchableOpacity, TextInput as TextInputNative } from 'react-native';
+import { View, TextInput as TextInputNative } from 'react-native';
 
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StackScreenProps } from '@react-navigation/stack';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Header from '@/components/Header';
+import auth from '@react-native-firebase/auth';
 import Button from '@/components/Button';
-import { styles } from './styles';
-import { ApiCall } from '@/src/services/api';
 import { validateFields } from '@/utils/validation/validate-fields';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 
-import GeneralStatusBar from '@/components/GeneralStatusBar';
 import { GeneralStyle } from '../../../constants/GeneralStyle';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { RootStackParamList } from '@/src/_Navigation/types';
 import { button } from '@/src/styles/buttons';
 import { Colors } from '@/src/styles';
 import StyledTextInput from '@/components/styled/TextInput';
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
+import { MainStackParamList } from '@/src/navigator/types';
 
-type Props = StackScreenProps<RootStackParamList, 'PasswordChange'>;
+type Props = StackScreenProps<MainStackParamList, 'PasswordChange'>;
 
 function PasswordChange({ navigation, route }: Props) {
   const dispatch = useDispatch();
@@ -43,7 +36,6 @@ function PasswordChange({ navigation, route }: Props) {
     passwordErrorC: '',
   });
 
-  const [error, seterror] = React.useState();
   const [hidePassN, setHidePassN] = useState(true);
   const [hidePassC, setHidePassC] = useState(true);
   const toast = useToast();
