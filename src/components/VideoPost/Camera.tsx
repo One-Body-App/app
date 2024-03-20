@@ -6,6 +6,7 @@ import {
   NativeModules,
   NativeEventEmitter,
   Image,
+  Platform,
 } from 'react-native';
 import React, {
   Dispatch,
@@ -62,10 +63,10 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
         if (camera.current) {
           setIsRecording(true);
           camera.current.startRecording({
-            onRecordingFinished: (video) => {
+            onRecordingFinished: async (video) => {
+              console.log('🚀 ~ handleStartRecording ~ video:', video);
               setRecordedVideo(video);
               isValidVideo(video?.path || '');
-
               showEditor(video?.path || '', {
                 saveToPhoto: false,
                 maxDuration: 60,
@@ -110,13 +111,18 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     getPermissions();
     fetchPhotos();
     const eventEmitter = new NativeEventEmitter(NativeModules.VideoTrim);
-    const subscription = eventEmitter.addListener('VideoTrim', (event) => {
+    const subscription = eventEmitter.addListener('VideoTrim', async (event) => {
       console.log('🚀 ~ subscription ~ event:', event);
       switch (event.name) {
         case 'onFinishTrimming': {
           // on trimming is done
+          if (Platform.OS === 'ios') {
+            setVideoPath(event?.outputPath);
+          } else {
+            const asset = await CameraRoll.saveAsset(event?.outputPath || '');
+            setVideoPath(asset.node.image.uri);
+          }
 
-          setVideoPath(event?.outputPath);
           break;
         }
         case 'onError': {
