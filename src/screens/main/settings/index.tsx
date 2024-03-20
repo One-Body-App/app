@@ -26,6 +26,7 @@ import {
 import Feather from 'react-native-vector-icons/Feather';
 import Icon from 'react-native-vector-icons/AntDesign';
 import { useToast } from 'react-native-toast-notifications';
+import DeviceInfo from 'react-native-device-info';
 import { styles } from './styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
@@ -40,6 +41,8 @@ import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
 
 function Settings({ navigation }: Props) {
+  const appVersion = DeviceInfo.getVersion();
+
   const GOOGLE_PACKAGE_NAME = '';
   const APPLE_STORE_ID = '';
 
@@ -201,7 +204,7 @@ function Settings({ navigation }: Props) {
       }}
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        {userProfile?.influencerProfile?.influencerStatus != 'approved' ? (
+        {false && userProfile?.influencerProfile?.influencerStatus != 'approved' ? (
           <TouchableOpacity
             style={[
               styles.settingsCard,
@@ -762,7 +765,7 @@ function Settings({ navigation }: Props) {
                   App Version
                 </StyledText>
                 <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                  1.0
+                  {appVersion}
                 </StyledText>
               </View>
             </TouchableOpacity>
