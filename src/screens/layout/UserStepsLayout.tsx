@@ -1,22 +1,17 @@
-import { ReactElement, useEffect, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { ReactElement } from 'react';
+import { Platform, SafeAreaView, View, ViewStyle } from 'react-native';
+
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
 type Props = {
-  children: ReactElement;
+  children: ReactElement | ReactElement[];
   backgroundColor?: string;
-  keyboardVerticalOffset?: number;
+  bottomOffset?: number;
   hideBottomText?: boolean;
-  keyboardAvoidingViewStyle?: ViewStyle;
 };
 
 export function BottomStepsText() {
@@ -25,7 +20,7 @@ export function BottomStepsText() {
       style={{
         flexDirection: 'row',
         justifyContent: 'center',
-        paddingVertical: Platform.OS == 'android' ? spacing.x10 : 0,
+        paddingVertical: Platform.OS === 'android' ? spacing.x10 : 0,
       }}
     >
       <StyledText style={[Typography.subheader.M, { color: Colors.primary[300] }]}>
@@ -38,34 +33,14 @@ export function BottomStepsText() {
   );
 }
 
-function UserStepsLayout({
-  children,
-  backgroundColor,
-  keyboardVerticalOffset,
-  hideBottomText,
-  keyboardAvoidingViewStyle,
-}: Props) {
+function UserStepsLayout({ children, backgroundColor, bottomOffset, hideBottomText }: Props) {
   return (
     <SafeAreaView style={{ flexGrow: 1, backgroundColor: backgroundColor ?? undefined }}>
-      {/* <SafeAreaView style={{ flexGrow: 1, backgroundColor: backgroundColor ?? undefined }}> */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'position' : 'height'}
-        // keyboardVerticalOffset={headerHeight}
+      <KeyboardAwareScrollView bottomOffset={bottomOffset ?? 50}>
+        {children}
 
-        // style={{ backgroundColor: 'green' }}
-        keyboardVerticalOffset={keyboardVerticalOffset}
-        // contentContainerStyle={{
-        //   flexGrow: 1,
-        //   // backgroundColor: 'green',
-        // }}
-        style={keyboardAvoidingViewStyle ?? { flexGrow: 1 }}
-      >
-        <ScrollView style={{ flexGrow: 1 }}>{children}</ScrollView>
-      </KeyboardAvoidingView>
-
-      {hideBottomText ? null : <BottomStepsText />}
-
-      {/* </SafeAreaView> */}
+        {hideBottomText ? null : <BottomStepsText />}
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

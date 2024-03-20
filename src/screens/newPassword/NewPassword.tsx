@@ -2,8 +2,17 @@ import { View, TextInput } from 'react-native';
 import React, { useRef, useState } from 'react';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useDispatch } from 'react-redux';
-import auth from '@react-native-firebase/auth';
-import { RouteProp, useNavigation, useTheme } from '@react-navigation/native';
+import Toast from 'react-native-simple-toast';
+
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { StackScreenProps } from '@react-navigation/stack';
+import {
+  CompositeScreenProps,
+  RouteProp,
+  useNavigation,
+  useRoute,
+  useTheme,
+} from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useToast } from 'react-native-toast-notifications';
 

@@ -426,7 +426,7 @@ function Home({ navigation, route }: Props) {
 
                 if (item.type == 'tasteBreaker') {
                   return (
-                    <View style={{ paddingHorizontal: 10 }}>
+                    <View>
                       {/* <FlatList
                         nestedScrollEnabled
                         data={item.items}
@@ -480,7 +480,6 @@ function Home({ navigation, route }: Props) {
                           // }}
                           blogPostStyle={{
                             ...globalStyle.blogpostview,
-                            backgroundColor: cardSecondaryColor,
                           }}
                           blogPostImageStyle={globalStyle.newspostimage}
                           blogPostTitleStyle={{
@@ -496,7 +495,7 @@ function Home({ navigation, route }: Props) {
 
                 if (item.type == 'relatedContent') {
                   return (
-                    <View style={{ paddingHorizontal: 10 }}>
+                    <View>
                       <TouchableOpacity
                         onPress={() => {
                           if (item.id) {

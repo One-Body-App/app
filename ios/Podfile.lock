@@ -1107,6 +1107,10 @@ PODS:
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
+  - react-native-keyboard-controller (1.11.3):
+    - glog
+    - RCT-Folly (= 2022.05.16.00)
+    - React-Core
   - react-native-lottie-splash-screen (1.1.2):
     - React
   - react-native-mov-to-mp4 (0.2.2):
@@ -1446,6 +1450,7 @@ DEPENDENCIES:
   - react-native-fbsdk-next (from `../node_modules/react-native-fbsdk-next`)
   - "react-native-geolocation (from `../node_modules/@react-native-community/geolocation`)"
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
+  - react-native-keyboard-controller (from `../node_modules/react-native-keyboard-controller`)
   - react-native-lottie-splash-screen (from `../node_modules/react-native-lottie-splash-screen`)
   - react-native-mov-to-mp4 (from `../node_modules/react-native-mov-to-mp4`)
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
@@ -1622,6 +1627,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-community/geolocation"
   react-native-image-picker:
     :path: "../node_modules/react-native-image-picker"
+  react-native-keyboard-controller:
+    :path: "../node_modules/react-native-keyboard-controller"
   react-native-lottie-splash-screen:
     :path: "../node_modules/react-native-lottie-splash-screen"
   react-native-mov-to-mp4:
@@ -1800,6 +1807,7 @@ SPEC CHECKSUMS:
   react-native-fbsdk-next: 42229cf278a44c0f7249179c9b2d084109d8e2bd
   react-native-geolocation: ef66fb798d96284c6043f0b16c15d9d1d4955db4
   react-native-image-picker: e8f292d7d7f04778cfd0fa91466ac66acea96b1a
+  react-native-keyboard-controller: 9ea48f690b816cfb6efec550f3914cf23d7cc3d3
   react-native-lottie-splash-screen: 4e1b1fd9d6633f9cd2106d6877eb5ba0147f3e2b
   react-native-mov-to-mp4: a04f17590618523487ab5d71c9310c6c4a7aaf99
   react-native-pager-view: d5f3adb58a4e6e0d200055e9a4afdcda9b9022ce

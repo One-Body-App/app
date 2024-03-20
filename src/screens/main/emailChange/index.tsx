@@ -3,7 +3,7 @@ import { Text, View, TextInput as TextInputNative } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StackScreenProps } from '@react-navigation/stack';
 import { getWidth } from '@/utils/ResponsiveFun';
 import Button from '@/components/Button';

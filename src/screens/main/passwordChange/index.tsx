@@ -4,7 +4,7 @@ import { View, TextInput as TextInputNative } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useDispatch } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StackScreenProps } from '@react-navigation/stack';
 import auth from '@react-native-firebase/auth';
 import Button from '@/components/Button';
