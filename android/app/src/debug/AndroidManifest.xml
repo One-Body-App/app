@@ -12,4 +12,5 @@
         <uses-permission android:name="android.permission.CAMERA" />
         <!-- optionally, if you want to record audio: -->
         <uses-permission android:name="android.permission.RECORD_AUDIO" />
+        <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 </manifest>

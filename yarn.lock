@@ -5384,7 +5384,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base-64@npm:0.1.0":
+"base-64@npm:0.1.0, base-64@npm:^0.1.0":
   version: 0.1.0
   resolution: "base-64@npm:0.1.0"
   checksum: 10/5a42938f82372ab5392cbacc85a5a78115cbbd9dbef9f7540fa47d78763a3a8bd7d598475f0d92341f66285afd377509851a9bb5c67bbecb89686e9255d5b3eb
@@ -11647,6 +11647,7 @@ __metadata:
     react-native-email-link: "npm:^1.14.6"
     react-native-fast-image: "npm:^8.6.3"
     react-native-fbsdk-next: "npm:^12.1.2"
+    react-native-fs: "npm:^2.20.0"
     react-native-gesture-handler: "npm:^2.14.0"
     react-native-gifted-chat: "npm:^1.0.0"
     react-native-image-crop-picker: "npm:^0.40.3"
@@ -12591,6 +12592,22 @@ __metadata:
     expo:
       optional: true
   checksum: 10/45b96c9d1f474c30806555b9d7442822b670c6ec55209b3370b0fa83ce96fbb60b6db43f8ecb6d9d1be03ddb253566e19157d8a856d1bef1ff2338f073544302
+  languageName: node
+  linkType: hard
+
+"react-native-fs@npm:^2.20.0":
+  version: 2.20.0
+  resolution: "react-native-fs@npm:2.20.0"
+  dependencies:
+    base-64: "npm:^0.1.0"
+    utf8: "npm:^3.0.0"
+  peerDependencies:
+    react-native: "*"
+    react-native-windows: "*"
+  peerDependenciesMeta:
+    react-native-windows:
+      optional: true
+  checksum: 10/372e59f55d5e544e87093d832896fa3d56ba9802ca140c17b4b8903afe047714e022d3b1a2ddf18d744cb7f4f973593c8083641db9ae0768688b1390078d67a2
   languageName: node
   linkType: hard
 
@@ -15410,6 +15427,13 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0
   checksum: 10/a676216affc203876bd47981103f201f28c2731361bb186367e12d287a7566763213a8816910c6eb88265eccd4c230426eb783d64c373c4a180905be8820ed8e
+  languageName: node
+  linkType: hard
+
+"utf8@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "utf8@npm:3.0.0"
+  checksum: 10/31d19c4faacbb65b09ebc1c21c32b20bdb0919c6f6773cee5001b99bb83f8e503e7233c08fc71ebb34f7cfebd95cec3243b81d90176097aa2f286cccb4ce866e
   languageName: node
   linkType: hard
 
