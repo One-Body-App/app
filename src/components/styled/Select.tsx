@@ -26,6 +26,7 @@ interface Props {
   label?: string;
   wrapperStyle?: ViewStyle;
   hideSearch?: boolean;
+  showAllWithoutSearch?: boolean;
 }
 
 export default function StyledSelect({
@@ -37,18 +38,21 @@ export default function StyledSelect({
   label,
   wrapperStyle,
   hideSearch,
+  showAllWithoutSearch,
 }: Props) {
   const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [searchedItems, setSearchedItems] = useState<selectedItem[]>(hideSearch ? items : []);
+  const [searchedItems, setSearchedItems] = useState<selectedItem[]>(
+    hideSearch || showAllWithoutSearch ? items : []
+  );
   useEffect(() => {
     setSearchText('');
 
-    if (hideSearch) {
+    if (hideSearch || showAllWithoutSearch) {
       setSearchedItems(items);
     }
-  }, [items, hideSearch]);
+  }, [items, hideSearch, showAllWithoutSearch]);
 
   useEffect(() => {
     let values = items;
@@ -58,7 +62,7 @@ export default function StyledSelect({
       );
       setSearchedItems(values);
     } else {
-      setSearchedItems(hideSearch ? items : []);
+      setSearchedItems(hideSearch || showAllWithoutSearch ? items : []);
     }
   }, [searchText]);
 

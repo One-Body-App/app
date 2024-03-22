@@ -17,28 +17,20 @@ import { fontSize, header } from '@/src/styles/typography';
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchAttend'>;
 
 function OnboardingChurchAttend({ navigation, route }: Props) {
-  const { dark, colors } = useTheme();
+  const { dark } = useTheme();
   const [churchAttend, setChurchAttend] = useState<string>('');
-  const toast = useToast();
 
   return (
     <OnboardingStepsLayout
-      buttonText="Next"
+      buttonText={churchAttend ? 'Next' : 'Skip'}
       onPress={() => {
-        if (churchAttend) {
-          navigation.push('OnboardingDateOfBirth', {
-            ...route.params,
-            selectedChurchAttendence: churchAttend,
-          });
-        } else {
-          toast.show('Frequency of church attendance is required', {
-            type: 'danger',
-          });
-        }
+        navigation.push('OnboardingDateOfBirth', {
+          ...route.params,
+          selectedChurchAttendence: churchAttend,
+        });
       }}
       onboardingType={AccountType.individual}
       activeStep={2}
-      disabled={!churchAttend}
       reasonText={
         <StyledText style={{ color: dark ? Colors.main.black : Colors.primary.brand }}>
           Your frequency of church attendance helps us to understand the type of content you would
