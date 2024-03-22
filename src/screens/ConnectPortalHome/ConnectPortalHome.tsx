@@ -31,7 +31,9 @@ function ConnectPortalHome() {
   const handleOptionSelect = (option: types) => {
     setSelectedOption(option);
     if (option === 'People/Places') {
-      navigation.native('People');
+      navigation.navigate('People');
+    } else if (option === 'Serve') {
+      navigation.navigate('Serve');
     }
   };
 

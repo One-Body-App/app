@@ -3092,6 +3092,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-community/slider@npm:^4.5.0":
+  version: 4.5.0
+  resolution: "@react-native-community/slider@npm:4.5.0"
+  checksum: 10/acf8abf9018735e8a0f52b07af0fe0577a9f693733bec42eebe410ebcac527db2be7d8b657bd2a4f4034a8e16d914306ed843e0e13884abe24ae87dbefa2ad6e
+  languageName: node
+  linkType: hard
+
 "@react-native-firebase/analytics@npm:^18.3.0":
   version: 18.8.0
   resolution: "@react-native-firebase/analytics@npm:18.8.0"
@@ -11595,6 +11602,7 @@ __metadata:
     "@react-native-camera-roll/camera-roll": "npm:^7.4.0"
     "@react-native-clipboard/clipboard": "npm:^1.12.1"
     "@react-native-community/geolocation": "npm:^3.1.0"
+    "@react-native-community/slider": "npm:^4.5.0"
     "@react-native-firebase/analytics": "npm:^18.3.0"
     "@react-native-firebase/app": "npm:^18.3.0"
     "@react-native-firebase/auth": "npm:^18.3.0"

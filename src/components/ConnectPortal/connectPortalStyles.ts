@@ -29,21 +29,24 @@ export const styles = StyleSheet.create({
     borderBottomColor: 'black',
   },
   searchBar: {
-    borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 10,
     paddingHorizontal: spacing.x13,
+    backgroundColor: '#F2F3F3',
+    marginLeft: spacing.x16,
+    marginRight: spacing.x16,
+    borderRadius: spacing.x5,
   },
   input: {
     fontSize: 16,
     paddingVertical: spacing.x10,
+    paddingHorizontal: spacing.x24,
   },
   mapContainer: {
     flex: 1,
   },
   map: {
     flex: 1,
-    marginTop: spacing.x10,
+    marginTop: spacing.x16,
     borderRadius: 5,
   },
   buttonsContainer: {
@@ -53,6 +56,8 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.x10,
     paddingHorizontal: spacing.x20,
     marginTop: spacing.x8,
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
   button: {
     backgroundColor: 'white',
@@ -96,7 +101,6 @@ export const styles = StyleSheet.create({
   organizationContainer: {
     flexDirection: 'row',
     padding: 10,
-    borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
   organizationImage: {
