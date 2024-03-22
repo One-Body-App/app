@@ -1,8 +1,12 @@
 import { ActivityIndicator, TouchableHighlight, View } from 'react-native';
 import Video from 'react-native-video';
 import LinearGradient from 'react-native-linear-gradient';
-import { useState, useEffect, PropsWithChildren } from 'react';
+import { useState, useEffect, PropsWithChildren, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import StyledText from '@/src/components/styled/Text';
 import styles from '@/screens/home/watch/styles';
@@ -10,6 +14,11 @@ import { PostType, SocialPostReaction, WatchPost } from '@/utils/types';
 
 import { Colors } from '@/src/styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
+import {
+  HomeStackParamsList,
+  MainBottomStackParamsList,
+  MainDrawerParamsList,
+} from '@/src/navigator/types';
 
 type VideoItemProps = {
   item: WatchPost;
@@ -21,6 +30,13 @@ type VideoItemProps = {
   onShowDismissCard?: (e?: boolean) => void;
   activeInScreenIndex: number;
 };
+type ScreenNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<HomeStackParamsList, 'Home'>,
+  CompositeNavigationProp<
+    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
+    BottomTabNavigationProp<MainBottomStackParamsList, 'HomeTab'>
+  >
+>;
 
 function VideoItem({
   item,
@@ -35,7 +51,9 @@ function VideoItem({
   const [isLoading, setIsloading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [playedTimes, setPlayedTimes] = useState<number>(0);
+  const navigation = useNavigation<ScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const videRef = useRef<Video>(null);
   let myReaction: SocialPostReaction | undefined;
 
   item.reactions?.forEach((reaction) => {
@@ -47,6 +65,8 @@ function VideoItem({
   useEffect(() => {
     if (index === activeInScreenIndex) {
       setIsPaused(false);
+      setPlayedTimes(0);
+      videRef.current?.seek(0);
     } else {
       setIsPaused(true);
     }
@@ -79,6 +99,7 @@ function VideoItem({
         style={styles.video}
       >
         <Video
+          ref={videRef}
           source={{ uri: `https://stream.mux.com/${item.playBackId!}` }}
           resizeMode="cover"
           style={styles.video}
@@ -117,17 +138,17 @@ function VideoItem({
           onShowDismissCard={onShowDismissCard}
           index={index}
           onPress={() => {
-            // if (item.userData._id != user?._id) {
-            //   navigation.navigate('Main', {
-            //     screen: 'HomeTab',
-            //     params: {
-            //       screen: 'UserProfile',
-            //       params: {
-            //         id: item?.userData._id,
-            //       },
-            //     },
-            //   });
-            // }
+            if (item.userData._id != user?._id) {
+              navigation.navigate('Main', {
+                screen: 'HomeTab',
+                params: {
+                  screen: 'UserProfile',
+                  params: {
+                    id: item?.userData._id,
+                  },
+                },
+              });
+            }
           }}
         >
           {item.content && (
