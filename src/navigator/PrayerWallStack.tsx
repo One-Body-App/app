@@ -5,6 +5,8 @@ import {
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
+import { HeaderBackButton } from '@react-navigation/elements';
+import { Platform } from 'react-native';
 import { PrayerWallStackParamsList } from './types';
 import { Colors } from '../styles';
 import Prayer from '../screens/main/prayer';
@@ -24,9 +26,31 @@ function PrayerWall() {
       <Stack.Screen
         name="index"
         component={Prayer}
-        options={({ navigation }) =>
-          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Prayer Wall')
-        }
+        options={({ navigation }) => {
+          if (navigation.canGoBack()) {
+            return {
+              headerLeft: (props) => {
+                return (
+                  <HeaderBackButton
+                    style={{
+                      marginHorizontal: Platform.OS == 'ios' ? 0 : undefined,
+                      marginLeft: Platform.OS == 'ios' ? -5 : undefined,
+                      width: Platform.OS == 'ios' ? 40 : undefined,
+                    }}
+                    labelVisible={false}
+                    onPress={() => navigation.goBack()}
+                  />
+                );
+              },
+            };
+          }
+
+          return mainPageOptions(
+            navigation,
+            dark ? colors.text : Colors.primary.brand,
+            'Prayer Wall'
+          );
+        }}
       />
       <Stack.Screen
         name="UserProfile"

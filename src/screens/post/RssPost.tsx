@@ -15,6 +15,7 @@ import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { GiphyMedia } from '@giphy/react-native-sdk';
 import { useToast } from 'react-native-toast-notifications';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import StyledText from '@/components/styled/Text';
@@ -163,7 +164,7 @@ function RssPost({ navigation, route }: Props) {
           setIsEndOfList(false);
         } else {
           newComments = [...comments, ...(result?.response.content ?? [])];
-          if (result?.response.content.length < 1) {
+          if (!result?.response.content || result?.response.content.length < 1) {
             setIsEndOfList(true);
           }
         }
@@ -254,48 +255,33 @@ function RssPost({ navigation, route }: Props) {
       <View style={{ flex: 1, top: -1 * keyboardHeight }}>
         {post ? (
           <>
-            <View>
-              <ArticleItem
-                item={post}
-                imageSizeType="contain"
-                blogPostStyle={{
-                  marginBottom: spacing.x24,
-                  backgroundColor: colors.card,
-                }}
-                blogPostImageStyle={globalStyle.newspostimage}
-                // blogPostTitleStyle={{
-                //   flexDirection: 'row',
-                //   justifyContent: 'space-between',
-                //   // marginTop: getHeight(1),
-                // }}
-                showModal={showModal}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flexGrow: 1 }}>
               <FlatList
                 ref={commentList}
                 data={comments}
                 refreshing={isRefreshing}
-                // style={{ flexGrow: 1, flex: 1 }}
-                style={{ flexGrow: 1 }}
-                onEndReachedThreshold={0.5}
+                style={{ flex: 1 }}
+                onEndReachedThreshold={0.8}
                 onEndReached={() => {
                   if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
                 }}
-                // contentContainerStyle={{ paddingBottom: keyboardHeight + 80 }}
-                // onEndReachedThreshold={0.5}
-                // onEndReached={() => {
-                //   if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
-                // }}
-                // ListFooterComponent={() => (
-                //   <View>
-                //     {isEndOfList ? (
-                //       <StyledText style={{ textAlign: 'center' }}>
-                //         Not more social posts at this time
-                //       </StyledText>
-                //     ) : null}
-                //   </View>
-                // )}
+                ListHeaderComponent={() => (
+                  <ArticleItem
+                    item={post}
+                    imageSizeType="contain"
+                    blogPostStyle={{
+                      marginBottom: spacing.x24,
+                      backgroundColor: colors.card,
+                    }}
+                    blogPostImageStyle={globalStyle.newspostimage}
+                    // blogPostTitleStyle={{
+                    //   flexDirection: 'row',
+                    //   justifyContent: 'space-between',
+                    //   // marginTop: getHeight(1),
+                    // }}
+                    showModal={showModal}
+                  />
+                )}
                 refreshControl={
                   <RefreshControl
                     refreshing={isRefreshing && showRefreshIndicator}
@@ -354,7 +340,7 @@ function RssPost({ navigation, route }: Props) {
               />
             </View>
             {!isEditingComment ? (
-              <View>
+              <View style={{ flex: 0 }}>
                 <CommentField
                   mediaGif={mediaGif}
                   setGif={setGif}
