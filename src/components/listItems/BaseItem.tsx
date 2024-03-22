@@ -341,76 +341,77 @@ function BaseItem({
     },
   ];
 
-  return (
-    <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
-      <View
-        style={{
-          flex: 1,
-          flexDirection: 'column',
-          // alignItems: 'flex-start',
-          gap: spacing.x10,
-          // marginRight: spacing.x10,
-          position: 'relative',
-        }}
-      >
+  if (reelLayout)
+    return (
+      <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
         <View
           style={{
-            position: 'absolute',
-            top: reelLayout ? -165 : 0,
-            left: 0,
-            zIndex: 2,
-            maxWidth: 48,
+            flex: 1,
             flexDirection: 'column',
+            // alignItems: 'flex-start',
+            gap: spacing.x10,
+            // marginRight: spacing.x10,
+            position: 'relative',
           }}
         >
-          <TouchableOpacity
-            onPress={() => {
-              onPress();
-            }}
+          <View
             style={{
-              flexDirection: 'row',
-              justifyContent: 'flex-start',
-              alignItems: 'center',
-              marginTop: spacing.x5,
+              position: 'absolute',
+              top: -165,
+              left: 0,
+              zIndex: 2,
+              maxWidth: 48,
+              flexDirection: 'column',
             }}
           >
-            {userData.profileIcon && !userData.profileImage ? (
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: borderRadius.max,
-                  borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                  borderWidth: borderWidth.thin,
-                  padding: spacing.x5,
-                  marginBottom: spacing.x5,
-                  marginLeft: 0,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                {userData.profileIcon}
-              </View>
-            ) : (
-              <FastImage
-                source={{
-                  uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
-                }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: borderRadius.max,
-                  marginBottom: spacing.x5,
-                  borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                  borderWidth: borderWidth.thin,
-                  marginLeft: 0,
-                }}
-                resizeMode="contain"
-              />
-            )}
-          </TouchableOpacity>
-          {reelLayout && (
+            <TouchableOpacity
+              onPress={() => {
+                onPress();
+              }}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                alignItems: 'center',
+                marginTop: spacing.x5,
+              }}
+            >
+              {userData.profileIcon && !userData.profileImage ? (
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: borderRadius.max,
+                    borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                    borderWidth: borderWidth.thin,
+                    padding: spacing.x5,
+                    marginBottom: spacing.x5,
+                    marginLeft: 0,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  {userData.profileIcon}
+                </View>
+              ) : (
+                <FastImage
+                  source={{
+                    uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
+                  }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: borderRadius.max,
+                    marginBottom: spacing.x5,
+                    borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                    borderWidth: borderWidth.thin,
+                    marginLeft: 0,
+                  }}
+                  resizeMode="contain"
+                />
+              )}
+            </TouchableOpacity>
+
             <View
               style={{
                 flexDirection: 'column',
@@ -520,8 +521,395 @@ function BaseItem({
                 />
               </TouchableOpacity>
             </View>
-          )}
+          </View>
+          <View style={{ flexGrow: 1, flex: 1 }}>
+            {userData ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    // navigation.navigate('UserProfile', {
+                    //   id: userData?._id,
+                    // });
+                    onPress();
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'flex-start',
+                    alignItems: 'center',
+                    flexGrow: 1,
+                    flex: 1,
+                  }}
+                >
+                  <View style={{ flexDirection: 'column' }}>
+                    <View style={{ flexDirection: 'row' }}>
+                      <StyledText
+                        style={{
+                          color: 'white',
+                          alignItems: 'center',
+                          ...fontSize.x1,
+                          marginLeft: spacing.x5,
+                          marginTop: spacing.x5,
+                        }}
+                        numberOfLines={2}
+                      >
+                        {userData?.name}
+                      </StyledText>
+                      {isApprovedInfluencer ? (
+                        <Icon
+                          name="check-decagram"
+                          size={spacing.x16}
+                          style={{ marginLeft: spacing.x8, marginTop: spacing.x8 }}
+                          color="white"
+                        />
+                      ) : null}
+                    </View>
+                    <StyledText
+                      numberOfLines={2}
+                      style={{
+                        color: 'white',
+                        alignItems: 'center',
+                        ...fontSize.x1,
+                        marginLeft: spacing.x5,
+                        marginTop: 0,
+                      }}
+                    >
+                      {(source == 'twitter' && userData?.twitterHandler) ||
+                      (source == 'instagram' && userData?.instagramHandler) ||
+                      userData?.username
+                        ? `@${
+                            source === 'twitter'
+                              ? userData?.twitterHandler
+                              : source === 'instagram'
+                                ? userData?.instagramHandler
+                                : userData?.username
+                          }`
+                        : ''}
+
+                      {created ? (
+                        <>
+                          {(source === 'twitter' && userData?.twitterHandler) ||
+                          (source === 'instagram' && userData?.instagramHandler) ||
+                          userData?.username
+                            ? ` • `
+                            : ''}
+                          <StyledText
+                            style={[
+                              fontSize.x1,
+                              {
+                                color: 'white',
+                                alignItems: 'center',
+                              },
+                            ]}
+                          >
+                            {timeSince(created)} ago
+                          </StyledText>
+                        </>
+                      ) : null}
+                      {edited && updated ? (
+                        <>
+                          {' '}
+                          • {' Edited '}
+                          <StyledText
+                            style={[
+                              fontSize.x1,
+                              {
+                                color: 'white',
+                                alignItems: 'center',
+                              },
+                            ]}
+                          >
+                            {timeSince(updated)} ago
+                          </StyledText>
+                        </>
+                      ) : null}
+                    </StyledText>
+
+                    {postData.locationName ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Location
+                          size={15}
+                          color="white"
+                          style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
+                        />
+                        <StyledText
+                          style={[
+                            fontSize.x1,
+                            {
+                              color: 'white',
+                              marginTop: 0,
+                            },
+                          ]}
+                        >
+                          {postData.locationName}
+                        </StyledText>
+                      </View>
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowOptions(true);
+                  }}
+                >
+                  <FontAwesomeIcon
+                    icon={faEllipsisVertical}
+                    color="white"
+                    style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+          <View style={{ flexGrow: 1, flex: 1 }}>
+            {children && <View style={{ marginTop: spacing.x5 }}>{children}</View>}
+
+            <View style={{ flexDirection: 'row' }}>
+              {postData?.reactions && postData.reactions.length > 0 ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    marginTop: spacing.x10,
+                    alignItems: 'center',
+                  }}
+                >
+                  {reactionTypes.love > 0 ? (
+                    <>
+                      <View
+                        style={{
+                          padding: spacing.x5,
+                          backgroundColor: Colors.errorFeedback[200],
+                          borderRadius: borderRadius.max,
+                          borderWidth: borderWidth.thin,
+                          borderColor: Colors.main.white,
+                          marginRight: spacing.x5 / 2,
+                        }}
+                      >
+                        <Heart size={15} color="white" />
+                      </View>
+                      <StyledText
+                        style={[
+                          fontSize.x2,
+                          {
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                            marginRight: spacing.x5,
+                          },
+                        ]}
+                      >
+                        {reactionTypes.love}
+                      </StyledText>
+                    </>
+                  ) : null}
+
+                  {reactionTypes.happy > 0 ? (
+                    <>
+                      <View
+                        style={{
+                          padding: spacing.x5,
+                          backgroundColor: Colors.infoFeedback[200],
+                          borderRadius: borderRadius.max,
+                          borderWidth: borderWidth.thin,
+                          borderColor: Colors.main.white,
+                          marginRight: spacing.x5 / 2,
+                        }}
+                      >
+                        <NounHands width={15} height={15} color="white" />
+                      </View>
+                      <StyledText
+                        style={[
+                          fontSize.x2,
+                          {
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                            marginRight: spacing.x5,
+                          },
+                        ]}
+                      >
+                        {reactionTypes.happy}
+                      </StyledText>
+                    </>
+                  ) : null}
+
+                  {reactionTypes.praying > 0 ? (
+                    <>
+                      <View
+                        style={{
+                          padding: spacing.x5,
+                          backgroundColor: Colors.successFeedback[200],
+                          borderRadius: borderRadius.max,
+                          borderWidth: borderWidth.thin,
+                          borderColor: Colors.main.white,
+                          marginRight: spacing.x5 / 2,
+                        }}
+                      >
+                        <PrayerIcon width={15} height={15} color="white" />
+                      </View>
+                      <StyledText
+                        style={[
+                          fontSize.x2,
+                          {
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                            marginRight: spacing.x5,
+                          },
+                        ]}
+                      >
+                        {reactionTypes.praying}
+                      </StyledText>
+                    </>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: spacing.x10,
+              }}
+            >
+              <View style={{ justifyContent: 'center' }}>
+                {postData.externalLink ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (postData.externalLink) OpenURLButton(postData.externalLink);
+                    }}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
+                  >
+                    <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
+                      {source == 'instagram' ? (
+                        <Instagram height={getHeight(2.5)} fill="#00acee" />
+                      ) : null}
+
+                      {source == 'twitter' ? (
+                        <Twitter height={getHeight(2.5)} fill="#00acee" />
+                      ) : null}
+                    </View>
+
+                    <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                      View Post
+                    </StyledText>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <View style={{ alignItems: 'center' }}>
+                {postData.type == PostType.rss ? (
+                  <View
+                    style={
+                      {
+                        // alignItems: 'flex-end',
+                        // marginTop: spacing.x5,
+                        // marginEnd: spacing.x10,
+                        // marginLeft: 270,
+                        // marginVertical: spacing.x5,
+                      }
+                    }
+                  >
+                    <TouchableOpacity
+                      onPress={() => {
+                        Share.share({
+                          title: `${postData?.title}`,
+                          url: Platform.OS == 'ios' && postData.postlink ? postData?.postlink : '',
+                          message:
+                            Platform.OS == 'android' && postData?.postlink
+                              ? postData?.postlink
+                              : '',
+                        });
+                      }}
+                    >
+                      {Platform.OS === 'android' ? (
+                        <ShareAndroid
+                          color={transparency ? Colors.neutral[600] : colors.text}
+                          height={25}
+                          width={25}
+                        />
+                      ) : (
+                        <ShareIos
+                          color={transparency ? Colors.neutral[600] : colors.text}
+                          height={25}
+                          width={25}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          </View>
         </View>
+        <OptionsModal
+          show={showOptions ?? false}
+          setShow={setShowOptions}
+          currentPopupItem={{
+            ...postData,
+            type: postData.type ?? PostType.social,
+            userData,
+            created,
+          }}
+          onProfilePress={onPress}
+          removePost={removePost}
+          editPost={editPost}
+          isPrivate={postData.isPrivate}
+        />
+      </View>
+    );
+  return (
+    <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: spacing.x10,
+          marginRight: spacing.x10,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => {
+            onPress();
+          }}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            maxWidth: 0,
+            marginTop: spacing.x5,
+          }}
+        >
+          {userData.profileIcon && !userData.profileImage ? (
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: borderRadius.max,
+                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderWidth: borderWidth.thin,
+                padding: spacing.x5,
+                marginBottom: spacing.x5,
+                marginLeft: spacing.x10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              {userData.profileIcon}
+            </View>
+          ) : (
+            <FastImage
+              source={{
+                uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: borderRadius.max,
+                marginBottom: spacing.x5,
+                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderWidth: borderWidth.thin,
+                marginLeft: spacing.x10,
+              }}
+              resizeMode="contain"
+            />
+          )}
+        </TouchableOpacity>
         <View style={{ flexGrow: 1, flex: 1 }}>
           {userData ? (
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -544,14 +932,10 @@ function BaseItem({
                   <View style={{ flexDirection: 'row' }}>
                     <StyledText
                       style={{
-                        color: reelLayout
-                          ? 'white'
-                          : transparency
-                            ? Colors.neutral[500]
-                            : Colors.neutral.brand,
+                        color: transparency ? Colors.neutral[500] : Colors.neutral.brand,
                         alignItems: 'center',
                         ...fontSize.x1,
-                        marginLeft: reelLayout ? spacing.x5 : spacing.x48,
+                        marginLeft: spacing.x48,
                         marginTop: spacing.x5,
                       }}
                       numberOfLines={2}
@@ -563,21 +947,17 @@ function BaseItem({
                         name="check-decagram"
                         size={spacing.x16}
                         style={{ marginLeft: spacing.x8, marginTop: spacing.x8 }}
-                        color={reelLayout ? 'white' : Colors.primarySapphire.brand}
+                        color={Colors.primarySapphire.brand}
                       />
                     ) : null}
                   </View>
                   <StyledText
                     numberOfLines={2}
                     style={{
-                      color: reelLayout
-                        ? 'white'
-                        : transparency
-                          ? Colors.neutral[600]
-                          : Colors.neutral[300],
+                      color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                       alignItems: 'center',
                       ...fontSize.x1,
-                      marginLeft: reelLayout ? spacing.x5 : spacing.x48,
+                      marginLeft: spacing.x48,
                       marginTop: 0,
                     }}
                   >
@@ -585,9 +965,9 @@ function BaseItem({
                     (source == 'instagram' && userData?.instagramHandler) ||
                     userData?.username
                       ? `@${
-                          source === 'twitter'
+                          source == 'twitter'
                             ? userData?.twitterHandler
-                            : source === 'instagram'
+                            : source == 'instagram'
                               ? userData?.instagramHandler
                               : userData?.username
                         }`
@@ -595,8 +975,8 @@ function BaseItem({
 
                     {created ? (
                       <>
-                        {(source === 'twitter' && userData?.twitterHandler) ||
-                        (source === 'instagram' && userData?.instagramHandler) ||
+                        {(source == 'twitter' && userData?.twitterHandler) ||
+                        (source == 'instagram' && userData?.instagramHandler) ||
                         userData?.username
                           ? ` • `
                           : ''}
@@ -604,11 +984,7 @@ function BaseItem({
                           style={[
                             fontSize.x1,
                             {
-                              color: reelLayout
-                                ? 'white'
-                                : transparency
-                                  ? Colors.neutral[600]
-                                  : Colors.neutral[300],
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                               alignItems: 'center',
                             },
                           ]}
@@ -625,11 +1001,7 @@ function BaseItem({
                           style={[
                             fontSize.x1,
                             {
-                              color: reelLayout
-                                ? 'white'
-                                : transparency
-                                  ? Colors.neutral[600]
-                                  : Colors.neutral[300],
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                               alignItems: 'center',
                             },
                           ]}
@@ -644,18 +1016,14 @@ function BaseItem({
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Location
                         size={15}
-                        color={reelLayout ? 'white' : Colors.neutral[300]}
+                        color={Colors.neutral[300]}
                         style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
                       />
                       <StyledText
                         style={[
                           fontSize.x1,
                           {
-                            color: reelLayout
-                              ? 'white'
-                              : transparency
-                                ? Colors.neutral[600]
-                                : Colors.neutral[300],
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                             marginTop: 0,
                           },
                         ]}
@@ -673,17 +1041,14 @@ function BaseItem({
               >
                 <FontAwesomeIcon
                   icon={faEllipsisVertical}
-                  color={reelLayout ? 'white' : transparency ? Colors.neutral[600] : colors.text}
+                  color={transparency ? Colors.neutral[600] : colors.text}
                   style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
                 />
               </TouchableOpacity>
             </View>
           ) : null}
-        </View>
-        <View style={{ flexGrow: 1, flex: 1 }}>
-          {children && (
-            <View style={{ marginTop: reelLayout ? spacing.x5 : spacing.x20 }}>{children}</View>
-          )}
+
+          <View style={{ marginTop: spacing.x20 }}>{children}</View>
 
           <View style={{ flexDirection: 'row' }}>
             {postData?.reactions && postData.reactions.length > 0 ? (
@@ -810,115 +1175,112 @@ function BaseItem({
                   <StyledText style={{ color: Colors.primarySapphire.brand }}>View Post</StyledText>
                 </TouchableOpacity>
               ) : null}
-              {/* Action Items  */}
-              {!reelLayout && (
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  // marginTop: spacing.x10,
+                  // alignContent: 'space-between',
+                }}
+              >
+                <Reaction
+                  items={ReactionItems}
+                  type="modal"
+                  cardStyle={{
+                    padding: spacing.x5,
+                    shadowOpacity: 0.2,
+                    marginTop: spacing.x16,
+                    borderRadius: borderRadius.base,
+                  }}
+                  onTap={async (item) => {
+                    if (item) {
+                      if (myReaction?.type == item.type) {
+                        await removeReactPost();
+                      } else {
+                        await reactPost(item.type);
+                      }
+                    }
+                  }}
+                  itemIndex={index}
+                  onShowDismissCard={onShowDismissCard}
+                  onPress={() => {
+                    if (myReaction) {
+                      removeReactPost();
+                    } else {
+                      reactPost(SocialPostReactionType.love);
+                    }
+                  }}
+                >
+                  <Heart
+                    size={25}
+                    color={
+                      myReaction
+                        ? Colors.errorFeedback[200]
+                        : transparency
+                          ? Colors.neutral[600]
+                          : colors.text
+                    }
+                    variant={myReaction ? 'Bold' : 'Linear'}
+                    style={{ marginVertical: spacing.x10 }}
+                  />
+                </Reaction>
+
                 <View
                   style={{
                     flexDirection: 'row',
+                    marginLeft: spacing.x10,
                     alignItems: 'center',
-                    // marginTop: spacing.x10,
-                    // alignContent: 'space-between',
                   }}
                 >
-                  <Reaction
-                    items={ReactionItems}
-                    type="modal"
-                    cardStyle={{
-                      padding: spacing.x5,
-                      shadowOpacity: 0.2,
-                      marginTop: spacing.x16,
-                      borderRadius: borderRadius.base,
-                    }}
-                    onTap={async (item) => {
-                      if (item) {
-                        if (myReaction?.type == item.type) {
-                          await removeReactPost();
-                        } else {
-                          await reactPost(item.type);
-                        }
-                      }
-                    }}
-                    itemIndex={index}
-                    onShowDismissCard={onShowDismissCard}
-                    onPress={() => {
-                      if (myReaction) {
-                        removeReactPost();
-                      } else {
-                        reactPost(SocialPostReactionType.love);
-                      }
-                    }}
-                  >
-                    <Heart
-                      size={25}
-                      color={
-                        myReaction
-                          ? Colors.errorFeedback[200]
-                          : transparency
-                            ? Colors.neutral[600]
-                            : colors.text
-                      }
-                      variant={myReaction ? 'Bold' : 'Linear'}
-                      style={{ marginVertical: spacing.x10 }}
-                    />
-                  </Reaction>
-
-                  <View
+                  <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
+                  <StyledText
                     style={{
-                      flexDirection: 'row',
                       marginLeft: spacing.x10,
-                      alignItems: 'center',
+                      // marginVertical: spacing.x5,
+                      color: transparency ? Colors.neutral[600] : colors.text,
                     }}
                   >
-                    <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
-                    <StyledText
-                      style={{
-                        marginLeft: spacing.x10,
-                        // marginVertical: spacing.x5,
-                        color: transparency ? Colors.neutral[600] : colors.text,
-                      }}
-                    >
-                      {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                    </StyledText>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (isThisPostSaved) {
-                        if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
-                        else if (postData.postlink)
-                          removeSavedPost(postData.type, postData.postlink);
-                      } else {
-                        savePost(
-                          postData?.id,
-                          postData?.type,
-                          postData.title,
-                          created,
-                          userData?._id,
-                          postData?.postlink,
-                          postData?.image?.url
-                        );
-                      }
-                    }}
-                    style={{ marginEnd: spacing.x10, marginStart: spacing.x10 }}
-                  >
-                    <Bookmark
-                      style={{ marginRight: 3 }}
-                      width={25}
-                      height={25}
-                      color={transparency ? Colors.neutral[600] : colors.text}
-                      fill={
-                        isThisPostSaved
-                          ? transparency
-                            ? Colors.neutral[600]
-                            : colors.text
-                          : transparency
-                            ? 'transparent'
-                            : colors.background
-                      }
-                    />
-                  </TouchableOpacity>
+                    {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                  </StyledText>
                 </View>
-              )}
+
+                <TouchableOpacity
+                  onPress={() => {
+                    if (isThisPostSaved) {
+                      if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                      else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
+                    } else {
+                      savePost(
+                        postData?.id,
+                        postData?.type,
+                        postData.title,
+                        created,
+                        userData?._id,
+                        postData?.postlink,
+                        postData?.image?.url
+                      );
+                    }
+                  }}
+                  style={{ marginEnd: spacing.x10, marginStart: spacing.x10 }}
+                >
+                  <Bookmark
+                    style={{ marginRight: 3 }}
+                    width={25}
+                    height={25}
+                    color={transparency ? Colors.neutral[600] : colors.text}
+                    fill={
+                      isThisPostSaved
+                        ? transparency
+                          ? Colors.neutral[600]
+                          : colors.text
+                        : transparency
+                          ? 'transparent'
+                          : colors.background
+                    }
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={{ alignItems: 'center' }}>
               {postData.type == PostType.rss ? (
