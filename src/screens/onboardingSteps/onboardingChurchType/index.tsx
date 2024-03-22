@@ -27,7 +27,6 @@ function OnboardingChurchType({ navigation }: Props) {
   const [selectedChurchType, setSelectedChurchType] = useState<ChurchType['_id']>('');
   const [selectedChurchSubType, setSelectedChurchSubType] = useState<ChurchType['_id']>('');
 
-  const toast = useToast();
   const getChurchTypes = async () => {
     try {
       const res = await ApiCall({
@@ -71,27 +70,15 @@ function OnboardingChurchType({ navigation }: Props) {
 
   return (
     <OnboardingStepsLayout
-      buttonText="Next"
+      buttonText={selectedChurchType ? 'Next' : 'Skip'}
       onPress={() => {
-        if (selectedChurchType) {
-          navigation.navigate('OnboardingChurchAttend', {
-            selectedChurchType: selectedChurchTypeName,
-            selectedChurchSubType: selectedChurchSubTypeName,
-          });
-        } else {
-          toast.show('Church type required', {
-            type: 'danger',
-          });
-        }
+        navigation.navigate('OnboardingChurchAttend', {
+          selectedChurchType: selectedChurchTypeName,
+          selectedChurchSubType: selectedChurchSubTypeName,
+        });
       }}
       onboardingType={AccountType.individual}
       activeStep={1}
-      disabled={
-        selectedChurchTypeFiltered.length < 1 ||
-        (selectedChurchTypeFiltered.length > 0 &&
-          selectedChurchTypeFiltered[0].children.length > 0 &&
-          selectedChurchSubTypeFiltered.length < 1)
-      }
       reasonText={
         <>
           <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
@@ -137,6 +124,7 @@ function OnboardingChurchType({ navigation }: Props) {
             selectedItem={selectedChurchType}
             btnText={selectedChurchType == '' ? 'Select' : selectedChurchTypeName}
             modalTitle="Select your Denomination"
+            showAllWithoutSearch
             onChange={(item) => {
               setSelectedChurchType(item);
               setSelectedChurchSubType('');
