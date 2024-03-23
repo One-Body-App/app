@@ -1,12 +1,13 @@
 import { ActivityIndicator, TouchableHighlight, View } from 'react-native';
 import Video from 'react-native-video';
 import LinearGradient from 'react-native-linear-gradient';
-import { useState, useEffect, PropsWithChildren, useRef } from 'react';
+import { useState, useEffect, PropsWithChildren, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import FastImage from 'react-native-fast-image';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import StyledText from '@/src/components/styled/Text';
 import styles from '@/screens/home/watch/styles';
@@ -72,6 +73,19 @@ function VideoItem({
     }
   }, [activeInScreenIndex]);
 
+  const onEnd = useCallback(() => {
+    videRef.current?.seek(0);
+    setIsPaused(true);
+
+    setPlayedTimes(playedTimes + 1);
+  }, []);
+
+  useEffect(() => {
+    if (playedTimes < 3) {
+      setIsPaused(false);
+    }
+  }, [playedTimes]);
+
   return (
     <View
       style={[
@@ -98,20 +112,20 @@ function VideoItem({
         }}
         style={styles.video}
       >
-        <Video
-          ref={videRef}
-          source={{ uri: `https://stream.mux.com/${item.playBackId!}` }}
-          resizeMode="cover"
-          style={styles.video}
-          onLoad={() => {
-            setIsloading(false);
-          }}
-          paused={isPaused}
-          repeat={playedTimes < 3}
-          onEnd={() => {
-            setPlayedTimes(playedTimes + 1);
-          }}
-        />
+        <View style={{ flex: 1 }}>
+          <Video
+            ref={videRef}
+            source={{ uri: `https://stream.mux.com/${item.playBackId!}.m3u8` }}
+            resizeMode="cover"
+            style={styles.video}
+            onLoad={() => {
+              setIsloading(false);
+            }}
+            paused={isPaused}
+            onEnd={onEnd}
+            poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp`}
+          />
+        </View>
       </TouchableHighlight>
       <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
         <BaseItem

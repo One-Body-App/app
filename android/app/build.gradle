@@ -113,8 +113,8 @@ android {
         applicationId "com.onebody"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 200399
-        versionName "2.2.8"
+        versionCode 200402
+        versionName "2.2.10"
 
         resConfigs "en", "es"
     }

@@ -194,8 +194,6 @@ function Home({ navigation, route }: Props) {
     // listRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
-  const cardSecondaryColor = dark ? '#353535' : '#DDD';
-
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       setIsRefreshing(true);
@@ -425,8 +423,9 @@ function Home({ navigation, route }: Props) {
                 }
 
                 if (item.type == 'tasteBreaker') {
+                  const itemToUse = item?.items[0];
                   return (
-                    <View>
+                    <View key={`tastebreaker_${itemToUse.id}`}>
                       {/* <FlatList
                         nestedScrollEnabled
                         data={item.items}
@@ -458,17 +457,17 @@ function Home({ navigation, route }: Props) {
 
                       <TouchableOpacity
                         onPress={() => {
-                          if (item.id) {
+                          if (itemToUse.id) {
                             navigation.navigate('SingleRss', {
-                              postId: item.id,
+                              postId: itemToUse.id,
                             });
                           }
                         }}
                       >
                         <ArticleItem
                           pillText="Taste Breakers"
-                          key={`article_${item.id}`}
-                          item={item.items[0]}
+                          key={`tastebreaker_${itemToUse.id}`}
+                          item={itemToUse}
                           imageSizeType="cover"
                           // blogPostStyle={{
                           //   ...globalStyle.blogpostview,
@@ -495,19 +494,19 @@ function Home({ navigation, route }: Props) {
 
                 if (item.type == 'relatedContent') {
                   return (
-                    <View>
+                    <View key={`relatedContent_${item.item.id}`}>
                       <TouchableOpacity
                         onPress={() => {
-                          if (item.id) {
+                          if (item.item.id) {
                             navigation.navigate('SingleRss', {
-                              postId: item.id,
+                              postId: item.item.id,
                             });
                           }
                         }}
                       >
                         <ArticleItem
                           pillText="Suggested"
-                          key={`relatedContent_${item.id}`}
+                          key={`relatedContent_${item.item.id}`}
                           item={item.item}
                           imageSizeType="cover"
                           blogPostStyle={globalStyle.blogpostview}

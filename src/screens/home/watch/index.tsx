@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-import { View, FlatList, RefreshControl, useWindowDimensions, StyleSheet } from 'react-native';
+import {
+  View,
+  FlatList,
+  RefreshControl,
+  useWindowDimensions,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 
 import { useSelector } from 'react-redux';
 
@@ -37,7 +44,7 @@ function Watch({ navigation }: any) {
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [commentText, setCommentText] = useState('');
   const flatListRef = useRef<FlatList>(null);
-
+  const [isScrollEnable, setIsScrollEnable] = useState(true);
   const { height, width } = useWindowDimensions();
 
   // Accede al estado del usuario
@@ -70,22 +77,22 @@ function Watch({ navigation }: any) {
         verb: 'get',
       });
       let newFeedData: WatchPost[] = [];
-
+      console.log(`user/get-following-feed/${FeedTypes.Watch}/${page}`);
       if (res?.status === 200) {
         newFeedData = [];
-        const validPosts = res.response.map(async (i: any) => {
-          try {
-            const a = await fetch(`https://stream.mux.com/${i.playBackId}`);
-            if (a.ok) {
-              return i;
-            }
-            return null;
-          } catch (error) {
-            return null;
-          }
-        });
-        const validPostsArray = await Promise.all(validPosts);
-        const feedPosts = validPostsArray
+        // const validPosts = res.response.map(async (i: any) => {
+        //   try {
+        //     const a = await fetch(`https://stream.mux.com/${i.playBackId}`);
+        //     if (a.ok) {
+        //       return i;
+        //     }
+        //     return null;
+        //   } catch (error) {
+        //     return null;
+        //   }
+        // });
+        // const validPostsArray = await Promise.all(validPosts);
+        const feedPosts = res.response
           .filter((i: any) => !!i?.playBackId)
           .sort((a: any, b: any) => {
             const dateA = new Date(a.created);
@@ -150,6 +157,14 @@ function Watch({ navigation }: any) {
     getFeedData();
   }, [page]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setIsRefreshing(true);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   return (
     <View
       style={{ flex: 1, position: 'relative' }}
@@ -158,78 +173,71 @@ function Watch({ navigation }: any) {
         setViewHeight(height);
       }}
     >
-      <FlatList
-        ref={flatListRef}
-        data={feedData}
-        contentContainerStyle={{ flexGrow: 1, position: 'absolute' }}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => {
-          return (
-            <VideoItem
-              index={index}
-              activeInScreenIndex={activeWatchReel}
-              item={item}
-              viewHeight={viewHeight}
-              width={width}
-              fromSavedPosts={false}
-              onShowDismissCard={(e?: boolean) => {
-                // setIsScrollEnable(!e)
+      {isLoading && page == 1 && !isRefreshing ? (
+        <View style={{ marginTop: 10 }}>
+          <ActivityIndicator size="small" />
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={feedData}
+          contentContainerStyle={{ flexGrow: 1, position: 'absolute' }}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={isScrollEnable}
+          renderItem={({ item, index }) => {
+            return (
+              <VideoItem
+                index={index}
+                activeInScreenIndex={activeWatchReel}
+                item={item}
+                viewHeight={viewHeight}
+                width={width}
+                fromSavedPosts={false}
+                onShowDismissCard={(e?: boolean) => {
+                  setIsScrollEnable(!e);
+                }}
+              />
+            );
+          }}
+          keyExtractor={(item) => item.id.toString()}
+          getItemLayout={(data, index) => ({
+            length: getHeight(74.2), // Adjust height as needed
+            offset: getHeight(74.2) * index,
+            index,
+          })}
+          pagingEnabled
+          decelerationRate="fast"
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={{
+            itemVisiblePercentThreshold: 50,
+          }}
+          onEndReachedThreshold={0.5}
+          onEndReached={() => {
+            if (!isLoading && !isRefreshing && !isEndOfList) {
+              setPage(page + 1);
+            }
+          }}
+          refreshing={isRefreshing}
+          refreshControl={
+            <RefreshControl
+              enabled
+              refreshing={isRefreshing}
+              colors={
+                dark
+                  ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
+                  : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
+              }
+              tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
+              onRefresh={() => {
+                setIsRefreshing(true);
               }}
             />
-          );
-        }}
-        keyExtractor={(item) => item.id.toString()}
-        getItemLayout={(data, index) => ({
-          length: getHeight(74.2), // Adjust height as needed
-          offset: getHeight(74.2) * index,
-          index,
-        })}
-        pagingEnabled
-        decelerationRate="fast"
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{
-          itemVisiblePercentThreshold: 50,
-        }}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (!isLoading && !isRefreshing && !isEndOfList) {
-            setPage(page + 1);
           }
-        }}
-        refreshing={isRefreshing}
-        refreshControl={
-          <RefreshControl
-            enabled
-            refreshing={isRefreshing}
-            colors={
-              dark
-                ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
-                : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
-            }
-            tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
-            onRefresh={() => {
-              setIsRefreshing(true);
-            }}
-          />
-        }
-        // CellRendererComponent={({ children, style, onLayout, onFocusCapture }) => (
-        //   <View style={[style, { flex: 1 }]}>{children}</View>
-        // )}
-      />
-
-      <View style={[{ position: 'absolute', top: spacing.x60, left: spacing.x17, flexGrow: 1 }]}>
-        <TouchableOpacity
-          onPress={() => {
-            navigation.goBack();
-          }}
-        >
-          <FastImage
-            style={{ width: spacing.x17, height: spacing.x17 }}
-            resizeMode={FastImage.resizeMode.contain}
-            source={backIcon}
-          />
-        </TouchableOpacity>
-      </View>
+          // CellRendererComponent={({ children, style, onLayout, onFocusCapture }) => (
+          //   <View style={[style, { flex: 1 }]}>{children}</View>
+          // )}
+        />
+      )}
     </View>
   );
 }

@@ -92,7 +92,13 @@ function HomeStack() {
         component={Watch}
         options={{
           presentation: 'card',
-          headerShown: false,
+          headerShown: true,
+          headerTintColor: '#fff',
+          headerTransparent: true,
+          title: 'Watch',
+          headerStyle: {
+            backgroundColor: 'rgba(0,0,0,0.4)',
+          },
         }}
       />
 

@@ -1,6 +1,6 @@
 import { unescape } from 'lodash';
 import { Linking } from 'react-native';
-// eslint-disable-next-line import/no-extraneous-dependencies
+
 import Config from 'react-native-config';
 
 import InAppBrowser from 'react-native-inappbrowser-reborn';
@@ -21,8 +21,6 @@ export const { NO_POST_IMAGE_URL } = Config;
 export const { TWITTER_CLIENT_ID } = Config;
 export const { GIPHY_KEY_IOS } = Config;
 export const { GIPHY_KEY_ANDROID } = Config;
-export const { MUX_TOKEN_ID } = Config;
-export const { MUX_SECRET_KEY } = Config;
 
 export const OpenURLButton = async (
   url: string,

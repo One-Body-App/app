@@ -356,11 +356,10 @@ function BaseItem({
         >
           <View
             style={{
-              position: 'absolute',
-              top: -165,
+              // position: 'absolute',
+              // top: -165,
               left: 0,
               zIndex: 2,
-              maxWidth: 48,
               flexDirection: 'column',
             }}
           >
@@ -370,9 +369,11 @@ function BaseItem({
               }}
               style={{
                 flexDirection: 'row',
-                justifyContent: 'flex-start',
+                justifyContent: 'center',
                 alignItems: 'center',
                 marginTop: spacing.x5,
+                flex: 1,
+                marginBottom: spacing.x20,
               }}
             >
               {userData.profileIcon && !userData.profileImage ? (
@@ -410,15 +411,153 @@ function BaseItem({
                   resizeMode="contain"
                 />
               )}
+              <View style={{ flexGrow: 1, flex: 1 }}>
+                {userData ? (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        // navigation.navigate('UserProfile', {
+                        //   id: userData?._id,
+                        // });
+                        onPress();
+                      }}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
+                        flexGrow: 1,
+                        flex: 1,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'column' }}>
+                        <View style={{ flexDirection: 'row' }}>
+                          <StyledText
+                            style={{
+                              color: 'white',
+                              alignItems: 'center',
+                              ...fontSize.x1,
+                              marginLeft: spacing.x5,
+                              paddingLeft: spacing.x5,
+                            }}
+                            numberOfLines={2}
+                          >
+                            {userData?.name}
+                          </StyledText>
+                          {isApprovedInfluencer ? (
+                            <Icon
+                              name="check-decagram"
+                              size={spacing.x16}
+                              style={{ marginLeft: spacing.x8, marginTop: spacing.x8 }}
+                              color="white"
+                            />
+                          ) : null}
+                        </View>
+                        <StyledText
+                          numberOfLines={2}
+                          style={{
+                            color: 'white',
+                            alignItems: 'center',
+                            ...fontSize.x1,
+                            marginLeft: spacing.x5,
+                            marginTop: 0,
+                          }}
+                        >
+                          {(source == 'twitter' && userData?.twitterHandler) ||
+                          (source == 'instagram' && userData?.instagramHandler) ||
+                          userData?.username
+                            ? `@${
+                                source === 'twitter'
+                                  ? userData?.twitterHandler
+                                  : source === 'instagram'
+                                    ? userData?.instagramHandler
+                                    : userData?.username
+                              }`
+                            : ''}
+
+                          {created ? (
+                            <>
+                              {(source === 'twitter' && userData?.twitterHandler) ||
+                              (source === 'instagram' && userData?.instagramHandler) ||
+                              userData?.username
+                                ? ` • `
+                                : ''}
+                              <StyledText
+                                style={[
+                                  fontSize.x1,
+                                  {
+                                    color: 'white',
+                                    alignItems: 'center',
+                                  },
+                                ]}
+                              >
+                                {timeSince(created)} ago
+                              </StyledText>
+                            </>
+                          ) : null}
+                          {edited && updated ? (
+                            <>
+                              {' '}
+                              • {' Edited '}
+                              <StyledText
+                                style={[
+                                  fontSize.x1,
+                                  {
+                                    color: 'white',
+                                    alignItems: 'center',
+                                  },
+                                ]}
+                              >
+                                {timeSince(updated)} ago
+                              </StyledText>
+                            </>
+                          ) : null}
+                        </StyledText>
+
+                        {postData.locationName ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Location
+                              size={15}
+                              color="white"
+                              style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
+                            />
+                            <StyledText
+                              style={[
+                                fontSize.x1,
+                                {
+                                  color: 'white',
+                                  marginTop: 0,
+                                },
+                              ]}
+                            >
+                              {postData.locationName}
+                            </StyledText>
+                          </View>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowOptions(true);
+                      }}
+                    >
+                      <FontAwesomeIcon
+                        icon={faEllipsisVertical}
+                        color="white"
+                        style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
             </TouchableOpacity>
 
             <View
               style={{
-                flexDirection: 'column',
+                flexDirection: 'row',
                 alignItems: 'flex-start',
                 gap: spacing.x16,
-                marginLeft: 7,
-                marginTop: 5,
+                marginLeft: spacing.x8,
+                marginTop: spacing.x5,
                 alignContent: 'space-between',
               }}
             >
@@ -426,12 +565,12 @@ function BaseItem({
                 items={ReactionItems}
                 type="modal"
                 cardStyle={{
-                  padding: spacing.x5,
+                  // padding: spacing.x10,
                   shadowOpacity: 0.2,
                   marginTop: spacing.x16,
-                  width: 40,
-                  height: 40,
-                  flexDirection: 'column',
+                  width: 140,
+                  height: 50,
+                  flexDirection: 'row',
                   justifyContent: 'center',
                   alignItems: 'center',
                   borderRadius: borderRadius.base,
@@ -522,144 +661,7 @@ function BaseItem({
               </TouchableOpacity>
             </View>
           </View>
-          <View style={{ flexGrow: 1, flex: 1 }}>
-            {userData ? (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    // navigation.navigate('UserProfile', {
-                    //   id: userData?._id,
-                    // });
-                    onPress();
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'flex-start',
-                    alignItems: 'center',
-                    flexGrow: 1,
-                    flex: 1,
-                  }}
-                >
-                  <View style={{ flexDirection: 'column' }}>
-                    <View style={{ flexDirection: 'row' }}>
-                      <StyledText
-                        style={{
-                          color: 'white',
-                          alignItems: 'center',
-                          ...fontSize.x1,
-                          marginLeft: spacing.x5,
-                          marginTop: spacing.x5,
-                        }}
-                        numberOfLines={2}
-                      >
-                        {userData?.name}
-                      </StyledText>
-                      {isApprovedInfluencer ? (
-                        <Icon
-                          name="check-decagram"
-                          size={spacing.x16}
-                          style={{ marginLeft: spacing.x8, marginTop: spacing.x8 }}
-                          color="white"
-                        />
-                      ) : null}
-                    </View>
-                    <StyledText
-                      numberOfLines={2}
-                      style={{
-                        color: 'white',
-                        alignItems: 'center',
-                        ...fontSize.x1,
-                        marginLeft: spacing.x5,
-                        marginTop: 0,
-                      }}
-                    >
-                      {(source == 'twitter' && userData?.twitterHandler) ||
-                      (source == 'instagram' && userData?.instagramHandler) ||
-                      userData?.username
-                        ? `@${
-                            source === 'twitter'
-                              ? userData?.twitterHandler
-                              : source === 'instagram'
-                                ? userData?.instagramHandler
-                                : userData?.username
-                          }`
-                        : ''}
 
-                      {created ? (
-                        <>
-                          {(source === 'twitter' && userData?.twitterHandler) ||
-                          (source === 'instagram' && userData?.instagramHandler) ||
-                          userData?.username
-                            ? ` • `
-                            : ''}
-                          <StyledText
-                            style={[
-                              fontSize.x1,
-                              {
-                                color: 'white',
-                                alignItems: 'center',
-                              },
-                            ]}
-                          >
-                            {timeSince(created)} ago
-                          </StyledText>
-                        </>
-                      ) : null}
-                      {edited && updated ? (
-                        <>
-                          {' '}
-                          • {' Edited '}
-                          <StyledText
-                            style={[
-                              fontSize.x1,
-                              {
-                                color: 'white',
-                                alignItems: 'center',
-                              },
-                            ]}
-                          >
-                            {timeSince(updated)} ago
-                          </StyledText>
-                        </>
-                      ) : null}
-                    </StyledText>
-
-                    {postData.locationName ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Location
-                          size={15}
-                          color="white"
-                          style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
-                        />
-                        <StyledText
-                          style={[
-                            fontSize.x1,
-                            {
-                              color: 'white',
-                              marginTop: 0,
-                            },
-                          ]}
-                        >
-                          {postData.locationName}
-                        </StyledText>
-                      </View>
-                    ) : null}
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowOptions(true);
-                  }}
-                >
-                  <FontAwesomeIcon
-                    icon={faEllipsisVertical}
-                    color="white"
-                    style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
-                  />
-                </TouchableOpacity>
-              </View>
-            ) : null}
-          </View>
           <View style={{ flexGrow: 1, flex: 1 }}>
             {children && <View style={{ marginTop: spacing.x5 }}>{children}</View>}
 

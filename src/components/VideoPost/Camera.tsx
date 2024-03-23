@@ -7,6 +7,7 @@ import {
   NativeEventEmitter,
   Image,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import React, {
   Dispatch,
@@ -18,12 +19,18 @@ import React, {
   useCallback,
 } from 'react';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import {
+  Camera,
+  CameraPermissionStatus,
+  useCameraDevice,
+  useCameraPermission,
+} from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
 import { isValidVideo, showEditor } from 'react-native-video-trim';
 import videoPostStyles from './styles';
 import { spacing } from '@/src/styles/spacing';
+import { Colors } from '@/src/styles';
 
 const cameraIos = require('@/assets/icons/camera-ios.png');
 
@@ -39,6 +46,8 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordedVideo, setRecordedVideo] = useState<any>('');
   const devices = useCameraDevice(isFrontCamera ? 'front' : 'back');
+  const [cameraPermission, setCameraPermission] =
+    useState<CameraPermissionStatus>('not-determined');
 
   const handleSelectionFromGallery = async () => {
     const options: ImageLibraryOptions = {
@@ -63,6 +72,7 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
         if (camera.current) {
           setIsRecording(true);
           camera.current.startRecording({
+            videoCodec: 'h265',
             onRecordingFinished: async (video) => {
               console.log('🚀 ~ handleStartRecording ~ video:', video);
               setRecordedVideo(video);
@@ -105,6 +115,7 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
       // await Linking.openSettings();
       await permission.requestPermission();
     }
+    setCameraPermission(cameraPermission);
   };
 
   useEffect(() => {
@@ -116,12 +127,12 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
       switch (event.name) {
         case 'onFinishTrimming': {
           // on trimming is done
-          if (Platform.OS === 'ios') {
-            setVideoPath(event?.outputPath);
-          } else {
-            const asset = await CameraRoll.saveAsset(event?.outputPath || '');
-            setVideoPath(asset.node.image.uri);
-          }
+          // if (Platform.OS === 'ios') {
+          setVideoPath(event?.outputPath);
+          // } else {
+          //   const asset = await CameraRoll.saveAsset(event?.outputPath || '');
+          //   setVideoPath(asset.node.image.uri);
+          // }
 
           break;
         }
@@ -146,9 +157,24 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     );
   }
 
+  if (cameraPermission === 'not-determined') {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'transparent',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <ActivityIndicator size="large" color={Colors.primary.brand} />
+      </View>
+    );
+  }
+
   return (
     <>
-      <Camera ref={camera} style={StyleSheet.absoluteFill} device={devices} isActive video />
+      <Camera ref={camera} style={StyleSheet.absoluteFill} device={devices} isActive video audio />
       {children}
       <View style={videoPostStyles.cameraBtncontainer}>
         <View style={videoPostStyles.btnSubContainer}>
