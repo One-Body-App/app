@@ -1,31 +1,19 @@
-/* eslint-disable global-require */
 import {
   DarkTheme,
   DefaultTheme,
   LinkingOptions,
   NavigationContainer,
-  useTheme,
 } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Platform,
-  useColorScheme,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, Linking, useColorScheme } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
 
 import { isEqual } from 'lodash';
-import {
-  NativeStackNavigationOptions,
-  createNativeStackNavigator,
-} from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import messaging from '@react-native-firebase/messaging';
-import FastImage from 'react-native-fast-image';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
@@ -49,31 +37,10 @@ import NewPost from '../screens/post/NewPost';
 import SinglePost from '../screens/post/Single';
 import VideoPost from '../screens/post/VideoPost';
 import RssPost from '../screens/post/RssPost';
+import { headerOptions } from './global';
 
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
-
-export const headerOptions: NativeStackNavigationOptions = {
-  headerShadowVisible: Platform.OS !== 'ios',
-  headerTransparent: Platform.OS === 'ios',
-  headerBackTitleVisible: false,
-  headerTitle() {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { dark } = useTheme();
-
-    return (
-      <FastImage
-        style={{ width: 100, height: 28 }}
-        resizeMode={FastImage.resizeMode.contain}
-        source={
-          dark
-            ? require('@/assets/images/logo_header_white.png')
-            : require('@/assets/images/logo_header.png')
-        }
-      />
-    );
-  },
-};
 
 function Main() {
   const toast = useToast();

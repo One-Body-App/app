@@ -1,11 +1,7 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 /* eslint-disable react/no-unstable-nested-components */
-import { FC, useState } from 'react';
 import FastImage from 'react-native-fast-image';
 
-import { View, Platform } from 'react-native';
-
-import { DrawerScreenProps } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import FontAwesome from 'react-native-vector-icons/FontAwesome5';
 import { useSelector } from 'react-redux';
@@ -14,10 +10,7 @@ import { AddSquare, Global, Home3, SearchNormal1 } from 'iconsax-react-native';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
-import { MainBottomStackParamsList, MainDrawerParamsList } from './types';
-// import Home from '@/assets/icons/home.svg';
-// import Search from '@/assets/icons/search.svg';
-// import Global from '@/assets/icons/global.svg';
+import { MainBottomStackParamsList } from './types';
 import { Colors } from '../styles';
 import SearchStack from './SearchStack';
 import { RootState } from '../redux/reducers/rootReducer';

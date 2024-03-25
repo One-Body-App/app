@@ -77,7 +77,7 @@ function TwitterFlatlist({
         <SocialItem
           key={item.id}
           index={index}
-          item={item}
+          itemData={item}
           socialPostviewStyle={{ backgroundColor: colors.card }}
           onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
         />

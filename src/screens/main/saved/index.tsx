@@ -299,7 +299,7 @@ function Saved({ navigation }: Props) {
                   }}
                 >
                   <SocialItem
-                    item={postData}
+                    itemData={postData}
                     index={index}
                     onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
                     removePost={removePost}

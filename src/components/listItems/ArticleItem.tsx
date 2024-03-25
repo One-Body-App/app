@@ -151,8 +151,8 @@ function ArticleItem({
             paddingHorizontal: spacing.x10,
             paddingVertical: spacing.x10,
             backgroundColor: Colors.neutral[900],
-            borderEndEndRadius: borderRadius.base,
-            borderEndStartRadius: borderRadius.base,
+            borderBottomEndRadius: borderRadius.base,
+            borderBottomStartRadius: borderRadius.base,
           }}
         >
           <View
@@ -167,7 +167,10 @@ function ArticleItem({
                 flex: 1,
               }}
             >
-              <StyledText numberOfLines={2} style={[{ color: colors.text }, blogPostTitleStyle]}>
+              <StyledText
+                numberOfLines={2}
+                style={[{ color: colors.text, fontWeight: 'bold' }, blogPostTitleStyle]}
+              >
                 {isObject(itemData?.title)
                   ? decode(itemData?.title?.a.$text)
                   : decode(itemData?.title)}

@@ -45,10 +45,7 @@ function ConfirmLogin({ route, navigation }: Props) {
   }, []);
 
   return (
-    <UserStepsLayout
-      backgroundColor={dark ? colors.background : Colors.neutral[700]}
-      keyboardAvoidingViewStyle={{}}
-    >
+    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
       <ScrollView style={{ flexGrow: 1, marginTop: spacing.x24 }}>
         {route?.params?.mode == 'resetPassword' ? (
           <NewPassword {...route.params} />

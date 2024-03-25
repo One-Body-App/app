@@ -7,29 +7,27 @@ import MyProfile from '../screens/main/myProfile';
 import { MyProfileStackParamsList } from './types';
 import { Colors } from '../styles';
 import InviteFriend from '../screens/main/inviteFriend';
+import mainPageOptions from './global';
 
 const Stack = createNativeStackNavigator<MyProfileStackParamsList>();
 
 function ProfileStack() {
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
   return (
     <Stack.Navigator>
       <Stack.Screen
         name="MyProfile"
         component={MyProfile}
-        options={({ navigation }) => {
-          navigation.getParent().getParent().setOptions({ headerShown: true });
-          return {
-            headerShown: false,
-          };
-        }}
+        options={({ navigation }) =>
+          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Profile')
+        }
       />
       <Stack.Screen
         name="EditProfile"
         component={EditProfile}
-        options={({ navigation }) => {
-          navigation.getParent().getParent().setOptions({ headerShown: false });
+        options={() => {
           return {
+            // headerShown: false,
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },
             title: 'Edit Profile',
@@ -40,9 +38,9 @@ function ProfileStack() {
       <Stack.Screen
         name="InviteFriends"
         component={InviteFriend}
-        options={({ navigation }) => {
-          navigation.getParent().getParent().setOptions({ headerShown: false });
+        options={() => {
           return {
+            headerBackTitleVisible: false,
             headerShown: true,
             headerTransparent: true,
             headerTintColor: '#fff',

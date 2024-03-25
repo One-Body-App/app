@@ -1,8 +1,8 @@
 import 'react-native-gesture-handler';
 import 'react-native-devsettings/withAsyncStorage';
 
-import React, { useState, useEffect } from 'react';
-import { Provider, useDispatch } from 'react-redux';
+import React, { useEffect } from 'react';
+import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 
 // import ZendeskChat from 'react-native-zendesk-chat';
@@ -12,6 +12,7 @@ import { ToastProvider } from 'react-native-toast-notifications';
 
 import * as Sentry from '@sentry/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { persistor, store } from './src/redux/store';
 import Main from '@/navigator/Main';
 
@@ -63,19 +64,21 @@ function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <ToastProvider offsetTop={60}>
-        <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            {/* <PaperProvider theme={theme}> */}
+    <KeyboardProvider>
+      <SafeAreaProvider>
+        <ToastProvider offsetTop={60}>
+          <Provider store={store}>
+            <PersistGate loading={null} persistor={persistor}>
+              {/* <PaperProvider theme={theme}> */}
 
-            <Main />
+              <Main />
 
-            {/* </PaperProvider> */}
-          </PersistGate>
-        </Provider>
-      </ToastProvider>
-    </SafeAreaProvider>
+              {/* </PaperProvider> */}
+            </PersistGate>
+          </Provider>
+        </ToastProvider>
+      </SafeAreaProvider>
+    </KeyboardProvider>
   );
 }
 export default Sentry.wrap(App);

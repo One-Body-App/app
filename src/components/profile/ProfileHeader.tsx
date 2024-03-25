@@ -87,7 +87,7 @@ function ProfileHeader({
     );
 
     const maxValue =
-      height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize + 10; // 10 = marginTop
+      height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize - 30; // 10 = marginTop
     if (valueTranslate > maxValue) {
       valueTranslate = maxValue;
     }
@@ -108,7 +108,7 @@ function ProfileHeader({
       [0, 0 - 300]
     );
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - profileImagesize; // 10 = marginTop
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - profileImagesize - 75;
     if (valueTranslate > maxValue) {
       valueTranslate = maxValue;
     }
@@ -135,8 +135,9 @@ function ProfileHeader({
       [0, 0 - 90]
     );
 
-    // const maxValueY = height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + 20;
-    const maxValueY = height - HEADER_COLLAPSED_HEIGHT - 160;
+    let paddingRight = -1 * interpolate(scrollY.value, [0, 0 - 300], [0, 65]);
+
+    const maxValueY = height - HEADER_COLLAPSED_HEIGHT - 165;
     if (valueTranslateY > maxValueY) {
       valueTranslateY = maxValueY;
     }
@@ -145,8 +146,12 @@ function ProfileHeader({
     if (valueTranslateX > maxValueX) {
       valueTranslateX = maxValueX;
     }
+    if (paddingRight > 95) {
+      paddingRight = 95;
+    }
 
     return {
+      paddingRight,
       transform: [
         {
           translateY: valueTranslateY,
@@ -183,14 +188,13 @@ function ProfileHeader({
     );
     let width = interpolate(scrollY.value, [0, 0 - 300], [0, 35]);
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - (height - 190);
+    const maxValue = height - HEADER_COLLAPSED_HEIGHT - (height - 125);
 
-    if (valueTranslateY > maxValue) {
+    if (valueTranslateY > -1 * maxValue) {
       valueTranslateY = maxValue;
     }
-
     if (100 + width < 70) {
-      width = -35;
+      width = -38;
     }
     return {
       width: `${100 + width}%`,
@@ -380,7 +384,7 @@ function ProfileHeader({
           ]}
           pointerEvents="box-none"
         >
-          <Animated.View style={[{ flex: 1, height: 75 }, nameAnimation]}>
+          <Animated.View style={[{ flex: 1, height: 70 }, nameAnimation]}>
             <View
               style={{
                 flexDirection: 'row',
@@ -573,7 +577,7 @@ function ProfileHeader({
             >
               <HomeHashtag size={20} color={Colors.neutral.brand} />
 
-              <StyledText style={[{ marginLeft: spacing.x10 }, Typography.body.x2M]}>
+              <StyledText style={[{ marginHorizontal: spacing.x10 }, Typography.body.x2M]}>
                 Denomination
                 <StyledText style={{ color: Colors.neutral[300] }}>{` • `}</StyledText>
                 <StyledText>
@@ -615,6 +619,7 @@ function ProfileHeader({
             </View>
           ) : null}
         </Animated.View>
+
         <Animated.View
           style={[
             {
@@ -624,7 +629,8 @@ function ProfileHeader({
               // width: '65%',
               overflow: 'hidden',
               height: 58,
-              paddingTop: spacing.x5,
+              // paddingTop: spacing.x5,
+              // backgroundColor: 'red',
             },
             connectedConnectorsContent,
           ]}
@@ -636,7 +642,9 @@ function ProfileHeader({
             }}
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
           >
-            <StyledText style={[Typography.body.x3M, { flex: 1 }]}>
+            <StyledText
+              style={[Typography.body.x3M, { flex: 1, lineHeight: 18, textAlign: 'center' }]}
+            >
               {profileData?.followerCount && profileData?.followerCount > 999
                 ? `${(profileData.followerCount / 1000).toFixed(2)}k`
                 : profileData?.followerCount && profileData?.followerCount > 999999
@@ -651,6 +659,8 @@ function ProfileHeader({
                 {
                   marginLeft: spacing.x24,
                   flex: 1,
+                  lineHeight: 18,
+                  textAlign: 'center',
                 },
               ]}
             >

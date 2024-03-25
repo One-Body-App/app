@@ -188,74 +188,14 @@ function Home({ navigation, route }: Props) {
 
   const cardSecondaryColor = dark ? '#353535' : '#DDD';
 
-  const addHeaderButtons = () => {
-    navigation
-      .getParent()
-      ?.getParent()
-      ?.setOptions({
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate('MainRoot', {
-                  screen: 'Main',
-                  params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
-                });
-              }}
-              // style={{ paddingRight: spacing.x24 }}
-            >
-              <Notification
-                style={{ height: 24, width: 24 }}
-                color={Colors.primary.brand}
-                strokeWidth={0.2}
-              />
-            </TouchableOpacity>
-            {/* <TouchableOpacity onPress={() => {}}>
-                            <Message
-                              style={{ height: 24, width: 24 }}
-                              stroke={Colors.primary.brand}
-                              strokeWidth={0.2}
-                            />
-                          </TouchableOpacity> */}
-          </View>
-        ),
-      });
-
-    return () => {
-      navigation
-        .getParent()
-        ?.getParent()
-        ?.setOptions({
-          headerRight: () => <View />,
-        });
-    };
-  };
-
-  const removeHeaderButtons = () => {
-    navigation
-      .getParent()
-      ?.getParent()
-      ?.setOptions({
-        headerRight: () => <View />,
-      });
-  };
-
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      addHeaderButtons();
       setIsRefreshing(true);
     });
 
     return unsubscribe;
   }, [navigation]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      removeHeaderButtons();
-    });
-
-    return unsubscribe;
-  }, [navigation]);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
 
   const removePost = async (type: string, id: string) => {
@@ -451,7 +391,7 @@ function Home({ navigation, route }: Props) {
                         index={index}
                         key={`social_${item.id}_${index}`}
                         onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                        item={item}
+                        itemData={item}
                         visible={
                           visibleItemsIndex && visibleItemsIndex.length > 0
                             ? visibleItemsIndex?.indexOf(index) > -1
@@ -467,7 +407,7 @@ function Home({ navigation, route }: Props) {
 
                 if (item.type == 'tasteBreaker') {
                   return (
-                    <View style={{ paddingHorizontal: 10 }}>
+                    <View>
                       {/* <FlatList
                         nestedScrollEnabled
                         data={item.items}
@@ -521,7 +461,6 @@ function Home({ navigation, route }: Props) {
                           // }}
                           blogPostStyle={{
                             ...globalStyle.blogpostview,
-                            backgroundColor: cardSecondaryColor,
                           }}
                           blogPostImageStyle={globalStyle.newspostimage}
                           blogPostTitleStyle={{
@@ -537,7 +476,7 @@ function Home({ navigation, route }: Props) {
 
                 if (item.type == 'relatedContent') {
                   return (
-                    <View style={{ paddingHorizontal: 10 }}>
+                    <View>
                       <TouchableOpacity
                         onPress={() => {
                           if (item.id) {

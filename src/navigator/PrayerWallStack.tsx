@@ -5,6 +5,8 @@ import {
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
+import { HeaderBackButton } from '@react-navigation/elements';
+import { Platform } from 'react-native';
 import { PrayerWallStackParamsList } from './types';
 import { Colors } from '../styles';
 import Prayer from '../screens/main/prayer';
@@ -12,11 +14,12 @@ import Prayer from '../screens/main/prayer';
 import UserProfile from '../screens/main/userProfile';
 import NewPrayer from '../screens/main/prayer/NewPrayer';
 import SinglePrayer from '../screens/main/prayer/Single';
+import mainPageOptions from './global';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
 
 function PrayerWall() {
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
 
   return (
     <Stack.Navigator>
@@ -24,18 +27,35 @@ function PrayerWall() {
         name="index"
         component={Prayer}
         options={({ navigation }) => {
-          navigation.getParent().setOptions({ headerShown: true });
-          return {
-            headerShown: false,
-          };
+          if (navigation.canGoBack()) {
+            return {
+              headerLeft: (props) => {
+                return (
+                  <HeaderBackButton
+                    style={{
+                      marginHorizontal: Platform.OS == 'ios' ? 0 : undefined,
+                      marginLeft: Platform.OS == 'ios' ? -5 : undefined,
+                      width: Platform.OS == 'ios' ? 40 : undefined,
+                    }}
+                    labelVisible={false}
+                    onPress={() => navigation.goBack()}
+                  />
+                );
+              },
+            };
+          }
+
+          return mainPageOptions(
+            navigation,
+            dark ? colors.text : Colors.primary.brand,
+            'Prayer Wall'
+          );
         }}
       />
       <Stack.Screen
         name="UserProfile"
         component={UserProfile}
-        options={({ navigation }) => {
-          navigation.getParent().setOptions({ headerShown: false });
-
+        options={() => {
           return {
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },
@@ -47,8 +67,7 @@ function PrayerWall() {
       <Stack.Screen
         name="Prayer"
         component={NewPrayer}
-        options={({ navigation, route }) => {
-          navigation.getParent().setOptions({ headerShown: false });
+        options={({ route }) => {
           return {
             headerBackTitleVisible: false,
             headerBackTitle: 'Back',
@@ -78,8 +97,7 @@ function PrayerWall() {
       <Stack.Screen
         name="Single"
         component={SinglePrayer}
-        options={({ navigation }) => {
-          navigation.getParent().setOptions({ headerShown: false });
+        options={() => {
           return {
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },

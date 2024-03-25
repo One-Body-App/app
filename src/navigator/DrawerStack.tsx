@@ -1,22 +1,10 @@
+/* eslint-disable react/no-unstable-nested-components */
 import React, { useEffect } from 'react';
-import {
-  DrawerToggleButton,
-  createDrawerNavigator,
-  getDrawerStatusFromState,
-} from '@react-navigation/drawer';
+import { createDrawerNavigator, getDrawerStatusFromState } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
-import {
-  Animated,
-  Platform,
-  StyleProp,
-  StyleSheet,
-  TextProps,
-  TextStyle,
-  View,
-  useWindowDimensions,
-} from 'react-native';
 import { GlobalSearch, Home3, Profile2User } from 'iconsax-react-native';
-import { Route, getFocusedRouteNameFromRoute, useTheme } from '@react-navigation/native';
+import { Platform, View, useWindowDimensions } from 'react-native';
+import { useTheme } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import { HandsPraying } from 'phosphor-react-native';
 
@@ -30,8 +18,6 @@ import { Colors } from '../styles';
 
 import Connections from '@/src/screens/main/connections';
 import SettingsStack from './SettingsStack';
-import Logo from '@/assets/icons/logo.svg';
-import LogoWhite from '@/assets/icons/logo_white.svg';
 import MainTabStack from './BottomTabStack';
 import DrawerContent from './DrawerContent';
 import PrayerWallStack from './PrayerWallStack';
@@ -39,32 +25,9 @@ import Saved from '../screens/main/saved';
 import { getHeight } from '@/utils/ResponsiveFun';
 import ConnectPortalHome from '../screens/ConnectPortalHome/ConnectPortalHome';
 import ConnectPortalStack from './ConnectPortalStack';
+import mainPageOptions from './global';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
-type HeaderProps = Omit<TextProps, 'style'> & {
-  tintColor?: string;
-  style?: Animated.WithAnimatedValue<StyleProp<TextStyle>>;
-};
-
-function getHeaderTitle(route: Partial<Route<string>>) {
-  // If the focused route is not found, we need to assume it's the initial screen
-  // This can happen during if there hasn't been any navigation inside the screen
-  // In our case, it's "Feed" as that's the first screen inside the navigator
-  const routeName = getFocusedRouteNameFromRoute(route) ?? 'HomeTab';
-
-  switch (routeName) {
-    case 'HomeTab':
-      return 'Home';
-    case 'SearchTab':
-      return 'Search';
-    case 'ExploreTab':
-      return 'Discover Accounts';
-    case 'MyProfileTab':
-      return 'Profile';
-    default:
-      return '';
-  }
-}
 
 function DrawerNav() {
   const authState = useSelector((state: RootState) => state.auth);
@@ -114,23 +77,42 @@ function DrawerNav() {
     }
     return (
       <DrawerStack.Navigator
-        // backBehavior="history"
-        screenOptions={({ navigation, route }) => {
+        backBehavior="history"
+        screenOptions={({ navigation }) => {
           return {
             drawerType,
+            headerShown: false,
             headerTintColor: dark ? colors.text : Colors.primary.brand,
 
             drawerActiveBackgroundColor: Colors.neutral[600],
             drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
+
             headerLeft: (props) => {
               const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
 
               if (navigation.canGoBack() && !isDrawerOpen) {
                 return (
-                  <HeaderBackButton labelVisible={false} onPress={() => navigation.goBack()} />
+                  <HeaderBackButton
+                    style={{ marginHorizontal: 11 }}
+                    labelVisible={false}
+                    onPress={() => navigation.goBack()}
+                  />
                 );
               }
-              return <DrawerToggleButton {...props} />;
+              const { headerLeft } = mainPageOptions(
+                navigation,
+                props.tintColor ?? colors.text,
+                '',
+                {
+                  marginHorizontal: 11,
+                }
+              );
+
+              if (headerLeft) {
+                return headerLeft({ canGoBack: false });
+              }
+
+              return <View />;
             },
           };
         }}
@@ -139,48 +121,11 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="Main"
           component={MainTabStack}
-          options={({ route }) => {
+          options={() => {
             return {
-              headerStyle: {
-                height: getHeight(11),
-              },
               title: 'Home',
               drawerIcon: ({ color, size }) => {
                 return <Home3 size={size} color={color} />;
-              },
-              headerLeft: (props) => <DrawerToggleButton {...props} />,
-              headerTitleAlign:
-                getHeaderTitle(route) === 'Home' || Platform.OS === 'ios' ? 'center' : 'left',
-              headerTitle: ({ tintColor, style, children, ...rest }: HeaderProps) => {
-                const title = getHeaderTitle(route);
-
-                if (title == 'Home') {
-                  return (
-                    <View style={{ height: 28, width: 28 }}>
-                      {dark ? (
-                        <LogoWhite style={{ height: 28, width: 28 }} />
-                      ) : (
-                        <Logo style={{ height: 28, width: 28 }} />
-                      )}
-                    </View>
-                  );
-                }
-
-                return (
-                  <Animated.Text
-                    accessibilityRole="header"
-                    aria-level="1"
-                    numberOfLines={1}
-                    // eslint-disable-next-line react/no-children-prop
-                    children={title}
-                    {...rest}
-                    style={[
-                      styles.title,
-                      { color: tintColor === undefined ? colors.text : tintColor },
-                      style,
-                    ]}
-                  />
-                );
               },
             };
           }}
@@ -190,6 +135,7 @@ function DrawerNav() {
           name="Saved"
           component={Saved}
           options={{
+            headerShown: true,
             title: 'Saved Posts',
             drawerIcon: ({ color, size }) => {
               return <Feather name="bookmark" size={size} color={color} />;
@@ -216,6 +162,7 @@ function DrawerNav() {
           component={Connections}
           options={({ navigation }) => {
             return {
+              headerShown: true,
               title: 'My Connections',
               drawerIcon: ({ color, size }) => {
                 return <Profile2User size={size} color={color} />;
@@ -257,21 +204,3 @@ function DrawerNav() {
 }
 
 export default DrawerNav;
-
-const styles = StyleSheet.create({
-  title: Platform.select({
-    ios: {
-      fontSize: 17,
-      fontWeight: '600',
-    },
-    android: {
-      fontSize: 20,
-      fontFamily: 'sans-serif-medium',
-      fontWeight: 'normal',
-    },
-    default: {
-      fontSize: 18,
-      fontWeight: '500',
-    },
-  }),
-});
