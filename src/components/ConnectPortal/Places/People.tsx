@@ -8,6 +8,8 @@ import {
   Image,
   FlatList,
   Modal,
+  ScrollView,
+  ImageSourcePropType,
 } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
@@ -21,6 +23,8 @@ import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import { spacing } from '@/src/styles/spacing';
 import { styles } from '../connectPortalStyles';
+import HomeScreen from './HomeScreen';
+import churchImage from '../../../assets/images/church.jpeg';
 
 type types = 'Explore' | 'My Places' | 'Filter' | 'List' | 'Map';
 interface Organization {
@@ -28,6 +32,7 @@ interface Organization {
   name: string;
   type: string;
   location: string;
+  imageSource: ImageSourcePropType;
 }
 
 function People() {
@@ -53,30 +58,35 @@ function People() {
       name: 'Example Church',
       type: 'Church',
       location: 'Toronto',
+      imageSource: churchImage,
     },
     {
       id: 2,
       name: 'Another Church',
       type: 'Church',
       location: 'New York',
+      imageSource: churchImage,
     },
     {
       id: 3,
       name: 'Another Church',
       type: 'Church',
       location: 'Miami',
+      imageSource: churchImage,
     },
     {
       id: 4,
       name: 'Another Church',
       type: 'Houst',
       location: 'Houston texas',
+      imageSource: churchImage,
     },
     {
       id: 5,
       name: 'Another Church',
       type: 'Houst',
       location: 'Houston texas',
+      imageSource: churchImage,
     },
   ]);
 
@@ -96,6 +106,7 @@ function People() {
   const renderOrganizationItem = ({ item }: { item: Organization }) => (
     <View style={localstyle.organizationCard}>
       <View style={styles.organizationContainer}>
+        <Image source={item.imageSource} style={styles.organizationImage} />
         <View style={styles.organizationDetails}>
           <Text>{item.name}</Text>
           <View style={styles.organizationTypeContainer}>
@@ -112,92 +123,96 @@ function People() {
   );
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.optionContainer}>
-        <TouchableOpacity
-          style={[styles.option, selectedOption === 'Explore' && styles.selectedOption]}
-          onPress={() => setSelectedOption('Explore')}
-        >
-          <Text>Explore</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.option, selectedOption === 'My Places' && styles.selectedOption]}
-          onPress={() => setSelectedOption('My Places')}
-        >
-          <Text>My Places</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.searchBar}>
-        <TextInput
-          placeholder="Search"
-          style={styles.input}
-          onChangeText={(text) => setSearchQuery(text)}
-          value={searchQuery}
-        />
-      </View>
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity
-          style={[styles.button, selectedOption === 'Filter' && styles.activeButton]}
-          onPress={() => handleOptionSelect('Filter')}
-        >
-          <FontAwesomeIcon
-            icon={faSlidersH}
-            size={24}
-            color={selectedOption === 'Filter' ? 'white' : 'black'}
-          />
-          <Text>Filter</Text>
-        </TouchableOpacity>
-        <View style={styles.listMapButtons}>
+    <ScrollView>
+      <View style={{ flex: 1 }}>
+        <View style={styles.optionContainer}>
           <TouchableOpacity
-            style={[
-              styles.iconButton,
-              styles.listButton,
-              selectedOption === 'List' && styles.activeButton,
-            ]}
-            onPress={() => handleOptionSelect('List')}
+            style={[styles.option, selectedOption === 'Explore' && styles.selectedOption]}
+            onPress={() => setSelectedOption('Explore')}
           >
-            <FontAwesomeIcon
-              icon={faList}
-              size={24}
-              color={selectedOption === 'List' ? 'white' : 'black'}
-            />
+            <Text>Explore</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[
-              styles.iconButton,
-              styles.mapButton,
-              selectedOption === 'Map' && styles.activeButton,
-            ]}
-            onPress={() => handleOptionSelect('Map')}
+            style={[styles.option, selectedOption === 'My Places' && styles.selectedOption]}
+            onPress={() => setSelectedOption('My Places')}
           >
-            <FontAwesomeIcon
-              icon={faMap}
-              size={24}
-              color={selectedOption === 'Map' ? 'white' : 'black'}
-            />
+            <Text>My Places</Text>
           </TouchableOpacity>
         </View>
-      </View>
+        <View style={styles.searchBar}>
+          <TextInput
+            placeholder="Search"
+            style={styles.input}
+            onChangeText={(text) => setSearchQuery(text)}
+            value={searchQuery}
+          />
+        </View>
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity
+            style={[styles.button, selectedOption === 'Filter' && styles.activeButton]}
+            onPress={() => handleOptionSelect('Filter')}
+          >
+            <FontAwesomeIcon
+              icon={faSlidersH}
+              size={24}
+              color={selectedOption === 'Filter' ? 'white' : 'black'}
+            />
+            <Text>Filter</Text>
+          </TouchableOpacity>
+          <View style={styles.listMapButtons}>
+            <TouchableOpacity
+              style={[
+                styles.iconButton,
+                styles.listButton,
+                selectedOption === 'List' && styles.activeButton,
+              ]}
+              onPress={() => handleOptionSelect('List')}
+            >
+              <FontAwesomeIcon
+                icon={faList}
+                size={24}
+                color={selectedOption === 'List' ? 'white' : 'black'}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.iconButton,
+                styles.mapButton,
+                selectedOption === 'Map' && styles.activeButton,
+              ]}
+              onPress={() => handleOptionSelect('Map')}
+            >
+              <FontAwesomeIcon
+                icon={faMap}
+                size={24}
+                color={selectedOption === 'Map' ? 'white' : 'black'}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      {selectedOption === 'Map' ? (
-        <MapView
-          style={styles.map}
-          provider={PROVIDER_DEFAULT}
-          initialRegion={region}
-          onRegionChangeComplete={(region) => setRegion(region)}
-        >
-          <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
-        </MapView>
-      ) : (
-        <FlatList
-          data={organizations}
-          renderItem={renderOrganizationItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={localstyle.flatListContainer}
-        />
-      )}
-    </View>
+        {/* Integración del componente HomeScreen */}
+
+        {selectedOption === 'Map' ? (
+          <MapView
+            style={styles.map}
+            provider={PROVIDER_DEFAULT}
+            initialRegion={region}
+            onRegionChangeComplete={(region) => setRegion(region)}
+          >
+            <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
+          </MapView>
+        ) : (
+          <FlatList
+            data={organizations}
+            renderItem={renderOrganizationItem}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={localstyle.flatListContainer}
+          />
+        )}
+      </View>
+    </ScrollView>
   );
 }
 

@@ -12,7 +12,7 @@ const Stack = createStackNavigator();
 function ConnectPortalStack() {
   return (
     <Stack.Navigator initialRouteName="ConnectPortalHome">
-      <Stack.Screen name="ConnectPortalHome" component={ConnectPortalHome} />
+      <Stack.Screen name="                ." component={ConnectPortalHome} />
 
       <Stack.Screen name="People" component={People} />
 

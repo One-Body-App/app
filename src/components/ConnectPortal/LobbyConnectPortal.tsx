@@ -8,6 +8,9 @@ import {
   PanResponder,
   Animated,
 } from 'react-native';
+import GoTabImage from '../../assets/images/Mapa2.png';
+import ServeTabImage from '../../assets/images/Serve2.png';
+import PeoplePlacesTabImage from '../../assets/images/Places.png';
 
 interface LobbyProps {
   onClose: () => void;
@@ -35,6 +38,7 @@ const PaginationIndicator = ({ count, currentIndex }) => {
 const GoTab = ({ onNext }: { onNext: () => void }) => {
   return (
     <View>
+      <Image source={GoTabImage} style={styles.image} />
       <View>
         <Text style={styles.textTab}>Go!</Text>
         <Text style={styles.summaryText} numberOfLines={2}>
@@ -52,6 +56,7 @@ const GoTab = ({ onNext }: { onNext: () => void }) => {
 const ServeTab = ({ onNext }: { onNext: () => void }) => {
   return (
     <View>
+      <Image source={ServeTabImage} style={styles.image} />
       <View>
         <Text style={styles.textTab}>Serve</Text>
         <Text style={styles.summaryText} numberOfLines={2}>
@@ -69,8 +74,9 @@ const ServeTab = ({ onNext }: { onNext: () => void }) => {
 const PeoplePlacesTab = () => {
   return (
     <View>
+      <Image source={PeoplePlacesTabImage} style={styles.image} />
       <View>
-        <Text style={styles.textTab}>Peolple/Places</Text>
+        <Text style={styles.textTab}>People/Places</Text>
         <Text style={styles.summaryText} numberOfLines={2}>
           Brief summary of what they can do or added value of using this portion of the portal.
         </Text>
@@ -123,18 +129,24 @@ function LobbyConnectPortal({ onClose }: LobbyProps) {
   };
 
   return (
-    <Animated.View style={[styles.modalContainer, animatedStyles]} {...panResponder.panHandlers}>
-      {tabIndex === 0 && <GoTab onNext={handleNext} />}
-      {tabIndex === 1 && <ServeTab onNext={handleNext} />}
-      {tabIndex === 2 && <PeoplePlacesTab />}
-    </Animated.View>
+    <View style={styles.container}>
+      <TouchableOpacity onPress={onClose} style={styles.overlay} />
+      <Animated.View style={[styles.modalContainer, animatedStyles]} {...panResponder.panHandlers}>
+        {tabIndex === 0 && <GoTab onNext={handleNext} />}
+        {tabIndex === 1 && <ServeTab onNext={handleNext} />}
+        {tabIndex === 2 && <PeoplePlacesTab />}
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContainer: {
     backgroundColor: '#fff',
