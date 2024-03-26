@@ -5,10 +5,10 @@ import { useNavigation } from '@react-navigation/native';
 import { styles } from '../../components/ConnectPortal/connectPortalStyles';
 import LobbyConnectPortal from '../../components/ConnectPortal/LobbyConnectPortal';
 
-type types = 'People/Places' | 'Go!' | 'Serve';
+type connectPortalTabsTypes = 'People/Places' | 'Go!' | 'Serve';
 
 function ConnectPortalHome() {
-  const [selectedOption, setSelectedOption] = useState<types>('People/Places');
+  const [selectedOption, setSelectedOption] = useState<connectPortalTabsTypes>('People/Places');
   const [region, setRegion] = useState<{
     latitude: number;
     longitude: number;
@@ -28,7 +28,7 @@ function ConnectPortalHome() {
     setLobbyModalVisible(true);
   }, []);
 
-  const handleOptionSelect = (option: types) => {
+  const handleOptionSelect = (option: connectPortalTabsTypes) => {
     setSelectedOption(option);
     if (option === 'People/Places') {
       navigation.navigate('People');
@@ -43,8 +43,6 @@ function ConnectPortalHome() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Connect Portal</Text>
-
       <Modal
         visible={lobbyModalVisible}
         animationType="slide"

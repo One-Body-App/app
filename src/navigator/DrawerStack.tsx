@@ -145,7 +145,7 @@ function DrawerNav() {
 
         {/* Boton connectPortal */}
         <DrawerStack.Screen
-          name="Connect Portal"
+          name="ConnectPortal"
           component={ConnectPortalStack}
           options={({ navigation }) => {
             return {
