@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, Modal } from 'react-native';
+import { View, TouchableOpacity, Text, Modal, StyleSheet } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import { styles } from '../../components/ConnectPortal/connectPortalStyles';
 import LobbyConnectPortal from '../../components/ConnectPortal/LobbyConnectPortal';
 
-type connectPortalTabsTypes = 'People/Places' | 'Go!' | 'Serve';
+type connectPortalTabsTypes = 'Places' | 'Go' | 'Serve';
 
 function ConnectPortalHome() {
-  const [selectedOption, setSelectedOption] = useState<connectPortalTabsTypes>('People/Places');
+  const [selectedOption, setSelectedOption] = useState<connectPortalTabsTypes>('Places');
   const [region, setRegion] = useState<{
     latitude: number;
     longitude: number;
@@ -30,7 +30,7 @@ function ConnectPortalHome() {
 
   const handleOptionSelect = (option: connectPortalTabsTypes) => {
     setSelectedOption(option);
-    if (option === 'People/Places') {
+    if (option === 'Places') {
       navigation.navigate('People');
     } else if (option === 'Serve') {
       navigation.navigate('Serve');
@@ -55,26 +55,24 @@ function ConnectPortalHome() {
       </Modal>
 
       <View style={styles.optionContainer}>
-        <TouchableOpacity
-          style={[styles.option, selectedOption === 'People/Places' && styles.selectedOption]}
-          onPress={() => handleOptionSelect('People/Places')}
-        >
-          <Text>Pleople/Places</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.option, selectedOption === 'Go!' && styles.selectedOption]}
-          onPress={() => handleOptionSelect('Go!')}
-        >
-          <Text>Go!</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.option, selectedOption === 'Serve' && styles.selectedOption]}
-          onPress={() => handleOptionSelect('Serve')}
-        >
-          <Text>Serve</Text>
-        </TouchableOpacity>
+        <OptionButton
+          label="Pleople/Places"
+          option="Places"
+          selectedOption={selectedOption}
+          onPress={handleOptionSelect}
+        />
+        <OptionButton
+          label="Go!"
+          option="Go"
+          selectedOption={selectedOption}
+          onPress={handleOptionSelect}
+        />
+        <OptionButton
+          label="Serve"
+          option="Serve"
+          selectedOption={selectedOption}
+          onPress={handleOptionSelect}
+        />
       </View>
       <MapView
         style={styles.mapContainer}
@@ -91,5 +89,32 @@ function ConnectPortalHome() {
     </View>
   );
 }
+
+interface OptionButtonProps {
+  label: string;
+  option: connectPortalTabsTypes;
+  selectedOption: connectPortalTabsTypes;
+  onPress: (option: connectPortalTabsTypes) => void;
+}
+
+const OptionButton: React.FC<OptionButtonProps> = ({ label, option, selectedOption, onPress }) => {
+  const isSelected = selectedOption === option;
+
+  return (
+    <TouchableOpacity
+      style={[styles.option, isSelected && styles.selectedOption]}
+      onPress={() => onPress(option)}
+    >
+      <Text
+        style={{
+          color: isSelected ? '#126B87' : '#000',
+        }}
+      >
+        {label}
+      </Text>
+      {isSelected && <View style={styles.selectedBar} />}
+    </TouchableOpacity>
+  );
+};
 
 export default ConnectPortalHome;

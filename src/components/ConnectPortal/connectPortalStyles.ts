@@ -26,7 +26,15 @@ export const styles = StyleSheet.create({
   },
   selectedOption: {
     borderBottomWidth: 2,
-    borderBottomColor: 'black',
+    borderBottomColor: '#126B87',
+  },
+  selectedBar: {
+    height: 2,
+    backgroundColor: '#126B87',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   searchBar: {
     borderColor: '#ccc',

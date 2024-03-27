@@ -228,5 +228,4 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
 });
-
 export default LobbyConnectPortal;
