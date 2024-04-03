@@ -369,7 +369,7 @@ function Main() {
             options={{
               headerShown: true,
               headerTransparent: true,
-              title: 'Create Watch',
+              title: 'Create',
               headerBackImageSource: closeIcon,
               headerTitleAlign: 'center',
               headerBackTitleVisible: false,
