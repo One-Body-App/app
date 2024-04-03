@@ -12,8 +12,6 @@ import FilterScreen from '../components/ConnectPortal/Places/FilterScreen';
 import FilterServeScreen from '../components/ConnectPortal/Serve/FilterServeScreen';
 import mainPageOptions from './global';
 import { Colors } from '../styles';
-import Logo from '@/assets/icons/logo.svg';
-import LogoWhite from '@/assets/icons/logo_white.svg';
 import { ConnectPortalStackParamsList } from './types';
 
 const Stack = createNativeStackNavigator<ConnectPortalStackParamsList>();

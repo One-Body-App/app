@@ -186,8 +186,6 @@ function Home({ navigation, route }: Props) {
     // listRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
-  const cardSecondaryColor = dark ? '#353535' : '#DDD';
-
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       setIsRefreshing(true);
