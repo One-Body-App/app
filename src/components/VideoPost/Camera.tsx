@@ -74,7 +74,6 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
           camera.current.startRecording({
             videoCodec: 'h265',
             onRecordingFinished: async (video) => {
-              console.log('🚀 ~ handleStartRecording ~ video:', video);
               setRecordedVideo(video);
               isValidVideo(video?.path || '');
               showEditor(video?.path || '', {
@@ -123,7 +122,6 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     fetchPhotos();
     const eventEmitter = new NativeEventEmitter(NativeModules.VideoTrim);
     const subscription = eventEmitter.addListener('VideoTrim', async (event) => {
-      console.log('🚀 ~ subscription ~ event:', event);
       switch (event.name) {
         case 'onFinishTrimming': {
           // on trimming is done

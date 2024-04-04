@@ -3,7 +3,7 @@ import { Platform, Share, StyleProp, TouchableOpacity, View, ViewStyle } from 'r
 import FastImage from 'react-native-fast-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Heart, Location, Message2 } from 'iconsax-react-native';
-import { useTheme } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -21,7 +21,7 @@ import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledText from '../styled/Text';
 import { fontSize } from '@/src/styles/typography';
 import { spacing } from '@/src/styles/spacing';
-import { Colors, Spacing } from '@/src/styles';
+import { Colors } from '@/src/styles';
 
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
@@ -102,6 +102,7 @@ function BaseItem({
   reelLayout = false,
 }: BaseItemProps) {
   const { colors } = useTheme();
+  const { navigate } = useNavigation();
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -607,7 +608,15 @@ function BaseItem({
                 />
               </Reaction>
 
-              <View
+              <TouchableOpacity
+                onPress={() => {
+                  if (postData.id) {
+                    navigate('SingleRss', {
+                      postId: postData?.id,
+                      postType: postData?.type,
+                    });
+                  }
+                }}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -623,7 +632,7 @@ function BaseItem({
                 >
                   {postData?.commentNumber ?? postData.comments?.length ?? '0'}
                 </StyledText>
-              </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => {

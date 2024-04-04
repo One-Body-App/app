@@ -30,6 +30,7 @@ import CommentItem from '@/components/comments/CommentItem';
 
 import ArticleItem from '@/src/components/listItems/ArticleItem';
 import { styles as globalStyle } from '@/components/listItems/style';
+import VideoItem from '../home/watch/VideoItem';
 
 type Props = StackScreenProps<MainStackParamList, 'SingleRss'>;
 
@@ -118,6 +119,11 @@ function RssPost({ navigation, route }: Props) {
 
         verb: 'get',
       });
+      console.log('🚀 ~ RssPost ~ route:', route.params?.postId);
+      console.log('🚀 ~ getRssPost ~ result :', result);
+      // 🚀 ~ RssPost ~ route: 65fde17b81cdc6d0267dcb34
+      // getRssPost ~ result : {"response": "", "status": 200}
+      // maybe its just returning data from backend.
 
       setIsLoading(false);
 
@@ -183,7 +189,6 @@ function RssPost({ navigation, route }: Props) {
       const result = await ApiCall({
         route: `comments/rss/${route.params?.postId}`,
         token,
-
         verb: 'post',
         params: {
           content,
@@ -265,23 +270,37 @@ function RssPost({ navigation, route }: Props) {
                 onEndReached={() => {
                   if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
                 }}
-                ListHeaderComponent={() => (
-                  <ArticleItem
-                    item={post}
-                    imageSizeType="contain"
-                    blogPostStyle={{
-                      marginBottom: spacing.x24,
-                      backgroundColor: colors.card,
-                    }}
-                    blogPostImageStyle={globalStyle.newspostimage}
-                    // blogPostTitleStyle={{
-                    //   flexDirection: 'row',
-                    //   justifyContent: 'space-between',
-                    //   // marginTop: getHeight(1),
-                    // }}
-                    showModal={showModal}
-                  />
-                )}
+                ListHeaderComponent={() => {
+                  if (route.params?.postType === 'watch')
+                    return (
+                      <VideoItem
+                        index={0}
+                        activeInScreenIndex={0}
+                        item={post}
+                        viewHeight={200}
+                        width={50}
+                        fromSavedPosts={false}
+                        onShowDismissCard={undefined}
+                      />
+                    );
+                  return (
+                    <ArticleItem
+                      item={post}
+                      imageSizeType="contain"
+                      blogPostStyle={{
+                        marginBottom: spacing.x24,
+                        backgroundColor: colors.card,
+                      }}
+                      blogPostImageStyle={globalStyle.newspostimage}
+                      // blogPostTitleStyle={{
+                      //   flexDirection: 'row',
+                      //   justifyContent: 'space-between',
+                      //   // marginTop: getHeight(1),
+                      // }}
+                      showModal={showModal}
+                    />
+                  );
+                }}
                 refreshControl={
                   <RefreshControl
                     refreshing={isRefreshing && showRefreshIndicator}
