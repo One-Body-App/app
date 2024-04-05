@@ -3,6 +3,7 @@ import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Logo from '@/assets/svg/Logo.svg';
+import StyledText from './styled/Text';
 
 type Props = {
   title?: string;
@@ -57,7 +58,7 @@ function GradientHeader({ title, left }: Props) {
             elevation: 0,
           }}
         />
-        <Text
+        <StyledText
           style={{
             color: 'white',
             fontSize: getFontSize(3),
@@ -65,7 +66,7 @@ function GradientHeader({ title, left }: Props) {
           }}
         >
           {title ?? 'Welcome'}
-        </Text>
+        </StyledText>
       </LinearGradient>
     </View>
   );

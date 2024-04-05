@@ -629,7 +629,7 @@ function EditProfile({ navigation }: Props) {
                         // color: '#757575',
                         // fontSize: 12,
                         // // marginTop: getHeight(1),
-                        // fontFamily: 'Rubik-Regular',
+                        // fontFamily: 'OpenSans-Regular',
                         // textAlign: 'center',
                         // width: '40%',
                         // alignSelf: 'center',

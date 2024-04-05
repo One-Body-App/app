@@ -1347,7 +1347,7 @@ PODS:
     - RNFBApp
   - RNFS (2.20.0):
     - React-Core
-  - RNGestureHandler (2.14.1):
+  - RNGestureHandler (2.16.0):
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
@@ -1745,7 +1745,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   AppAuth: 3bb1d1cd9340bd09f5ed189fb00b1cc28e1e8570
-  boost: d3f49c53809116a5d38da093a8aa78bf551aed09
+  boost: 26fad476bfa736552bbfa698a06cc530475c1505
   BVLinearGradient: 880f91a7854faff2df62518f0281afb1c60d49a3
   DoubleConversion: fea03f2699887d960129cc54bba7e52542b6f953
   FBAEMKit: 6c7b5eb77c96861bb59e040842c6e55bf39512ce
@@ -1856,7 +1856,7 @@ SPEC CHECKSUMS:
   RNFBDynamicLinks: 77cccfac365229b763b6749949f2fac32d2ee87c
   RNFBMessaging: 1e7415390ae579c5949505a0709686a2de8a47e5
   RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
-  RNGestureHandler: 15c6ef51acba34c49ff03003806cf5dd6098f383
+  RNGestureHandler: bc2cdb2dc42facdf34992ae364b8a728e19a3686
   RNGoogleSignin: aac5c1ec73422109dec1da770247a1e410dcc620
   RNImageCropPicker: e7ab6fb43d2fc3e84651e786ef4a080d63b0ed3d
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
@@ -1880,4 +1880,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 97b20acec8a0b632736cca852d961c3e306d3287
 
-COCOAPODS: 1.14.3
+COCOAPODS: 1.15.2

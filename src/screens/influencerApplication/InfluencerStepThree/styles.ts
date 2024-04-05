@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
   paragraph: {
     color: '#4F6D77',
     fontWeight: '400',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     fontSize: 15.5,
     lineHeight: 20,
     marginTop: getHeight(0.5),
@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
   headingt: {
     color: '#032F3C',
     fontWeight: '500',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     letterSpacing: 0.25,
     fontSize: 18,
     marginTop: getHeight(2),
@@ -53,7 +53,7 @@ export const styles = StyleSheet.create({
   },
 
   text: {
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     width: getWidth(60),
     textAlign: 'center',
   },
@@ -61,7 +61,7 @@ export const styles = StyleSheet.create({
     color: '#032F3C',
     fontWeight: '600',
     fontSize: getFontSize(2.2),
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
   },
   progressBar: {
     width: getWidth(25),
@@ -79,7 +79,7 @@ export const styles = StyleSheet.create({
 
   heading: {
     fontSize: getFontSize(2.9),
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     textAlign: 'center',
 
     color: 'black',

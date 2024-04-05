@@ -41,7 +41,7 @@ export const styles = StyleSheet.create({
   },
   paragraph: {
     fontWeight: '400',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     fontSize: 15.5,
     lineHeight: 20,
     marginTop: getHeight(0.5),
@@ -50,7 +50,7 @@ export const styles = StyleSheet.create({
     color: '#304248',
     fontWeight: '400',
     fontStyle: 'italic',
-    fontFamily: 'Rubik-Bold',
+    fontFamily: 'OpenSans-Bold',
     fontSize: 15.5,
     lineHeight: 20,
     marginTop: getHeight(0.5),
@@ -70,7 +70,7 @@ export const styles = StyleSheet.create({
     color: 'white',
     fontSize: getFontSize(2),
     letterSpacing: 1,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
 
   Errorview: {

@@ -83,7 +83,7 @@ function Faqs({ navigation }) {
                 <Text
                   style={{
                     color: ' #032F3C',
-                    fontFamily: 'Rubik-Regular',
+                    fontFamily: 'OpenSans-Regular',
                     fontSize: 16,
                     fontWeight: '400',
                   }}

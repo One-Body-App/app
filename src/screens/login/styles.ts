@@ -40,7 +40,7 @@ export const styles = StyleSheet.create({
   },
   selectedTabText: {
     color: 'white',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     fontSize: getFontSize(2.3),
   },
   TabTex: { color: appColor.SecoundryColor, fontSize: getFontSize(2.3) },

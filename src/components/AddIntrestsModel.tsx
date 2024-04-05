@@ -7,6 +7,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { getuserAll, getInterests, addUserInterest } from '../redux/actions/UserAction';
 import GradientButton from './GradientButton';
+import StyledText from './styled/Text';
 
 type Route = {
   key: string;
@@ -81,7 +82,7 @@ function AddIntrestsModel(props: any) {
                     }
                     key={item?._id}
                   >
-                    <Text
+                    <StyledText
                       numberOfLines={1}
                       style={
                         selectedIntrest.includes(item?._id)
@@ -90,7 +91,7 @@ function AddIntrestsModel(props: any) {
                       }
                     >
                       {item?.name}
-                    </Text>
+                    </StyledText>
                   </TouchableOpacity>
                 ))}
             </View>
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: getFontSize(2),
     letterSpacing: 1,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   imageThumbnail: {
     justifyContent: 'center',

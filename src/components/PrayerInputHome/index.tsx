@@ -10,6 +10,7 @@ import { styles } from './styles';
 import { ApiCall } from '@/src/services/api';
 import { getAllPrayer, getMyPrayer, getTestimonies } from '@/src/redux/actions/PrayerAction';
 import Send from '@/assets/svg/Send.svg';
+import StyledText from '../styled/Text';
 
 function PrayerInputHome({ color }: { color: string }) {
   const dispatch = useDispatch();
@@ -181,7 +182,7 @@ function PrayerInputHome({ color }: { color: string }) {
         </TouchableOpacity>
       </View>
       {prayer !== '' && error == null ? (
-        <Text
+        <StyledText
           style={{
             color,
             paddingLeft: getWidth(5),
@@ -189,11 +190,10 @@ function PrayerInputHome({ color }: { color: string }) {
           }}
         >
           {prayer !== '' ? prayer.length : null}/150 Characters left
-        </Text>
+        </StyledText>
       ) : (
         <View
           style={{
-            color,
             paddingLeft: getWidth(5),
             marginBottom: getHeight(1),
           }}
@@ -201,7 +201,7 @@ function PrayerInputHome({ color }: { color: string }) {
       )}
       {error != null ? (
         <View style={styles.nulview}>
-          <Text style={styles.errortect}>{error}</Text>
+          <StyledText style={styles.errortect}>{error}</StyledText>
         </View>
       ) : null}
     </View>

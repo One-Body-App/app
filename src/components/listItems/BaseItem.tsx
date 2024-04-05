@@ -67,6 +67,7 @@ interface BaseItemProps {
     comments?: CommentPost[];
     commentNumber?: number;
   };
+  onCommentsPress?: Function;
   userData: PostUserData;
 
   isApprovedInfluencer?: boolean;
@@ -100,6 +101,7 @@ function BaseItem({
   editPost,
   fromSavedPosts,
   reelLayout = false,
+  onCommentsPress,
 }: BaseItemProps) {
   const { colors } = useTheme();
   const { navigate } = useNavigation();
@@ -609,12 +611,10 @@ function BaseItem({
               </Reaction>
 
               <TouchableOpacity
+                disabled={!onCommentsPress}
                 onPress={() => {
-                  if (postData.id) {
-                    navigate('SingleRss', {
-                      postId: postData?.id,
-                      postType: postData?.type,
-                    });
+                  if (onCommentsPress) {
+                    onCommentsPress();
                   }
                 }}
                 style={{

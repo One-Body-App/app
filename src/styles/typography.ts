@@ -46,12 +46,12 @@ export const fontWeight: Record<FontWeight, TextStyle> = {
 //   x40: 3,
 // };
 
-const poppinsFontFamily = Platform.select({
-  ios: 'poppins',
-  android: 'poppins',
+const openSansFontFamily = Platform.select({
+  ios: 'OpenSans-Regular',
+  android: 'OpenSans-Regular',
 });
 
-const defaultFontFamily = poppinsFontFamily;
+const defaultFontFamily = openSansFontFamily;
 
 type LineHeight = 'x1' | 'x2' | 'x3' | 'x4' | 'x5' | 'x6' | 'x7';
 export const lineHeight: Record<LineHeight, TextStyle> = {
@@ -224,7 +224,7 @@ export const body: Record<Body, TextStyle> = {
   },
 };
 
-type Poppins = 'base';
-export const poppins: Record<Poppins, TextStyle> = {
+type OpenSans = 'base';
+export const openSans: Record<OpenSans, TextStyle> = {
   base: body.x2,
 };

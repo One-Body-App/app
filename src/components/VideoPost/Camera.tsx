@@ -31,6 +31,7 @@ import { isValidVideo, showEditor } from 'react-native-video-trim';
 import videoPostStyles from './styles';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
+import StyledText from '../styled/Text';
 
 const cameraIos = require('@/assets/icons/camera-ios.png');
 
@@ -150,7 +151,7 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
   if (devices == null) {
     return (
       <View style={videoPostStyles.noCam}>
-        <Text>Camera not available</Text>
+        <StyledText>Camera not available</StyledText>
       </View>
     );
   }

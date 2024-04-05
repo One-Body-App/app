@@ -1,8 +1,9 @@
 import { TouchableOpacity, View, ScrollView, EmitterSubscription } from 'react-native';
 import { CloseCircle, Send, TickCircle } from 'iconsax-react-native';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '@react-navigation/native';
+import { useBottomSheetInternal } from '@gorhom/bottom-sheet';
 import StyledTextInput from '../styled/TextInput';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
@@ -16,6 +17,7 @@ interface Props {
   text?: string;
   isEditingComment?: boolean;
   setEditingComment?: (status: boolean) => void;
+  isFromBottomField?: boolean;
 }
 
 let keyboardWillShowListener: EmitterSubscription;
@@ -27,6 +29,7 @@ function CommentField({
   text,
   isEditingComment,
   setEditingComment,
+  isFromBottomField,
 }: Props) {
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
   const [content, setContent] = useState(text ?? '');
@@ -68,7 +71,24 @@ function CommentField({
     }
   };
 
-  const { colors } = useTheme();
+  const { shouldHandleKeyboardEvents } = useBottomSheetInternal();
+
+  useEffect(() => {
+    return () => {
+      // Reset the flag on unmount
+      shouldHandleKeyboardEvents.value = false;
+    };
+  }, [shouldHandleKeyboardEvents]);
+
+  // #region callbacks
+  const handleOnFocus = useCallback(() => {
+    shouldHandleKeyboardEvents.value = true;
+  }, [shouldHandleKeyboardEvents]);
+  const handleOnBlur = useCallback(() => {
+    console.log(shouldHandleKeyboardEvents);
+    shouldHandleKeyboardEvents.value = false;
+  }, [shouldHandleKeyboardEvents]);
+  // #endregion
 
   return (
     <>
@@ -83,6 +103,8 @@ function CommentField({
           placeholder={isEditingComment ? 'Edit Comment' : 'Drop your comment here'}
           multiline
           maxLength={600}
+          onFocus={isFromBottomField ? handleOnFocus : undefined}
+          onBlur={isFromBottomField ? handleOnBlur : undefined}
           enforceMaxLength
           value={content}
           placeholderTextColor={Colors.neutral[300]}

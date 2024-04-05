@@ -13,14 +13,14 @@ export const styles = StyleSheet.create({
   },
   heading: {
     fontSize: getFontSize(2),
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     fontWeight: '500',
     letterSpacing: 0.1,
     color: '#032F3C',
   },
   text: {
     fontSize: 12,
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     fontWeight: '400',
     color: '#70747D',
   },

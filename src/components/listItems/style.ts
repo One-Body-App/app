@@ -165,7 +165,7 @@ export const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '500',
     color: '#032F3C',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     marginLeft: 10,
     padding: 10,
     paddingBottom: 10,
@@ -190,7 +190,7 @@ export const styles = StyleSheet.create({
   },
   newstext: {
     color: 'white',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     alignSelf: 'center',
     fontSize: getFontSize(2.5),
     width: '90%',
@@ -202,7 +202,7 @@ export const styles = StyleSheet.create({
   },
   socialposttext: {
     fontSize: getFontSize(2.5),
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     marginLeft: getWidth(2),
     padding: 10,
     paddingBottom: 0,
@@ -264,7 +264,7 @@ export const styles = StyleSheet.create({
   },
   blogposttext: {
     fontSize: 20,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     marginLeft: 10,
     marginTop: 20,
     padding: 10,
@@ -294,7 +294,7 @@ export const styles = StyleSheet.create({
     padding: 2,
     marginTop: getHeight(1),
     flex: 2,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   blogposthour: {
     paddingBottom: 8,
@@ -310,7 +310,7 @@ export const styles = StyleSheet.create({
     width: 140,
 
     color: '#032F3C',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   viewtext: {
     flexDirection: 'row',

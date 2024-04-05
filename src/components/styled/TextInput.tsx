@@ -1,7 +1,7 @@
 import { ReactElement, forwardRef } from 'react';
 import { StyleSheet, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
 import { useTheme } from '@react-navigation/native';
-import { poppins } from '@/src/styles/typography';
+import { openSans } from '@/src/styles/typography';
 import StyledText from './Text';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
@@ -78,7 +78,7 @@ export default forwardRef<TextInput, Props>((props, ref) => {
             { paddingVertical: spacing.x10, color: colors.text },
             styles.input,
             inputStyle,
-            poppins.base,
+            openSans.base,
           ]}
         />
 

@@ -42,7 +42,7 @@ export const styles = StyleSheet.create({
   },
   selectedTabText: {
     color: 'white',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     fontSize: getFontSize(2.3),
   },
   TabTex: { color: appColor.SecoundryColor, fontSize: getFontSize(2.3) },
@@ -78,13 +78,13 @@ export const styles = StyleSheet.create({
     marginTop: getHeight(7),
     width: getWidth(80),
     textAlign: 'center',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
   },
 
   heading: {
     fontSize: getFontSize(2.7),
     marginTop: getHeight(2),
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     textAlign: 'center',
 
     color: 'black',
@@ -94,7 +94,7 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     color: '#032F3C',
   },
   btn: {
@@ -131,7 +131,7 @@ export const styles = StyleSheet.create({
   btnText: {
     fontSize: getFontSize(1.8),
 
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   Errorview: { padding: 5, flexDirection: 'row', marginLeft: getWidth(10) },
   errortext: {

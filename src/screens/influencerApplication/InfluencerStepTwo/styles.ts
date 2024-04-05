@@ -69,7 +69,7 @@ export const styles = StyleSheet.create({
   text: {
     width: '80%',
     textAlign: 'center',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     color: '#888C93',
   },
   TextInput: {
@@ -90,7 +90,7 @@ export const styles = StyleSheet.create({
     color: '#032F3C',
     fontWeight: '600',
     fontSize: getFontSize(2.2),
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
   },
   progressBar: {
     width: getWidth(25),
@@ -109,7 +109,7 @@ export const styles = StyleSheet.create({
   heading: {
     fontSize: getFontSize(2.9),
     textAlign: 'center',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
 
     color: '#032F3C',
   },

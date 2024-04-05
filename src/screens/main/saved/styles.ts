@@ -31,7 +31,7 @@ export const styles = StyleSheet.create({
     marginTop: getHeight(1),
     lineHeight: 18,
 
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
 
     width: 150,
   },

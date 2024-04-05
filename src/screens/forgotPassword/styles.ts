@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
   title: {
     color: appColor.PrimaryColor,
     fontSize: getFontSize(3.2),
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     textAlign: 'justify',
   },
   subTitle: {
