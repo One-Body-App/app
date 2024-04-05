@@ -56,7 +56,7 @@ function ConnectPortalHome() {
 
       <View style={styles.optionContainer}>
         <OptionButton
-          label="Pleople/Places"
+          label="People/Places"
           option="Places"
           selectedOption={selectedOption}
           onPress={handleOptionSelect}

@@ -14,7 +14,7 @@ const lobbyConnectPortalStyles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 20,
-    height: '85%',
+    height: '65%',
     position: 'absolute',
     bottom: 0,
     left: 0,

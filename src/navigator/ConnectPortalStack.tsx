@@ -10,6 +10,7 @@ import Go from '../components/ConnectPortal/Go';
 import Serve from '../components/ConnectPortal/Serve/Serve';
 import FilterScreen from '../components/ConnectPortal/Places/FilterScreen';
 import FilterServeScreen from '../components/ConnectPortal/Serve/FilterServeScreen';
+import HomeScreen from '../components/ConnectPortal/Places/HomeScreen';
 import mainPageOptions from './global';
 import { Colors } from '../styles';
 import { ConnectPortalStackParamsList } from './types';
@@ -33,7 +34,7 @@ function ConnectPortalStack() {
             headerTitleAlign: 'center',
           };
         }}
-        component={ConnectPortalHome}
+        component={HomeScreen}
       />
 
       <Stack.Screen name="People" component={People} />
