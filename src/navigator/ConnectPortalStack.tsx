@@ -6,12 +6,14 @@ import { Notification } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import ConnectPortalHome from '../screens/ConnectPortalHome/ConnectPortalHome';
 import People from '../components/ConnectPortal/Places/People';
-import Go from '../components/ConnectPortal/Go';
+import Go from '../components/ConnectPortal/Go/Go';
 import Serve from '../components/ConnectPortal/Serve/Serve';
 import FilterScreen from '../components/ConnectPortal/Places/FilterScreen';
+import FilterGoScreen from '../components/ConnectPortal/Go/FilterGoScreen';
 import FilterServeScreen from '../components/ConnectPortal/Serve/FilterServeScreen';
-import HomeScreenServe from '../components/ConnectPortal/Serve/HomeScreenServe';
+import HomeScreenGo from '../components/ConnectPortal/Go/HomeScreenGo';
 import HomeScreenPlace from '../components/ConnectPortal/Places/HomeScreenPlace';
+import HomeServeScreen from '../components/ConnectPortal/Serve/HomeScreenServe';
 import mainPageOptions from './global';
 import { Colors } from '../styles';
 import { ConnectPortalStackParamsList } from './types';
@@ -43,6 +45,8 @@ function ConnectPortalStack() {
       <Stack.Screen name="FilterScreen" component={FilterScreen} />
 
       <Stack.Screen name="Go" component={Go} />
+
+      <Stack.Screen name="FilterGoScreen" component={FilterGoScreen} />
 
       <Stack.Screen name="Serve" component={Serve} />
 

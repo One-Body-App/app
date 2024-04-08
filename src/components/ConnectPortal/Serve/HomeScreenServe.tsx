@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
-import {
-  ImageSourcePropType,
-  ScrollView,
-  Text,
-  View,
-  TouchableOpacity,
-  FlatList,
-  Image,
-} from 'react-native';
+import { TouchableOpacity, Text, View, ScrollView, FlatList, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faArrowRight, faMapMarker, faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
-import { CalendarSearch } from 'iconsax-react-native';
-import { styles } from '../connectPortalStyles';
-import EventsImage from '@/assets/images/Events.png';
+import {
+  faArrowRight,
+  faCalendarAlt,
+  faTag,
+  faMapMarkerAlt,
+} from '@fortawesome/free-solid-svg-icons';
+import { Strongbox } from 'iconsax-react-native';
 import StyledText from '../../styled/Text';
+import { styles } from '../connectPortalStyles';
+import { spacing } from '@/src/styles/spacing';
 
 type homeServeTypes = 'People/Places' | 'Go!' | 'Serve';
 
@@ -25,58 +22,46 @@ interface OptionButtonProps {
   onPress: (option: homeServeTypes) => void;
 }
 
-interface Events {
+interface Opportunity {
   id: number;
   name: string;
-  date: Date;
-  hour: string;
+  date: string;
+  eventType: string;
   location: string;
-  imageSource: ImageSourcePropType;
 }
 
-function HomeScreenServe() {
-  const [events, setEvents] = useState<Events[]>([
+function HomeServeScreen() {
+  const [opportunity, setOpportunity] = useState<Opportunity[]>([
     {
       id: 1,
-      name: 'Easter sunday Thanksgiving',
-      date: new Date(2024, 5, 23),
-      hour: '5:30 pm - 6:30 pm EST',
-      location: 'Toronto',
-      imageSource: EventsImage,
+      name: 'Hiring a Full Time Accountant for Med size Church',
+      date: 'Closes: July 15, 2028',
+      eventType: 'Accounting',
+      location: 'Atlanta, GA',
     },
     {
       id: 2,
-      name: 'Easter sunday Thanksgiving',
-      date: new Date(2024, 5, 23),
-      hour: '5:30 pm - 6:30 pm EST',
-      location: 'Toronto',
-      imageSource: EventsImage,
+      name: 'Drummer needed for 4 services per week',
+      date: 'Closes: June 29, 2028',
+      eventType: 'Musicians',
+      location: 'Decatur, GA',
     },
     {
       id: 3,
-      name: 'Easter sunday Thanksgiving',
-      date: new Date(2024, 5, 23),
-      hour: '5:30 pm - 6:30 pm EST',
-      location: 'Toronto',
-      imageSource: EventsImage,
+      name: 'Web Developer needed for Church website',
+      date: 'Closes: August 30, 2028',
+      eventType: 'Technology',
+      location: 'Clarkston, GA',
     },
     {
       id: 4,
-      name: 'Easter sunday Thanksgiving',
-      date: new Date(2024, 5, 23),
-      hour: '5:30 pm - 6:30 pm EST',
-      location: 'Toronto',
-      imageSource: EventsImage,
-    },
-    {
-      id: 5,
-      name: 'Easter sunday Thanksgiving',
-      date: new Date(2024, 5, 23),
-      hour: '5:30 pm - 6:30 pm EST',
-      location: 'Toronto',
-      imageSource: EventsImage,
+      name: 'After School Lead needed for fast growing Daycare',
+      date: 'Closes: June 15, 2028',
+      eventType: 'Childcare',
+      location: 'Dublin, GA',
     },
   ]);
+
   const [selectedOption, setSelectedOption] = useState<homeServeTypes>('Serve');
 
   const navigation = useNavigation();
@@ -110,7 +95,6 @@ function HomeScreenServe() {
             onPress={handleOptionSelect}
           />
         </View>
-
         <View style={styles.cardContainer}>
           <View style={styles.arrowContainer}>
             <TouchableOpacity
@@ -121,49 +105,46 @@ function HomeScreenServe() {
             </TouchableOpacity>
           </View>
           <View style={{ ...styles.iconsContainer, width: 40, height: 40 }}>
-            <CalendarSearch size={40} color="#126B87" />
+            <Strongbox size={40} color="#126B87" />
           </View>
           <StyledText style={[styles.title, { textAlign: 'center', color: '#000' }]}>
-            Find Events
+            Find Job Opportunities
           </StyledText>
           <StyledText
             style={[styles.contenCard, { textAlign: 'center', color: '#000' }]}
             numberOfLines={2}
           >
-            Explore local Christian events and go!
+            Discover and post jobs/ opportunities.
           </StyledText>
           <View style={{ position: 'absolute', bottom: 0, right: 0 }}>
-            <CalendarSearch size={80} color="#999" />
+            <Strongbox size={70} color="#999" />
           </View>
         </View>
 
         <View style={styles.headerLineContainer}>
           <View style={styles.line} />
-          <StyledText style={styles.headerLine}>Recommended Events</StyledText>
+          <StyledText style={styles.headerLine}>Recommended Opportunities</StyledText>
           <View style={styles.line} />
         </View>
 
         <View style={styles.organizationContainer}>
           <FlatList
-            data={events}
+            data={opportunity}
             renderItem={({ item }) => (
-              <View style={styles.organizationCard}>
-                <View style={styles.cardHeader}>
-                  <Image source={item.imageSource} style={styles.organizationImage} />
-                </View>
-                <View style={styles.organizationInfo}>
-                  <Text style={styles.organizationName}>{item.name}</Text>
-                  <View style={styles.organizationTypeContainer}>
-                    <FontAwesomeIcon icon={faCalendar} size={16} style={styles.typeIcon} />
-                    <Text style={styles.organizationType}>{item.date.toLocaleDateString()}</Text>
+              <View style={localstyle.cardContainer}>
+                <View style={localstyle.card}>
+                  <StyledText style={localstyle.cardTitle}>{item.name}</StyledText>
+                  <View style={localstyle.cardInfo}>
+                    <FontAwesomeIcon icon={faCalendarAlt} size={20} color="black" />
+                    <StyledText>{item.date}</StyledText>
                   </View>
-                  <View style={styles.organizationTypeContainer}>
-                    <FontAwesomeIcon icon={faClock} size={16} style={styles.typeIcon} />
-                    <Text style={styles.organizationType}>{item.hour}</Text>
+                  <View style={localstyle.cardInfo}>
+                    <FontAwesomeIcon icon={faTag} size={20} color="black" />
+                    <StyledText>{item.eventType}</StyledText>
                   </View>
-                  <View style={styles.organizationTypeContainer}>
-                    <FontAwesomeIcon icon={faMapMarker} size={16} style={styles.typeIcon} />
-                    <Text style={styles.organizationType}>{item.location}</Text>
+                  <View style={localstyle.cardInfo}>
+                    <FontAwesomeIcon icon={faMapMarkerAlt} size={20} color="black" />
+                    <StyledText>{item.location}</StyledText>
                   </View>
                 </View>
               </View>
@@ -171,8 +152,8 @@ function HomeScreenServe() {
             keyExtractor={(item) => item.id.toString()}
           />
         </View>
-        <TouchableOpacity style={styles.seeMoreButton}>
-          <Text style={styles.seeMoreText}>See More</Text>
+        <TouchableOpacity style={localstyle.seeMoreButton}>
+          <StyledText style={localstyle.seeMoreText}>See More</StyledText>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -199,4 +180,42 @@ const OptionButton: React.FC<OptionButtonProps> = ({ label, option, selectedOpti
   );
 };
 
-export default HomeScreenServe;
+const localstyle = StyleSheet.create({
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: spacing.x20,
+    marginBottom: spacing.x20,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: spacing.x10,
+  },
+  cardInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.x10,
+  },
+  cardContainer: {
+    backgroundColor: '#F2F3F3',
+    borderRadius: 10,
+    padding: spacing.x10,
+    marginBottom: spacing.x16,
+  },
+  seeMoreButton: {
+    backgroundColor: '#f2f3f3',
+    borderRadius: 25,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 30,
+    marginBottom: 70,
+  },
+  seeMoreText: {
+    color: 'black',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+});
+
+export default HomeServeScreen;

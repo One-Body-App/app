@@ -34,6 +34,8 @@ function ConnectPortalHome() {
       navigation.navigate('People');
     } else if (option === 'Serve') {
       navigation.navigate('Serve');
+    } else if (option === 'Go') {
+      navigation.navigate('Go');
     }
   };
 

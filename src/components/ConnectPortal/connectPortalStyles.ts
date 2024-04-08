@@ -348,4 +348,12 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  flatListContainer: {
+    padding: 10,
+  },
+  cardContainer2: {
+    backgroundColor: '#F2F3F3',
+    borderRadius: 10,
+    padding: spacing.x10,
+  },
 });
