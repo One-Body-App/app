@@ -245,6 +245,9 @@ export const styles = StyleSheet.create({
     marginLeft: spacing.x30,
     color: '#000',
   },
+  dateText: {
+    color: 'black',
+  },
   headerLineContainer: {
     flexDirection: 'row',
     alignItems: 'center',

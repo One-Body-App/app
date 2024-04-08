@@ -23,7 +23,6 @@ import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import { spacing } from '@/src/styles/spacing';
 import { styles } from '../connectPortalStyles';
-import HomeScreen from './HomeScreen';
 import churchImage from '../../../assets/images/church.jpeg';
 
 type types = 'Explore' | 'My Places' | 'Filter' | 'List' | 'Map';

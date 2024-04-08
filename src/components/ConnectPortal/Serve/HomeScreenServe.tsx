@@ -1,83 +1,89 @@
 import React, { useState } from 'react';
 import {
+  ImageSourcePropType,
+  ScrollView,
+  Text,
   View,
   TouchableOpacity,
-  Text,
-  ImageSourcePropType,
   FlatList,
   Image,
-  ScrollView,
 } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faArrowRight, faMapMarker, faChurch } from '@fortawesome/free-solid-svg-icons';
-import { GlobalSearch } from 'iconsax-react-native';
 import { useNavigation } from '@react-navigation/native';
-import StyledText from '../../styled/Text';
-import churchImage from '../../../assets/images/church.jpeg';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faArrowRight, faMapMarker, faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
+import { CalendarSearch } from 'iconsax-react-native';
 import { styles } from '../connectPortalStyles';
+import EventsImage from '@/assets/images/Events.png';
+import StyledText from '../../styled/Text';
 
-type connectPortalHomeTypes = 'People/Places' | 'Go!' | 'Serve';
+type homeServeTypes = 'People/Places' | 'Go!' | 'Serve';
 
 interface OptionButtonProps {
   label: string;
-  option: connectPortalHomeTypes;
-  selectedOption: connectPortalHomeTypes;
-  onPress: (option: connectPortalHomeTypes) => void;
+  option: homeServeTypes;
+  selectedOption: homeServeTypes;
+  onPress: (option: homeServeTypes) => void;
 }
 
-interface Organization {
+interface Events {
   id: number;
   name: string;
-  type: string;
+  date: Date;
+  hour: string;
   location: string;
   imageSource: ImageSourcePropType;
 }
 
-function HomeScreen() {
-  const [organizations, setOrganizations] = useState<Organization[]>([
+function HomeScreenServe() {
+  const [events, setEvents] = useState<Events[]>([
     {
       id: 1,
-      name: 'Lakewood church',
-      type: 'Church',
+      name: 'Easter sunday Thanksgiving',
+      date: new Date(2024, 5, 23),
+      hour: '5:30 pm - 6:30 pm EST',
       location: 'Toronto',
-      imageSource: churchImage,
+      imageSource: EventsImage,
     },
     {
       id: 2,
-      name: 'Lakewood church',
-      type: 'Church',
+      name: 'Easter sunday Thanksgiving',
+      date: new Date(2024, 5, 23),
+      hour: '5:30 pm - 6:30 pm EST',
       location: 'Toronto',
-      imageSource: churchImage,
+      imageSource: EventsImage,
     },
     {
       id: 3,
-      name: 'Lakewood church',
-      type: 'Church',
+      name: 'Easter sunday Thanksgiving',
+      date: new Date(2024, 5, 23),
+      hour: '5:30 pm - 6:30 pm EST',
       location: 'Toronto',
-      imageSource: churchImage,
+      imageSource: EventsImage,
     },
     {
       id: 4,
-      name: 'Lakewood church',
-      type: 'Church',
+      name: 'Easter sunday Thanksgiving',
+      date: new Date(2024, 5, 23),
+      hour: '5:30 pm - 6:30 pm EST',
       location: 'Toronto',
-      imageSource: churchImage,
+      imageSource: EventsImage,
     },
     {
       id: 5,
-      name: 'Lakewood church',
-      type: 'Church',
+      name: 'Easter sunday Thanksgiving',
+      date: new Date(2024, 5, 23),
+      hour: '5:30 pm - 6:30 pm EST',
       location: 'Toronto',
-      imageSource: churchImage,
+      imageSource: EventsImage,
     },
   ]);
-  const [selectedOption, setSelectedOption] = useState<connectPortalHomeTypes>('People/Places');
+  const [selectedOption, setSelectedOption] = useState<homeServeTypes>('Serve');
 
   const navigation = useNavigation();
-  const handleOptionSelect = (option: connectPortalHomeTypes) => {
+  const handleOptionSelect = (option: homeServeTypes) => {
     setSelectedOption(option);
-    if (option === 'People/Places') {
-      navigation.navigate('People');
+    if (option === 'Serve') {
+      navigation.navigate('Serve');
     }
   };
 
@@ -109,37 +115,37 @@ function HomeScreen() {
           <View style={styles.arrowContainer}>
             <TouchableOpacity
               style={styles.arrowIconContainer}
-              onPress={() => handleOptionSelect('People/Places')}
+              onPress={() => handleOptionSelect('Serve')}
             >
               <FontAwesomeIcon icon={faArrowRight} size={20} color="#fff" />
             </TouchableOpacity>
           </View>
           <View style={{ ...styles.iconsContainer, width: 40, height: 40 }}>
-            <GlobalSearch size={40} color="#126B87" />
+            <CalendarSearch size={40} color="#126B87" />
           </View>
           <StyledText style={[styles.title, { textAlign: 'center', color: '#000' }]}>
-            Find Organizations Near You
+            Find Events
           </StyledText>
           <StyledText
             style={[styles.contenCard, { textAlign: 'center', color: '#000' }]}
             numberOfLines={2}
           >
-            Find local Church’s, Non-Profits and more near you!
+            Explore local Christian events and go!
           </StyledText>
           <View style={{ position: 'absolute', bottom: 0, right: 0 }}>
-            <GlobalSearch size={80} color="#999" />
+            <CalendarSearch size={80} color="#999" />
           </View>
         </View>
 
         <View style={styles.headerLineContainer}>
           <View style={styles.line} />
-          <StyledText style={styles.headerLine}>Recommended Places</StyledText>
+          <StyledText style={styles.headerLine}>Recommended Events</StyledText>
           <View style={styles.line} />
         </View>
 
-        <View style={styles.organizationListContainer}>
+        <View style={styles.organizationContainer}>
           <FlatList
-            data={organizations}
+            data={events}
             renderItem={({ item }) => (
               <View style={styles.organizationCard}>
                 <View style={styles.cardHeader}>
@@ -148,12 +154,16 @@ function HomeScreen() {
                 <View style={styles.organizationInfo}>
                   <Text style={styles.organizationName}>{item.name}</Text>
                   <View style={styles.organizationTypeContainer}>
-                    <FontAwesomeIcon icon={faChurch} size={16} style={styles.typeIcon} />
-                    <Text style={styles.organizationType}>{item.type}</Text>
+                    <FontAwesomeIcon icon={faCalendar} size={16} style={styles.typeIcon} />
+                    <Text style={styles.organizationType}>{item.date.toLocaleDateString()}</Text>
                   </View>
-                  <View style={styles.organizationLocationContainer}>
-                    <FontAwesomeIcon icon={faMapMarker} size={16} style={styles.locationIcon} />
-                    <Text style={styles.organizationLocation}>{item.location}</Text>
+                  <View style={styles.organizationTypeContainer}>
+                    <FontAwesomeIcon icon={faClock} size={16} style={styles.typeIcon} />
+                    <Text style={styles.organizationType}>{item.hour}</Text>
+                  </View>
+                  <View style={styles.organizationTypeContainer}>
+                    <FontAwesomeIcon icon={faMapMarker} size={16} style={styles.typeIcon} />
+                    <Text style={styles.organizationType}>{item.location}</Text>
                   </View>
                 </View>
               </View>
@@ -161,7 +171,6 @@ function HomeScreen() {
             keyExtractor={(item) => item.id.toString()}
           />
         </View>
-
         <TouchableOpacity style={styles.seeMoreButton}>
           <Text style={styles.seeMoreText}>See More</Text>
         </TouchableOpacity>
@@ -190,4 +199,4 @@ const OptionButton: React.FC<OptionButtonProps> = ({ label, option, selectedOpti
   );
 };
 
-export default HomeScreen;
+export default HomeScreenServe;
