@@ -1,12 +1,10 @@
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   NativeModules,
   NativeEventEmitter,
   Image,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import React, {
@@ -63,6 +61,8 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
         saveToPhoto: false,
         enableSaveDialog: false,
         maxDuration: 60,
+        cancelDialogMessage: 'Are you sure you want to delete this?',
+        cancelDialogConfirmText: 'Delete',
       });
     }
   };

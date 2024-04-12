@@ -35,6 +35,8 @@ function VideoPost({ navigation }: Props) {
   const [VideoPath, setVideoPath] = useState<string | undefined>(undefined);
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [playedTimes, setPlayedTimes] = useState<number>(1);
+
   const toast = useToast();
 
   const uploadToMux = async () => {
@@ -74,14 +76,11 @@ function VideoPost({ navigation }: Props) {
         token,
       });
       if (res.status == 200) {
-        toast.show(
-          'Watch created successfully. Video processing; will be public upon completion.',
-          {
-            id: 'successMessage',
-            type: 'success',
-            placement: 'bottom',
-          }
-        );
+        toast.show('Your post is being processed. It will be public shortly!', {
+          id: 'successMessage',
+          type: 'success',
+          placement: 'bottom',
+        });
         navigation.navigate('MainRoot', {
           screen: 'Main',
           params: {
@@ -95,13 +94,12 @@ function VideoPost({ navigation }: Props) {
 
       setLoading(false);
     } catch (error) {
-      console.error(error);
       setLoading(false);
     }
   };
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={[styles.container, { marginVertical: Platform.OS == 'ios' ? 50 : 0 }]}>
+      <View style={[styles.container]}>
         <View style={styles.subContainer}>
           {!VideoPath ? (
             <CameraComponent setVideoPath={setVideoPath} />
@@ -109,10 +107,11 @@ function VideoPost({ navigation }: Props) {
             <SafeAreaView
               style={{
                 flex: 1,
+
                 paddingTop: spacing.x10,
               }}
             >
-              <View style={{ flex: 1, alignItems: 'center', paddingTop: 50 }}>
+              <View style={{ flex: 3, alignItems: 'center' }}>
                 <View
                   style={{
                     flex: 1,
@@ -120,15 +119,18 @@ function VideoPost({ navigation }: Props) {
                     overflow: 'hidden',
                     aspectRatio: '9/16',
                     margin: 'auto',
-                    marginTop: spacing.x30,
                   }}
                 >
                   <Video
                     source={{ uri: VideoPath || '' }}
                     resizeMode="contain"
-                    repeat
-                    // controls
+                    repeat={playedTimes <= 3}
+                    paused={playedTimes >= 3}
+                    controls
                     style={{ flex: 1 }}
+                    onEnd={() => {
+                      setPlayedTimes(playedTimes + 1);
+                    }}
                   />
                 </View>
               </View>

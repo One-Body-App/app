@@ -274,8 +274,7 @@ function RssPost({ navigation, route }: Props) {
                   if (route.params?.postType === 'watch')
                     return (
                       <VideoItem
-                        index={0}
-                        activeInScreenIndex={0}
+                        currentIndex={0}
                         item={post}
                         viewHeight={200}
                         width={50}

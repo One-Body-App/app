@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { spacing } from '@/src/styles/spacing';
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getHeight } from '@/utils/ResponsiveFun';
 
 const styles = StyleSheet.create({
   container: {
@@ -10,8 +10,6 @@ const styles = StyleSheet.create({
   videoContainer: {
     flex: 1,
     overflow: 'hidden',
-    height: getHeight(74.2),
-    width: getWidth(100),
   },
   videoInfo: {
     position: 'absolute',

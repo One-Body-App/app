@@ -35,7 +35,6 @@ function ImageSlide({
         style={{
           width,
           height,
-          backgroundColor: Colors.neutral[800],
           justifyContent: 'center',
           alignItems: 'center',
         }}

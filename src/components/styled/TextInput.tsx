@@ -1,4 +1,4 @@
-import { ReactElement, forwardRef } from 'react';
+import { FC, ReactElement, ReactNode, forwardRef } from 'react';
 import { StyleSheet, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { openSans } from '@/src/styles/typography';
@@ -20,6 +20,7 @@ interface Props extends TextInputProps {
   inputWrapperStyle?: ViewStyle;
   maxLengthErrorMessage?: string;
   enforceMaxLength?: boolean;
+  customComponent?: ReactNode | FC;
 }
 
 export default forwardRef<TextInput, Props>((props, ref) => {
@@ -37,6 +38,7 @@ export default forwardRef<TextInput, Props>((props, ref) => {
     maxLengthErrorMessage,
     maxLength,
     enforceMaxLength,
+    customComponent,
     ...textInputProps
   } = props;
   let backgroundColorWrapper = backgroundColor;
@@ -48,6 +50,12 @@ export default forwardRef<TextInput, Props>((props, ref) => {
     backgroundColorWrapper = color700;
   }
   const { colors } = useTheme();
+
+  let TextInputField: any = TextInput;
+
+  if (customComponent) {
+    TextInputField = customComponent;
+  }
 
   return (
     <View style={wrapperStyle}>
@@ -70,7 +78,7 @@ export default forwardRef<TextInput, Props>((props, ref) => {
       >
         {leftIcon || null}
 
-        <TextInput
+        <TextInputField
           ref={ref}
           {...textInputProps}
           maxLength={enforceMaxLength && maxLength ? maxLength : undefined}

@@ -566,7 +566,7 @@ function ProfileHeader({
           </View>
 
           {profileData.accountType === AccountType.individual &&
-          (profileData?._id === currentUser._id || profileData.profile?.isChurchTypePublic) ? (
+          profileData.profile?.isChurchTypePublic ? (
             <View
               style={{
                 flexDirection: 'row',

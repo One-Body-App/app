@@ -69,6 +69,7 @@ const videoPostStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginHorizontal: spacing.x16,
+    paddingBottom: spacing.x20,
   },
   galleryPreview: {
     height: 40,

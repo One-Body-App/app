@@ -1,9 +1,9 @@
 import { TouchableOpacity, View, ScrollView, EmitterSubscription } from 'react-native';
 import { CloseCircle, Send, TickCircle } from 'iconsax-react-native';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import { useCallback, useEffect, useState } from 'react';
+import { ReactComponentElement, ReactNode, useCallback, useEffect, useState } from 'react';
 import { useTheme } from '@react-navigation/native';
-import { useBottomSheetInternal } from '@gorhom/bottom-sheet';
+import { BottomSheetTextInput, useBottomSheetInternal } from '@gorhom/bottom-sheet';
 import StyledTextInput from '../styled/TextInput';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
@@ -71,24 +71,24 @@ function CommentField({
     }
   };
 
-  const { shouldHandleKeyboardEvents } = useBottomSheetInternal();
+  // const { shouldHandleKeyboardEvents } = useBottomSheetInternal();
 
-  useEffect(() => {
-    return () => {
-      // Reset the flag on unmount
-      shouldHandleKeyboardEvents.value = false;
-    };
-  }, [shouldHandleKeyboardEvents]);
+  // useEffect(() => {
+  //   return () => {
+  //     // Reset the flag on unmount
+  //     shouldHandleKeyboardEvents.value = false;
+  //   };
+  // }, [shouldHandleKeyboardEvents]);
 
-  // #region callbacks
-  const handleOnFocus = useCallback(() => {
-    shouldHandleKeyboardEvents.value = true;
-  }, [shouldHandleKeyboardEvents]);
-  const handleOnBlur = useCallback(() => {
-    console.log(shouldHandleKeyboardEvents);
-    shouldHandleKeyboardEvents.value = false;
-  }, [shouldHandleKeyboardEvents]);
-  // #endregion
+  // // #region callbacks
+  // const handleOnFocus = useCallback(() => {
+  //   shouldHandleKeyboardEvents.value = true;
+  // }, [shouldHandleKeyboardEvents]);
+  // const handleOnBlur = useCallback(() => {
+  //   console.log(shouldHandleKeyboardEvents);
+  //   shouldHandleKeyboardEvents.value = false;
+  // }, [shouldHandleKeyboardEvents]);
+  // // #endregion
 
   return (
     <>
@@ -103,12 +103,10 @@ function CommentField({
           placeholder={isEditingComment ? 'Edit Comment' : 'Drop your comment here'}
           multiline
           maxLength={600}
-          onFocus={isFromBottomField ? handleOnFocus : undefined}
-          onBlur={isFromBottomField ? handleOnBlur : undefined}
           enforceMaxLength
           value={content}
           placeholderTextColor={Colors.neutral[300]}
-          onChangeText={(content) => {
+          onChangeText={(content: any) => {
             setContent(content);
           }}
           onSubmitEditing={() => {
@@ -133,6 +131,7 @@ function CommentField({
             borderColor: Colors.neutral[600],
             borderWidth: 1,
           }}
+          customComponent={isFromBottomField ? BottomSheetTextInput : undefined}
           leftIcon={
             <Button
               text="GIF"

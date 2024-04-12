@@ -3,8 +3,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
-import { TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Notification } from 'iconsax-react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Home, { FeedTypes } from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
@@ -15,6 +16,8 @@ import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
 import mainPageOptions from './global';
 import Watch from '../screens/home/watch';
+import StyledText from '../components/styled/Text';
+import { fontSize } from '../styles/typography';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
 function HomeStack() {
@@ -95,10 +98,36 @@ function HomeStack() {
           headerShown: true,
           headerTintColor: '#fff',
           headerTransparent: true,
+
+          headerBackTitleVisible: false,
           title: 'Watch',
-          headerStyle: {
-            backgroundColor: 'rgba(0,0,0,0.4)',
-          },
+          headerTitle: (props) => (
+            <Text
+              {...props}
+              style={{
+                fontWeight: 'bold',
+                color: 'white',
+                fontSize: fontSize.x4.fontSize,
+                textShadowColor: 'rgba(0,0,0,0.3)',
+                textShadowRadius: 1,
+                textShadowOffset: {
+                  width: 1,
+                  height: 1,
+                },
+              }}
+            />
+          ),
+
+          // headerStyle: {
+          //   backgroundColor: 'rgba(0,0,0,0.06)',
+          // },
+          headerBackground: () => (
+            <LinearGradient
+              colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0)']}
+              locations={[0.8, 1]}
+              style={[StyleSheet.absoluteFill, { flex: 1 }]}
+            />
+          ),
         }}
       />
 

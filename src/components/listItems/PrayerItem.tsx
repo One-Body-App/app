@@ -25,7 +25,7 @@ import Toast, { useToast } from 'react-native-toast-notifications';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
-import { PostType, PrayerPost, SocialPostReaction } from '@/utils/types';
+import { PostType, PrayerPost, PrayerWallCategory, SocialPostReaction } from '@/utils/types';
 import {
   MainDrawerParamsList,
   MainBottomStackParamsList,
@@ -395,7 +395,9 @@ function PrayerItem({
         )}
       </View>
 
-      {item?.userData?._id == user?._id && !item.answered ? (
+      {item?.userData?._id == user?._id &&
+      !item.answered &&
+      item.category == PrayerWallCategory.Request ? (
         <View
           style={{
             // paddingHorizontal: spacing.x10,

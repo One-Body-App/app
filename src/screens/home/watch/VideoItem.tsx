@@ -39,11 +39,10 @@ type VideoItemProps = {
   item: WatchPost;
   viewHeight: number;
   width: number;
-  index: number;
+  currentIndex: number;
   fromSavedPosts: boolean;
   parentRefreshContent?: Function;
   onShowDismissCard?: (e?: boolean) => void;
-  activeInScreenIndex: number;
 };
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<HomeStackParamsList, 'Home'>,
@@ -58,11 +57,10 @@ const VideoItem = gestureHandlerRootHOC(
     item,
     viewHeight,
     width,
-    index,
     fromSavedPosts,
     parentRefreshContent,
     onShowDismissCard,
-    activeInScreenIndex,
+    currentIndex,
   }: PropsWithChildren<VideoItemProps>) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
@@ -110,26 +108,26 @@ const VideoItem = gestureHandlerRootHOC(
       }
     });
 
-    useEffect(() => {
-      if (index === activeInScreenIndex) {
-        setIsPaused(false);
-        setPlayedTimes(0);
-        videRef.current?.seek(0);
-      } else {
-        setIsPaused(true);
-      }
-    }, [activeInScreenIndex]);
+    // useEffect(() => {
+    //   if (currentIndex === activeInScreenIndex) {
+    //     setIsPaused(false);
+    //     setPlayedTimes(0);
+    //     videRef.current?.seek(0);
+    //   } else {
+    //     setIsPaused(true);
+    //   }
+    // }, [activeInScreenIndex, currentIndex]);
 
     const onEnd = useCallback(() => {
-      videRef.current?.seek(0);
-      setIsPaused(true);
-
-      setPlayedTimes(playedTimes + 1);
-    }, []);
+      if (!isPaused && playedTimes < 2) {
+        videRef.current?.seek(0);
+        setPlayedTimes(playedTimes + 1);
+      }
+    }, [playedTimes]);
 
     useEffect(() => {
-      if (playedTimes < 3) {
-        setIsPaused(false);
+      if (playedTimes > 2) {
+        setIsPaused(true);
       }
     }, [playedTimes]);
 
@@ -297,7 +295,7 @@ const VideoItem = gestureHandlerRootHOC(
               ref={videRef}
               source={{ uri: `https://stream.mux.com/${item.playBackId!}.m3u8` }}
               resizeMode="cover"
-              style={styles.video}
+              style={[styles.video, { width, height: viewHeight }]}
               onLoad={() => {
                 setIsLoading(false);
               }}
@@ -330,7 +328,7 @@ const VideoItem = gestureHandlerRootHOC(
             created={item?.created}
             isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
             onShowDismissCard={onShowDismissCard}
-            index={index}
+            index={currentIndex}
             onPress={() => {
               if (item.userData._id != user?._id) {
                 navigation.navigate('Main', {
