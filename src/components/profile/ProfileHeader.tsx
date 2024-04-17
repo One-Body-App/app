@@ -1,5 +1,3 @@
-import { useCurrentTabScrollY } from 'react-native-collapsible-tab-view';
-
 import { useDispatch, useSelector } from 'react-redux';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { Add, Location, Calendar, ShieldTick, HomeHashtag, Link21 } from 'iconsax-react-native';
@@ -11,17 +9,19 @@ import {
   SafeAreaView,
   ScrollView,
   useWindowDimensions,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import Toast from 'react-native-simple-toast';
-import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, parseISO } from 'date-fns';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { HEADER_COLLAPSED_HEIGHT, ProfileProps, profileImagesize } from './Profile';
+import { ProfileProps } from './Profile';
 import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { GeneralStyle } from '@/src/constants/GeneralStyle';
@@ -43,7 +43,10 @@ import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import { OpenURLButton } from '@/services/constants';
 
-interface HeaderProps extends ProfileProps {}
+interface HeaderProps extends ProfileProps {
+  setActiveTab: Function;
+  activeTab: string;
+}
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<MyProfileStackParamsList, 'MyProfile'>,
@@ -59,6 +62,8 @@ function ProfileHeader({
   relatedUsers,
   handleSubscribe,
   handleUnSubscribe,
+  setActiveTab,
+  activeTab,
   ...props
 }: HeaderProps) {
   const dispatch = useDispatch();
@@ -70,7 +75,7 @@ function ProfileHeader({
   const { width } = useWindowDimensions();
   // const { top, height } = useHeaderMeasurements();
 
-  const scrollY = useCurrentTabScrollY();
+  // const scrollY = useCurrentTabScrollY();
   const [selectedBadges, setSelectedBadges] = useState<Badge[]>(profileData?.badgesData ?? []);
   const unselect = (id: string) => {
     const array = selectedBadges.filter((item) => item._id != id);
@@ -79,142 +84,142 @@ function ProfileHeader({
   };
   const { colors } = useTheme();
 
-  const profileImageAnimation = useAnimatedStyle(() => {
-    let valueTranslate = interpolate(
-      scrollY.value,
-      [0, -(height - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - 300]
-    );
+  // const profileImageAnimation = useAnimatedStyle(() => {
+  //   let valueTranslate = interpolate(
+  //     scrollY.value,
+  //     [0, -(height - HEADER_COLLAPSED_HEIGHT)],
+  //     [0, 0 - 300]
+  //   );
 
-    const maxValue =
-      height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize - 30; // 10 = marginTop
-    if (valueTranslate > maxValue) {
-      valueTranslate = maxValue;
-    }
+  //   const maxValue =
+  //     height - HEADER_COLLAPSED_HEIGHT - HEADER_COLLAPSED_HEIGHT + profileImagesize - 30; // 10 = marginTop
+  //   if (valueTranslate > maxValue) {
+  //     valueTranslate = maxValue;
+  //   }
 
-    return {
-      transform: [
-        {
-          translateY: valueTranslate,
-        },
-      ],
-    };
-  });
+  //   return {
+  //     transform: [
+  //       {
+  //         translateY: valueTranslate,
+  //       },
+  //     ],
+  //   };
+  // });
 
-  const buttonsAnimation = useAnimatedStyle(() => {
-    let valueTranslate = interpolate(
-      scrollY.value,
-      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - 300]
-    );
+  // const buttonsAnimation = useAnimatedStyle(() => {
+  //   let valueTranslate = interpolate(
+  //     scrollY.value,
+  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
+  //     [0, 0 - 300]
+  //   );
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - profileImagesize - 75;
-    if (valueTranslate > maxValue) {
-      valueTranslate = maxValue;
-    }
+  //   const maxValue = height - HEADER_COLLAPSED_HEIGHT - profileImagesize - 75;
+  //   if (valueTranslate > maxValue) {
+  //     valueTranslate = maxValue;
+  //   }
 
-    return {
-      transform: [
-        {
-          translateY: valueTranslate,
-        },
-      ],
-    };
-  });
+  //   return {
+  //     transform: [
+  //       {
+  //         translateY: valueTranslate,
+  //       },
+  //     ],
+  //   };
+  // });
 
-  const nameAnimation = useAnimatedStyle(() => {
-    let valueTranslateY = interpolate(
-      scrollY.value,
-      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - 300]
-    );
+  // const nameAnimation = useAnimatedStyle(() => {
+  //   let valueTranslateY = interpolate(
+  //     scrollY.value,
+  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
+  //     [0, 0 - 300]
+  //   );
 
-    let valueTranslateX = interpolate(
-      scrollY.value,
-      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - 90]
-    );
+  //   let valueTranslateX = interpolate(
+  //     scrollY.value,
+  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
+  //     [0, 0 - 90]
+  //   );
 
-    let paddingRight = -1 * interpolate(scrollY.value, [0, 0 - 300], [0, 65]);
+  //   let paddingRight = -1 * interpolate(scrollY.value, [0, 0 - 300], [0, 65]);
 
-    const maxValueY = height - HEADER_COLLAPSED_HEIGHT - 165;
-    if (valueTranslateY > maxValueY) {
-      valueTranslateY = maxValueY;
-    }
+  //   const maxValueY = height - HEADER_COLLAPSED_HEIGHT - 165;
+  //   if (valueTranslateY > maxValueY) {
+  //     valueTranslateY = maxValueY;
+  //   }
 
-    const maxValueX = width / 4;
-    if (valueTranslateX > maxValueX) {
-      valueTranslateX = maxValueX;
-    }
-    if (paddingRight > 95) {
-      paddingRight = 95;
-    }
+  //   const maxValueX = width / 4;
+  //   if (valueTranslateX > maxValueX) {
+  //     valueTranslateX = maxValueX;
+  //   }
+  //   if (paddingRight > 95) {
+  //     paddingRight = 95;
+  //   }
 
-    return {
-      paddingRight,
-      transform: [
-        {
-          translateY: valueTranslateY,
-        },
-        {
-          translateX: valueTranslateX,
-        },
-      ],
-    };
-  });
+  //   return {
+  //     paddingRight,
+  //     transform: [
+  //       {
+  //         translateY: valueTranslateY,
+  //       },
+  //       {
+  //         translateX: valueTranslateX,
+  //       },
+  //     ],
+  //   };
+  // });
 
-  const contentAnimation = useAnimatedStyle(() => {
-    const value = interpolate(
-      scrollY.value,
-      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - HEADER_COLLAPSED_HEIGHT]
-    );
-    const opacity = interpolate(scrollY.value, [0, 130], [1, 0]);
-    return {
-      opacity,
-      transform: [
-        {
-          translateY: -1 * value,
-        },
-      ],
-    };
-  });
+  // const contentAnimation = useAnimatedStyle(() => {
+  //   const value = interpolate(
+  //     scrollY.value,
+  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
+  //     [0, 0 - HEADER_COLLAPSED_HEIGHT]
+  //   );
+  //   const opacity = interpolate(scrollY.value, [0, 130], [1, 0]);
+  //   return {
+  //     opacity,
+  //     transform: [
+  //       {
+  //         translateY: -1 * value,
+  //       },
+  //     ],
+  //   };
+  // });
 
-  const connectedConnectorsContent = useAnimatedStyle(() => {
-    let valueTranslateY = interpolate(
-      scrollY.value,
-      [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
-      [0, 0 - 300]
-    );
-    let width = interpolate(scrollY.value, [0, 0 - 300], [0, 35]);
+  // const connectedConnectorsContent = useAnimatedStyle(() => {
+  //   let valueTranslateY = interpolate(
+  //     scrollY.value,
+  //     [0, 0 - (height - HEADER_COLLAPSED_HEIGHT)],
+  //     [0, 0 - 300]
+  //   );
+  //   let width = interpolate(scrollY.value, [0, 0 - 300], [0, 35]);
 
-    const maxValue = height - HEADER_COLLAPSED_HEIGHT - (height - 125);
+  //   const maxValue = height - HEADER_COLLAPSED_HEIGHT - (height - 125);
 
-    if (valueTranslateY > -1 * maxValue) {
-      valueTranslateY = maxValue;
-    }
-    if (100 + width < 70) {
-      width = -38;
-    }
-    return {
-      width: `${100 + width}%`,
-      transform: [
-        {
-          translateY: -1 * valueTranslateY,
-        },
-      ],
-    };
-  });
+  //   if (valueTranslateY > -1 * maxValue) {
+  //     valueTranslateY = maxValue;
+  //   }
+  //   if (100 + width < 70) {
+  //     width = -38;
+  //   }
+  //   return {
+  //     width: `${100 + width}%`,
+  //     transform: [
+  //       {
+  //         translateY: -1 * valueTranslateY,
+  //       },
+  //     ],
+  //   };
+  // });
 
   return (
-    <Animated.View
+    <View
       pointerEvents="box-none"
       onLayout={({ nativeEvent }) => {
         const { height: divHeight } = nativeEvent.layout;
         setHeight(divHeight);
       }}
     >
-      <Animated.View pointerEvents="box-none">
+      <View pointerEvents="box-none">
         <View style={[{ width: '100%', height: 180 }]} pointerEvents="box-none">
           {profileData?.profileHeader ? (
             <View pointerEvents="none">
@@ -340,7 +345,7 @@ function ProfileHeader({
             </View>
           ) : null}
 
-          <Animated.View
+          <View
             style={[
               {
                 position: 'absolute',
@@ -351,15 +356,14 @@ function ProfileHeader({
                 // profileImageAnimation
               },
 
-              profileImageAnimation,
               // animatedStyles,
             ]}
             pointerEvents="none"
           >
             <FastImage
               style={{
-                width: profileImagesize,
-                height: profileImagesize,
+                width: 80,
+                height: 80,
                 borderRadius: borderRadius.max,
                 borderWidth: borderWidth.base,
                 borderColor: 'white',
@@ -369,12 +373,12 @@ function ProfileHeader({
               }}
               resizeMode="cover"
             />
-          </Animated.View>
+          </View>
         </View>
-      </Animated.View>
+      </View>
 
       <View style={[{ paddingHorizontal: spacing.x24 }]} pointerEvents="box-none">
-        <Animated.View
+        <View
           style={[
             {
               flexDirection: 'row',
@@ -384,7 +388,7 @@ function ProfileHeader({
           ]}
           pointerEvents="box-none"
         >
-          <Animated.View style={[{ flex: 1, height: 70 }, nameAnimation]}>
+          <View style={[{ flex: 1, height: 70 }]}>
             <View
               style={{
                 flexDirection: 'row',
@@ -399,7 +403,7 @@ function ProfileHeader({
                 style={[
                   Typography.header.h3,
                   {
-                    // flex: 1,
+                    flex: 1,
                     marginRight: spacing.x10,
                   },
                   // {
@@ -416,38 +420,46 @@ function ProfileHeader({
                 <Icon name="check-decagram" size={20} color={Colors.primarySapphire.brand} />
               ) : null}
             </View>
-            <Animated.View style={{ flex: 1 }}>
-              <StyledText>
-                <StyledText style={{ color: Colors.neutral[300] }} numberOfLines={1}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, overflow: 'hidden', flexDirection: 'row' }}>
+                <StyledText
+                  style={{
+                    color: Colors.neutral[300],
+                    flex: 2,
+                    overflow: 'hidden',
+                  }}
+                  numberOfLines={1}
+                >
                   {profileData?.username ? `@${profileData?.username}` : ''}
                 </StyledText>
                 {profileData?.profile?.whatIDo?.name || profileData?.profile?.typeOfOrganization ? (
-                  <StyledText style={{ color: Colors.neutral[300] }}>
+                  <StyledText style={{ color: Colors.neutral[300], flex: 0 }}>
                     {profileData?.username ? ` • ` : ''}
                   </StyledText>
                 ) : null}
-                {`${
-                  profileData?.profile?.whatIDo?.name
-                    ? `${profileData?.profile?.whatIDo?.name}`
-                    : ''
-                }`}
-                {`${
-                  profileData?.profile?.typeOfOrganization
-                    ? `${profileData?.profile?.typeOfOrganization?.name}`
-                    : ''
-                }`}
-              </StyledText>
-            </Animated.View>
-          </Animated.View>
+                <StyledText style={{ flex: 1 }}>
+                  {`${
+                    profileData?.profile?.whatIDo?.name
+                      ? `${profileData?.profile?.whatIDo?.name}`
+                      : ''
+                  }`}
+                  {`${
+                    profileData?.profile?.typeOfOrganization
+                      ? `${profileData?.profile?.typeOfOrganization?.name}`
+                      : ''
+                  }`}
+                </StyledText>
+              </View>
+            </View>
+          </View>
 
-          <Animated.View
+          <View
             style={[
               {
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
               },
-              buttonsAnimation,
             ]}
             pointerEvents="box-none"
           >
@@ -491,10 +503,10 @@ function ProfileHeader({
                 }}
               />
             )}
-          </Animated.View>
-        </Animated.View>
+          </View>
+        </View>
 
-        <Animated.View style={[contentAnimation]} pointerEvents="box-none">
+        <View pointerEvents="box-none">
           {profileData?.influencerProfile?.influencerStatus === 'approved' && profileData?.bio ? (
             <View style={{ marginBottom: spacing.x16 }} pointerEvents="box-none">
               <StyledText numberOfLines={3} style={{ color: Colors.neutral[200] }}>
@@ -532,7 +544,6 @@ function ProfileHeader({
                     ? spacing.x16
                     : 0,
                 flex: 1,
-                marginTop: spacing.x10,
               }}
             >
               <Calendar size={20} color={Colors.neutral.brand} />
@@ -618,9 +629,9 @@ function ProfileHeader({
               </TouchableOpacity>
             </View>
           ) : null}
-        </Animated.View>
+        </View>
 
-        <Animated.View
+        <View
           style={[
             {
               flexDirection: 'row',
@@ -632,7 +643,6 @@ function ProfileHeader({
               // paddingTop: spacing.x5,
               // backgroundColor: 'red',
             },
-            connectedConnectorsContent,
           ]}
           pointerEvents="box-none"
         >
@@ -672,8 +682,48 @@ function ProfileHeader({
               <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
             </StyledText>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </View>
+      {profileData?.influencerProfile?.influencerStatus === 'approved' &&
+      profileData?.influencerProfile?.rssUrl ? (
+        <View
+          style={{
+            // backgroundColor: Colors.neutral[800],
+            borderColor: Colors.neutral[800],
+            borderTopWidth: borderWidth.thin,
+            borderBottomWidth: borderWidth.thin,
+            flexGrow: 1,
+            flexDirection: 'row',
+            paddingHorizontal: spacing.x10,
+          }}
+        >
+          <TouchableOpacity
+            style={[
+              style.tab,
+              { borderColor: Colors.neutral[800], borderRightWidth: borderWidth.thin },
+            ]}
+            onPress={() => {
+              setActiveTab('social');
+            }}
+          >
+            <StyledText style={activeTab == 'social' ? style.selectedMenuItem : style.menuItem}>
+              Social
+            </StyledText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              setActiveTab('blog');
+            }}
+            style={style.tab}
+          >
+            <StyledText style={activeTab == 'blog' ? style.selectedMenuItem : style.menuItem}>
+              Blog/News
+            </StyledText>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <Modal
         backdropOpacity={0.3}
         isVisible={requestModal}
@@ -872,8 +922,28 @@ function ProfileHeader({
           </SafeAreaView>
         </View>
       </Modal>
-    </Animated.View>
+    </View>
   );
 }
 
 export default ProfileHeader;
+
+const menuItem: TextStyle = {
+  fontSize: 14,
+  textAlign: 'center',
+  fontWeight: '500',
+  textTransform: 'capitalize',
+};
+const style = StyleSheet.create({
+  tab: {
+    width: '50%',
+    padding: spacing.x10,
+    alignItems: 'center',
+  },
+  menuItem,
+  selectedMenuItem: {
+    ...menuItem,
+    fontWeight: 'bold',
+    color: Colors.primarySapphire.brand,
+  },
+});

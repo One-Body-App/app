@@ -160,7 +160,7 @@ function DrawerNav() {
           options={({ navigation }) => {
             return {
               title: 'Prayer Wall',
-
+              drawerItemStyle: { height: 0 },
               drawerIcon: ({ color, size }) => {
                 return <HandsPraying size={size} color={color} />;
               },

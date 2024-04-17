@@ -90,7 +90,7 @@ function ArticleItem({
       }}
       created={itemData?.created}
       userData={item.userData}
-      isApprovedInfluencer={user?.influencerProfile?.influencerStatus == 'approved'}
+      isApprovedInfluencer={itemData.userData.isApprovedInfluencer}
       onPress={() => {
         if (item.userData._id != user?._id) {
           navigation.navigate('Main', {
@@ -169,7 +169,7 @@ function ArticleItem({
             >
               <StyledText
                 numberOfLines={2}
-                style={[{ color: colors.text, fontWeight: 'bold' }, blogPostTitleStyle]}
+                style={[{ color: colors.text, fontWeight: '600' }, blogPostTitleStyle]}
               >
                 {isObject(itemData?.title)
                   ? decode(itemData?.title?.a.$text)

@@ -271,7 +271,6 @@ function BaseItem({
       }
     });
   }
-  // console.log('here', postData);
 
   const reactionTypes = {
     love: 0,
@@ -441,6 +440,7 @@ function BaseItem({
                               ...fontSize.x1,
                               marginLeft: spacing.x5,
                               paddingLeft: spacing.x5,
+                              fontWeight: 'bold',
                             }}
                             numberOfLines={2}
                           >
@@ -948,6 +948,7 @@ function BaseItem({
                         ...fontSize.x1,
                         marginLeft: spacing.x48,
                         marginTop: spacing.x5,
+                        fontWeight: 'bold',
                       }}
                       numberOfLines={2}
                     >

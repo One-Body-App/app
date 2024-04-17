@@ -371,9 +371,13 @@ function Main() {
               headerTransparent: true,
               title: 'Create',
               headerBackImageSource: closeIcon,
+
               headerTitleAlign: 'center',
               headerBackTitleVisible: false,
               headerTintColor: 'white',
+              headerTitleStyle: {
+                fontSize: 20,
+              },
             }}
           />
         </MainStack.Navigator>

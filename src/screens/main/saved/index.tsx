@@ -170,7 +170,7 @@ function Saved({ navigation }: Props) {
   };
 
   return (
-    <View style={{ paddingBottom: spacing.x104 }}>
+    <SafeAreaView>
       {savedPosts.length > 0 ? (
         <ScrollView
           horizontal
@@ -227,8 +227,8 @@ function Saved({ navigation }: Props) {
         </ScrollView>
       ) : null}
       <FlatList
-        data={savedPosts.filter((item) => item.type != PostType.prayer)}
-        contentContainerStyle={{ flexGrow: 1 }}
+        data={savedPosts}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: spacing.x72 }}
         onRefresh={() => {
           setIsRefreshing(true);
         }}
@@ -240,7 +240,7 @@ function Saved({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => {
           return (
-            <View style={{ flex: 1, justifyContent: 'center' }}>
+            <View style={{ flex: 1, justifyContent: 'center', backgroundColor: 'red' }}>
               <View
                 style={{
                   justifyContent: 'center',
@@ -316,6 +316,7 @@ function Saved({ navigation }: Props) {
                   created: item.created ?? new Date(),
                   image: { url: item.image ?? '' },
                   userData: user,
+                  reactions: [],
                 }}
                 imageSizeType="cover"
                 blogPostTitleStyle={{
@@ -329,54 +330,8 @@ function Saved({ navigation }: Props) {
 
           return null;
         }}
-        // (
-        //   <TouchableOpacity
-        //     style={{
-        //       ...styles.blogpostview,
-        //       marginHorizontal: 10,
-        //     }}
-        //     onPress={() => {
-        //       if (item.link) OpenURLButton(item.link);
-        //     }}
-        //   >
-        //     <FastImage
-        //       style={styles.blogpostimage}
-        //       resizeMode={'stretch'}
-        //       source={{ uri: item.image }}
-        //     />
-        //     <View
-        //       style={{
-        //         top: 0,
-        //         position: 'absolute',
-        //         backgroundColor: 'white',
-        //         height: getHeight(4.5),
-        //         width: getWidth(8.5),
-        //         borderBottomRightRadius: 10,
-        //         justifyContent: 'center',
-        //         alignItems: 'center',
-        //         borderBottomLeftRadius: 10,
-        //         right: 15,
-        //       }}
-        //     >
-        //       <Save height={getHeight(3)} width={getWidth(3)} />
-        //     </View>
-        //     <StyledText
-        //       numberOfLines={2}
-        //       style={[styles.blogpostpara, { color: dark ? colors.text : '#032F3C' }]}
-        //     >
-        //       {item.title}
-        //     </StyledText>
-        //     <TouchableOpacity
-        //       onPress={() => {
-        //         if (item.link) removePost(item.link);
-        //       }}
-        //     >
-        //       <StyledText>Remove</StyledText>
-        //     </TouchableOpacity>
-        //   </TouchableOpacity>
-        // )}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 export default Saved;

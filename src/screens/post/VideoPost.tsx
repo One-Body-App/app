@@ -5,11 +5,11 @@ import {
   View,
   Keyboard,
   TouchableWithoutFeedback,
-  KeyboardAvoidingView,
   SafeAreaView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { ActivityIndicator } from 'react-native-paper';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import RNFetchBlob from 'rn-fetch-blob';
@@ -99,7 +99,7 @@ function VideoPost({ navigation }: Props) {
   };
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={[styles.container]}>
+      <KeyboardAwareScrollView contentContainerStyle={[styles.container]}>
         <View style={styles.subContainer}>
           {!VideoPath ? (
             <CameraComponent setVideoPath={setVideoPath} />
@@ -135,7 +135,7 @@ function VideoPost({ navigation }: Props) {
                 </View>
               </View>
 
-              <KeyboardAvoidingView style={styles.bottomContainer}>
+              <View style={styles.bottomContainer}>
                 <StyledTextInput
                   style={{ height: 100, flexGrow: 1, color: colors.text }}
                   inputStyle={{}}
@@ -171,11 +171,11 @@ function VideoPost({ navigation }: Props) {
                     </>
                   }
                 />
-              </KeyboardAvoidingView>
+              </View>
             </SafeAreaView>
           )}
         </View>
-      </View>
+      </KeyboardAwareScrollView>
     </TouchableWithoutFeedback>
   );
 }
