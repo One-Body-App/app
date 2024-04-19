@@ -14,6 +14,7 @@ import FilterServeScreen from '../components/ConnectPortal/Serve/FilterServeScre
 import HomeScreenGo from '../components/ConnectPortal/Go/HomeScreenGo';
 import HomeScreenPlace from '../components/ConnectPortal/Places/HomeScreenPlace';
 import HomeServeScreen from '../components/ConnectPortal/Serve/HomeScreenServe';
+import EventDetails from '../components/ConnectPortal/Go/EventDetails';
 import mainPageOptions from './global';
 import { Colors } from '../styles';
 import { ConnectPortalStackParamsList } from './types';
@@ -51,6 +52,8 @@ function ConnectPortalStack() {
       <Stack.Screen name="Serve" component={Serve} />
 
       <Stack.Screen name="FilterServeScreen" component={FilterServeScreen} />
+
+      <Stack.Screen name="EventDetails" component={EventDetails} />
     </Stack.Navigator>
   );
 }

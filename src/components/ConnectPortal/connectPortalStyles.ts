@@ -278,8 +278,6 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
     marginBottom: 10,
   },
   cardHeader: {
@@ -299,7 +297,8 @@ export const styles = StyleSheet.create({
   organizationName: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginRight: 10,
+    marginLeft: spacing.x10,
+    marginTop: spacing.x10,
   },
   organizationType: {
     fontSize: 14,
@@ -326,6 +325,7 @@ export const styles = StyleSheet.create({
   typeIcon: {
     marginRight: 5,
     color: '#999',
+    marginLeft: spacing.x10,
   },
   logoContainer: {
     width: 50,

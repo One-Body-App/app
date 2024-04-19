@@ -22,6 +22,7 @@ import {
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { styles } from '../connectPortalStyles';
 import EventsImage from '@/assets/images/Events.png';
+import EventDetails from './EventDetails';
 
 type types = 'Explore' | 'Saved' | 'My Events' | 'Filter' | 'List' | 'Map';
 
@@ -107,26 +108,28 @@ function Go() {
   };
 
   const renderEventsItem = ({ item }: { item: Events }) => (
-    <View style={styles.organizationCard}>
-      <View style={styles.cardHeader}>
-        <Image source={item.imageSource} style={styles.organizationImage} />
+    <TouchableOpacity onPress={() => navigation.navigate('EventDetails', { event: item })}>
+      <View style={styles.organizationContainer}>
+        <View style={styles.cardHeader}>
+          <Image source={item.imageSource} style={styles.organizationImage} />
+        </View>
+        <View style={styles.organizationInfo}>
+          <Text style={styles.organizationName}>{item.name}</Text>
+          <View style={styles.organizationTypeContainer}>
+            <FontAwesomeIcon icon={faCalendar} size={16} style={styles.typeIcon} />
+            <Text style={styles.organizationType}>{item.date.toLocaleDateString()}</Text>
+          </View>
+          <View style={styles.organizationTypeContainer}>
+            <FontAwesomeIcon icon={faClock} size={16} style={styles.typeIcon} />
+            <Text style={styles.organizationType}>{item.hour}</Text>
+          </View>
+          <View style={styles.organizationTypeContainer}>
+            <FontAwesomeIcon icon={faMapMarker} size={16} style={styles.typeIcon} />
+            <Text style={styles.organizationType}>{item.location}</Text>
+          </View>
+        </View>
       </View>
-      <View style={styles.organizationInfo}>
-        <Text style={styles.organizationName}>{item.name}</Text>
-        <View style={styles.organizationTypeContainer}>
-          <FontAwesomeIcon icon={faCalendar} size={16} style={styles.typeIcon} />
-          <Text style={styles.organizationType}>{item.date.toLocaleDateString()}</Text>
-        </View>
-        <View style={styles.organizationTypeContainer}>
-          <FontAwesomeIcon icon={faClock} size={16} style={styles.typeIcon} />
-          <Text style={styles.organizationType}>{item.hour}</Text>
-        </View>
-        <View style={styles.organizationTypeContainer}>
-          <FontAwesomeIcon icon={faMapMarker} size={16} style={styles.typeIcon} />
-          <Text style={styles.organizationType}>{item.location}</Text>
-        </View>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (

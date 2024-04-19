@@ -15,6 +15,7 @@ import { CalendarSearch } from 'iconsax-react-native';
 import { styles } from '../connectPortalStyles';
 import EventsImage from '@/assets/images/Events.png';
 import StyledText from '../../styled/Text';
+import EventDetails from './EventDetails';
 
 type homeGoTypes = 'People/Places' | 'Go!' | 'Serve';
 
@@ -78,6 +79,11 @@ function HomeScreenGo() {
     },
   ]);
   const [selectedOption, setSelectedOption] = useState<homeGoTypes>('Go!');
+
+  const [selectedEvent, setSelectedEvent] = useState<Events | null>(null);
+  const handleEventSelect = (event: Events) => {
+    setSelectedEvent(event);
+  };
 
   const navigation = useNavigation();
   const handleOptionSelect = (option: homeGoTypes) => {
