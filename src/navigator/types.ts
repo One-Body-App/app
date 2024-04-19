@@ -123,6 +123,17 @@ export type HomeStackParamsList = {
   };
 };
 
+export type ConnectPortalStackParamsList = {
+  ConnectPortalHome: {
+    tabs?: string;
+    selectedTab?: FeedTypes;
+  };
+  People: {};
+  FilterScreen: {};
+  Go: {};
+  Serve: {};
+  FilterServeScreen: {};
+};
 export type ExploreStackParamsList = {
   Explore: undefined;
   UserProfile: {
@@ -196,6 +207,7 @@ export type MainBottomStackParamsList = {
 export type MainDrawerParamsList = {
   Main: NavigatorScreenParams<MainBottomStackParamsList>;
 
+  ConnectPortal: NavigatorScreenParams<MainBottomStackParamsList>;
   Connections: undefined;
   Saved: undefined;
   Settings: NavigatorScreenParams<SettingsStackParamsList>;

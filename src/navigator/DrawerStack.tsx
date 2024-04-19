@@ -2,8 +2,8 @@
 import React, { useEffect } from 'react';
 import { createDrawerNavigator, getDrawerStatusFromState } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
+import { GlobalSearch, Home3, Profile2User } from 'iconsax-react-native';
 import { Platform, View, useWindowDimensions } from 'react-native';
-import { Home3, Profile2User } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import { HandsPraying } from 'phosphor-react-native';
@@ -22,6 +22,9 @@ import MainTabStack from './BottomTabStack';
 import DrawerContent from './DrawerContent';
 import PrayerWallStack from './PrayerWallStack';
 import Saved from '../screens/main/saved';
+import { getHeight } from '@/utils/ResponsiveFun';
+import ConnectPortalHome from '../screens/ConnectPortalHome/ConnectPortalHome';
+import ConnectPortalStack from './ConnectPortalStack';
 import mainPageOptions from './global';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
@@ -137,6 +140,20 @@ function DrawerNav() {
             drawerIcon: ({ color, size }) => {
               return <Feather name="bookmark" size={size} color={color} />;
             },
+          }}
+        />
+
+        {/* Boton connectPortal */}
+        <DrawerStack.Screen
+          name="ConnectPortal"
+          component={ConnectPortalStack}
+          options={({ navigation }) => {
+            return {
+              title: 'Connect Portal',
+              drawerIcon: ({ color, size }) => {
+                return <GlobalSearch size={size} color={color} />;
+              },
+            };
           }}
         />
 

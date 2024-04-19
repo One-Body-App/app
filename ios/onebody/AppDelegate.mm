@@ -15,6 +15,7 @@
 #import "Onebody-Swift.h"
 #import "SDImageCodersManager.h"
 #import <SDWebImageWebPCoder/SDImageWebPCoder.h>
+#import <GoogleMaps/GoogleMaps.h>
 
 @implementation AppDelegate
 
@@ -44,7 +45,7 @@
       UIView *rootView = self.window.rootViewController.view;
 
 
-
+      [GMSServices provideAPIKey:@"AIzaSyDZmdm2o_TpqfQvWBWVgjWBFfIl1XdHTcs"]; // add this line using the api key obtained from Google Console
 
       Dynamic *t = [Dynamic new];
       UIView *animationUIView = (UIView *)[t createAnimationViewWithRootView:rootView lottieName:@"logoAnimation"]; // change lottieName to your lottie files name

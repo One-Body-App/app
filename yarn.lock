@@ -1970,6 +1970,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@expo/vector-icons@npm:^13.0.0":
+  version: 13.0.0
+  resolution: "@expo/vector-icons@npm:13.0.0"
+  checksum: 10/88e8a77f14eea19c675a3b95c9805f1df76662ea62d2e0022f5a8f5e85293ce2e02e7286678243c56772f7e5d7abfd23b3475df05ce59378353178e1c2b23f6e
+  languageName: node
+  linkType: hard
+
 "@fastify/busboy@npm:^2.0.0":
   version: 2.1.0
   resolution: "@fastify/busboy@npm:2.1.0"
@@ -2051,6 +2058,40 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/b3558f56e64f40cdc8343b1863f235b6b96478e425a3155002e18646eb32fd804e1a985dd12f1679864a48257ba07c879c92c3260a5ac0a0890519682ad0f394
+  languageName: node
+  linkType: hard
+
+"@gorhom/bottom-sheet@npm:^4.6.1":
+  version: 4.6.1
+  resolution: "@gorhom/bottom-sheet@npm:4.6.1"
+  dependencies:
+    "@gorhom/portal": "npm:1.0.14"
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-native": "*"
+    react: "*"
+    react-native: "*"
+    react-native-gesture-handler: ">=1.10.1"
+    react-native-reanimated: ">=2.2.0"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    "@types/react-native":
+      optional: true
+  checksum: 10/c378f3722afec4ef94dc0e7cfedaee4c64b55fa81f5b7135ffe129e3a1e1cc6498d168ba93690125527cd5c1a5655105d38024215294ca0a5fe32ebefe6df094
+  languageName: node
+  linkType: hard
+
+"@gorhom/portal@npm:1.0.14":
+  version: 1.0.14
+  resolution: "@gorhom/portal@npm:1.0.14"
+  dependencies:
+    nanoid: "npm:^3.3.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/e0fa06be88b850cccdc6a1417a86e5ac21d82e3bfd1cec7eb05eccf7f3b595babe305541f278fdcbde34f3a9db465097dca2c785445c28bafb83b744e235da0c
   languageName: node
   linkType: hard
 
@@ -3046,6 +3087,13 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/66adac223c676a00d20d4fb687124a9e73ee47804f58c275111ac0fa6ef9beb3235af0713de1ebc9b920418dc702f5576a54fbdb3813bd1fef89693bcc4193fa
+  languageName: node
+  linkType: hard
+
+"@react-native-community/slider@npm:^4.5.0":
+  version: 4.5.0
+  resolution: "@react-native-community/slider@npm:4.5.0"
+  checksum: 10/acf8abf9018735e8a0f52b07af0fe0577a9f693733bec42eebe410ebcac527db2be7d8b657bd2a4f4034a8e16d914306ed843e0e13884abe24ae87dbefa2ad6e
   languageName: node
   linkType: hard
 
@@ -4204,6 +4252,13 @@ __metadata:
     "@types/node": "npm:*"
     "@types/responselike": "npm:^1.0.0"
   checksum: 10/159f9fdb2a1b7175eef453ae2ced5ea04c0d2b9610cc9ccd9f9abb066d36dacb1f37acd879ace10ad7cbb649490723feb396fb7307004c9670be29636304b988
+  languageName: node
+  linkType: hard
+
+"@types/geojson@npm:^7946.0.13":
+  version: 7946.0.14
+  resolution: "@types/geojson@npm:7946.0.14"
+  checksum: 10/ae511bee6488ae3bd5a3a3347aedb0371e997b14225b8983679284e22fa4ebd88627c6e3ff8b08bf4cc35068cb29310c89427311ffc9322c255615821a922e71
   languageName: node
   linkType: hard
 
@@ -11174,7 +11229,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^3.1.23":
+"nanoid@npm:^3.1.23, nanoid@npm:^3.3.1":
   version: 3.3.7
   resolution: "nanoid@npm:3.3.7"
   bin:
@@ -11547,12 +11602,14 @@ __metadata:
     "@commitlint/config-conventional": "npm:^18.4.4"
     "@dreamwalk-os/react-native-image-modal": "npm:^2.2.0"
     "@elastic/elasticsearch": "npm:^8.9.0"
+    "@expo/vector-icons": "npm:^13.0.0"
     "@fortawesome/fontawesome-svg-core": "npm:^6.4.2"
     "@fortawesome/free-brands-svg-icons": "npm:^6.4.2"
     "@fortawesome/free-regular-svg-icons": "npm:^6.4.2"
     "@fortawesome/free-solid-svg-icons": "npm:^6.4.2"
     "@fortawesome/react-native-fontawesome": "npm:^0.3.0"
     "@giphy/react-native-sdk": "npm:^3.2.2"
+    "@gorhom/bottom-sheet": "npm:^4.6.1"
     "@invertase/react-native-apple-authentication": "npm:^2.2.2"
     "@jest/globals": "npm:^29.7.0"
     "@mux/mux-data-react-native-video": "npm:^0.15.0"
@@ -11562,6 +11619,7 @@ __metadata:
     "@react-native-camera-roll/camera-roll": "npm:^7.4.0"
     "@react-native-clipboard/clipboard": "npm:^1.12.1"
     "@react-native-community/geolocation": "npm:^3.1.0"
+    "@react-native-community/slider": "npm:^4.5.0"
     "@react-native-firebase/analytics": "npm:^18.3.0"
     "@react-native-firebase/app": "npm:^18.3.0"
     "@react-native-firebase/auth": "npm:^18.3.0"
@@ -11649,6 +11707,7 @@ __metadata:
     react-native-fbsdk-next: "npm:^12.1.2"
     react-native-gesture-handler: "npm:^2.14.0"
     react-native-gifted-chat: "npm:^1.0.0"
+    react-native-google-places-autocomplete: "npm:^2.5.6"
     react-native-image-crop-picker: "npm:^0.40.3"
     react-native-image-picker: "npm:^7.1.0"
     react-native-image-viewing: "npm:^0.2.2"
@@ -11657,7 +11716,9 @@ __metadata:
     react-native-keyboard-controller: "npm:^1.11.3"
     react-native-linear-gradient: "npm:^2.8.3"
     react-native-lottie-splash-screen: "npm:^1.1.2"
+    react-native-maps: "npm:^1.11.3"
     react-native-modal: "npm:^13.0.1"
+    react-native-modalize: "npm:^2.1.1"
     react-native-mov-to-mp4: "npm:^0.2.2"
     react-native-pager-view: "npm:^6.2.0"
     react-native-paper: "npm:^5.10.0"
@@ -12304,6 +12365,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"qs@npm:~6.9.1":
+  version: 6.9.7
+  resolution: "qs@npm:6.9.7"
+  checksum: 10/fb364b54bf4f092a095554968f5abf06036cfe359c9aba258a81b0c0366f625a46098fe1224b2a71ee2f88642470af391c7a8a1496508eca29c37093293f91a9
+  languageName: node
+  linkType: hard
+
 "query-string@npm:^7.1.3":
   version: 7.1.3
   resolution: "query-string@npm:7.1.3"
@@ -12639,6 +12707,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-google-places-autocomplete@npm:^2.5.6":
+  version: 2.5.6
+  resolution: "react-native-google-places-autocomplete@npm:2.5.6"
+  dependencies:
+    lodash.debounce: "npm:^4.0.8"
+    prop-types: "npm:^15.7.2"
+    qs: "npm:~6.9.1"
+  peerDependencies:
+    react-native: ">= 0.59"
+  checksum: 10/f8a0e85225c3e13c086b29e92c5cd93bfb8515c0d7ef6483f78e6215cfa0ebaa7e4ea8db9a2e65971d2ff45912d9386c1e9ba52bdc31e1739c44a8762e4c3ee2
+  languageName: node
+  linkType: hard
+
 "react-native-image-crop-picker@npm:^0.40.3":
   version: 0.40.3
   resolution: "react-native-image-crop-picker@npm:0.40.3"
@@ -12744,6 +12825,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-maps@npm:^1.11.3":
+  version: 1.11.3
+  resolution: "react-native-maps@npm:1.11.3"
+  dependencies:
+    "@types/geojson": "npm:^7946.0.13"
+  peerDependencies:
+    react: ">= 17.0.1"
+    react-native: ">= 0.64.3"
+    react-native-web: ">= 0.11"
+  peerDependenciesMeta:
+    react-native-web:
+      optional: true
+  checksum: 10/2928f5b3b2b642bff08649493971f46dc4a36f05452c096f704e9ab5dfe79b99f28c728327b908aba961b9898bc116ce3ff2889ef115e90e513c9b0124fcc5bc
+  languageName: node
+  linkType: hard
+
 "react-native-modal@npm:^13.0.1":
   version: 13.0.1
   resolution: "react-native-modal@npm:13.0.1"
@@ -12754,6 +12851,17 @@ __metadata:
     react: "*"
     react-native: ">=0.65.0"
   checksum: 10/7b9096127f5195e28bf8016bed5e8760e060e533358ba41f829605233b7f0e9e7e94941884c9fdb0d14d288c02a2944b516754477af24b0173c57777f2aa5018
+  languageName: node
+  linkType: hard
+
+"react-native-modalize@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "react-native-modalize@npm:2.1.1"
+  peerDependencies:
+    react: "> 15.0.0"
+    react-native: "> 0.50.0"
+    react-native-gesture-handler: "> 1.0.0"
+  checksum: 10/35fdce956a8f5f5dbb0295d119df3c58852803c77c95932d9b0b22de27b2464ef218bc12be033383174a6b0277ae04d5d0c6a10359332dc5e1b89769ccfa4c93
   languageName: node
   linkType: hard
 

@@ -20,6 +20,8 @@ declare module 'react-native-config' {
 
     MUX_TOKEN_ID: string;
     MUX_SECRET_KEY: string;
+
+    GOOGLE_MAPS_API_KEY: string;
   }
 
   export const Config: NativeConfig;
