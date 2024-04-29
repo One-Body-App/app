@@ -113,8 +113,8 @@ android {
         applicationId "com.onebody"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 200399
-        versionName "2.2.8"
+        versionCode 200407
+        versionName "2.2.14"
 
         resConfigs "en", "es"
     }
@@ -181,6 +181,8 @@ dependencies {
     // For WebP support, including animated WebP
     implementation 'com.facebook.fresco:animated-webp:2.5.0'
     implementation 'com.facebook.fresco:webpsupport:2.5.0'
+    implementation project(':react-native-fs')
+
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)

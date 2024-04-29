@@ -20,7 +20,7 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#4F6D77',
     fontWeight: '500',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
   },
   heading: {
     fontWeight: '500',
@@ -28,7 +28,7 @@ export const styles = StyleSheet.create({
     margin: 10,
 
     letterSpacing: 0.25,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
 
   TextInput: {
@@ -52,7 +52,7 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2),
     marginRight: getWidth(5),
     color: '#032F3C',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     fontWeight: '500',
     letterSpacing: 1.25,
   },

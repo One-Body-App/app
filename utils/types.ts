@@ -154,6 +154,12 @@ export type ArticleType = {
     username: string;
     accountType: AccountType;
     profileImage?: string;
+
+    website?: string;
+    instagramHandler?: string;
+    twitterHandler?: string;
+    isApprovedInfluencer?: boolean;
+    interests?: Interest[];
   };
   reactions: SocialPostReaction[];
 };
@@ -242,6 +248,7 @@ export interface SocialPost {
     twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
+    interests?: Interest[];
   };
   images?: string[];
   gif?: GiphyMedia;
@@ -261,6 +268,7 @@ export interface SocialPost {
 
 export interface WatchPost {
   _id?: string;
+  playBackId?: string;
   postId?: string;
   content: string;
   date: string;

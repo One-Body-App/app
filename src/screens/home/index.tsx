@@ -26,7 +26,6 @@ import {
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import WatchComponent from '@/screens/home/watch';
 import { getHeight } from '@/utils/ResponsiveFun';
 
 export enum FeedTypes {
@@ -148,6 +147,15 @@ function Home({ navigation, route }: Props) {
   useEffect(() => {
     // getData(page);
     getFeedData(feedOptions.type, feedOptions.page);
+    if (feedOptions.type === FeedTypes.Watch) {
+      navigation.setOptions({
+        headerShown: false,
+      });
+    } else {
+      navigation.setOptions({
+        headerShown: true,
+      });
+    }
   }, [feedOptions]);
 
   useEffect(() => {
@@ -186,8 +194,6 @@ function Home({ navigation, route }: Props) {
     // listRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
-  const cardSecondaryColor = dark ? '#353535' : '#DDD';
-
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       setIsRefreshing(true);
@@ -206,7 +212,7 @@ function Home({ navigation, route }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         getFeedData(feedOptions.type, feedOptions.page);
       }
     } catch (e: any) {
@@ -315,6 +321,16 @@ function Home({ navigation, route }: Props) {
                   navigation.navigate('MainRoot', {
                     screen: 'PrayerWall',
                   });
+                } else if (feedType === FeedTypes.Watch) {
+                  navigation.navigate('MainRoot', {
+                    screen: 'Main',
+                    params: {
+                      screen: 'HomeTab',
+                      params: {
+                        screen: 'WatchPortal',
+                      },
+                    },
+                  });
                 } else if (feedOptions.type !== feedType) {
                   filterUpdate(feedType);
                 }
@@ -357,6 +373,7 @@ function Home({ navigation, route }: Props) {
           </View>
         ))}
       </View>
+
       {isLoading && feedOptions.page == 1 && !isRefreshing ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicator size="small" />
@@ -406,8 +423,9 @@ function Home({ navigation, route }: Props) {
                 }
 
                 if (item.type == 'tasteBreaker') {
+                  const itemToUse = item?.items[0];
                   return (
-                    <View>
+                    <View key={`tastebreaker_${itemToUse.id}`}>
                       {/* <FlatList
                         nestedScrollEnabled
                         data={item.items}
@@ -439,17 +457,17 @@ function Home({ navigation, route }: Props) {
 
                       <TouchableOpacity
                         onPress={() => {
-                          if (item.id) {
+                          if (itemToUse.id) {
                             navigation.navigate('SingleRss', {
-                              postId: item.id,
+                              postId: itemToUse.id,
                             });
                           }
                         }}
                       >
                         <ArticleItem
                           pillText="Taste Breakers"
-                          key={`article_${item.id}`}
-                          item={item.items[0]}
+                          key={`tastebreaker_${itemToUse.id}`}
+                          item={itemToUse}
                           imageSizeType="cover"
                           // blogPostStyle={{
                           //   ...globalStyle.blogpostview,
@@ -476,19 +494,19 @@ function Home({ navigation, route }: Props) {
 
                 if (item.type == 'relatedContent') {
                   return (
-                    <View>
+                    <View key={`relatedContent_${item.item.id}`}>
                       <TouchableOpacity
                         onPress={() => {
-                          if (item.id) {
+                          if (item.item.id) {
                             navigation.navigate('SingleRss', {
-                              postId: item.id,
+                              postId: item.item.id,
                             });
                           }
                         }}
                       >
                         <ArticleItem
                           pillText="Suggested"
-                          key={`relatedContent_${item.id}`}
+                          key={`relatedContent_${item.item.id}`}
                           item={item.item}
                           imageSizeType="cover"
                           blogPostStyle={globalStyle.blogpostview}
@@ -560,12 +578,6 @@ function Home({ navigation, route }: Props) {
             />
           </View>
         )
-      )}
-
-      {feedOptions.type === 'watch' && (
-        <View style={{ flex: 1, marginBottom: 0 }}>
-          <WatchComponent />
-        </View>
       )}
     </View>
   );

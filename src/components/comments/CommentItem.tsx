@@ -214,8 +214,8 @@ function CommentItem({
                           source == 'twitter'
                             ? userData?.twitterHandler
                             : source == 'instagram'
-                            ? userData?.instagramHandler
-                            : userData?.username
+                              ? userData?.instagramHandler
+                              : userData?.username
                         }`
                       : ''}
 

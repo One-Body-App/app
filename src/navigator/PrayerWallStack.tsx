@@ -29,6 +29,7 @@ function PrayerWall() {
         options={({ navigation }) => {
           if (navigation.canGoBack()) {
             return {
+              title: 'Pray',
               headerLeft: (props) => {
                 return (
                   <HeaderBackButton

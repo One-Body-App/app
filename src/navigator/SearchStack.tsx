@@ -21,7 +21,14 @@ function SearchStack() {
           mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Search')
         }
       />
-      <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen
+        name="UserProfile"
+        options={{
+          headerBackTitleVisible: false,
+          title: 'Profile ',
+        }}
+        component={UserProfile}
+      />
     </Stack.Navigator>
   );
 }

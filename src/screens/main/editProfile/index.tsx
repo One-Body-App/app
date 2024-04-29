@@ -49,7 +49,7 @@ import { AccountType, ChurchType, Interest, Tag } from '@/utils/types';
 
 import MapBox, { MapSuggestion } from '@/components/MapBox';
 import { spacing } from '@/src/styles/spacing';
-import { profileImagesize } from '@/components/profile/Profile';
+
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledText from '@/components/styled/Text';
@@ -567,7 +567,7 @@ function EditProfile({ navigation }: Props) {
             <View
               style={{
                 position: 'absolute',
-                bottom: profileImagesize / 6,
+                bottom: 13,
                 marginLeft: spacing.x24,
               }}
             >
@@ -587,15 +587,15 @@ function EditProfile({ navigation }: Props) {
                     // justifyContent: 'center',
                     // alignContent: 'center',
 
-                    width: profileImagesize,
-                    height: profileImagesize,
+                    width: 80,
+                    height: 80,
                     borderRadius: borderRadius.max,
                   }}
                 >
                   <FastImage
                     style={{
-                      width: profileImagesize,
-                      height: profileImagesize,
+                      width: 80,
+                      height: 80,
                       borderRadius: borderRadius.max,
                     }}
                     source={
@@ -612,8 +612,8 @@ function EditProfile({ navigation }: Props) {
                   <View
                     style={{
                       backgroundColor: 'rgba(0,0,0,0.7)',
-                      width: profileImagesize,
-                      height: profileImagesize,
+                      width: 80,
+                      height: 80,
                       position: 'absolute',
                       borderRadius: borderRadius.max,
                       borderWidth: borderWidth.base,
@@ -629,7 +629,7 @@ function EditProfile({ navigation }: Props) {
                         // color: '#757575',
                         // fontSize: 12,
                         // // marginTop: getHeight(1),
-                        // fontFamily: 'Rubik-Regular',
+                        // fontFamily: 'OpenSans-Regular',
                         // textAlign: 'center',
                         // width: '40%',
                         // alignSelf: 'center',
@@ -652,7 +652,7 @@ function EditProfile({ navigation }: Props) {
               <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
                 {user?.accountType} Details
               </StyledText>
-              <StyledText selectable>{token}</StyledText>
+
               <StyledTextInput
                 onChangeText={(e) => setUsername(e.toLowerCase().trim().replace(/\s+/g, ''))}
                 wrapperStyle={{ marginTop: spacing.x24 }}

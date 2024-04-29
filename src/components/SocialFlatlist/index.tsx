@@ -1,4 +1,11 @@
-import React, { FC, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, {
+  ComponentType,
+  ReactElement,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -22,253 +29,246 @@ import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
 
-const SocialFlatlist = forwardRef<RefreshListRef, { userIdToPullData?: string }>(
-  ({ userIdToPullData }, ref) => {
-    // const socialPost = useSelector((state: RootState) => state.social.SocialPost);
-    const [socialPosts, setSocialPosts] = useState<SocialPost[]>([]);
+const SocialFlatlist = forwardRef<
+  RefreshListRef,
+  {
+    userIdToPullData?: string;
+    headerItem?: ComponentType<any> | ReactElement | null | undefined;
+  }
+>(({ userIdToPullData, headerItem }, ref) => {
+  // const socialPost = useSelector((state: RootState) => state.social.SocialPost);
+  const [socialPosts, setSocialPosts] = useState<SocialPost[]>([]);
 
-    const token = useSelector((state: RootState) => state.auth.userToken);
-    const [hasMore, setHasMore] = useState(true);
+  const token = useSelector((state: RootState) => state.auth.userToken);
 
-    const [page, setPage] = useState(1);
-    const [isEndOfList, setIsEndOfList] = useState(false);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [showRefreshIndicator, setShowRefreshIndicator] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [show, setShow] = useState<boolean>(false);
-    const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
-    const navigation = useNavigation<NavigationProp<MainStackParamList>>();
+  const [page, setPage] = useState(1);
+  const [isEndOfList, setIsEndOfList] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showRefreshIndicator, setShowRefreshIndicator] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [show, setShow] = useState<boolean>(false);
+  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
+  const navigation = useNavigation<NavigationProp<MainStackParamList>>();
 
-    const refreshContent = (showRefreshIndicator = false) => {
-      setIsEndOfList(false);
-      setPage(1);
-      setIsRefreshing(true);
+  const refreshContent = (showRefreshIndicator = false) => {
+    setIsEndOfList(false);
+    setPage(1);
+    setIsRefreshing(true);
 
-      if (showRefreshIndicator) {
-        setShowRefreshIndicator(true);
-      }
-    };
+    if (showRefreshIndicator) {
+      setShowRefreshIndicator(true);
+    }
+  };
 
-    useImperativeHandle(ref, () => ({
-      setRefreshing() {
-        refreshContent();
-      },
-    }));
+  useImperativeHandle(ref, () => ({
+    setRefreshing() {
+      refreshContent();
+    },
+  }));
 
-    const getSocialPosts = async (pageNumber: number) => {
-      setIsLoading(true);
+  const getSocialPosts = async (pageNumber: number) => {
+    setIsLoading(true);
 
-      try {
-        const res = await ApiCall({
-          route: userIdToPullData
-            ? `user/get-social/all/${userIdToPullData}/${pageNumber}?itemsPerPage=5`
-            : `user/get-following-social/${pageNumber}`,
-          token,
-          verb: 'get',
-        });
-        let posts = [];
+    try {
+      const res = await ApiCall({
+        route: userIdToPullData
+          ? `user/get-social/all/${userIdToPullData}/${pageNumber}?itemsPerPage=5`
+          : `user/get-following-social/${pageNumber}`,
+        token,
+        verb: 'get',
+      });
+      let posts = [];
 
-        if (res?.status == 200) {
-          setHasMore(res?.response.hasMore);
-          if (pageNumber == 1) {
-            posts = res?.response?.content ?? [];
-            setIsEndOfList(false);
-          } else {
-            posts = [...socialPosts, ...(res?.response?.content ?? [])];
-            if (res?.response?.content?.length < 1) {
-              setIsEndOfList(true);
-            }
-          }
-          setSocialPosts(posts);
+      if (res?.status == 200) {
+        if (pageNumber == 1) {
+          posts = res?.response?.content ?? [];
+          setIsEndOfList(false);
         } else {
-          console.log('error', res?.response);
+          posts = [...socialPosts, ...(res?.response?.content ?? [])];
+          if (res?.response?.content?.length < 1) {
+            setIsEndOfList(true);
+          }
         }
-        setIsLoading(false);
-        setIsRefreshing(false);
-        setShowRefreshIndicator(false);
-      } catch (e: any) {
-        console.log(e.toString());
+        setSocialPosts(posts);
+      } else {
+        console.log('error', res?.response);
       }
       setIsLoading(false);
       setIsRefreshing(false);
       setShowRefreshIndicator(false);
+    } catch (e: any) {
+      console.log(e.toString());
+    }
+    setIsLoading(false);
+    setIsRefreshing(false);
+    setShowRefreshIndicator(false);
 
-      setPage(pageNumber);
-    };
+    setPage(pageNumber);
+  };
 
-    const getData = async () => {
-      await getSocialPosts(page);
-    };
+  const getData = async () => {
+    await getSocialPosts(page);
+  };
 
-    useEffect(() => {
-      getData();
-    }, [page]);
+  useEffect(() => {
+    getData();
+  }, [page]);
 
-    // useEffect(() => {
-    //   SetSocial([]);
-    // }, []);
+  // useEffect(() => {
+  //   SetSocial([]);
+  // }, []);
 
-    useEffect(() => {
-      if (isRefreshing) getData();
-    }, [isRefreshing]);
-    const [isScrollEnable, setIsScrollEnable] = useState(true);
+  useEffect(() => {
+    if (isRefreshing) getData();
+  }, [isRefreshing]);
+  const [isScrollEnable, setIsScrollEnable] = useState(true);
 
-    const removePost = async (type: string, id: string) => {
-      try {
-        const res = await ApiCall({
-          route: `social/remove-post/${id}`,
-          verb: 'delete',
-          token,
-        });
-        console.log(res);
-        if (res?.status == 200) {
-          getData();
-        }
-      } catch (e: any) {
-        console.log('saga error -- ', e.toString());
+  const removePost = async (type: string, id: string) => {
+    try {
+      const res = await ApiCall({
+        route: `social/remove-post/${id}`,
+        verb: 'delete',
+        token,
+      });
+
+      if (res?.status == 200) {
+        getData();
       }
-    };
+    } catch (e: any) {
+      console.log('saga error -- ', e.toString());
+    }
+  };
 
-    const editPost = async (id: string) => {
-      navigation.navigate('Post', { postId: id });
-      // try {
-      //   const res = await ApiCall({
-      //     route: `social/edit-post/${id}`,
-      //     verb: 'patch',
-      //     token: token,
-      //   });
-      //   if (res?.status == 200) {
-      //     getFeedData(feedOptions.type, feedOptions.page);
-      //   }
-      // } catch (e: any) {
-      //   console.log('saga error -- ', e.toString());
-      // }
-    };
+  const editPost = async (id: string) => {
+    navigation.navigate('Post', { postId: id });
+    // try {
+    //   const res = await ApiCall({
+    //     route: `social/edit-post/${id}`,
+    //     verb: 'patch',
+    //     token: token,
+    //   });
+    //   if (res?.status == 200) {
+    //     getFeedData(feedOptions.type, feedOptions.page);
+    //   }
+    // } catch (e: any) {
+    //   console.log('saga error -- ', e.toString());
+    // }
+  };
 
-    return (
-      <Tabs.FlatList
-        data={socialPosts}
-        style={{ flex: 1 }}
-        keyExtractor={(item, index) => {
-          return `${item?.userData?.username}-${item.id ?? item.postId}-${index}`;
-        }}
-        extraData={isRefreshing}
-        scrollEnabled={isScrollEnable}
-        ListHeaderComponent={() => {
-          if (isLoading && socialPosts.length == 0) {
-            return (
-              <View style={{ marginTop: spacing.x10 }}>
-                <ActivityIndicator animating={isLoading} size="small" />
-              </View>
-            );
-          }
-
-          return null;
-        }}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            onPress={() => {
-              if (item.postId) {
-                navigation.navigate('SinglePost', {
-                  postId: item.postId,
-                });
-              }
-            }}
-          >
-            <SocialItem
-              itemData={item}
-              onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-              index={index}
-              parentRefreshContent={refreshContent}
-              removePost={removePost}
-              editPost={editPost}
-            />
-          </TouchableOpacity>
-        )}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (!isLoading && !isRefreshing && !isEndOfList) setPage(page + 1);
-        }}
-        ListFooterComponent={() => (
-          <View>
-            {isEndOfList ? (
-              <StyledText style={{ textAlign: 'center' }}>
-                Not more social posts at this time
-              </StyledText>
-            ) : null}
-          </View>
-        )}
-        refreshControl={
-          <RefreshControl
-            enabled
-            refreshing={isRefreshing && showRefreshIndicator}
-            onRefresh={() => {
-              refreshContent();
-            }}
+  return (
+    <FlatList
+      data={socialPosts}
+      style={{ flex: 1 }}
+      keyExtractor={(item, index) => {
+        return `${item?.userData?.username}-${item.id ?? item.postId}-${index}`;
+      }}
+      extraData={isRefreshing}
+      scrollEnabled={isScrollEnable}
+      ListHeaderComponent={headerItem}
+      renderItem={({ item, index }) => (
+        <TouchableOpacity
+          onPress={() => {
+            if (item.postId) {
+              navigation.navigate('SinglePost', {
+                postId: item.postId,
+              });
+            }
+          }}
+        >
+          <SocialItem
+            itemData={item}
+            onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+            index={index}
+            parentRefreshContent={refreshContent}
+            removePost={removePost}
+            editPost={editPost}
           />
-        }
-        ListEmptyComponent={() => {
-          if (isLoading) {
-            return null;
-          }
-
-          return (
-            <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
-              Nothing here
+        </TouchableOpacity>
+      )}
+      onEndReachedThreshold={0.5}
+      onEndReached={() => {
+        if (!isLoading && !isRefreshing && !isEndOfList && socialPosts.length > 0)
+          setPage(page + 1);
+      }}
+      ListFooterComponent={() => (
+        <View>
+          {isEndOfList ? (
+            <StyledText style={{ textAlign: 'center' }}>
+              Not more social posts at this time
             </StyledText>
-          );
-        }}
-      />
-      // <>
-      //   {socialPost?.map((item, i) => (
-      //     <View key={i} style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
-      //       {item?.attachments ? (
-      //         <Image
-      //           style={styles.socialpostimage}
-      //           resizeMode={'stretch'}
-      //           source={require('@/assets/images/Photo.png')}
-      //         />
-      //       ) : null}
-      //       <Text
-      //         style={{
-      //           padding: 5,
-      //           fontFamily: 'Rubik',
-      //           lineHeight: 18,
-      //           color: colors.text,
-      //           marginTop: getHeight(1),
-      //           textAlign: 'center',
-      //         }}
-      //       >
-      //         {item?.content}
-      //       </Text>
-      //       <View style={{ flexDirection: 'row', padding: 5 }}>
-      //         {item?.source == 'twitter' ? <Twitter fill="#00acee" /> : null}
-      //         <Text
-      //           style={{
-      //             marginLeft: 5,
-      //             fontFamily: 'Rubik',
-      //             color: '#68828A',
-      //             alignItems: 'center',
-      //           }}
-      //         >
-      //           @{item?.handler}
-      //         </Text>
-      //       </View>
-      //     </View>
-      //   ))}
-      //   {hasMore ? (
-      //     <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
-      //       <TouchableOpacity
-      //         onPress={async () => {
-      //           await getSocialPosts(page + 1);
-      //         }}
-      //       >
-      //         <Text>View More</Text>
-      //       </TouchableOpacity>
-      //     </View>
-      //   ) : null}
-      // </>
-    );
-  }
-);
+          ) : null}
+        </View>
+      )}
+      refreshControl={
+        <RefreshControl
+          enabled
+          refreshing={isRefreshing && showRefreshIndicator}
+          onRefresh={() => {
+            refreshContent();
+          }}
+        />
+      }
+      ListEmptyComponent={() => {
+        if (isLoading) {
+          return null;
+        }
+
+        return (
+          <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
+            Nothing here
+          </StyledText>
+        );
+      }}
+    />
+    // <>
+    //   {socialPost?.map((item, i) => (
+    //     <View key={i} style={{ ...styles.socialpostview, backgroundColor: colors.card, margin: 7 }}>
+    //       {item?.attachments ? (
+    //         <Image
+    //           style={styles.socialpostimage}
+    //           resizeMode={'stretch'}
+    //           source={require('@/assets/images/Photo.png')}
+    //         />
+    //       ) : null}
+    //       <Text
+    //         style={{
+    //           padding: 5,
+    //           fontFamily: 'Rubik',
+    //           lineHeight: 18,
+    //           color: colors.text,
+    //           marginTop: getHeight(1),
+    //           textAlign: 'center',
+    //         }}
+    //       >
+    //         {item?.content}
+    //       </Text>
+    //       <View style={{ flexDirection: 'row', padding: 5 }}>
+    //         {item?.source == 'twitter' ? <Twitter fill="#00acee" /> : null}
+    //         <Text
+    //           style={{
+    //             marginLeft: 5,
+    //             fontFamily: 'Rubik',
+    //             color: '#68828A',
+    //             alignItems: 'center',
+    //           }}
+    //         >
+    //           @{item?.handler}
+    //         </Text>
+    //       </View>
+    //     </View>
+    //   ))}
+    //   {hasMore ? (
+    //     <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
+    //       <TouchableOpacity
+    //         onPress={async () => {
+    //           await getSocialPosts(page + 1);
+    //         }}
+    //       >
+    //         <Text>View More</Text>
+    //       </TouchableOpacity>
+    //     </View>
+    //   ) : null}
+    // </>
+  );
+});
 export default SocialFlatlist;

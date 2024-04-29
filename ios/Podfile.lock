@@ -1345,7 +1345,9 @@ PODS:
     - FirebaseCoreExtension (= 10.20.0)
     - React-Core
     - RNFBApp
-  - RNGestureHandler (2.14.1):
+  - RNFS (2.20.0):
+    - React-Core
+  - RNGestureHandler (2.16.0):
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
@@ -1492,6 +1494,7 @@ DEPENDENCIES:
   - "RNFBAuth (from `../node_modules/@react-native-firebase/auth`)"
   - "RNFBDynamicLinks (from `../node_modules/@react-native-firebase/dynamic-links`)"
   - "RNFBMessaging (from `../node_modules/@react-native-firebase/messaging`)"
+  - RNFS (from `../node_modules/react-native-fs`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
   - RNImageCropPicker (from `../node_modules/react-native-image-crop-picker`)
@@ -1711,6 +1714,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-firebase/dynamic-links"
   RNFBMessaging:
     :path: "../node_modules/@react-native-firebase/messaging"
+  RNFS:
+    :path: "../node_modules/react-native-fs"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNGoogleSignin:
@@ -1850,7 +1855,8 @@ SPEC CHECKSUMS:
   RNFBAuth: bd014d486a51b5414b642dd155763c5873a2b3e4
   RNFBDynamicLinks: 77cccfac365229b763b6749949f2fac32d2ee87c
   RNFBMessaging: 1e7415390ae579c5949505a0709686a2de8a47e5
-  RNGestureHandler: 15c6ef51acba34c49ff03003806cf5dd6098f383
+  RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
+  RNGestureHandler: bc2cdb2dc42facdf34992ae364b8a728e19a3686
   RNGoogleSignin: aac5c1ec73422109dec1da770247a1e410dcc620
   RNImageCropPicker: e7ab6fb43d2fc3e84651e786ef4a080d63b0ed3d
   RNInAppBrowser: e36d6935517101ccba0e875bac8ad7b0cb655364
@@ -1872,6 +1878,6 @@ SPEC CHECKSUMS:
   Yoga: a716eea57d0d3430219c0a5a233e1e93ee931eb7
   YoutubePlayer-in-WKWebView: 4fca3b4f6f09940077bfbae7bddb771f2b43aacd
 
-PODFILE CHECKSUM: cff0dee4d0bd4bc58fa87f25de860cd865cd6307
+PODFILE CHECKSUM: 97b20acec8a0b632736cca852d961c3e306d3287
 
 COCOAPODS: 1.14.3

@@ -24,7 +24,7 @@ export const styles = StyleSheet.create({
 
   titletext: {
     fontSize: getFontSize(2.2),
-    // fontFamily: 'Rubik-Medium',
+    // fontFamily: 'OpenSans-Medium',
     // color: '#032F3C',
     textAlign: 'center',
   },
@@ -77,7 +77,7 @@ export const styles = StyleSheet.create({
   center: { justifyContent: 'center', alignItems: 'center' },
   SocialText: {
     color: '#126B87',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     fontSize: getFontSize(2.2),
     margin: 5,
     marginBottom: getHeight(2),

@@ -6,7 +6,7 @@ export const styles = StyleSheet.create({
   textstyle: {
     marginLeft: getWidth(4),
     color: '#4F6D77',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     fontWeight: '700',
     letterSpacing: 1,
     fontSize: 16,
@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
   },
   litetext: {
     color: '#4F6D77',
-    fontFamily: 'Rubik-Light',
+    fontFamily: 'OpenSans-Light',
     marginLeft: getWidth(4),
     fontSize: 16,
     fontWeight: '400',

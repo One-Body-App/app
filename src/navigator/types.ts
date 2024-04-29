@@ -44,7 +44,7 @@
 
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { Animated, StyleProp, TextProps, TextStyle } from 'react-native';
-import { AccountType } from '@/utils/types';
+import { AccountType, PostType } from '@/utils/types';
 import { FeedTypes } from '../screens/home';
 
 //   RemoveAccount: undefined;
@@ -117,7 +117,7 @@ export type HomeStackParamsList = {
   };
   Search: undefined;
   Notifications: undefined;
-
+  WatchPortal: undefined;
   UserProfile: {
     id: string;
   };
@@ -295,6 +295,7 @@ export type MainStackParamList = {
   };
   SingleRss: {
     postId: string;
+    postType?: PostType;
   };
   NewPassword: undefined;
   Intro: undefined;

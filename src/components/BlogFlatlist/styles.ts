@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
   },
   titletext: {
     fontSize: getFontSize(2.5),
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     color: '#032F3C',
   },
   blogpostview: {
@@ -53,7 +53,7 @@ export const styles = StyleSheet.create({
     marginTop: getHeight(1),
     lineHeight: 18,
     color: '#032F3C',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
 
     width: 150,
   },

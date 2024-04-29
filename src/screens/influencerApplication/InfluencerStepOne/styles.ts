@@ -26,14 +26,14 @@ export const styles = StyleSheet.create({
 
   text: {
     textAlign: 'center',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     marginTop: 10,
   },
   footerText: {
     color: '#032F3C',
     fontWeight: '600',
     fontSize: getFontSize(2.2),
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
   },
   progressBar: {
     width: getWidth(25),
@@ -53,7 +53,7 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2.9),
     textAlign: 'center',
 
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   foter: {
     height: getHeight(10),
@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
   point: {
     fontWeight: 'bold',
     fontSize: getFontSize(2.5),
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
   },
   btn: {
     backgroundColor: '#F6F6F6',

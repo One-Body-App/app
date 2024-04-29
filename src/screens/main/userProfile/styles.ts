@@ -121,7 +121,7 @@ export const styles = StyleSheet.create({
   onebodytext: {
     color: '#126B87',
     textAlign: 'center',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     marginVertical: getHeight(2),
     marginBottom: getHeight(1),
   },

@@ -1,6 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-import { View, FlatList, RefreshControl, useWindowDimensions } from 'react-native';
+import {
+  View,
+  FlatList,
+  RefreshControl,
+  useWindowDimensions,
+  ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  StyleSheet,
+  Animated,
+  Image,
+  Dimensions,
+} from 'react-native';
 
 import { useSelector } from 'react-redux';
 
@@ -11,42 +24,32 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import { FeedTypes } from '@/screens/home';
 
-import { getHeight } from '@/utils/ResponsiveFun';
 import VideoItem from './VideoItem';
 import { WatchPost } from '@/utils/types';
+import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 
-function Watch() {
+const { width } = Dimensions.get('window');
+
+function Watch({ navigation }: any) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [feedData, setFeedData] = useState<WatchPost[]>([]);
   const [page, setPage] = useState<number>(1);
+  const [activeWatchReel, setActiveWatchReel] = useState<number>(0);
   const [viewHeight, setViewHeight] = useState<number>(1);
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [sharedVideoUrl, setSharedVideoUrl] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [likesCount, setLikesCount] = useState(0);
-  const [commentsCount, setCommentsCount] = useState(0);
-  const [savesCount, setSavesCount] = useState(0);
-  const [sharesCount, setSharesCount] = useState(0);
-  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
-  const [commentText, setCommentText] = useState('');
   const flatListRef = useRef<FlatList>(null);
-
-  const { height, width } = useWindowDimensions();
+  const [isScrollEnable, setIsScrollEnable] = useState(true);
+  const { width } = useWindowDimensions();
 
   // Accede al estado del usuario
   const { dark } = useTheme();
 
-  const [reactionCounts, setReactionCounts] = useState({
-    love: 0,
-    praying: 0,
-    happy: 0,
-  });
-
   useEffect(() => {
     // getData(page);
     if (isRefreshing) {
-      if (page == 1) {
+      if (page === 1) {
         getFeedData();
       } else {
         setPage(1);
@@ -67,8 +70,20 @@ function Watch() {
 
       if (res?.status === 200) {
         newFeedData = [];
+        // const validPosts = res.response.map(async (i: any) => {
+        //   try {
+        //     const a = await fetch(`https://stream.mux.com/${i.playBackId}`);
+        //     if (a.ok) {
+        //       return i;
+        //     }
+        //     return null;
+        //   } catch (error) {
+        //     return null;
+        //   }
+        // });
+        // const validPostsArray = await Promise.all(validPosts);
         const feedPosts = res.response
-          .filter((i: any) => !!i.playBackId)
+          .filter((i: any) => !!i?.playBackId)
           .sort((a: any, b: any) => {
             const dateA = new Date(a.created);
             const dateB = new Date(b.created);
@@ -105,31 +120,47 @@ function Watch() {
     }
   };
 
-  const handleShare = (id: number) => {
-    // Lógica para compartir el video
-    setSharedVideoUrl(`https://www.example.com/video/${id}`);
-    setSharesCount(sharesCount + 1);
-  };
+  // const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+  //   console.log(viewableItems, 'viewableItems');
+  //   if (viewableItems && viewableItems.length > 0) {
+  //     const { index } = viewableItems[0];
+  //     setActiveWatchReel(index);
+  //   }
+  // }).current;
 
-  const handleComment = () => {
-    // Lógica para dejar un comentario
-    setIsCommentModalVisible(true);
-  };
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    // apply your logic here
 
-  const handleSave = () => {
-    // Lógica para guardar el video
-    setSavesCount(savesCount + 1);
-  };
-
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0) {
       const { index } = viewableItems[0];
+      setActiveWatchReel(index);
     }
-  }).current;
+  }, []);
 
   useEffect(() => {
     getFeedData();
   }, [page]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setIsRefreshing(true);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const [index, setIndex] = React.useState(0);
+  const opacity = React.useRef(new Animated.Value(1)).current;
+  const onMomentumScrollEnd = ({ nativeEvent }: any) => {
+    const newIndex = nativeEvent.contentOffset.y / viewHeight;
+
+    if (newIndex !== index && newIndex < feedData.length && newIndex >= 0) {
+      opacity.setValue(0);
+      setIndex(newIndex);
+    }
+  };
+
+  const resizeMode = 'cover';
 
   return (
     <View
@@ -139,64 +170,65 @@ function Watch() {
         setViewHeight(height);
       }}
     >
-      <FlatList
-        ref={flatListRef}
-        data={feedData}
-        contentContainerStyle={{ flexGrow: 1 }}
-        renderItem={({ item, index }) => {
-          return (
-            <VideoItem
-              index={index}
-              item={item}
-              viewHeight={viewHeight}
-              width={width}
-              fromSavedPosts={false}
-              onShowDismissCard={(e?: boolean) => {
-                // setIsScrollEnable(!e)
-              }}
-            />
-          );
-        }}
-        keyExtractor={(item) => item.id.toString()}
-        getItemLayout={(data, index) => ({
-          length: getHeight(74.2), // Adjust height as needed
-          offset: getHeight(74.2) * index,
-          index,
-        })}
-        pagingEnabled
-        decelerationRate="fast"
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{
-          itemVisiblePercentThreshold: 50,
-        }}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (!isLoading && !isRefreshing && !isEndOfList) {
-            setPage(page + 1);
-          }
-        }}
-        refreshing={isRefreshing}
-        refreshControl={
-          <RefreshControl
-            enabled
-            refreshing={isRefreshing}
-            colors={
-              dark
-                ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
-                : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
-            }
-            tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
-            onRefresh={() => {
-              setIsRefreshing(true);
-            }}
-          />
-        }
-        // CellRendererComponent={({ children, style, onLayout, onFocusCapture }) => (
-        //   <View style={[style, { flex: 1 }]}>{children}</View>
-        // )}
-      />
+      {isLoading && page == 1 && !isRefreshing ? (
+        <View style={{ marginTop: 10 }}>
+          <ActivityIndicator size="small" />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.container}
+          pagingEnabled
+          onMomentumScrollEnd={onMomentumScrollEnd}
+        >
+          {feedData.map((i) => {
+            return (
+              <Image
+                resizeMode={resizeMode}
+                style={[styles.item, { height: viewHeight }]}
+                source={{
+                  uri: `https://image.mux.com/${i.playBackId}/thumbnail.webp?fit_mode=preserve&width=${width}`,
+                }}
+              />
+            );
+          })}
+
+          {feedData[index] ? (
+            <Animated.View
+              style={[
+                StyleSheet.absoluteFillObject,
+                { height: viewHeight, flex: 1, top: index * viewHeight },
+              ]}
+            >
+              <VideoItem
+                currentIndex={index}
+                item={feedData[index]}
+                viewHeight={viewHeight}
+                width={width}
+                fromSavedPosts={false}
+                onShowDismissCard={(e?: boolean) => {
+                  setIsScrollEnable(!e);
+                }}
+              />
+            </Animated.View>
+          ) : null}
+        </ScrollView>
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+
+    backgroundColor: 'black',
+  },
+  item: {
+    height: '100%',
+    width,
+    overflow: 'hidden',
+  },
+  video: { flex: 1 },
+});
 
 export default Watch;

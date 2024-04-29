@@ -1,17 +1,6 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  TouchableOpacity,
-  ImageBackground,
-  TextInput,
-  Linking,
-} from 'react-native';
+import { View, TextInput } from 'react-native';
 import React, { useRef, useState } from 'react';
-import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 
@@ -26,19 +15,15 @@ import {
 } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useToast } from 'react-native-toast-notifications';
-import { appColor, COLORS, THEME } from '../../constants';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
-import Logo from '@/assets/svg/LogoBlue.svg';
+
 import { GeneralStyle } from '../../constants/GeneralStyle';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../../components/Button';
 
 import { validateFields } from '@/utils/validation/validate-fields';
 import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import GoBackIcon from '@/components/GoBackIcon';
-import { MainStackParamList, SettingsStackParamsList } from '@/src/navigator/types';
+import { MainStackParamList } from '@/src/navigator/types';
 import StyledTextInput from '@/components/styled/TextInput';
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';

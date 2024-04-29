@@ -47,11 +47,11 @@ const styles = StyleSheet.create({
     fontSize: getFontSize(2.3),
     padding: 5,
     color: '#032F3C',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   paragraph: {
     fontSize: getFontSize(2),
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
     padding: 5,
     paddingVertical: 0,
     width: getWidth(69),

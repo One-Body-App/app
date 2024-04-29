@@ -9,6 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import StyledText from './styled/Text';
 
 function GradientButton({
   text,
@@ -46,7 +47,7 @@ function GradientButton({
           }}
         >
           {leftIcon}
-          <Text style={[btnTextStyle]}>{text}</Text>
+          <StyledText style={[btnTextStyle]}>{text}</StyledText>
           {RightIcon}
         </TouchableOpacity>
       </LinearGradient>

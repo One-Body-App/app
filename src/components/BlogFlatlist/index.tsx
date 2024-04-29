@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { ComponentType, ReactElement, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -26,7 +26,13 @@ import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
 import { styles as globalStyle } from '@/components/listItems/style';
 import { spacing } from '@/src/styles/spacing';
 
-function BlogFlatlist({ userId }: { userId: string }) {
+function BlogFlatlist({
+  userId,
+  headerItem,
+}: {
+  userId: string;
+  headerItem?: ComponentType<any> | ReactElement | null | undefined;
+}) {
   // const offset = useRef(new Animated.Value(0)).current;
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -125,9 +131,10 @@ function BlogFlatlist({ userId }: { userId: string }) {
         currentPopupItem={currentPopupItem}
         height={getHeight(25)}
       />
-      <Tabs.FlatList
+      <FlatList
         nestedScrollEnabled
         data={blogs}
+        ListHeaderComponent={headerItem}
         // onScroll={(e) => {
         //   setScrollPosition(e.nativeEvent.contentOffset.y);
         // }}

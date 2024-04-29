@@ -38,7 +38,7 @@ export const styles = StyleSheet.create({
     color: 'white',
     fontSize: getFontSize(2),
     letterSpacing: 1.25,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
 
   btn: {
