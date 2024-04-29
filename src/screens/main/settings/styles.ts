@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
   heading: {
     fontSize: getFontSize(2.5),
     fontWeight: '400',
-    fontFamily: 'Rubik-Regular',
+    fontFamily: 'OpenSans-Regular',
   },
   logouttext: {
     fontSize: getFontSize(2.5),

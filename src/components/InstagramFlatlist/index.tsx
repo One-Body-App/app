@@ -102,7 +102,7 @@ function InstagramFlatlist({
                 ? visibleItemsIndex?.indexOf(index) > -1
                 : false
             }
-            item={item}
+            itemData={item}
             socialPostviewStyle={{ backgroundColor: colors.card }}
           />
         )}

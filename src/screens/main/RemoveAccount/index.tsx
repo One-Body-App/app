@@ -175,8 +175,8 @@ function RemoveAccount({ navigation }: Props) {
                           color: !reason
                             ? colors.text
                             : reason == item.reason
-                            ? Colors.errorFeedback.background
-                            : Colors.neutral[500],
+                              ? Colors.errorFeedback.background
+                              : Colors.neutral[500],
                         },
                       ]}
                       wrapperBtnStyle={{
@@ -196,6 +196,7 @@ function RemoveAccount({ navigation }: Props) {
                 multiline
                 numberOfLines={3}
                 maxLength={150}
+                enforceMaxLength
                 placeholder="Tell us more information"
                 inputStyle={{ minHeight: 80 }}
                 showCharCounter

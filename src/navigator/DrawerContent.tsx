@@ -3,7 +3,7 @@ import {
   DrawerContentScrollView,
   DrawerItemList,
 } from '@react-navigation/drawer';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import FastImage from 'react-native-fast-image';
@@ -163,10 +163,30 @@ export default function DrawerContent({
               borderRadius: borderRadius.base,
             }}
             leftIcon={<LogoutCurve color={Colors.primary.brand} />}
-            onPress={async () => {
-              LoginManager.logOut();
-              dispatch(logout());
-              await auth().signOut();
+            onPress={() => {
+              Alert.alert(
+                'Signing Out',
+                'Are you sure you want to sign out?',
+                [
+                  {
+                    text: 'Cancel',
+
+                    style: 'cancel',
+                    isPreferred: true,
+                  },
+                  {
+                    text: 'Yes',
+                    onPress: async () => {
+                      LoginManager.logOut();
+                      dispatch(logout());
+                      await auth().signOut();
+                    },
+                  },
+                ],
+                {
+                  cancelable: true,
+                }
+              );
             }}
           />
           <Button

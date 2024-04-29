@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -10,6 +10,7 @@ import {
   Dimensions,
   Share,
   Switch,
+  TextInput,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import {
@@ -48,7 +49,7 @@ import { AccountType, ChurchType, Interest, Tag } from '@/utils/types';
 
 import MapBox, { MapSuggestion } from '@/components/MapBox';
 import { spacing } from '@/src/styles/spacing';
-import { profileImagesize } from '@/components/profile/Profile';
+
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledText from '@/components/styled/Text';
@@ -128,6 +129,7 @@ function EditProfile({ navigation }: Props) {
 
   const [username, setUsername] = useState<string>(user?.username ?? '');
   const [website, setWebsite] = useState<string>(user?.website ?? '');
+  const [isValidWebsite, setIsValidWebsite] = useState<boolean | null>(null);
   const [bio, setBio] = useState<string>(user?.bio ?? '');
   const [whatIDo, setWhatIDo] = useState<string>(user?.profile.whatIDo?._id || '');
   const [organizationType, setOrganizationType] = useState<Tag | null>(
@@ -185,28 +187,6 @@ function EditProfile({ navigation }: Props) {
 
   const oftenChurchOptions = ['Weekly', 'Bi-Weekly', 'Once a month', 'I only watch at home'];
 
-  // React.useEffect(() => {
-  //   navigation.setOptions({
-  //     headerRight: () => (
-  //       <View style={{ flexDirection: 'row', padding: spacing.x5 }}>
-  //         <Button
-  //           onPress={() => {}}
-  //           text="Save"
-  //           btnTextStyle={{ color: Colors.primarySapphire.brand }}
-  //           btnStyle={[
-  //             button.outline,
-  //             {
-  //               paddingHorizontal: spacing.x24,
-  //               paddingVertical: spacing.x5,
-  //               borderColor: Colors.primarySapphire.brand,
-  //             },
-  //           ]}
-  //         />
-  //       </View>
-  //     ),
-  //   });
-  // }, [navigation]);
-
   const { colors } = useTheme();
 
   useEffect(() => {
@@ -219,47 +199,44 @@ function EditProfile({ navigation }: Props) {
     }
   }, [newLocation, longitude, latitude]);
 
-  useEffect(() => {
-    navigation
-      .getParent()
-      ?.getParent()
-      ?.setOptions({
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-            <TouchableOpacity
-              style={{ marginRight: spacing.x16 }}
-              onPress={() => {
-                Share.share({
-                  title:
-                    // profileData?._id == currentUser._id ?
-                    `Check my profile on One Body App`,
-                  // : 'Check this profile on One Body App`',
-                  // message: `Check my profile in One Body App`,
-                  url: `https://app.onebodyapp.com/profile/${user?.username}`,
-                });
-              }}
-            >
-              {Platform.OS == 'android' ? (
-                <Ionicons name="share-social-outline" size={24} color={Colors.primary.brand} />
-              ) : (
-                <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setShowSettings(true);
-              }}
-            >
-              <Setting2
-                style={{ height: 24, width: 24 }}
-                color={Colors.primary.brand}
-                strokeWidth={0.2}
-              />
-            </TouchableOpacity>
-          </View>
-        ),
-      });
-  }, [navigation, user]);
+  // useEffect(() => {
+  //   navigation.setOptions({
+  //     headerRight: () => (
+  //       <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
+  //         <TouchableOpacity
+  //           style={{ marginRight: spacing.x16 }}
+  //           onPress={() => {
+  //             Share.share({
+  //               title:
+  //                 // profileData?._id == currentUser._id ?
+  //                 `Check my profile on One Body App`,
+  //               // : 'Check this profile on One Body App`',
+  //               // message: `Check my profile in One Body App`,
+  //               url: `https://app.onebodyapp.com/profile/${user?.username}`,
+  //             });
+  //           }}
+  //         >
+  //           {Platform.OS == 'android' ? (
+  //             <Ionicons name="share-social-outline" size={24} color={Colors.primary.brand} />
+  //           ) : (
+  //             <Ionicons name="share-outline" size={24} color={Colors.primary.brand} />
+  //           )}
+  //         </TouchableOpacity>
+  //         <TouchableOpacity
+  //           onPress={() => {
+  //             setShowSettings(true);
+  //           }}
+  //         >
+  //           <Setting2
+  //             style={{ height: 24, width: 24 }}
+  //             color={Colors.primary.brand}
+  //             strokeWidth={0.2}
+  //           />
+  //         </TouchableOpacity>
+  //       </View>
+  //     ),
+  //   });
+  // }, [navigation, user]);
 
   const getChurchTypes = async () => {
     try {
@@ -522,513 +499,394 @@ function EditProfile({ navigation }: Props) {
     churchSubType == 'none'
       ? 'None'
       : selectedChurchSubType.length > 0
-      ? selectedChurchSubType[0].churchType
-      : '';
+        ? selectedChurchSubType[0].churchType
+        : '';
 
+  const websiteRef = useRef<TextInput>(null);
+  const urlRegex = /^[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$/i;
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        // keyboardVerticalOffset={120}
-      >
-        <ScrollView>
-          <View>
-            <View style={{ width: '100%', height: 200 }}>
-              {headerImageToUpload ? (
-                <FastImage
-                  style={{
-                    height: 150,
-                    width: '100%',
-                  }}
-                  source={{
-                    uri: headerImageToUpload,
-                  }}
-                  resizeMode="cover"
-                />
-              ) : (
+    <>
+      {/* <SafeAreaView style={{ flex: 1, backgroundColor: 'blue' }}> */}
+      {/* //   <KeyboardAvoidingView
+    //     style={{ flex: 1 }}
+    //     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    //     // keyboardVerticalOffset={120}
+    //   > */}
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View>
+          <View style={{ width: '100%', height: 200 }}>
+            {headerImageToUpload ? (
+              <FastImage
+                style={{
+                  height: 150,
+                  width: '100%',
+                }}
+                source={{
+                  uri: headerImageToUpload,
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={{
+                  backgroundColor: Colors.primarySapphire.brand,
+                  height: 150,
+                  width: '100%',
+                }}
+              />
+            )}
+
+            <View
+              style={{
+                alignSelf: 'flex-end',
+                backgroundColor: 'white',
+                borderRadius: borderRadius.button,
+                padding: spacing.x10,
+                marginRight: spacing.x24,
+                position: 'absolute',
+                bottom: spacing.x64, // size of the profile image + margin space
+                right: 0,
+              }}
+            >
+              <ImagePickerModal
+                visible={headerImagePickerModalVisibile}
+                hideVisible={() => setHeaderImagePickerModalVisibile(false)}
+                galleryImage={() => chooseImageGallery('header')}
+                cameraImage={() => captureImage('photo', 'header')}
+              />
+
+              <TouchableOpacity
+                onPress={() => {
+                  setHeaderImagePickerModalVisibile(true);
+                }}
+              >
+                <GalleryEdit color={Colors.neutral[200]} />
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 13,
+                marginLeft: spacing.x24,
+              }}
+            >
+              <ImagePickerModal
+                visible={pickerModalVisibile}
+                hideVisible={() => setPickerModalVisibile(false)}
+                galleryImage={() => chooseImageGallery('photo')}
+                cameraImage={() => captureImage('photo', 'photo')}
+              />
+              <TouchableOpacity
+                onPress={() => setPickerModalVisibile(true)}
+                style={styles.imageContainer}
+              >
                 <View
                   style={{
-                    backgroundColor: Colors.primarySapphire.brand,
-                    height: 150,
-                    width: '100%',
-                  }}
-                />
-              )}
+                    // flexDirection: 'row',
+                    // justifyContent: 'center',
+                    // alignContent: 'center',
 
-              <View
-                style={{
-                  alignSelf: 'flex-end',
-                  backgroundColor: 'white',
-                  borderRadius: borderRadius.button,
-                  padding: spacing.x10,
-                  marginRight: spacing.x24,
-                  position: 'absolute',
-                  bottom: spacing.x64, // size of the profile image + margin space
-                  right: 0,
-                }}
-              >
-                <ImagePickerModal
-                  visible={headerImagePickerModalVisibile}
-                  hideVisible={() => setHeaderImagePickerModalVisibile(false)}
-                  galleryImage={() => chooseImageGallery('header')}
-                  cameraImage={() => captureImage('photo', 'header')}
-                />
-
-                <TouchableOpacity
-                  onPress={() => {
-                    setHeaderImagePickerModalVisibile(true);
+                    width: 80,
+                    height: 80,
+                    borderRadius: borderRadius.max,
                   }}
                 >
-                  <GalleryEdit color={Colors.neutral[200]} />
-                </TouchableOpacity>
-              </View>
-
-              <View
-                style={{
-                  position: 'absolute',
-                  bottom: profileImagesize / 6,
-                  marginLeft: spacing.x24,
-                }}
-              >
-                <ImagePickerModal
-                  visible={pickerModalVisibile}
-                  hideVisible={() => setPickerModalVisibile(false)}
-                  galleryImage={() => chooseImageGallery('photo')}
-                  cameraImage={() => captureImage('photo', 'photo')}
-                />
-                <TouchableOpacity
-                  onPress={() => setPickerModalVisibile(true)}
-                  style={styles.imageContainer}
-                >
-                  <View
+                  <FastImage
                     style={{
-                      // flexDirection: 'row',
-                      // justifyContent: 'center',
-                      // alignContent: 'center',
-
-                      width: profileImagesize,
-                      height: profileImagesize,
+                      width: 80,
+                      height: 80,
                       borderRadius: borderRadius.max,
                     }}
-                  >
-                    <FastImage
-                      style={{
-                        width: profileImagesize,
-                        height: profileImagesize,
-                        borderRadius: borderRadius.max,
-                      }}
-                      source={
-                        imageToUpload
-                          ? { uri: imageToUpload }
-                          : {
-                              uri:
-                                user?.profileImage ||
-                                'https://cdn.onebodyapp.com/user/no-image.png',
-                            }
-                      }
-                      resizeMode={FastImage.resizeMode.stretch}
-                    />
-
-                    <View
-                      style={{
-                        backgroundColor: 'rgba(0,0,0,0.7)',
-                        width: profileImagesize,
-                        height: profileImagesize,
-                        position: 'absolute',
-                        borderRadius: borderRadius.max,
-                        borderWidth: borderWidth.base,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-
-                        borderColor: 'white',
-                      }}
-                    >
-                      <GalleryEdit color="white" />
-                      <StyledText
-                        style={{
-                          // color: '#757575',
-                          // fontSize: 12,
-                          // // marginTop: getHeight(1),
-                          // fontFamily: 'Rubik-Regular',
-                          // textAlign: 'center',
-                          // width: '40%',
-                          // alignSelf: 'center',
-                          color: 'white',
-                          textAlign: 'center',
-                        }}
-                      >
-                        Change
-                      </StyledText>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.topContainer}>
-            <View style={{ marginHorizontal: spacing.x24 }}>
-              <View style={[styles.inputGroup, { backgroundColor: colors.card }]}>
-                <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
-                  {user?.accountType} Details
-                </StyledText>
-                <StyledTextInput
-                  onChangeText={(e) => setUsername(e.toLowerCase().trim().replace(/\s+/g, ''))}
-                  wrapperStyle={{ marginTop: spacing.x24 }}
-                  value={username}
-                  label="Username"
-                  placeholder="username"
-                />
-
-                <StyledTextInput
-                  onChangeText={(e) => setFullName(e)}
-                  wrapperStyle={{ marginTop: spacing.x16 }}
-                  value={fullname}
-                  label="Name"
-                  placeholder="Name"
-                />
-
-                <View style={{ flex: 4, marginTop: spacing.x16 }}>
-                  <StyledText style={{ marginBottom: 10 }}>Date of birth</StyledText>
-                  <Button
-                    text={date || 'Select'}
-                    btnStyle={{
-                      flex: 1,
-                      backgroundColor: Colors.neutral[700],
-                      borderColor: Colors.neutral[800],
-                      borderRadius: borderRadius.xs,
-                    }}
-                    wrapperBtnStyle={{
-                      justifyContent: 'space-between',
-                      paddingHorizontal: 14,
-                      paddingVertical: 16,
-                    }}
-                    btnTextStyle={{
-                      color: date ? Colors.neutral[300] : Colors.neutral[400],
-                    }}
-                    onPress={() => setOpen(true)}
-                    rightIcon={
-                      <Calendar
-                        onPress={() => setOpen(true)}
-                        style={{ paddingTop: 6 }}
-                        size={20}
-                        color={Colors.neutral[300]}
-                      />
+                    source={
+                      imageToUpload
+                        ? { uri: imageToUpload }
+                        : {
+                            uri:
+                              user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                          }
                     }
-                  />
-                  <DatePicker
-                    modal
-                    minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
-                    maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
-                    mode="date"
-                    androidVariant="nativeAndroid"
-                    open={open}
-                    date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
-                    onConfirm={(date) => {
-                      setOpen(false);
-                      setDate(format(date, 'MM/dd/yyyy'));
-                    }}
-                    onCancel={() => {
-                      setOpen(false);
-                    }}
-                  />
-                </View>
-
-                {user?.accountType == 'individual' ? (
-                  <StyledSelect
-                    items={whatIDoList.map((item) => {
-                      return {
-                        text: item.name,
-                        value: item._id,
-                      };
-                    })}
-                    label="What I Do"
-                    selectedItem={whatIDo}
-                    btnText={whatIDo == '' ? 'Select' : selectedWhatIDoName}
-                    modalTitle="Select one"
-                    onChange={(item) => {
-                      setWhatIDo(item);
-                    }}
-                    wrapperStyle={{ marginTop: spacing.x16 }}
-                  />
-                ) : (
-                  <StyledSelect
-                    items={organizationTypes.map((item) => {
-                      return {
-                        text: item.name,
-                        value: item._id,
-                      };
-                    })}
-                    label="Type"
-                    selectedItem={organizationType?._id}
-                    btnText={!organizationType ? 'Select' : organizationType.name}
-                    modalTitle="Select one"
-                    onChange={(_id) => {
-                      const newOrganizationType = organizationTypes.filter(
-                        (item) => item._id == _id
-                      );
-
-                      if (newOrganizationType && newOrganizationType.length > 0) {
-                        setOrganizationType(newOrganizationType[0]);
-                      }
-                    }}
-                    wrapperStyle={{ marginTop: spacing.x16 }}
-                  />
-                )}
-                {user?.isInfluencer == true || user?.accountType == 'organization' ? (
-                  <StyledTextInput
-                    multiline
-                    numberOfLines={3}
-                    maxLength={150}
-                    label="Bio"
-                    inputStyle={{ minHeight: 80 }}
-                    showCharCounter
-                    value={bio}
-                    onChangeText={(e) => setBio(e)}
-                    counterContainerStyle={{
-                      justifyContent: 'center',
-                      alignItems: 'flex-end',
-                    }}
-                    counterTextStyleStyle={{
-                      marginTop: spacing.x32 * -1,
-                      marginRight: spacing.x10,
-                      color: Colors.neutral[300],
-                    }}
-                    wrapperStyle={{ marginTop: spacing.x16 }}
-                  />
-                ) : null}
-
-                <View style={{ flex: 4, marginTop: spacing.x16 }}>
-                  <StyledText style={{ marginBottom: 10 }}>Location</StyledText>
-                  <Button
-                    text={
-                      location
-                        ? location.address
-                        : newLocation?.place_name ?? 'Select your location'
-                    }
-                    btnStyle={{
-                      flex: 1,
-                      backgroundColor: Colors.neutral[700],
-                      borderColor: Colors.neutral[800],
-                      borderRadius: borderRadius.xs,
-                    }}
-                    wrapperBtnStyle={{
-                      justifyContent: 'space-between',
-                      paddingHorizontal: 14,
-                      paddingVertical: 16,
-                    }}
-                    btnTextStyle={{
-                      color: location ? Colors.neutral[300] : Colors.neutral[400],
-                    }}
-                    onPress={() => setCitySelector(true)}
-                    rightIcon={
-                      <ArrowDown2
-                        onPress={() => setCitySelector(true)}
-                        style={{ paddingTop: 6 }}
-                        size={15}
-                        color={Colors.neutral[300]}
-                      />
-                    }
-                  />
-
-                  <MapBox
-                    location={newLocation}
-                    setLongitude={setLongitude}
-                    setLatitude={setLatitude}
-                    modalVisible={citySelector}
-                    setModalVisible={setCitySelector}
-                    setLocation={setNewLocation}
-                    modalTitle={
-                      <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
-                        In what{' '}
-                        <StyledText
-                          style={{ fontSize: 18, color: Colors.primary.brand, fontWeight: 'bold' }}
-                        >
-                          city
-                        </StyledText>{' '}
-                        are you located?
-                      </StyledText>
-                    }
+                    resizeMode={FastImage.resizeMode.stretch}
                   />
 
                   <View
                     style={{
+                      backgroundColor: 'rgba(0,0,0,0.7)',
+                      width: 80,
+                      height: 80,
+                      position: 'absolute',
+                      borderRadius: borderRadius.max,
+                      borderWidth: borderWidth.base,
                       justifyContent: 'center',
-                      flexDirection: 'row',
                       alignItems: 'center',
-                      paddingTop: spacing.x10,
+
+                      borderColor: 'white',
                     }}
                   >
-                    <StyledText style={[{ color: Colors.neutral.brand }]}>
-                      Make your location public
-                    </StyledText>
-
-                    <View
+                    <GalleryEdit color="white" />
+                    <StyledText
                       style={{
-                        paddingLeft: spacing.x10,
-                        flex: 1,
-                        alignItems: 'flex-end',
+                        // color: '#757575',
+                        // fontSize: 12,
+                        // // marginTop: getHeight(1),
+                        // fontFamily: 'OpenSans-Regular',
+                        // textAlign: 'center',
+                        // width: '40%',
+                        // alignSelf: 'center',
+                        color: 'white',
+                        textAlign: 'center',
                       }}
                     >
-                      <Switch
-                        value={isPublicLocationEnabled}
-                        onValueChange={(value) => {
-                          setIsPublicLocationEnabled(value);
-                        }}
-                      />
-                    </View>
+                      Change
+                    </StyledText>
                   </View>
                 </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
 
-                <StyledTextInput
-                  value={website}
-                  label="Website"
-                  keyboardType="url"
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  placeholder="www.website.com"
-                  onChangeText={(e) => setWebsite(e)}
-                  wrapperStyle={{ marginTop: spacing.x16 }}
+        <View style={styles.topContainer}>
+          <View style={{ marginHorizontal: spacing.x24 }}>
+            <View style={[styles.inputGroup, { backgroundColor: colors.card }]}>
+              <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
+                {user?.accountType} Details
+              </StyledText>
+
+              <StyledTextInput
+                onChangeText={(e) => setUsername(e.toLowerCase().trim().replace(/\s+/g, ''))}
+                wrapperStyle={{ marginTop: spacing.x24 }}
+                value={username}
+                label="Username"
+                placeholder="username"
+              />
+
+              <StyledTextInput
+                onChangeText={(e) => setFullName(e)}
+                wrapperStyle={{ marginTop: spacing.x16 }}
+                value={fullname}
+                label="Name"
+                placeholder="Name"
+              />
+
+              <View style={{ flex: 4, marginTop: spacing.x16 }}>
+                <StyledText style={{ marginBottom: 10 }}>Date of birth</StyledText>
+                <Button
+                  text={date || 'Select'}
+                  btnStyle={{
+                    flex: 1,
+                    backgroundColor: Colors.neutral[700],
+                    borderColor: Colors.neutral[800],
+                    borderRadius: borderRadius.xs,
+                  }}
+                  wrapperBtnStyle={{
+                    justifyContent: 'space-between',
+                    paddingHorizontal: 14,
+                    paddingVertical: 16,
+                  }}
+                  btnTextStyle={{
+                    color: date ? Colors.neutral[300] : Colors.neutral[400],
+                  }}
+                  onPress={() => setOpen(true)}
+                  rightIcon={
+                    <Calendar
+                      onPress={() => setOpen(true)}
+                      style={{ paddingTop: 6 }}
+                      size={20}
+                      color={Colors.neutral[300]}
+                    />
+                  }
+                />
+                <DatePicker
+                  modal
+                  minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 90))}
+                  maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+                  mode="date"
+                  androidVariant="nativeAndroid"
+                  open={open}
+                  date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
+                  onConfirm={(date) => {
+                    setOpen(false);
+                    setDate(format(date, 'MM/dd/yyyy'));
+                  }}
+                  onCancel={() => {
+                    setOpen(false);
+                  }}
                 />
               </View>
 
               {user?.accountType == 'individual' ? (
-                <View
-                  style={[
-                    styles.inputGroup,
-                    { backgroundColor: colors.card, marginTop: spacing.x32 },
-                  ]}
-                >
-                  <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
-                    Church Details
-                  </StyledText>
-                  <StyledSelect
-                    items={churchTypes.map((item) => {
-                      return {
-                        text: item.churchType,
-                        value: item.churchType,
-                      };
-                    })}
-                    label="Denomination"
-                    selectedItem={churchType}
-                    btnText={selectedChurchTypeName == '' ? 'Select' : selectedChurchTypeName}
-                    modalTitle="Select your Denomination"
-                    onChange={(item) => {
-                      setChurchType(item);
-                      setSubChurchType('');
-                    }}
-                    wrapperStyle={{ marginTop: spacing.x24 }}
-                  />
+                <StyledSelect
+                  items={whatIDoList.map((item) => {
+                    return {
+                      text: item.name,
+                      value: item._id,
+                    };
+                  })}
+                  label="What I Do"
+                  selectedItem={whatIDo}
+                  btnText={whatIDo == '' ? 'Select' : selectedWhatIDoName}
+                  modalTitle="Select one"
+                  onChange={(item) => {
+                    setWhatIDo(item);
+                  }}
+                  wrapperStyle={{ marginTop: spacing.x16 }}
+                />
+              ) : (
+                <StyledSelect
+                  items={organizationTypes.map((item) => {
+                    return {
+                      text: item.name,
+                      value: item._id,
+                    };
+                  })}
+                  label="Type"
+                  selectedItem={organizationType?._id}
+                  btnText={!organizationType ? 'Select' : organizationType.name}
+                  modalTitle="Select one"
+                  onChange={(_id) => {
+                    const newOrganizationType = organizationTypes.filter((item) => item._id == _id);
 
-                  {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
-                    <StyledSelect
-                      wrapperStyle={{ marginTop: spacing.x24 }}
-                      items={[
-                        {
-                          text: 'None',
-                          value: 'none',
-                        },
-                        ...selectedChurchType[0].children.map((item) => {
-                          return {
-                            text: item.churchType,
-                            value: item.churchType,
-                          };
-                        }),
-                      ]}
-                      label="Sub Denomination or Association"
-                      btnText={
-                        selectedChurchSubTypeName == '' ? 'Select' : selectedChurchSubTypeName
-                      }
-                      onChange={(item) => {
-                        setSubChurchType(item);
-                      }}
-                      modalTitle="Select church sub Denomination"
+                    if (newOrganizationType && newOrganizationType.length > 0) {
+                      setOrganizationType(newOrganizationType[0]);
+                    }
+                  }}
+                  wrapperStyle={{ marginTop: spacing.x16 }}
+                />
+              )}
+              {user?.isInfluencer == true || user?.accountType == 'organization' ? (
+                <StyledTextInput
+                  multiline
+                  numberOfLines={3}
+                  maxLength={150}
+                  enforceMaxLength
+                  label="Bio"
+                  inputStyle={{ minHeight: 80 }}
+                  showCharCounter
+                  value={bio}
+                  onChangeText={(e) => setBio(e)}
+                  counterContainerStyle={{
+                    justifyContent: 'center',
+                    alignItems: 'flex-end',
+                  }}
+                  counterTextStyleStyle={{
+                    marginTop: spacing.x32 * -1,
+                    marginRight: spacing.x10,
+                    color: Colors.neutral[300],
+                  }}
+                  wrapperStyle={{ marginTop: spacing.x16 }}
+                />
+              ) : null}
+
+              <View style={{ flex: 4, marginTop: spacing.x16 }}>
+                <StyledText style={{ marginBottom: 10 }}>Location</StyledText>
+                <Button
+                  text={
+                    location ? location.address : newLocation?.place_name ?? 'Select your location'
+                  }
+                  btnStyle={{
+                    flex: 1,
+                    backgroundColor: Colors.neutral[700],
+                    borderColor: Colors.neutral[800],
+                    borderRadius: borderRadius.xs,
+                  }}
+                  wrapperBtnStyle={{
+                    justifyContent: 'space-between',
+                    paddingHorizontal: 14,
+                    paddingVertical: 16,
+                  }}
+                  btnTextStyle={{
+                    color: location ? Colors.neutral[300] : Colors.neutral[400],
+                  }}
+                  onPress={() => setCitySelector(true)}
+                  rightIcon={
+                    <ArrowDown2
+                      onPress={() => setCitySelector(true)}
+                      style={{ paddingTop: 6 }}
+                      size={15}
+                      color={Colors.neutral[300]}
                     />
-                  ) : null}
+                  }
+                />
+
+                <MapBox
+                  location={newLocation}
+                  setLongitude={setLongitude}
+                  setLatitude={setLatitude}
+                  modalVisible={citySelector}
+                  setModalVisible={setCitySelector}
+                  setLocation={setNewLocation}
+                  modalTitle={
+                    <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
+                      In what{' '}
+                      <StyledText
+                        style={{ fontSize: 18, color: Colors.primary.brand, fontWeight: 'bold' }}
+                      >
+                        city
+                      </StyledText>{' '}
+                      are you located?
+                    </StyledText>
+                  }
+                />
+
+                <View
+                  style={{
+                    justifyContent: 'center',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingTop: spacing.x10,
+                  }}
+                >
+                  <StyledText style={[{ color: Colors.neutral.brand }]}>
+                    Make your location public
+                  </StyledText>
 
                   <View
                     style={{
-                      justifyContent: 'center',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingTop: spacing.x10,
+                      paddingLeft: spacing.x10,
+                      flex: 1,
+                      alignItems: 'flex-end',
                     }}
                   >
-                    <StyledText style={[{ color: Colors.neutral.brand }]}>
-                      Make your denomination public
-                    </StyledText>
-
-                    <View
-                      style={{
-                        paddingLeft: spacing.x10,
-                        flex: 1,
-                        alignItems: 'flex-end',
+                    <Switch
+                      value={isPublicLocationEnabled}
+                      onValueChange={(value) => {
+                        setIsPublicLocationEnabled(value);
                       }}
-                    >
-                      <Switch
-                        value={isPublicChurchTypeEnabled}
-                        onValueChange={(value) => {
-                          setIsPublicChurchTypeEnabled(value);
-                        }}
-                      />
-                    </View>
+                    />
                   </View>
-
-                  <StyledSelect
-                    wrapperStyle={{ marginTop: spacing.x24 }}
-                    items={oftenChurchOptions.map((item) => {
-                      return {
-                        text: item,
-                        value: item,
-                      };
-                    })}
-                    label="Church attendence"
-                    btnText={oftenChurch == '' ? 'Select' : oftenChurch}
-                    onChange={(item) => {
-                      setOftenChurch(item);
-                    }}
-                    modalTitle="Select Church Attendence"
-                  />
                 </View>
+              </View>
+
+              <StyledTextInput
+                value={website}
+                label="Website"
+                keyboardType="url"
+                autoCorrect={false}
+                autoCapitalize="none"
+                placeholder="www.website.com"
+                onChangeText={(value) => {
+                  setWebsite(value);
+                }}
+                onBlur={() => {
+                  if (urlRegex.test(website)) {
+                    setIsValidWebsite(true);
+                  } else {
+                    setIsValidWebsite(false);
+                  }
+                }}
+                wrapperStyle={{ marginTop: spacing.x16 }}
+                ref={websiteRef}
+              />
+
+              {website && isValidWebsite === false ? (
+                <StyledText style={{ color: Colors.errorFeedback[200], marginTop: spacing.x8 }}>
+                  Please enter a valid URL
+                </StyledText>
               ) : null}
+            </View>
 
-              {user?.accountType == 'organization' ? (
-                <View
-                  style={[
-                    styles.inputGroup,
-                    { backgroundColor: colors.card, marginTop: spacing.x32 },
-                  ]}
-                >
-                  <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
-                    Organization Contact
-                  </StyledText>
-                  <StyledTextInput
-                    onChangeText={(e) => setOrganizationContactName(e)}
-                    wrapperStyle={{ marginTop: spacing.x24 }}
-                    value={organizationContactName}
-                    label="Name"
-                    placeholder="Contact name"
-                  />
-
-                  <StyledTextInput
-                    onChangeText={(e) => setOrganizationContactEmail(e)}
-                    wrapperStyle={{ marginTop: spacing.x24 }}
-                    value={organizationContactEmail}
-                    label="Email"
-                    placeholder="Contact email"
-                  />
-
-                  <StyledTextInput
-                    onChangeText={(e) => setOrganizationContactPhone(e)}
-                    wrapperStyle={{ marginTop: spacing.x24 }}
-                    value={organizationContactPhone}
-                    label="Phone Number"
-                    placeholder="Contact phone number"
-                  />
-                </View>
-              ) : null}
-
+            {user?.accountType == 'individual' ? (
               <View
                 style={[
                   styles.inputGroup,
@@ -1036,107 +894,234 @@ function EditProfile({ navigation }: Props) {
                 ]}
               >
                 <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
-                  Interests
+                  Church Details
                 </StyledText>
+                <StyledSelect
+                  items={churchTypes.map((item) => {
+                    return {
+                      text: item.churchType,
+                      value: item.churchType,
+                    };
+                  })}
+                  label="Denomination"
+                  selectedItem={churchType}
+                  btnText={selectedChurchTypeName == '' ? 'Select' : selectedChurchTypeName}
+                  modalTitle="Select your Denomination"
+                  onChange={(item) => {
+                    setChurchType(item);
+                    setSubChurchType('');
+                  }}
+                  wrapperStyle={{ marginTop: spacing.x24 }}
+                />
 
-                <View style={{ flex: 6, marginTop: spacing.x24 }}>
-                  <View>
-                    <StyledTextInput
-                      // style={{ ...GeneralStyle.input, width: getWidth(80) }}
-                      // mode="outlined"
+                {selectedChurchType.length > 0 && selectedChurchType[0]?.children?.length > 0 ? (
+                  <StyledSelect
+                    wrapperStyle={{ marginTop: spacing.x24 }}
+                    items={[
+                      {
+                        text: 'None',
+                        value: 'none',
+                      },
+                      ...selectedChurchType[0].children.map((item) => {
+                        return {
+                          text: item.churchType,
+                          value: item.churchType,
+                        };
+                      }),
+                    ]}
+                    label="Sub Denomination or Association"
+                    btnText={selectedChurchSubTypeName == '' ? 'Select' : selectedChurchSubTypeName}
+                    onChange={(item) => {
+                      setSubChurchType(item);
+                    }}
+                    modalTitle="Select church sub Denomination"
+                  />
+                ) : null}
 
-                      clearButtonMode="always"
-                      onChangeText={(text) => {
-                        const newSearchInterest = [];
-                        for (let i = 0; i < interest.length; i++) {
-                          if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-                            newSearchInterest.push(interest[i]);
-                          }
-                          setSearchInterest(newSearchInterest);
-                        }
+                <View
+                  style={{
+                    justifyContent: 'center',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingTop: spacing.x10,
+                  }}
+                >
+                  <StyledText style={[{ color: Colors.neutral.brand }]}>
+                    Make your denomination public
+                  </StyledText>
+
+                  <View
+                    style={{
+                      paddingLeft: spacing.x10,
+                      flex: 1,
+                      alignItems: 'flex-end',
+                    }}
+                  >
+                    <Switch
+                      value={isPublicChurchTypeEnabled}
+                      onValueChange={(value) => {
+                        setIsPublicChurchTypeEnabled(value);
                       }}
-                      leftIcon={
-                        <View style={{ justifyContent: 'center' }}>
-                          <SearchIcon
-                            style={{ height: 20, width: 20, marginRight: spacing.x10 }}
-                            stroke={Colors.neutral[300]}
-                          />
-                        </View>
-                        // <MaterialCommunityIcons
-                        //   name="magnify"
-                        //   size={20}
-                        //   style={{ marginRight: 10 }}
-                        //   color={Colors.neutral[200]}
-                        // />
-                      }
-                      placeholder="Search for interest"
                     />
                   </View>
-                  <View style={{ flex: 10 }}>
-                    <ScrollView
-                      contentContainerStyle={{
-                        marginTop: spacing.x24,
-                        paddingBottom: spacing.x48,
-                        flexDirection: searchInterest.length < 1 ? 'column' : 'row',
-                        flexWrap: searchInterest.length < 1 ? 'nowrap' : 'wrap',
-                      }}
-                    >
-                      {searchInterest.length < 1 ? (
-                        <StyledText
-                          style={[
-                            Typography.body.x2M,
-                            { padding: spacing.x16, textAlign: 'center' },
-                          ]}
+                </View>
+
+                <StyledSelect
+                  wrapperStyle={{ marginTop: spacing.x24 }}
+                  items={oftenChurchOptions.map((item) => {
+                    return {
+                      text: item,
+                      value: item,
+                    };
+                  })}
+                  label="Church attendence"
+                  btnText={oftenChurch == '' ? 'Select' : oftenChurch}
+                  onChange={(item) => {
+                    setOftenChurch(item);
+                  }}
+                  modalTitle="Select Church Attendence"
+                />
+              </View>
+            ) : null}
+
+            {user?.accountType == 'organization' ? (
+              <View
+                style={[
+                  styles.inputGroup,
+                  { backgroundColor: colors.card, marginTop: spacing.x32 },
+                ]}
+              >
+                <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
+                  Organization Contact
+                </StyledText>
+                <StyledTextInput
+                  onChangeText={(e) => setOrganizationContactName(e)}
+                  wrapperStyle={{ marginTop: spacing.x24 }}
+                  value={organizationContactName}
+                  label="Name"
+                  placeholder="Contact name"
+                />
+
+                <StyledTextInput
+                  onChangeText={(e) => setOrganizationContactEmail(e)}
+                  wrapperStyle={{ marginTop: spacing.x24 }}
+                  value={organizationContactEmail}
+                  label="Email"
+                  placeholder="Contact email"
+                />
+
+                <StyledTextInput
+                  onChangeText={(e) => setOrganizationContactPhone(e)}
+                  wrapperStyle={{ marginTop: spacing.x24 }}
+                  value={organizationContactPhone}
+                  label="Phone Number"
+                  placeholder="Contact phone number"
+                />
+              </View>
+            ) : null}
+
+            <View
+              style={[styles.inputGroup, { backgroundColor: colors.card, marginTop: spacing.x32 }]}
+            >
+              <StyledText style={[Typography.header.h3, { textTransform: 'uppercase' }]}>
+                Interests
+              </StyledText>
+
+              <View style={{ flex: 6, marginTop: spacing.x24 }}>
+                <View>
+                  <StyledTextInput
+                    // style={{ ...GeneralStyle.input, width: getWidth(80) }}
+                    // mode="outlined"
+
+                    clearButtonMode="always"
+                    onChangeText={(text) => {
+                      const newSearchInterest = [];
+                      for (let i = 0; i < interest.length; i++) {
+                        if (interest[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
+                          newSearchInterest.push(interest[i]);
+                        }
+                        setSearchInterest(newSearchInterest);
+                      }
+                    }}
+                    leftIcon={
+                      <View style={{ justifyContent: 'center' }}>
+                        <SearchIcon
+                          style={{ height: 20, width: 20, marginRight: spacing.x10 }}
+                          stroke={Colors.neutral[300]}
+                        />
+                      </View>
+                      // <MaterialCommunityIcons
+                      //   name="magnify"
+                      //   size={20}
+                      //   style={{ marginRight: 10 }}
+                      //   color={Colors.neutral[200]}
+                      // />
+                    }
+                    placeholder="Search for interest"
+                  />
+                </View>
+                <View style={{ flex: 10 }}>
+                  <ScrollView
+                    contentContainerStyle={{
+                      marginTop: spacing.x24,
+                      paddingBottom: spacing.x48,
+                      flexDirection: searchInterest.length < 1 ? 'column' : 'row',
+                      flexWrap: searchInterest.length < 1 ? 'nowrap' : 'wrap',
+                    }}
+                  >
+                    {searchInterest.length < 1 ? (
+                      <StyledText
+                        style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}
+                      >
+                        No Search Results
+                      </StyledText>
+                    ) : null}
+                    {searchInterest.map((item, index) => {
+                      return (
+                        <TouchableOpacity
+                          key={index}
+                          onPress={() =>
+                            selectedInterest.includes(item?._id)
+                              ? setSelectedInterest(
+                                  selectedInterest.filter(function (item2) {
+                                    return item2 !== item?._id;
+                                  })
+                                )
+                              : setSelectedInterest([...selectedInterest, item?._id])
+                          }
+                          style={
+                            selectedInterest.includes(item?._id)
+                              ? [
+                                  iterestListItem,
+                                  {
+                                    backgroundColor: Colors.primary.brand,
+                                    borderColor: Colors.primary.brand,
+                                  },
+                                ]
+                              : iterestListItem
+                          }
                         >
-                          No Search Results
-                        </StyledText>
-                      ) : null}
-                      {searchInterest.map((item, index) => {
-                        return (
-                          <TouchableOpacity
-                            key={index}
-                            onPress={() =>
-                              selectedInterest.includes(item?._id)
-                                ? setSelectedInterest(
-                                    selectedInterest.filter(function (item2) {
-                                      return item2 !== item?._id;
-                                    })
-                                  )
-                                : setSelectedInterest([...selectedInterest, item?._id])
-                            }
+                          <StyledText
+                            numberOfLines={1}
                             style={
                               selectedInterest.includes(item?._id)
-                                ? [
-                                    iterestListItem,
-                                    {
-                                      backgroundColor: Colors.primary.brand,
-                                      borderColor: Colors.primary.brand,
-                                    },
-                                  ]
-                                : iterestListItem
+                                ? { color: 'white' }
+                                : { color: Colors.neutral[200] }
                             }
                           >
-                            <StyledText
-                              numberOfLines={1}
-                              style={
-                                selectedInterest.includes(item?._id)
-                                  ? { color: 'white' }
-                                  : { color: Colors.neutral[200] }
-                              }
-                            >
-                              {item?.name}
-                            </StyledText>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  </View>
+                            {item?.name}
+                          </StyledText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
               </View>
             </View>
           </View>
-          <View style={styles.bottomContainer}>
-            {/* {user?.isInfluencer == true ? (
+        </View>
+        <View style={styles.bottomContainer}>
+          {/* {user?.isInfluencer == true ? (
               <View style={{ ...styles.center, marginTop: getHeight(2) }}>
                 <Text style={styles.SocialText}>Link Social Media Account</Text>
                 <View style={styles.socialIcon}>
@@ -1146,12 +1131,22 @@ function EditProfile({ navigation }: Props) {
                 </View>
               </View>
             ) : null} */}
-            <View
-              style={{ paddingHorizontal: spacing.x24, marginBottom: spacing.x16, width: '100%' }}
-            >
-              <Button
-                text="SAVE"
-                onPress={async () => {
+          <View
+            style={{ paddingHorizontal: spacing.x24, marginBottom: spacing.x16, width: '100%' }}
+          >
+            <Button
+              text="SAVE"
+              disabled={website != '' && isValidWebsite === false}
+              onPress={async () => {
+                let validWebsite = null;
+
+                if (urlRegex.test(website)) {
+                  validWebsite = true;
+                } else {
+                  validWebsite = false;
+                }
+
+                if (!website || (website && validWebsite === true)) {
                   const data: EditProfileDTO = {
                     churchType,
                     churchSubType: churchSubType == 'none' ? '' : churchSubType,
@@ -1211,19 +1206,29 @@ function EditProfile({ navigation }: Props) {
                       })
                     );
                   }
-                }}
-                btnStyle={[button.primary, { flex: 1 }]}
-                disabledBtnStyle={[button.primary, { flex: 1, opacity: 0.5 }]}
-                btnTextStyle={{ color: 'white' }}
-              />
-            </View>
+                } else {
+                  setIsValidWebsite(validWebsite);
+                  websiteRef.current?.focus();
+                }
+              }}
+              btnStyle={[button.primary, { flex: 1 }]}
+              disabledBtnStyle={[button.primary, { flex: 1, opacity: 0.5 }]}
+              btnTextStyle={{ color: 'white' }}
+            />
+            {website && isValidWebsite === false ? (
+              <StyledText style={{ color: Colors.errorFeedback[200], marginTop: spacing.x8 }}>
+                Please correct all the fields with errors
+              </StyledText>
+            ) : null}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </ScrollView>
+      {/* {/* //   </KeyboardAvoidingView> */}
       {user ? (
         <SettingsSheet userData={user} showModal={showSettings} setShowModal={setShowSettings} />
       ) : null}
-    </SafeAreaView>
+      {/* </SafeAreaView> */}
+    </>
   );
 }
 export default EditProfile;

@@ -3,7 +3,7 @@ import { Platform, Share, StyleProp, TouchableOpacity, View, ViewStyle } from 'r
 import FastImage from 'react-native-fast-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Heart, Location, Message2 } from 'iconsax-react-native';
-import { useTheme } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -38,6 +38,7 @@ import OptionsModal from './OptionsModal';
 
 interface BaseItemProps {
   children: ReactNode;
+  transparency?: boolean;
   style?: StyleProp<ViewStyle>;
   onPress: Function;
   created?: Date;
@@ -66,6 +67,7 @@ interface BaseItemProps {
     comments?: CommentPost[];
     commentNumber?: number;
   };
+  onCommentsPress?: Function;
   userData: PostUserData;
 
   isApprovedInfluencer?: boolean;
@@ -76,12 +78,13 @@ interface BaseItemProps {
   parentRefreshContent?: Function;
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
+  reelLayout?: boolean;
 }
 
 function BaseItem({
+  transparency,
   style,
   onPress,
-
   children,
   created,
   updated,
@@ -97,8 +100,11 @@ function BaseItem({
   removePost,
   editPost,
   fromSavedPosts,
+  reelLayout = false,
+  onCommentsPress,
 }: BaseItemProps) {
   const { colors } = useTheme();
+  const { navigate } = useNavigation();
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -265,7 +271,6 @@ function BaseItem({
       }
     });
   }
-  // console.log('here', postData);
 
   const reactionTypes = {
     love: 0,
@@ -338,172 +343,337 @@ function BaseItem({
     },
   ];
 
-  return (
-    <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          gap: spacing.x10,
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => {
-            onPress();
-          }}
+  if (reelLayout)
+    return (
+      <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
+        <View
           style={{
-            flexDirection: 'row',
-            justifyContent: 'flex-start',
-            alignItems: 'center',
+            flex: 1,
+            flexDirection: 'column',
+            // alignItems: 'flex-start',
+            gap: spacing.x10,
+            // marginRight: spacing.x10,
+            position: 'relative',
           }}
         >
-          {userData.profileIcon && !userData.profileImage ? (
-            <View
+          <View
+            style={{
+              // position: 'absolute',
+              // top: -165,
+              left: 0,
+              zIndex: 2,
+              flexDirection: 'column',
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                onPress();
+              }}
               style={{
-                borderRadius: borderRadius.max,
-                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                borderWidth: borderWidth.thin,
-                padding: spacing.x5,
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: spacing.x5,
+                flex: 1,
+                marginBottom: spacing.x20,
               }}
             >
-              {userData.profileIcon}
-            </View>
-          ) : (
-            <FastImage
-              source={{
-                uri: userData.profileImage != '' ? userData.profileImage : NO_PROFILE_IMAGE,
-              }}
+              {userData.profileIcon && !userData.profileImage ? (
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: borderRadius.max,
+                    borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                    borderWidth: borderWidth.thin,
+                    padding: spacing.x5,
+                    marginBottom: spacing.x5,
+                    marginLeft: 0,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  {userData.profileIcon}
+                </View>
+              ) : (
+                <FastImage
+                  source={{
+                    uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
+                  }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: borderRadius.max,
+                    marginBottom: spacing.x5,
+                    borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                    borderWidth: borderWidth.thin,
+                    marginLeft: 0,
+                  }}
+                  resizeMode="contain"
+                />
+              )}
+              <View style={{ flexGrow: 1, flex: 1 }}>
+                {userData ? (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        // navigation.navigate('UserProfile', {
+                        //   id: userData?._id,
+                        // });
+                        onPress();
+                      }}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
+                        flexGrow: 1,
+                        flex: 1,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'column' }}>
+                        <View style={{ flexDirection: 'row' }}>
+                          <StyledText
+                            style={{
+                              color: 'white',
+                              alignItems: 'center',
+                              ...fontSize.x1,
+                              marginLeft: spacing.x5,
+                              paddingLeft: spacing.x5,
+                              fontWeight: 'bold',
+                            }}
+                            numberOfLines={2}
+                          >
+                            {userData?.name}
+                          </StyledText>
+                          {isApprovedInfluencer ? (
+                            <Icon
+                              name="check-decagram"
+                              size={spacing.x16}
+                              style={{ marginLeft: spacing.x8, marginTop: spacing.x8 }}
+                              color="white"
+                            />
+                          ) : null}
+                        </View>
+                        <StyledText
+                          numberOfLines={2}
+                          style={{
+                            color: 'white',
+                            alignItems: 'center',
+                            ...fontSize.x1,
+                            marginLeft: spacing.x5,
+                            marginTop: 0,
+                          }}
+                        >
+                          {(source == 'twitter' && userData?.twitterHandler) ||
+                          (source == 'instagram' && userData?.instagramHandler) ||
+                          userData?.username
+                            ? `@${
+                                source === 'twitter'
+                                  ? userData?.twitterHandler
+                                  : source === 'instagram'
+                                    ? userData?.instagramHandler
+                                    : userData?.username
+                              }`
+                            : ''}
+
+                          {created ? (
+                            <>
+                              {(source === 'twitter' && userData?.twitterHandler) ||
+                              (source === 'instagram' && userData?.instagramHandler) ||
+                              userData?.username
+                                ? ` • `
+                                : ''}
+                              <StyledText
+                                style={[
+                                  fontSize.x1,
+                                  {
+                                    color: 'white',
+                                    alignItems: 'center',
+                                  },
+                                ]}
+                              >
+                                {timeSince(created)} ago
+                              </StyledText>
+                            </>
+                          ) : null}
+                          {edited && updated ? (
+                            <>
+                              {' '}
+                              • {' Edited '}
+                              <StyledText
+                                style={[
+                                  fontSize.x1,
+                                  {
+                                    color: 'white',
+                                    alignItems: 'center',
+                                  },
+                                ]}
+                              >
+                                {timeSince(updated)} ago
+                              </StyledText>
+                            </>
+                          ) : null}
+                        </StyledText>
+
+                        {postData.locationName ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Location
+                              size={15}
+                              color="white"
+                              style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
+                            />
+                            <StyledText
+                              style={[
+                                fontSize.x1,
+                                {
+                                  color: 'white',
+                                  marginTop: 0,
+                                },
+                              ]}
+                            >
+                              {postData.locationName}
+                            </StyledText>
+                          </View>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowOptions(true);
+                      }}
+                    >
+                      <FontAwesomeIcon
+                        icon={faEllipsisVertical}
+                        color="white"
+                        style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+
+            <View
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: borderRadius.max,
-                // marginBottom: 5,
-                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                borderWidth: borderWidth.thin,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: spacing.x16,
+                marginLeft: spacing.x8,
+                marginTop: spacing.x5,
+                alignContent: 'space-between',
               }}
-              resizeMode="contain"
-            />
-          )}
-        </TouchableOpacity>
-        <View style={{ flexGrow: 1, flex: 1 }}>
-          {userData ? (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <TouchableOpacity
+            >
+              <Reaction
+                items={ReactionItems}
+                type="modal"
+                cardStyle={{
+                  // padding: spacing.x10,
+                  shadowOpacity: 0.2,
+                  marginTop: spacing.x16,
+                  width: 140,
+                  height: 50,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: borderRadius.base,
+                }}
+                onTap={async (item) => {
+                  if (item) {
+                    if (myReaction?.type === item.type) {
+                      await removeReactPost();
+                    } else {
+                      await reactPost(item.type);
+                    }
+                  }
+                }}
+                itemIndex={index}
+                onShowDismissCard={onShowDismissCard}
                 onPress={() => {
-                  // navigation.navigate('UserProfile', {
-                  //   id: userData?._id,
-                  // });
-                  onPress();
+                  if (myReaction) {
+                    removeReactPost();
+                  } else {
+                    reactPost(SocialPostReactionType.love);
+                  }
+                }}
+              >
+                <Heart
+                  size={25}
+                  color={
+                    myReaction
+                      ? Colors.errorFeedback[200]
+                      : transparency
+                        ? Colors.neutral[600]
+                        : 'white'
+                  }
+                  variant={myReaction ? 'Bold' : 'Linear'}
+                />
+              </Reaction>
+
+              <TouchableOpacity
+                disabled={!onCommentsPress}
+                onPress={() => {
+                  if (onCommentsPress) {
+                    onCommentsPress();
+                  }
                 }}
                 style={{
                   flexDirection: 'row',
-                  justifyContent: 'flex-start',
                   alignItems: 'center',
-                  flexGrow: 1,
-                  flex: 1,
                 }}
               >
-                <View style={{ flexDirection: 'column' }}>
-                  <View style={{ flexDirection: 'row' }}>
-                    <StyledText
-                      style={{
-                        color: Colors.neutral.brand,
-                        alignItems: 'center',
-                        ...fontSize.x1,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {userData?.name}
-                    </StyledText>
-                    {isApprovedInfluencer ? (
-                      <Icon
-                        name="check-decagram"
-                        size={20}
-                        style={{ marginLeft: spacing.x8 }}
-                        color={Colors.primarySapphire.brand}
-                      />
-                    ) : null}
-                  </View>
-                  <StyledText
-                    numberOfLines={2}
-                    style={{
-                      color: Colors.neutral[300],
-                      alignItems: 'center',
-                      ...fontSize.x1,
-                    }}
-                  >
-                    {(source == 'twitter' && userData?.twitterHandler) ||
-                    (source == 'instagram' && userData?.instagramHandler) ||
-                    userData?.username
-                      ? `@${
-                          source == 'twitter'
-                            ? userData?.twitterHandler
-                            : source == 'instagram'
-                              ? userData?.instagramHandler
-                              : userData?.username
-                        }`
-                      : ''}
-
-                    {created ? (
-                      <>
-                        {(source == 'twitter' && userData?.twitterHandler) ||
-                        (source == 'instagram' && userData?.instagramHandler) ||
-                        userData?.username
-                          ? ` • `
-                          : ''}
-                        <StyledText
-                          style={[
-                            fontSize.x1,
-                            { color: Colors.neutral[300], alignItems: 'center' },
-                          ]}
-                        >
-                          {timeSince(created)} ago
-                        </StyledText>
-                      </>
-                    ) : null}
-                    {edited && updated ? (
-                      <>
-                        {' '}
-                        • {' Edited '}
-                        <StyledText
-                          style={[
-                            fontSize.x1,
-                            { color: Colors.neutral[300], alignItems: 'center' },
-                          ]}
-                        >
-                          {timeSince(updated)} ago
-                        </StyledText>
-                      </>
-                    ) : null}
-                  </StyledText>
-
-                  {postData.locationName ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Location
-                        size={15}
-                        color={Colors.neutral[300]}
-                        style={{ marginRight: spacing.x5 }}
-                      />
-                      <StyledText style={[fontSize.x1, { color: Colors.neutral[300] }]}>
-                        {postData.locationName}
-                      </StyledText>
-                    </View>
-                  ) : null}
-                </View>
+                <Message2 color={transparency ? Colors.neutral[600] : 'white'} />
+                <StyledText
+                  style={{
+                    marginLeft: spacing.x10,
+                    // marginVertical: spacing.x5,
+                    color: transparency ? Colors.neutral[600] : 'white',
+                  }}
+                >
+                  {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                </StyledText>
               </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={() => {
-                  setShowOptions(true);
+                  if (isThisPostSaved) {
+                    if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                    else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
+                  } else {
+                    savePost(
+                      postData?.id,
+                      postData?.type,
+                      postData.title,
+                      created,
+                      userData?._id,
+                      postData?.postlink,
+                      postData?.image?.url
+                    );
+                  }
                 }}
               >
-                <FontAwesomeIcon icon={faEllipsisVertical} color={colors.text} />
+                <Bookmark
+                  style={{ marginRight: 3 }}
+                  width={25}
+                  height={25}
+                  color={transparency ? Colors.neutral[600] : 'white'}
+                  fill={
+                    isThisPostSaved
+                      ? transparency
+                        ? Colors.neutral[600]
+                        : 'white'
+                      : transparency
+                        ? 'transparent'
+                        : 'transparent'
+                  }
+                />
               </TouchableOpacity>
             </View>
-          ) : null}
+          </View>
 
-          <View style={{ marginTop: spacing.x16 }}>{children}</View>
-          {(postData.type == PostType.social || postData.type == PostType.prayer) &&
-          !postData.externalLink ? (
+          <View style={{ flexGrow: 1, flex: 1 }}>
+            {children && <View style={{ marginTop: spacing.x5 }}>{children}</View>}
+
             <View style={{ flexDirection: 'row' }}>
               {postData?.reactions && postData.reactions.length > 0 ? (
                 <View
@@ -531,7 +701,7 @@ function BaseItem({
                         style={[
                           fontSize.x2,
                           {
-                            color: Colors.neutral[300],
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                             marginRight: spacing.x5,
                           },
                         ]}
@@ -559,7 +729,7 @@ function BaseItem({
                         style={[
                           fontSize.x2,
                           {
-                            color: Colors.neutral[300],
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                             marginRight: spacing.x5,
                           },
                         ]}
@@ -587,7 +757,7 @@ function BaseItem({
                         style={[
                           fontSize.x2,
                           {
-                            color: Colors.neutral[300],
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                             marginRight: spacing.x5,
                           },
                         ]}
@@ -599,166 +769,571 @@ function BaseItem({
                 </View>
               ) : null}
             </View>
-          ) : null}
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {postData.externalLink ? (
-              <TouchableOpacity
-                onPress={() => {
-                  if (postData.externalLink) OpenURLButton(postData.externalLink);
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
-              >
-                <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
-                  {source == 'instagram' ? (
-                    <Instagram height={getHeight(2.5)} fill="#00acee" />
-                  ) : null}
-
-                  {source == 'twitter' ? <Twitter height={getHeight(2.5)} fill="#00acee" /> : null}
-                </View>
-
-                <StyledText style={{ color: Colors.primarySapphire.brand }}>View Post</StyledText>
-              </TouchableOpacity>
-            ) : null}
 
             <View
               style={{
                 flexDirection: 'row',
-                flex: 3,
+                justifyContent: 'space-between',
                 alignItems: 'center',
                 marginTop: spacing.x10,
-                justifyContent: 'space-between',
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {postData.type == PostType.social || postData.type == PostType.prayer ? (
-                  <>
-                    {!postData.externalLink ? (
-                      <>
-                        <Reaction
-                          items={ReactionItems}
-                          type="modal"
-                          cardStyle={{
-                            padding: spacing.x5,
-                            shadowOpacity: 0.2,
-                            marginTop: spacing.x16,
-                            borderRadius: borderRadius.base,
-                          }}
-                          onTap={async (item) => {
-                            if (item) {
-                              if (myReaction?.type == item.type) {
-                                await removeReactPost();
-                              } else {
-                                await reactPost(item.type);
-                              }
-                            }
-                          }}
-                          itemIndex={index}
-                          onShowDismissCard={onShowDismissCard}
-                          onPress={() => {
-                            if (myReaction) {
-                              removeReactPost();
-                            } else {
-                              reactPost(SocialPostReactionType.love);
-                            }
-                          }}
-                        >
-                          <Heart
-                            size={25}
-                            color={myReaction ? Colors.errorFeedback[200] : colors.text}
-                            variant={myReaction ? 'Bold' : 'Linear'}
-                          />
-                        </Reaction>
+              <View style={{ justifyContent: 'center' }}>
+                {postData.externalLink ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (postData.externalLink) OpenURLButton(postData.externalLink);
+                    }}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
+                  >
+                    <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
+                      {source == 'instagram' ? (
+                        <Instagram height={getHeight(2.5)} fill="#00acee" />
+                      ) : null}
 
-                        {/* <TouchableOpacity
-                        onLongPress={() => {
-                          if (!myReaction) {
-                            setShowActions(!showActions);
-                          }
-                        }}
-                        onPress={() => {
-                          if (showActions) {
-                            setShowActions(!showActions);
-                          } else {
-                            if (myReaction) {
-                              removeReactPost();
-                            } else {
-                              reactPost(SocialPostReactionType.love);
-                            }
-                          }
-                          // setShowActions(!showActions);
-                        }}
-                        ref={refs.setReference}
-                      >
-                        <Heart
-                          size={25}
-                          color={myReaction ? Colors.errorFeedback[200] : colors.text}
-                          variant={myReaction ? 'Bold' : 'Linear'}
-                        />
-                      </TouchableOpacity> */}
-                      </>
-                    ) : null}
+                      {source == 'twitter' ? (
+                        <Twitter height={getHeight(2.5)} fill="#00acee" />
+                      ) : null}
+                    </View>
+
+                    <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                      View Post
+                    </StyledText>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <View style={{ alignItems: 'center' }}>
+                {postData.type == PostType.rss ? (
+                  <View
+                    style={
+                      {
+                        // alignItems: 'flex-end',
+                        // marginTop: spacing.x5,
+                        // marginEnd: spacing.x10,
+                        // marginLeft: 270,
+                        // marginVertical: spacing.x5,
+                      }
+                    }
+                  >
                     <TouchableOpacity
                       onPress={() => {
-                        if (isThisPostSaved) {
-                          if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
-                          else if (postData.postlink)
-                            removeSavedPost(postData.type, postData.postlink);
-                        } else {
-                          savePost(
-                            postData?.id,
-                            postData?.type,
-                            postData.title,
-                            created,
-                            userData?._id,
-                            postData?.postlink,
-                            postData?.image?.url
-                          );
-                        }
+                        Share.share({
+                          title: `${postData?.title}`,
+                          url: Platform.OS == 'ios' && postData.postlink ? postData?.postlink : '',
+                          message:
+                            Platform.OS == 'android' && postData?.postlink
+                              ? postData?.postlink
+                              : '',
+                        });
                       }}
                     >
-                      <Bookmark
-                        style={{ marginRight: 3 }}
-                        width={25}
-                        height={25}
-                        color={colors.text}
-                        fill={isThisPostSaved ? colors.text : colors.background}
-                      />
+                      {Platform.OS === 'android' ? (
+                        <ShareAndroid
+                          color={transparency ? Colors.neutral[600] : colors.text}
+                          height={25}
+                          width={25}
+                        />
+                      ) : (
+                        <ShareIos
+                          color={transparency ? Colors.neutral[600] : colors.text}
+                          height={25}
+                          width={25}
+                        />
+                      )}
                     </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          </View>
+        </View>
+        <OptionsModal
+          show={showOptions ?? false}
+          setShow={setShowOptions}
+          currentPopupItem={{
+            ...postData,
+            type: postData.type ?? PostType.social,
+            userData,
+            created,
+          }}
+          onProfilePress={onPress}
+          removePost={removePost}
+          editPost={editPost}
+          isPrivate={postData.isPrivate}
+        />
+      </View>
+    );
+  return (
+    <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: spacing.x10,
+          marginRight: spacing.x10,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => {
+            onPress();
+          }}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            maxWidth: 0,
+            marginTop: spacing.x5,
+          }}
+        >
+          {userData.profileIcon && !userData.profileImage ? (
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: borderRadius.max,
+                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderWidth: borderWidth.thin,
+                padding: spacing.x5,
+                marginBottom: spacing.x5,
+                marginLeft: spacing.x10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              {userData.profileIcon}
+            </View>
+          ) : (
+            <FastImage
+              source={{
+                uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: borderRadius.max,
+                marginBottom: spacing.x5,
+                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderWidth: borderWidth.thin,
+                marginLeft: spacing.x10,
+              }}
+              resizeMode="contain"
+            />
+          )}
+        </TouchableOpacity>
+        <View style={{ flexGrow: 1, flex: 1 }}>
+          {userData ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <TouchableOpacity
+                onPress={() => {
+                  // navigation.navigate('UserProfile', {
+                  //   id: userData?._id,
+                  // });
+                  onPress();
+                }}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'flex-start',
+                  alignItems: 'center',
+                  flexGrow: 1,
+                  flex: 1,
+                }}
+              >
+                <View style={{ flexDirection: 'column' }}>
+                  <View style={{ flexDirection: 'row' }}>
+                    <StyledText
+                      style={{
+                        color: transparency ? Colors.neutral[500] : Colors.neutral.brand,
+                        alignItems: 'center',
+                        ...fontSize.x1,
+                        marginLeft: spacing.x48,
+                        marginTop: spacing.x5,
+                        fontWeight: 'bold',
+                      }}
+                      numberOfLines={2}
+                    >
+                      {userData?.name}
+                    </StyledText>
+                    {isApprovedInfluencer ? (
+                      <Icon
+                        name="check-decagram"
+                        size={spacing.x16}
+                        style={{ marginLeft: spacing.x8, marginTop: spacing.x8 }}
+                        color={Colors.primarySapphire.brand}
+                      />
+                    ) : null}
+                  </View>
+                  <StyledText
+                    numberOfLines={2}
+                    style={{
+                      color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                      alignItems: 'center',
+                      ...fontSize.x1,
+                      marginLeft: spacing.x48,
+                      marginTop: 0,
+                    }}
+                  >
+                    {(source == 'twitter' && userData?.twitterHandler) ||
+                    (source == 'instagram' && userData?.instagramHandler) ||
+                    userData?.username
+                      ? `@${
+                          source == 'twitter'
+                            ? userData?.twitterHandler
+                            : source == 'instagram'
+                              ? userData?.instagramHandler
+                              : userData?.username
+                        }`
+                      : ''}
+
+                    {created ? (
+                      <>
+                        {(source == 'twitter' && userData?.twitterHandler) ||
+                        (source == 'instagram' && userData?.instagramHandler) ||
+                        userData?.username
+                          ? ` • `
+                          : ''}
+                        <StyledText
+                          style={[
+                            fontSize.x1,
+                            {
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              alignItems: 'center',
+                            },
+                          ]}
+                        >
+                          {timeSince(created)} ago
+                        </StyledText>
+                      </>
+                    ) : null}
+                    {edited && updated ? (
+                      <>
+                        {' '}
+                        • {' Edited '}
+                        <StyledText
+                          style={[
+                            fontSize.x1,
+                            {
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              alignItems: 'center',
+                            },
+                          ]}
+                        >
+                          {timeSince(updated)} ago
+                        </StyledText>
+                      </>
+                    ) : null}
+                  </StyledText>
+
+                  {postData.locationName ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Location
+                        size={15}
+                        color={Colors.neutral[300]}
+                        style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
+                      />
+                      <StyledText
+                        style={[
+                          fontSize.x1,
+                          {
+                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                            marginTop: 0,
+                          },
+                        ]}
+                      >
+                        {postData.locationName}
+                      </StyledText>
+                    </View>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowOptions(true);
+                }}
+              >
+                <FontAwesomeIcon
+                  icon={faEllipsisVertical}
+                  color={transparency ? Colors.neutral[600] : colors.text}
+                  style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          <View style={{ marginTop: spacing.x20 }}>{children}</View>
+
+          <View style={{ flexDirection: 'row' }}>
+            {postData?.reactions && postData.reactions.length > 0 ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  marginTop: spacing.x10,
+                  alignItems: 'center',
+                }}
+              >
+                {reactionTypes.love > 0 ? (
+                  <>
+                    <View
+                      style={{
+                        padding: spacing.x5,
+                        backgroundColor: Colors.errorFeedback[200],
+                        borderRadius: borderRadius.max,
+                        borderWidth: borderWidth.thin,
+                        borderColor: Colors.main.white,
+                        marginRight: spacing.x5 / 2,
+                      }}
+                    >
+                      <Heart size={15} color="white" />
+                    </View>
+                    <StyledText
+                      style={[
+                        fontSize.x2,
+                        {
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                          marginRight: spacing.x5,
+                        },
+                      ]}
+                    >
+                      {reactionTypes.love}
+                    </StyledText>
+                  </>
+                ) : null}
+
+                {reactionTypes.happy > 0 ? (
+                  <>
+                    <View
+                      style={{
+                        padding: spacing.x5,
+                        backgroundColor: Colors.infoFeedback[200],
+                        borderRadius: borderRadius.max,
+                        borderWidth: borderWidth.thin,
+                        borderColor: Colors.main.white,
+                        marginRight: spacing.x5 / 2,
+                      }}
+                    >
+                      <NounHands width={15} height={15} color="white" />
+                    </View>
+                    <StyledText
+                      style={[
+                        fontSize.x2,
+                        {
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                          marginRight: spacing.x5,
+                        },
+                      ]}
+                    >
+                      {reactionTypes.happy}
+                    </StyledText>
+                  </>
+                ) : null}
+
+                {reactionTypes.praying > 0 ? (
+                  <>
+                    <View
+                      style={{
+                        padding: spacing.x5,
+                        backgroundColor: Colors.successFeedback[200],
+                        borderRadius: borderRadius.max,
+                        borderWidth: borderWidth.thin,
+                        borderColor: Colors.main.white,
+                        marginRight: spacing.x5 / 2,
+                      }}
+                    >
+                      <PrayerIcon width={15} height={15} color="white" />
+                    </View>
+                    <StyledText
+                      style={[
+                        fontSize.x2,
+                        {
+                          color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                          marginRight: spacing.x5,
+                        },
+                      ]}
+                    >
+                      {reactionTypes.praying}
+                    </StyledText>
                   </>
                 ) : null}
               </View>
+            ) : null}
+          </View>
 
-              {postData.type !== PostType.rss ? (
-                <View>
-                  <View style={{ flexDirection: 'row' }}>
-                    <Message2 color={colors.text} />
-                    <StyledText style={{ marginLeft: spacing.x10 }}>
-                      {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                    </StyledText>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: spacing.x10,
+            }}
+          >
+            <View style={{ justifyContent: 'center' }}>
+              {postData.externalLink ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    if (postData.externalLink) OpenURLButton(postData.externalLink);
+                  }}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
+                >
+                  <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
+                    {source == 'instagram' ? (
+                      <Instagram height={getHeight(2.5)} fill="#00acee" />
+                    ) : null}
+
+                    {source == 'twitter' ? (
+                      <Twitter height={getHeight(2.5)} fill="#00acee" />
+                    ) : null}
                   </View>
+
+                  <StyledText style={{ color: Colors.primarySapphire.brand }}>View Post</StyledText>
+                </TouchableOpacity>
+              ) : null}
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  // marginTop: spacing.x10,
+                  // alignContent: 'space-between',
+                }}
+              >
+                <Reaction
+                  items={ReactionItems}
+                  type="modal"
+                  cardStyle={{
+                    padding: spacing.x5,
+                    shadowOpacity: 0.2,
+                    marginTop: spacing.x16,
+                    borderRadius: borderRadius.base,
+                  }}
+                  onTap={async (item) => {
+                    if (item) {
+                      if (myReaction?.type == item.type) {
+                        await removeReactPost();
+                      } else {
+                        await reactPost(item.type);
+                      }
+                    }
+                  }}
+                  itemIndex={index}
+                  onShowDismissCard={onShowDismissCard}
+                  onPress={() => {
+                    if (myReaction) {
+                      removeReactPost();
+                    } else {
+                      reactPost(SocialPostReactionType.love);
+                    }
+                  }}
+                >
+                  <Heart
+                    size={25}
+                    color={
+                      myReaction
+                        ? Colors.errorFeedback[200]
+                        : transparency
+                          ? Colors.neutral[600]
+                          : colors.text
+                    }
+                    variant={myReaction ? 'Bold' : 'Linear'}
+                    style={{ marginVertical: spacing.x10 }}
+                  />
+                </Reaction>
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    marginLeft: spacing.x10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
+                  <StyledText
+                    style={{
+                      marginLeft: spacing.x10,
+                      // marginVertical: spacing.x5,
+                      color: transparency ? Colors.neutral[600] : colors.text,
+                    }}
+                  >
+                    {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+                  </StyledText>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    if (isThisPostSaved) {
+                      if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                      else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
+                    } else {
+                      savePost(
+                        postData?.id,
+                        postData?.type,
+                        postData.title,
+                        created,
+                        userData?._id,
+                        postData?.postlink,
+                        postData?.image?.url
+                      );
+                    }
+                  }}
+                  style={{ marginEnd: spacing.x10, marginStart: spacing.x10 }}
+                >
+                  <Bookmark
+                    style={{ marginRight: 3 }}
+                    width={25}
+                    height={25}
+                    color={transparency ? Colors.neutral[600] : colors.text}
+                    fill={
+                      isThisPostSaved
+                        ? transparency
+                          ? Colors.neutral[600]
+                          : colors.text
+                        : transparency
+                          ? 'transparent'
+                          : colors.background
+                    }
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={{ alignItems: 'center' }}>
+              {postData.type == PostType.rss ? (
+                <View
+                  style={
+                    {
+                      // alignItems: 'flex-end',
+                      // marginTop: spacing.x5,
+                      // marginEnd: spacing.x10,
+                      // marginLeft: 270,
+                      // marginVertical: spacing.x5,
+                    }
+                  }
+                >
+                  <TouchableOpacity
+                    onPress={() => {
+                      Share.share({
+                        title: `${postData?.title}`,
+                        url: Platform.OS == 'ios' && postData.postlink ? postData?.postlink : '',
+                        message:
+                          Platform.OS == 'android' && postData?.postlink ? postData?.postlink : '',
+                      });
+                    }}
+                  >
+                    {Platform.OS == 'android' ? (
+                      <ShareAndroid
+                        color={transparency ? Colors.neutral[600] : colors.text}
+                        height={25}
+                        width={25}
+                      />
+                    ) : (
+                      <ShareIos
+                        color={transparency ? Colors.neutral[600] : colors.text}
+                        height={25}
+                        width={25}
+                      />
+                    )}
+                  </TouchableOpacity>
                 </View>
               ) : null}
             </View>
-            {postData.type == PostType.rss ? (
-              <View style={{ flex: 1, alignItems: 'flex-end', marginTop: spacing.x10 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    Share.share({
-                      title: `${postData?.title}`,
-                      url: Platform.OS == 'ios' && postData.postlink ? postData?.postlink : '',
-                      message:
-                        Platform.OS == 'android' && postData?.postlink ? postData?.postlink : '',
-                    });
-                  }}
-                >
-                  {Platform.OS == 'android' ? (
-                    <ShareAndroid color={colors.text} height={25} width={25} />
-                  ) : (
-                    <ShareIos color={colors.text} height={25} width={25} />
-                  )}
-                </TouchableOpacity>
-              </View>
-            ) : null}
           </View>
         </View>
       </View>

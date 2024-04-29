@@ -40,6 +40,7 @@
               <action android:name="android.intent.action.VIEW" />
               <category android:name="android.intent.category.DEFAULT" />
               <category android:name="android.intent.category.BROWSABLE" />
+              <action android:name="android.intent.action.DOWNLOAD_COMPLETE"/>
               <data android:scheme="onebodyapp" />
 
           </intent-filter>
@@ -54,7 +55,13 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"></uses-permission>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
++   <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+
+
+        <uses-permission android:name="android.permission.CAMERA" />
+        <!-- optionally, if you want to record audio: -->
+        <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
 </manifest>

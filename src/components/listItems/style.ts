@@ -18,7 +18,10 @@ export const styles = StyleSheet.create({
   continer: {
     flex: 1,
   },
-  contview: { flex: 1, justifyContent: 'space-around' },
+  contview: {
+    flex: 1,
+    justifyContent: 'space-around',
+  },
 
   title: {
     fontSize: 20,
@@ -162,7 +165,7 @@ export const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '500',
     color: '#032F3C',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     marginLeft: 10,
     padding: 10,
     paddingBottom: 10,
@@ -187,7 +190,7 @@ export const styles = StyleSheet.create({
   },
   newstext: {
     color: 'white',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     alignSelf: 'center',
     fontSize: getFontSize(2.5),
     width: '90%',
@@ -199,7 +202,7 @@ export const styles = StyleSheet.create({
   },
   socialposttext: {
     fontSize: getFontSize(2.5),
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     marginLeft: getWidth(2),
     padding: 10,
     paddingBottom: 0,
@@ -211,9 +214,13 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   postView: {
+    // flex: 1,
     flexGrow: 1,
+    flexDirection: 'row',
     borderBottomWidth: borderWidth.thick * 2,
-    padding: spacing.x16,
+    padding: spacing.x10,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
   },
   socialpostview: {
     flexGrow: 1,
@@ -257,7 +264,7 @@ export const styles = StyleSheet.create({
   },
   blogposttext: {
     fontSize: 20,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     marginLeft: 10,
     marginTop: 20,
     padding: 10,
@@ -287,7 +294,7 @@ export const styles = StyleSheet.create({
     padding: 2,
     marginTop: getHeight(1),
     flex: 2,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   blogposthour: {
     paddingBottom: 8,
@@ -303,7 +310,7 @@ export const styles = StyleSheet.create({
     width: 140,
 
     color: '#032F3C',
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   viewtext: {
     flexDirection: 'row',

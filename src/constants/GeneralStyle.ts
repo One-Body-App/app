@@ -10,7 +10,7 @@ export const GeneralStyle = StyleSheet.create({
   },
   btnText: {
     fontSize: getFontSize(2.1),
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     letterSpacing: 1.25,
   },
   btn: {

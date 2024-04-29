@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
@@ -293,7 +293,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                       fontSize: getFontSize(2.3),
 
                       marginVertical: 10,
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                     }}
                   >
                     <Ionicons name="logo-twitter" color="#032F3C" size={20} /> Twitter handle
@@ -304,7 +304,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                       marginTop: 15,
                       color: '#032F3C',
                       fontWeight: '400',
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                     }}
                   >
                     {state.twitterUsername}
@@ -321,7 +321,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                       fontSize: getFontSize(2.3),
                       marginTop: getHeight(5),
                       marginBottom: 10,
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                     }}
                   >
                     <Ionicons name="logo-instagram" color="#032F3C" size={20} /> Instagram handle
@@ -331,7 +331,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                       marginTop: 20,
                       color: '#032F3C',
                       fontWeight: '400',
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                     }}
                   >
                     {state.instagramUsername}
@@ -348,7 +348,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                       fontSize: getFontSize(2.3),
                       marginTop: getHeight(5),
                       marginBottom: 10,
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                     }}
                   >
                     RSS
@@ -359,7 +359,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                         marginTop: 20,
                         color: '#032F3C',
                         fontWeight: '400',
-                        fontFamily: 'Rubik-Regular',
+                        fontFamily: 'OpenSans-Regular',
                       }}
                     >
                       {state.rssFeed1Category} - {state.rssFeed1}
@@ -372,7 +372,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                         marginTop: 20,
                         color: '#032F3C',
                         fontWeight: '400',
-                        fontFamily: 'Rubik-Regular',
+                        fontFamily: 'OpenSans-Regular',
                       }}
                     >
                       {state.rssFeed2Category} - {state.rssFeed2}
@@ -386,7 +386,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                   marginTop: 15,
                   color: '#032F3C',
                   fontWeight: '400',
-                  fontFamily: 'Rubik-Regular',
+                  fontFamily: 'OpenSans-Regular',
                 }}
               >
                 {state.instagramTitle}
@@ -399,7 +399,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                   fontSize: getFontSize(2.3),
                   marginTop: getHeight(5),
                   marginBottom: 10,
-                  fontFamily: 'Rubik-Regular',
+                  fontFamily: 'OpenSans-Regular',
                 }}
               >
                 Bio
@@ -409,7 +409,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                   marginTop: 20,
                   color: '#032F3C',
                   fontWeight: '400',
-                  fontFamily: 'Rubik-Regular',
+                  fontFamily: 'OpenSans-Regular',
                 }}
               >
                 {state.bio}
@@ -424,7 +424,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                       fontSize: getFontSize(2.3),
                       marginTop: getHeight(5),
                       marginBottom: 10,
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                     }}
                   >
                     Comments
@@ -434,7 +434,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                       marginTop: 20,
                       color: '#032F3C',
                       fontWeight: '400',
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                     }}
                   >
                     {state.comments}
@@ -528,7 +528,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                 ...styles.heading,
                 color: dark ? colors.text : '#032F3C',
                 marginVertical: 12,
-                fontFamily: 'Rubik-Medium',
+                fontFamily: 'OpenSans-Medium',
               }}
             >
               Application
@@ -635,7 +635,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                 fontSize: getFontSize(2.3),
 
                 marginBottom: 10,
-                fontFamily: 'Rubik-Regular',
+                fontFamily: 'OpenSans-Regular',
               }}
             >
               <Ionicons name="logo-twitter" size={20} /> Twitter
@@ -668,7 +668,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                 fontSize: getFontSize(2.3),
                 marginTop: getHeight(3),
                 marginBottom: 10,
-                fontFamily: 'Rubik-Regular',
+                fontFamily: 'OpenSans-Regular',
               }}
             >
               <Ionicons name="logo-instagram" size={15} color="#032F3C" /> Instagram
@@ -799,7 +799,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
                 fontSize: getFontSize(2.3),
                 marginTop: getHeight(3),
                 marginBottom: 10,
-                fontFamily: 'Rubik-Regular',
+                fontFamily: 'OpenSans-Regular',
               }}
             >
               RSS

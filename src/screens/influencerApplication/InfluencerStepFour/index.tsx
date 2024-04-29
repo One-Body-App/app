@@ -63,7 +63,7 @@ function InfluencerStepFour({ navigation, route }: Props) {
                 ...styles.heading,
                 color: '#032F3C',
                 marginTop: 12,
-                fontFamily: 'Rubik-Medium',
+                fontFamily: 'OpenSans-Medium',
               }}
             >
               Influencer Agreement

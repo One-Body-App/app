@@ -1,19 +1,19 @@
 import { StyleSheet } from 'react-native';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import { getHeight } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
+
     // justifyContent: 'center',
     // alignItems: 'center',
   },
   subContainer: {
-    flex: 0.9,
-    borderWidth: 1,
-    marginTop: 44,
+    flex: 1,
+    // borderWidth: 1,
+    // marginTop: 44,
   },
   button: {
     backgroundColor: 'gray',
@@ -29,7 +29,8 @@ export const styles = StyleSheet.create({
   cameraView: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: spacing.x17,
+
+    // marginTop: spacing.x17,
   },
   buttonContainer: {
     backgroundColor: 'pink',
@@ -101,12 +102,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: spacing.x17,
-    position: 'absolute',
+    // position: 'absolute',
     width: '100%',
+    backgroundColor: 'red',
   },
   imgPreview: { flex: 1, borderRadius: 8 },
   bottomContainer: {
-    flex: 0.4,
+    flex: 1,
     marginHorizontal: spacing.x16,
     marginTop: 20,
   },
@@ -116,3 +118,5 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export default styles;

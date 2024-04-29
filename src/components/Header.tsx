@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { Text, View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
+import StyledText from './styled/Text';
 
 type Props = {
   title: string;
@@ -30,7 +31,9 @@ function Header({ title, leftView, RightView }: Props) {
       >
         {leftView}
 
-        <Text style={{ ...styles.titletext, color: dark ? colors.text : '#032F3C' }}>{title}</Text>
+        <StyledText style={{ ...styles.titletext, color: dark ? colors.text : '#032F3C' }}>
+          {title}
+        </StyledText>
 
         {RightView}
       </View>
@@ -60,7 +63,7 @@ const styles = StyleSheet.create<{ headview: ViewStyle; titletext: TextStyle }>(
   },
   titletext: {
     fontSize: getFontSize(2.5),
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
 });
 export default Header;

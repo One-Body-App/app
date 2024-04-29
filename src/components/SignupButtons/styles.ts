@@ -62,11 +62,11 @@ export const styles = StyleSheet.create({
   },
   text: {
     marginTop: 2,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   simpleText: {
     marginTop: 2,
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
   },
   alreadyAccountContainer: {
     alignSelf: 'center',

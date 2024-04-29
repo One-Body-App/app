@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
+import { FlatList, View, RefreshControl, TouchableOpacity, Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { platform } from 'os';
 import { ApiCall } from '@/src/services/api';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -37,8 +38,8 @@ function PrayerWallComponent() {
       });
       let posts = [];
       // console.log(res.response.meta.body.error);
-      if (res?.status == 200) {
-        if (pageNumber == 1) {
+      if (res?.status === 200) {
+        if (pageNumber === 1) {
           posts = res?.response ?? [];
           setIsEndOfList(false);
         } else {
@@ -138,11 +139,14 @@ function PrayerWallComponent() {
               {
                 padding: spacing.x16,
                 textAlign: 'center',
-                transform: [{ rotate: '180deg' }, { scaleX: -1 }],
+                transform:
+                  Platform.OS == 'ios'
+                    ? [{ rotate: '180deg' }, { scaleX: -1 }]
+                    : [{ rotate: '180deg' }],
               },
             ]}
           >
-            Nothing here
+            No new prayers to see
           </StyledText>
         )}
         onEndReachedThreshold={0.8}

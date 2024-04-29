@@ -39,11 +39,11 @@ function Prayer({ navigation }: Props) {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View style={{ flex: 1, paddingBottom: spacing.x24 }}>
+      <View style={{ flex: 1 }}>
         <TabView
           navigationState={{ index, routes }}
           renderScene={renderScene}
-          sceneContainerStyle={{ paddingBottom: spacing.x48 }}
+          sceneContainerStyle={{ marginBottom: spacing.x48 }}
           renderTabBar={(props) => {
             return (
               <View style={styles.tabBar}>

@@ -81,7 +81,7 @@ function IntroScreen({ route, navigation }: Props) {
                 </View>
               </View>
 
-              <View style={{ marginHorizontal: 20 }}>
+              <View style={{ marginHorizontal: spacing.x20, marginTop: spacing.x20 }}>
                 <Button
                   btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
                   onPress={() => {

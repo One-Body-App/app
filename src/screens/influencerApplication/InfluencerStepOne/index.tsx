@@ -112,7 +112,7 @@ function InfluencerStepOne({ navigation }: Props) {
 
                   <Text
                     style={{
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                       color: colors.text,
                       fontSize: 16,
                     }}
@@ -122,7 +122,7 @@ function InfluencerStepOne({ navigation }: Props) {
                   </Text>
                   <Text
                     style={{
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                       color: colors.text,
                       marginTop: 20,
                       fontSize: 16,
@@ -135,7 +135,7 @@ function InfluencerStepOne({ navigation }: Props) {
                   </Text>
                   <Text
                     style={{
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                       color: colors.text,
                       marginTop: 20,
                       fontSize: 16,
@@ -147,7 +147,7 @@ function InfluencerStepOne({ navigation }: Props) {
                   </Text>
                   <Text
                     style={{
-                      fontFamily: 'Rubik-Regular',
+                      fontFamily: 'OpenSans-Regular',
                       color: colors.text,
                       marginTop: 20,
                       fontSize: 16,

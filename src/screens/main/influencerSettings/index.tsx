@@ -212,7 +212,7 @@ function InfluencerSettings({ navigation, route }: Props) {
   const btnTextStyle = {
     paddingVertical: 7,
     fontSize: getFontSize(1.5),
-    // fontFamily: 'Rubik-Medium',
+    // fontFamily: 'OpenSans-Medium',
     letterSpacing: 1.25,
   };
   return (
@@ -235,7 +235,7 @@ function InfluencerSettings({ navigation, route }: Props) {
                 fontWeight: '700',
                 fontSize: getFontSize(2.3),
                 marginLeft: 5,
-                fontFamily: 'Rubik-Regular',
+                fontFamily: 'OpenSans-Regular',
               }}
             >
               Instagram Account
@@ -333,7 +333,7 @@ function InfluencerSettings({ navigation, route }: Props) {
                 fontWeight: '700',
                 fontSize: getFontSize(2.3),
                 marginLeft: 5,
-                fontFamily: 'Rubik-Regular',
+                fontFamily: 'OpenSans-Regular',
               }}
             >
               Twitter Account

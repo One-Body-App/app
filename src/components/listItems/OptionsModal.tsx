@@ -276,7 +276,7 @@ function OptionsModal({
                         />
                       }
                       onPress={() => {
-                        Alert.alert('Are you sure you want to delete this post?', undefined, [
+                        Alert.alert('Are you sure you want to remove this?', undefined, [
                           {
                             text: 'Yes',
                             onPress: () => {

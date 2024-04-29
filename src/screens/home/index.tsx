@@ -1,28 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  View,
-  SafeAreaView,
-  TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  Dimensions,
-  Modal,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  ViewStyle,
-  TouchableHighlight,
-} from 'react-native';
+import { View, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 
 import { useSelector } from 'react-redux';
 import { CompositeScreenProps, useTheme, useScrollToTop } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { ArrowDown, ArrowDown2, Notification } from 'iconsax-react-native';
-import { Dropdown } from 'react-native-element-dropdown';
-import { GiphyDialog } from '@giphy/react-native-sdk';
-import { getHeight } from '@/utils/ResponsiveFun';
+import { ArrowDown2, Notification } from 'iconsax-react-native';
 import { styles } from './styles';
 
 import { ApiCall } from '@/services/api';
@@ -30,9 +13,8 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import SocialItem from '@/components/listItems/SocialItem';
 import ArticleItem from '@/components/listItems/ArticleItem';
-import ActivityIndicatorContent from '@/components/ActivityIndicatorContent';
+
 import { ArticleType } from '@/utils/types';
-import OptionsModal from '@/components/listItems/OptionsModal';
 import { styles as globalStyle } from '@/components/listItems/style';
 
 import {
@@ -44,11 +26,9 @@ import {
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import { fontSize, poppins } from '@/src/styles/typography';
-import { borderWidth } from '@/src/styles/outlines';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { getHeight } from '@/utils/ResponsiveFun';
 
-enum FeedTypes {
+export enum FeedTypes {
   Connected = 'connected',
   ForYou = 'foryou',
   Read = 'read',
@@ -61,7 +41,7 @@ type FeedOptions = {
   page: number;
 };
 
-const feedTypes: FeedTypes[] = [FeedTypes.Read];
+const feedTypes: FeedTypes[] = [FeedTypes.Read, FeedTypes.Pray, FeedTypes.Watch];
 
 type Props = CompositeScreenProps<
   StackScreenProps<HomeStackParamsList, 'Home'>,
@@ -74,11 +54,11 @@ type Props = CompositeScreenProps<
   >
 >;
 
-function Home({ navigation }: Props) {
+function Home({ navigation, route }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
 
   const [feedOptions, setFeedOptions] = useState<FeedOptions>({
-    type: FeedTypes.Connected,
+    type: route.params?.selectedTab ?? FeedTypes.Connected,
     page: 1,
   });
 
@@ -133,10 +113,10 @@ function Home({ navigation }: Props) {
       });
       let newFeedData = [];
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         newFeedData = [];
 
-        if (pageNumber == 1) {
+        if (pageNumber === 1) {
           newFeedData = res?.response ?? [];
 
           setIsEndOfList(false);
@@ -167,7 +147,25 @@ function Home({ navigation }: Props) {
   useEffect(() => {
     // getData(page);
     getFeedData(feedOptions.type, feedOptions.page);
+    if (feedOptions.type === FeedTypes.Watch) {
+      navigation.setOptions({
+        headerShown: false,
+      });
+    } else {
+      navigation.setOptions({
+        headerShown: true,
+      });
+    }
   }, [feedOptions]);
+
+  useEffect(() => {
+    if (route.params?.selectedTab) {
+      setFeedOptions({
+        type: route.params?.selectedTab,
+        page: 1,
+      });
+    }
+  }, [route.params]);
 
   useEffect(() => {
     // getData(page);
@@ -196,75 +194,14 @@ function Home({ navigation }: Props) {
     // listRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
-  const cardSecondaryColor = dark ? '#353535' : '#DDD';
-
-  const addHeaderButtons = () => {
-    navigation
-      .getParent()
-      ?.getParent()
-      ?.setOptions({
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', paddingRight: spacing.x24 }}>
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate('MainRoot', {
-                  screen: 'Main',
-                  params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
-                });
-              }}
-              // style={{ paddingRight: spacing.x24 }}
-            >
-              <Notification
-                style={{ height: 24, width: 24 }}
-                color={Colors.primary.brand}
-                strokeWidth={0.2}
-              />
-            </TouchableOpacity>
-            {/* <TouchableOpacity onPress={() => {}}>
-                            <Message
-                              style={{ height: 24, width: 24 }}
-                              stroke={Colors.primary.brand}
-                              strokeWidth={0.2}
-                            />
-                          </TouchableOpacity> */}
-          </View>
-        ),
-      });
-
-    return () => {
-      navigation
-        .getParent()
-        ?.getParent()
-        ?.setOptions({
-          headerRight: () => <View />,
-        });
-    };
-  };
-
-  const removeHeaderButtons = () => {
-    navigation
-      .getParent()
-      ?.getParent()
-      ?.setOptions({
-        headerRight: () => <View />,
-      });
-  };
-
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      addHeaderButtons();
+      setIsRefreshing(true);
     });
 
     return unsubscribe;
   }, [navigation]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      removeHeaderButtons();
-    });
-
-    return unsubscribe;
-  }, [navigation]);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
 
   const removePost = async (type: string, id: string) => {
@@ -275,7 +212,7 @@ function Home({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         getFeedData(feedOptions.type, feedOptions.page);
       }
     } catch (e: any) {
@@ -304,29 +241,35 @@ function Home({ navigation }: Props) {
     <View style={{ flex: 1 }}>
       <View
         style={{
+          flex: 0,
           flexDirection: 'row',
-
+          marginHorizontal: spacing.x5,
           // marginBottom: 20,
+
+          height: getHeight(5.8),
         }}
       >
-        <View style={{ flex: 1 }} key="main">
+        <View style={{ flex: 1.4 }} key="main">
           <TouchableOpacity
             onPress={() => {
-              if (feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou) {
+              if (
+                feedOptions.type === FeedTypes.Connected ||
+                feedOptions.type === FeedTypes.ForYou
+              ) {
                 setFeedSubType(
-                  feedOptions.type == FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
+                  feedOptions.type === FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
                 );
                 filterUpdate(
-                  feedOptions.type == FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
+                  feedOptions.type === FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
                 );
               } else {
                 filterUpdate(
-                  feedSubType == FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
+                  feedSubType === FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
                 );
               }
             }}
             style={
-              feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou
+              feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou
                 ? [styles.menuItemSelected]
                 : [styles.menuItem]
             }
@@ -334,7 +277,7 @@ function Home({ navigation }: Props) {
             <View style={{ flexDirection: 'row' }}>
               <StyledText
                 style={
-                  feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou
+                  feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou
                     ? [
                         styles.menuItemText,
                         { fontWeight: 'bold', color: Colors.primarySapphire.brand },
@@ -342,118 +285,148 @@ function Home({ navigation }: Props) {
                     : [styles.menuItemText, { color: Colors.neutral[400] }]
                 }
               >
-                {feedOptions.type == FeedTypes.Read
+                {feedOptions.type === FeedTypes.Read
                   ? 'Feed'
-                  : feedSubType == FeedTypes.Connected
-                  ? 'Connected'
-                  : 'For You'}
+                  : feedSubType === FeedTypes.Connected
+                    ? 'Connected'
+                    : 'For You'}
               </StyledText>
-              {feedOptions.type == FeedTypes.Read ? null : (
+              {feedOptions.type === FeedTypes.Read ? null : (
                 <ArrowDown2
                   size={20}
                   color={
-                    feedOptions.type == FeedTypes.Connected || feedOptions.type == FeedTypes.ForYou
+                    feedOptions.type === FeedTypes.Connected ||
+                    feedOptions.type === FeedTypes.ForYou
                       ? Colors.primarySapphire.brand
                       : Colors.neutral[400]
                   }
-                  style={{ marginLeft: spacing.x10 }}
+                  style={{ marginLeft: spacing.x5 }}
                 />
               )}
             </View>
           </TouchableOpacity>
         </View>
 
-        {feedTypes.map((feedType) => {
-          return (
-            <View style={{ flex: 1 }} key={feedType}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (
-                    (feedOptions.type == FeedTypes.Connected ||
-                      feedOptions.type == FeedTypes.ForYou) &&
-                    (feedType == FeedTypes.Connected || feedType == FeedTypes.ForYou)
-                  ) {
-                    setSelectVisible(true);
-                  } else if (feedOptions.type != feedType) {
-                    filterUpdate(feedType);
-                  }
-                }}
+        {feedTypes.map((feedType, index) => (
+          <View style={{ flex: index === 2 ? 1.3 : 0.8 }} key={feedType}>
+            <TouchableOpacity
+              onPress={() => {
+                if (
+                  (feedOptions.type === FeedTypes.Connected ||
+                    feedOptions.type === FeedTypes.ForYou) &&
+                  (feedType === FeedTypes.Connected || feedType === FeedTypes.ForYou)
+                ) {
+                  setSelectVisible(true);
+                } else if (feedType === FeedTypes.Pray) {
+                  navigation.navigate('MainRoot', {
+                    screen: 'PrayerWall',
+                  });
+                } else if (feedType === FeedTypes.Watch) {
+                  navigation.navigate('MainRoot', {
+                    screen: 'Main',
+                    params: {
+                      screen: 'HomeTab',
+                      params: {
+                        screen: 'WatchPortal',
+                      },
+                    },
+                  });
+                } else if (feedOptions.type !== feedType) {
+                  filterUpdate(feedType);
+                }
+              }}
+              style={
+                feedOptions.type === feedType ||
+                (feedType === FeedTypes.Connected && feedOptions.type === FeedTypes.ForYou)
+                  ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
+                  : [
+                      styles.menuItem,
+                      {
+                        marginLeft: 0,
+                      },
+                    ]
+              }
+            >
+              <StyledText
                 style={
-                  feedOptions.type == feedType ||
-                  (feedType == FeedTypes.Connected && feedOptions.type == FeedTypes.ForYou)
-                    ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
-                    : [styles.menuItem]
+                  feedOptions.type === feedType
+                    ? [
+                        styles.menuItemText,
+                        {
+                          fontWeight: 'bold',
+                          color: Colors.primarySapphire.brand,
+                          textAlign: 'left',
+                        },
+                      ]
+                    : [
+                        styles.menuItemText,
+                        {
+                          color: Colors.neutral[400],
+                          textAlign: 'left',
+                        },
+                      ]
                 }
               >
-                <StyledText
-                  style={
-                    feedOptions.type == feedType
-                      ? [
-                          styles.menuItemText,
-                          { fontWeight: 'bold', color: Colors.primarySapphire.brand },
-                        ]
-                      : [styles.menuItemText, { color: Colors.neutral[400] }]
-                  }
-                >
-                  {feedType}
-                </StyledText>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
+                {feedType}
+              </StyledText>
+            </TouchableOpacity>
+          </View>
+        ))}
       </View>
 
       {isLoading && feedOptions.page == 1 && !isRefreshing ? (
         <View style={{ marginTop: 10 }}>
-          <ActivityIndicatorContent size="small" />
+          <ActivityIndicator size="small" />
         </View>
       ) : (
-        <View style={{ flex: 1 }}>
-          <FlatList
-            viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-            data={feedData}
-            ref={listRef}
-            keyExtractor={(item, index) => {
-              return `${item.id}-${index}`;
-            }}
-            contentContainerStyle={{
-              flexGrow: 1,
-            }}
-            scrollEnabled={isScrollEnable}
-            renderItem={({ item, index }) => {
-              if (item.type == 'social') {
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (item.postId) {
-                        navigation.navigate('SinglePost', {
-                          postId: item.postId,
-                        });
-                      }
-                    }}
-                  >
-                    <SocialItem
-                      index={index}
-                      key={`social_${item.id}_${index}`}
-                      onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                      item={item}
-                      visible={
-                        visibleItemsIndex && visibleItemsIndex.length > 0
-                          ? visibleItemsIndex?.indexOf(index) > -1
-                          : false
-                      }
-                      socialPostviewStyle={{ backgroundColor: colors.card }}
-                      removePost={removePost}
-                      editPost={editPost}
-                    />
-                  </TouchableOpacity>
-                );
-              }
+        feedOptions.type !== 'watch' && (
+          <View style={{ flex: 1 }}>
+            <FlatList
+              viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+              data={feedData}
+              ref={listRef}
+              keyExtractor={(item, index) => {
+                return `${item.id}-${index}`;
+              }}
+              contentContainerStyle={{
+                flexGrow: 1,
+              }}
+              scrollEnabled={isScrollEnable}
+              renderItem={({ item, index }) => {
+                if (item.type == 'social') {
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (item.postId) {
+                          navigation.navigate('SinglePost', {
+                            postId: item.postId,
+                          });
+                        }
+                      }}
+                    >
+                      <SocialItem
+                        index={index}
+                        key={`social_${item.id}_${index}`}
+                        onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                        itemData={item}
+                        visible={
+                          visibleItemsIndex && visibleItemsIndex.length > 0
+                            ? visibleItemsIndex?.indexOf(index) > -1
+                            : false
+                        }
+                        socialPostviewStyle={{ backgroundColor: colors.card }}
+                        removePost={removePost}
+                        editPost={editPost}
+                      />
+                    </TouchableOpacity>
+                  );
+                }
 
-              if (item.type == 'tasteBreaker') {
-                return (
-                  <View style={{ paddingHorizontal: 10 }}>
-                    {/* <FlatList
+                if (item.type == 'tasteBreaker') {
+                  const itemToUse = item?.items[0];
+                  return (
+                    <View key={`tastebreaker_${itemToUse.id}`}>
+                      {/* <FlatList
                         nestedScrollEnabled
                         data={item.items}
                         horizontal={true}
@@ -482,102 +455,129 @@ function Home({ navigation }: Props) {
                         )}
                       /> */}
 
-                    <ArticleItem
-                      pillText="Taste Breakers"
-                      key={`article_${item.id}`}
-                      item={item.items[0]}
-                      imageSizeType="cover"
-                      // blogPostStyle={{
-                      //   ...globalStyle.blogpostview,
-                      //   backgroundColor: cardSecondaryColor,
-                      // }}
-                      // blogPostImageStyle={globalStyle.newspostimage}
-                      // blogPostTitleStyle={{
-                      //   flexWrap: 'wrap',
-                      // }}
-                      blogPostStyle={{
-                        ...globalStyle.blogpostview,
-                        backgroundColor: cardSecondaryColor,
-                      }}
-                      blogPostImageStyle={globalStyle.newspostimage}
-                      blogPostTitleStyle={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                      }}
-                      showModal={showModal}
-                    />
-                  </View>
-                );
-              }
-
-              if (item.type == 'relatedContent') {
-                return (
-                  <View style={{ paddingHorizontal: 10 }}>
-                    <ArticleItem
-                      pillText="Suggested"
-                      key={`relatedContent_${item.id}`}
-                      item={item.item}
-                      imageSizeType="cover"
-                      blogPostStyle={{
-                        ...globalStyle.blogpostview,
-                        backgroundColor: cardSecondaryColor,
-                      }}
-                      blogPostImageStyle={globalStyle.newspostimage}
-                      blogPostTitleStyle={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                      }}
-                      showModal={showModal}
-                    />
-                  </View>
-                );
-              }
-              return (
-                <ArticleItem
-                  key={`article_${item.id}`}
-                  item={item}
-                  imageSizeType="cover"
-                  blogPostImageStyle={globalStyle.newspostimage}
-                  blogPostTitleStyle={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                  }}
-                  showModal={showModal}
-                />
-              );
-            }}
-            refreshing={isLoading}
-            refreshControl={
-              <RefreshControl
-                enabled
-                refreshing={isRefreshing}
-                colors={
-                  dark
-                    ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
-                    : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (itemToUse.id) {
+                            navigation.navigate('SingleRss', {
+                              postId: itemToUse.id,
+                            });
+                          }
+                        }}
+                      >
+                        <ArticleItem
+                          pillText="Taste Breakers"
+                          key={`tastebreaker_${itemToUse.id}`}
+                          item={itemToUse}
+                          imageSizeType="cover"
+                          // blogPostStyle={{
+                          //   ...globalStyle.blogpostview,
+                          //   backgroundColor: cardSecondaryColor,
+                          // }}
+                          // blogPostImageStyle={globalStyle.newspostimage}
+                          // blogPostTitleStyle={{
+                          //   flexWrap: 'wrap',
+                          // }}
+                          blogPostStyle={{
+                            ...globalStyle.blogpostview,
+                          }}
+                          blogPostImageStyle={globalStyle.newspostimage}
+                          blogPostTitleStyle={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                          }}
+                          showModal={showModal}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  );
                 }
-                tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
-                onRefresh={() => {
-                  setIsRefreshing(true);
-                }}
-              />
-            }
-            onEndReachedThreshold={0.5}
-            onEndReached={() => {
-              if (!isLoading && !isRefreshing && !isEndOfList) {
-                setFeedOptions({
-                  ...feedOptions,
-                  page: feedOptions.page + 1,
-                });
+
+                if (item.type == 'relatedContent') {
+                  return (
+                    <View key={`relatedContent_${item.item.id}`}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (item.item.id) {
+                            navigation.navigate('SingleRss', {
+                              postId: item.item.id,
+                            });
+                          }
+                        }}
+                      >
+                        <ArticleItem
+                          pillText="Suggested"
+                          key={`relatedContent_${item.item.id}`}
+                          item={item.item}
+                          imageSizeType="cover"
+                          blogPostStyle={globalStyle.blogpostview}
+                          blogPostImageStyle={globalStyle.newspostimage}
+                          blogPostTitleStyle={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                          }}
+                          showModal={showModal}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                }
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (item.id) {
+                        navigation.navigate('SingleRss', {
+                          postId: item.id,
+                        });
+                      }
+                    }}
+                  >
+                    <ArticleItem
+                      key={`article_${item.id}`}
+                      item={item}
+                      imageSizeType="cover"
+                      blogPostImageStyle={globalStyle.newspostimage}
+                      blogPostTitleStyle={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                      }}
+                      showModal={showModal}
+                    />
+                  </TouchableOpacity>
+                );
+              }}
+              refreshing={isLoading}
+              refreshControl={
+                <RefreshControl
+                  enabled
+                  refreshing={isRefreshing}
+                  colors={
+                    dark
+                      ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
+                      : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
+                  }
+                  tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
+                  onRefresh={() => {
+                    setIsRefreshing(true);
+                  }}
+                />
               }
-            }}
-            ListFooterComponent={() => (
-              <View>
-                {isLoading && !isRefreshing ? <ActivityIndicatorContent size="small" /> : null}
-              </View>
-            )}
-          />
-        </View>
+              onEndReachedThreshold={0.5}
+              onEndReached={() => {
+                if (!isLoading && !isRefreshing && !isEndOfList) {
+                  setFeedOptions({
+                    ...feedOptions,
+                    page: feedOptions.page + 1,
+                  });
+                }
+              }}
+              ListFooterComponent={() => (
+                <View>
+                  {isLoading && !isRefreshing ? <ActivityIndicator size="small" /> : null}
+                </View>
+              )}
+            />
+          </View>
+        )
       )}
     </View>
   );

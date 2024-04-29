@@ -73,6 +73,7 @@ GiphySDK.configure({
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Prayer'>;
 
 function NewPrayer({ navigation, route }: Props) {
+  const MAX_CONTENT_LENGHT = 300;
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [postType, setPostType] = useState<PrayerWallCategory>();
@@ -531,6 +532,9 @@ function NewPrayer({ navigation, route }: Props) {
                 value={content}
                 multiline
                 returnKeyType="next"
+                maxLength={MAX_CONTENT_LENGHT}
+                showCharCounter
+                maxLengthErrorMessage="This message exceeds the character limit."
                 label=""
                 autoCorrect
                 placeholder="What's on your heart?"
@@ -765,7 +769,8 @@ function NewPrayer({ navigation, route }: Props) {
               !uploadImagesObject &&
               imagesObject.length == 0 &&
               !mediaGif) ||
-            !postType
+            !postType ||
+            (!!content && content.length > MAX_CONTENT_LENGHT)
           }
           onPress={() => {
             if (route.params?.postId) {

@@ -3,6 +3,7 @@
     "browser": true,
     "es2021": true
   },
+  "ignorePatterns": ["index.js"],
   "extends": [
     "@react-native",
     "plugin:react/recommended",
@@ -51,8 +52,9 @@
     "class-methods-use-this": "warn",
     "react/prop-types": ["warn"],
     "default-param-last": "off",
-    "@typescript-eslint/default-param-last": "off"
-
+    "@typescript-eslint/default-param-last": "off",
+    "react-native/no-inline-styles": "off",
+    "import/no-extraneous-dependencies": "off"
     // [
     //   "error",
     //   {

@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
   loyalsty: { width: getWidth(100), backgroundColor: 'red' },
   walltext: {
     // fontSize: getFontSize(2.5),
-    fontFamily: 'Rubik-Medium',
+    fontFamily: 'OpenSans-Medium',
     color: 'white',
     alignSelf: 'center',
     marginTop: getHeight(1.5),

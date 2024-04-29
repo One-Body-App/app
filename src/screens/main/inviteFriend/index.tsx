@@ -28,7 +28,7 @@ function InviteFriend() {
   return (
     <LinearGradient
       colors={dark ? [colors.background] : ['#12D2D9', '#126B87']}
-      style={{ flex: 1, paddingTop: spacing.x48 }}
+      style={{ flex: 1, paddingTop: spacing.x88 }}
     >
       <ScrollView style={styles.container}>
         <View style={[styles.innerContainer, { backgroundColor: colors.card }]}>

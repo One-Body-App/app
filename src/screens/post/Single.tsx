@@ -4,48 +4,30 @@ import {
   ActivityIndicator,
   FlatList,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
-  ScrollView,
   View,
   KeyboardEvent,
-  TouchableWithoutFeedback,
-  TouchableOpacity,
   RefreshControl,
   EmitterSubscription,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
-import { Asset } from 'react-native-image-picker';
-import { CloseCircle, Send } from 'iconsax-react-native';
 import {
   GiphyDialog,
   GiphyDialogEvent,
   GiphyDialogMediaSelectEventHandler,
   GiphyMedia,
-  GiphyMediaView,
 } from '@giphy/react-native-sdk';
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
-import Button from '@/components/Button';
-import MapBox, { MapSuggestion } from '@/components/MapBox';
 import StyledText from '@/components/styled/Text';
-import StyledTextInput from '@/components/styled/TextInput';
-import { MainStackParamList, PrayerWallStackParamsList } from '@/src/navigator/types';
-import { Colors, Spacing } from '@/src/styles';
-import { button } from '@/src/styles/buttons';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { MainStackParamList } from '@/src/navigator/types';
+import { Colors } from '@/src/styles';
+import { borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import {
-  CommentPost,
-  Location,
-  PostType,
-  PrayerPost,
-  SocialPost,
-  SocialPostReaction,
-} from '@/utils/types';
+import { CommentPost, SocialPost, SocialPostReaction } from '@/utils/types';
 
 import CommentField from '@/components/comments/Field';
 import CommentItem from '@/components/comments/CommentItem';
@@ -57,7 +39,7 @@ let keyboardWillShowListener: EmitterSubscription;
 let onKeyboardWillHideListener: EmitterSubscription;
 function SinglePost({ navigation, route }: Props) {
   const [post, setPost] = useState<SocialPost>();
-  const [comments, setComments] = useState<CommentPost[]>();
+  const [comments, setComments] = useState<CommentPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
@@ -170,7 +152,7 @@ function SinglePost({ navigation, route }: Props) {
     setIsLoading(true);
     try {
       const result = await ApiCall({
-        route: `comments/social/${route.params?.postId}`,
+        route: `comments/social/${route.params?.postId}?page=${page}`,
         token,
 
         verb: 'get',
@@ -178,8 +160,20 @@ function SinglePost({ navigation, route }: Props) {
 
       setIsLoading(false);
       setIsRefreshing(false);
+      let newComments = [];
       if (result.status == 200) {
-        setComments(result.response.content);
+        if (page == 1) {
+          newComments = result?.response.content ?? [];
+
+          setIsEndOfList(false);
+        } else {
+          newComments = [...comments, ...(result?.response.content ?? [])];
+          if (result?.response.content.length < 1) {
+            setIsEndOfList(true);
+          }
+        }
+
+        setComments(newComments);
       }
     } catch (e) {
       setIsRefreshing(false);
@@ -283,23 +277,23 @@ function SinglePost({ navigation, route }: Props) {
       <View style={{ flex: 1, top: -1 * keyboardHeight }}>
         {post ? (
           <>
-            <View>
-              <SocialItem
-                editPost={editPost}
-                removePost={removePost}
-                item={post}
-                socialPostviewStyle={{
-                  borderBottomColor: Colors.neutral[800],
-                  borderBottomWidth: borderWidth.thin,
-                }}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flexGrow: 1 }}>
               <FlatList
                 data={comments}
                 refreshing={isRefreshing}
                 // style={{ flexGrow: 1, flex: 1 }}
-                style={{ flexGrow: 1 }}
+                style={{ flex: 1 }}
+                ListHeaderComponent={() => (
+                  <SocialItem
+                    editPost={editPost}
+                    removePost={removePost}
+                    itemData={post}
+                    socialPostviewStyle={{
+                      borderBottomColor: Colors.neutral[800],
+                      borderBottomWidth: borderWidth.thin,
+                    }}
+                  />
+                )}
                 // contentContainerStyle={{ paddingBottom: keyboardHeight + 80 }}
                 // onEndReachedThreshold={0.5}
                 // onEndReached={() => {
@@ -372,7 +366,7 @@ function SinglePost({ navigation, route }: Props) {
               />
             </View>
             {!isEditingComment ? (
-              <View>
+              <View style={{ flex: 0 }}>
                 <CommentField
                   mediaGif={mediaGif}
                   setGif={setGif}

@@ -10,20 +10,21 @@ import { styles } from './styles';
 import { ApiCall } from '@/src/services/api';
 import { getAllPrayer, getMyPrayer, getTestimonies } from '@/src/redux/actions/PrayerAction';
 import Send from '@/assets/svg/Send.svg';
+import StyledText from '../styled/Text';
 
-function PrayerInputHome({ color }) {
+function PrayerInputHome({ color }: { color: string }) {
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.getProfileData);
-  const prayers = useSelector((state) => state.general.prayers);
+  const token = useSelector((state: any) => state.auth.userToken);
+  const user = useSelector((state: any) => state.auth.getProfileData);
+  const prayers = useSelector((state: any) => state.general.prayers);
   const [prayerTypeShow, setPrayerTypeShow] = useState(false);
-  const [payerType, setPrayerType] = useState(null);
+  const [payerType, setPrayerType] = useState<string | null>(null);
   const [prayer, setPrayer] = useState('');
-  const [error, seterror] = React.useState();
+  const [error, seterror] = React.useState<string | null>();
 
   const ValidatePrayer = () => {
     if (prayer != null && payerType != null) {
-      if (prayer.length <= 150 && prayer != '') {
+      if (prayer.length <= 150 && prayer !== '') {
         seterror(null);
         createPrayer();
       } else {
@@ -45,14 +46,14 @@ function PrayerInputHome({ color }) {
     if (payerType == 'answer') {
       dispatch(setLoader(true));
       try {
-        const res = await ApiCall({
+        const res: any = await ApiCall({
           params: { answer: prayer },
           token,
           route: `prayers/answer-prayer`,
           verb: 'patch',
         });
 
-        if (res?.status == '200') {
+        if (res?.status === '200') {
           dispatch(setLoader(false));
           setPrayerTypeShow(false);
           setPrayerType(null);
@@ -80,7 +81,7 @@ function PrayerInputHome({ color }) {
       }
     } else {
       try {
-        const res = await ApiCall({
+        const res: any = await ApiCall({
           params: { prayer, prayerType: payerType },
           token,
           route: 'prayers/new-prayer',
@@ -122,28 +123,28 @@ function PrayerInputHome({ color }) {
         <ScrollView showsHorizontalScrollIndicator={false} horizontal>
           <View style={styles.prayerTypeView}>
             <Button
-              btnStyle={payerType == 'anonymous' ? styles.btnSelected : styles.btn}
-              btnTextStyle={payerType == 'anonymous' ? { color: 'white' } : { color: '#5B7279' }}
+              btnStyle={payerType === 'anonymous' ? styles.btnSelected : styles.btn}
+              btnTextStyle={payerType === 'anonymous' ? { color: 'white' } : { color: '#5B7279' }}
               text="Anonymous"
               onPress={() => setPrayerType('anonymous')}
             />
             <Button
-              btnStyle={payerType == 'prayer-request' ? styles.btnSelected : styles.btn}
+              btnStyle={payerType === 'prayer-request' ? styles.btnSelected : styles.btn}
               btnTextStyle={
-                payerType == 'prayer-request' ? { color: 'white' } : { color: '#5B7279' }
+                payerType === 'prayer-request' ? { color: 'white' } : { color: '#5B7279' }
               }
               text="Prayer Request"
               onPress={() => setPrayerType('prayer-request')}
             />
             <Button
-              btnStyle={payerType == 'exhortation' ? styles.btnSelected : styles.btn}
-              btnTextStyle={payerType == 'exhortation' ? { color: 'white' } : { color: '#5B7279' }}
+              btnStyle={payerType === 'exhortation' ? styles.btnSelected : styles.btn}
+              btnTextStyle={payerType === 'exhortation' ? { color: 'white' } : { color: '#5B7279' }}
               text="Exhortation"
               onPress={() => setPrayerType('exhortation')}
             />
             <Button
-              btnStyle={payerType == 'answer' ? styles.btnSelected : styles.btn}
-              btnTextStyle={payerType == 'answer' ? { color: 'white' } : { color: '#5B7279' }}
+              btnStyle={payerType === 'answer' ? styles.btnSelected : styles.btn}
+              btnTextStyle={payerType === 'answer' ? { color: 'white' } : { color: '#5B7279' }}
               text="Testimonies"
               onPress={() => setPrayerType('answer')}
             />
@@ -180,20 +181,19 @@ function PrayerInputHome({ color }) {
           {/* <Ionicons name="send" size={20} color="#032F3C" /> */}
         </TouchableOpacity>
       </View>
-      {prayer != '' && error == null ? (
-        <Text
+      {prayer !== '' && error == null ? (
+        <StyledText
           style={{
             color,
             paddingLeft: getWidth(5),
             marginBottom: getHeight(1),
           }}
         >
-          {prayer != '' ? prayer.length : null}/150 Characters left
-        </Text>
+          {prayer !== '' ? prayer.length : null}/150 Characters left
+        </StyledText>
       ) : (
         <View
           style={{
-            color,
             paddingLeft: getWidth(5),
             marginBottom: getHeight(1),
           }}
@@ -201,7 +201,7 @@ function PrayerInputHome({ color }) {
       )}
       {error != null ? (
         <View style={styles.nulview}>
-          <Text style={styles.errortect}>{error}</Text>
+          <StyledText style={styles.errortect}>{error}</StyledText>
         </View>
       ) : null}
     </View>

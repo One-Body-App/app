@@ -68,6 +68,7 @@ export enum PostType {
   rss = 'rss',
   prayer = 'prayer',
   comment = 'comment',
+  watch = 'watch',
 }
 
 export type SavedPost = {
@@ -145,13 +146,22 @@ export type ArticleType = {
   created: Date;
   image?: { url: string };
   title: string | { a: any };
+  comments?: CommentPost[];
+  commentNumber?: number;
   userData: {
     _id: string;
     name: string;
     username: string;
     accountType: AccountType;
     profileImage?: string;
+
+    website?: string;
+    instagramHandler?: string;
+    twitterHandler?: string;
+    isApprovedInfluencer?: boolean;
+    interests?: Interest[];
   };
+  reactions: SocialPostReaction[];
 };
 
 export enum AccountType {
@@ -238,6 +248,7 @@ export interface SocialPost {
     twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
+    interests?: Interest[];
   };
   images?: string[];
   gif?: GiphyMedia;
@@ -252,6 +263,44 @@ export interface SocialPost {
     coordinates?: number[];
   };
   locationName?: string;
+  edited?: boolean;
+}
+
+export interface WatchPost {
+  _id?: string;
+  playBackId?: string;
+  postId?: string;
+  content: string;
+  date: string;
+  handler: string;
+  link: string;
+  title: string;
+  mediaUrl?: string;
+  comments?: CommentPost[];
+  commentNumber?: number;
+
+  permalink?: string;
+  userData: {
+    _id: string;
+    name: string;
+    username: string;
+    accountType: AccountType;
+    profileImage: string;
+    twitterHandler?: string;
+    instagramHandler?: string;
+    isApprovedInfluencer?: boolean;
+  };
+
+  videos?: string[];
+  created: Date;
+  updated: Date;
+  id: string;
+
+  reactions: SocialPostReaction[];
+  location?: {
+    type?: string;
+    coordinates?: number[];
+  };
   edited?: boolean;
 }
 

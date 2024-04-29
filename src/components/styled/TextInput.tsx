@@ -1,7 +1,7 @@
-import { ReactElement, forwardRef } from 'react';
+import { FC, ReactElement, ReactNode, forwardRef } from 'react';
 import { StyleSheet, TextInput, TextInputProps, TextStyle, View, ViewStyle } from 'react-native';
 import { useTheme } from '@react-navigation/native';
-import { poppins } from '@/src/styles/typography';
+import { openSans } from '@/src/styles/typography';
 import StyledText from './Text';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
@@ -19,6 +19,8 @@ interface Props extends TextInputProps {
   counterTextStyleStyle?: TextStyle;
   inputWrapperStyle?: ViewStyle;
   maxLengthErrorMessage?: string;
+  enforceMaxLength?: boolean;
+  customComponent?: ReactNode | FC;
 }
 
 export default forwardRef<TextInput, Props>((props, ref) => {
@@ -34,6 +36,9 @@ export default forwardRef<TextInput, Props>((props, ref) => {
     counterContainerStyle,
     counterTextStyleStyle,
     maxLengthErrorMessage,
+    maxLength,
+    enforceMaxLength,
+    customComponent,
     ...textInputProps
   } = props;
   let backgroundColorWrapper = backgroundColor;
@@ -46,9 +51,15 @@ export default forwardRef<TextInput, Props>((props, ref) => {
   }
   const { colors } = useTheme();
 
+  let TextInputField: any = TextInput;
+
+  if (customComponent) {
+    TextInputField = customComponent;
+  }
+
   return (
     <View style={wrapperStyle}>
-      {label && label != '' ? (
+      {label && label !== '' ? (
         <StyledText style={{ marginBottom: 15, color: Colors.neutral.brand }}>{label}</StyledText>
       ) : null}
       <View
@@ -67,42 +78,52 @@ export default forwardRef<TextInput, Props>((props, ref) => {
       >
         {leftIcon || null}
 
-        <TextInput
+        <TextInputField
           ref={ref}
           {...textInputProps}
+          maxLength={enforceMaxLength && maxLength ? maxLength : undefined}
           style={[
             { paddingVertical: spacing.x10, color: colors.text },
             styles.input,
             inputStyle,
-            poppins.base,
+            openSans.base,
           ]}
         />
 
         {rightIcon || null}
       </View>
-      {showCharCounter && textInputProps.maxLength ? (
+      {showCharCounter && maxLength ? (
         <View style={counterContainerStyle}>
           <StyledText
             style={[
               counterTextStyleStyle,
               {
+                marginTop: spacing.x5,
+
                 color:
-                  (textInputProps.value?.length ?? 0) >= textInputProps.maxLength
+                  (textInputProps.value?.length ?? 0) >= maxLength
                     ? Colors.errorFeedback[200]
                     : colors.text,
               },
             ]}
           >
-            {textInputProps.value?.length || '0'}/{textInputProps.maxLength}{' '}
-            {(textInputProps.value?.length ?? 0) >= textInputProps.maxLength &&
-            maxLengthErrorMessage ? (
+            {(textInputProps.value?.length ?? 0) >= maxLength - 5 ? (
               <StyledText
                 style={[
                   counterTextStyleStyle,
-                  { marginLeft: spacing.x10, color: Colors.errorFeedback[200] },
+                  {
+                    marginLeft: spacing.x10,
+                    color:
+                      (textInputProps.value?.length ?? 0) > maxLength
+                        ? Colors.errorFeedback[200]
+                        : colors.text,
+                  },
                 ]}
               >
-                {maxLengthErrorMessage}
+                {textInputProps.value?.length || '0'}/{maxLength}{' '}
+                {maxLengthErrorMessage && (textInputProps.value?.length ?? 0) > maxLength
+                  ? maxLengthErrorMessage
+                  : ''}
               </StyledText>
             ) : null}
           </StyledText>
