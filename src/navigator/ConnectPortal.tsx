@@ -1,10 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { styles } from './connectPortalStyles';
+import { GOOGLE_MAPS_API_KEY } from '../services/constants';
+
+type types = 'Explore' | 'My Places';
 
 function ConnectPortal() {
-  const [selectedOption, setSelectedOption] = useState('Explore');
+  const [selectedOption, setSelectedOption] = useState<types>('Explore');
+  /* const [region, setRegion] = useState<{
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  }>({
+    latitude: 37.78825,
+    longitude: -122.4324,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  }); */
 
-  const handleOptionSelect = (option: string) => {
+  const handleOptionSelect = (option: types) => {
     setSelectedOption(option);
   };
 
@@ -33,46 +49,21 @@ function ConnectPortal() {
       <View style={styles.searchBar}>
         <TextInput placeholder="Search..." style={styles.input} />
       </View>
+
+      <MapView
+        style={styles.map}
+        provider={PROVIDER_DEFAULT}
+        initialRegion={{
+          latitude: 37.78825,
+          longitude: -122.4324,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+      >
+        <Marker coordinate={{ latitude: 37.78825, longitude: -122.4324 }} />
+      </MapView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  optionContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    backgroundColor: '#ccc',
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  option: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  selectedOption: {
-    borderBottomWidth: 2,
-    borderBottomColor: 'black',
-  },
-  searchBar: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-  },
-  input: {
-    fontSize: 16,
-    paddingVertical: 10,
-  },
-});
 
 export default ConnectPortal;

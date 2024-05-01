@@ -15,7 +15,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Home3, Profile2User } from 'iconsax-react-native';
+import { GlobalSearch, Home3, Profile2User } from 'iconsax-react-native';
 import { Route, getFocusedRouteNameFromRoute, useTheme } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import { HandsPraying } from 'phosphor-react-native';
@@ -196,6 +196,20 @@ function DrawerNav() {
           }}
         />
 
+        {/* Boton connectPortal */}
+        <DrawerStack.Screen
+          name="Connect Portal"
+          component={ConnectPortal}
+          options={({ navigation }) => {
+            return {
+              title: 'Connect Portal',
+              drawerIcon: ({ color, size }) => {
+                <GlobalSearch size={size} color={color} />;
+              },
+            };
+          }}
+        />
+
         <DrawerStack.Screen
           name="Connections"
           component={Connections}
@@ -230,18 +244,6 @@ function DrawerNav() {
             return {
               drawerItemStyle: { height: 0 },
             };
-          }}
-        />
-
-        {/* Boton connectPortal */}
-        <DrawerStack.Screen
-          name="Connect Portal"
-          component={ConnectPortal}
-          options={{
-            title: 'Connect Portal',
-            drawerIcon: ({ color, size }) => {
-              return <Connections size={size} color={color} />;
-            },
           }}
         />
 

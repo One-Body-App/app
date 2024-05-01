@@ -4,7 +4,7 @@ import { Linking } from 'react-native';
 import Config from 'react-native-config';
 
 import InAppBrowser from 'react-native-inappbrowser-reborn';
-import { sha256 } from 'react-native-sha256';
+import { sha256 } from 'js-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 
@@ -23,6 +23,7 @@ export const { GIPHY_KEY_IOS } = Config;
 export const { GIPHY_KEY_ANDROID } = Config;
 export const { MUX_TOKEN_ID } = Config;
 export const { MUX_SECRET_KEY } = Config;
+export const { GOOGLE_MAPS_API_KEY } = Config;
 
 export const OpenURLButton = async (
   url: string,
