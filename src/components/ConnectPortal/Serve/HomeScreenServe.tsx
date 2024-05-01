@@ -97,10 +97,7 @@ function HomeServeScreen() {
         </View>
         <View style={styles.cardContainer}>
           <View style={styles.arrowContainer}>
-            <TouchableOpacity
-              style={styles.arrowIconContainer}
-              onPress={() => handleOptionSelect('Serve')}
-            >
+            <TouchableOpacity style={styles.arrowIconContainer}>
               <FontAwesomeIcon icon={faArrowRight} size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -152,7 +149,10 @@ function HomeServeScreen() {
             keyExtractor={(item) => item.id.toString()}
           />
         </View>
-        <TouchableOpacity style={localstyle.seeMoreButton}>
+        <TouchableOpacity
+          style={localstyle.seeMoreButton}
+          onPress={() => handleOptionSelect('Serve')}
+        >
           <StyledText style={localstyle.seeMoreText}>See More</StyledText>
         </TouchableOpacity>
       </View>

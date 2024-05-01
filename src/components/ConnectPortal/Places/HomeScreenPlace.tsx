@@ -107,10 +107,7 @@ function HomeScreenPlace() {
 
         <View style={styles.cardContainer}>
           <View style={styles.arrowContainer}>
-            <TouchableOpacity
-              style={styles.arrowIconContainer}
-              onPress={() => handleOptionSelect('People/Places')}
-            >
+            <TouchableOpacity style={styles.arrowIconContainer}>
               <FontAwesomeIcon icon={faArrowRight} size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -162,7 +159,10 @@ function HomeScreenPlace() {
           />
         </View>
 
-        <TouchableOpacity style={styles.seeMoreButton}>
+        <TouchableOpacity
+          style={styles.seeMoreButton}
+          onPress={() => handleOptionSelect('People/Places')}
+        >
           <Text style={styles.seeMoreText}>See More</Text>
         </TouchableOpacity>
       </View>

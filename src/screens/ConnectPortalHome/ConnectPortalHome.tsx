@@ -1,122 +1,68 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, Modal, StyleSheet } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { View, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { styles } from '../../components/ConnectPortal/connectPortalStyles';
 import LobbyConnectPortal from '../../components/ConnectPortal/LobbyConnectPortal';
+import HomeScreenPlace from '@/src/components/ConnectPortal/Places/HomeScreenPlace';
+import HomeScreenGo from '@/src/components/ConnectPortal/Go/HomeScreenGo';
+import HomeScreenServe from '@/src/components/ConnectPortal/Serve/HomeScreenServe';
 
 type connectPortalTabsTypes = 'Places' | 'Go' | 'Serve';
-
 function ConnectPortalHome() {
   const [selectedOption, setSelectedOption] = useState<connectPortalTabsTypes>('Places');
-  const [region, setRegion] = useState<{
-    latitude: number;
-    longitude: number;
-    latitudeDelta: number;
-    longitudeDelta: number;
-  }>({
-    latitude: 37.78825,
-    longitude: -122.4324,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
-
-  const [lobbyModalVisible, setLobbyModalVisible] = useState(false);
+  const [lobbyModalVisible, setLobbyModalVisible] = useState(true);
   const navigation = useNavigation();
-
-  useEffect(() => {
-    setLobbyModalVisible(true);
-  }, []);
-
+  useEffect(() => {}, []);
   const handleOptionSelect = (option: connectPortalTabsTypes) => {
     setSelectedOption(option);
-    if (option === 'Places') {
-      navigation.navigate('People');
-    } else if (option === 'Serve') {
-      navigation.navigate('Serve');
-    } else if (option === 'Go') {
-      navigation.navigate('Go');
-    }
   };
-
   const toggleLobbyModal = () => {
     setLobbyModalVisible(!lobbyModalVisible);
   };
-
+  const renderContent = () => {
+    switch (selectedOption) {
+      case 'Places':
+        return <HomeScreenPlace />;
+      case 'Go':
+        return <HomeScreenGo />;
+      case 'Serve':
+        return <HomeScreenServe />;
+      default:
+        return null;
+    }
+  };
   return (
-    <View style={styles.container}>
-      <Modal
-        visible={lobbyModalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setLobbyModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <LobbyConnectPortal onClose={() => setLobbyModalVisible(false)} />
-        </View>
-      </Modal>
+    <ScrollView>
+      <View style={{ flex: 1 }}>
+        <View>{renderContent()}</View>
 
-      <View style={styles.optionContainer}>
-        <OptionButton
-          label="People/Places"
-          option="Places"
-          selectedOption={selectedOption}
-          onPress={handleOptionSelect}
+        <LobbyConnectPortal
+          onClose={() => setLobbyModalVisible(false)}
+          visible={lobbyModalVisible}
         />
-        <OptionButton
-          label="Go!"
-          option="Go"
-          selectedOption={selectedOption}
-          onPress={handleOptionSelect}
-        />
-        <OptionButton
-          label="Serve"
-          option="Serve"
-          selectedOption={selectedOption}
-          onPress={handleOptionSelect}
-        />
+
+        <TouchableOpacity onPress={toggleLobbyModal}>
+          <Text>Open Lobby</Text>
+        </TouchableOpacity>
       </View>
-      <MapView
-        style={styles.mapContainer}
-        provider={PROVIDER_DEFAULT}
-        initialRegion={region}
-        onRegionChangeComplete={(region) => setRegion(region)}
-      >
-        <Marker coordinate={{ latitude: region.latitude, longitude: region.latitude }} />
-      </MapView>
-
-      <TouchableOpacity onPress={toggleLobbyModal}>
-        <Text>Open Lobby</Text>
-      </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
-
 interface OptionButtonProps {
   label: string;
   option: connectPortalTabsTypes;
   selectedOption: connectPortalTabsTypes;
   onPress: (option: connectPortalTabsTypes) => void;
 }
-
 const OptionButton: React.FC<OptionButtonProps> = ({ label, option, selectedOption, onPress }) => {
   const isSelected = selectedOption === option;
 
   return (
     <TouchableOpacity
-      style={[styles.option, isSelected && styles.selectedOption]}
+      style={{ backgroundColor: isSelected ? 'lightblue' : 'white', padding: 10 }}
       onPress={() => onPress(option)}
     >
-      <Text
-        style={{
-          color: isSelected ? '#126B87' : '#000',
-        }}
-      >
-        {label}
-      </Text>
-      {isSelected && <View style={styles.selectedBar} />}
+      <Text>{label}</Text>
     </TouchableOpacity>
   );
 };
-
 export default ConnectPortalHome;

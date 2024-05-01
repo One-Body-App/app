@@ -78,7 +78,7 @@ function HomeScreenGo() {
       imageSource: EventsImage,
     },
   ]);
-  const [selectedOption, setSelectedOption] = useState<homeGoTypes>('Go!');
+  const [selectedOption, setSelectedOption] = useState<homeGoTypes>('People/Places');
 
   const [selectedEvent, setSelectedEvent] = useState<Events | null>(null);
   const handleEventSelect = (event: Events) => {
@@ -89,7 +89,7 @@ function HomeScreenGo() {
   const handleOptionSelect = (option: homeGoTypes) => {
     setSelectedOption(option);
     if (option === 'Go!') {
-      navigation.navigate('Go!');
+      navigation.navigate('Go');
     }
   };
 
@@ -119,10 +119,7 @@ function HomeScreenGo() {
 
         <View style={styles.cardContainer}>
           <View style={styles.arrowContainer}>
-            <TouchableOpacity
-              style={styles.arrowIconContainer}
-              onPress={() => handleOptionSelect('Go!')}
-            >
+            <TouchableOpacity style={styles.arrowIconContainer}>
               <FontAwesomeIcon icon={faArrowRight} size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -177,7 +174,7 @@ function HomeScreenGo() {
             keyExtractor={(item) => item.id.toString()}
           />
         </View>
-        <TouchableOpacity style={styles.seeMoreButton}>
+        <TouchableOpacity style={styles.seeMoreButton} onPress={() => handleOptionSelect('Go!')}>
           <Text style={styles.seeMoreText}>See More</Text>
         </TouchableOpacity>
       </View>

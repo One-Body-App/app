@@ -341,7 +341,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 30,
-    marginBottom: 20,
+    marginBottom: 70,
   },
   seeMoreText: {
     color: 'black',
