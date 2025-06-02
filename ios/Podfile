@@ -1,3 +1,6 @@
+#  source 'https://github.com/CocoaPods/Specs.git'
+#  source 'https://github.com/getsentry/sentry-cocoa.git' # ✅ this one
+
 def node_require(script)
    # Resolve script with node to allow for hoisting
    require Pod::Executable.execute_command('node', ['-p',
@@ -11,63 +14,73 @@ def node_require(script)
  node_require('react-native-permissions/scripts/setup.rb')
 
 install! 'cocoapods', :deterministic_uuids => false
-# use_frameworks! :linkage => :static
+#use_frameworks! :linkage => :dynamic
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
 production = ENV["PRODUCTION"] == "1"
 
-# If you are using a `react-native-flipper` your iOS build will fail when `NO_FLIPPER=1` is set.
-# because `react-native-flipper` depends on (FlipperKit,...) that will be excluded
+# If you are using a ⁠ react-native-flipper ⁠ your iOS build will fail when ⁠ NO_FLIPPER=1 ⁠ is set.
+# because ⁠ react-native-flipper ⁠ depends on (FlipperKit,...) that will be excluded
 #
-# To fix this you can also exclude `react-native-flipper` using a `react-native.config.js`
-# ```js
+# To fix this you can also exclude ⁠ react-native-flipper ⁠ using a ⁠ react-native.config.js ⁠
+# ⁠ js
 # module.exports = {
 #   dependencies: {
 #     ...(process.env.NO_FLIPPER ? { 'react-native-flipper': { platforms: { ios: null } } } : {}),
-# ```
+#  ⁠
 flipper_config = ENV['NO_FLIPPER'] == "1" ? FlipperConfiguration.disabled : FlipperConfiguration.enabled
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
+  #use_frameworks! :linkage => linkage.to_sym
+  use_frameworks! :linkage => :dynamic
 end
 
 
 target 'onebody' do
   setup_permissions([
-  # 'AppTrackingTransparency',
-  # 'Bluetooth',
-  # 'Calendars',
-  # 'CalendarsWriteOnly',
-  'Camera',
-  # 'Contacts',
-  # 'FaceID',
-  # 'LocationAccuracy',
-  # 'LocationAlways',
-  'LocationWhenInUse',
-  # 'MediaLibrary',
-  # 'Microphone',
-  # 'Motion',
-  'Notifications',
-  # 'PhotoLibrary',
-  # 'PhotoLibraryAddOnly',
-  # 'Reminders',
-  # 'Siri',
-  # 'SpeechRecognition',
-  # 'StoreKit',
-])
+    # 'AppTrackingTransparency',
+    # 'Bluetooth',
+    # 'Calendars',
+    # 'CalendarsWriteOnly',
+    'Camera',
+    # 'Contacts',
+    # 'FaceID',
+    # 'LocationAccuracy',
+    # 'LocationAlways',
+    'LocationWhenInUse',
+    # 'MediaLibrary',
+    # 'Microphone',
+    # 'Motion',
+    'Notifications',
+    # 'PhotoLibrary',
+    # 'PhotoLibraryAddOnly',
+    # 'Reminders',
+    # 'Siri',
+    # 'SpeechRecognition',
+    # 'StoreKit',
+  ])
 
-pod 'RNFS', :path => '../node_modules/react-native-fs'
+  pod 'RNFS', :path => '../node_modules/react-native-fs'
+  pod 'lottie-ios', :modular_headers => true
+  pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
 
-pod 'rn-fetch-blob',
-    :path => '../node_modules/rn-fetch-blob'
+  pod 'react-native-lottie-splash-screen', :path => '../node_modules/react-native-lottie-splash-screen'
+
+  pod 'rn-fetch-blob',
+      :path => '../node_modules/rn-fetch-blob'
 
   pod 'Firebase', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
   pod 'GoogleUtilities', :modular_headers => true
   pod 'SDWebImageWebPCoder'
   pod 'libwebp', '1.3.2', :source => 'https://cdn.cocoapods.org/'
+  pod 'Sentry/HybridSDK', '8.50.2'
+
+  # ✅ updated version
+  #pod 'fmt', '~> 8.1.1'     ✅ resolves char8_t crash
+
   $RNFirebaseAsStaticFramework = true
 
 
@@ -105,6 +118,8 @@ pod 'rn-fetch-blob',
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['ENABLE_BITCODE'] = 'NO'
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+        config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
         current_target = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
         minimum_target = min_ios_version_supported
         if current_target.to_f < minimum_target.to_f
