@@ -5,7 +5,7 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Linking, useColorScheme } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -17,8 +17,6 @@ import messaging from '@react-native-firebase/messaging';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
-import FastImage from 'react-native-fast-image';
-import { HeaderBackButton } from '@react-navigation/elements';
 import { RootState } from '../redux/reducers/rootReducer';
 import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions';
 import ForgotPassword from '../screens/forgotPassword';
@@ -70,9 +68,10 @@ function Main() {
   }, [loader]);
 
   useEffect(() => {
-    if (initializing && authState.getProfileSuccess != undefined) {
+    console.log('AuthState changed', authState.getProfileSuccess);
+    if (initializing && authState.getProfileSuccess !== undefined) {
       setInitializing(false);
-    } else if (!initializing && authState.getProfileSuccess == undefined && !authState.isLoading) {
+    } else if (!initializing && authState.getProfileSuccess === undefined && !authState.isLoading) {
       setInitializing(true);
     }
   }, [authState.getProfileSuccess]);
@@ -103,6 +102,7 @@ function Main() {
   }, []);
 
   useEffect(() => {
+    console.log('Main useEffect triggered', initializing, token, user);
     if (user && token) {
       dispatch(setLoginData({ token }));
     }
@@ -115,19 +115,19 @@ function Main() {
       );
     }
 
-    if (token == 'unauthorized') {
+    if (token === 'unauthorized') {
       if (initializing) setInitializing(false);
     }
 
-    if (!initializing) {
-      // if (Platform.OS == 'android') {
-      //   LottieSplashScreen.hide();
-      // } else {
-      setTimeout(() => {
-        LottieSplashScreen.hide();
-      }, 5000);
-      // }
-    }
+    // Always hide splash screen after a short delay
+    const splashTimer = setTimeout(() => {
+      console.log('Hiding splash screen');
+      LottieSplashScreen.hide();
+    }, 1500); // Use a shorter timeout
+
+    return () => {
+      clearTimeout(splashTimer);
+    };
   }, [token, user, initializing]);
 
   const linking: LinkingOptions<MainStackParamList> = {

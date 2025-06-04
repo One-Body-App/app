@@ -1,5 +1,5 @@
 #import <UIKit/UIKit.h>
-
+// Don't import RCTAppDelegate directly
 #import "AppDelegate.h"
 
 int main(int argc, char *argv[])

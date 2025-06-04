@@ -1,5 +1,10 @@
-#import <RCTAppDelegate.h>
 #import <UIKit/UIKit.h>
-@interface AppDelegate : RCTAppDelegate
+#import <React/RCTBridgeDelegate.h>
+
+@interface AppDelegate : UIResponder <UIApplicationDelegate, RCTBridgeDelegate>
+
+@property (nonatomic, strong) UIWindow *window;
+@property (nonatomic, copy) NSString *moduleName;
+@property (nonatomic, copy) NSDictionary *initialProps;
 
 @end

@@ -25,7 +25,7 @@ import {
 } from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
-import { isValidVideo, showEditor } from 'react-native-video-trim';
+// import { isValidVideo, showEditor } from 'react-native-video-trim';
 import videoPostStyles from './styles';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
@@ -76,12 +76,12 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
             videoCodec: 'h265',
             onRecordingFinished: async (video) => {
               setRecordedVideo(video);
-              isValidVideo(video?.path || '');
-              showEditor(video?.path || '', {
-                saveToPhoto: false,
-                maxDuration: 60,
-                enableSaveDialog: false,
-              });
+              // isValidVideo(video?.path || '');
+              // showEditor(video?.path || '', {
+              //   saveToPhoto: false,
+              //   maxDuration: 60,
+              //   enableSaveDialog: false,
+              // });
             },
             onRecordingError: (error) => {
               console.log('🚀 ~ handleStartRecording ~ error:', error);

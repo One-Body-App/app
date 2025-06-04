@@ -1,5 +1,5 @@
-#  source 'https://github.com/CocoaPods/Specs.git'
-#  source 'https://github.com/getsentry/sentry-cocoa.git' # ✅ this one
+ENV['RCT_NEW_ARCH_ENABLED'] = '1'
+ENV['FOLLY_CONV_DTOA_TO_CHARS'] = '0'
 
 def node_require(script)
    # Resolve script with node to allow for hoisting
@@ -15,10 +15,10 @@ def node_require(script)
 
 install! 'cocoapods', :deterministic_uuids => false
 #use_frameworks! :linkage => :dynamic
-platform :ios, min_ios_version_supported
+platform :ios,'16.5'
 prepare_react_native_project!
 
-production = ENV["PRODUCTION"] == "1"
+production = ENV["PRODUCTION"] == "0"
 
 # If you are using a ⁠ react-native-flipper ⁠ your iOS build will fail when ⁠ NO_FLIPPER=1 ⁠ is set.
 # because ⁠ react-native-flipper ⁠ depends on (FlipperKit,...) that will be excluded
@@ -29,7 +29,9 @@ production = ENV["PRODUCTION"] == "1"
 #   dependencies: {
 #     ...(process.env.NO_FLIPPER ? { 'react-native-flipper': { platforms: { ios: null } } } : {}),
 #  ⁠
-flipper_config = ENV['NO_FLIPPER'] == "1" ? FlipperConfiguration.disabled : FlipperConfiguration.enabled
+flipper_pods_path = File.expand_path('../node_modules/react-native/scripts/flipper_pods', __dir__)
+require_relative flipper_pods_path if File.exist?(flipper_pods_path)
+flipper_config = defined?(FlipperConfiguration) ? (ENV['NO_FLIPPER'] == "1" ? FlipperConfiguration.disabled : FlipperConfiguration.enabled) : nil
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
@@ -68,6 +70,12 @@ target 'onebody' do
 
   pod 'react-native-lottie-splash-screen', :path => '../node_modules/react-native-lottie-splash-screen'
 
+    # pod 'react-native-share', :path => '../node_modules/react-native-share'
+    # react-native-share does not have a podspec and should not be added manually
+    # To link react-native-share, use the React Native CLI:
+    # npx react-native link react-native-share
+
+
   pod 'rn-fetch-blob',
       :path => '../node_modules/rn-fetch-blob'
 
@@ -77,6 +85,9 @@ target 'onebody' do
   pod 'SDWebImageWebPCoder'
   pod 'libwebp', '1.3.2', :source => 'https://cdn.cocoapods.org/'
   pod 'Sentry/HybridSDK', '8.50.2'
+
+  # Explicitly specify a compatible RCT-Folly version to resolve conflicts
+  pod 'RCT-Folly', :podspec => '../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec'
 
   # ✅ updated version
   #pod 'fmt', '~> 8.1.1'     ✅ resolves char8_t crash
@@ -90,7 +101,8 @@ target 'onebody' do
 
   use_react_native!(
     :path => config[:reactNativePath],
-
+    :hermes_enabled => true,
+    #:fabric_enabled => true,
     # Enables Flipper.
     #
     # Note that if you have use_frameworks! enabled, Flipper will not work and
@@ -121,7 +133,7 @@ target 'onebody' do
         config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
         config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
         current_target = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
-        minimum_target = min_ios_version_supported
+        minimum_target = '16.5'
         if current_target.to_f < minimum_target.to_f
           config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = minimum_target
         end
@@ -133,6 +145,7 @@ target 'onebody' do
 
   pre_install do |installer|
    installer.pod_targets.each do |pod|
+    
      if pod.name.eql?('RNPermissions') || pod.name.start_with?('Permission-')
        def pod.build_type;
          Pod::BuildType.static_library # I assume you use CocoaPods >= 1.9
