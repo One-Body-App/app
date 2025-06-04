@@ -1,0 +1,3 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace onebody.xcworkspace -scheme onebody -configuration Debug -destination id=00008120-001125680CD8C01E
+
