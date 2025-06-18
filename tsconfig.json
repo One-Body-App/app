@@ -3,7 +3,7 @@
   // "extends": "@react-native/typescript-config/tsconfig.json" /* Recommended React Native TSConfig base */,
   "extends": "@react-native/typescript-config",
   "include": ["**/*.tsx", "**/*.ts"],
-  "exclude": ["index.js"],
+  "exclude": ["index.js", "metro.config.js"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
 
