@@ -1,32 +1,54 @@
-
-
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
     ext {
         buildToolsVersion = "35.0.0"
         minSdkVersion = 24
-        compileSdkVersion = 35
-        targetSdkVersion = 35
+        compileSdkVersion = 36
+        targetSdkVersion = 36
         // supportLibVersion = "27.1.1"
         googlePlayServicesAuthVersion = "19.2.0"
 
         ndkVersion = "27.1.12297006"
-        kotlinVersion = "2.1.20"
+        kotlinVersion = "1.9.20"
+        firebaseBomVersion = "33.15.0"
     }
     repositories {
+        maven { url 'https://maven.google.com' } // <--- Ensure this is present
+        mavenLocal()
+        maven {
+            // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
+            url "$rootDir/../node_modules/react-native/android"
+        }
         google()
         mavenCentral()
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
-        classpath 'com.google.gms:google-services:4.3.13'
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion") // Ensure this uses $kotlinVersion
+        classpath 'com.google.gms:google-services:4.3.15'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
 }
+
+configurations.all {
+    resolutionStrategy {
+        force 'com.google.firebase:firebase-iid:21.1.0'
+    }
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.name.contains("react-native-device-info")) {
+            project.configurations.all {
+                resolutionStrategy {
+                    force 'com.google.firebase:firebase-iid:21.1.0'
+                }
+            }
+        }
+    }
+}
+
 apply plugin: "com.facebook.react.rootproject"
-
-

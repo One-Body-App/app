@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Video from 'react-native-video';
+// . import Video from 'react-native-video';
 import { useTheme } from '@react-navigation/native';
 import {
   View,
@@ -121,7 +121,7 @@ function VideoPost({ navigation }: Props) {
                     margin: 'auto',
                   }}
                 >
-                  <Video
+                  {/*  <Video
                     source={{ uri: VideoPath || '' }}
                     resizeMode="contain"
                     repeat={playedTimes <= 3}
@@ -131,7 +131,7 @@ function VideoPost({ navigation }: Props) {
                     onEnd={() => {
                       setPlayedTimes(playedTimes + 1);
                     }}
-                  />
+                  /> */}
                 </View>
               </View>
 

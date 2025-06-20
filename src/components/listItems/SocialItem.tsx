@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
-import Video from 'react-native-video';
+// import Video from 'react-native-video';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -335,28 +335,29 @@ function SocialItem({
         {media.length > 0 &&
           media.map((mediaItem, index) => {
             if (mediaItem.type === 'VIDEO') {
-              return (
-                <Video
-                  key={`${mediaItem.type}-${index}`}
-                  ignoreSilentSwitch="ignore"
-                  source={{
-                    uri: mediaItem.url,
-                  }}
-                  style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
-                  controls={false}
-                  resizeMode="cover"
-                  paused={!isPlaying}
-                  muted={isMuted}
-                  repeat
-                  onTouchEnd={() => {
-                    if (!isPlaying) {
-                      setIsPlaying(true);
-                    }
-                    setIsMuted(!isMuted);
-                  }}
-                  // hideShutterView={true}
-                />
-              );
+              return null; // Video support is commented out, uncomment if needed
+              // return (
+              //   <Video
+              //     key={`${mediaItem.type}-${index}`}
+              //     ignoreSilentSwitch="ignore"
+              //     source={{
+              //       uri: mediaItem.url,
+              //     }}
+              //     style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
+              //     controls={false}
+              //     resizeMode="cover"
+              //     paused={!isPlaying}
+              //     muted={isMuted}
+              //     repeat
+              //     onTouchEnd={() => {
+              //       if (!isPlaying) {
+              //         setIsPlaying(true);
+              //       }
+              //       setIsMuted(!isMuted);
+              //     }}
+              //     // hideShutterView={true}
+              //   />
+              // );
             }
 
             return null;

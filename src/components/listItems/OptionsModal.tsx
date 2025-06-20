@@ -11,7 +11,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Copy, InfoCircle, Profile } from 'iconsax-react-native';
 import { Bookmark, EditPencil, ShareAndroid, ShareIos, Xmark } from 'iconoir-react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
+// import Clipboard from '@react-native-clipboard/clipboard';
 import Toast from 'react-native-toast-notifications';
 import Button from '../Button';
 
@@ -390,7 +390,7 @@ function OptionsModal({
                 }
                 onPress={() => {
                   if (currentPopupItem?.postlink) {
-                    Clipboard.setString(currentPopupItem?.postlink);
+                    // Clipboard.setString(currentPopupItem?.postlink);
                     toast.current?.show('Link copied to the clipboard', {
                       placement: 'bottom',
                     });

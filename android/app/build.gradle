@@ -1,6 +1,6 @@
 apply plugin: "com.android.application"
-apply plugin: 'com.google.gms.google-services'
 apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.google.gms.google-services"
 apply plugin: "com.facebook.react"
 apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
 
@@ -181,6 +181,7 @@ dependencies {
     // For animated GIF support
     implementation 'com.facebook.fresco:animated-gif:2.5.0'
 
+    implementation 'com.google.firebase:firebase-iid:21.1.0'
     // For WebP support, including animated WebP
     implementation 'com.facebook.fresco:animated-webp:2.5.0'
     implementation 'com.facebook.fresco:webpsupport:2.5.0'

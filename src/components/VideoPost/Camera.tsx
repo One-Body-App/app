@@ -16,7 +16,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import { CameraRoll } from '@react-native-camera-roll/camera-roll';
+// import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import {
   Camera,
   CameraPermissionStatus,
@@ -25,7 +25,7 @@ import {
 } from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
-import { isValidVideo, showEditor } from 'react-native-video-trim';
+// import { isValidVideo, showEditor } from 'react-native-video-trim';
 import videoPostStyles from './styles';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
@@ -56,14 +56,14 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     const response = await launchImageLibrary(options);
     if (response?.assets && response?.assets.length > 0) {
       setRecordedVideo(response?.assets[0]?.uri);
-      isValidVideo(response?.assets[0]?.uri || 'xxxx');
-      showEditor(response?.assets[0]?.uri || '', {
-        saveToPhoto: false,
-        enableSaveDialog: false,
-        maxDuration: 60,
-        cancelDialogMessage: 'Are you sure you want to delete this?',
-        cancelDialogConfirmText: 'Delete',
-      });
+      // isValidVideo(response?.assets[0]?.uri || 'xxxx');
+      // showEditor(response?.assets[0]?.uri || '', {
+      //   saveToPhoto: false,
+      //   enableSaveDialog: false,
+      //   maxDuration: 60,
+      //   cancelDialogMessage: 'Are you sure you want to delete this?',
+      //   cancelDialogConfirmText: 'Delete',
+      // });
     }
   };
 
@@ -76,12 +76,12 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
             videoCodec: 'h265',
             onRecordingFinished: async (video) => {
               setRecordedVideo(video);
-              isValidVideo(video?.path || '');
-              showEditor(video?.path || '', {
-                saveToPhoto: false,
-                maxDuration: 60,
-                enableSaveDialog: false,
-              });
+              // isValidVideo(video?.path || '');
+              // showEditor(video?.path || '', {
+              //   saveToPhoto: false,
+              //   maxDuration: 60,
+              //   enableSaveDialog: false,
+              // });
             },
             onRecordingError: (error) => {
               console.log('🚀 ~ handleStartRecording ~ error:', error);
@@ -99,12 +99,11 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
   };
 
   const fetchPhotos = useCallback(async () => {
-    const res = await CameraRoll.getPhotos({
-      first: 1,
-    });
-    const image_url = res?.edges[0]?.node?.image;
-
-    setLatestGalleryImg(image_url?.uri);
+    // const res = await CameraRoll.getPhotos({
+    //   first: 1,
+    // });
+    // const image_url = res?.edges[0]?.node?.image;
+    // setLatestGalleryImg(image_url?.uri);
   }, []);
 
   const getPermissions = async () => {

@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import Video from 'react-native-video';
+// import Video from 'react-native-video';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -270,27 +270,28 @@ function PrayerItem({
         {media.length > 0 &&
           media.map((mediaItem) => {
             if (mediaItem.type == 'VIDEO') {
-              return (
-                <Video
-                  ignoreSilentSwitch="ignore"
-                  source={{
-                    uri: mediaItem.url,
-                  }}
-                  style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
-                  controls={false}
-                  resizeMode="cover"
-                  paused={!isPlaying}
-                  muted={isMuted}
-                  repeat
-                  onTouchEnd={() => {
-                    if (!isPlaying) {
-                      setIsPlaying(true);
-                    }
-                    setIsMuted(!isMuted);
-                  }}
-                  // hideShutterView={true}
-                />
-              );
+              // return (
+              //   <Video
+              //     ignoreSilentSwitch="ignore"
+              //     source={{
+              //       uri: mediaItem.url,
+              //     }}
+              //     style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
+              //     controls={false}
+              //     resizeMode="cover"
+              //     paused={!isPlaying}
+              //     muted={isMuted}
+              //     repeat
+              //     onTouchEnd={() => {
+              //       if (!isPlaying) {
+              //         setIsPlaying(true);
+              //       }
+              //       setIsMuted(!isMuted);
+              //     }}
+              //     // hideShutterView={true}
+              //   />
+              // );
+              return null;
             }
 
             return null;

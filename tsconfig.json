@@ -2,11 +2,12 @@
 {
   // "extends": "@react-native/typescript-config/tsconfig.json" /* Recommended React Native TSConfig base */,
   "extends": "@react-native/typescript-config",
-  "include": ["**/*.tsx", "**/*.ts"],
+  "include": ["**/*.tsx", "**/*.ts", "src/redux/store/index.Js"],
   "exclude": ["index.js", "metro.config.js"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
-
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     /* Completeness */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
     // "baseUrl": ".",

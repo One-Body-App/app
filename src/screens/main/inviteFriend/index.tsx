@@ -7,7 +7,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import FastImage from 'react-native-fast-image';
 import { Link1 } from 'iconsax-react-native';
 import { ShareAndroid, ShareIos } from 'iconoir-react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
+// import Clipboard from '@react-native-clipboard/clipboard';
 import { useToast } from 'react-native-toast-notifications';
 import { styles } from './styles';
 
@@ -108,7 +108,7 @@ function InviteFriend() {
               justifyContent: 'center',
             }}
             onPress={() => {
-              Clipboard.setString(shareUrl);
+              // Clipboard.setString(shareUrl);
               toast.show('Link copied to the clipboard', {
                 placement: 'bottom',
               });
