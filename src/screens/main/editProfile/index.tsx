@@ -542,7 +542,7 @@ function EditProfile({ navigation }: Props) {
                   setHeaderImagePickerModalVisibile(true);
                 }}
               >
-                <GalleryEdit color={Colors.neutral[200]} />
+                <GalleryEdit size={22} color={Colors.neutral[200]} />
               </TouchableOpacity>
             </View>
 
@@ -605,7 +605,7 @@ function EditProfile({ navigation }: Props) {
                       borderColor: 'white',
                     }}
                   >
-                    <GalleryEdit color="white" />
+                    <GalleryEdit size={22} color="white" />
                     <StyledText
                       style={{
                         // color: '#757575',
@@ -697,7 +697,7 @@ function EditProfile({ navigation }: Props) {
                 />
               </View>
 
-              {user?.accountType == 'individual' ? (
+              {user?.accountType === 'individual' ? (
                 <StyledSelect
                   items={whatIDoList.map((item) => {
                     return {
@@ -707,7 +707,7 @@ function EditProfile({ navigation }: Props) {
                   })}
                   label="What I Do"
                   selectedItem={whatIDo}
-                  btnText={whatIDo == '' ? 'Select' : selectedWhatIDoName}
+                  btnText={whatIDo === '' ? 'Select' : selectedWhatIDoName}
                   modalTitle="Select one"
                   onChange={(item) => {
                     setWhatIDo(item);

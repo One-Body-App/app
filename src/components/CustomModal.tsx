@@ -38,7 +38,7 @@ export default function CustomModal({
           duration: 200,
           useNativeDriver: true,
         }).start(() => {
-          onclose();
+          if (onclose) onclose();
           translateY.setValue(0);
         });
       } else {

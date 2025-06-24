@@ -1,9 +1,8 @@
 import { TouchableOpacity, View, ScrollView, EmitterSubscription } from 'react-native';
 import { CloseCircle, Send, TickCircle } from 'iconsax-react-native';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import { ReactComponentElement, ReactNode, useCallback, useEffect, useState } from 'react';
-import { useTheme } from '@react-navigation/native';
-import { BottomSheetTextInput, useBottomSheetInternal } from '@gorhom/bottom-sheet';
+import { useState } from 'react';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import StyledTextInput from '../styled/TextInput';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';

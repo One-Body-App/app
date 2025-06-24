@@ -14,14 +14,7 @@ import { CloseCircle, Gallery, Location as LocationIcon, VideoPlay } from 'icons
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImagePicker from 'react-native-image-crop-picker';
-import {
-  Asset,
-  CameraOptions,
-  ImageLibraryOptions,
-  MediaType,
-  launchCamera,
-  launchImageLibrary,
-} from 'react-native-image-picker';
+import { Asset, CameraOptions, MediaType, launchCamera } from 'react-native-image-picker';
 import { serialize } from 'object-to-formdata';
 import FastImage from 'react-native-fast-image';
 import {
