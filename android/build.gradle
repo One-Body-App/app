@@ -12,11 +12,6 @@ buildscript {
         ndkVersion = "27.1.12297006"
         kotlinVersion = "1.9.20"
         firebaseBomVersion = "33.15.0"
-            useExoplayerIMA = true
-    useExoplayerRtsp = true
-    useExoplayerSmoothStreaming = true
-    useExoplayerDash = true
-    useExoplayerHls = true
     }
     repositories {
         maven { url 'https://maven.google.com' } // <--- Ensure this is present
