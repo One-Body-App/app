@@ -24,9 +24,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
-import firebase from '@react-native-firebase/app';
 import { persistor, store } from './src/redux/store'; // Make sure this path is correct
 import AppContent from './src/navigator/AppContent'; // Import the new component
+import Main from './src/navigator/Main';
 
 Sentry.init({
   dsn: 'https://5a54913b45c44079b31e038fc1e7b4aa@o4504958486642688.ingest.sentry.io/4504958800560128',
@@ -34,11 +34,10 @@ Sentry.init({
 });
 
 function App() {
-  console.log('App component rendered', process.env.NODE_ENV);
-  console.log('Firebase Config:', firebase.apps, !firebase.apps.length);
-
   const handleDynamicLink = (link: string) => {
-    console.log('Dynamic Link handled:', link);
+    // console.log('Dynamic Link:', link);
+    // LottieSplashScreen.hide();
+    // console.log('LottieSplashScreen.hide() called');
   };
 
   useEffect(() => {
@@ -58,7 +57,6 @@ function App() {
     });
   }, []);
 
-  console.log('App started');
   return (
     <Provider store={store}>
       <GestureHandlerRootView style={{ flex: 1 }}>

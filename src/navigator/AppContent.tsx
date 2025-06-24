@@ -49,11 +49,9 @@ const MainStack = createNativeStackNavigator<MainStackParamList>();
 // This component now contains all the logic that was in your original Main.tsx
 function AppContent() {
   // Renamed from 'Main' to 'AppContent'
-  console.log('Main Navigator Loaded');
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
   const authState = useSelector((state: RootState) => state.auth);
-  console.log('Auth State:', authState);
   const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
@@ -85,7 +83,6 @@ function AppContent() {
   const onAuthStateChanged = async function onAuthStateChanged(
     firebaseUser: FirebaseAuthTypes.User | null
   ) {
-    console.log('Auth State Changed:', firebaseUser);
     const firebaseToken = await firebaseUser?.getIdToken();
 
     if (!isEqual(firebaseUser, user)) {
@@ -137,9 +134,8 @@ function AppContent() {
         LottieSplashScreen.hide();
       }, 5000);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- [token, user, initializing]);
   }, [token, user, initializing]);
-
-  console.log('User:', initializing ? 'Loading...' : user, user);
 
   const linking: LinkingOptions<MainStackParamList> = {
     prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
