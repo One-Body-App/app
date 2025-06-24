@@ -1,5 +1,4 @@
 import { ActivityIndicator, TouchableHighlight, View } from 'react-native';
-// import Video from 'react-native-video';
 import LinearGradient from 'react-native-linear-gradient';
 import { useState, useEffect, PropsWithChildren, useRef, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
@@ -34,6 +33,7 @@ import CommentItem from '@/src/components/comments/CommentItem';
 import { ApiCall } from '@/src/services/api';
 import CommentField from '@/src/components/comments/Field';
 import { spacing } from '@/src/styles/spacing';
+import CustomVideo from '@/src/components/CustomVideo';
 
 type VideoItemProps = {
   item: WatchPost;
@@ -291,7 +291,7 @@ const VideoItem = gestureHandlerRootHOC(
           style={styles.video}
         >
           <View style={{ flex: 1 }}>
-            {/*   <Video
+            <CustomVideo
               ref={videRef}
               source={{ uri: `https://stream.mux.com/${item.playBackId!}.m3u8` }}
               resizeMode="cover"
@@ -302,7 +302,7 @@ const VideoItem = gestureHandlerRootHOC(
               paused={isPaused}
               onEnd={onEnd}
               poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp`}
-            /> */}
+            />
           </View>
         </TouchableHighlight>
         <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>

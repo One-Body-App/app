@@ -1,7 +1,6 @@
 // import { StyleSheet } from 'react-native';
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 // import muxReactNativeVideo from '@mux/mux-data-react-native-video';
-// import Video, { VideoRef } from 'react-native-video';
 // import VisibilitySensor from '@svanboxel/visibility-sensor-react-native';
 
 const SingleReels = forwardRef(({ item }: any, parentRef) => {

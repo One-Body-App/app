@@ -9,7 +9,6 @@ import {
   ViewStyle,
 } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-// import Video from 'react-native-video';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -44,6 +43,7 @@ import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import StyledTextInput from '../styled/TextInput';
 import CustomModal from '../CustomModal';
+import CustomVideo from '../CustomVideo';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<PrayerWallStackParamsList, 'index'>,
@@ -269,28 +269,27 @@ function PrayerItem({
 
         {media.length > 0 &&
           media.map((mediaItem) => {
-            if (mediaItem.type == 'VIDEO') {
-              // return (
-              //   <Video
-              //     ignoreSilentSwitch="ignore"
-              //     source={{
-              //       uri: mediaItem.url,
-              //     }}
-              //     style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
-              //     controls={false}
-              //     resizeMode="cover"
-              //     paused={!isPlaying}
-              //     muted={isMuted}
-              //     repeat
-              //     onTouchEnd={() => {
-              //       if (!isPlaying) {
-              //         setIsPlaying(true);
-              //       }
-              //       setIsMuted(!isMuted);
-              //     }}
-              //     // hideShutterView={true}
-              //   />
-              // );
+            if (mediaItem.type === 'VIDEO') {
+              return (
+                <CustomVideo
+                  source={{
+                    uri: mediaItem.url,
+                  }}
+                  style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
+                  controls={false}
+                  resizeMode="cover"
+                  paused={!isPlaying}
+                  muted={isMuted}
+                  repeat
+                  onEnd={() => {
+                    if (!isPlaying) {
+                      setIsPlaying(true);
+                    }
+                    setIsMuted(!isMuted);
+                  }}
+                  // hideShutterView={true}
+                />
+              );
               return null;
             }
 

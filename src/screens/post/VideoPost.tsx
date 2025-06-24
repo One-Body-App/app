@@ -26,6 +26,7 @@ import { ApiCall } from '@/src/services/api';
 import { MainStackParamList } from '@/src/navigator/types';
 import CameraComponent from '@/src/components/VideoPost/Camera';
 import { spacing } from '@/src/styles/spacing';
+import CustomVideo from '@/src/components/CustomVideo';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
@@ -121,7 +122,7 @@ function VideoPost({ navigation }: Props) {
                     margin: 'auto',
                   }}
                 >
-                  {/*  <Video
+                  <CustomVideo
                     source={{ uri: VideoPath || '' }}
                     resizeMode="contain"
                     repeat={playedTimes <= 3}
@@ -131,7 +132,7 @@ function VideoPost({ navigation }: Props) {
                     onEnd={() => {
                       setPlayedTimes(playedTimes + 1);
                     }}
-                  /> */}
+                  />
                 </View>
               </View>
 
