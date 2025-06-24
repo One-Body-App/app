@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unstable-nested-components */
-/* eslint-disable react-native/no-inline-styles */
+
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -117,14 +117,13 @@ function Search() {
       },
     });
     setIsLoading(false);
-    console.log(res);
-    if (res.status == 200) {
+    if (res.status === 200) {
       setResults(res.response);
     }
   }
 
   useEffect(() => {
-    if (input && input != '') {
+    if (input && input !== '') {
       setIsLoading(true);
       clearTimeout(timer);
 

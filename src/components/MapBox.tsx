@@ -7,7 +7,6 @@ import {
   PermissionsAndroid,
   ActivityIndicator,
 } from 'react-native';
-import Modal from 'react-native-modal';
 
 import Geolocation from '@react-native-community/geolocation';
 
@@ -19,6 +18,7 @@ import StyledText from './styled/Text';
 import { Colors, Typography } from '../styles';
 import StyledTextInput from './styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
+import CustomModal from './CustomModal';
 
 export enum MapBoxTypes {
   country = 'country',
@@ -156,22 +156,7 @@ function MapBox({
   };
 
   return (
-    <Modal
-      swipeDirection={['down']}
-      avoidKeyboard
-      backdropOpacity={0.3}
-      isVisible={modalVisible}
-      onBackdropPress={() => onclose()}
-      onSwipeComplete={() => onclose()}
-      // style={styles.bottomView}
-      style={{
-        justifyContent: 'flex-end',
-        margin: 0,
-      }}
-      propagateSwipe
-      coverScreen
-      useNativeDriver
-    >
+    <CustomModal modalVisible={modalVisible} onclose={() => onclose()}>
       <View
         style={{
           paddingVertical: 18,
@@ -289,7 +274,7 @@ function MapBox({
           />
         </View>
       </View>
-    </Modal>
+    </CustomModal>
   );
 }
 

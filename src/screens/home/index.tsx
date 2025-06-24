@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { CompositeScreenProps, useTheme, useScrollToTop } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { ArrowDown2, Notification } from 'iconsax-react-native';
+import { ArrowDown2 } from 'iconsax-react-native';
 import { styles } from './styles';
 
 import { ApiCall } from '@/services/api';
@@ -65,12 +65,6 @@ function Home({ navigation, route }: Props) {
   const [feedSubType, setFeedSubType] = useState<FeedTypes>(FeedTypes.Connected);
 
   const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
-
-  const viewabilityConfig = {
-    itemVisiblePercentThreshold: 100,
-    // waitForInteraction: true,
-    minimumViewTime: 10,
-  };
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0) {
@@ -175,7 +169,7 @@ function Home({ navigation, route }: Props) {
     }
   }, [isRefreshing]);
 
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<FlatList | null>(null);
   useScrollToTop(listRef);
 
   const filterUpdate = (itemValue: FeedTypes) => {

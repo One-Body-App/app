@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Animated, TouchableOpacity } from 'react-native';
 
-import Modal from 'react-native-modal';
 import { Divider } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -24,6 +23,7 @@ import StyledText from '@/components/styled/Text';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { NotificationType } from '@/utils/types';
+import CustomModal from '@/src/components/CustomModal';
 
 // create a component
 type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
@@ -75,12 +75,9 @@ function Notification({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={{ flex: 1 }}>
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={modalVisible}
-          onBackdropPress={() => setModalVisible(false)}
-          onSwipeComplete={() => setModalVisible(false)}
-          swipeDirection={['down']}
+        <CustomModal
+          modalVisible={modalVisible}
+          onclose={() => setModalVisible(false)}
           style={styles.bottomView}
         >
           <View style={styles.content2}>
@@ -111,9 +108,9 @@ function Notification({ navigation }: Props) {
               ena mauris, ac mollis mauris commodo sed.
             </StyledText>
           </View>
-        </Modal>
+        </CustomModal>
 
-        <Modal isVisible={isModalVisible}>
+        <CustomModal modalVisible={isModalVisible}>
           <View style={styles.Notificationmodal}>
             <View style={styles.modelview}>
               <TouchableOpacity onPress={() => setModal(false)} style={styles.setmodel}>
@@ -137,7 +134,7 @@ function Notification({ navigation }: Props) {
               />
             </View>
           </View>
-        </Modal>
+        </CustomModal>
 
         <SwipeListView
           showsVerticalScrollIndicator={false}

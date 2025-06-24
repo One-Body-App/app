@@ -10,12 +10,11 @@ import {
   ScrollView,
   useWindowDimensions,
   StyleSheet,
-  ViewStyle,
   TextStyle,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import Toast from 'react-native-simple-toast';
-import Modal from 'react-native-modal';
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, parseISO } from 'date-fns';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -42,6 +41,7 @@ import Selected from '@/assets/svg/Selected.svg';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import { OpenURLButton } from '@/services/constants';
+import CustomModal from '../CustomModal';
 
 interface HeaderProps extends ProfileProps {
   setActiveTab: Function;
@@ -659,7 +659,7 @@ function ProfileHeader({
                 ? `${(profileData.followerCount / 1000).toFixed(2)}k`
                 : profileData?.followerCount && profileData?.followerCount > 999999
                   ? `${(profileData.followerCount / 1000000).toFixed(2)}m`
-                  : profileData?.followerCount ?? 0}{' '}
+                  : (profileData?.followerCount ?? 0)}{' '}
               <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
             </StyledText>
 
@@ -678,7 +678,7 @@ function ProfileHeader({
                 ? `${(profileData.following.length / 1000).toFixed(2)}k`
                 : profileData?.following.length > 999999
                   ? `${(profileData.following.length / 1000000).toFixed(2)}m`
-                  : profileData?.following.length ?? 0}{' '}
+                  : (profileData?.following.length ?? 0)}{' '}
               <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
             </StyledText>
           </TouchableOpacity>
@@ -724,14 +724,12 @@ function ProfileHeader({
         </View>
       ) : null}
 
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={requestModal}
-        onBackdropPress={() => setRequestModal(false)}
-        onSwipeComplete={() => setRequestModal(false)}
-        swipeDirection={['down']}
+      <CustomModal
+        modalVisible={requestModal}
+        onclose={() => {
+          setRequestModal(false);
+        }}
         style={styles.bottomView}
-        propagateSwipe
       >
         <View style={[styles.content2, { backgroundColor: colors.background }]}>
           <SafeAreaView>
@@ -921,7 +919,7 @@ function ProfileHeader({
             </View>
           </SafeAreaView>
         </View>
-      </Modal>
+      </CustomModal>
     </View>
   );
 }

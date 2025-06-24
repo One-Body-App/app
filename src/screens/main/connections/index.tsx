@@ -11,8 +11,6 @@ import {
   ScrollView,
 } from 'react-native';
 
-import Modal from 'react-native-modal';
-
 import { useDispatch, useSelector } from 'react-redux';
 import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { useTheme } from '@react-navigation/native';
@@ -35,6 +33,7 @@ import { spacing } from '@/src/styles/spacing';
 
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { MainDrawerParamsList } from '@/src/navigator/types';
+import CustomModal from '@/src/components/CustomModal';
 
 type Props = DrawerScreenProps<MainDrawerParamsList, 'Connections'>;
 
@@ -327,7 +326,7 @@ function Connected({ navigation }: Props) {
                       ? `${(user.followerCount / 1000).toFixed(2)}k`
                       : user?.followerCount && user?.followerCount > 999999
                         ? `${(user.followerCount / 1000000).toFixed(2)}m`
-                        : user?.followerCount ?? 0}{' '}
+                        : (user?.followerCount ?? 0)}{' '}
                     <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
                   </StyledText>
                 </View>
@@ -361,7 +360,7 @@ function Connected({ navigation }: Props) {
                       ? `${(user.following.length / 1000).toFixed(2)}k`
                       : user?.following.length && user?.following.length > 999999
                         ? `${(user.following.length / 1000000).toFixed(2)}m`
-                        : user?.following.length ?? 0}{' '}
+                        : (user?.following.length ?? 0)}{' '}
                     <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
                   </StyledText>
                 </View>
@@ -466,15 +465,10 @@ function Connected({ navigation }: Props) {
           />
         </View>
 
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={showInterestModal}
-          onBackdropPress={() => setShowInterestModal(false)}
-          onSwipeComplete={() => setShowInterestModal(false)}
-          swipeDirection={['down']}
-          propagateSwipe
+        <CustomModal
+          modalVisible={showInterestModal}
+          onclose={() => setShowInterestModal(false)}
           style={{ margin: 0 }}
-          avoidKeyboard
         >
           <SafeAreaView
             style={{
@@ -571,7 +565,7 @@ function Connected({ navigation }: Props) {
               </ScrollView>
             </View>
           </SafeAreaView>
-        </Modal>
+        </CustomModal>
       </View>
     </KeyboardAvoidingView>
   );

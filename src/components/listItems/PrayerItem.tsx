@@ -17,10 +17,9 @@ import { useSelector } from 'react-redux';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 
 import ImageView from 'react-native-image-viewing';
-import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+import { GiphyMediaView } from '@giphy/react-native-sdk';
 
 import { isArray } from 'lodash';
-import Modal from 'react-native-modal';
 import Toast, { useToast } from 'react-native-toast-notifications';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -44,6 +43,7 @@ import Anonymous from '@/assets/svg/anonymous.svg';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import StyledTextInput from '../styled/TextInput';
+import CustomModal from '../CustomModal';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<PrayerWallStackParamsList, 'index'>,
@@ -438,14 +438,7 @@ function PrayerItem({
         </View>
       ) : null}
 
-      <Modal
-        isVisible={showModal}
-        onBackdropPress={() => setShowModal(false)}
-        onSwipeComplete={() => setShowModal(false)}
-        swipeDirection={['down']}
-        propagateSwipe
-        avoidKeyboard
-      >
+      <CustomModal modalVisible={showModal} onclose={() => setShowModal(false)}>
         <View
           style={{
             backgroundColor: colors.background,
@@ -559,7 +552,7 @@ function PrayerItem({
           />
         </View>
         <Toast ref={toastRef} />
-      </Modal>
+      </CustomModal>
     </BaseItem>
   );
 }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, TouchableOpacity, View, ViewStyle } from 'react-native';
-import Modal from 'react-native-modal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -11,14 +10,15 @@ import { borderRadius } from '@/src/styles/outlines';
 import StyledTextInput from './TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import { spacing } from '@/src/styles/spacing';
+import CustomModal from '../CustomModal';
 
-type selectedItem = {
+type SelectedItem = {
   text: string;
   value: string;
 };
 
 interface Props {
-  items: selectedItem[];
+  items: SelectedItem[];
   btnText: string;
   modalTitle: string;
   onChange: (item: any) => void;
@@ -43,7 +43,7 @@ export default function StyledSelect({
   const { dark, colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [searchedItems, setSearchedItems] = useState<selectedItem[]>(
+  const [searchedItems, setSearchedItems] = useState<SelectedItem[]>(
     hideSearch || showAllWithoutSearch ? items : []
   );
   useEffect(() => {
@@ -94,19 +94,14 @@ export default function StyledSelect({
         onPress={() => setModalVisible(true)}
       />
 
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={modalVisible}
-        avoidKeyboard
-        onBackdropPress={() => setModalVisible(false)}
-        onSwipeComplete={() => setModalVisible(false)}
-        swipeDirection={['down']}
+      <CustomModal
+        modalVisible={modalVisible}
+        onclose={() => setModalVisible(false)}
         // style={styles.bottomView}
         style={{
           justifyContent: 'flex-end',
           margin: 0,
         }}
-        propagateSwipe
       >
         <View
           style={{
@@ -235,7 +230,7 @@ export default function StyledSelect({
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </CustomModal>
     </View>
   );
 }

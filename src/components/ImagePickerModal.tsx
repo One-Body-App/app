@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { Colors } from '../styles';
 import StyledText from './styled/Text';
+import CustomModal from './CustomModal';
 
 type Props = {
   visible: boolean;
@@ -15,14 +15,7 @@ type Props = {
 function ImagePickerModal(props: Props) {
   const { visible, hideVisible, galleryImage, cameraImage } = props;
   return (
-    <Modal
-      backdropOpacity={0.3}
-      isVisible={visible}
-      onBackdropPress={() => hideVisible()}
-      onSwipeComplete={() => hideVisible()}
-      swipeDirection={['down']}
-      style={styles.bottomView}
-    >
+    <CustomModal modalVisible={visible} onclose={hideVisible} style={styles.bottomView}>
       <View style={styles.content2}>
         <View style={[styles.headLine, { backgroundColor: Colors.neutral[600] }]} />
         <View style={[styles.container, { backgroundColor: Colors.neutral[800] }]}>
@@ -53,7 +46,7 @@ function ImagePickerModal(props: Props) {
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </CustomModal>
   );
 }
 

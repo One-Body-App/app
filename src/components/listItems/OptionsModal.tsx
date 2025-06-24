@@ -1,9 +1,8 @@
 import { CompositeNavigationProp, useTheme } from '@react-navigation/native';
 
 import React, { useRef } from 'react';
-import { View, Share, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Modal, Share, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Modal from 'react-native-modal';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -173,15 +172,16 @@ function OptionsModal({
 
   return (
     <Modal
-      backdropOpacity={0.3}
-      isVisible={show}
-      onBackdropPress={() => setShow(false)}
-      onSwipeComplete={() => setShow(false)}
-      swipeDirection={['down']}
+      // backdropOpacity={0.3}
+      visible={show}
+      onRequestClose={() => setShow(false)}
+      // onBackdropPress={() => setShow(false)}
+      // onSwipeComplete={() => setShow(false)}
+      // swipeDirection={['down']}
       style={styles.bottomView}
-      propagateSwipe
-      coverScreen
-      useNativeDriver
+      // propagateSwipe
+      // coverScreen
+      // useNativeDriver
     >
       <Toast ref={toast} />
       <View

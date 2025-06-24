@@ -1,18 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Dimensions,
-  Share,
-  Switch,
-  TextInput,
-} from 'react-native';
-import Modal from 'react-native-modal';
+import { View, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput } from 'react-native';
 import {
   CameraOptions,
   ImageLibraryOptions,
@@ -27,9 +14,8 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
-import { ArrowDown2, Calendar, GalleryEdit, Setting2 } from 'iconsax-react-native';
+import { ArrowDown2, Calendar, GalleryEdit } from 'iconsax-react-native';
 import { serialize } from 'object-to-formdata';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import Button from '@/components/Button';
@@ -38,10 +24,6 @@ import { styles } from './styles';
 import { profileUpdate } from '@/src/redux/actions/AuthActions';
 import ImagePickerModal from '@/components/ImagePickerModal';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { GeneralStyle } from '../../../constants/GeneralStyle';
-import Twitter from '@/assets/svg/Twitter.svg';
-import Blog from '@/assets/svg/Blog.svg';
-import Instagram from '@/assets/svg/Instagram.svg';
 import { ApiCall } from '@/src/services/api';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -124,7 +106,7 @@ function EditProfile({ navigation }: Props) {
     name: string;
   }>();
   const [fullname, setFullName] = useState<string>(
-    user?.accountType == 'individual' ? user?.name ?? '' : user?.profile.companyName ?? ''
+    user?.accountType == 'individual' ? (user?.name ?? '') : (user?.profile.companyName ?? '')
   );
 
   const [username, setUsername] = useState<string>(user?.username ?? '');
@@ -782,7 +764,9 @@ function EditProfile({ navigation }: Props) {
                 <StyledText style={{ marginBottom: 10 }}>Location</StyledText>
                 <Button
                   text={
-                    location ? location.address : newLocation?.place_name ?? 'Select your location'
+                    location
+                      ? location.address
+                      : (newLocation?.place_name ?? 'Select your location')
                   }
                   btnStyle={{
                     flex: 1,

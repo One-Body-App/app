@@ -3,7 +3,7 @@ import { Platform, Share, StyleProp, TouchableOpacity, View, ViewStyle } from 'r
 import FastImage from 'react-native-fast-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Heart, Location, Message2 } from 'iconsax-react-native';
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
 import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -95,7 +95,6 @@ function BaseItem({
   postData,
   parentRefreshContent,
   onShowDismissCard,
-  isScrollEnable,
   index,
   removePost,
   editPost,
@@ -104,7 +103,6 @@ function BaseItem({
   onCommentsPress,
 }: BaseItemProps) {
   const { colors } = useTheme();
-  const { navigate } = useNavigation();
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
