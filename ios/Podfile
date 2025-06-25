@@ -55,18 +55,24 @@ target 'onebody' do
   pod 'RNFS', :path => '../node_modules/react-native-fs'
   pod 'lottie-ios', :modular_headers => true
   pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
+  pod 'fast_float', :podspec => '../node_modules/react-native/third-party-podspecs/fast_float.podspec'
+
 
   pod 'react-native-lottie-splash-screen', :path => '../node_modules/react-native-lottie-splash-screen'
 
   pod 'rn-fetch-blob',
       :path => '../node_modules/rn-fetch-blob'
-
+  pod 'FirebaseAuth', :modular_headers => true
+  pod 'FirebaseAppCheckInterop', :modular_headers => true
+  pod 'FirebaseAuthInterop', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
   pod 'Firebase', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
   pod 'GoogleUtilities', :modular_headers => true
   pod 'SDWebImageWebPCoder'
   pod 'libwebp', '1.3.2', :source => 'https://cdn.cocoapods.org/'
-  pod 'Sentry/HybridSDK', '8.50.2'
+  pod 'Sentry/HybridSDK', '8.52.1'
 
   # ✅ updated version
   #pod 'fmt', '~> 8.1.1'     ✅ resolves char8_t crash
