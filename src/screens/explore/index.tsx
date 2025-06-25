@@ -63,7 +63,6 @@ enum SortType {
 
 function Explore({ navigation }: Props) {
   const dispatch = useDispatch();
-  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // const navigation = useNavigation<ScreenNavigationProp>();
@@ -76,8 +75,6 @@ function Explore({ navigation }: Props) {
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
   const [showFollowingModal, setShowFollowingModal] = useState<boolean>(false);
 
-  const [showMyConnections, setShowMyConnections] = useState<boolean>(false);
-  const [interests, setInterests] = useState<Interest[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
   const [sort, setSort] = useState<SortType>(SortType.forMe);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
@@ -222,7 +219,6 @@ function Explore({ navigation }: Props) {
       });
 
       if (res?.status == 200) {
-        setInterests(res?.response);
         setSearchInterest(res?.response);
       } else {
         console.log('error', res?.response);
@@ -301,18 +297,6 @@ function Explore({ navigation }: Props) {
     } catch (e) {
       console.log('saga sign up err --- ', e);
     }
-  };
-
-  const setFilteredUsers = (users: User[], text: string) => {
-    const newSearchChannels = [];
-    for (let i = 0; i < users.length; i++) {
-      if (users[i] && users[i].name) {
-        if (users[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-          newSearchChannels.push(users[i]);
-        }
-      }
-    }
-    setSearchChannelsToFollow(newSearchChannels);
   };
 
   const renderListHeader = () => {

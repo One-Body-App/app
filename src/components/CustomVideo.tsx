@@ -1,6 +1,6 @@
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { forwardRef, useRef, useImperativeHandle } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { WebView } from 'react-native-webview';
+import Video, { OnLoadData } from 'react-native-video';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -8,93 +8,52 @@ type CustomVideoProps = {
   source: { uri: string };
   paused?: boolean;
   repeat?: boolean;
-  resizeMode?: 'contain' | 'cover' | 'stretch';
+  resizeMode?: 'contain' | 'cover' | 'stretch' | 'none';
   controls?: boolean;
   muted?: boolean;
   poster?: string;
   style?: any;
   onEnd?: () => void;
-  onLoad?: () => void;
+  onLoad?: (data: OnLoadData) => void;
 };
 
-const CustomVideo = forwardRef<WebView, CustomVideoProps>(
-  (
-    {
-      source,
-      paused = false,
-      repeat = false,
-      resizeMode = 'contain',
-      controls = true,
-      muted = false,
-      poster,
-      style,
-      onEnd,
-      onLoad,
-    },
-    ref
-  ) => {
-    const webRef = useRef<WebView>(null);
+const CustomVideo = forwardRef<Video, CustomVideoProps>((props, ref) => {
+  const {
+    source,
+    paused = false,
+    repeat = true,
+    resizeMode = 'contain',
+    controls = true,
+    muted = false,
+    poster,
+    style,
+    onEnd,
+    onLoad,
+  } = props;
 
-    useImperativeHandle(ref, () => webRef.current as WebView);
+  const videoRef = useRef<Video>(null);
 
-    const videoHTML = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="initial-scale=1, maximum-scale=1">
-        <style>
-          body {
-            margin: 0;
-            background-color: black;
-            overflow: hidden;
-          }
-          video {
-            width: 100%;
-            height: 100%;
-            object-fit: ${resizeMode};
-          }
-        </style>
-      </head>
-      <body>
-        <video
-          ${controls ? 'controls' : ''}
-          ${muted ? 'muted' : ''}
-          ${repeat ? 'loop' : ''}
-          ${poster ? `poster="${poster}"` : ''}
-          ${paused ? '' : 'autoplay'}
-          playsinline
-          webkit-playsinline
-          onloadeddata="window.ReactNativeWebView.postMessage('onLoad')"
-          onended="window.ReactNativeWebView.postMessage('onEnd')"
-          src="${source.uri}">
-        </video>
-      </body>
-    </html>
-  `;
+  useImperativeHandle(ref, () => videoRef.current as Video);
 
-    const handleMessage = (event: any) => {
-      const message = event.nativeEvent.data;
-      if (message === 'onEnd') onEnd?.();
-      if (message === 'onLoad') onLoad?.();
-    };
-
-    return (
-      <View style={[styles.container, style]}>
-        <WebView
-          ref={webRef}
-          originWhitelist={['*']}
-          source={{ html: videoHTML }}
-          javaScriptEnabled
-          domStorageEnabled
-          allowsInlineMediaPlayback
-          mediaPlaybackRequiresUserAction={false}
-          onMessage={handleMessage}
-          scrollEnabled={false}
-        />
-      </View>
-    );
-  }
-);
+  return (
+    <View style={[styles.container, style]}>
+      <Video
+        ref={videoRef}
+        source={source}
+        style={StyleSheet.absoluteFill}
+        resizeMode={resizeMode}
+        paused={paused}
+        repeat={repeat}
+        muted={muted}
+        controls={controls}
+        poster={poster}
+        posterResizeMode="cover"
+        onEnd={onEnd}
+        onLoad={onLoad}
+      />
+    </View>
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

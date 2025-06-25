@@ -2373,16 +2373,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@giphy/react-native-sdk@npm:^3.2.2":
-  version: 3.3.1
-  resolution: "@giphy/react-native-sdk@npm:3.3.1"
+"@giphy/react-native-sdk@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "@giphy/react-native-sdk@npm:4.1.0"
   dependencies:
     "@giphy/js-types": "npm:^4.4.0"
     type-fest: "npm:^4.5.0"
   peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/845a5f76fa211dae4cc0ff9277c59b5f928a5f900dd4fa645fe09aa4f2c59a8404440162750c16aad93f1f764f1d276b3515b28c4e495d283504b6ebdfbec799
+    react: ^18.2.0
+    react-native: ">=0.73.0"
+  checksum: 10/4b0b195095cd6c060d1a24f77f0aa12588678bd5db515682845f27f0290a7ac32bdac0eaa984e528ee3b1d45f01cfcb11d803dc34199953ebc16d9fa43b22e25
   languageName: node
   linkType: hard
 
@@ -12172,7 +12172,7 @@ __metadata:
     "@fortawesome/free-regular-svg-icons": "npm:^6.4.2"
     "@fortawesome/free-solid-svg-icons": "npm:^6.4.2"
     "@fortawesome/react-native-fontawesome": "npm:^0.3.0"
-    "@giphy/react-native-sdk": "npm:^3.2.2"
+    "@giphy/react-native-sdk": "npm:^4.1.0"
     "@gorhom/bottom-sheet": "npm:5.1.6"
     "@invertase/react-native-apple-authentication": "npm:^2.2.2"
     "@jest/globals": "npm:^29.7.0"
@@ -12309,6 +12309,8 @@ __metadata:
     react-native-toast-notifications: "npm:^3.3.1"
     react-native-typography: "npm:^1.4.1"
     react-native-vector-icons: "npm:^10.0.3"
+    react-native-video: "npm:^6.15.0"
+    react-native-video-player: "npm:^0.16.3"
     react-native-vision-camera: "npm:^4.7.0"
     react-native-webview: "npm:^13.6.3"
     react-redux: "npm:^9.0.4"
@@ -13878,6 +13880,27 @@ __metadata:
     fa6-upgrade: bin/fa6-upgrade.sh
     generate-icon: bin/generate-icon.js
   checksum: 10/ac3b05bb353807d0ed94256bd6de4291e8261afb320ce69c06270fba3be2ed3c7b3a81ecbda29191cfe906e89bf853d4b4f016465b6b56a428315c7b6630eff1
+  languageName: node
+  linkType: hard
+
+"react-native-video-player@npm:^0.16.3":
+  version: 0.16.3
+  resolution: "react-native-video-player@npm:0.16.3"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-video: ^6.8.0
+  checksum: 10/c469a792e2e0f92c30d89becc04e5c32a7ac7f359f9edbc2089a05b5f9e77b098530bc6ee11f2447e4e4720fc5d6f39e0996f9b1359bd9940407e48982837e27
+  languageName: node
+  linkType: hard
+
+"react-native-video@npm:^6.15.0":
+  version: 6.15.0
+  resolution: "react-native-video@npm:6.15.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/9e9cfe04afcd5f10f9c9332bda01fd9b0282c3f66551dbd10378ae1be4e17ac103c123a9dea62922da174dee81ff8bac576a6c3f87ca5664bf5f894862d9a995
   languageName: node
   linkType: hard
 

@@ -18,6 +18,7 @@ import { borderWidth } from '../styles/outlines';
 import PostStack from './PostStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
+import NewPost from '../screens/post/NewPost';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -93,7 +94,7 @@ function BottomStack() {
       />
       <Tab.Screen
         name="PostTab"
-        component={PostStack}
+        component={SearchStack}
         options={{
           tabBarLabel: 'Post',
           tabBarIcon: (props) => <AddSquare size={22} color={props.color} />,

@@ -415,7 +415,7 @@ function Home({ navigation, route }: Props) {
                   );
                 }
 
-                if (item.type == 'tasteBreaker') {
+                if (item.type === 'tasteBreaker') {
                   const itemToUse = item?.items[0];
                   return (
                     <View key={`tastebreaker_${itemToUse.id}`}>

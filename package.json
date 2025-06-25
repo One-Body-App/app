@@ -10,7 +10,7 @@
     "lint": "eslint --fix . --ext .js,.jsx,.ts,.tsx",
     "debug": "open 'rndebugger://set-debugger-loc?host=localhost&port=8081'",
     "version": "auto-changelog -p",
-    "postinstall": "husky install"
+    "postinstall": "patch-package && husky install"
   },
   "dependencies": {
     "@dreamwalk-os/react-native-image-modal": "^2.2.0",
@@ -20,7 +20,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.4.2",
     "@fortawesome/free-solid-svg-icons": "^6.4.2",
     "@fortawesome/react-native-fontawesome": "^0.3.0",
-    "@giphy/react-native-sdk": "^3.2.2",
+    "@giphy/react-native-sdk": "^4.1.0",
     "@gorhom/bottom-sheet": "5.1.6",
     "@invertase/react-native-apple-authentication": "^2.2.2",
     "@mux/mux-data-react-native-video": "^0.15.0",
@@ -110,6 +110,8 @@
     "react-native-toast-notifications": "^3.3.1",
     "react-native-typography": "^1.4.1",
     "react-native-vector-icons": "^10.0.3",
+    "react-native-video": "^6.15.0",
+    "react-native-video-player": "^0.16.3",
     "react-native-vision-camera": "^4.7.0",
     "react-native-webview": "^13.6.3",
     "react-redux": "^9.0.4",

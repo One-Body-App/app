@@ -1,153 +1,99 @@
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  NativeModules,
-  NativeEventEmitter,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
-import React, {
-  Dispatch,
-  PropsWithChildren,
-  SetStateAction,
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-} from 'react';
-// import { CameraRoll } from '@react-native-camera-roll/camera-roll';
+import React, { useRef, useState, useEffect, useCallback, FC } from 'react';
+import { View, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import {
   Camera,
   CameraPermissionStatus,
   useCameraDevice,
   useCameraPermission,
 } from 'react-native-vision-camera';
+import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import FastImage from 'react-native-fast-image';
-import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
-// import { isValidVideo, showEditor } from 'react-native-video-trim';
-import videoPostStyles from './styles';
+import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
-import StyledText from '../styled/Text';
+import videoPostStyles from './styles';
 
 const cameraIos = require('@/assets/icons/camera-ios.png');
 
-type Props = {
-  setVideoPath: Dispatch<SetStateAction<string | undefined>>;
-};
+interface CameraComponentProps {
+  setVideoPath: (path: string | undefined) => void;
+}
 
-function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
+function CameraComponent({ setVideoPath }: CameraComponentProps) {
   const permission = useCameraPermission();
   const camera = useRef<Camera>(null);
   const [isFrontCamera, setIsFrontCamera] = useState<boolean>(false);
-  const [latestGalleryImg, setLatestGalleryImg] = useState<any>('/');
+  const [latestGalleryImg, setLatestGalleryImg] = useState<string>('/');
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [recordedVideo, setRecordedVideo] = useState<any>('');
+  // Removed unused recordedVideo state
   const devices = useCameraDevice(isFrontCamera ? 'front' : 'back');
   const [cameraPermission, setCameraPermission] =
     useState<CameraPermissionStatus>('not-determined');
 
   const handleSelectionFromGallery = async () => {
-    const options: ImageLibraryOptions = {
+    const response = await launchImageLibrary({
       mediaType: 'video',
       selectionLimit: 1,
-    };
-    const response = await launchImageLibrary(options);
-    if (response?.assets && response?.assets.length > 0) {
-      setRecordedVideo(response?.assets[0]?.uri);
-      // isValidVideo(response?.assets[0]?.uri || 'xxxx');
-      // showEditor(response?.assets[0]?.uri || '', {
-      //   saveToPhoto: false,
-      //   enableSaveDialog: false,
-      //   maxDuration: 60,
-      //   cancelDialogMessage: 'Are you sure you want to delete this?',
-      //   cancelDialogConfirmText: 'Delete',
-      // });
+    });
+    if (response?.assets && response.assets.length > 0) {
+      const uri = response.assets[0]?.uri;
+      if (uri) {
+        setVideoPath(uri);
+      }
     }
   };
 
   const handleStartRecording = async () => {
-    if (!isRecording) {
+    if (!isRecording && camera.current) {
       try {
-        if (camera.current) {
-          setIsRecording(true);
-          camera.current.startRecording({
-            videoCodec: 'h265',
-            onRecordingFinished: async (video) => {
-              setRecordedVideo(video);
-              // isValidVideo(video?.path || '');
-              // showEditor(video?.path || '', {
-              //   saveToPhoto: false,
-              //   maxDuration: 60,
-              //   enableSaveDialog: false,
-              // });
-            },
-            onRecordingError: (error) => {
-              console.log('🚀 ~ handleStartRecording ~ error:', error);
-              console.error(error);
-            },
-          });
-        }
+        setIsRecording(true);
+        camera.current.startRecording({
+          videoCodec: 'h265',
+          onRecordingFinished: (video) => {
+            // setRecordedVideo(video.path); // removed unused state
+            setVideoPath(video.path);
+            setIsRecording(false);
+          },
+          onRecordingError: (error) => {
+            // console.error('Recording error:', error);
+            setIsRecording(false);
+          },
+        });
       } catch (error) {
-        console.log(error);
+        // console.error('Start recording error:', error);
+        setIsRecording(false);
       }
     } else {
-      setIsRecording(false);
       camera.current?.stopRecording();
+      setIsRecording(false);
     }
   };
 
   const fetchPhotos = useCallback(async () => {
-    // const res = await CameraRoll.getPhotos({
-    //   first: 1,
-    // });
-    // const image_url = res?.edges[0]?.node?.image;
-    // setLatestGalleryImg(image_url?.uri);
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      selectionLimit: 1,
+    });
+    if (result.assets && result.assets.length > 0) {
+      const uri = result.assets[0]?.uri;
+      if (uri) setLatestGalleryImg(uri);
+    }
   }, []);
 
   const getPermissions = async () => {
-    const cameraPermission = await Camera.requestCameraPermission();
-    const microphonePermission = await Camera.requestMicrophonePermission();
-
-    if (cameraPermission === 'denied' || microphonePermission === 'denied') {
-      // await Linking.openSettings();
+    const cameraPerm = await Camera.requestCameraPermission();
+    const micPerm = await Camera.requestMicrophonePermission();
+    if (cameraPerm === 'denied' || micPerm === 'denied') {
       await permission.requestPermission();
     }
-    setCameraPermission(cameraPermission);
+    setCameraPermission(cameraPerm);
   };
 
   useEffect(() => {
     getPermissions();
-    fetchPhotos();
-    const eventEmitter = new NativeEventEmitter(NativeModules.VideoTrim);
-    const subscription = eventEmitter.addListener('VideoTrim', async (event) => {
-      switch (event.name) {
-        case 'onFinishTrimming': {
-          // on trimming is done
-          // if (Platform.OS === 'ios') {
-          setVideoPath(event?.outputPath);
-          // } else {
-          //   const asset = await CameraRoll.saveAsset(event?.outputPath || '');
-          //   setVideoPath(asset.node.image.uri);
-          // }
-
-          break;
-        }
-        case 'onError': {
-          console.log('🚀 ~ handleStartRecording ~ error:', event);
-          break;
-        }
-        default:
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
   }, []);
 
-  if (devices == null) {
+  if (!devices) {
     return (
       <View style={videoPostStyles.noCam}>
         <StyledText>Camera not available</StyledText>
@@ -157,14 +103,7 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
 
   if (cameraPermission === 'not-determined') {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: 'transparent',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary.brand} />
       </View>
     );
@@ -173,13 +112,9 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
   return (
     <>
       <Camera ref={camera} style={StyleSheet.absoluteFill} device={devices} isActive video audio />
-      {children}
       <View style={videoPostStyles.cameraBtncontainer}>
         <View style={videoPostStyles.btnSubContainer}>
-          <TouchableOpacity
-            style={{ justifyContent: 'center' }}
-            onPress={handleSelectionFromGallery}
-          >
+          <TouchableOpacity onPress={handleSelectionFromGallery}>
             <View style={videoPostStyles.galleryPreview}>
               <Image
                 style={videoPostStyles.imgPreview}
@@ -200,12 +135,7 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
               ]}
             />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={{ justifyContent: 'center' }}
-            onPress={() => {
-              setIsFrontCamera((prevState) => !prevState);
-            }}
-          >
+          <TouchableOpacity onPress={() => setIsFrontCamera((prev) => !prev)}>
             <FastImage
               style={videoPostStyles.flipCameraImg}
               resizeMode={FastImage.resizeMode.contain}
@@ -217,5 +147,14 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default CameraComponent;

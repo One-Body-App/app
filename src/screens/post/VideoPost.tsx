@@ -98,6 +98,7 @@ function VideoPost({ navigation }: Props) {
       setLoading(false);
     }
   };
+  console.log('VideoPath', VideoPath, !VideoPath);
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAwareScrollView contentContainerStyle={[styles.container]}>
@@ -123,9 +124,12 @@ function VideoPost({ navigation }: Props) {
                   }}
                 >
                   <CustomVideo
-                    source={{ uri: VideoPath || '' }}
+                    source={{
+                      uri:
+                        'file:///data/user/0/com.onebody/cache/mrousavy6691347555245248709.mov' ||
+                        '',
+                    }}
                     resizeMode="contain"
-                    repeat={playedTimes <= 3}
                     paused={playedTimes >= 3}
                     controls
                     style={{ flex: 1 }}
