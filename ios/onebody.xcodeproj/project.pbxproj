@@ -21,6 +21,7 @@
 		3A048F488DAB4816A43A8CB0 /* OpenSans_SemiCondensed-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 60F3078A51DE468EABE64640 /* OpenSans_SemiCondensed-SemiBold.ttf */; };
 		3AC089BC3B7A88752CC0A4F8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 51E080956F52A689B63F887E /* PrivacyInfo.xcprivacy */; };
 		3E2A929CB7FE4F5E851711AA /* OpenSans_SemiCondensed-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AF3A9BB15E764506B2E6F756 /* OpenSans_SemiCondensed-SemiBoldItalic.ttf */; };
+		46D852BD32A123304024B964 /* libPods-onebody.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C43DE55F1C0AE66C244C339 /* libPods-onebody.a */; };
 		5C505C2A543243BE9F9DBC43 /* OpenSans-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C83D0FD48824D7E864A921B /* OpenSans-BoldItalic.ttf */; };
 		61991BDF50CA4D6F919B7704 /* OpenSans_SemiCondensed-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EE6CB3AC63364411B65CF45C /* OpenSans_SemiCondensed-LightItalic.ttf */; };
 		6966016AF3054CEEBC90B8FB /* OpenSans_SemiCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9675D4F89B6E499787990203 /* OpenSans_SemiCondensed-ExtraBold.ttf */; };
@@ -67,7 +68,6 @@
 		E61A6E5D922D4307A5742C99 /* OpenSans-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ABB5AA1D3BBE4F9A9B558AF0 /* OpenSans-Italic.ttf */; };
 		EA16FC4CD43B4E7487AB75A8 /* OpenSans_Condensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F27285D2127D4BBC9F5FAEE6 /* OpenSans_Condensed-ExtraBold.ttf */; };
 		EB911B8296C44DECA602BF32 /* OpenSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F3697ABF779C4510A7A920FF /* OpenSans-Bold.ttf */; };
-		EBF58E5C67AAF89A65230EB3 /* libPods-onebody.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DBF9C02F7D08053FA55E34BD /* libPods-onebody.a */; };
 		F6B78ED8A1E44112984C7684 /* OpenSans_SemiCondensed-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 967AD7B40C4A481585BE3032 /* OpenSans_SemiCondensed-Italic.ttf */; };
 		FC94AC312B72469298F466BE /* OpenSans_SemiCondensed-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 178CD6E161734C35870FE3F7 /* OpenSans_SemiCondensed-ExtraBoldItalic.ttf */; };
 		FF89C5CFF3124CAE95E326A7 /* OpenSans_Condensed-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CD79752175C54E5994C16281 /* OpenSans_Condensed-Light.ttf */; };
@@ -140,6 +140,7 @@
 		7C83D0FD48824D7E864A921B /* OpenSans-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-BoldItalic.ttf"; path = "../src/assets/fonts/OpenSans-BoldItalic.ttf"; sourceTree = "<group>"; };
 		7E417E7EA4764689BA519E04 /* OpenSans-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-SemiBoldItalic.ttf"; path = "../src/assets/fonts/OpenSans-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
 		8968D0792BEF457284B37032 /* OpenSans-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-ExtraBold.ttf"; path = "../src/assets/fonts/OpenSans-ExtraBold.ttf"; sourceTree = "<group>"; };
+		8C43DE55F1C0AE66C244C339 /* libPods-onebody.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-onebody.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		91847383F0F5441BB127ADEB /* OpenSans_Condensed-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-BoldItalic.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-BoldItalic.ttf"; sourceTree = "<group>"; };
 		9675D4F89B6E499787990203 /* OpenSans_SemiCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-ExtraBold.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-ExtraBold.ttf"; sourceTree = "<group>"; };
 		967AD7B40C4A481585BE3032 /* OpenSans_SemiCondensed-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-Italic.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-Italic.ttf"; sourceTree = "<group>"; };
@@ -153,7 +154,6 @@
 		CD79752175C54E5994C16281 /* OpenSans_Condensed-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-Light.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-Light.ttf"; sourceTree = "<group>"; };
 		D954938953F04BB4AE9D6780 /* OpenSans_Condensed-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-Bold.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-Bold.ttf"; sourceTree = "<group>"; };
 		DB641DB035BC426C94E3595E /* OpenSans_SemiCondensed-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-BoldItalic.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-BoldItalic.ttf"; sourceTree = "<group>"; };
-		DBF9C02F7D08053FA55E34BD /* libPods-onebody.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-onebody.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE925F980E4340ABB9787D85 /* OpenSans-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-Light.ttf"; path = "../src/assets/fonts/OpenSans-Light.ttf"; sourceTree = "<group>"; };
 		E2BF53DE7B214CE48E6C2E42 /* OpenSans_Condensed-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-SemiBoldItalic.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -176,7 +176,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				72A8C9FA28C2A5C600811FC8 /* libswiftWebKit.tbd in Frameworks */,
-				EBF58E5C67AAF89A65230EB3 /* libPods-onebody.a in Frameworks */,
+				46D852BD32A123304024B964 /* libPods-onebody.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -222,7 +222,7 @@
 				72A8C9F828C2A50700811FC8 /* JavaScriptCore.framework */,
 				72A8C9F528C2A48400811FC8 /* libswiftWebKit.tbd */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				DBF9C02F7D08053FA55E34BD /* libPods-onebody.a */,
+				8C43DE55F1C0AE66C244C339 /* libPods-onebody.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -1041,6 +1041,17 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
@@ -1117,6 +1128,17 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,

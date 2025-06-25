@@ -19,8 +19,6 @@ interface Props {
   isFromBottomField?: boolean;
 }
 
-let keyboardWillShowListener: EmitterSubscription;
-let onKeyboardWillHideListener: EmitterSubscription;
 function CommentField({
   mediaGif,
   setGif,
@@ -30,7 +28,6 @@ function CommentField({
   setEditingComment,
   isFromBottomField,
 }: Props) {
-  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
   const [content, setContent] = useState(text ?? '');
 
   // const onKeyboardWillShow = (e: KeyboardEvent) => {
@@ -180,7 +177,7 @@ function CommentField({
                     submitComment(content);
                   }}
                 >
-                  <Send variant="Bold" color={Colors.primarySapphire.brand} />
+                  <Send variant="Bold" size={30} color={Colors.primarySapphire.brand} />
                 </TouchableOpacity>
               )}
             </View>
@@ -216,7 +213,7 @@ function CommentField({
                 setGif(null);
               }}
             >
-              <CloseCircle size="30" color="#fff" />
+              <CloseCircle size={30} color="#fff" />
             </TouchableOpacity>
             <GiphyMediaView
               media={mediaGif}

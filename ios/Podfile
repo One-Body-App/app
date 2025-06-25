@@ -73,6 +73,7 @@ target 'onebody' do
   pod 'SDWebImageWebPCoder'
   pod 'libwebp', '1.3.2', :source => 'https://cdn.cocoapods.org/'
   pod 'Sentry/HybridSDK', '8.52.1'
+  
 
   # ✅ updated version
   #pod 'fmt', '~> 8.1.1'     ✅ resolves char8_t crash

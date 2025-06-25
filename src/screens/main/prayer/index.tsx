@@ -90,7 +90,7 @@ function Prayer({ navigation }: Props) {
               justifyContent: 'center',
             }}
           >
-            <AddSquare color="#fff" />
+            <AddSquare size={32} color="#fff" />
           </View>
         </TouchableOpacity>
       </View>

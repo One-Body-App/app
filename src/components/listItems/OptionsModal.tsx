@@ -5,14 +5,10 @@ import { View, Share, Platform, ScrollView, TouchableOpacity, Alert } from 'reac
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { Copy, InfoCircle, Profile } from 'iconsax-react-native';
 import { Bookmark, EditPencil, ShareAndroid, ShareIos, Xmark } from 'iconoir-react-native';
 // import Clipboard from '@react-native-clipboard/clipboard';
 import Toast from 'react-native-toast-notifications';
-import { min } from 'lodash';
 import Button from '../Button';
 
 import { styles } from './style';
@@ -21,11 +17,6 @@ import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
 import { getuserGet } from '@/src/redux/actions/UserAction';
-import {
-  ExploreStackParamsList,
-  MainDrawerParamsList,
-  MainBottomStackParamsList,
-} from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
@@ -33,14 +24,6 @@ import { borderRadius } from '@/src/styles/outlines';
 import { body, fontSize, header } from '@/src/styles/typography';
 import CustomClipboard, { CustomClipboardHandle } from '@/src/components/CustomClipboard';
 import CustomModal from '../CustomModal';
-
-type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
-  CompositeNavigationProp<
-    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
-    BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
-  >
->;
 
 export type PopupItem = {
   id?: string;

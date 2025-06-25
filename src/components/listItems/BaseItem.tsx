@@ -619,7 +619,7 @@ function BaseItem({
                   alignItems: 'center',
                 }}
               >
-                <Message2 color={transparency ? Colors.neutral[600] : 'white'} />
+                <Message2 size={22} color={transparency ? Colors.neutral[600] : 'white'} />
                 <StyledText
                   style={{
                     marginLeft: spacing.x10,
