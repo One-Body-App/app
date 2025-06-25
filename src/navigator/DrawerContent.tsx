@@ -161,8 +161,9 @@ export default function DrawerContent({
               backgroundColor: Colors.neutral[700],
               padding: spacing.x16,
               borderRadius: borderRadius.base,
+              width: 50,
             }}
-            leftIcon={<LogoutCurve color={Colors.primary.brand} />}
+            leftIcon={<LogoutCurve size={24} color={Colors.primary.brand} />}
             onPress={() => {
               Alert.alert(
                 'Signing Out',
@@ -200,7 +201,7 @@ export default function DrawerContent({
               padding: spacing.x16,
               borderRadius: borderRadius.base,
             }}
-            leftIcon={<Setting2 color={Colors.neutral[200]} />}
+            leftIcon={<Setting2 size={24} color={Colors.neutral[200]} />}
             onPress={() => {
               navigation.navigate('Settings');
             }}

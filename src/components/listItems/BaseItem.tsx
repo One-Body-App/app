@@ -109,7 +109,6 @@ function BaseItem({
 
   const [myReaction, setMyReaction] = useState<SocialPostReaction | undefined>(postData.myReaction);
   // const [reactions, setReactions] = useState<SocialPostReaction[]>(postData.reactions ?? []);
-  const [showActions, setShowActions] = useState(false);
 
   const [showOptions, setShowOptions] = useState(false);
 
@@ -138,7 +137,7 @@ function BaseItem({
           });
 
           // if (myReaction) setReactions([...reactions, myReaction]);
-          setShowActions(false);
+          // setShowActions(false);
           if (myReaction) setMyReaction(myReaction);
         } else {
           setMyReaction(undefined);
@@ -1239,14 +1238,24 @@ function BaseItem({
                 <View
                   style={{
                     flexDirection: 'row',
-                    marginLeft: spacing.x10,
+                    marginLeft: spacing.x5,
+                    marginRight: spacing.x10,
                     alignItems: 'center',
+                    // remove - Matty
+                    width: 30,
                   }}
                 >
-                  <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
+                  <Message2
+                    size={25}
+                    color={transparency ? Colors.neutral[600] : colors.text}
+                    style={{ marginRight: 3 }}
+                    width={25}
+                    height={25}
+                  />
                   <StyledText
                     style={{
                       marginLeft: spacing.x10,
+                      marginRight: spacing.x10,
                       // marginVertical: spacing.x5,
                       color: transparency ? Colors.neutral[600] : colors.text,
                     }}
@@ -1315,7 +1324,7 @@ function BaseItem({
                       });
                     }}
                   >
-                    {Platform.OS == 'android' ? (
+                    {Platform.OS === 'android' ? (
                       <ShareAndroid
                         color={transparency ? Colors.neutral[600] : colors.text}
                         height={25}

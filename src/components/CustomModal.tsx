@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 const screenHeight = Dimensions.get('window').height;
 
@@ -26,13 +26,14 @@ export default function CustomModal({
 }) {
   const translateY = useRef(new Animated.Value(0)).current;
 
-  const onGestureEvent = Animated.event([{ nativeEvent: { translationY: translateY } }], {
-    useNativeDriver: true,
-  });
-
-  const onHandlerStateChange = ({ nativeEvent }: any) => {
-    if (nativeEvent.state === State.END) {
-      if (nativeEvent.translationY > 100) {
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (event.translationY > 0) {
+        translateY.setValue(event.translationY);
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationY > 100) {
         Animated.timing(translateY, {
           toValue: screenHeight,
           duration: 200,
@@ -47,8 +48,7 @@ export default function CustomModal({
           useNativeDriver: true,
         }).start();
       }
-    }
-  };
+    });
 
   return (
     <Modal visible={modalVisible} animationType="fade" transparent onRequestClose={onclose}>
@@ -60,14 +60,11 @@ export default function CustomModal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.wrapper}
       >
-        <PanGestureHandler
-          onGestureEvent={onGestureEvent}
-          onHandlerStateChange={onHandlerStateChange}
-        >
+        <GestureDetector gesture={panGesture}>
           <Animated.View style={[style, styles.modalContainer, { transform: [{ translateY }] }]}>
             {children}
           </Animated.View>
-        </PanGestureHandler>
+        </GestureDetector>
       </KeyboardAvoidingView>
     </Modal>
   );

@@ -90,7 +90,6 @@ function Home({ navigation, route }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectVisible, setSelectVisible] = useState(false);
-  const [position, setPosition] = useState<any>();
 
   const showModal = (item: ArticleType) => {
     setCurrentPopupItem(item);

@@ -73,7 +73,7 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
           padding: spacing.x24,
           borderTopRightRadius: borderRadius.large,
           borderTopLeftRadius: borderRadius.large,
-          height: '60%',
+          height: '100%',
           backgroundColor: colors.background,
         }}
       >

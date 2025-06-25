@@ -67,6 +67,7 @@ function HomeStack() {
                   }}
                 >
                   <Notification
+                    size={24}
                     style={{ height: 24, width: 24 }}
                     color={Colors.primary.brand}
                     strokeWidth={0.2}
