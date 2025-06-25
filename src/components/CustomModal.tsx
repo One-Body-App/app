@@ -51,13 +51,7 @@ export default function CustomModal({
   };
 
   return (
-    <Modal
-      visible={modalVisible}
-      animationType="fade"
-      transparent
-      onRequestClose={onclose}
-      style={style}
-    >
+    <Modal visible={modalVisible} animationType="fade" transparent onRequestClose={onclose}>
       <TouchableWithoutFeedback onPress={onclose}>
         <View style={styles.backdrop} />
       </TouchableWithoutFeedback>
@@ -70,7 +64,7 @@ export default function CustomModal({
           onGestureEvent={onGestureEvent}
           onHandlerStateChange={onHandlerStateChange}
         >
-          <Animated.View style={[styles.modalContainer, { transform: [{ translateY }] }]}>
+          <Animated.View style={[style, styles.modalContainer, { transform: [{ translateY }] }]}>
             {children}
           </Animated.View>
         </PanGestureHandler>
@@ -88,10 +82,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
+    flex: 1,
     backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: '100%',
+    minHeight: '50%',
   },
 });
