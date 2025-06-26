@@ -9,7 +9,6 @@ import {
   ViewStyle,
 } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import Video from 'react-native-video';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,10 +16,9 @@ import { useSelector } from 'react-redux';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 
 import ImageView from 'react-native-image-viewing';
-import { type GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+import { GiphyMediaView } from '@giphy/react-native-sdk';
 
 import { isArray } from 'lodash';
-import Modal from 'react-native-modal';
 import Toast, { useToast } from 'react-native-toast-notifications';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -44,6 +42,8 @@ import Anonymous from '@/assets/svg/anonymous.svg';
 import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import StyledTextInput from '../styled/TextInput';
+import CustomModal from '../CustomModal';
+import CustomVideo from '../CustomVideo';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<PrayerWallStackParamsList, 'index'>,
@@ -269,10 +269,9 @@ function PrayerItem({
 
         {media.length > 0 &&
           media.map((mediaItem) => {
-            if (mediaItem.type == 'VIDEO') {
+            if (mediaItem.type === 'VIDEO') {
               return (
-                <Video
-                  ignoreSilentSwitch="ignore"
+                <CustomVideo
                   source={{
                     uri: mediaItem.url,
                   }}
@@ -282,7 +281,7 @@ function PrayerItem({
                   paused={!isPlaying}
                   muted={isMuted}
                   repeat
-                  onTouchEnd={() => {
+                  onEnd={() => {
                     if (!isPlaying) {
                       setIsPlaying(true);
                     }
@@ -291,6 +290,7 @@ function PrayerItem({
                   // hideShutterView={true}
                 />
               );
+              return null;
             }
 
             return null;
@@ -437,14 +437,7 @@ function PrayerItem({
         </View>
       ) : null}
 
-      <Modal
-        isVisible={showModal}
-        onBackdropPress={() => setShowModal(false)}
-        onSwipeComplete={() => setShowModal(false)}
-        swipeDirection={['down']}
-        propagateSwipe
-        avoidKeyboard
-      >
+      <CustomModal modalVisible={showModal} onclose={() => setShowModal(false)}>
         <View
           style={{
             backgroundColor: colors.background,
@@ -558,7 +551,7 @@ function PrayerItem({
           />
         </View>
         <Toast ref={toastRef} />
-      </Modal>
+      </CustomModal>
     </BaseItem>
   );
 }

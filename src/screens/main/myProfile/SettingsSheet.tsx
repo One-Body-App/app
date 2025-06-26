@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { LoginManager } from 'react-native-fbsdk-next';
-import Modal from 'react-native-modal';
 import Rate, { AndroidMarket } from 'react-native-rate';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -23,6 +22,7 @@ import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { logout } from '@/src/redux/actions/AuthActions';
+import CustomModal from '@/src/components/CustomModal';
 
 const options = {
   AppleAppID: '1637542382',
@@ -56,26 +56,24 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
   >();
 
   return (
-    <Modal
+    <CustomModal
       // swipeDirection={['down']}
-      avoidKeyboard
-      backdropOpacity={0.3}
-      isVisible={showModal}
-      onBackdropPress={() => setShowModal(false)}
-      onSwipeComplete={() => setShowModal(false)}
+      // avoidKeyboard
+      // backdropOpacity={0.3}
+      modalVisible={showModal}
+      onclose={() => setShowModal(false)}
       // style={styles.bottomView}
       style={{
         justifyContent: 'flex-end',
         margin: 0,
       }}
-      propagateSwipe
     >
       <View
         style={{
           padding: spacing.x24,
           borderTopRightRadius: borderRadius.large,
           borderTopLeftRadius: borderRadius.large,
-          height: '60%',
+          height: '100%',
           backgroundColor: colors.background,
         }}
       >
@@ -267,7 +265,7 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
           />
         </ScrollView>
       </View>
-    </Modal>
+    </CustomModal>
   );
 }
 

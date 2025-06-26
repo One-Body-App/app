@@ -3,7 +3,7 @@ import { Platform, Share, StyleProp, TouchableOpacity, View, ViewStyle } from 'r
 import FastImage from 'react-native-fast-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Heart, Location, Message2 } from 'iconsax-react-native';
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
 import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -95,7 +95,6 @@ function BaseItem({
   postData,
   parentRefreshContent,
   onShowDismissCard,
-  isScrollEnable,
   index,
   removePost,
   editPost,
@@ -104,14 +103,12 @@ function BaseItem({
   onCommentsPress,
 }: BaseItemProps) {
   const { colors } = useTheme();
-  const { navigate } = useNavigation();
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
 
   const [myReaction, setMyReaction] = useState<SocialPostReaction | undefined>(postData.myReaction);
   // const [reactions, setReactions] = useState<SocialPostReaction[]>(postData.reactions ?? []);
-  const [showActions, setShowActions] = useState(false);
 
   const [showOptions, setShowOptions] = useState(false);
 
@@ -140,7 +137,7 @@ function BaseItem({
           });
 
           // if (myReaction) setReactions([...reactions, myReaction]);
-          setShowActions(false);
+          // setShowActions(false);
           if (myReaction) setMyReaction(myReaction);
         } else {
           setMyReaction(undefined);
@@ -622,7 +619,7 @@ function BaseItem({
                   alignItems: 'center',
                 }}
               >
-                <Message2 color={transparency ? Colors.neutral[600] : 'white'} />
+                <Message2 size={22} color={transparency ? Colors.neutral[600] : 'white'} />
                 <StyledText
                   style={{
                     marginLeft: spacing.x10,
@@ -1241,14 +1238,24 @@ function BaseItem({
                 <View
                   style={{
                     flexDirection: 'row',
-                    marginLeft: spacing.x10,
+                    marginLeft: spacing.x5,
+                    marginRight: spacing.x10,
                     alignItems: 'center',
+                    // remove - Matty
+                    width: 30,
                   }}
                 >
-                  <Message2 color={transparency ? Colors.neutral[600] : colors.text} />
+                  <Message2
+                    size={25}
+                    color={transparency ? Colors.neutral[600] : colors.text}
+                    style={{ marginRight: 3 }}
+                    width={25}
+                    height={25}
+                  />
                   <StyledText
                     style={{
                       marginLeft: spacing.x10,
+                      marginRight: spacing.x10,
                       // marginVertical: spacing.x5,
                       color: transparency ? Colors.neutral[600] : colors.text,
                     }}
@@ -1317,7 +1324,7 @@ function BaseItem({
                       });
                     }}
                   >
-                    {Platform.OS == 'android' ? (
+                    {Platform.OS === 'android' ? (
                       <ShareAndroid
                         color={transparency ? Colors.neutral[600] : colors.text}
                         height={25}

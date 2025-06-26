@@ -18,6 +18,7 @@ import { borderWidth } from '../styles/outlines';
 import PostStack from './PostStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
+import NewPost from '../screens/post/NewPost';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -64,9 +65,9 @@ function BottomStack() {
             return (
               <>
                 {props.focused ? (
-                  <Home3 style={{ height: 22, width: 22 }} color={props.color} variant="Bold" />
+                  <Home3 size={22} color={props.color} variant="Bold" />
                 ) : (
-                  <Home3 style={{ height: 22, width: 22 }} color={props.color} />
+                  <Home3 size={22} color={props.color} />
                 )}
               </>
             );
@@ -82,13 +83,9 @@ function BottomStack() {
             return (
               <>
                 {props.focused ? (
-                  <SearchNormal1
-                    style={{ height: 22, width: 22 }}
-                    color={props.color}
-                    variant="Bold"
-                  />
+                  <SearchNormal1 size={22} color={props.color} variant="Bold" />
                 ) : (
-                  <SearchNormal1 style={{ height: 22, width: 22 }} color={props.color} />
+                  <SearchNormal1 size={22} color={props.color} />
                 )}
               </>
             );
@@ -97,12 +94,10 @@ function BottomStack() {
       />
       <Tab.Screen
         name="PostTab"
-        component={PostStack}
+        component={SearchStack}
         options={{
           tabBarLabel: 'Post',
-          tabBarIcon: (props) => (
-            <AddSquare style={{ height: 22, width: 22 }} color={props.color} />
-          ),
+          tabBarIcon: (props) => <AddSquare size={22} color={props.color} />,
         }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
@@ -120,9 +115,14 @@ function BottomStack() {
             return (
               <>
                 {props.focused ? (
-                  <Global style={{ height: 22, width: 22 }} color={props.color} variant="Bold" />
+                  <Global
+                    style={{ height: 22, width: 22 }}
+                    size={20}
+                    color={props.color}
+                    variant="Bold"
+                  />
                 ) : (
-                  <Global style={{ height: 22, width: 22 }} color={props.color} />
+                  <Global size={22} color={props.color} />
                 )}
               </>
             );
@@ -153,7 +153,7 @@ function BottomStack() {
               );
             }
 
-            return <FontAwesome name="user-circle" size={20} color={props.color} />;
+            return <FontAwesome name="user-circle" size={22} color={props.color} />;
           },
         }}
       />

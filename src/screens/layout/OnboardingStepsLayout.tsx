@@ -10,16 +10,16 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import Modal from 'react-native-modal';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Button from '@/components/Button';
 import StyledText from '@/components/styled/Text';
-import { Buttons, Colors, Spacing, Typography } from '@/src/styles';
+import { Buttons, Colors, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { header } from '@/src/styles/typography';
 import { AccountType } from '@/utils/types';
+import CustomModal from '@/src/components/CustomModal';
 
 type Props = {
   children: ReactElement;
@@ -139,14 +139,10 @@ function OnboardingStepsLayout({
         />
       </View>
 
-      <Modal
-        backdropOpacity={0.3}
-        isVisible={showModal}
-        onBackdropPress={() => setShowModal(false)}
-        onSwipeComplete={() => setShowModal(false)}
-        swipeDirection={['down']}
-        style={{ justifyContent: 'flex-end', margin: 0 }}
-        propagateSwipe
+      <CustomModal
+        modalVisible={showModal}
+        onclose={() => setShowModal(false)}
+        style={{ margin: 0, justifyContent: 'flex-end' }}
       >
         <View
           style={{
@@ -192,7 +188,7 @@ function OnboardingStepsLayout({
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </CustomModal>
     </SafeAreaView>
   );
 }

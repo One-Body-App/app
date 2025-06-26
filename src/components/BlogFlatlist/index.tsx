@@ -1,26 +1,12 @@
-import React, { ComponentType, ReactElement, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  FlatList,
-  Image,
-  RefreshControl,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { SceneRendererProps } from 'react-native-tab-view';
+import React, { ComponentType, ReactElement, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
+import { useSelector } from 'react-redux';
 import { isObject } from 'lodash';
 import { useTheme } from '@react-navigation/native';
-import { Tabs } from 'react-native-collapsible-tab-view';
-import { styles } from './styles';
-import Social from '@/assets/svg/Social.svg';
-import { getFontSize, getHeight, timeSince } from '@/utils/ResponsiveFun';
+import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import { ArticleType, PostType, User } from '@/utils/types';
-import { OpenURLButton } from '@/services/constants';
+import { ArticleType, PostType } from '@/utils/types';
 import ArticleItem from '../listItems/ArticleItem';
 import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
 import { styles as globalStyle } from '@/components/listItems/style';

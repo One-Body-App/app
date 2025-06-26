@@ -54,7 +54,7 @@ function MyProfile({ navigation, route }: Props) {
               });
             }}
           >
-            {Platform.OS == 'android' ? (
+            {Platform.OS === 'android' ? (
               <Ionicons
                 name="share-social-outline"
                 size={24}
@@ -74,6 +74,7 @@ function MyProfile({ navigation, route }: Props) {
             }}
           >
             <Setting2
+              size={24}
               style={{ height: 24, width: 24 }}
               color={dark ? colors.text : Colors.primary.brand}
               strokeWidth={0.2}

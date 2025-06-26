@@ -5,7 +5,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import Modal from 'react-native-modal';
 import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
 import axios from 'axios';
 
@@ -47,6 +46,7 @@ import { button } from '@/src/styles/buttons';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledTextInput from '../styled/TextInput';
 import { fontSize } from '@/src/styles/typography';
+import CustomModal from '../CustomModal';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
 
@@ -969,12 +969,9 @@ function LoginComponent({
 
         <View>
           {!verifyAccount ? (
-            <Modal
-              backdropOpacity={0.3}
-              isVisible={showConfirmEmail}
-              onBackdropPress={() => setShowConfirmEmail(false)}
-              onSwipeComplete={() => setShowConfirmEmail(false)}
-              swipeDirection={['down']}
+            <CustomModal
+              modalVisible={showConfirmEmail}
+              onclose={() => setShowConfirmEmail(false)}
               style={styles.bottomView}
             >
               <View style={styles.content2}>
@@ -1022,7 +1019,7 @@ function LoginComponent({
                   )}
                 </View>
               </View>
-            </Modal>
+            </CustomModal>
           ) : null}
         </View>
       </View>

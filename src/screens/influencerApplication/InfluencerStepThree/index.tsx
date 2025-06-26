@@ -8,7 +8,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import { StackScreenProps } from '@react-navigation/stack';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import { useToast } from 'react-native-toast-notifications';
-import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { getFontSize, getWidth } from '@/utils/ResponsiveFun';
 import { styles } from './styles';
 import { ApiCall } from '@/src/services/api';
@@ -92,7 +91,7 @@ function InfluencerStepThree({ navigation, route }: Props) {
                   <EvilIcons
                     name="search"
                     size={getFontSize(4)}
-                    color={Colors.primarySapphire[500]}
+                    color="#5C6BC0"
                     style={{ marginTop: 5 }}
                   />
                 )}

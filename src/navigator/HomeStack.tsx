@@ -16,7 +16,6 @@ import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
 import mainPageOptions from './global';
 import Watch from '../screens/home/watch';
-import StyledText from '../components/styled/Text';
 import { fontSize } from '../styles/typography';
 
 const Stack = createNativeStackNavigator<HomeStackParamsList>();
@@ -68,6 +67,7 @@ function HomeStack() {
                   }}
                 >
                   <Notification
+                    size={24}
                     style={{ height: 24, width: 24 }}
                     color={Colors.primary.brand}
                     strokeWidth={0.2}
@@ -88,7 +88,7 @@ function HomeStack() {
       <Stack.Screen
         name="Notifications"
         component={Notifications}
-        options={{ presentation: 'modal' }}
+        options={{ presentation: 'modal', headerShown: true, headerTitle: 'Notifications' }}
       />
       <Stack.Screen
         name="WatchPortal"

@@ -3,15 +3,11 @@ import { CompositeNavigationProp, useTheme } from '@react-navigation/native';
 import React, { useRef } from 'react';
 import { View, Share, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Modal from 'react-native-modal';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { Copy, InfoCircle, Profile } from 'iconsax-react-native';
 import { Bookmark, EditPencil, ShareAndroid, ShareIos, Xmark } from 'iconoir-react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
+// import Clipboard from '@react-native-clipboard/clipboard';
 import Toast from 'react-native-toast-notifications';
 import Button from '../Button';
 
@@ -21,24 +17,13 @@ import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
 import { getuserGet } from '@/src/redux/actions/UserAction';
-import {
-  ExploreStackParamsList,
-  MainDrawerParamsList,
-  MainBottomStackParamsList,
-} from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import { body, fontSize, header } from '@/src/styles/typography';
-
-type ScreenNavigationProp = CompositeNavigationProp<
-  StackNavigationProp<ExploreStackParamsList, 'Explore'>,
-  CompositeNavigationProp<
-    DrawerNavigationProp<MainDrawerParamsList, 'Main'>,
-    BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
-  >
->;
+import CustomClipboard, { CustomClipboardHandle } from '@/src/components/CustomClipboard';
+import CustomModal from '../CustomModal';
 
 export type PopupItem = {
   id?: string;
@@ -82,6 +67,7 @@ function OptionsModal({
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const dispatch = useDispatch();
   const toast = useRef<Toast>(null);
+  const clipboardRef = useRef<CustomClipboardHandle>(null);
   const loader = useSelector((state: RootState) => state.general.loader);
 
   const removeSavedPost = async (type?: string, link?: string, id?: string) => {
@@ -172,17 +158,19 @@ function OptionsModal({
   }
 
   return (
-    <Modal
-      backdropOpacity={0.3}
-      isVisible={show}
-      onBackdropPress={() => setShow(false)}
-      onSwipeComplete={() => setShow(false)}
-      swipeDirection={['down']}
-      style={styles.bottomView}
-      propagateSwipe
-      coverScreen
-      useNativeDriver
+    <CustomModal
+      // backdropOpacity={0.3}
+      modalVisible={show}
+      onclose={() => setShow(false)}
+      // onBackdropPress={() => setShow(false)}
+      // onSwipeComplete={() => setShow(false)}
+      // swipeDirection={['down']}
+      style={{ ...styles.bottomView, height: '100%', minHeight: 500 }}
+      // propagateSwipe
+      // coverScreen
+      // useNativeDriver
     >
+      <CustomClipboard ref={clipboardRef} />
       <Toast ref={toast} />
       <View
         // style={[styles.content2, { height: height ?? '60%', backgroundColor: Colors.main.white }]}
@@ -191,7 +179,7 @@ function OptionsModal({
           paddingHorizontal: spacing.x24,
           borderTopRightRadius: borderRadius.large,
           borderTopLeftRadius: borderRadius.large,
-          height: height ?? '60%',
+          height: height ?? '100%',
           backgroundColor: colors.background,
         }}
       >
@@ -215,7 +203,7 @@ function OptionsModal({
             <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
           </TouchableOpacity>
         </View>
-        <ScrollView style={{ flexGrow: 1 }}>
+        <ScrollView style={{ flexGrow: 1, minHeight: 200 }}>
           <View>
             {currentPopupItem?.userData?._id != user?._id && !isPrivate ? (
               <View style={{ marginVertical: spacing.x8 }}>
@@ -237,7 +225,7 @@ function OptionsModal({
               </View>
             ) : null}
 
-            {currentPopupItem?.userData?._id == user?._id ? (
+            {currentPopupItem?.userData?._id === user?._id ? (
               <>
                 {editPost ? (
                   <View style={{ marginVertical: spacing.x8 }}>
@@ -341,7 +329,7 @@ function OptionsModal({
                   btnStyle={{ backgroundColor: colors.card, flexDirection: 'row' }}
                   text="Share"
                   leftIcon={
-                    Platform.OS == 'ios' ? (
+                    Platform.OS === 'ios' ? (
                       <ShareIos
                         style={{ marginRight: spacing.x5 }}
                         color={colors.text}
@@ -379,7 +367,7 @@ function OptionsModal({
           {currentPopupItem?.postlink ? (
             <View style={{ marginVertical: spacing.x8 }}>
               <Button
-                text="Copy Link"
+                text="Copy Link!"
                 btnTextStyle={[body.x2, { color: colors.text }]}
                 leftIcon={
                   <Copy
@@ -390,7 +378,8 @@ function OptionsModal({
                 }
                 onPress={() => {
                   if (currentPopupItem?.postlink) {
-                    Clipboard.setString(currentPopupItem?.postlink);
+                    // Clipboard.setString(currentPopupItem?.postlink);
+                    clipboardRef.current?.copy(currentPopupItem?.postlink || '');
                     toast.current?.show('Link copied to the clipboard', {
                       placement: 'bottom',
                     });
@@ -432,7 +421,7 @@ function OptionsModal({
           </View>
         </ScrollView>
       </View>
-    </Modal>
+    </CustomModal>
   );
 }
 

@@ -15,7 +15,6 @@ import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
-import { Send } from 'iconsax-react-native';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
@@ -25,7 +24,6 @@ import StyledText from '../styled/Text';
 import { fontSize } from '@/src/styles/typography';
 import { timeSince } from '@/utils/ResponsiveFun';
 import OptionsModal from '../listItems/OptionsModal';
-import StyledTextInput from '../styled/TextInput';
 import CommentField from './Field';
 
 interface BaseItemProps {

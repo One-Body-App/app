@@ -1,11 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, Image, RefreshControl, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { FlatList, RefreshControl, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { SceneRendererProps } from 'react-native-tab-view';
 import { useTheme } from '@react-navigation/native';
-import { styles } from './styles';
-import Twitter from '@/assets/svg/Twitter.svg';
-import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
+import { getHeight } from '@/utils/ResponsiveFun';
 import { ApiCall } from '@/src/services/api';
 import SocialItem from '../listItems/SocialItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';

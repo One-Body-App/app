@@ -17,12 +17,10 @@ import FastImage from 'react-native-fast-image';
 
 import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
-import Modal from 'react-native-modal';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { isNumber } from 'lodash';
 import Button from '@/components/Button';
 
 import { getUserProfile } from '@/src/redux/actions/UserAction';
@@ -43,9 +41,9 @@ import SearchIcon from '@/assets/icons/search.svg';
 import { borderRadius } from '@/src/styles/outlines';
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
+import CustomModal from '@/src/components/CustomModal';
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 
 type Props = CompositeScreenProps<
@@ -65,7 +63,6 @@ enum SortType {
 
 function Explore({ navigation }: Props) {
   const dispatch = useDispatch();
-  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // const navigation = useNavigation<ScreenNavigationProp>();
@@ -78,8 +75,6 @@ function Explore({ navigation }: Props) {
   const [showInterestModal, setShowInterestModal] = useState<boolean>(false);
   const [showFollowingModal, setShowFollowingModal] = useState<boolean>(false);
 
-  const [showMyConnections, setShowMyConnections] = useState<boolean>(false);
-  const [interests, setInterests] = useState<Interest[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
   const [sort, setSort] = useState<SortType>(SortType.forMe);
   const [searchInterest, setSearchInterest] = useState<Interest[]>([]);
@@ -224,7 +219,6 @@ function Explore({ navigation }: Props) {
       });
 
       if (res?.status == 200) {
-        setInterests(res?.response);
         setSearchInterest(res?.response);
       } else {
         console.log('error', res?.response);
@@ -303,18 +297,6 @@ function Explore({ navigation }: Props) {
     } catch (e) {
       console.log('saga sign up err --- ', e);
     }
-  };
-
-  const setFilteredUsers = (users: User[], text: string) => {
-    const newSearchChannels = [];
-    for (let i = 0; i < users.length; i++) {
-      if (users[i] && users[i].name) {
-        if (users[i].name.toLowerCase().indexOf(text.toLowerCase()) > -1) {
-          newSearchChannels.push(users[i]);
-        }
-      }
-    }
-    setSearchChannelsToFollow(newSearchChannels);
   };
 
   const renderListHeader = () => {
@@ -651,15 +633,10 @@ function Explore({ navigation }: Props) {
           />
         </View>
 
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={showInterestModal}
-          onBackdropPress={() => setShowInterestModal(false)}
-          onSwipeComplete={() => setShowInterestModal(false)}
-          swipeDirection={['down']}
-          propagateSwipe
+        <CustomModal
+          modalVisible={showInterestModal}
+          onclose={() => setShowInterestModal(false)}
           style={{ margin: 0 }}
-          avoidKeyboard
         >
           <SafeAreaView
             style={{
@@ -748,17 +725,12 @@ function Explore({ navigation }: Props) {
               </ScrollView>
             </View>
           </SafeAreaView>
-        </Modal>
+        </CustomModal>
 
-        <Modal
-          backdropOpacity={0.3}
-          isVisible={showFollowingModal}
-          onBackdropPress={() => setShowFollowingModal(false)}
-          onSwipeComplete={() => setShowFollowingModal(false)}
-          swipeDirection={['down']}
+        <CustomModal
+          modalVisible={showFollowingModal}
+          onclose={() => setShowFollowingModal(false)}
           style={{ margin: 0 }}
-          propagateSwipe
-          avoidKeyboard
         >
           <SafeAreaView
             style={{
@@ -934,7 +906,7 @@ function Explore({ navigation }: Props) {
               </View>
             </View>
           </SafeAreaView>
-        </Modal>
+        </CustomModal>
       </View>
     </KeyboardAvoidingView>
   );

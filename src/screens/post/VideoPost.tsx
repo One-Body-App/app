@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Video from 'react-native-video';
+// . import Video from 'react-native-video';
 import { useTheme } from '@react-navigation/native';
 import {
   View,
@@ -26,6 +26,7 @@ import { ApiCall } from '@/src/services/api';
 import { MainStackParamList } from '@/src/navigator/types';
 import CameraComponent from '@/src/components/VideoPost/Camera';
 import { spacing } from '@/src/styles/spacing';
+import CustomVideo from '@/src/components/CustomVideo';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
@@ -97,6 +98,7 @@ function VideoPost({ navigation }: Props) {
       setLoading(false);
     }
   };
+  console.log('VideoPath', VideoPath, !VideoPath);
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAwareScrollView contentContainerStyle={[styles.container]}>
@@ -121,10 +123,13 @@ function VideoPost({ navigation }: Props) {
                     margin: 'auto',
                   }}
                 >
-                  <Video
-                    source={{ uri: VideoPath || '' }}
+                  <CustomVideo
+                    source={{
+                      uri:
+                        'file:///data/user/0/com.onebody/cache/mrousavy6691347555245248709.mov' ||
+                        '',
+                    }}
                     resizeMode="contain"
-                    repeat={playedTimes <= 3}
                     paused={playedTimes >= 3}
                     controls
                     style={{ flex: 1 }}

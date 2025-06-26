@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { CompositeScreenProps, useTheme, useScrollToTop } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { ArrowDown2, Notification } from 'iconsax-react-native';
+import { ArrowDown2 } from 'iconsax-react-native';
 import { styles } from './styles';
 
 import { ApiCall } from '@/services/api';
@@ -66,12 +66,6 @@ function Home({ navigation, route }: Props) {
 
   const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
 
-  const viewabilityConfig = {
-    itemVisiblePercentThreshold: 100,
-    // waitForInteraction: true,
-    minimumViewTime: 10,
-  };
-
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0) {
       setVisibleItemsIndex(viewableItems.map((item: any) => item.index));
@@ -96,7 +90,6 @@ function Home({ navigation, route }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectVisible, setSelectVisible] = useState(false);
-  const [position, setPosition] = useState<any>();
 
   const showModal = (item: ArticleType) => {
     setCurrentPopupItem(item);
@@ -175,7 +168,7 @@ function Home({ navigation, route }: Props) {
     }
   }, [isRefreshing]);
 
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<FlatList | null>(null);
   useScrollToTop(listRef);
 
   const filterUpdate = (itemValue: FeedTypes) => {
@@ -422,7 +415,7 @@ function Home({ navigation, route }: Props) {
                   );
                 }
 
-                if (item.type == 'tasteBreaker') {
+                if (item.type === 'tasteBreaker') {
                   const itemToUse = item?.items[0];
                   return (
                     <View key={`tastebreaker_${itemToUse.id}`}>

@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Modal from 'react-native-modal';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -8,6 +7,7 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { getuserAll, getInterests, addUserInterest } from '../redux/actions/UserAction';
 import GradientButton from './GradientButton';
 import StyledText from './styled/Text';
+import CustomModal from './CustomModal';
 
 type Route = {
   key: string;
@@ -43,14 +43,7 @@ function AddIntrestsModel(props: any) {
   }, [userState?.addUserInterestSuccess]);
 
   return (
-    <Modal
-      backdropOpacity={0.3}
-      isVisible={show}
-      onBackdropPress={() => setShow(false)}
-      onSwipeComplete={() => setShow(false)}
-      swipeDirection={['down']}
-      style={styles.bottomView}
-    >
+    <CustomModal modalVisible={show} onclose={() => setShow(false)} style={styles.bottomView}>
       <View style={styles.content2}>
         <View style={styles.headLine} />
         <View style={styles.container}>
@@ -104,7 +97,7 @@ function AddIntrestsModel(props: any) {
           />
         </View>
       </View>
-    </Modal>
+    </CustomModal>
   );
 }
 

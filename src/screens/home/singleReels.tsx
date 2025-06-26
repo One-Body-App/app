@@ -1,13 +1,12 @@
-import { StyleSheet } from 'react-native';
+// import { StyleSheet } from 'react-native';
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import muxReactNativeVideo from '@mux/mux-data-react-native-video';
-import Video, { VideoRef } from 'react-native-video';
-import VisibilitySensor from '@svanboxel/visibility-sensor-react-native';
+// import muxReactNativeVideo from '@mux/mux-data-react-native-video';
+// import VisibilitySensor from '@svanboxel/visibility-sensor-react-native';
 
 const SingleReels = forwardRef(({ item }: any, parentRef) => {
-  const MuxVideo = muxReactNativeVideo(Video);
-  const [paused, setpaused] = useState(true);
-  const videoRef = useRef<VideoRef>(null);
+  // const MuxVideo = muxReactNativeVideo(Video);
+  // const [paused, setpaused] = useState(true);
+  const videoRef = useRef</* VideoRef */ any>(null);
   useImperativeHandle(parentRef, () => ({
     play,
     // unload,
@@ -49,40 +48,39 @@ const SingleReels = forwardRef(({ item }: any, parentRef) => {
   // useEffect(() => {
   //   return () => unload();
   // }, []);
-  return (
-    <VisibilitySensor
-      style={{ flex: 1 }}
-      onChange={(isVisible) => {
-        return isVisible ? setpaused(false) : setpaused(true);
-      }}
-    >
-      <MuxVideo
-        ref={videoRef}
-        resizeMode="cover"
-        style={{ flex: 1 }}
-        // controls
-        repeat
-        isLooping
-        paused={paused}
-        source={{
-          uri: `https://stream.mux.com/${item?.playback_ids?.[0]?.id}.m3u8`,
-        }}
-        muxOptions={{
-          application_name: 'One Body Inc', // (required) the name of your application
-          // application_version: 1, // the version of your application (optional, but encouraged)
-          data: {
-            env_key: 'rki2o54t3hd863rmub7pfo3mm', // (required)
-            // player_software_version: '5.0.2', // (optional, but encouraged) the version of react-native-video that you are using
-            player_name: 'React Native Player', // See metadata docs for available metadata fields https://docs.mux.com/docs/web-integration-guide#section-5-add-metadata
-            video_id: '4PqGmTr702jsox5IW7zWgwnSvfwnLmqVMwGAVNFBcJm8',
-            video_title: 'My awesome video',
-          },
-        }}
-      />
-    </VisibilitySensor>
-  );
+  // return (
+  //   <VisibilitySensor
+  //     style={{ flex: 1 }}
+  //     onChange={(isVisible) => {
+  //       return isVisible ? setpaused(false) : setpaused(true);
+  //     }}
+  //   >
+  //     <MuxVideo
+  //       ref={videoRef}
+  //       resizeMode="cover"
+  //       style={{ flex: 1 }}
+  //       // controls
+  //       repeat
+  //       isLooping
+  //       paused={paused}
+  //       source={{
+  //         uri: `https://stream.mux.com/${item?.playback_ids?.[0]?.id}.m3u8`,
+  //       }}
+  //       muxOptions={{
+  //         application_name: 'One Body Inc', // (required) the name of your application
+  //         // application_version: 1, // the version of your application (optional, but encouraged)
+  //         data: {
+  //           env_key: 'rki2o54t3hd863rmub7pfo3mm', // (required)
+  //           // player_software_version: '5.0.2', // (optional, but encouraged) the version of react-native-video that you are using
+  //           player_name: 'React Native Player', // See metadata docs for available metadata fields https://docs.mux.com/docs/web-integration-guide#section-5-add-metadata
+  //           video_id: '4PqGmTr702jsox5IW7zWgwnSvfwnLmqVMwGAVNFBcJm8',
+  //           video_title: 'My awesome video',
+  //         },
+  //       }}
+  //     />
+  //   </VisibilitySensor>
+  // );
+  return null;
 });
 
 export default SingleReels;
-
-const styles = StyleSheet.create({});

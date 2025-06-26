@@ -6,6 +6,7 @@ import {
   NativeEventEmitter,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import React, {
   Dispatch,
@@ -25,7 +26,7 @@ import {
 } from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
-import { isValidVideo, showEditor } from 'react-native-video-trim';
+import { isValidFile, showEditor } from 'react-native-video-trim';
 import videoPostStyles from './styles';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
@@ -56,10 +57,13 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     const response = await launchImageLibrary(options);
     if (response?.assets && response?.assets.length > 0) {
       setRecordedVideo(response?.assets[0]?.uri);
-      isValidVideo(response?.assets[0]?.uri || 'xxxx');
+      isValidFile(response?.assets[0]?.uri || 'xxxx');
       showEditor(response?.assets[0]?.uri || '', {
         saveToPhoto: false,
         enableSaveDialog: false,
+        alertOnFailToLoad: true,
+        alertOnFailMessage: 'Failed to load video',
+        alertOnFailTitle: 'Error',
         maxDuration: 60,
         cancelDialogMessage: 'Are you sure you want to delete this?',
         cancelDialogConfirmText: 'Delete',
@@ -76,8 +80,13 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
             videoCodec: 'h265',
             onRecordingFinished: async (video) => {
               setRecordedVideo(video);
-              isValidVideo(video?.path || '');
+              isValidFile(video?.path || '');
+
               showEditor(video?.path || '', {
+                alertOnFailToLoad: true,
+                alertOnFailMessage: 'Failed to load video',
+                alertOnFailTitle: 'Error',
+
                 saveToPhoto: false,
                 maxDuration: 60,
                 enableSaveDialog: false,
@@ -103,7 +112,6 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
       first: 1,
     });
     const image_url = res?.edges[0]?.node?.image;
-
     setLatestGalleryImg(image_url?.uri);
   }, []);
 
@@ -118,28 +126,80 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     setCameraPermission(cameraPermission);
   };
 
+  // useEffect(() => {
+  //   getPermissions();
+  //   fetchPhotos();
+  //   const eventEmitter = new NativeEventEmitter(NativeModules.VideoTrim);
+  //   const subscription = eventEmitter.addListener('VideoTrim', async (event) => {
+  //     switch (event.name) {
+  //       case 'onFinishTrimming': {
+  //         // on trimming is done
+  //         if (Platform.OS === 'ios') {
+  //           setVideoPath(event?.outputPath);
+  //         } else {
+  //           const asset = await CameraRoll.saveAsset(event?.outputPath || '');
+  //           setVideoPath(asset.node.image.uri);
+  //         }
+
+  //         break;
+  //       }
+  //       case 'onError': {
+  //         console.log('🚀 ~ handleStartRecording ~ error:', event);
+  //         break;
+  //       }
+  //       default:
+  //     }
+  //   });
+
+  //   return () => {
+  //     subscription.remove();
+  //   };
+  // }, []);
   useEffect(() => {
     getPermissions();
     fetchPhotos();
-    const eventEmitter = new NativeEventEmitter(NativeModules.VideoTrim);
-    const subscription = eventEmitter.addListener('VideoTrim', async (event) => {
-      switch (event.name) {
-        case 'onFinishTrimming': {
-          // on trimming is done
-          // if (Platform.OS === 'ios') {
-          setVideoPath(event?.outputPath);
-          // } else {
-          //   const asset = await CameraRoll.saveAsset(event?.outputPath || '');
-          //   setVideoPath(asset.node.image.uri);
-          // }
 
+    const nativeModule = NativeModules.VideoTrim;
+
+    // Check if module exists and has listener methods
+    const isValidEmitter =
+      nativeModule &&
+      typeof nativeModule.addListener === 'function' &&
+      typeof nativeModule.removeListeners === 'function';
+
+    if (!isValidEmitter) {
+      console.warn(
+        '[VideoTrim] Native module is missing listener methods. Skipping NativeEventEmitter setup.'
+      );
+      return;
+    }
+
+    const eventEmitter = new NativeEventEmitter(nativeModule);
+
+    const subscription = eventEmitter.addListener('VideoTrim', async (event) => {
+      console.log('[VideoTrim] Event received:', event);
+
+      switch (event.name) {
+        case 'onFinishTrimming':
+          try {
+            if (Platform.OS === 'ios') {
+              setVideoPath(event?.outputPath);
+            } else {
+              const asset = await CameraRoll.saveAsset(event?.outputPath || '');
+              setVideoPath(asset.node.image.uri);
+            }
+          } catch (err) {
+            console.error('[VideoTrim] Failed to handle trimmed video output:', err);
+          }
           break;
-        }
-        case 'onError': {
-          console.log('🚀 ~ handleStartRecording ~ error:', event);
+
+        case 'onError':
+          console.error('[VideoTrim] Error event:', event);
           break;
-        }
+
         default:
+          console.warn('[VideoTrim] Unknown event:', event);
+          break;
       }
     });
 

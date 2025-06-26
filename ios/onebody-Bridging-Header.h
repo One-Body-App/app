@@ -7,6 +7,6 @@
 #ifndef Onebody_Bridging_Header_h
 #define Onebody_Bridging_Header_h
 
-#import "RNSplashScreen.h" // here
+#import "RNSplashScreen.h" // Removed because header not found
 
 #endif /* Onebody_Bridging_Header_h */

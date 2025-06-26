@@ -5,7 +5,7 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Linking, useColorScheme } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -17,8 +17,6 @@ import messaging from '@react-native-firebase/messaging';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
-import FastImage from 'react-native-fast-image';
-import { HeaderBackButton } from '@react-navigation/elements';
 import { RootState } from '../redux/reducers/rootReducer';
 import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions';
 import ForgotPassword from '../screens/forgotPassword';
@@ -47,6 +45,7 @@ GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 function Main() {
+  console.log('Main Navigator Loaded');
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
   const authState = useSelector((state: RootState) => state.auth);
@@ -121,7 +120,7 @@ function Main() {
 
     if (!initializing) {
       // if (Platform.OS == 'android') {
-      //   LottieSplashScreen.hide();
+      LottieSplashScreen.hide();
       // } else {
       setTimeout(() => {
         LottieSplashScreen.hide();
