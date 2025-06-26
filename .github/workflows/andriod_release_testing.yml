@@ -9,7 +9,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: production
+    environment: staging
     steps:
       - uses: actions/checkout@v4
         with:
