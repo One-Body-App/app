@@ -59,7 +59,7 @@
     "js-sha256": "^0.11.0",
     "lodash": "^4.17.21",
     "lottie-ios": "^4.3.4",
-    "lottie-react-native": "https://github.com/lottie-react-native/lottie-react-native",
+    "lottie-react-native": "^7.2.3",
     "object-to-formdata": "^4.5.1",
     "phosphor-react-native": "^2.0.0",
     "react": "19.1.0",
