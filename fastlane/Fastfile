@@ -33,6 +33,7 @@ end
 platform :ios do
   before_all do
       cocoapods(podfile: "./ios")
+      xcversion(version: "~> 16.2.0")
   end
 
   desc "Push a new beta build to TestFlight"
