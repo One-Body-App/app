@@ -120,7 +120,7 @@ function Main() {
 
     if (!initializing) {
       // if (Platform.OS == 'android') {
-      LottieSplashScreen.hide();
+      // LottieSplashScreen.hide();
       // } else {
       setTimeout(() => {
         LottieSplashScreen.hide();

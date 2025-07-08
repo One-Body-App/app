@@ -33,7 +33,7 @@ end
 platform :ios do
   before_all do
       cocoapods(podfile: "./ios")
-      xcodes(version: "16.2", select_for_current_build_only: true)
+
 
   end
 
