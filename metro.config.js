@@ -21,4 +21,4 @@ const config = {
   },
 };
 
-module.exports = withSentryConfig(mergeConfig(defaultConfig, config));
+module.exports = withSentryConfig(withSentryConfig(mergeConfig(defaultConfig, config)));

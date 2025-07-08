@@ -8,14 +8,12 @@ gem 'concurrent-ruby', '< 1.3.4'
 
 gem 'abbrev'
 gem 'logger'
-gem 'mutex_m'
 gem 'csv'
 gem "fastlane"
 
 
 # Ruby 3.4.0 has removed some libraries from the standard library.
 gem 'bigdecimal'
-gem 'logger'
 gem 'benchmark'
 gem 'mutex_m'
 

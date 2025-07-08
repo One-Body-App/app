@@ -2118,7 +2118,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-lottie-splash-screen (1.1.2):
+  - react-native-lottie-splash-screen (1.1.1):
     - React
   - react-native-mov-to-mp4 (0.2.2):
     - React
@@ -3897,7 +3897,7 @@ SPEC CHECKSUMS:
   react-native-geolocation: b7f68b8c04e36ee669c630dbc48dd42cf93a0a41
   react-native-image-picker: bf90d78234b2bdffd8ce3e037b097c84a2778a28
   react-native-keyboard-controller: dbd9a7de10c53ccd6ddffc84733b3b958fe4ca08
-  react-native-lottie-splash-screen: 2d84b1c81c176981d3e5e17df14da5a99a2f5082
+  react-native-lottie-splash-screen: e7820832f194c296ccdb177a82d8a3f3b7e362bf
   react-native-mov-to-mp4: 4049007fa3fc04897a4b8b764983aca01810ee00
   react-native-pager-view: 14b164735478c7f04a7ee14f544b3fb3218b080e
   react-native-render-html: 5afc4751f1a98621b3009432ef84c47019dcb2bd
