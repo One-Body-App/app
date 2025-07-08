@@ -8,13 +8,13 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-15
     environment: production
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{secrets.GH_TOKEN}}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ios/Pods
           key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
@@ -22,7 +22,7 @@ jobs:
             ${{ runner.os }}-pods-
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: 'yarn'
       - uses: ruby/setup-ruby@v1
         with:

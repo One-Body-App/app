@@ -1,15 +1,7 @@
-//
-//  Dynamic.swift
-//  onebody
-//
-//  Created by Daniel Chavez on 12/5/23.
-//
-
-#if canImport(UIKit)
 import UIKit
-#endif
 import Foundation
 import Lottie
+import react_native_lottie_splash_screen
 
 @objc class Dynamic: NSObject {
 
@@ -24,7 +16,7 @@ import Lottie
   @objc func play(animationView: LottieAnimationView) {
     animationView.play(
       completion: { (success) in
-        RNSplashScreen.setAnimationFinished(true)
+        react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
       }
     );
   }
