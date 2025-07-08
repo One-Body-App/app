@@ -4048,9 +4048,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/react-native@npm:^6.14.0":
-  version: 6.15.1
-  resolution: "@sentry/react-native@npm:6.15.1"
+"@sentry/react-native@npm:^6.16.1":
+  version: 6.16.1
+  resolution: "@sentry/react-native@npm:6.16.1"
   dependencies:
     "@sentry/babel-plugin-component-annotate": "npm:3.5.0"
     "@sentry/browser": "npm:8.54.0"
@@ -4068,7 +4068,7 @@ __metadata:
       optional: true
   bin:
     sentry-expo-upload-sourcemaps: scripts/expo-upload-sourcemaps.js
-  checksum: 10/133ba9b9705b9f4c43f97d55fc614f48f765c2057ac69f2213c6096d44cef3d353a21abca19a7c0ef56eaa3bf6f67d57931e089a2563fc671c3d0d4515c9bf99
+  checksum: 10/502395b92f637cbf4ebbc1fab55b5444c0b129ffe50518e646c4eb2d03589ae985fd4be7da5fe12a1efbb85cff73edf43aeedb858d3e97771a6457a8612ea41a
   languageName: node
   linkType: hard
 
@@ -12213,7 +12213,7 @@ __metadata:
     "@react-navigation/native-stack": "npm:^6.9.13"
     "@react-navigation/stack": "npm:^6.3.17"
     "@reduxjs/toolkit": "npm:^1.8.3"
-    "@sentry/react-native": "npm:^6.14.0"
+    "@sentry/react-native": "npm:^6.16.1"
     "@svanboxel/visibility-sensor-react-native": "npm:^1.0.2"
     "@types/base-64": "npm:^1"
     "@types/jest": "npm:^29.5.13"
