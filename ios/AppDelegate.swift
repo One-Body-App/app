@@ -34,22 +34,51 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       in: window,
       launchOptions: launchOptions
     )
+    
 
     if let rootView = window?.rootViewController?.view {
-//      rootView.backgroundColor = .white
+
+      switch (UIScreen.main.traitCollection.userInterfaceStyle) {
+      case .dark:
+          rootView.backgroundColor = .black
+      case .light, .unspecified:
+          rootView.backgroundColor = .white
+      @unknown default:
+          rootView.backgroundColor = .white
+      }
 
       // Set up Lottie splash screen
       let dynamic = Dynamic()
       if let animationUIView = dynamic.createAnimationView(rootView: rootView, lottieName: "logoAnimation") as? UIView {
-        react_native_lottie_splash_screen.RNSplashScreen.showLottieSplash(animationUIView, inRootView: rootView)
+                  react_native_lottie_splash_screen.RNSplashScreen.showLottieSplash(animationUIView, inRootView: rootView)
 
-        if let animationView = animationUIView as? LottieAnimationView {
-          dynamic.play(animationView: animationView)
-        }
-
-        // Force remove animation layout when hide is called
-        react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
-      }
+                  if let animationView = animationUIView as? LottieAnimationView {
+                      // Play the animation and set setAnimationFinished(true) in the completion block
+                      dynamic.play(animationView: animationView) { (finished) in
+                          if finished {
+                              // This block will be executed once the Lottie animation is done playing
+                              react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+                          }
+                      }
+                  } else {
+                      // If for some reason animationUIView isn't a LottieAnimationView,
+                      // ensure setAnimationFinished is still called to avoid infinite splash screen.
+                      react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+                  }
+              } else {
+                  // If animationUIView couldn't be created, ensure setAnimationFinished is called.
+                  react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+              }
+//      if let animationUIView = dynamic.createAnimationView(rootView: rootView, lottieName: "logoAnimation") as? UIView {
+//        react_native_lottie_splash_screen.RNSplashScreen.showLottieSplash(animationUIView, inRootView: rootView)
+//
+//        if let animationView = animationUIView as? LottieAnimationView {
+//          dynamic.play(animationView: animationView)
+//        }
+//
+//        // Force remove animation layout when hide is called
+//        react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+//      }
     }
     return true
   }

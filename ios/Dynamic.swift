@@ -13,11 +13,14 @@ import react_native_lottie_splash_screen
     return animationView;
   }
 
-  @objc func play(animationView: LottieAnimationView) {
-    animationView.play(
-      completion: { (success) in
-        react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+//  @objc func play(animationView: LottieAnimationView) {
+//    animationView.play(
+//      completion: { (success) in
+//        react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+//      }
+//    );
+//  }
+  @objc func play(animationView: LottieAnimationView, completion: LottieCompletionBlock? = nil) {
+          animationView.play(completion: completion) // Pass the completion to Lottie's play method
       }
-    );
-  }
 }

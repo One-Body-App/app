@@ -123,7 +123,7 @@ function Main() {
       // LottieSplashScreen.hide();
       // } else {
       setTimeout(() => {
-        LottieSplashScreen.hide();
+        // LottieSplashScreen.hide();
       }, 5500);
       // }
     }
