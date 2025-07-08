@@ -1,7 +1,7 @@
 import React, { ReactNode, useState } from 'react';
 import { Platform, Share, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { Heart, Location, Message2 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import { ShareIos, ShareAndroid, Bookmark } from 'iconoir-react-native';

@@ -16,8 +16,8 @@ import {
 } from 'react-native';
 import { Avatar, Provider } from 'react-native-paper';
 import DropDown from 'react-native-paper-dropdown';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import AntDesign from '@react-native-vector-icons/ant-design';
 import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
 import { useSelector } from 'react-redux';
 import RenderHtml from 'react-native-render-html';

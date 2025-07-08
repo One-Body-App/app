@@ -15,7 +15,7 @@ import {
 import FastImage from 'react-native-fast-image';
 import Toast from 'react-native-simple-toast';
 
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon from '@react-native-vector-icons/material-design-icons';
 import { format, parseISO } from 'date-fns';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';

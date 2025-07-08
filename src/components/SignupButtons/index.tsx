@@ -8,7 +8,7 @@ import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import FontAwesome from '@react-native-vector-icons/fontawesome';
 import Button from '../Button';
 import G from '@/assets/svg/G.svg';
 import Facebook from '@/assets/svg/Facebook.svg';

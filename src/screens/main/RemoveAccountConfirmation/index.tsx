@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, Alert } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';

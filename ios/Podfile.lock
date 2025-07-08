@@ -2273,6 +2273,14 @@ PODS:
     - SocketRocket
     - Toast (~> 4)
     - Yoga
+  - react-native-vector-icons-ant-design (12.0.1)
+  - react-native-vector-icons-entypo (12.0.1)
+  - react-native-vector-icons-evil-icons (12.0.1)
+  - react-native-vector-icons-feather (12.0.1)
+  - react-native-vector-icons-fontawesome (12.0.1)
+  - react-native-vector-icons-ionicons (12.0.1)
+  - react-native-vector-icons-material-design-icons (12.0.1)
+  - react-native-vector-icons-material-icons (12.0.1)
   - react-native-video (6.15.0):
     - boost
     - DoubleConversion
@@ -3477,6 +3485,14 @@ DEPENDENCIES:
   - react-native-render-html (from `../node_modules/react-native-render-html`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-simple-toast (from `../node_modules/react-native-simple-toast`)
+  - "react-native-vector-icons-ant-design (from `../node_modules/@react-native-vector-icons/ant-design`)"
+  - "react-native-vector-icons-entypo (from `../node_modules/@react-native-vector-icons/entypo`)"
+  - "react-native-vector-icons-evil-icons (from `../node_modules/@react-native-vector-icons/evil-icons`)"
+  - "react-native-vector-icons-feather (from `../node_modules/@react-native-vector-icons/feather`)"
+  - "react-native-vector-icons-fontawesome (from `../node_modules/@react-native-vector-icons/fontawesome`)"
+  - "react-native-vector-icons-ionicons (from `../node_modules/@react-native-vector-icons/ionicons`)"
+  - "react-native-vector-icons-material-design-icons (from `../node_modules/@react-native-vector-icons/material-design-icons`)"
+  - "react-native-vector-icons-material-icons (from `../node_modules/@react-native-vector-icons/material-icons`)"
   - react-native-video (from `../node_modules/react-native-video`)
   - react-native-webview (from `../node_modules/react-native-webview`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -3696,6 +3712,22 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-simple-toast:
     :path: "../node_modules/react-native-simple-toast"
+  react-native-vector-icons-ant-design:
+    :path: "../node_modules/@react-native-vector-icons/ant-design"
+  react-native-vector-icons-entypo:
+    :path: "../node_modules/@react-native-vector-icons/entypo"
+  react-native-vector-icons-evil-icons:
+    :path: "../node_modules/@react-native-vector-icons/evil-icons"
+  react-native-vector-icons-feather:
+    :path: "../node_modules/@react-native-vector-icons/feather"
+  react-native-vector-icons-fontawesome:
+    :path: "../node_modules/@react-native-vector-icons/fontawesome"
+  react-native-vector-icons-ionicons:
+    :path: "../node_modules/@react-native-vector-icons/ionicons"
+  react-native-vector-icons-material-design-icons:
+    :path: "../node_modules/@react-native-vector-icons/material-design-icons"
+  react-native-vector-icons-material-icons:
+    :path: "../node_modules/@react-native-vector-icons/material-icons"
   react-native-video:
     :path: "../node_modules/react-native-video"
   react-native-webview:
@@ -3903,6 +3935,14 @@ SPEC CHECKSUMS:
   react-native-render-html: 5afc4751f1a98621b3009432ef84c47019dcb2bd
   react-native-safe-area-context: 32293dc61d1b92ccf892499ab6f8acfd609f9aef
   react-native-simple-toast: f5d6bac431cf98ed8d1884526d064904d8f33bee
+  react-native-vector-icons-ant-design: e496d5477b61e28313e3a2d1e92f27dec1f8d677
+  react-native-vector-icons-entypo: 1f4268fbf87eced3075f6d543e2b15fc622f7bfb
+  react-native-vector-icons-evil-icons: 26a89e2d729c84231afbe726de8aa5b976a7a6be
+  react-native-vector-icons-feather: bf1b6a4a4db7c7eb84abbecf385b0ceca931ee40
+  react-native-vector-icons-fontawesome: 3d17a696d3f897139f0094437c2acdb2eee08939
+  react-native-vector-icons-ionicons: 82538a5f94fd186b3b7abd49192ea96e28876887
+  react-native-vector-icons-material-design-icons: fa35dd305942c95e838767cea9ef1934bf0aafc2
+  react-native-vector-icons-material-icons: e1c2768c9bba5442735b791ec7a152b642aaf3ad
   react-native-video: 19b7b409bce311c000162876c6554641509bf0f4
   react-native-webview: 44434e525f798a7b35b8b94d9db36cd25a75048f
   React-NativeModulesApple: 7fda5d50e7aacd04eee21799be16913360562eb5
@@ -3972,4 +4012,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: b0e4ea14c82f375db7e1cff236d19611547e8c0b
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2

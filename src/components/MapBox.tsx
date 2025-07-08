@@ -11,7 +11,7 @@ import {
 import Geolocation from '@react-native-community/geolocation';
 
 import { useTheme } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Gps } from 'iconsax-react-native';
 import { borderRadius } from '../styles/outlines';
 import StyledText from './styled/Text';

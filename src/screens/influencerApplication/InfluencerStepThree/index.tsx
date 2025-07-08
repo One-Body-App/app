@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, ImageBackground, TouchableOpacity, ScrollView } from 'react-native';
 import { TextInput } from 'react-native-paper';
 
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import LinearGradient from 'react-native-linear-gradient';
 import { StackScreenProps } from '@react-navigation/stack';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
+import EvilIcons from '@react-native-vector-icons/evil-icons';
 import { useToast } from 'react-native-toast-notifications';
 import { getFontSize, getWidth } from '@/utils/ResponsiveFun';
 import { styles } from './styles';

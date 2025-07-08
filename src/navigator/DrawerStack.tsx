@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { Platform, View, useWindowDimensions } from 'react-native';
 import { Home3, Profile2User } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
-import Feather from 'react-native-vector-icons/Feather';
+import Feather from '@react-native-vector-icons/feather';
 import { HandsPraying } from 'phosphor-react-native';
 
 import Geolocation from '@react-native-community/geolocation';

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Linking } from 'react-native';
 import { Text } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';

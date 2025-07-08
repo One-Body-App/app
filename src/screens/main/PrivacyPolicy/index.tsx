@@ -9,7 +9,7 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Header from '@/components/Header';

@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useSelector } from 'react-redux';
 import { SceneMap } from 'react-native-tab-view';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';

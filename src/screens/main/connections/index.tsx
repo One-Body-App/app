@@ -15,7 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import ImageModal from '@dreamwalk-os/react-native-image-modal';
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import Button from '@/components/Button';
 import { ApiCall } from '@/src/services/api';
 import { setLoader } from '@/src/redux/actions/GeneralActions';

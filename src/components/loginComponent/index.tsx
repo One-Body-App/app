@@ -1,6 +1,6 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity, ScrollView, useColorScheme, Platform } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useDispatch, useSelector } from 'react-redux';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -11,7 +11,7 @@ import axios from 'axios';
 import { useToast } from 'react-native-toast-notifications';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import FontAwesome from '@react-native-vector-icons/fontawesome';
 import { openInbox } from 'react-native-email-link';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getHeight } from '@/utils/ResponsiveFun';

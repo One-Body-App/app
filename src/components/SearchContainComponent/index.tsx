@@ -9,8 +9,8 @@ import {
   View,
   TouchableOpacity,
 } from 'react-native';
-import Entypo from 'react-native-vector-icons/Entypo';
-import AntDesign from 'react-native-vector-icons/AntDesign';
+import Entypo from '@react-native-vector-icons/entypo';
+import AntDesign from '@react-native-vector-icons/ant-design';
 import { styles } from './styles';
 import Button from '../Button';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';

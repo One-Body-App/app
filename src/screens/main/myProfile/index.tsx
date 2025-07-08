@@ -8,7 +8,7 @@ import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
 import { Setting2 } from 'iconsax-react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useSelector } from 'react-redux';
 import { Colors } from '@/src/styles';
 

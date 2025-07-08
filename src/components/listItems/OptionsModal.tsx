@@ -2,7 +2,7 @@ import { CompositeNavigationProp, useTheme } from '@react-navigation/native';
 
 import React, { useRef } from 'react';
 import { View, Share, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { Copy, InfoCircle, Profile } from 'iconsax-react-native';

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { View, TextInput as TextInputNative } from 'react-native';
 
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';

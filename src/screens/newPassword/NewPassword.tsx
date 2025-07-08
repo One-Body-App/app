@@ -1,6 +1,6 @@
 import { View, TextInput } from 'react-native';
 import React, { useRef, useState } from 'react';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 

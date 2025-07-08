@@ -12,7 +12,7 @@ import {
 import { useSelector } from 'react-redux';
 import { CloseCircle, Gallery, Location as LocationIcon, VideoPlay } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import ImagePicker from 'react-native-image-crop-picker';
 import { Asset, CameraOptions, MediaType, launchCamera } from 'react-native-image-picker';
 import { serialize } from 'object-to-formdata';

@@ -9,7 +9,7 @@ import {
   useColorScheme,
 } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';

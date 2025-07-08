@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Animated, TouchableOpacity } from 'react-native';
 
 import { Divider } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { SwipeListView } from 'react-native-swipe-list-view';
-import AntDesign from 'react-native-vector-icons/AntDesign';
+import AntDesign from '@react-native-vector-icons/ant-design';
 
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';

@@ -3,7 +3,7 @@
 import FastImage from 'react-native-fast-image';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import FontAwesome from 'react-native-vector-icons/FontAwesome5';
+import FontAwesome from '@react-native-vector-icons/fontawesome';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { AddSquare, Global, Home3, SearchNormal1 } from 'iconsax-react-native';

@@ -10,7 +10,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import Button from '@/components/Button';
 import StyledText from '@/components/styled/Text';
 import { Buttons, Colors, Typography } from '@/src/styles';

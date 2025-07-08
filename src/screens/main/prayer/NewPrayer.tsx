@@ -22,7 +22,7 @@ import {
   VideoPlay,
 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import ImagePicker from 'react-native-image-crop-picker';
 import {
   Asset,

@@ -10,7 +10,7 @@ import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Logout, LogoutCurve, Setting2 } from 'iconsax-react-native';
 import { LoginManager } from 'react-native-fbsdk-next';
-import Icon from 'react-native-vector-icons/AntDesign';
+import Icon from '@react-native-vector-icons/ant-design';
 import { useTheme } from '@react-navigation/native';
 import { RootState } from '../redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';

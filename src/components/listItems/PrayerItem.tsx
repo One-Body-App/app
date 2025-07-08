@@ -21,7 +21,7 @@ import { GiphyMediaView } from '@giphy/react-native-sdk';
 import { isArray } from 'lodash';
 import Toast, { useToast } from 'react-native-toast-notifications';
 
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { PostType, PrayerPost, PrayerWallCategory, SocialPostReaction } from '@/utils/types';
 import {

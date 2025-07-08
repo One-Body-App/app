@@ -105,7 +105,7 @@ function AppContent() {
     const subscriber = auth().onIdTokenChanged(onAuthStateChanged);
     setTimeout(() => {
       LottieSplashScreen.hide();
-    }, 5000);
+    }, 5500);
 
     return subscriber;
     // Cleanup subscription on unmount
@@ -132,7 +132,7 @@ function AppContent() {
     if (!initializing) {
       setTimeout(() => {
         LottieSplashScreen.hide();
-      }, 5000);
+      }, 5500);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- [token, user, initializing]);
   }, [token, user, initializing]);

@@ -23,8 +23,8 @@ import {
   SmsNotification,
   UserRemove,
 } from 'iconsax-react-native';
-import Feather from 'react-native-vector-icons/Feather';
-import Icon from 'react-native-vector-icons/AntDesign';
+import Feather from '@react-native-vector-icons/feather';
+import Icon from '@react-native-vector-icons/ant-design';
 import { useToast } from 'react-native-toast-notifications';
 import DeviceInfo from 'react-native-device-info';
 import { styles } from './styles';

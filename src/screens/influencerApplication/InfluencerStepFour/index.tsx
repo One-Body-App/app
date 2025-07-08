@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Text, View, ImageBackground, TouchableOpacity, ScrollView, Alert } from 'react-native';
 
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import LinearGradient from 'react-native-linear-gradient';
 import { StackScreenProps } from '@react-navigation/stack';

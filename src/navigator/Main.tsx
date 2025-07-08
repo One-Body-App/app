@@ -124,7 +124,7 @@ function Main() {
       // } else {
       setTimeout(() => {
         LottieSplashScreen.hide();
-      }, 5000);
+      }, 5500);
       // }
     }
   }, [token, user, initializing]);

@@ -11,7 +11,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import FastImage, { ImageStyle, ResizeMode } from 'react-native-fast-image';
-import Entypo from 'react-native-vector-icons/Entypo';
+import Entypo from '@react-native-vector-icons/entypo';
 import { decode } from 'html-entities';
 import { Caption } from 'react-native-paper';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
