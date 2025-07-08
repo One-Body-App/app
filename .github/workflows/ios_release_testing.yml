@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
     environment: staging
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
             ${{ runner.os }}-pods-
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: 'yarn'
       - uses: ruby/setup-ruby@v1
         with:
