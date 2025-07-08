@@ -1,13 +1,4 @@
-//
-//  Dynamic.swift
-//  onebody
-//
-//  Created by Daniel Chavez on 12/5/23.
-//
-
-#if canImport(UIKit)
 import UIKit
-#endif
 import Foundation
 import Lottie
 
