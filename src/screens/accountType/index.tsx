@@ -43,7 +43,6 @@ function AccountType({ route, navigation }: Props) {
               card,
               {
                 backgroundColor: Colors.main.white,
-                flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderColor:
@@ -57,48 +56,52 @@ function AccountType({ route, navigation }: Props) {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View
-                style={{
-                  backgroundColor: Colors.neutral[800],
-                  borderRadius: borderRadius.base,
-                  padding: spacing.x10,
-                }}
-              >
-                <Profile color={Colors.primary.brand} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <StyledText style={{ marginLeft: 15, ...Typography.body.x3 }}>
-                  I am an Individual
-                </StyledText>
-                {accountType == AccountTypeType.individual ? (
-                  <StyledText
-                    style={{
-                      marginLeft: 15,
-                      marginRight: 5,
-                      ...Typography.body.x2,
-                      color: Colors.neutral[300],
-                    }}
-                  >
-                    Individual profiles are for individuals, leaders, or any one person that desires
-                    to create a One Body profile.
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <View
+                  style={{
+                    backgroundColor: Colors.neutral[800],
+                    borderRadius: borderRadius.base,
+                    padding: spacing.x10,
+                    height: 40,
+                    width: 40,
+                  }}
+                >
+                  <Profile color={Colors.primary.brand} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <StyledText style={{ marginLeft: 15, ...Typography.body.x3 }}>
+                    I am an Individual
                   </StyledText>
+                  {accountType == AccountTypeType.individual ? (
+                    <StyledText
+                      style={{
+                        marginLeft: 15,
+                        marginRight: 5,
+                        ...Typography.body.x2,
+                        color: Colors.neutral[300],
+                      }}
+                    >
+                      Individual profiles are for individuals, leaders, or any one person that
+                      desires to create a One Body profile.
+                    </StyledText>
+                  ) : null}
+                </View>
+              </View>
+              <View
+                style={[
+                  GeneralStyle.radioButton,
+                  {
+                    borderColor:
+                      accountType == AccountTypeType.individual
+                        ? Colors.primarySapphire.brand
+                        : Colors.neutral[200],
+                  },
+                ]}
+              >
+                {accountType == AccountTypeType.individual ? (
+                  <View style={GeneralStyle.radioButtonIcon} />
                 ) : null}
               </View>
-            </View>
-            <View
-              style={[
-                GeneralStyle.radioButton,
-                {
-                  borderColor:
-                    accountType == AccountTypeType.individual
-                      ? Colors.primarySapphire.brand
-                      : Colors.neutral[200],
-                },
-              ]}
-            >
-              {accountType == AccountTypeType.individual ? (
-                <View style={GeneralStyle.radioButtonIcon} />
-              ) : null}
             </View>
           </TouchableOpacity>
 
@@ -107,7 +110,6 @@ function AccountType({ route, navigation }: Props) {
               card,
               {
                 backgroundColor: Colors.main.white,
-                flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderColor:
@@ -121,49 +123,53 @@ function AccountType({ route, navigation }: Props) {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View
-                style={{
-                  backgroundColor: Colors.neutral[800],
-                  borderRadius: borderRadius.base,
-                  padding: 10,
-                }}
-              >
-                <People color={Colors.primary.brand} />
-              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <View
+                  style={{
+                    backgroundColor: Colors.neutral[800],
+                    borderRadius: borderRadius.base,
+                    padding: 10,
+                    height: 40,
+                    width: 40,
+                  }}
+                >
+                  <People color={Colors.primary.brand} />
+                </View>
 
-              <View style={{ flex: 1 }}>
-                <StyledText style={{ marginLeft: 15, ...Typography.body.x3 }}>
-                  We are an Organization
-                </StyledText>
-                {accountType == AccountTypeType.organization ? (
-                  <StyledText
-                    style={{
-                      marginLeft: 15,
-                      marginRight: 5,
-                      ...Typography.body.x2,
-                      color: Colors.neutral[300],
-                    }}
-                  >
-                    Organization accounts are for Churches, Non-Profits, Businesses, or any
-                    Christian entities that desire to create a One Body profile.
+                <View style={{ flex: 1 }}>
+                  <StyledText style={{ marginLeft: 15, ...Typography.body.x3 }}>
+                    We are an Organization
                   </StyledText>
+                  {accountType == AccountTypeType.organization ? (
+                    <StyledText
+                      style={{
+                        marginLeft: 15,
+                        marginRight: 5,
+                        ...Typography.body.x2,
+                        color: Colors.neutral[300],
+                      }}
+                    >
+                      Organization accounts are for Churches, Non-Profits, Businesses, or any
+                      Christian entities that desire to create a One Body profile.
+                    </StyledText>
+                  ) : null}
+                </View>
+              </View>
+              <View
+                style={[
+                  GeneralStyle.radioButton,
+                  {
+                    borderColor:
+                      accountType == AccountTypeType.organization
+                        ? Colors.primarySapphire.brand
+                        : Colors.neutral[200],
+                  },
+                ]}
+              >
+                {accountType == AccountTypeType.organization ? (
+                  <View style={GeneralStyle.radioButtonIcon} />
                 ) : null}
               </View>
-            </View>
-            <View
-              style={[
-                GeneralStyle.radioButton,
-                {
-                  borderColor:
-                    accountType == AccountTypeType.organization
-                      ? Colors.primarySapphire.brand
-                      : Colors.neutral[200],
-                },
-              ]}
-            >
-              {accountType == AccountTypeType.organization ? (
-                <View style={GeneralStyle.radioButtonIcon} />
-              ) : null}
             </View>
           </TouchableOpacity>
         </View>

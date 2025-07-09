@@ -72,18 +72,20 @@ export default function CustomModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
+
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
   wrapper: {
     flex: 1,
     justifyContent: 'flex-end',
+    padding: 0,
+    margin: 0,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    padding: 20,
+    // padding: 20,
     maxHeight: '100%',
     minHeight: '50%',
   },
