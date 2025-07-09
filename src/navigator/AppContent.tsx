@@ -104,7 +104,7 @@ function AppContent() {
   useEffect(() => {
     const subscriber = auth().onIdTokenChanged(onAuthStateChanged);
     setTimeout(() => {
-      // LottieSplashScreen.hide();
+      LottieSplashScreen.hide();
     }, 5500);
 
     return subscriber;
@@ -131,7 +131,7 @@ function AppContent() {
 
     if (!initializing) {
       setTimeout(() => {
-        // LottieSplashScreen.hide();
+        LottieSplashScreen.hide();
       }, 5500);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- [token, user, initializing]);

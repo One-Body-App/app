@@ -1,10 +1,10 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-devsettings/withAsyncStorage';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-// import LottieSplashScreen from 'react-native-lottie-splash-screen'; // Note: LottieSplashScreen.hide() is now in AppContent
+import LottieSplashScreen from 'react-native-lottie-splash-screen'; // Note: LottieSplashScreen.hide() is now in AppContent
 
 // import ZendeskChat from 'react-native-zendesk-chat';
 import dynamicLinks from '@react-native-firebase/dynamic-links';
@@ -56,6 +56,51 @@ function App() {
       }
     });
   }, []);
+
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  useEffect(() => {
+    async function prepareApp() {
+      try {
+        // Define the MINIMUM time you want the splash screen to be visible.
+        // This should be *slightly longer* than your Lottie animation's actual duration.
+        // Example: If your Lottie is 2 seconds, use 2500ms (2.5 seconds).
+        const MIN_SPLASH_DISPLAY_TIME_MS = 6000; // Adjust this value!
+
+        // Record when the JS side starts its initialization (approximate start of splash screen visibility)
+        const jsLoadStartTime = Date.now();
+
+        // Calculate how much more time we need to wait to meet the minimum display time
+        const elapsed = Date.now() - jsLoadStartTime;
+        const remainingWaitTime = Math.max(0, MIN_SPLASH_DISPLAY_TIME_MS - elapsed);
+
+        // Wait for the remaining time
+        await new Promise((resolve) => {
+          setTimeout(resolve, remainingWaitTime);
+        });
+      } catch (e) {
+        console.error('App initialization failed', e);
+        // Handle error: perhaps show an error screen after a delay
+      } finally {
+        // Once all prep work and the minimum display time are met, mark app as ready
+        setAppIsReady(true);
+      }
+    }
+
+    prepareApp();
+  }, []); // Run once when the component mounts
+
+  useEffect(() => {
+    if (appIsReady) {
+      LottieSplashScreen.hide();
+    }
+  }, [appIsReady]); // Run this effect when `appIsReady` changes
+
+  // While the app is not ready, return null or a simple loading indicator
+  // The native splash screen will remain visible during this time.
+  if (!appIsReady) {
+    return null; // Don't render your main app content yet
+  }
 
   return (
     <Provider store={store}>
