@@ -1,7 +1,7 @@
 // prettier-ignore
 {
   // "extends": "@react-native/typescript-config/tsconfig.json" /* Recommended React Native TSConfig base */,
-  "extends": "@react-native/typescript-config",
+  "extends": "@react-native/typescript-config/tsconfig.json",
   "include": ["**/*.tsx", "**/*.ts", "src/redux/store/index.Js"],
   "exclude": ["index.js", "metro.config.js"],
   "compilerOptions": {
@@ -12,6 +12,7 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
     // "baseUrl": ".",
 
+    "jsx": "react-native",
     "types": ["react-native", "jest", "node"],
 
     "paths": {

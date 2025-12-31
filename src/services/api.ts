@@ -1,6 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
-import { firebase } from '@react-native-firebase/auth';
+import auth from '@react-native-firebase/auth';
 import { BASE_URL } from './constants';
+import { getFirebaseApp } from './firebaseApp';
 
 export const ApiCall = async ({
   params,
@@ -23,7 +24,8 @@ export const ApiCall = async ({
   try {
     let tokenToUse = '';
     if (token) {
-      tokenToUse = (await firebase.auth().currentUser?.getIdToken()) ?? '';
+      const firebaseAuth = auth(getFirebaseApp());
+      tokenToUse = (await firebaseAuth.currentUser?.getIdToken()) ?? '';
     }
 
     let url = null;
@@ -92,6 +94,7 @@ export const ApiCall = async ({
   } catch (e: any) {
     //
     // handle error
+    console.warn('ApiCall error', route, e?.response?.status, e?.response?.data ?? e?.message ?? e);
     return { status: 400, response: e?.response?.data ?? e.message };
   }
 };

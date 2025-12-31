@@ -8,7 +8,8 @@ import { sha256 } from 'js-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 
-export const { BASE_URL } = Config;
+// TEMP: Hardcode BASE_URL to staging to bypass env issues. Remove when env is correct.
+export const BASE_URL = 'https://stagingapi.onebodyapp.com/api';
 export const { PRIVACY_POLICY_URL } = Config;
 export const { TERMS_CONDITIONS_URL } = Config;
 export const { GOOGLE_LOGIN_CLIENT_ID } = Config;

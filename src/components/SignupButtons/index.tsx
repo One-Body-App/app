@@ -20,6 +20,7 @@ import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/services/constants';
 import { MainStackParamList } from '@/src/navigator/types';
+import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
   errorFromLogin?: string;
@@ -44,6 +45,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
 
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
+  const firebaseAuth = auth(getFirebaseApp());
 
   useEffect(() => {
     seterror(errorFromLogin ?? '');
@@ -52,6 +54,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
+      serverClientId: GOOGLE_LOGIN_CLIENT_ID,
       offlineAccess: true,
       forceCodeForRefreshToken: true,
     });
@@ -86,7 +89,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
 
       // use credentialState response to ensure the user is authenticated
       if (credentialState === appleAuth.State.AUTHORIZED) {
-        const userCredentials = await auth().signInWithCredential(appleCredential);
+        const userCredentials = await firebaseAuth.signInWithCredential(appleCredential);
 
         processLogin(userCredentials, setNewUserCredentials);
       }
@@ -129,7 +132,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
       // Create a Google credential with the token
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
 
-      const userCredentials = await auth().signInWithCredential(googleCredential);
+      const userCredentials = await firebaseAuth.signInWithCredential(googleCredential);
 
       processLogin(userCredentials, setNewUserCredentials);
     } catch (error: any) {
@@ -159,7 +162,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
 
       // Create a Firebase credential with the AccessToken
       const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-      const userCredentials = await auth().signInWithCredential(facebookCredential);
+      const userCredentials = await firebaseAuth.signInWithCredential(facebookCredential);
 
       processLogin(userCredentials, setNewUserCredentials);
     } catch (error: any) {

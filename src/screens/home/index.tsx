@@ -379,7 +379,8 @@ function Home({ navigation, route }: Props) {
               data={feedData}
               ref={listRef}
               keyExtractor={(item, index) => {
-                return `${item.id}-${index}`;
+                const baseId = item.id || item.postId || item.item?.id || item?.items?.[0]?.id;
+                return baseId ? baseId.toString() : `feed-${index}`;
               }}
               contentContainerStyle={{
                 flexGrow: 1,
@@ -399,7 +400,6 @@ function Home({ navigation, route }: Props) {
                     >
                       <SocialItem
                         index={index}
-                        key={`social_${item.id}_${index}`}
                         onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
                         itemData={item}
                         visible={
@@ -418,13 +418,15 @@ function Home({ navigation, route }: Props) {
                 if (item.type === 'tasteBreaker') {
                   const itemToUse = item?.items[0];
                   return (
-                    <View key={`tastebreaker_${itemToUse.id}`}>
+                    <View>
                       {/* <FlatList
                         nestedScrollEnabled
                         data={item.items}
                         horizontal={true}
                         showsHorizontalScrollIndicator={true}
-                        keyExtractor={(item, index) => `${item.created}_${index}`}
+                        keyExtractor={(nestedItem, nestedIndex) =>
+                          `${nestedItem?.id || nestedItem?.postId || nestedItem?.created || 'nested'}-${nestedIndex}`
+                        }
                         renderItem={({ item }) => (
                           <ArticleItem
                             pillText="Taste Breakers"
@@ -459,7 +461,6 @@ function Home({ navigation, route }: Props) {
                       >
                         <ArticleItem
                           pillText="Taste Breakers"
-                          key={`tastebreaker_${itemToUse.id}`}
                           item={itemToUse}
                           imageSizeType="cover"
                           // blogPostStyle={{
@@ -487,7 +488,7 @@ function Home({ navigation, route }: Props) {
 
                 if (item.type == 'relatedContent') {
                   return (
-                    <View key={`relatedContent_${item.item.id}`}>
+                    <View>
                       <TouchableOpacity
                         onPress={() => {
                           if (item.item.id) {
@@ -499,7 +500,6 @@ function Home({ navigation, route }: Props) {
                       >
                         <ArticleItem
                           pillText="Suggested"
-                          key={`relatedContent_${item.item.id}`}
                           item={item.item}
                           imageSizeType="cover"
                           blogPostStyle={globalStyle.blogpostview}

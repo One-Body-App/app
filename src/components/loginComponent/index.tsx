@@ -47,6 +47,7 @@ import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledTextInput from '../styled/TextInput';
 import { fontSize } from '@/src/styles/typography';
 import CustomModal from '../CustomModal';
+import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
 
@@ -108,6 +109,7 @@ function LoginComponent({
   });
 
   const toast = useToast();
+  const firebaseAuth = auth(getFirebaseApp());
 
   const [error, seterror] = useState<string>();
   const [success, setSuccess] = useState<string>('');
@@ -126,16 +128,17 @@ function LoginComponent({
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
+      serverClientId: GOOGLE_LOGIN_CLIENT_ID,
       offlineAccess: true,
       forceCodeForRefreshToken: true,
     });
 
     // navigation.addListener('beforeRemove', (e) => {
     //   LoginManager.logOut();
-    //   if (auth().currentUser?.uid) {
-    //     auth().signOut();
+    //   if (firebaseAuth.currentUser?.uid) {
+    //     firebaseAuth.signOut();
 
-    //     auth().currentUser?.reload();
+    //     firebaseAuth.currentUser?.reload();
     //   }
     //   dispatch(logout());
     // });
@@ -143,7 +146,7 @@ function LoginComponent({
 
   useEffect(() => {
     if (token) {
-      auth().currentUser?.reload();
+      firebaseAuth.currentUser?.reload();
 
       if (Platform.OS === 'android') {
         navigation.replace('MainRoot', {
@@ -158,10 +161,10 @@ function LoginComponent({
     if (mode == 'verifyEmail' && action == 'action' && oobCode) {
       const action = async () => {
         try {
-          const result = await auth().checkActionCode(oobCode);
+          const result = await firebaseAuth.checkActionCode(oobCode);
 
           if (result.operation == 'VERIFY_EMAIL') {
-            await auth().applyActionCode(oobCode);
+            await firebaseAuth.applyActionCode(oobCode);
 
             setSuccess('Email verification successful. Please Sign in to your account');
           }
@@ -175,8 +178,8 @@ function LoginComponent({
     if (mode == 'verifyAndChangeEmail' && action == 'action' && oobCode) {
       const action = async () => {
         try {
-          const result = await auth().checkActionCode(oobCode);
-          await auth().applyActionCode(oobCode);
+          const result = await firebaseAuth.checkActionCode(oobCode);
+          await firebaseAuth.applyActionCode(oobCode);
 
           setSuccess('Email changed successful. Please Sign in to your account');
           setState({ ...state, email: result.data.email ?? '' });
@@ -218,8 +221,8 @@ function LoginComponent({
         seterror('User not found, please register to continue');
         newUserCredentials.user.delete();
         LoginManager.logOut();
-        await auth().signOut();
-        await auth().currentUser?.reload();
+        await firebaseAuth.signOut();
+        await firebaseAuth.currentUser?.reload();
         dispatch(logout());
       }
     };
@@ -255,7 +258,7 @@ function LoginComponent({
               tokenData[0],
               tokenData[1]
             );
-            const userCredentials = await auth().signInWithCredential(twitterCredential);
+            const userCredentials = await firebaseAuth.signInWithCredential(twitterCredential);
 
             if (
               !!verifyAccount &&
@@ -323,7 +326,8 @@ function LoginComponent({
       if (!emailError && !passwordError) {
         dispatch(setLoader(true));
 
-        const emailCredential = await auth().signInWithEmailAndPassword(email, password);
+        const emailCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
+        console.log('signInUser: got credential', emailCredential.user?.uid);
 
         if (verifyAccount) {
           setState({ ...state, password: '' });
@@ -367,6 +371,7 @@ function LoginComponent({
       ) {
         message = error.message;
       }
+      console.warn('signInUser error', error?.code, error?.message);
       seterror(message);
       dispatch(setLoader(false));
     }
@@ -377,8 +382,8 @@ function LoginComponent({
     setNewUserCredentials(null);
     dispatch(setAccountType(''));
 
-    await auth().currentUser?.reload();
-    await auth().currentUser?.getIdToken(true);
+    await firebaseAuth.currentUser?.reload();
+    await firebaseAuth.currentUser?.getIdToken(true);
   };
   const sendFcm = (token: string) => {
     requestUserPermission(token, true);
@@ -448,7 +453,7 @@ function LoginComponent({
       );
 
       if (credentialState === appleAuth.State.AUTHORIZED) {
-        const userCredentials = await auth().signInWithCredential(appleCredential);
+        const userCredentials = await firebaseAuth.signInWithCredential(appleCredential);
 
         processLogin(userCredentials, setNewUserCredentials, setToken);
       }
@@ -468,7 +473,7 @@ function LoginComponent({
 
       // Create a Google credential with the token
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const userCredentials = await auth().signInWithCredential(googleCredential);
+      const userCredentials = await firebaseAuth.signInWithCredential(googleCredential);
 
       if (!!verifyAccount && !!onlyPassword && userCredentials.user.email !== currentUserEmail) {
         navigation.goBack();
@@ -737,8 +742,8 @@ function LoginComponent({
                     if (!onlyPassword) {
                       dispatch(signUp.Reset());
                       LoginManager.logOut();
-                      await auth().signOut();
-                      await auth().currentUser?.reload();
+                      await firebaseAuth.signOut();
+                      await firebaseAuth.currentUser?.reload();
                       dispatch(logout());
                     }
                   }}
@@ -983,8 +988,8 @@ function LoginComponent({
                         const FBToken = await AccessToken.getCurrentAccessToken();
                         if (FBToken) {
                           LoginManager.logOut();
-                          await auth().signOut();
-                          await auth().currentUser?.reload();
+                          await firebaseAuth.signOut();
+                          await firebaseAuth.currentUser?.reload();
                         }
                         setShowConfirmEmail(false);
                         setNewUserCredentials(null);
@@ -1011,7 +1016,7 @@ function LoginComponent({
                       btnTextStyle={styles.btnText2}
                       onPress={() => {
                         setShowSendEmailConfirmation(false);
-                        auth().currentUser?.sendEmailVerification();
+                        firebaseAuth.currentUser?.sendEmailVerification();
                       }}
                     />
                   ) : (

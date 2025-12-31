@@ -27,6 +27,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { persistor, store } from './src/redux/store'; // Make sure this path is correct
 import AppContent from './src/navigator/AppContent'; // Import the new component
 import Main from './src/navigator/Main';
+import { getFirebaseApp } from './src/services/firebaseApp';
 
 Sentry.init({
   dsn: 'https://5a54913b45c44079b31e038fc1e7b4aa@o4504958486642688.ingest.sentry.io/4504958800560128',
@@ -34,6 +35,8 @@ Sentry.init({
 });
 
 function App() {
+  const firebaseApp = getFirebaseApp();
+  const links = dynamicLinks();
   const handleDynamicLink = (link: string) => {
     // console.log('Dynamic Link:', link);
     // LottieSplashScreen.hide();
@@ -42,12 +45,12 @@ function App() {
 
   useEffect(() => {
     const event = Linking.addEventListener('url', ({ url }) => handleDynamicLink(url));
-    const unsubscribe = dynamicLinks().onLink((url) => handleDynamicLink(url.url));
+    const unsubscribe = links.onLink((url) => handleDynamicLink(url.url));
     return () => {
       event.remove();
       unsubscribe();
     };
-  }, []);
+  }, [links]);
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {

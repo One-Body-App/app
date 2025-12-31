@@ -176,6 +176,7 @@ function NewPost({ navigation, route }: Props) {
 
       setIsLoading(false);
 
+      console.log('postSocial result', result.status, result.response);
       if (result.status === 200) {
         setContent('');
         navigation.popToTop();
@@ -186,6 +187,7 @@ function NewPost({ navigation, route }: Props) {
           },
         });
       } else {
+        console.warn('postSocial non-200', result.status, result.response);
         if (result?.response?.moderationPassed === false) {
           throw result.response;
         }
@@ -194,6 +196,7 @@ function NewPost({ navigation, route }: Props) {
       }
     } catch (e: any) {
       setIsLoading(false);
+      console.warn('postSocial error', e?.response?.status, e?.response?.data || e?.message || e);
 
       let message = 'There was a problem on our end. Please try again later.';
       if (e?.moderationPassed === false) {

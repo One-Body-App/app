@@ -40,6 +40,7 @@ import SinglePost from '../screens/post/Single'; // Adjust path
 import VideoPost from '../screens/post/VideoPost'; // Adjust path
 import RssPost from '../screens/post/RssPost'; // Adjust path
 import { headerOptions } from './global'; // Adjust path
+import { getFirebaseApp } from '../services/firebaseApp';
 
 const closeIcon = require('../assets/images/close.png'); // Adjust path
 
@@ -57,6 +58,9 @@ function AppContent() {
   const [initializing, setInitializing] = useState<boolean>(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');
+  const firebaseApp = getFirebaseApp();
+  const firebaseAuth = auth(firebaseApp);
+  const firebaseMessaging = messaging(firebaseApp);
 
   useEffect(() => {
     toast.hideAll();
@@ -102,7 +106,7 @@ function AppContent() {
   };
 
   useEffect(() => {
-    const subscriber = auth().onIdTokenChanged(onAuthStateChanged);
+    const subscriber = firebaseAuth.onIdTokenChanged(onAuthStateChanged);
     setTimeout(() => {
       LottieSplashScreen.hide();
     }, 5500);
@@ -134,6 +138,13 @@ function AppContent() {
         LottieSplashScreen.hide();
       }, 5500);
     }
+    console.log(
+      'AppContent token/user/profile',
+      token ? token.slice(0, 10) : 'no-token',
+      !!user,
+      authState.getProfileSuccess,
+      authState.getProfileError
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- [token, user, initializing]);
   }, [token, user, initializing]);
 
@@ -172,13 +183,13 @@ function AppContent() {
       if (url != null) {
         return url;
       }
-      const message = await messaging().getInitialNotification();
+      const message = await firebaseMessaging.getInitialNotification();
       return message?.data?.url as string;
     },
     subscribe(listener) {
       const onReceiveURL = ({ url }: { url: string }) => listener(url);
       const subscription = Linking.addEventListener('url', onReceiveURL);
-      const unsubscribeNotification = messaging().onNotificationOpenedApp((message) => {
+      const unsubscribeNotification = firebaseMessaging.onNotificationOpenedApp((message) => {
         const url = message.data?.url as string;
         if (url) {
           listener(url);
