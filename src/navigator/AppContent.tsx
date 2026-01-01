@@ -4,8 +4,9 @@ import {
   DefaultTheme,
   LinkingOptions,
   NavigationContainer,
+  useNavigationContainerRef,
 } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, useColorScheme } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,6 +16,7 @@ import { useToast } from 'react-native-toast-notifications';
 import { isEqual } from 'lodash';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import messaging from '@react-native-firebase/messaging';
+import analytics from '@react-native-firebase/analytics';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
@@ -61,6 +63,8 @@ function AppContent() {
   const firebaseApp = getFirebaseApp();
   const firebaseAuth = auth(firebaseApp);
   const firebaseMessaging = messaging(firebaseApp);
+  const navigationRef = useNavigationContainerRef<MainStackParamList>();
+  const routeNameRef = useRef<string | undefined>();
 
   useEffect(() => {
     toast.hideAll();
@@ -228,7 +232,29 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer linking={linking} theme={scheme === 'dark' ? darkTheme : theme}>
+    <NavigationContainer
+      ref={navigationRef}
+      linking={linking}
+      theme={scheme === 'dark' ? darkTheme : theme}
+      onReady={() => {
+        const routeName = navigationRef.getCurrentRoute()?.name;
+        routeNameRef.current = routeName;
+        if (routeName) {
+          analytics().logScreenView({ screen_name: routeName, screen_class: routeName });
+        }
+      }}
+      onStateChange={() => {
+        const previousRouteName = routeNameRef.current;
+        const currentRouteName = navigationRef.getCurrentRoute()?.name;
+        if (currentRouteName && previousRouteName !== currentRouteName) {
+          analytics().logScreenView({
+            screen_name: currentRouteName,
+            screen_class: currentRouteName,
+          });
+        }
+        routeNameRef.current = currentRouteName;
+      }}
+    >
       <ReactionProvider>
         <MainStack.Navigator>
           {user &&
