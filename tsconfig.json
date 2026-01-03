@@ -10,6 +10,7 @@
     "allowSyntheticDefaultImports": true,
     /* Completeness */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
+    "jsx": "react-native",
     // "baseUrl": ".",
 
     "jsx": "react-native",
