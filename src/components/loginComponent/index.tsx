@@ -3,7 +3,15 @@ import { View, TouchableOpacity, ScrollView, useColorScheme, Platform } from 're
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useDispatch, useSelector } from 'react-redux';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import {
+  AppleAuthProvider,
+  FirebaseAuthTypes,
+  GoogleAuthProvider,
+  TwitterAuthProvider,
+  getAuth,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+} from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
 import axios from 'axios';
@@ -109,7 +117,7 @@ function LoginComponent({
   });
 
   const toast = useToast();
-  const firebaseAuth = auth(getFirebaseApp());
+  const firebaseAuth = getAuth(getFirebaseApp());
 
   const [error, seterror] = useState<string>();
   const [success, setSuccess] = useState<string>('');
@@ -117,6 +125,7 @@ function LoginComponent({
   const [isVerificationNeeded, setIsVerificationNeeded] = useState<boolean>(false);
   const [token, setToken] = useState('');
   const [showConfirmEmail, setShowConfirmEmail] = useState<boolean>(false);
+  const [verificationEmailRequested, setVerificationEmailRequested] = useState(false);
 
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
@@ -254,11 +263,8 @@ function LoginComponent({
               return item.split('=')[1];
             });
 
-            const twitterCredential = auth.TwitterAuthProvider.credential(
-              tokenData[0],
-              tokenData[1]
-            );
-            const userCredentials = await firebaseAuth.signInWithCredential(twitterCredential);
+            const twitterCredential = TwitterAuthProvider.credential(tokenData[0], tokenData[1]);
+            const userCredentials = await signInWithCredential(firebaseAuth, twitterCredential);
 
             if (
               !!verifyAccount &&
@@ -312,12 +318,47 @@ function LoginComponent({
     }
   }, [authState?.sendVerificationEmailSuccess]);
 
+  useEffect(() => {
+    if (authState?.sendVerificationEmailSuccess === false) {
+      toast.show(`We couldn't send the verification email. Please try again.`, {
+        type: 'danger',
+        placement: 'top',
+      });
+    }
+  }, [authState?.sendVerificationEmailSuccess]);
+
+  useEffect(() => {
+    const shouldAutoSend =
+      (isVerificationNeeded || showConfirmationEmailMessage) && !verificationEmailRequested;
+
+    if (!shouldAutoSend) {
+      return;
+    }
+
+    const sendVerification = async () => {
+      const firebaseToken = await firebaseAuth.currentUser?.getIdToken();
+      if (firebaseToken) {
+        setVerificationEmailRequested(true);
+        dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
+      }
+    };
+
+    sendVerification();
+  }, [dispatch, isVerificationNeeded, showConfirmationEmailMessage, verificationEmailRequested]);
+
   const signInUser = async () => {
     try {
       const { email, password } = state;
       const emailError = await validator('email', email);
       const passwordError = await validator('password', password);
       seterror('');
+      if (__DEV__) {
+        console.log('[login] signInUser submit', {
+          email,
+          verifyAccount: !!verifyAccount,
+          onlyPassword: !!onlyPassword,
+        });
+      }
 
       if (!!verifyAccount && !!onlyPassword && email !== currentUserEmail) {
         throw new Error("Please login with the current user's email");
@@ -326,8 +367,13 @@ function LoginComponent({
       if (!emailError && !passwordError) {
         dispatch(setLoader(true));
 
-        const emailCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
-        console.log('signInUser: got credential', emailCredential.user?.uid);
+        const emailCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+        if (__DEV__) {
+          console.log('[login] firebase signIn success', {
+            uid: emailCredential.user.uid,
+            emailVerified: !!emailCredential.user.emailVerified,
+          });
+        }
 
         if (verifyAccount) {
           setState({ ...state, password: '' });
@@ -350,6 +396,7 @@ function LoginComponent({
             navigation.goBack();
           }
         } else if (emailCredential.user.emailVerified) {
+          await processLogin(emailCredential, setNewUserCredentials, setToken);
           dispatch(setLoader(false));
         } else {
           setIsVerificationNeeded(true);
@@ -363,6 +410,12 @@ function LoginComponent({
         setState({ ...state, emailError, passwordError });
       }
     } catch (error: any) {
+      if (__DEV__) {
+        console.log('[login] signInUser error', {
+          message: error?.message,
+          code: error?.code,
+        });
+      }
       let message = 'User/password combination not found';
       if (
         error.message &&
@@ -446,14 +499,14 @@ function LoginComponent({
 
       // Create a Firebase credential from the response
       const { identityToken, nonce } = appleAuthRequestResponse;
-      const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+      const appleCredential = AppleAuthProvider.credential(identityToken, nonce);
 
       const credentialState = await appleAuth.getCredentialStateForUser(
         appleAuthRequestResponse.user
       );
 
       if (credentialState === appleAuth.State.AUTHORIZED) {
-        const userCredentials = await firebaseAuth.signInWithCredential(appleCredential);
+        const userCredentials = await signInWithCredential(firebaseAuth, appleCredential);
 
         processLogin(userCredentials, setNewUserCredentials, setToken);
       }
@@ -472,8 +525,8 @@ function LoginComponent({
       const { idToken } = await GoogleSignin.signIn();
 
       // Create a Google credential with the token
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const userCredentials = await firebaseAuth.signInWithCredential(googleCredential);
+      const googleCredential = GoogleAuthProvider.credential(idToken);
+      const userCredentials = await signInWithCredential(firebaseAuth, googleCredential);
 
       if (!!verifyAccount && !!onlyPassword && userCredentials.user.email !== currentUserEmail) {
         navigation.goBack();
@@ -545,8 +598,9 @@ function LoginComponent({
           btnTextStyle={[{ color: '#fff' }]}
         />
         <Button
-          onPress={() => {
-            dispatch(sendVerificationEmail.Request({ token: userProfile?.token }));
+          onPress={async () => {
+            const firebaseToken = await firebaseAuth.currentUser?.getIdToken();
+            dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
           }}
           text="Didn’t receive the mail? "
           wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'center' }}

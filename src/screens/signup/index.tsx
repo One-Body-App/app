@@ -14,7 +14,13 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useDispatch, useSelector } from 'react-redux';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import {
+  FirebaseAuthTypes,
+  TwitterAuthProvider,
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithCredential,
+} from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
@@ -43,6 +49,8 @@ import { processLogin } from '@/services/login';
 import SignupButtons from '@/components/SignupButtons';
 import Button from '@/components/Button';
 import { ApiCall } from '@/services/api';
+import { AccountType } from '@/utils/types';
+import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 const { width: wWidth } = Dimensions.get('window');
 
@@ -72,13 +80,12 @@ function SignupForm({ navigation, route }: Props) {
   const [token, setToken] = useState('');
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
+  const firebaseAuth = getAuth(getFirebaseApp());
 
   const inputRefs = {
     email: useRef<TextInput>(null),
     password: useRef<TextInput>(null),
     cPassword: useRef<TextInput>(null),
-    name: useRef<TextInput>(null),
-    username: useRef<TextInput>(null),
   };
   const [state, setState] = useState({
     email: '',
@@ -87,10 +94,6 @@ function SignupForm({ navigation, route }: Props) {
     passwordError: '',
     cPassword: '',
     cPasswordError: '',
-    name: '',
-    nameError: '',
-    username: '',
-    usernameError: '',
   });
   const [error, setError] = React.useState<string>();
   const [socialError, setSocialError] = React.useState<string>();
@@ -98,19 +101,31 @@ function SignupForm({ navigation, route }: Props) {
   const [chidePass, setcHidePass] = useState(true);
   const [loading, setIsloading] = useState(false);
 
+  const buildSignupProfile = (email: string) => {
+    const localPart = email.split('@')[0]?.trim() || '';
+    const username = localPart.toLowerCase().replace(/[^a-z0-9]/g, '') || `user${Date.now()}`;
+    const readableName = localPart
+      .replace(/[._-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const fallbackName = accountType === AccountType.organization ? 'Organization' : 'User';
+    const name = readableName || fallbackName;
+
+    return { name, username };
+  };
+
   const signUpUser = async () => {
     setIsloading(true);
     setError('');
-    const { email, password, name, cPassword, username } = state;
+    const { email, password, cPassword } = state;
     const emailError = await validator('email', email);
-    const nameError = await validator('name', name);
-    const usernameError = await validator('username', username);
     const passwordError = await validator('password', password);
     const cPasswordError = await validator('cPassword', cPassword, { password });
 
-    if (!emailError && !passwordError && !nameError && !cPasswordError && !usernameError) {
+    if (!emailError && !passwordError && !cPasswordError) {
       if (password == cPassword) {
-        const { email, password, name, cPassword, username } = state;
+        const { email } = state;
+        const { name, username } = buildSignupProfile(email);
         const data = {
           email,
           name,
@@ -135,11 +150,7 @@ function SignupForm({ navigation, route }: Props) {
       }
     } else {
       setIsloading(false);
-      if (usernameError) {
-        scrollView.current?.scrollTo({ y: 130 });
-      } else if (nameError) {
-        scrollView.current?.scrollTo({ y: 190 });
-      } else if (emailError) {
+      if (emailError) {
         scrollView.current?.scrollTo({ y: 250 });
       } else if (cPasswordError) {
         scrollView.current?.scrollTo({ y: 310 });
@@ -150,8 +161,6 @@ function SignupForm({ navigation, route }: Props) {
         emailError,
         passwordError,
         cPasswordError,
-        nameError,
-        usernameError,
       });
     }
   };
@@ -160,7 +169,8 @@ function SignupForm({ navigation, route }: Props) {
   const { dark, colors } = useTheme();
 
   const onVerify = (token: string) => {
-    const { email, password, name, cPassword, username } = state;
+    const { email, password } = state;
+    const { name, username } = buildSignupProfile(email);
 
     const data = {
       email,
@@ -169,8 +179,7 @@ function SignupForm({ navigation, route }: Props) {
       userId: '',
       username,
     };
-    auth()
-      .createUserWithEmailAndPassword(email, password)
+    createUserWithEmailAndPassword(firebaseAuth, email, password)
       .then(async (user) => {
         // await user.user.sendEmailVerification();
         const token = await user.user.getIdToken();
@@ -241,8 +250,8 @@ function SignupForm({ navigation, route }: Props) {
     dispatch(setAccountType(''));
     dispatch(setLoader(false));
 
-    await auth().currentUser?.reload();
-    await auth().currentUser?.getIdToken(true);
+    await firebaseAuth.currentUser?.reload();
+    await firebaseAuth.currentUser?.getIdToken(true);
   };
 
   const sendFcm = (token: string) => {
@@ -296,12 +305,9 @@ function SignupForm({ navigation, route }: Props) {
               return item.split('=')[1];
             });
 
-            const twitterCredential = auth.TwitterAuthProvider.credential(
-              tokenData[0],
-              tokenData[1]
-            );
+            const twitterCredential = TwitterAuthProvider.credential(tokenData[0], tokenData[1]);
 
-            const userCredentials = await auth().signInWithCredential(twitterCredential);
+            const userCredentials = await signInWithCredential(firebaseAuth, twitterCredential);
 
             await processLogin(userCredentials, setNewUserCredentials, setToken);
           }
@@ -418,61 +424,6 @@ function SignupForm({ navigation, route }: Props) {
             }}
           />
         </View>
-        <StyledTextInput
-          wrapperStyle={{ marginTop: spacing.x16 }}
-          ref={inputRefs.username}
-          value={state.username}
-          returnKeyType="next"
-          returnKeyLabel="next"
-          label="Username"
-          autoCapitalize="none"
-          onFocus={() => setState({ ...state, usernameError: '' })}
-          placeholder="Enter username"
-          onBlur={
-            () => {}
-            // validateFields(state.username, 'username', (error) =>
-            //   setState({ ...state, usernameError: error })
-            // )
-          }
-          onSubmitEditing={() => inputRefs.name.current?.focus()}
-          onChangeText={(username) => changeHandler('username', username)}
-          autoCorrect={false}
-          autoComplete="username"
-          keyboardType="default"
-          textContentType="username"
-          blurOnSubmit={false}
-        />
-
-        {state.usernameError ? (
-          <StyledText style={{ ...GeneralStyle.InputError }}>{state.usernameError}</StyledText>
-        ) : null}
-
-        <StyledTextInput
-          wrapperStyle={{ marginTop: 15 }}
-          ref={inputRefs.name}
-          label="Full Name"
-          placeholder="Enter your full name"
-          value={state.name}
-          returnKeyType="next"
-          returnKeyLabel="next"
-          onFocus={() => setState({ ...state, nameError: '' })}
-          onBlur={
-            () => {}
-            // validateFields(state.name, 'name', (error) =>
-            //   setState({ ...state, nameError: error })
-            // )
-          }
-          onSubmitEditing={() => inputRefs.email.current?.focus()}
-          onChangeText={(name) => changeHandler('name', name)}
-          keyboardType="default"
-          autoCapitalize="words"
-          blurOnSubmit={false}
-        />
-
-        {state.nameError ? (
-          <StyledText style={{ ...GeneralStyle.InputError }}>{state.nameError}</StyledText>
-        ) : null}
-
         <StyledTextInput
           wrapperStyle={{ marginTop: 15 }}
           ref={inputRefs.email}
@@ -713,14 +664,7 @@ function SignupForm({ navigation, route }: Props) {
           }}
           btnTextStyle={{ color: '#FFF' }}
           disabledBtnTextStyle={{ color: '#FFF' }}
-          disabled={
-            loading ||
-            !state.cPassword ||
-            !state.password ||
-            !state.email ||
-            !state.name ||
-            !state.username
-          }
+          disabled={loading || !state.cPassword || !state.password || !state.email}
         />
       </View>
 

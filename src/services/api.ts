@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import auth from '@react-native-firebase/auth';
+import { getAuth } from '@react-native-firebase/auth';
 import { BASE_URL } from './constants';
 import { getFirebaseApp } from './firebaseApp';
 
@@ -23,9 +23,13 @@ export const ApiCall = async ({
 }): Promise<{ status: number; response: any }> => {
   try {
     let tokenToUse = '';
-    if (token) {
-      const firebaseAuth = auth(getFirebaseApp());
-      tokenToUse = (await firebaseAuth.currentUser?.getIdToken()) ?? '';
+    if (token !== undefined) {
+      if (typeof token === 'string' && token.length > 0) {
+        tokenToUse = token;
+      } else {
+        const firebaseAuth = getAuth(getFirebaseApp());
+        tokenToUse = (await firebaseAuth.currentUser?.getIdToken()) ?? '';
+      }
     }
 
     let url = null;
@@ -37,26 +41,24 @@ export const ApiCall = async ({
       url = `${!external ? `${BASE_URL}/` : ''}${route}`;
     }
 
+    const authHeader = tokenToUse ? { Authorization: `Bearer ${tokenToUse}` } : undefined;
     let response: AxiosResponse<any, any> | null = null;
     switch (verb) {
       case 'get':
-        response = await axios.get(
-          url,
-          token ? { headers: { Authorization: `Bearer ${tokenToUse}` } } : undefined
-        );
+        response = await axios.get(url, authHeader ? { headers: authHeader } : undefined);
 
         break;
       case 'post':
         response = await axios.post(
           url,
           params,
-          token
+          authHeader
             ? {
                 headers: {
                   'Content-Type': isFormUrlEncode
                     ? 'multipart/form-data'
                     : 'application/x-www-form-urlencoded',
-                  Authorization: `Bearer ${tokenToUse}`,
+                  ...authHeader,
                 },
               }
             : undefined
@@ -67,13 +69,13 @@ export const ApiCall = async ({
           url,
           // isFormUrlEncode ? formData : params,
           params,
-          token
+          authHeader
             ? {
                 headers: {
                   'Content-Type': isFormUrlEncode
                     ? 'multipart/form-data'
                     : 'application/x-www-form-urlencoded',
-                  Authorization: `Bearer ${tokenToUse}`,
+                  ...authHeader,
                 },
               }
             : undefined
@@ -81,7 +83,7 @@ export const ApiCall = async ({
         break;
       case 'delete':
         response = await axios.delete(url, {
-          headers: token ? { Authorization: `Bearer ${tokenToUse}` } : undefined,
+          headers: authHeader,
           params,
         });
         break;
@@ -98,3 +100,5 @@ export const ApiCall = async ({
     return { status: 400, response: e?.response?.data ?? e.message };
   }
 };
+
+export default ApiCall;
