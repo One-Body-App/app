@@ -239,14 +239,19 @@ function* signUpSaga(params: { data: any; token: string; type: string }) {
       token: params.token,
     });
 
-    if (res?.status === 200) {
+    if (res?.status === 200 && res?.response) {
       yield put(setAccountType(''));
       yield put(signUp.Success(res?.response));
     } else {
-      yield put(signUp.Failed(res?.response));
+      const fallbackMessage =
+        (res?.response as any)?.message ??
+        (typeof res?.response === 'string' ? res.response : 'That was a glitch on our part.');
+      yield put(signUp.Failed(fallbackMessage));
     }
   } catch (e) {
-    yield put(signUp.Failed(e));
+    const fallbackMessage =
+      (e as any)?.message ?? 'That was a glitch on our part. Please try again.';
+    yield put(signUp.Failed(fallbackMessage));
   }
 }
 export function* SignUpSaga() {
@@ -264,7 +269,7 @@ function* sendVerificationEmailSaga(params: { data: any; token: string; type: st
     });
 
     console.log('SEND VERIFICATION EMAIL SAGA', res);
-    if (res?.status == 200) {
+    if (res?.status == 200 && res?.response === true) {
       yield put(sendVerificationEmail.Success(res?.response));
     } else {
       yield put(sendVerificationEmail.Failed(res?.response));

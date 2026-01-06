@@ -1,3 +1,9 @@
 node_modules/
 metro.config.js
 commitlint.config.js
+vendor/
+ios/Pods/
+ios/build/
+android/build/
+jest.config.js
+react-native.config.js

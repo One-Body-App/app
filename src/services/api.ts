@@ -1,5 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
-import { getAuth } from '@react-native-firebase/auth';
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import { getAuth, getIdToken } from '@react-native-firebase/auth';
+import { DevSettings } from 'react-native';
 import { BASE_URL } from './constants';
 import { getFirebaseApp } from './firebaseApp';
 
@@ -11,16 +12,18 @@ export const ApiCall = async ({
   baseurl,
   external,
   isFormUrlEncode,
+  timeoutMs = 300000,
 }: //
 {
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
   route: string;
   verb: 'post' | 'get' | 'delete' | 'patch';
   token?: string;
   baseurl?: string;
   external?: boolean;
   isFormUrlEncode?: boolean;
-}): Promise<{ status: number; response: any }> => {
+  timeoutMs?: number;
+}): Promise<{ status: number; response: unknown }> => {
   try {
     let tokenToUse = '';
     if (token !== undefined) {
@@ -28,7 +31,7 @@ export const ApiCall = async ({
         tokenToUse = token;
       } else {
         const firebaseAuth = getAuth(getFirebaseApp());
-        tokenToUse = (await firebaseAuth.currentUser?.getIdToken()) ?? '';
+        tokenToUse = firebaseAuth.currentUser ? await getIdToken(firebaseAuth.currentUser) : '';
       }
     }
 
@@ -42,10 +45,13 @@ export const ApiCall = async ({
     }
 
     const authHeader = tokenToUse ? { Authorization: `Bearer ${tokenToUse}` } : undefined;
-    let response: AxiosResponse<any, any> | null = null;
+    let response: AxiosResponse<unknown, unknown> | null = null;
     switch (verb) {
       case 'get':
-        response = await axios.get(url, authHeader ? { headers: authHeader } : undefined);
+        response = await axios.get(
+          url,
+          authHeader ? { headers: authHeader, timeout: timeoutMs } : { timeout: timeoutMs }
+        );
 
         break;
       case 'post':
@@ -60,8 +66,9 @@ export const ApiCall = async ({
                     : 'application/x-www-form-urlencoded',
                   ...authHeader,
                 },
+                timeout: timeoutMs,
               }
-            : undefined
+            : { timeout: timeoutMs }
         );
         break;
       case 'patch':
@@ -77,14 +84,16 @@ export const ApiCall = async ({
                     : 'application/x-www-form-urlencoded',
                   ...authHeader,
                 },
+                timeout: timeoutMs,
               }
-            : undefined
+            : { timeout: timeoutMs }
         );
         break;
       case 'delete':
         response = await axios.delete(url, {
           headers: authHeader,
           params,
+          timeout: timeoutMs,
         });
         break;
 
@@ -93,11 +102,21 @@ export const ApiCall = async ({
     }
 
     return { status: 200, response: response?.data };
-  } catch (e: any) {
-    //
-    // handle error
-    console.warn('ApiCall error', route, e?.response?.status, e?.response?.data ?? e?.message ?? e);
-    return { status: 400, response: e?.response?.data ?? e.message };
+  } catch (err: unknown) {
+    const axiosError = err as AxiosError;
+    const message = axiosError.response?.data ?? axiosError.message ?? err;
+    console.warn('ApiCall error', route, axiosError?.response?.status, message);
+    if (
+      axiosError?.code === 'ECONNABORTED' ||
+      (typeof axiosError?.message === 'string' && axiosError.message.includes('timeout'))
+    ) {
+      // Reload to recover from a stuck session on timeout
+      DevSettings.reload();
+    }
+    const status =
+      axiosError?.response?.status ?? (axiosError?.code === 'ECONNABORTED' ? 408 : 400);
+    const friendlyMessage = `That was a glitch on our part. Try again! (${status})`;
+    return { status, response: { message: friendlyMessage } };
   }
 };
 

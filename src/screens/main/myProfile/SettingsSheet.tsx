@@ -8,7 +8,7 @@ import Feather from '@react-native-vector-icons/feather';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import AntDesignIcon from '@react-native-vector-icons/ant-design';
 import { useDispatch } from 'react-redux';
-import auth from '@react-native-firebase/auth';
+import { getAuth, signOut } from '@react-native-firebase/auth';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -23,6 +23,7 @@ import Button from '@/components/Button';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { logout } from '@/src/redux/actions/AuthActions';
 import CustomModal from '@/src/components/CustomModal';
+import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 const options = {
   AppleAppID: '1637542382',
@@ -251,7 +252,7 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
             onPress={async () => {
               LoginManager.logOut();
               dispatch(logout());
-              await auth().signOut();
+              await signOut(getAuth(getFirebaseApp()));
             }}
             btnStyle={{ marginBottom: spacing.x32 }}
             leftIcon={

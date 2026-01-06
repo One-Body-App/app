@@ -6,7 +6,7 @@ import { useDispatch } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StackScreenProps } from '@react-navigation/stack';
-import auth from '@react-native-firebase/auth';
+import { getAuth, updatePassword } from '@react-native-firebase/auth';
 import Button from '@/components/Button';
 import { validateFields } from '@/utils/validation/validate-fields';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
@@ -19,6 +19,7 @@ import StyledTextInput from '@/components/styled/TextInput';
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
+import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type Props = StackScreenProps<MainStackParamList, 'PasswordChange'>;
 
@@ -39,6 +40,7 @@ function PasswordChange({ navigation, route }: Props) {
   const [hidePassN, setHidePassN] = useState(true);
   const [hidePassC, setHidePassC] = useState(true);
   const toast = useToast();
+  const firebaseAuth = getAuth(getFirebaseApp());
 
   const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/g;
   const atLeastOneUppercase = /[A-Z]/g; // capital letters from A to Z
@@ -65,7 +67,9 @@ function PasswordChange({ navigation, route }: Props) {
 
       if (!passwordErrorC && !passwordErrorN) {
         dispatch(setLoader(true));
-        await auth().currentUser?.updatePassword(passwordN);
+        if (firebaseAuth.currentUser) {
+          await updatePassword(firebaseAuth.currentUser, passwordN);
+        }
         navigation.pop(2);
         toast.show('Password updated successfully', {
           type: 'success',

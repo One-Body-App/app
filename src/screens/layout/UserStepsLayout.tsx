@@ -1,5 +1,6 @@
 import { ReactElement } from 'react';
 import { Platform, SafeAreaView, View, ViewStyle } from 'react-native';
+import { useTheme } from '@react-navigation/native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
@@ -12,9 +13,13 @@ type Props = {
   backgroundColor?: string;
   bottomOffset?: number;
   hideBottomText?: boolean;
+  refreshControl?: React.ReactElement;
 };
 
 export function BottomStepsText() {
+  const { dark } = useTheme();
+  const primaryTextColor = dark ? '#f6f6f6' : Colors.primary.brand;
+
   return (
     <View
       style={{
@@ -23,20 +28,31 @@ export function BottomStepsText() {
         paddingVertical: Platform.OS === 'android' ? spacing.x10 : 0,
       }}
     >
-      <StyledText style={[Typography.subheader.M, { color: Colors.primary[300] }]}>
-        Unify the Body{' '}
+      <StyledText style={[Typography.subheader.M, { color: primaryTextColor }]}>
+        Build the Body{' '}
       </StyledText>
-      <StyledText style={[Typography.subheader.M, { color: Colors.primarySapphire.brand }]}>
-        1 Cor. 12:12
-      </StyledText>
+      <StyledText style={[Typography.subheader.M, { color: '#12d2d9' }]}>1 Cor. 12:12</StyledText>
     </View>
   );
 }
 
-function UserStepsLayout({ children, backgroundColor, bottomOffset, hideBottomText }: Props) {
+function UserStepsLayout({
+  children,
+  backgroundColor,
+  bottomOffset,
+  hideBottomText,
+  refreshControl,
+}: Props) {
+  const { colors } = useTheme();
+  const resolvedBackground = backgroundColor ?? colors.background;
+
   return (
-    <SafeAreaView style={{ flexGrow: 1, backgroundColor: backgroundColor ?? undefined }}>
-      <KeyboardAwareScrollView bottomOffset={bottomOffset ?? 50}>
+    <SafeAreaView style={{ flexGrow: 1, backgroundColor: resolvedBackground }}>
+      <KeyboardAwareScrollView
+        bottomOffset={bottomOffset ?? 50}
+        contentContainerStyle={{ paddingBottom: bottomOffset ?? 50 }}
+        refreshControl={refreshControl}
+      >
         {children}
 
         {hideBottomText ? null : <BottomStepsText />}

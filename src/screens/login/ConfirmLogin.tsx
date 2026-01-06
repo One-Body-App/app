@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
-import auth from '@react-native-firebase/auth';
-import { useTheme } from '@react-navigation/native';
+import { fetchSignInMethodsForEmail, getAuth, reload } from '@react-native-firebase/auth';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import LoginComponent from '@/components/loginComponent';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -14,6 +14,7 @@ import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
+import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
@@ -25,6 +26,23 @@ function ConfirmLogin({ route, navigation }: Props) {
   const dispatch = useDispatch();
   const { dark, colors } = useTheme();
 
+  useFocusEffect(
+    useCallback(() => {
+      const auth = getAuth(getFirebaseApp());
+      const user = auth.currentUser;
+      if (user) {
+        reload(user).then(() => {
+          if (auth.currentUser?.emailVerified) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainRoot' }],
+            });
+          }
+        });
+      }
+    }, [navigation])
+  );
+
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: false });
     if (route.params?.toScreen) {
@@ -34,7 +52,8 @@ function ConfirmLogin({ route, navigation }: Props) {
     }
     if (authReducer.userData?.email) {
       const getSignInMethods = async () => {
-        const providers = await auth().fetchSignInMethodsForEmail(
+        const providers = await fetchSignInMethodsForEmail(
+          getAuth(getFirebaseApp()),
           authReducer.userData?.email ?? ''
         );
 
@@ -47,15 +66,15 @@ function ConfirmLogin({ route, navigation }: Props) {
   return (
     <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
       <ScrollView style={{ flexGrow: 1, marginTop: spacing.x24 }}>
-        {route?.params?.mode == 'resetPassword' ? (
+        {route?.params?.mode === 'resetPassword' ? (
           <NewPassword {...route.params} />
         ) : (
           <LoginComponent
             showConfirmationEmailMessage={false}
-            verifyAccount
             currentUserEmail={userData?.email ?? ''}
             enabledLoginProviders={enabledLoginProviders}
             {...route.params}
+            verifyAccount
           />
         )}
       </ScrollView>

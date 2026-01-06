@@ -1,24 +1,28 @@
+/* eslint-disable @typescript-eslint/no-shadow */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { Text, View, useColorScheme, Platform, StyleProp, ViewStyle } from 'react-native';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
+import {
+  AppleAuthProvider,
+  FirebaseAuthTypes,
+  GoogleAuthProvider,
+  getAuth,
+  signInWithCredential,
+} from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import Button from '../Button';
 import G from '@/assets/svg/G.svg';
-import Facebook from '@/assets/svg/Facebook.svg';
-import Twitter from '@/assets/svg/Twitter.svg';
 import { styles } from './styles';
 
-import { getTwitterLoginToken, processLogin } from '@/services/login';
-import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/services/constants';
+import { processLogin } from '@/services/login';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { GOOGLE_LOGIN_CLIENT_ID } from '@/services/constants';
 import { MainStackParamList } from '@/src/navigator/types';
 import { getFirebaseApp } from '@/src/services/firebaseApp';
 
@@ -41,11 +45,9 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   });
 
   const dispatch = useDispatch();
-  const accounType = useSelector((state: RootState) => state.general.accountType);
-
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
-  const firebaseAuth = auth(getFirebaseApp());
+  const firebaseAuth = getAuth(getFirebaseApp());
 
   useEffect(() => {
     seterror(errorFromLogin ?? '');
@@ -62,7 +64,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
 
   useEffect(() => {
     socialLogin(newUserCredentials);
-  }, [newUserCredentials]);
+  }, [newUserCredentials, socialLogin]);
 
   const onAppleButtonPress = async () => {
     try {
@@ -79,7 +81,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
 
       // Create a Firebase credential from the response
       const { identityToken, nonce } = appleAuthRequestResponse;
-      const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+      const appleCredential = AppleAuthProvider.credential(identityToken, nonce);
 
       // get current authentication state for user
       // /!\ This method must be tested on a real device. On the iOS simulator it always throws an error.
@@ -89,34 +91,12 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
 
       // use credentialState response to ensure the user is authenticated
       if (credentialState === appleAuth.State.AUTHORIZED) {
-        const userCredentials = await firebaseAuth.signInWithCredential(appleCredential);
+        const userCredentials = await signInWithCredential(firebaseAuth, appleCredential);
 
         processLogin(userCredentials, setNewUserCredentials);
       }
     } catch (error: any) {
       if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
-    }
-  };
-
-  const onTwitterButtonPress = async () => {
-    try {
-      dispatch(setLoader(true));
-      seterror('');
-      setState({ ...state, emailError: '', passwordError: '' });
-
-      const urlToken = await getTwitterLoginToken(true);
-
-      if (urlToken) {
-        // OpenURLButton(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
-        OpenURLButton(
-          `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
-          false,
-          true,
-          'onebodyapp://app.onebodyapp.com/signup/twitter'
-        );
-      }
-    } catch (e) {
-      console.log(e);
     }
   };
 
@@ -130,43 +110,15 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
       const { idToken } = await GoogleSignin.signIn();
 
       // Create a Google credential with the token
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const googleCredential = GoogleAuthProvider.credential(idToken);
 
-      const userCredentials = await firebaseAuth.signInWithCredential(googleCredential);
+      const userCredentials = await signInWithCredential(firebaseAuth, googleCredential);
 
       processLogin(userCredentials, setNewUserCredentials);
     } catch (error: any) {
       if (!error.message.includes('Code=-5')) {
         seterror(error.message.replace(`[${error.code}]`, ''));
       }
-    }
-  };
-
-  const facebookLogin = async () => {
-    try {
-      dispatch(setLoader(true));
-      seterror('');
-      setState({ ...state, emailError: '', passwordError: '' });
-      const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
-
-      if (result.isCancelled) {
-        throw new Error('User cancelled the login process');
-      }
-
-      // Once signed in, get the users AccesToken
-      const data = await AccessToken.getCurrentAccessToken();
-
-      if (!data) {
-        throw new Error('Something went wrong obtaining access token');
-      }
-
-      // Create a Firebase credential with the AccessToken
-      const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-      const userCredentials = await firebaseAuth.signInWithCredential(facebookCredential);
-
-      processLogin(userCredentials, setNewUserCredentials);
-    } catch (error: any) {
-      if (error.message) seterror(error.message.replace(`[${error.code}]`, ''));
     }
   };
 
@@ -208,7 +160,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
           btnStyle={getButtonContainer()}
           btnTextStyle={getButtonTextStyle()}
           onPress={() => {
-            if (disabled != null) {
+            if (!disabled) {
               googleSignIn();
             }
           }}
@@ -216,33 +168,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
           disabledBtnTextStyle={getDisabledButtonTextStyle()}
           wrapperViewBtnStyle={styles.buttonsWrapper}
         />
-        {/* <Button
-          disabled={disabled}
-          leftIcon={<Facebook fill="#1877f2" />}
-          btnStyle={getButtonContainer()}
-          btnTextStyle={getButtonTextStyle()}
-          onPress={() => {
-            disabled != null ? facebookLogin() : null;
-          }}
-          disabledBtnStyle={getDisabledButtonStyle()}
-          disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperViewBtnStyle={styles.buttonsWrapper}
-        /> */}
-
-        <Button
-          disabled={disabled}
-          leftIcon={<Twitter fill="#00acee" />}
-          btnStyle={getButtonContainer()}
-          btnTextStyle={getButtonTextStyle()}
-          onPress={() => {
-            disabled != null ? onTwitterButtonPress() : null;
-          }}
-          disabledBtnStyle={getDisabledButtonStyle()}
-          disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperViewBtnStyle={styles.buttonsWrapper}
-        />
-
-        {Platform.OS == 'ios' ? (
+        {Platform.OS === 'ios' ? (
           <Button
             disabled={disabled}
             leftIcon={
@@ -255,7 +181,9 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
               />
             }
             onPress={() => {
-              disabled != null ? onAppleButtonPress() : null;
+              if (!disabled) {
+                onAppleButtonPress();
+              }
             }}
             btnStyle={getButtonContainer()}
             disabledBtnStyle={getDisabledButtonStyle()}

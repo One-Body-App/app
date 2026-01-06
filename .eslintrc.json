@@ -54,7 +54,8 @@
     "default-param-last": "off",
     "@typescript-eslint/default-param-last": "off",
     "react-native/no-inline-styles": "off",
-    "import/no-extraneous-dependencies": "off"
+    "import/no-extraneous-dependencies": "off",
+    "no-console": ["warn", { "allow": ["warn", "error"] }]
     // [
     //   "error",
     //   {

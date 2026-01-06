@@ -1,5 +1,5 @@
-/* eslint-disable react/no-unstable-nested-components */
-import React, { useEffect } from 'react';
+/* eslint-disable react/no-unstable-nested-components, react/prop-types */
+import React, { useCallback, useEffect } from 'react';
 import { createDrawerNavigator, getDrawerStatusFromState } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
 import { Platform, View, useWindowDimensions } from 'react-native';
@@ -9,12 +9,13 @@ import Feather from '@react-native-vector-icons/feather';
 import { HandsPraying } from 'phosphor-react-native';
 
 import Geolocation from '@react-native-community/geolocation';
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, requestPermission } from '@react-native-firebase/messaging';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { MainDrawerParamsList } from './types';
 import OnboardingStack from './OnboardingStack';
 import { RootState } from '../redux/reducers/rootReducer';
 import { Colors } from '../styles';
+import { getFirebaseApp } from '../services/firebaseApp';
 
 import Connections from '@/src/screens/main/connections';
 import SettingsStack from './SettingsStack';
@@ -29,14 +30,15 @@ const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 function DrawerNav() {
   const authState = useSelector((state: RootState) => state.auth);
   const dimensions = useWindowDimensions();
+  const firebaseMessaging = getMessaging(getFirebaseApp());
 
   const { dark, colors } = useTheme();
 
-  const requestNotificationPermission = async () => {
-    await messaging().requestPermission();
-  };
+  const requestNotificationPermission = useCallback(async () => {
+    await requestPermission(firebaseMessaging);
+  }, [firebaseMessaging]);
 
-  const requestlocationPermison = async () => {
+  const requestlocationPermison = useCallback(async () => {
     try {
       if (Platform.OS === 'ios') {
         Geolocation.requestAuthorization();
@@ -55,14 +57,14 @@ function DrawerNav() {
         // }
       }
     } catch (err) {
-      console.warn(err);
+      // Ignore location permission errors; app functions without location
     }
-  };
+  }, []);
 
   useEffect(() => {
     requestNotificationPermission();
     requestlocationPermison();
-  }, []);
+  }, [requestNotificationPermission, requestlocationPermison]);
 
   if (authState.getProfileData?.isProfileCompleted) {
     let drawerType: 'front' | 'back' | 'slide' | 'permanent' = 'front';
@@ -84,7 +86,7 @@ function DrawerNav() {
             drawerActiveBackgroundColor: Colors.neutral[600],
             drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
 
-            headerLeft: (props) => {
+            headerLeft: (props: { tintColor?: string }) => {
               const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
 
               if (navigation.canGoBack() && !isDrawerOpen) {
@@ -113,7 +115,15 @@ function DrawerNav() {
             },
           };
         }}
-        drawerContent={(props) => <DrawerContent {...props} />}
+        drawerContent={(props) => (
+          <DrawerContent
+            descriptors={props.descriptors}
+            state={props.state}
+            navigation={props.navigation}
+            progress={props.progress}
+            drawerPosition={props.drawerPosition}
+          />
+        )}
       >
         <DrawerStack.Screen
           name="Main"
@@ -143,7 +153,7 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="Connections"
           component={Connections}
-          options={({ navigation }) => {
+          options={() => {
             return {
               headerShown: true,
               title: 'My Connections',
@@ -157,7 +167,7 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="PrayerWall"
           component={PrayerWallStack}
-          options={({ navigation }) => {
+          options={() => {
             return {
               title: 'Prayer Wall',
               drawerItemStyle: { height: 0 },
@@ -171,7 +181,7 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="Settings"
           component={SettingsStack}
-          options={({ navigation }) => {
+          options={() => {
             return {
               drawerItemStyle: { height: 0 },
             };

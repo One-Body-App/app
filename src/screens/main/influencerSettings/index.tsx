@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Linking } from 'react-native';
 import { Text } from 'react-native-paper';
-import auth from '@react-native-firebase/auth';
+import { getAuth, getIdTokenResult } from '@react-native-firebase/auth';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -23,6 +23,7 @@ import {
 } from '@/services/constants';
 import { getProfile, removeSocialAccountRequest } from '@/src/redux/actions/AuthActions';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerSettings'>;
 const twitterRedirectUrl = 'onebodyapp://influencer-settings/connect/twitter';
@@ -43,6 +44,7 @@ function InfluencerSettings({ navigation, route }: Props) {
 
   const [twitterStateConfirmation] = useState(Math.random().toString(36).substring(2, 30));
   const [twitterCodeConfirmation, setTwitterCodeConfirmation] = useState<string>('');
+  const firebaseAuth = getAuth(getFirebaseApp());
 
   const onTwitterButtonPress = async () => {
     try {
@@ -109,18 +111,23 @@ function InfluencerSettings({ navigation, route }: Props) {
   }, [route.params]);
 
   useEffect(() => {
-    auth()
-      .currentUser?.getIdTokenResult()
-      .then((result) => {
-        if (result.signInProvider == 'facebook.com') {
-          setIsLoggedInFacebook(true);
-        }
-      });
+    const loadAuthProvider = async () => {
+      if (!firebaseAuth.currentUser) {
+        return;
+      }
+
+      const result = await getIdTokenResult(firebaseAuth.currentUser);
+      if (result.signInProvider === 'facebook.com') {
+        setIsLoggedInFacebook(true);
+      }
+    };
+
+    loadAuthProvider();
 
     codeChallenge().then((code) => {
       setTwitterCodeConfirmation(code);
     });
-  }, []);
+  }, [firebaseAuth]);
 
   // useEffect(() => {
   //   if (route.params?.service == 'instagram' && route.params?.code) {

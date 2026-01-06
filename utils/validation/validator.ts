@@ -1,10 +1,10 @@
 import validate from 'validate.js';
 import { validation } from './index';
 
-const validator = async (field: string, value: string, extraFieldData?: Object) => {
+const validator = async (field: string, value: string, extraFieldData?: Record<string, any>) => {
   const lang = 'en';
 
-  let object: any = new Object();
+  let object: Record<string, any> = {};
   object[field] = value;
   if (extraFieldData) {
     object = {
@@ -13,7 +13,7 @@ const validator = async (field: string, value: string, extraFieldData?: Object) 
     };
   }
 
-  const constraint: any = new Object();
+  const constraint: Record<string, any> = {};
   constraint[field] = validation(lang)[field];
 
   // Validate against the constraint and hold the error messages

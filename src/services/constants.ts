@@ -46,7 +46,7 @@ export const OpenURLButton = async (
             enableDefaultShare: false,
           });
 
-          if (result.type == 'success') {
+          if (result.type === 'success') {
             Linking.openURL(result.url);
           }
         } else {
@@ -133,6 +133,7 @@ export const getInstagramAuthToken = async (
     }
   } catch (error: any) {
     console.log(error);
+    return undefined;
   }
 };
 
@@ -172,6 +173,7 @@ export const getTwitterAuthToken = async (
         twitterRefreshToken: result.data?.twitterRefreshToken,
       };
     }
+    return undefined;
   } catch (error: any) {
     if (error.response) {
       // The request was made and the server responded with a status code
@@ -189,5 +191,6 @@ export const getTwitterAuthToken = async (
       console.log('Error', error.message);
     }
     console.log(error.config);
+    return undefined;
   }
 };

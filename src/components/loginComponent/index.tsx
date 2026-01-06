@@ -9,6 +9,7 @@ import {
   GoogleAuthProvider,
   TwitterAuthProvider,
   getAuth,
+  getIdToken,
   signInWithCredential,
   signInWithEmailAndPassword,
 } from '@react-native-firebase/auth';
@@ -336,7 +337,9 @@ function LoginComponent({
     }
 
     const sendVerification = async () => {
-      const firebaseToken = await firebaseAuth.currentUser?.getIdToken();
+      const firebaseToken = firebaseAuth.currentUser
+        ? await getIdToken(firebaseAuth.currentUser)
+        : undefined;
       if (firebaseToken) {
         setVerificationEmailRequested(true);
         dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
@@ -436,7 +439,9 @@ function LoginComponent({
     dispatch(setAccountType(''));
 
     await firebaseAuth.currentUser?.reload();
-    await firebaseAuth.currentUser?.getIdToken(true);
+    if (firebaseAuth.currentUser) {
+      await getIdToken(firebaseAuth.currentUser, true);
+    }
   };
   const sendFcm = (token: string) => {
     requestUserPermission(token, true);
@@ -561,13 +566,23 @@ function LoginComponent({
 
   const scheme = useColorScheme();
   const { colors } = useTheme();
+  const isDark = scheme === 'dark';
+  const brandWhite = '#f6f6f7';
+
+  const [resendAttempts, setResendAttempts] = useState(0);
+  const [resendMessage, setResendMessage] = useState<string>('');
 
   if (isVerificationNeeded || (showConfirmationEmailMessage && userProfile)) {
     return (
       <View style={{ marginHorizontal: spacing.x16, flex: 1, marginTop: spacing.x24 }}>
-        <StyledText style={Typography.header.h1}>Verify your email address</StyledText>
+        <StyledText style={[Typography.header.h1, isDark ? { color: brandWhite } : undefined]}>
+          Verify your email address
+        </StyledText>
         <StyledText
-          style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+          style={[
+            Typography.subheader.R,
+            { color: isDark ? brandWhite : Colors.neutral[300], marginTop: spacing.x8 },
+          ]}
         >
           You’ll need to verify your email to complete your account activation.
         </StyledText>
@@ -576,7 +591,7 @@ function LoginComponent({
             Typography.subheader.R,
             {
               ...fontSize.x1,
-              color: Colors.primarySapphire[300],
+              color: isDark ? brandWhite : Colors.primarySapphire[300],
               marginTop: spacing.x8,
               marginBottom: spacing.x48,
             },
@@ -599,7 +614,9 @@ function LoginComponent({
         />
         <Button
           onPress={async () => {
-            const firebaseToken = await firebaseAuth.currentUser?.getIdToken();
+            const firebaseToken = firebaseAuth.currentUser
+              ? await getIdToken(firebaseAuth.currentUser)
+              : undefined;
             dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
           }}
           text="Didn’t receive the mail? "
@@ -632,6 +649,116 @@ function LoginComponent({
   const getDisabledButtonStyle = () => {
     return { ...styles.disabledButtonContainer, borderColor: colors.border };
   };
+
+  if (verifyAccount) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          marginHorizontal: spacing.x16,
+          paddingVertical: spacing.x24,
+          justifyContent: 'space-between',
+        }}
+      >
+        <View>
+          <StyledText
+            style={[Typography.header.h1, { color: isDark ? brandWhite : Colors.primary.brand }]}
+          >
+            Verify your Email address
+          </StyledText>
+          <StyledText
+            style={[
+              Typography.subheader.R,
+              {
+                color: isDark ? brandWhite : Colors.primary.brand,
+                marginTop: spacing.x8,
+                lineHeight: 21,
+              },
+            ]}
+          >
+            You’ll need to verify your email to complete your account activation.
+          </StyledText>
+
+          <View
+            style={{
+              marginTop: spacing.x24,
+              paddingHorizontal: spacing.x16,
+              paddingVertical: spacing.x20,
+              backgroundColor: colors.card,
+              borderRadius: borderRadius.base,
+              borderWidth: 1,
+              borderColor: Colors.neutral[800],
+            }}
+          >
+            <Button
+              text="Open email app"
+              btnStyle={[
+                button.primary,
+                {
+                  width: '100%',
+                  paddingVertical: spacing.x12,
+                  borderRadius: 60,
+                },
+              ]}
+              btnTextStyle={{ color: '#FFF', fontSize: 14, fontWeight: '500', lineHeight: 24 }}
+              onPress={() => {
+                // No-op: users can open their email app manually
+              }}
+            />
+
+            <TouchableOpacity
+              style={{ marginTop: spacing.x16, alignSelf: 'center' }}
+              onPress={() => {
+                if (resendAttempts >= 5) {
+                  setResendMessage('Please wait before requesting another verification email.');
+                  return;
+                }
+                if (firebaseAuth.currentUser) {
+                  firebaseAuth.currentUser
+                    .sendEmailVerification()
+                    .then(() => {
+                      setResendAttempts((prev) => prev + 1);
+                      setResendMessage('Verification email sent. Please check your inbox.');
+                    })
+                    .catch(() => {
+                      setResendMessage('Unable to resend right now. Please try again later.');
+                    });
+                } else {
+                  setResendMessage('Please log in again to resend the verification email.');
+                }
+              }}
+            >
+              <StyledText style={{ color: Colors.neutral[300] }}>
+                Didn’t get mail?{' '}
+                <StyledText style={{ color: Colors.primary.brand }}>Resend email</StyledText>
+              </StyledText>
+            </TouchableOpacity>
+            {resendMessage ? (
+              <StyledText
+                style={{
+                  color: Colors.primary.brand,
+                  textAlign: 'center',
+                  marginTop: spacing.x8,
+                  fontSize: 12,
+                }}
+              >
+                {resendMessage}
+              </StyledText>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={{ alignItems: 'center', marginBottom: spacing.x16 }}>
+          <StyledText style={{ color: Colors.neutral[300], fontSize: 12, fontWeight: '500' }}>
+            Unify the Body
+          </StyledText>
+          <StyledText style={{ color: Colors.primary.brand, fontSize: 12, marginTop: spacing.x4 }}>
+            1 Cor. 12:12
+          </StyledText>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View

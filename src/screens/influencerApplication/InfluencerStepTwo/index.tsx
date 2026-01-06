@@ -14,7 +14,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
-import auth from '@react-native-firebase/auth';
+import { FacebookAuthProvider, getAuth, getIdTokenResult } from '@react-native-firebase/auth';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -39,6 +39,7 @@ import Facebook from '@/assets/svg/Facebook.svg';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 const twitterRedirectUrl = 'onebodyapp://influencer/login/twitter';
 
@@ -48,6 +49,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
   const userToken = useSelector((state: RootState) => state.auth.userToken);
   const [twitterStateConfirmation] = useState(Math.random().toString(36).substring(2, 30));
   const [twitterCodeConfirmation, setTwitterCodeConfirmation] = useState<string>('');
+  const firebaseAuth = getAuth(getFirebaseApp());
 
   const inputRefs = {
     twitterUsername: useRef<TextInputNative>(null),
@@ -173,14 +175,14 @@ function InfluencerStepTwo({ navigation, route }: Props) {
 
       let foundFacebook = false;
 
-      auth().currentUser?.providerData.forEach((provider) => {
+      firebaseAuth.currentUser?.providerData.forEach((provider) => {
         if (provider.providerId == 'facebook.com') {
           foundFacebook = true;
         }
       });
 
       if (!foundFacebook) {
-        const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+        const facebookCredential = FacebookAuthProvider.credential(data.accessToken);
 
         // await auth().currentUser?.linkWithCredential(facebookCredential);
       }
@@ -237,9 +239,8 @@ function InfluencerStepTwo({ navigation, route }: Props) {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    auth()
-      .currentUser?.getIdTokenResult()
-      .then((result) => {
+    if (firebaseAuth.currentUser) {
+      getIdTokenResult(firebaseAuth.currentUser).then((result) => {
         if (result.signInProvider == 'facebook.com') {
           setIsLoggedInFacebook(true);
         }
@@ -248,6 +249,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
           setIsLoggedInTwitter(true);
         }
       });
+    }
 
     codeChallenge().then((code) => {
       setTwitterCodeConfirmation(code);

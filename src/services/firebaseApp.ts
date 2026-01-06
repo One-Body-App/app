@@ -4,3 +4,5 @@ import { getApp, getApps, initializeApp } from '@react-native-firebase/app';
 const firebaseApp = getApps().length ? getApp() : initializeApp();
 
 export const getFirebaseApp = () => firebaseApp;
+
+export default getFirebaseApp;

@@ -8,12 +8,22 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, useColorScheme } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import {
+  getAuth,
+  getIdToken,
+  getIdTokenResult,
+  onIdTokenChanged,
+} from '@react-native-firebase/auth';
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
 
 import { isEqual } from 'lodash';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import messaging from '@react-native-firebase/messaging';
+import {
+  getMessaging,
+  getInitialNotification,
+  onNotificationOpenedApp,
+} from '@react-native-firebase/messaging';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
@@ -38,24 +48,56 @@ import SinglePost from '../screens/post/Single';
 import VideoPost from '../screens/post/VideoPost';
 import RssPost from '../screens/post/RssPost';
 import { headerOptions } from './global';
+import { getFirebaseApp } from '../services/firebaseApp';
 
 const closeIcon = require('@/assets/images/close.png');
 
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
+const serializeFirebaseUser = (firebaseUser: FirebaseAuthTypes.User | null) => {
+  if (!firebaseUser) {
+    return null;
+  }
+
+  return {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email,
+    emailVerified: firebaseUser.emailVerified,
+    displayName: firebaseUser.displayName,
+    photoURL: firebaseUser.photoURL,
+    phoneNumber: firebaseUser.phoneNumber,
+    providerData: firebaseUser.providerData,
+    isAnonymous: firebaseUser.isAnonymous,
+    metadata: firebaseUser.metadata,
+    providerId: firebaseUser.providerId,
+    refreshToken: firebaseUser.refreshToken,
+    tenantId: firebaseUser.tenantId,
+  };
+};
+
+const getIdTokenWithTimeout = async (firebaseUser: FirebaseAuthTypes.User, timeoutMs = 5000) => {
+  return Promise.race([
+    getIdToken(firebaseUser),
+    new Promise<string>((_resolve, reject) => {
+      setTimeout(() => reject(new Error('getIdToken timeout')), timeoutMs);
+    }),
+  ]);
+};
+
 function Main() {
-  console.log('Main Navigator Loaded');
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
   const authState = useSelector((state: RootState) => state.auth);
-  // console.log(authState);
   const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');
-  // console.log(token);
+  const firebaseApp = getFirebaseApp();
+  const firebaseAuth = getAuth(firebaseApp);
+  const firebaseMessaging = getMessaging(firebaseApp);
   useEffect(() => {
     toast.hideAll();
 
@@ -66,52 +108,71 @@ function Main() {
     } else {
       toast.hideAll();
     }
-  }, [loader]);
+  }, [loader, toast]);
 
-  useEffect(() => {
-    if (initializing && authState.getProfileSuccess != undefined) {
-      setInitializing(false);
-    } else if (!initializing && authState.getProfileSuccess == undefined && !authState.isLoading) {
-      setInitializing(true);
+  const onAuthStateChanged = async (firebaseUser: FirebaseAuthTypes.User | null) => {
+    let firebaseToken: string | undefined;
+    try {
+      firebaseToken = firebaseUser ? await getIdTokenWithTimeout(firebaseUser) : undefined;
+    } catch (error) {
+      firebaseToken = undefined;
     }
-  }, [authState.getProfileSuccess]);
-
-  const onAuthStateChanged = async function (firebaseUser: FirebaseAuthTypes.User | null) {
-    const firebaseToken = await firebaseUser?.getIdToken();
 
     if (!isEqual(firebaseUser, user)) {
-      setUser(firebaseUser);
+      let tokenResult: FirebaseAuthTypes.IdTokenResult | undefined;
+      if (firebaseUser) {
+        try {
+          tokenResult = await getIdTokenResult(firebaseUser);
+        } catch (error) {
+          /* noop on token result fetch failure */
+        }
+      }
 
+      setUser(firebaseUser);
       dispatch(
         setUserData({
-          ...firebaseUser?.toJSON(),
-          tokenResult: await firebaseUser?.getIdTokenResult(),
+          ...serializeFirebaseUser(firebaseUser),
+          tokenResult,
         })
       );
     }
 
-    if (!isEqual(firebaseToken, token)) {
-      setToken(firebaseToken ?? 'unauthorized');
+    const nextToken = firebaseToken && firebaseToken.length > 0 ? firebaseToken : 'unauthorized';
+    if (!isEqual(nextToken, token)) {
+      setToken(nextToken);
+    }
+    if (!authChecked) {
+      setAuthChecked(true);
+      setInitializing(false);
     }
   };
 
   useEffect(() => {
-    const subscriber = auth().onIdTokenChanged(onAuthStateChanged);
+    const subscriber = onIdTokenChanged(firebaseAuth, onAuthStateChanged);
 
     return subscriber; // unsubscribe on unmount
   }, []);
 
   useEffect(() => {
-    if (user && token) {
-      dispatch(setLoginData({ token }));
-    }
+    const timer = setTimeout(() => {
+      setAuthChecked(true);
+      setInitializing(false);
+      LottieSplashScreen.hide();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
-    if (token) {
+  useEffect(() => {
+    const hasValidToken = !!user && token !== '' && token !== 'unauthorized';
+    if (hasValidToken) {
+      dispatch(setLoginData({ token }));
       dispatch(
         getProfile.Request({
           token,
         })
       );
+    } else if (token === 'unauthorized') {
+      dispatch(setLoginData({ token: '' }));
     }
 
     if (token == 'unauthorized') {
@@ -186,7 +247,7 @@ function Main() {
       }
 
       // Check if there is an initial firebase notification
-      const message = await messaging().getInitialNotification();
+      const message = await getInitialNotification(firebaseMessaging);
 
       // Get the `url` property from the notification which corresponds to a screen
       // This property needs to be set on the notification payload when sending it
@@ -199,7 +260,7 @@ function Main() {
       const subscription = Linking.addEventListener('url', onReceiveURL);
 
       // Listen to firebase push notifications
-      const unsubscribeNotification = messaging().onNotificationOpenedApp((message) => {
+      const unsubscribeNotification = onNotificationOpenedApp(firebaseMessaging, (message) => {
         const url = message.data?.url as string;
 
         if (url) {
@@ -224,8 +285,9 @@ function Main() {
     colors: {
       ...DefaultTheme.colors,
       background: Colors.main.white,
-      primary: Colors.primary.brand,
-      // card: Colors.neutral[800],
+      card: Colors.neutral[800],
+      text: Colors.neutral.brand,
+      primary: Colors.primarySapphire.brand,
       border: Colors.neutral[900],
     },
   };
@@ -234,16 +296,17 @@ function Main() {
     ...DarkTheme,
     colors: {
       ...DarkTheme.colors,
-      // Colors.neutral[900]
-      primary: '#5B7279',
-      // card: Colors.neutral[700],
-      background: Colors.main.white,
+      background: '#0D0D0D',
+      card: '#121212',
+      text: '#F6F7F8',
+      primary: Colors.primarySapphire.brand,
+      border: '#1B1B1B',
     },
   };
 
   const scheme = useColorScheme();
 
-  if (initializing) {
+  if (!authChecked && initializing) {
     return null;
   }
 

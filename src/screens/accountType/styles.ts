@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white ',
@@ -99,3 +99,5 @@ export const styles = StyleSheet.create({
     fontFamily: 'OpenSans-Medium',
   },
 });
+
+export default styles;

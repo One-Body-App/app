@@ -7,7 +7,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import LottieSplashScreen from 'react-native-lottie-splash-screen'; // Note: LottieSplashScreen.hide() is now in AppContent
 
 // import ZendeskChat from 'react-native-zendesk-chat';
-import dynamicLinks from '@react-native-firebase/dynamic-links';
+import { getDynamicLinks, onLink } from '@react-native-firebase/dynamic-links';
 import { Linking, Text } from 'react-native'; // Text might not be needed here if not directly used
 import { ToastProvider } from 'react-native-toast-notifications';
 
@@ -36,7 +36,7 @@ Sentry.init({
 
 function App() {
   const firebaseApp = getFirebaseApp();
-  const links = dynamicLinks();
+  const links = getDynamicLinks(firebaseApp);
   const handleDynamicLink = (link: string) => {
     // console.log('Dynamic Link:', link);
     // LottieSplashScreen.hide();
@@ -45,7 +45,7 @@ function App() {
 
   useEffect(() => {
     const event = Linking.addEventListener('url', ({ url }) => handleDynamicLink(url));
-    const unsubscribe = links.onLink((url) => handleDynamicLink(url.url));
+    const unsubscribe = onLink(links, (url) => handleDynamicLink(url.url));
     return () => {
       event.remove();
       unsubscribe();

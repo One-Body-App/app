@@ -22,7 +22,7 @@ export const COLORS = {
   grey: '#707070',
   purple: '#126B87',
   background: '#E5E5E5',
-  lightWhite: '#F6F6F6',
+  lightWhite: '#F6F6F7',
   btnBackground: '#032F3C',
   titleColor: '#12D2D9',
 };
