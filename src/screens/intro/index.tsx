@@ -60,9 +60,7 @@ const loadHapticModule = () => {
 };
 
 const triggerButtonHaptic = () => {
-  if (Platform.OS !== 'android') {
-    return;
-  }
+  // Removed platform check to enable haptics on iOS
 
   loadHapticModule()
     .then((module) => {
