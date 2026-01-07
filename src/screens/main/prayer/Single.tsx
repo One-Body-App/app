@@ -34,6 +34,10 @@ import PrayerItem from '@/components/listItems/PrayerItem';
 import CommentField from '@/components/comments/Field';
 import CommentItem from '@/components/comments/CommentItem';
 
+function LoadingEmptyComponent() {
+  return <ActivityIndicator />;
+}
+
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
 let keyboardWillShowListener: EmitterSubscription;
 let onKeyboardWillHideListener: EmitterSubscription;
@@ -282,13 +286,7 @@ function SinglePrayer({ navigation, route }: Props) {
                     }}
                   />
                 }
-                ListEmptyComponent={() => {
-                  if (isLoading) {
-                    return <ActivityIndicator />;
-                  }
-
-                  return null;
-                }}
+                ListEmptyComponent={isLoading ? LoadingEmptyComponent : undefined}
                 renderItem={({ item }) => {
                   let myReaction: SocialPostReaction | undefined;
 

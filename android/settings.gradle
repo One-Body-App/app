@@ -1,9 +1,22 @@
-pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
-plugins { id("com.facebook.react.settings") }
+pluginManagement {
+    includeBuild("../node_modules/@react-native/gradle-plugin")
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "com.facebook.react.settings") {
+                useModule("com.facebook.react:settings-plugin:0.80.0")
+            }
+        }
+    }
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+plugins { id("com.facebook.react.settings") version "0.80.0" }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+includeBuild("../node_modules/@react-native/gradle-plugin")
 rootProject.name = 'onebody'
 include ':app'
-includeBuild('../node_modules/@react-native/gradle-plugin')
 include ':react-native-fs'
 project(':react-native-fs').projectDir = new File(settingsDir, '../node_modules/react-native-fs/android')
-

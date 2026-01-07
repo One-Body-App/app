@@ -1,0 +1,5 @@
+diff --git a/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake b/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake
+@@
+-        string(REGEX REPLACE "react_codegen_" "" APP_CODEGEN_HEADER "${APP_CODEGEN_TARGET}")
++        string(REGEX REPLACE "^react_codegen_" "" APP_CODEGEN_HEADER "${APP_CODEGEN_TARGET}")
++        string(REGEX REPLACE "_app$" "" APP_CODEGEN_HEADER "${APP_CODEGEN_HEADER}")

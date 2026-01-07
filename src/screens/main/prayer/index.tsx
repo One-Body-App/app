@@ -50,7 +50,7 @@ function Prayer({ navigation }: Props) {
                 {props.navigationState.routes.map((route, i) => {
                   return (
                     <TouchableOpacity style={styles.tabItem} onPress={() => setIndex(i)}>
-                      {props?.navigationState?.index == i ? (
+                      {props?.navigationState?.index === i ? (
                         <StyledText
                           style={{ color: colors.text, fontWeight: 'bold', ...fontSize.x092 }}
                         >
@@ -61,7 +61,7 @@ function Prayer({ navigation }: Props) {
                           {route.title}
                         </StyledText>
                       )}
-                      {props?.navigationState?.index == i ? <View style={styles.viewun} /> : null}
+                      {props?.navigationState?.index === i ? <View style={styles.viewun} /> : null}
                     </TouchableOpacity>
                   );
                 })}

@@ -6,6 +6,8 @@ apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.grad
 
 
 import groovy.json.JsonSlurper
+import org.gradle.api.JavaVersion
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 
 def getVersionFromNpm() {
@@ -120,6 +122,21 @@ android {
         versionName "2.2.22"
 
         resConfigs "en", "es"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_25
+        targetCompatibility JavaVersion.VERSION_25
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    kotlin {
+        jvmToolchain {
+            languageVersion.set(JavaLanguageVersion.of(17))
+        }
     }
 
 

@@ -9,6 +9,7 @@ import {
   Image,
   useWindowDimensions,
   StatusBar,
+  Platform,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
@@ -44,25 +45,36 @@ const ASSETS = {
   discoverIcon: discoverIconImg,
 };
 
-type Props = StackScreenProps<MainStackParamList, 'Intro'>;
-
 const hapticOptions = {
   enableVibrateFallback: true,
   ignoreAndroidSystemSettings: false,
 };
 
-const triggerIntroHaptic = () => {
+let cachedHapticModulePromise: Promise<typeof import('react-native-haptic-feedback')> | null = null;
+
+const loadHapticModule = () => {
+  if (!cachedHapticModulePromise) {
+    cachedHapticModulePromise = import('react-native-haptic-feedback');
+  }
+  return cachedHapticModulePromise;
+};
+
+const triggerButtonHaptic = () => {
   if (Platform.OS !== 'android') {
     return;
   }
-  try {
-    /* eslint-disable-next-line global-require */
-    const Haptic = require('react-native-haptic-feedback');
-    Haptic.trigger('impactLight', hapticOptions);
-  } catch (error) {
-    console.warn('[Intro Haptic] unable to trigger', error);
-  }
+
+  loadHapticModule()
+    .then((module) => {
+      const hapticModule = module.default ?? module;
+      hapticModule.trigger('impactLight', hapticOptions);
+    })
+    .catch((error) => {
+      console.warn('[Intro Haptic] unable to trigger', error);
+    });
 };
+
+type Props = StackScreenProps<MainStackParamList, 'Intro'>;
 
 function IntroScreen({ navigation }: Props) {
   const { colors, dark } = useTheme();
@@ -107,16 +119,6 @@ function IntroScreen({ navigation }: Props) {
             useNativeDriver: true,
           }),
         ]);
-
-      // Trigger heavy impact vibration when hero image starts animating
-      ReactNativeHapticFeedback.trigger('impactHeavy', hapticOptions);
-      // Continue vibration pattern for 2 seconds total
-      const vibrationInterval = setInterval(() => {
-        ReactNativeHapticFeedback.trigger('impactHeavy', hapticOptions);
-      }, 500);
-      setTimeout(() => {
-        clearInterval(vibrationInterval);
-      }, 2000);
 
       // Start Entry Animation
       Animated.sequence([
@@ -451,7 +453,7 @@ function IntroScreen({ navigation }: Props) {
                     <Button
                       btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
                       onPress={() => {
-                        triggerIntroHaptic();
+                        triggerButtonHaptic();
                         navigation.navigate('AccountType');
                       }}
                       text="Join the Family"
@@ -477,7 +479,7 @@ function IntroScreen({ navigation }: Props) {
                         { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
                       ]}
                       onPress={() => {
-                        triggerIntroHaptic();
+                        triggerButtonHaptic();
                         navigation.navigate('Login');
                       }}
                       text="I have an account"
