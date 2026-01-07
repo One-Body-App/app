@@ -12325,6 +12325,7 @@ __metadata:
     react-native-fs: "npm:^2.20.0"
     react-native-gesture-handler: "npm:^2.26.0"
     react-native-gifted-chat: "npm:^1.0.0"
+    react-native-haptic-feedback: "npm:^2.3.3"
     react-native-image-crop-picker: "npm:^0.40.3"
     react-native-image-picker: "npm:^7.1.0"
     react-native-image-viewing: "npm:^0.2.2"
@@ -13472,6 +13473,15 @@ __metadata:
     react-native-safe-area-context: "*"
     react-native-typing-animation: "*"
   checksum: 10/b699f649c40e80482f958b11a078603f7a8788d27399129c9887e3552d05f7315627b1eb3fd283939146ecb4d4ed06d530c8fb02b72fdb099e44052e50f7e3d9
+  languageName: node
+  linkType: hard
+
+"react-native-haptic-feedback@npm:^2.3.3":
+  version: 2.3.3
+  resolution: "react-native-haptic-feedback@npm:2.3.3"
+  peerDependencies:
+    react-native: ">=0.60.0"
+  checksum: 10/9c49a4f22a950a0483337698ac5212931fe7e6bce0cf1873a5e5422f7aae1c3250c61a9d598005ae0fc7b83d2d415a0e19d6b19d99185c137d28e5062cdb221e
   languageName: node
   linkType: hard
 

@@ -12,7 +12,7 @@ import { User } from '@/utils/types';
 import SocialItem from '../listItems/SocialItem';
 import { OpenURLButton } from '@/services/constants';
 import Button from '../Button';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import GeneralStyle from '@/src/constants/GeneralStyle';
 
 function InstagramFlatlist({
   currentUser,

@@ -12,7 +12,7 @@ import { ApiCall } from '@/src/services/api';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 
-import { GeneralStyle } from '../../../constants/GeneralStyle';
+import GeneralStyle from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import StyledText from '@/components/styled/Text';

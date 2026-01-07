@@ -15,7 +15,7 @@ import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import { logout } from '@/src/redux/actions/AuthActions';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
-import { GeneralStyle } from '../../../constants/GeneralStyle';
+import GeneralStyle from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
 

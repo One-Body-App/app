@@ -82,6 +82,8 @@ export default forwardRef<TextInput, Props>((props, ref) => {
           ref={ref}
           {...textInputProps}
           maxLength={enforceMaxLength && maxLength ? maxLength : undefined}
+          contextMenuHidden={false}
+          allowFontScaling
           style={[
             { paddingVertical: spacing.x10, color: colors.text },
             styles.input,

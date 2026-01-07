@@ -8,10 +8,10 @@ import {
   StyleSheet,
   Image,
   useWindowDimensions,
+  StatusBar,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
-import { MainStackParamList } from '@/src/navigator/types';
 import { header, subheader } from '@/src/styles/typography';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -19,6 +19,7 @@ import UserStepsLayout from '../layout/UserStepsLayout';
 import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { spacing } from '@/src/styles/spacing';
+import { MainStackParamList } from '@/src/navigator/types';
 import logogroupImg from '@/assets/images/logogroup.png';
 import logogroupDarkImg from '@/assets/images/logogroupdark.png';
 import avatar1Img from '@/assets/images/avatar1.png';
@@ -44,6 +45,24 @@ const ASSETS = {
 };
 
 type Props = StackScreenProps<MainStackParamList, 'Intro'>;
+
+const hapticOptions = {
+  enableVibrateFallback: true,
+  ignoreAndroidSystemSettings: false,
+};
+
+const triggerIntroHaptic = () => {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+  try {
+    /* eslint-disable-next-line global-require */
+    const Haptic = require('react-native-haptic-feedback');
+    Haptic.trigger('impactLight', hapticOptions);
+  } catch (error) {
+    console.warn('[Intro Haptic] unable to trigger', error);
+  }
+};
 
 function IntroScreen({ navigation }: Props) {
   const { colors, dark } = useTheme();
@@ -88,6 +107,16 @@ function IntroScreen({ navigation }: Props) {
             useNativeDriver: true,
           }),
         ]);
+
+      // Trigger heavy impact vibration when hero image starts animating
+      ReactNativeHapticFeedback.trigger('impactHeavy', hapticOptions);
+      // Continue vibration pattern for 2 seconds total
+      const vibrationInterval = setInterval(() => {
+        ReactNativeHapticFeedback.trigger('impactHeavy', hapticOptions);
+      }, 500);
+      setTimeout(() => {
+        clearInterval(vibrationInterval);
+      }, 2000);
 
       // Start Entry Animation
       Animated.sequence([
@@ -208,243 +237,260 @@ function IntroScreen({ navigation }: Props) {
   };
 
   return (
-    <UserStepsLayout backgroundColor={colors.background}>
-      <View
-        style={{
-          flexGrow: 1,
-          flexShrink: 0,
-          flexBasis: 'auto',
-          alignItems: isTablet ? 'center' : undefined,
-        }}
-      >
-        {/* --- ANIMATED SOLAR SYSTEM CONTAINER --- */}
-        <Animated.View
-          style={{
-            flexGrow: 1,
-            flexShrink: 0,
-            flexBasis: 300,
-            marginTop: spacing.x32,
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: 350, // Enlarged hero height to contain larger orbit
-            width: isTablet ? '100%' : undefined,
-            maxWidth: isTablet ? HERO_MAX_WIDTH : undefined,
-            ...orbitEntryStyle,
-          }}
-        >
-          <View style={styles.solarSystem}>
-            {/* 1. Static Rings (The Water Ripples) */}
-            <View style={[styles.ring, styles.ringOuter, ringStyles.outer]} />
-            <View style={[styles.ring, styles.ringMiddle, ringStyles.middle]} />
-            <View style={[styles.ring, styles.ringInner, ringStyles.inner]} />
+    <>
+      <StatusBar
+        backgroundColor={dark ? colors.background : Colors.main.white}
+        barStyle={dark ? 'light-content' : 'dark-content'}
+      />
 
-            {/* 2. Central Sun (The Logo) */}
-            <View style={[styles.sunContainer, sunStyle]}>
-              <FastImage
-                source={dark ? ASSETS.logogroupDark : ASSETS.logogroup}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-
-            {/* 3. Outer Orbit Track (Clockwise) */}
-            <Animated.View
-              style={[styles.orbitTrack, styles.trackOuter, { transform: [{ rotate: rotateCW }] }]}
-            >
-              {/* Avatar 1 (Top Right) */}
-              <Animated.View
-                style={[
-                  styles.planetParams,
-                  { top: 0, right: '20%', transform: [{ rotate: counterRotateCW }] },
-                ]}
-              >
-                <FastImage source={ASSETS.avatar1} style={styles.avatarLarge} />
-              </Animated.View>
-
-              {/* Avatar 2 (Bottom Left) */}
-              <Animated.View
-                style={[
-                  styles.planetParams,
-                  { bottom: '10%', left: '20%', transform: [{ rotate: counterRotateCW }] },
-                ]}
-              >
-                <FastImage source={ASSETS.avatar2} style={styles.avatarMedium} />
-              </Animated.View>
-
-              {/* Discover Icon (Far Right) */}
-              <Animated.View
-                style={[
-                  styles.planetParams,
-                  { top: '50%', right: -15, transform: [{ rotate: counterRotateCW }] },
-                ]}
-              >
-                <View style={styles.iconBubble}>
-                  <Image source={ASSETS.discoverIcon} style={styles.iconSmall} />
-                </View>
-              </Animated.View>
-            </Animated.View>
-
-            {/* 4. Inner Orbit Track (Counter-Clockwise) */}
-            <Animated.View
-              style={[styles.orbitTrack, styles.trackInner, { transform: [{ rotate: rotateCCW }] }]}
-            >
-              {/* Avatar 3 (Top Left) */}
-              <Animated.View
-                style={[
-                  styles.planetParams,
-                  { top: '15%', left: 0, transform: [{ rotate: counterRotateCCW }] },
-                ]}
-              >
-                <FastImage source={ASSETS.avatar3} style={styles.avatarMedium} />
-              </Animated.View>
-
-              {/* Search Icon (Bottom Right) */}
-              <Animated.View
-                style={[
-                  styles.planetParams,
-                  { bottom: '20%', right: 0, transform: [{ rotate: counterRotateCCW }] },
-                ]}
-              >
-                <View style={styles.iconBubble}>
-                  <Image source={ASSETS.searchIcon} style={styles.iconSmall} />
-                </View>
-              </Animated.View>
-
-              {/* Avatar 4 (Bottom Center) */}
-              <Animated.View
-                style={[
-                  styles.planetParams,
-                  { bottom: -15, left: '50%', transform: [{ rotate: counterRotateCCW }] },
-                ]}
-              >
-                <FastImage source={ASSETS.avatar4} style={styles.avatarSmall} />
-              </Animated.View>
-            </Animated.View>
-          </View>
-        </Animated.View>
-        {/* --- END ANIMATION --- */}
-
+      <UserStepsLayout backgroundColor={colors.background}>
         <View
           style={{
             flexGrow: 1,
-            flexBasis: 400,
-            width: isTablet ? '100%' : undefined,
-            maxWidth: isTablet ? CONTENT_MAX_WIDTH : undefined,
+            flexShrink: 0,
+            flexBasis: 'auto',
+            alignItems: isTablet ? 'center' : undefined,
           }}
         >
-          <View
+          {/* --- ANIMATED SOLAR SYSTEM CONTAINER --- */}
+          <Animated.View
             style={{
-              paddingTop: 60,
-              justifyContent: 'space-between',
-              flex: 1,
-              flexDirection: 'column',
+              flexGrow: 1,
               flexShrink: 0,
+              flexBasis: 300,
+              marginTop: spacing.x32,
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 350, // Enlarged hero height to contain larger orbit
+              width: isTablet ? '100%' : undefined,
+              maxWidth: isTablet ? HERO_MAX_WIDTH : undefined,
+              ...orbitEntryStyle,
             }}
           >
-            <View style={{ flex: 1, paddingBottom: 40 }}>
-              <View style={{ flex: 1 }}>
-                <Animated.View
-                  style={[{ flexDirection: 'row', justifyContent: 'center' }, textPopStyle]}
-                >
-                  <StyledText
-                    style={[
-                      header.h2,
-                      { color: dark ? '#f6f6f6' : Colors.primary.brand, fontWeight: 'bold' },
-                    ]}
-                  >
-                    Welcome to{' '}
-                  </StyledText>
-                  <StyledText
-                    style={[
-                      header.h2,
-                      {
-                        color: dark ? '#12d2d9' : Colors.primarySapphire.brand,
-                        fontWeight: 'bold',
-                      },
-                    ]}
-                  >
-                    One Body
-                  </StyledText>
-                </Animated.View>
+            <View style={styles.solarSystem}>
+              {/* 1. Static Rings (The Water Ripples) */}
+              <View style={[styles.ring, styles.ringOuter, ringStyles.outer]} />
+              <View style={[styles.ring, styles.ringMiddle, ringStyles.middle]} />
+              <View style={[styles.ring, styles.ringInner, ringStyles.inner]} />
 
-                <Animated.View style={[{ marginHorizontal: 25 }, textPopStyle]}>
-                  <StyledText
-                    style={[
-                      subheader.M,
-                      {
-                        color: dark ? '#f6f6f6' : Colors.primary.brand,
-                        textAlign: 'center',
-                        marginTop: 10,
-                      },
-                    ]}
-                  >
-                    Join the global community of believers. Discover Christian creators, find local
-                    Churches, and unite in Prayer with the Body of Christ worldwide.
-                  </StyledText>
-                </Animated.View>
+              {/* 2. Central Sun (The Logo) */}
+              <View style={[styles.sunContainer, sunStyle]}>
+                <FastImage
+                  source={dark ? ASSETS.logogroupDark : ASSETS.logogroup}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
               </View>
 
-              <View
-                style={{
-                  marginHorizontal: spacing.x20,
-                  marginTop: spacing.x20,
-                  ...(isTablet
-                    ? { width: '100%', maxWidth: BUTTONS_MAX_WIDTH, alignSelf: 'center' }
-                    : {}),
-                }}
+              {/* 3. Outer Orbit Track (Clockwise) */}
+              <Animated.View
+                style={[
+                  styles.orbitTrack,
+                  styles.trackOuter,
+                  { transform: [{ rotate: rotateCW }] },
+                ]}
               >
+                {/* Avatar 1 (Top Right) */}
                 <Animated.View
                   style={[
-                    {
-                      shadowColor: Colors.primary.brand,
-                      shadowOpacity: 0.125,
-                      shadowOffset: { width: 0, height: 6 },
-                      shadowRadius: 10,
-                      elevation: 4,
-                    },
-                    buttonWobble(primaryBtnAnim),
+                    styles.planetParams,
+                    { top: 0, right: '20%', transform: [{ rotate: counterRotateCW }] },
                   ]}
                 >
-                  <Button
-                    btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
-                    onPress={() => {
-                      navigation.navigate('AccountType');
-                    }}
-                    text="Join the Family"
-                    btnTextStyle={{ color: 'white' }}
-                  />
+                  <FastImage source={ASSETS.avatar1} style={styles.avatarLarge} />
                 </Animated.View>
 
+                {/* Avatar 2 (Bottom Left) */}
                 <Animated.View
                   style={[
-                    {
-                      shadowColor: Colors.primary.brand,
-                      shadowOpacity: 0.1,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowRadius: 8,
-                      elevation: 3,
-                    },
-                    buttonWobble(secondaryBtnAnim),
+                    styles.planetParams,
+                    { bottom: '10%', left: '20%', transform: [{ rotate: counterRotateCW }] },
                   ]}
                 >
-                  <Button
-                    btnStyle={[
-                      button.outline,
-                      { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
-                    ]}
-                    onPress={() => {
-                      navigation.navigate('Login');
-                    }}
-                    text="I have an account"
-                    btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
-                  />
+                  <FastImage source={ASSETS.avatar2} style={styles.avatarMedium} />
                 </Animated.View>
+
+                {/* Discover Icon (Far Right) */}
+                <Animated.View
+                  style={[
+                    styles.planetParams,
+                    { top: '50%', right: -15, transform: [{ rotate: counterRotateCW }] },
+                  ]}
+                >
+                  <View style={styles.iconBubble}>
+                    <Image source={ASSETS.discoverIcon} style={styles.iconSmall} />
+                  </View>
+                </Animated.View>
+              </Animated.View>
+
+              {/* 4. Inner Orbit Track (Counter-Clockwise) */}
+              <Animated.View
+                style={[
+                  styles.orbitTrack,
+                  styles.trackInner,
+                  { transform: [{ rotate: rotateCCW }] },
+                ]}
+              >
+                {/* Avatar 3 (Top Left) */}
+                <Animated.View
+                  style={[
+                    styles.planetParams,
+                    { top: '15%', left: 0, transform: [{ rotate: counterRotateCCW }] },
+                  ]}
+                >
+                  <FastImage source={ASSETS.avatar3} style={styles.avatarMedium} />
+                </Animated.View>
+
+                {/* Search Icon (Bottom Right) */}
+                <Animated.View
+                  style={[
+                    styles.planetParams,
+                    { bottom: '20%', right: 0, transform: [{ rotate: counterRotateCCW }] },
+                  ]}
+                >
+                  <View style={styles.iconBubble}>
+                    <Image source={ASSETS.searchIcon} style={styles.iconSmall} />
+                  </View>
+                </Animated.View>
+
+                {/* Avatar 4 (Bottom Center) */}
+                <Animated.View
+                  style={[
+                    styles.planetParams,
+                    { bottom: -15, left: '50%', transform: [{ rotate: counterRotateCCW }] },
+                  ]}
+                >
+                  <FastImage source={ASSETS.avatar4} style={styles.avatarSmall} />
+                </Animated.View>
+              </Animated.View>
+            </View>
+          </Animated.View>
+          {/* --- END ANIMATION --- */}
+
+          <View
+            style={{
+              flexGrow: 1,
+              flexBasis: 400,
+              width: isTablet ? '100%' : undefined,
+              maxWidth: isTablet ? CONTENT_MAX_WIDTH : undefined,
+            }}
+          >
+            <View
+              style={{
+                paddingTop: 60,
+                justifyContent: 'space-between',
+                flex: 1,
+                flexDirection: 'column',
+                flexShrink: 0,
+              }}
+            >
+              <View style={{ flex: 1, paddingBottom: 40 }}>
+                <View style={{ flex: 1 }}>
+                  <Animated.View
+                    style={[{ flexDirection: 'row', justifyContent: 'center' }, textPopStyle]}
+                  >
+                    <StyledText
+                      style={[
+                        header.h2,
+                        { color: dark ? '#f6f6f6' : Colors.primary.brand, fontWeight: 'bold' },
+                      ]}
+                    >
+                      Welcome to{' '}
+                    </StyledText>
+                    <StyledText
+                      style={[
+                        header.h2,
+                        {
+                          color: dark ? '#12d2d9' : Colors.primarySapphire.brand,
+                          fontWeight: 'bold',
+                        },
+                      ]}
+                    >
+                      One Body
+                    </StyledText>
+                  </Animated.View>
+
+                  <Animated.View style={[{ marginHorizontal: 25 }, textPopStyle]}>
+                    <StyledText
+                      style={[
+                        subheader.M,
+                        {
+                          color: dark ? '#f6f6f6' : Colors.primary.brand,
+                          textAlign: 'center',
+                          marginTop: 10,
+                        },
+                      ]}
+                    >
+                      Join the global community of believers. Discover Christian creators, find
+                      local Churches, and unite in Prayer with the Body of Christ worldwide.
+                    </StyledText>
+                  </Animated.View>
+                </View>
+
+                <View
+                  style={{
+                    marginHorizontal: spacing.x20,
+                    marginTop: spacing.x20,
+                    ...(isTablet
+                      ? { width: '100%', maxWidth: BUTTONS_MAX_WIDTH, alignSelf: 'center' }
+                      : {}),
+                  }}
+                >
+                  <Animated.View
+                    style={[
+                      {
+                        shadowColor: Colors.primary.brand,
+                        shadowOpacity: 0.125,
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowRadius: 10,
+                        elevation: 4,
+                      },
+                      buttonWobble(primaryBtnAnim),
+                    ]}
+                  >
+                    <Button
+                      btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
+                      onPress={() => {
+                        triggerIntroHaptic();
+                        navigation.navigate('AccountType');
+                      }}
+                      text="Join the Family"
+                      btnTextStyle={{ color: 'white' }}
+                    />
+                  </Animated.View>
+
+                  <Animated.View
+                    style={[
+                      {
+                        shadowColor: Colors.primary.brand,
+                        shadowOpacity: 0.1,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowRadius: 8,
+                        elevation: 3,
+                      },
+                      buttonWobble(secondaryBtnAnim),
+                    ]}
+                  >
+                    <Button
+                      btnStyle={[
+                        button.outline,
+                        { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
+                      ]}
+                      onPress={() => {
+                        triggerIntroHaptic();
+                        navigation.navigate('Login');
+                      }}
+                      text="I have an account"
+                      btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
+                    />
+                  </Animated.View>
+                </View>
               </View>
             </View>
           </View>
         </View>
-      </View>
-    </UserStepsLayout>
+      </UserStepsLayout>
+    </>
   );
 }
 

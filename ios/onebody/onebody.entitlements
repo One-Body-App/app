@@ -12,8 +12,11 @@
 	<array>
 		<string>applinks:app.onebodyapp.com</string>
 		<string>applinks:auth.onebodyapp.com</string>
+		<string>onebodyapp.com</string>
 	</array>
 	<key>keychain-access-groups</key>
-	<array/>
+	<array>
+		<string>$(AppIdentifierPrefix)com.onebodyapp</string>
+	</array>
 </dict>
 </plist>

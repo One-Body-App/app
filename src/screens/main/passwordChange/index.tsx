@@ -12,7 +12,7 @@ import { validateFields } from '@/utils/validation/validate-fields';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import validator from '@/utils/validation/validator';
 
-import { GeneralStyle } from '../../../constants/GeneralStyle';
+import GeneralStyle from '../../../constants/GeneralStyle';
 import { button } from '@/src/styles/buttons';
 import { Colors } from '@/src/styles';
 import StyledTextInput from '@/components/styled/TextInput';

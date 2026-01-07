@@ -16,7 +16,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useToast } from 'react-native-toast-notifications';
 
-import { GeneralStyle } from '../../constants/GeneralStyle';
+import GeneralStyle from '../../constants/GeneralStyle';
 import Button from '../../components/Button';
 
 import { validateFields } from '@/utils/validation/validate-fields';

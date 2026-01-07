@@ -25,6 +25,7 @@ import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { GOOGLE_LOGIN_CLIENT_ID } from '@/services/constants';
 import { MainStackParamList } from '@/src/navigator/types';
 import { getFirebaseApp } from '@/src/services/firebaseApp';
+import { appColor } from '@/src/constants';
 
 interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
   errorFromLogin?: string;
@@ -132,7 +133,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   const getButtonContainer = () => {
     return {
       ...styles.buttonContainer,
-      borderColor: colors.border,
+      borderColor: appColor.SecoundryColor,
     };
   };
 
@@ -147,7 +148,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   const getDisabledButtonStyle = () => {
     return {
       ...styles.buttonContainer,
-      borderColor: colors.border,
+      borderColor: appColor.SecoundryColor,
     };
   };
 

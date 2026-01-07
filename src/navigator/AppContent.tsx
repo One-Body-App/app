@@ -110,6 +110,7 @@ function AppContent() {
   // Renamed from 'Main' to 'AppContent'
   const toast = useToast();
   const loader = useSelector((state: RootState) => state.general.loader);
+  const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
 
   const [initializing, setInitializing] = useState<boolean>(true);
@@ -275,8 +276,13 @@ function AppContent() {
     }
     const currentRouteName = navigationRef.getCurrentRoute()?.name;
     const hasValidToken = !!user && token !== '' && token !== 'unauthorized';
+    const isProfileCompleted = authState.getProfileData?.isProfileCompleted;
+    const hasAccountType =
+      authState.getProfileData?.accountType === 'individual' ||
+      authState.getProfileData?.accountType === 'organization';
 
-    if (hasValidToken && user?.emailVerified) {
+    // Only navigate to MainRoot if user has verified email AND has completed their profile with account type
+    if (hasValidToken && user?.emailVerified && isProfileCompleted && hasAccountType) {
       if (currentRouteName !== 'MainRoot') {
         navigationRef.dispatch(CommonActions.navigate('MainRoot'));
       }
@@ -285,7 +291,7 @@ function AppContent() {
         navigationRef.dispatch(CommonActions.navigate('ConfirmLogin'));
       }
     }
-  }, [navigationReady, navigationRef, token, user]);
+  }, [navigationReady, navigationRef, token, user, authState.getProfileData]);
 
   const linkingConfig: LinkingOptions<MainStackParamList>['config'] = {
     screens: {

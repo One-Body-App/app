@@ -23,7 +23,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { ProfileProps } from './Profile';
 import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import GeneralStyle from '@/src/constants/GeneralStyle';
 import {
   MainBottomStackParamsList,
   MainDrawerParamsList,

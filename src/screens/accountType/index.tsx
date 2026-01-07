@@ -20,7 +20,8 @@ import { AccountType as AccountTypeType } from '@/utils/types';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import GeneralStyle from '@/src/constants/GeneralStyle';
+import { savePendingAccountType } from '@/src/services/accountTypeStorage';
 
 type Props = StackScreenProps<MainStackParamList, 'AccountType'>;
 
@@ -390,8 +391,12 @@ function AccountType({ navigation }: Props) {
               },
             ]}
             disabled={accountType == null}
-            onPress={() => {
-              if (accountType) navigation.navigate('SignUp', { accountType });
+            onPress={async () => {
+              if (!accountType) {
+                return;
+              }
+              await savePendingAccountType(accountType);
+              navigation.navigate('SignUp', { accountType });
             }}
           >
             <StyledText style={{ color: '#FFF' }}>Continue</StyledText>

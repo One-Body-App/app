@@ -26,7 +26,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
-import { GeneralStyle } from '../../constants/GeneralStyle';
+import GeneralStyle from '../../constants/GeneralStyle';
 import Google from '@/assets/svg/G.svg';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Apple from '@/assets/svg/Apple.svg';
@@ -57,6 +57,7 @@ import StyledTextInput from '../styled/TextInput';
 import { fontSize } from '@/src/styles/typography';
 import CustomModal from '../CustomModal';
 import { getFirebaseApp } from '@/src/services/firebaseApp';
+import { loadPendingAccountType, clearPendingAccountType } from '@/src/services/accountTypeStorage';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
 
@@ -207,6 +208,20 @@ function LoginComponent({
       action();
     }
   }, [mode]);
+
+  useEffect(() => {
+    if (!success) {
+      return;
+    }
+    const restoreAccountType = async () => {
+      const pendingType = await loadPendingAccountType();
+      if (pendingType) {
+        dispatch(setAccountType(pendingType));
+        await clearPendingAccountType();
+      }
+    };
+    restoreAccountType();
+  }, [success, dispatch]);
 
   // useEffect(() => {
   //   if (action == 'confirmation' && provider == 'twitter') {

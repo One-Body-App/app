@@ -14,7 +14,7 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useDispatch, useSelector } from 'react-redux';
 import { createUserWithEmailAndPassword, getAuth, getIdToken } from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useTheme } from '@react-navigation/native';
+import { useTheme, useFocusEffect } from '@react-navigation/native';
 import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
 import Toast from 'react-native-simple-toast';
 
@@ -40,6 +40,19 @@ import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/servi
 import { appColor } from '@/src/constants';
 
 const brandWhite = '#f6f6f7';
+
+const initialFormState = {
+  username: '',
+  usernameError: '',
+  name: '',
+  nameError: '',
+  email: '',
+  emailError: '',
+  password: '',
+  passwordError: '',
+  cPassword: '',
+  cPasswordError: '',
+};
 
 const InputField = React.forwardRef(
   (
@@ -89,7 +102,7 @@ const InputField = React.forwardRef(
     const hidePlaceholder = focused || !!(value && value.length > 0);
     let borderColor = isDark ? neutral900 : neutral600;
     if (focused) {
-      borderColor = Colors.primary.brand;
+      borderColor = appColor.SecoundryColor;
     }
     if (error) {
       borderColor = errorBorderColor;
@@ -172,18 +185,7 @@ function SignupForm({ navigation, route }: Props) {
     elevation: 8,
   };
 
-  const [state, setState] = useState({
-    username: '',
-    usernameError: '',
-    name: '',
-    nameError: '',
-    email: '',
-    emailError: '',
-    password: '',
-    passwordError: '',
-    cPassword: '',
-    cPasswordError: '',
-  });
+  const [state, setState] = useState(initialFormState);
 
   const [hidePass, setHidePass] = useState(true);
   const [loading, setIsloading] = useState(false);
@@ -334,7 +336,7 @@ function SignupForm({ navigation, route }: Props) {
 
   useEffect(() => {
     if (authState.signUpSuccess) {
-      Toast.show('Account created successfully.', Toast.SHORT);
+      Toast.show('Your account was created successfully. Welcome to the Family!', Toast.SHORT);
       setIsloading(false);
       navigation.replace('ConfirmLogin', { toScreen: 'MainRoot' });
     }
@@ -361,20 +363,20 @@ function SignupForm({ navigation, route }: Props) {
         Animated.parallel([
           Animated.timing(textAnim, {
             toValue: 1,
-            duration: 800,
-            easing: Easing.out(Easing.ease),
+            duration: 1200,
+            easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           }),
           Animated.timing(orbitAnim, {
             toValue: 1,
-            duration: 1000,
-            easing: Easing.out(Easing.ease),
+            duration: 1400,
+            easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           }),
           Animated.timing(fieldsAnim, {
             toValue: 1,
-            duration: 1000,
-            easing: Easing.out(Easing.ease),
+            duration: 1400,
+            easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           }),
         ]),
@@ -385,12 +387,20 @@ function SignupForm({ navigation, route }: Props) {
     };
   }, [fieldsAnim, orbitAnim, textAnim]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      setState(initialFormState);
+      setHidePass(true);
+      setShowPasswordHint(false);
+    }, [])
+  );
+
   const orbitStyle = {
     transform: [
       {
         translateY: orbitAnim.interpolate({
           inputRange: [0, 1],
-          outputRange: [30, 0],
+          outputRange: [-40, 0],
         }),
       },
     ],
@@ -412,7 +422,7 @@ function SignupForm({ navigation, route }: Props) {
       {
         translateY: textAnim.interpolate({
           inputRange: [0, 1],
-          outputRange: [8, 0],
+          outputRange: [-20, 0],
         }),
       },
     ],
@@ -424,7 +434,7 @@ function SignupForm({ navigation, route }: Props) {
       {
         translateY: fieldsAnim.interpolate({
           inputRange: [0, 1],
-          outputRange: [20, 0],
+          outputRange: [-45, 0],
         }),
       },
     ],
@@ -443,14 +453,14 @@ function SignupForm({ navigation, route }: Props) {
     >
       <Animated.View
         style={[
-          { marginTop: spacing.x24, marginBottom: spacing.x10, marginHorizontal: spacing.x16 },
+          { marginTop: spacing.x24, marginBottom: spacing.x10, marginHorizontal: spacing.x20 },
           textPopStyle,
         ]}
       >
         <StyledText
           style={[Typography.header.h1, { color: dark ? brandWhite : Colors.primary.brand }]}
         >
-          Create an account
+          Create your account details
         </StyledText>
         {accountType ? (
           <StyledText
@@ -483,7 +493,7 @@ function SignupForm({ navigation, route }: Props) {
         ]}
       >
         <TouchableOpacity
-          style={{ flexDirection: 'row', marginBottom: spacing.x24 }}
+          style={{ flexDirection: 'row', marginBottom: spacing.x40 }}
           onPress={() => navigation.replace('Login')}
         >
           <StyledText>Already have an account? </StyledText>
@@ -513,7 +523,7 @@ function SignupForm({ navigation, route }: Props) {
           ref={inputRefs.username}
           label="Username"
           isDark={dark}
-          placeholder={state.username ? '' : 'e.g. myOneBodyusername'}
+          placeholder={state.username ? '' : 'e.g. onebodyusername'}
           value={state.username}
           error={state.usernameError}
           autoCapitalize="none"
@@ -640,7 +650,7 @@ function SignupForm({ navigation, route }: Props) {
               marginTop: spacing.x24,
               width: '100%',
               alignSelf: 'stretch',
-              paddingVertical: spacing.x13,
+              paddingVertical: spacing.x25,
               paddingHorizontal: spacing.x20,
               minHeight: 52,
               borderRadius: 60,
@@ -684,7 +694,8 @@ function SignupForm({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginBottom: spacing.x10,
+    marginBottom: spacing.x50,
+    paddingVertical: spacing.x16,
     width: '100%',
   },
   inputLabel: {
@@ -700,14 +711,14 @@ const styles = StyleSheet.create({
   cardContainer: {
     marginHorizontal: spacing.x16,
     paddingHorizontal: spacing.x16,
-    paddingVertical: spacing.x20,
+    paddingVertical: spacing.x30,
     backgroundColor: Colors.main.white,
-    borderRadius: borderRadius.base,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.neutral[800],
     marginBottom: spacing.x60,
     width: '100%',
-    maxWidth: 343,
+    maxWidth: 480,
     alignSelf: 'center',
   },
 });

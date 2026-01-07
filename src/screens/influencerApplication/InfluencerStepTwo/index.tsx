@@ -24,7 +24,7 @@ import { styles } from './styles';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
 import Logo from '@/assets/svg/LogoBlue.svg';
-import { GeneralStyle } from '../../../constants/GeneralStyle';
+import GeneralStyle from '../../../constants/GeneralStyle';
 
 import {
   OpenURLButton,

@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { GeneralStyle } from '../../constants/GeneralStyle';
+import GeneralStyle from '../../constants/GeneralStyle';
 import { ApiCall } from '@/src/services/api';
 import Button from '@/components/Button';
 
