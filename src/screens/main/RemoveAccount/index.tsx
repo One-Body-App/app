@@ -23,7 +23,6 @@ import { button } from '@/src/styles/buttons';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { logout } from '@/src/redux/actions/AuthActions';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccount'>;
 
@@ -36,7 +35,7 @@ function RemoveAccount({ navigation }: Props) {
   const { colors } = useTheme();
   const dispatch = useDispatch();
   const toast = useToast();
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth();
 
   const options = [
     {

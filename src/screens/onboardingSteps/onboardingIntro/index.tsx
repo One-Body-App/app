@@ -12,6 +12,8 @@ import Button from '@/components/Button';
 import { Colors, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
+import CustomHeader from '@/src/components/CustomHeader';
+import { HapticService } from '@/src/services/haptic';
 
 const introImage = require('@/assets/images/onboarding_intro.png');
 
@@ -68,6 +70,7 @@ function OnboardingIntro({ navigation }: Props) {
   });
 
   const handleNext = () => {
+    HapticService.trigger('impactMedium');
     if (authState.getProfileData?.accountType === 'individual') {
       navigation.push('OnboardingChurchType');
     } else {
@@ -76,91 +79,94 @@ function OnboardingIntro({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        marginHorizontal: spacing.x24,
-        marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
-      }}
-    >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View
-          style={{
-            flex: 4,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
+    <>
+      {Platform.OS === 'android' && <CustomHeader showBackButton={false} />}
+      <SafeAreaView
+        style={{
+          flex: 1,
+          marginHorizontal: spacing.x24,
+          marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
+        }}
+      >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View
             style={{
-              width: '60%',
-              aspectRatio: 1,
+              flex: 4,
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: spacing.x32,
             }}
           >
-            <Animated.View
+            <View
               style={{
-                position: 'absolute',
                 width: '100%',
-                height: '100%',
-                transform: [{ rotate: spin }],
+                aspectRatio: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: spacing.x32,
               }}
             >
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  transform: [{ rotate: spin }],
+                }}
+              >
+                <AnimatedFastImage
+                  resizeMode="contain"
+                  style={{ width: '100%', height: '100%', opacity: 0.2 }}
+                  source={introImage}
+                />
+              </Animated.View>
+
               <AnimatedFastImage
                 resizeMode="contain"
-                style={{ width: '100%', height: '100%', opacity: 0.2 }}
+                style={{
+                  width: '70%',
+                  height: '70%',
+                  transform: [{ scale: pulseAnim }],
+                }}
                 source={introImage}
               />
-            </Animated.View>
-
-            <AnimatedFastImage
-              resizeMode="contain"
+            </View>
+            <StyledText
+              style={[
+                Typography.header.h1,
+                {
+                  color: dark ? Colors.primarySapphire[400] : Colors.primary.brand,
+                  marginVertical: spacing.x8,
+                },
+              ]}
+            >
+              Let&apos;s Get to Know You
+            </StyledText>
+            <StyledText
               style={{
-                width: '70%',
-                height: '70%',
-                transform: [{ scale: pulseAnim }],
+                marginHorizontal: spacing.x16,
+                textAlign: 'center',
+                color: dark ? Colors.main.black : Colors.primary.brand,
               }}
-              source={introImage}
+            >
+              This should only take about 2-3 minutes to complete.
+            </StyledText>
+          </View>
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+            <Button
+              text="Get Started"
+              btnStyle={[
+                button.primary,
+                {
+                  flex: 1,
+                },
+              ]}
+              onPress={handleNext}
+              btnTextStyle={{ color: '#FFF' }}
             />
           </View>
-          <StyledText
-            style={[
-              Typography.header.h1,
-              {
-                color: dark ? Colors.primarySapphire[400] : Colors.primary.brand,
-                marginVertical: spacing.x8,
-              },
-            ]}
-          >
-            Let’s Get to Know You
-          </StyledText>
-          <StyledText
-            style={{
-              marginHorizontal: spacing.x16,
-              textAlign: 'center',
-              color: dark ? Colors.main.black : Colors.primary.brand,
-            }}
-          >
-            This should only take about 2-3 minutes to complete.
-          </StyledText>
-        </View>
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <Button
-            text="Get Started"
-            btnStyle={[
-              button.primary,
-              {
-                flex: 1,
-              },
-            ]}
-            onPress={handleNext}
-            btnTextStyle={{ color: '#FFF' }}
-          />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
 

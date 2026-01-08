@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unstable-nested-components, react/prop-types */
+/* eslint-disable react/no-unstable-nested-components */
 import React, { useCallback, useEffect } from 'react';
 import { createDrawerNavigator, getDrawerStatusFromState } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
@@ -15,7 +15,6 @@ import { MainDrawerParamsList } from './types';
 import OnboardingStack from './OnboardingStack';
 import { RootState } from '../redux/reducers/rootReducer';
 import { Colors } from '../styles';
-import { getFirebaseApp } from '../services/firebaseApp';
 
 import Connections from '@/src/screens/main/connections';
 import SettingsStack from './SettingsStack';
@@ -30,7 +29,7 @@ const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 function DrawerNav() {
   const authState = useSelector((state: RootState) => state.auth);
   const dimensions = useWindowDimensions();
-  const firebaseMessaging = getMessaging(getFirebaseApp());
+  const firebaseMessaging = getMessaging();
 
   const { dark, colors } = useTheme();
 
@@ -115,15 +114,7 @@ function DrawerNav() {
             },
           };
         }}
-        drawerContent={(props) => (
-          <DrawerContent
-            descriptors={props.descriptors}
-            state={props.state}
-            navigation={props.navigation}
-            progress={props.progress}
-            drawerPosition={props.drawerPosition}
-          />
-        )}
+        drawerContent={(props) => <DrawerContent {...props} />}
       >
         <DrawerStack.Screen
           name="Main"

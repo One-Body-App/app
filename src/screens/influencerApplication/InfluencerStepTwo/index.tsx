@@ -39,7 +39,6 @@ import Facebook from '@/assets/svg/Facebook.svg';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { SettingsStackParamsList } from '@/src/navigator/types';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 const twitterRedirectUrl = 'onebodyapp://influencer/login/twitter';
 
@@ -49,7 +48,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
   const userToken = useSelector((state: RootState) => state.auth.userToken);
   const [twitterStateConfirmation] = useState(Math.random().toString(36).substring(2, 30));
   const [twitterCodeConfirmation, setTwitterCodeConfirmation] = useState<string>('');
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth();
 
   const inputRefs = {
     twitterUsername: useRef<TextInputNative>(null),

@@ -20,7 +20,6 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
 
 import { SettingsStackParamsList } from '@/src/navigator/types';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type Props = NativeStackScreenProps<SettingsStackParamsList, 'RemoveAccountConfirmation'>;
 
@@ -32,7 +31,7 @@ function DeactivateAccountConfirm({ navigation, route }: Props) {
   const dispatch = useDispatch();
   const toast = useToast();
   const { colors } = useTheme();
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth();
   const accountDeactivate = async () => {
     dispatch(setLoader(true));
     try {

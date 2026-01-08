@@ -21,6 +21,7 @@ import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
+import { HapticService } from '@/src/services/haptic';
 import logogroupImg from '@/assets/images/logogroup.png';
 import logogroupDarkImg from '@/assets/images/logogroupdark.png';
 import avatar1Img from '@/assets/images/avatar1.png';
@@ -43,33 +44,6 @@ const ASSETS = {
   avatar4: avatar4Img,
   searchIcon: searchIconImg,
   discoverIcon: discoverIconImg,
-};
-
-const hapticOptions = {
-  enableVibrateFallback: true,
-  ignoreAndroidSystemSettings: false,
-};
-
-let cachedHapticModulePromise: Promise<typeof import('react-native-haptic-feedback')> | null = null;
-
-const loadHapticModule = () => {
-  if (!cachedHapticModulePromise) {
-    cachedHapticModulePromise = import('react-native-haptic-feedback');
-  }
-  return cachedHapticModulePromise;
-};
-
-const triggerButtonHaptic = () => {
-  // Removed platform check to enable haptics on iOS
-
-  loadHapticModule()
-    .then((module) => {
-      const hapticModule = module.default ?? module;
-      hapticModule.trigger('impactLight', hapticOptions);
-    })
-    .catch((error) => {
-      console.warn('[Intro Haptic] unable to trigger', error);
-    });
 };
 
 type Props = StackScreenProps<MainStackParamList, 'Intro'>;
@@ -451,7 +425,7 @@ function IntroScreen({ navigation }: Props) {
                     <Button
                       btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
                       onPress={() => {
-                        triggerButtonHaptic();
+                        HapticService.trigger();
                         navigation.navigate('AccountType');
                       }}
                       text="Join the Family"
@@ -477,7 +451,7 @@ function IntroScreen({ navigation }: Props) {
                         { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
                       ]}
                       onPress={() => {
-                        triggerButtonHaptic();
+                        HapticService.trigger();
                         navigation.navigate('Login');
                       }}
                       text="I have an account"

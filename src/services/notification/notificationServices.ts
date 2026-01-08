@@ -7,9 +7,8 @@ import {
   requestPermission,
 } from '@react-native-firebase/messaging';
 import { ApiCall } from '@/src/services/api';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 
-const getMessagingInstance = () => getMessaging(getFirebaseApp());
+const getMessagingInstance = () => getMessaging();
 
 export const requestUserPermission = async (token: string, notificationStatus: boolean) => {
   const authStatus = await requestPermission(getMessagingInstance());

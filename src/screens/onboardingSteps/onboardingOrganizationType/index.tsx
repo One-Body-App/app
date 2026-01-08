@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { useSelector } from 'react-redux';
@@ -14,7 +14,6 @@ import { ApiCall } from '@/services/api';
 
 import StyledSelect from '@/components/styled/Select';
 import { OnboardingStackParamList } from '@/src/navigator/types';
-import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationType'>;
 
@@ -25,7 +24,7 @@ function OnboardingOrganizationType({ navigation }: Props) {
   const [selectedOrganizationType, setSelectedOrganizationType] = useState<Tag['_id']>('');
 
   const toast = useToast();
-  const getOrganizationTypes = async () => {
+  const getOrganizationTypes = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'tags/organization-types',
@@ -33,24 +32,28 @@ function OnboardingOrganizationType({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
-        setOrganizationTypes(res?.response);
-      } else {
+      if (res?.status === 200) {
+        setOrganizationTypes(res?.response as Tag[]);
+      } else if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('saga error -- ', e.toString());
+      }
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (token) {
       getOrganizationTypes();
     }
-  }, [token]);
+  }, [token, getOrganizationTypes]);
 
   const selectedOrganizationTypeFiltered = organizationTypes.filter((item) => {
-    return item._id == selectedOrganizationType;
+    return item._id === selectedOrganizationType;
   });
 
   const selectedOrganizationTypeName =
@@ -72,7 +75,7 @@ function OnboardingOrganizationType({ navigation }: Props) {
       }}
       onboardingType={AccountType.organization}
       activeStep={1}
-      disabled={selectedOrganizationTypeFiltered.length == 0}
+      disabled={selectedOrganizationTypeFiltered.length === 0}
       reasonText={
         <StyledText style={{ color: Colors.primary.brand }}>
           Denomination info helps us to understand the type of content you would be most interested
@@ -103,7 +106,7 @@ function OnboardingOrganizationType({ navigation }: Props) {
             })}
             label="Organization Type"
             selectedItem={selectedOrganizationType}
-            btnText={selectedOrganizationType == '' ? 'Select' : selectedOrganizationTypeName}
+            btnText={selectedOrganizationType === '' ? 'Select' : selectedOrganizationTypeName}
             modalTitle="Select organization Type"
             hideSearch
             onChange={(item) => {

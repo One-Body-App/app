@@ -7,6 +7,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
+import CustomHeader from '@/src/components/CustomHeader';
 
 type Props = {
   children: ReactElement | ReactElement[];
@@ -14,6 +15,7 @@ type Props = {
   bottomOffset?: number;
   hideBottomText?: boolean;
   refreshControl?: React.ReactElement;
+  showCustomHeaderOnAndroid?: boolean;
 };
 
 export function BottomStepsText() {
@@ -42,12 +44,14 @@ function UserStepsLayout({
   bottomOffset,
   hideBottomText,
   refreshControl,
+  showCustomHeaderOnAndroid = false,
 }: Props) {
   const { colors } = useTheme();
   const resolvedBackground = backgroundColor ?? colors.background;
 
   return (
     <SafeAreaView style={{ flexGrow: 1, backgroundColor: resolvedBackground }}>
+      {showCustomHeaderOnAndroid && Platform.OS === 'android' && <CustomHeader showBackButton />}
       <KeyboardAwareScrollView
         bottomOffset={bottomOffset ?? 50}
         contentContainerStyle={{ paddingBottom: bottomOffset ?? 50 }}

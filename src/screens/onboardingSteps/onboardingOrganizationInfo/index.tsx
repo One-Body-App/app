@@ -28,7 +28,7 @@ function OnboardingLocation({ navigation, route }: Props) {
     <OnboardingStepsLayout
       buttonText="Next"
       onPress={() => {
-        if (longitude && latitude && locationData && organizationName != '') {
+        if (longitude && latitude && locationData && organizationName !== '') {
           navigation.navigate('OnboardingOrganizationContact', {
             ...route.params,
             organizationName,
@@ -41,7 +41,7 @@ function OnboardingLocation({ navigation, route }: Props) {
 
           if (!longitude || !latitude || locationData) {
             message = 'Organization locations is required';
-          } else if (!organizationName || organizationName == '') {
+          } else if (!organizationName || organizationName === '') {
             message = 'Organization name is required';
           }
 

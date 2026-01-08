@@ -19,7 +19,6 @@ import StyledTextInput from '@/components/styled/TextInput';
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type Props = StackScreenProps<MainStackParamList, 'PasswordChange'>;
 
@@ -40,7 +39,7 @@ function PasswordChange({ navigation, route }: Props) {
   const [hidePassN, setHidePassN] = useState(true);
   const [hidePassC, setHidePassC] = useState(true);
   const toast = useToast();
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth();
 
   const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/g;
   const atLeastOneUppercase = /[A-Z]/g; // capital letters from A to Z

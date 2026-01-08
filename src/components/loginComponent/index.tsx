@@ -1,5 +1,5 @@
-import React, { FC, useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, ScrollView, useColorScheme, Platform } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, TouchableOpacity, useColorScheme, Platform } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,10 +12,13 @@ import {
   getIdToken,
   signInWithCredential,
   signInWithEmailAndPassword,
+  reload,
+  sendEmailVerification,
 } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
+import { LoginManager } from 'react-native-fbsdk-next';
 import axios from 'axios';
+import { getApp } from '@react-native-firebase/app';
 
 import { useToast } from 'react-native-toast-notifications';
 import { useNavigation, useTheme } from '@react-navigation/native';
@@ -35,7 +38,6 @@ import Button from '../Button';
 import { styles } from './styles';
 import { requestUserPermission } from '@/services/notification/notificationServices';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import GradientButton from '../GradientButton';
 import {
   loginSocialRequest,
   logout,
@@ -55,8 +57,6 @@ import { button } from '@/src/styles/buttons';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledTextInput from '../styled/TextInput';
 import { fontSize } from '@/src/styles/typography';
-import CustomModal from '../CustomModal';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 import { loadPendingAccountType, clearPendingAccountType } from '@/src/services/accountTypeStorage';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
@@ -67,16 +67,13 @@ interface Props {
   oauth_token?: string;
   oauth_verifier?: string;
 
-  provider?: string;
   action?: string;
-  apiKey?: string;
-  lang?: string;
+
   mode?: string;
   oobCode?: string;
   currentUserEmail?: string;
   onlyPassword?: boolean;
   toScreenRouteParams?: Record<string, string>;
-  errorFromLogin?: string;
   updateParent?: Function;
 
   enabledLoginProviders?: string[];
@@ -100,16 +97,18 @@ function LoginComponent({
   const dispatch = useDispatch();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
 
-  const authState = useSelector((state: RootState) => state.auth);
-  const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
-  const toScreen = useSelector((state: RootState) => state.general.loginVerficationBackPage);
+  const authState = useSelector((rootState: RootState) => rootState.auth);
+  const userProfile = useSelector((rootState: RootState) => rootState.auth.getProfileData);
+  const toScreen = useSelector(
+    (rootState: RootState) => rootState.general.loginVerficationBackPage
+  );
   const toScreenParams = useSelector(
-    (state: RootState) => state.general.loginVerficationBackPageParams
+    (rootState: RootState) => rootState.general.loginVerficationBackPageParams
   );
 
   const inputRefs = {
-    email: useRef<any>(),
-    password: useRef<any>(),
+    email: useRef<any>(null),
+    password: useRef<any>(null),
   };
   const [state, setState] = useState({
     email: currentUserEmail ?? '',
@@ -119,27 +118,42 @@ function LoginComponent({
   });
 
   const toast = useToast();
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth(getApp());
 
   const [error, seterror] = useState<string>();
   const [success, setSuccess] = useState<string>('');
   const [hidePass, setHidePass] = useState(true);
   const [isVerificationNeeded, setIsVerificationNeeded] = useState<boolean>(false);
   const [token, setToken] = useState('');
-  const [showConfirmEmail, setShowConfirmEmail] = useState<boolean>(false);
   const [verificationEmailRequested, setVerificationEmailRequested] = useState(false);
 
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
 
-  const [showSendEmailConfirmation, setShowSendEmailConfirmation] = useState<boolean>(true);
+  const accountType = useSelector((rootState: RootState) => rootState.general.accountType);
 
-  const accountType = useSelector((state: RootState) => state.general.accountType);
+  const changeHandler = useCallback(
+    (type: string, value: string) => setState((prevState) => ({ ...prevState, [type]: value })),
+    []
+  );
+  const gotoSignup = useCallback(async () => {
+    setNewUserCredentials(null);
+    dispatch(setAccountType(''));
+
+    if (firebaseAuth.currentUser) {
+      await reload(firebaseAuth.currentUser);
+    }
+    if (firebaseAuth.currentUser) {
+      await getIdToken(firebaseAuth.currentUser, true);
+    }
+  }, [dispatch, firebaseAuth]);
+  const sendFcm = useCallback((fcmToken: string) => {
+    requestUserPermission(fcmToken, true);
+  }, []);
 
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
-      serverClientId: GOOGLE_LOGIN_CLIENT_ID,
       offlineAccess: true,
       forceCodeForRefreshToken: true,
     });
@@ -157,7 +171,9 @@ function LoginComponent({
 
   useEffect(() => {
     if (token) {
-      firebaseAuth.currentUser?.reload();
+      if (firebaseAuth.currentUser) {
+        reload(firebaseAuth.currentUser);
+      }
 
       if (Platform.OS === 'android') {
         navigation.replace('MainRoot', {
@@ -166,28 +182,46 @@ function LoginComponent({
         });
       }
     }
-  }, [token]);
+  }, [token, firebaseAuth.currentUser, navigation]);
 
   useEffect(() => {
-    if (mode == 'verifyEmail' && action == 'action' && oobCode) {
-      const action = async () => {
+    if (mode === 'verifyEmail' && action === 'action' && oobCode) {
+      const verifyEmail = async () => {
         try {
           const result = await firebaseAuth.checkActionCode(oobCode);
 
-          if (result.operation == 'VERIFY_EMAIL') {
+          if (result.operation === 'VERIFY_EMAIL') {
             await firebaseAuth.applyActionCode(oobCode);
 
-            setSuccess('Email verification successful. Please Sign in to your account');
+            // Reload the current user to update emailVerified status
+            const { currentUser } = firebaseAuth;
+            if (currentUser) {
+              await reload(currentUser);
+              // Force token refresh to ensure global state updates
+              await currentUser.getIdToken(true);
+
+              // Navigate to MainRoot if user is now verified
+              if (firebaseAuth.currentUser?.emailVerified) {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'MainRoot' }],
+                });
+              } else {
+                setSuccess('Email verification successful. Please Sign in to your account');
+              }
+            } else {
+              setSuccess('Email verification successful. Please Sign in to your account');
+            }
           }
         } catch (e: any) {
           seterror('Invalid Verification code, please try again.');
         }
       };
-      action();
+      verifyEmail();
     }
 
-    if (mode == 'verifyAndChangeEmail' && action == 'action' && oobCode) {
-      const action = async () => {
+    if (mode === 'verifyAndChangeEmail' && action === 'action' && oobCode) {
+      const verifyAndChangeEmail = async () => {
         try {
           const result = await firebaseAuth.checkActionCode(oobCode);
           await firebaseAuth.applyActionCode(oobCode);
@@ -205,9 +239,20 @@ function LoginComponent({
           });
         }
       };
-      action();
+      verifyAndChangeEmail();
     }
-  }, [mode]);
+  }, [
+    mode,
+    action,
+    oobCode,
+    firebaseAuth,
+    navigation,
+    state,
+    updateParent,
+    toast,
+    setSuccess,
+    seterror,
+  ]);
 
   useEffect(() => {
     if (!success) {
@@ -247,7 +292,9 @@ function LoginComponent({
         newUserCredentials.user.delete();
         LoginManager.logOut();
         await firebaseAuth.signOut();
-        await firebaseAuth.currentUser?.reload();
+        if (firebaseAuth.currentUser) {
+          await reload(firebaseAuth.currentUser);
+        }
         dispatch(logout());
       }
     };
@@ -255,7 +302,7 @@ function LoginComponent({
     if (newUserCredentials) {
       checkNewUserCredentials();
     }
-  }, [newUserCredentials]);
+  }, [newUserCredentials, accountType, token, dispatch, gotoSignup, firebaseAuth, sendFcm]);
 
   useEffect(() => {
     if (oauth_token && oauth_verifier) {
@@ -313,26 +360,38 @@ function LoginComponent({
               processLogin(userCredentials, setNewUserCredentials, setToken);
             }
           }
-        } catch (error: any) {
-          if (error.nativeErrorMessage.includes('auth/user-not-found')) {
+        } catch (twitterAuthError: any) {
+          if (twitterAuthError.nativeErrorMessage.includes('auth/user-not-found')) {
             seterror('User/password combination not found');
           } else {
-            seterror(error.nativeErrorMessage);
+            seterror(twitterAuthError.nativeErrorMessage);
           }
         }
       };
       getTwitterAuthToken();
     }
-  }, [oauth_token]);
+  }, [
+    oauth_token,
+    oauth_verifier,
+    firebaseAuth,
+    verifyAccount,
+    onlyPassword,
+    currentUserEmail,
+    updateParent,
+    navigation,
+    toast,
+    toScreen,
+    toScreenParams,
+  ]);
 
   useEffect(() => {
-    if (authState?.sendVerificationEmailSuccess == true) {
+    if (authState?.sendVerificationEmailSuccess === true) {
       toast.show(`Verification email successfully sent. Check your inbox.`, {
         type: 'success',
         placement: 'top',
       });
     }
-  }, [authState?.sendVerificationEmailSuccess]);
+  }, [authState?.sendVerificationEmailSuccess, toast]);
 
   useEffect(() => {
     if (authState?.sendVerificationEmailSuccess === false) {
@@ -341,7 +400,7 @@ function LoginComponent({
         placement: 'top',
       });
     }
-  }, [authState?.sendVerificationEmailSuccess]);
+  }, [authState?.sendVerificationEmailSuccess, toast]);
 
   useEffect(() => {
     const shouldAutoSend =
@@ -362,7 +421,13 @@ function LoginComponent({
     };
 
     sendVerification();
-  }, [dispatch, isVerificationNeeded, showConfirmationEmailMessage, verificationEmailRequested]);
+  }, [
+    dispatch,
+    isVerificationNeeded,
+    showConfirmationEmailMessage,
+    verificationEmailRequested,
+    firebaseAuth.currentUser,
+  ]);
 
   const signInUser = async () => {
     try {
@@ -371,6 +436,7 @@ function LoginComponent({
       const passwordError = await validator('password', password);
       seterror('');
       if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('[login] signInUser submit', {
           email,
           verifyAccount: !!verifyAccount,
@@ -387,6 +453,7 @@ function LoginComponent({
 
         const emailCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
         if (__DEV__) {
+          // eslint-disable-next-line no-console
           console.log('[login] firebase signIn success', {
             uid: emailCredential.user.uid,
             emailVerified: !!emailCredential.user.emailVerified,
@@ -396,8 +463,8 @@ function LoginComponent({
         if (verifyAccount) {
           setState({ ...state, password: '' });
 
-          if (mode == 'verifyEmail') {
-            if (Platform.OS == 'ios') {
+          if (mode === 'verifyEmail') {
+            if (Platform.OS === 'ios') {
               navigation.pop();
             }
             await processLogin(emailCredential, setNewUserCredentials, setToken);
@@ -427,41 +494,29 @@ function LoginComponent({
       } else {
         setState({ ...state, emailError, passwordError });
       }
-    } catch (error: any) {
+    } catch (signInUserError: any) {
       if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('[login] signInUser error', {
-          message: error?.message,
-          code: error?.code,
+          message: signInUserError?.message,
+          code: signInUserError?.code,
         });
       }
       let message = 'User/password combination not found';
       if (
-        error.message &&
-        !error.message.includes('auth/user-not-found') &&
-        !error.message.includes('auth/wrong-password')
+        signInUserError.message &&
+        !signInUserError.message.includes('auth/user-not-found') &&
+        !signInUserError.message.includes('auth/wrong-password')
       ) {
-        message = error.message;
+        message = signInUserError.message;
       }
-      console.warn('signInUser error', error?.code, error?.message);
+      if (__DEV__) {
+        console.warn('signInUser error', signInUserError?.code, signInUserError?.message);
+      }
       seterror(message);
       dispatch(setLoader(false));
     }
   };
-  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
-  const gotoSignup = async () => {
-    setShowConfirmEmail(false);
-    setNewUserCredentials(null);
-    dispatch(setAccountType(''));
-
-    await firebaseAuth.currentUser?.reload();
-    if (firebaseAuth.currentUser) {
-      await getIdToken(firebaseAuth.currentUser, true);
-    }
-  };
-  const sendFcm = (token: string) => {
-    requestUserPermission(token, true);
-  };
-
   const onTwitterButtonPress = async () => {
     try {
       seterror('');
@@ -482,7 +537,7 @@ function LoginComponent({
         // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       }
     } catch (e) {
-      console.log(e);
+      // Error handled silently or via other mechanisms
     }
   };
 
@@ -530,8 +585,9 @@ function LoginComponent({
 
         processLogin(userCredentials, setNewUserCredentials, setToken);
       }
-    } catch (error: any) {
-      if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
+    } catch (appleAuthError: any) {
+      if (appleAuthError.code !== appleAuth.Error.CANCELED && appleAuthError.message)
+        seterror(appleAuthError.message);
     }
   }
 
@@ -572,9 +628,9 @@ function LoginComponent({
         await processLogin(userCredentials, setNewUserCredentials, setToken);
       }
       dispatch(setLoader(false));
-    } catch (error: any) {
-      if (!error.message.includes('Code=-5')) {
-        seterror(error.message.replace(`[${error.code}]`, ''));
+    } catch (signInError: any) {
+      if (!signInError.message.includes('Code=-5')) {
+        seterror(signInError.message.replace(`[${signInError.code}]`, ''));
       }
     }
   };
@@ -646,7 +702,7 @@ function LoginComponent({
   }
 
   const getButtonTextStyle = () => {
-    return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : Colors.primary.brand };
+    return { ...styles.btnTitle, color: scheme === 'dark' ? '#838383' : Colors.primary.brand };
   };
 
   const getButtonContainer = () => {
@@ -656,7 +712,7 @@ function LoginComponent({
   const getDisabledButtonTextStyle = () => {
     return {
       ...styles.disabledBtnTextStyle,
-      color: scheme == 'dark' ? '#3a3a3a' : '#B3C1C5',
+      color: scheme === 'dark' ? '#3a3a3a' : '#B3C1C5',
       borderColor: colors.border,
     };
   };
@@ -711,7 +767,7 @@ function LoginComponent({
                 button.primary,
                 {
                   width: '100%',
-                  paddingVertical: spacing.x12,
+                  paddingVertical: spacing.x13,
                   borderRadius: 60,
                 },
               ]}
@@ -728,9 +784,9 @@ function LoginComponent({
                   setResendMessage('Please wait before requesting another verification email.');
                   return;
                 }
-                if (firebaseAuth.currentUser) {
-                  firebaseAuth.currentUser
-                    .sendEmailVerification()
+                const { currentUser } = firebaseAuth;
+                if (currentUser) {
+                  sendEmailVerification(currentUser)
                     .then(() => {
                       setResendAttempts((prev) => prev + 1);
                       setResendMessage('Verification email sent. Please check your inbox.');
@@ -763,13 +819,27 @@ function LoginComponent({
           </View>
         </View>
 
-        <View style={{ alignItems: 'center', marginBottom: spacing.x16 }}>
-          <StyledText style={{ color: Colors.neutral[300], fontSize: 12, fontWeight: '500' }}>
-            Unify the Body
-          </StyledText>
-          <StyledText style={{ color: Colors.primary.brand, fontSize: 12, marginTop: spacing.x4 }}>
-            1 Cor. 12:12
-          </StyledText>
+        <View style={{ marginTop: spacing.x20 }}>
+          <Button
+            text="Cancel"
+            btnStyle={{
+              paddingVertical: spacing.x10,
+            }}
+            onPress={async () => {
+              if (updateParent) {
+                updateParent(false);
+              }
+
+              navigation.goBack();
+              if (!onlyPassword) {
+                dispatch(signUp.Reset());
+                LoginManager.logOut();
+                await firebaseAuth.signOut();
+                dispatch(logout());
+              }
+            }}
+            btnTextStyle={{ color: Colors.neutral[300] }}
+          />
         </View>
       </View>
     );
@@ -851,8 +921,8 @@ function LoginComponent({
                 autoCapitalize="none"
                 onFocus={() => setState({ ...state, emailError: '' })}
                 onBlur={() =>
-                  validateFields(state.email, 'email', (error: string) =>
-                    setState({ ...state, emailError: error })
+                  validateFields(state.email, 'email', (validationError: string) =>
+                    setState({ ...state, emailError: validationError })
                   )
                 }
                 onSubmitEditing={() => inputRefs.password?.current.focus()}
@@ -939,7 +1009,6 @@ function LoginComponent({
                       dispatch(signUp.Reset());
                       LoginManager.logOut();
                       await firebaseAuth.signOut();
-                      await firebaseAuth.currentUser?.reload();
                       dispatch(logout());
                     }
                   }}
@@ -1110,7 +1179,7 @@ function LoginComponent({
                   {enabledLoginProviders &&
                   enabledLoginProviders?.includes('apple') &&
                   enabledLoginProviders?.includes('password') &&
-                  Platform.OS == 'ios' ? (
+                  Platform.OS === 'ios' ? (
                     <View style={{ paddingHorizontal: spacing.x10, flex: 1 }}>
                       <Button
                         onPress={() => onAppleButtonPress()}
@@ -1168,61 +1237,7 @@ function LoginComponent({
           </View>
         </View>
 
-        <View>
-          {!verifyAccount ? (
-            <CustomModal
-              modalVisible={showConfirmEmail}
-              onclose={() => setShowConfirmEmail(false)}
-              style={styles.bottomView}
-            >
-              <View style={styles.content2}>
-                <View style={{ ...styles.contanier, paddingHorizontal: 15 }}>
-                  <View>
-                    <Button
-                      text="Cancel"
-                      onPress={async () => {
-                        const FBToken = await AccessToken.getCurrentAccessToken();
-                        if (FBToken) {
-                          LoginManager.logOut();
-                          await firebaseAuth.signOut();
-                          await firebaseAuth.currentUser?.reload();
-                        }
-                        setShowConfirmEmail(false);
-                        setNewUserCredentials(null);
-                      }}
-                    />
-                  </View>
-
-                  <ScrollView>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'stretch',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <StyledText>Please Confirm email</StyledText>
-                    </View>
-                  </ScrollView>
-
-                  {showSendEmailConfirmation ? (
-                    <GradientButton
-                      text="SEND EMAIL CONFIRMATION"
-                      btnStyle={styles.btn2}
-                      btnTextStyle={styles.btnText2}
-                      onPress={() => {
-                        setShowSendEmailConfirmation(false);
-                        firebaseAuth.currentUser?.sendEmailVerification();
-                      }}
-                    />
-                  ) : (
-                    <StyledText>Confirmation email sent</StyledText>
-                  )}
-                </View>
-              </View>
-            </CustomModal>
-          ) : null}
-        </View>
+        <View />
       </View>
     </View>
   );

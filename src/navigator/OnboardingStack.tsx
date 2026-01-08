@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { Platform } from 'react-native';
 
 import { OnboardingStackParamList } from './types';
 
@@ -20,7 +21,14 @@ const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 function OnboardingStack() {
   return (
     <Stack.Navigator initialRouteName="OnboardingIntro">
-      <Stack.Screen name="OnboardingIntro" component={OnboardingIntro} options={headerOptions} />
+      <Stack.Screen
+        name="OnboardingIntro"
+        component={OnboardingIntro}
+        options={{
+          ...headerOptions,
+          headerShown: Platform.OS !== 'android',
+        }}
+      />
       <Stack.Screen
         name="OnboardingChurchAttend"
         component={OnboardingChurchAttend}

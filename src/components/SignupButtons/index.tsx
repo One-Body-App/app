@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-shadow */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
-import { Text, View, useColorScheme, Platform, StyleProp, ViewStyle } from 'react-native';
+import { Text, View, useColorScheme, Platform, ViewStyle } from 'react-native';
 
 import { useDispatch } from 'react-redux';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -12,6 +10,7 @@ import {
   getAuth,
   signInWithCredential,
 } from '@react-native-firebase/auth';
+import { getApp } from '@react-native-firebase/app';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
@@ -24,7 +23,6 @@ import { processLogin } from '@/services/login';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { GOOGLE_LOGIN_CLIENT_ID } from '@/services/constants';
 import { MainStackParamList } from '@/src/navigator/types';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 import { appColor } from '@/src/constants';
 
 interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
@@ -38,17 +36,10 @@ interface Props extends StackScreenProps<MainStackParamList, 'SignUp'> {
 function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }: Props) {
   const [error, seterror] = useState<string>(errorFromLogin ?? '');
 
-  const [state, setState] = useState({
-    email: '',
-    emailError: '',
-    password: '',
-    passwordError: '',
-  });
-
   const dispatch = useDispatch();
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth(getApp());
 
   useEffect(() => {
     seterror(errorFromLogin ?? '');
@@ -57,7 +48,6 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
-      serverClientId: GOOGLE_LOGIN_CLIENT_ID,
       offlineAccess: true,
       forceCodeForRefreshToken: true,
     });
@@ -96,8 +86,9 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
 
         processLogin(userCredentials, setNewUserCredentials);
       }
-    } catch (error: any) {
-      if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
+    } catch (appleAuthError: any) {
+      if (appleAuthError.code !== appleAuth.Error.CANCELED && appleAuthError.message)
+        seterror(appleAuthError.message);
     }
   };
 
@@ -105,7 +96,6 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
     try {
       dispatch(setLoader(true));
       seterror('');
-      setState({ ...state, emailError: '', passwordError: '' });
 
       // Get the users ID token
       const { idToken } = await GoogleSignin.signIn();
@@ -116,9 +106,9 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
       const userCredentials = await signInWithCredential(firebaseAuth, googleCredential);
 
       processLogin(userCredentials, setNewUserCredentials);
-    } catch (error: any) {
-      if (!error.message.includes('Code=-5')) {
-        seterror(error.message.replace(`[${error.code}]`, ''));
+    } catch (googleSignInError: any) {
+      if (!googleSignInError.message.includes('Code=-5')) {
+        seterror(googleSignInError.message.replace(`[${googleSignInError.code}]`, ''));
       }
     }
   };
@@ -127,7 +117,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   const { dark, colors } = useTheme();
 
   const getButtonTextStyle = () => {
-    return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : '#032F3C' };
+    return { ...styles.btnTitle, color: scheme === 'dark' ? '#838383' : '#032F3C' };
   };
 
   const getButtonContainer = () => {
@@ -140,7 +130,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   const getDisabledButtonTextStyle = () => {
     return {
       ...styles.disabledBtnTextStyle,
-      color: scheme == 'dark' ? '#3a3a3a' : '#B3C1C5',
+      color: scheme === 'dark' ? '#3a3a3a' : '#B3C1C5',
       borderColor: colors.border,
     };
   };

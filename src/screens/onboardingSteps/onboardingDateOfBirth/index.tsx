@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Platform } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
@@ -15,7 +15,6 @@ import { spacing } from '@/src/styles/spacing';
 import { Colors, Typography } from '@/src/styles';
 import Button from '@/components/Button';
 import { borderRadius } from '@/src/styles/outlines';
-import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
 
@@ -112,9 +111,9 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
             date={
               date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date(new Date().setFullYear(2000))
             }
-            onConfirm={(date) => {
+            onConfirm={(selectedDate) => {
               setOpen(false);
-              setDate(format(date, 'MM/dd/yyyy'));
+              setDate(format(selectedDate, 'MM/dd/yyyy'));
             }}
             onCancel={() => {
               setOpen(false);

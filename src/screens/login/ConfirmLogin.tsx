@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, AppState, AppStateStatus, Platform } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchSignInMethodsForEmail, getAuth, reload } from '@react-native-firebase/auth';
+import { getAuth, getIdToken, reload } from '@react-native-firebase/auth';
+import { getApp } from '@react-native-firebase/app';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import LoginComponent from '@/components/loginComponent';
 
@@ -14,7 +15,7 @@ import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
+import CustomHeader from '@/src/components/CustomHeader';
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
@@ -28,11 +29,10 @@ function ConfirmLogin({ route, navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      const auth = getAuth(getFirebaseApp());
-      const user = auth.currentUser;
-      if (user) {
-        reload(user).then(() => {
-          if (auth.currentUser?.emailVerified) {
+      const { currentUser } = getAuth(getApp());
+      if (currentUser) {
+        reload(currentUser).then(() => {
+          if (getAuth(getApp()).currentUser?.emailVerified) {
             navigation.reset({
               index: 0,
               routes: [{ name: 'MainRoot' }],
@@ -52,8 +52,7 @@ function ConfirmLogin({ route, navigation }: Props) {
     }
     if (authReducer.userData?.email) {
       const getSignInMethods = async () => {
-        const providers = await fetchSignInMethodsForEmail(
-          getAuth(getFirebaseApp()),
+        const providers = await getAuth(getApp()).fetchSignInMethodsForEmail(
           authReducer.userData?.email ?? ''
         );
 
@@ -61,19 +60,52 @@ function ConfirmLogin({ route, navigation }: Props) {
       };
       getSignInMethods();
     }
-  }, []);
+
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        const { currentUser } = getAuth(getApp());
+        if (currentUser) {
+          reload(currentUser).then(() => {
+            if (getAuth(getApp()).currentUser?.emailVerified) {
+              // Force token refresh to ensure global state updates
+              getIdToken(currentUser, true);
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'MainRoot' }],
+              });
+            }
+          });
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [navigation, route.params, authReducer.userData?.email, dispatch]);
 
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
+    <UserStepsLayout
+      backgroundColor={dark ? colors.background : Colors.neutral[700]}
+      hideBottomText
+      showCustomHeaderOnAndroid
+    >
       <ScrollView style={{ flexGrow: 1, marginTop: spacing.x24 }}>
         {route?.params?.mode === 'resetPassword' ? (
-          <NewPassword {...route.params} />
+          <NewPassword oobCode={route.params?.oobCode} />
         ) : (
           <LoginComponent
             showConfirmationEmailMessage={false}
             currentUserEmail={userData?.email ?? ''}
             enabledLoginProviders={enabledLoginProviders}
-            {...route.params}
+            action={route.params?.action}
+            mode={route.params?.mode}
+            oobCode={route.params?.oobCode}
+            onlyPassword={route.params?.onlyPassword}
+            toScreenRouteParams={route.params?.toScreenRouteParams}
+            updateParent={route.params?.updateParent}
             verifyAccount
           />
         )}

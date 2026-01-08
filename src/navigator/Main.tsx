@@ -4,29 +4,22 @@ import {
   LinkingOptions,
   NavigationContainer,
 } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, useColorScheme } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, Platform, useColorScheme } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  getAuth,
-  getIdToken,
-  getIdTokenResult,
-  onIdTokenChanged,
-} from '@react-native-firebase/auth';
+import { getAuth } from '@react-native-firebase/auth';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { getApp } from '@react-native-firebase/app';
 import { useToast } from 'react-native-toast-notifications';
 
 import { isEqual } from 'lodash';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import {
-  getMessaging,
-  getInitialNotification,
-  onNotificationOpenedApp,
-} from '@react-native-firebase/messaging';
+import { getMessaging } from '@react-native-firebase/messaging';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
+
 import { RootState } from '../redux/reducers/rootReducer';
 import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions';
 import ForgotPassword from '../screens/forgotPassword';
@@ -48,7 +41,6 @@ import SinglePost from '../screens/post/Single';
 import VideoPost from '../screens/post/VideoPost';
 import RssPost from '../screens/post/RssPost';
 import { headerOptions } from './global';
-import { getFirebaseApp } from '../services/firebaseApp';
 
 const closeIcon = require('@/assets/images/close.png');
 
@@ -71,14 +63,12 @@ const serializeFirebaseUser = (firebaseUser: FirebaseAuthTypes.User | null) => {
     isAnonymous: firebaseUser.isAnonymous,
     metadata: firebaseUser.metadata,
     providerId: firebaseUser.providerId,
-    refreshToken: firebaseUser.refreshToken,
-    tenantId: firebaseUser.tenantId,
   };
 };
 
 const getIdTokenWithTimeout = async (firebaseUser: FirebaseAuthTypes.User, timeoutMs = 5000) => {
   return Promise.race([
-    getIdToken(firebaseUser),
+    firebaseUser.getIdToken(),
     new Promise<string>((_resolve, reject) => {
       setTimeout(() => reject(new Error('getIdToken timeout')), timeoutMs);
     }),
@@ -95,9 +85,6 @@ function Main() {
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [token, setToken] = useState<string>('');
-  const firebaseApp = getFirebaseApp();
-  const firebaseAuth = getAuth(firebaseApp);
-  const firebaseMessaging = getMessaging(firebaseApp);
   useEffect(() => {
     toast.hideAll();
 
@@ -110,48 +97,51 @@ function Main() {
     }
   }, [loader, toast]);
 
-  const onAuthStateChanged = async (firebaseUser: FirebaseAuthTypes.User | null) => {
-    let firebaseToken: string | undefined;
-    try {
-      firebaseToken = firebaseUser ? await getIdTokenWithTimeout(firebaseUser) : undefined;
-    } catch (error) {
-      firebaseToken = undefined;
-    }
-
-    if (!isEqual(firebaseUser, user)) {
-      let tokenResult: FirebaseAuthTypes.IdTokenResult | undefined;
-      if (firebaseUser) {
-        try {
-          tokenResult = await getIdTokenResult(firebaseUser);
-        } catch (error) {
-          /* noop on token result fetch failure */
-        }
+  const onAuthStateChanged = useCallback(
+    async (firebaseUser: FirebaseAuthTypes.User | null) => {
+      let firebaseToken: string | undefined;
+      try {
+        firebaseToken = firebaseUser ? await getIdTokenWithTimeout(firebaseUser) : undefined;
+      } catch (error) {
+        firebaseToken = undefined;
       }
 
-      setUser(firebaseUser);
-      dispatch(
-        setUserData({
-          ...serializeFirebaseUser(firebaseUser),
-          tokenResult,
-        })
-      );
-    }
+      if (!isEqual(firebaseUser, user)) {
+        let tokenResult: FirebaseAuthTypes.IdTokenResult | undefined;
+        if (firebaseUser) {
+          try {
+            tokenResult = await firebaseUser.getIdTokenResult();
+          } catch (error) {
+            /* noop on token result fetch failure */
+          }
+        }
 
-    const nextToken = firebaseToken && firebaseToken.length > 0 ? firebaseToken : 'unauthorized';
-    if (!isEqual(nextToken, token)) {
-      setToken(nextToken);
-    }
-    if (!authChecked) {
-      setAuthChecked(true);
-      setInitializing(false);
-    }
-  };
+        setUser(firebaseUser);
+        dispatch(
+          setUserData({
+            ...serializeFirebaseUser(firebaseUser),
+            tokenResult,
+          })
+        );
+      }
+
+      const nextToken = firebaseToken && firebaseToken.length > 0 ? firebaseToken : 'unauthorized';
+      if (!isEqual(nextToken, token)) {
+        setToken(nextToken);
+      }
+      if (!authChecked) {
+        setAuthChecked(true);
+        setInitializing(false);
+      }
+    },
+    [user, token, authChecked, dispatch]
+  );
 
   useEffect(() => {
-    const subscriber = onIdTokenChanged(firebaseAuth, onAuthStateChanged);
+    const subscriber = getAuth(getApp()).onIdTokenChanged(onAuthStateChanged);
 
     return subscriber; // unsubscribe on unmount
-  }, []);
+  }, [onAuthStateChanged]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -175,7 +165,7 @@ function Main() {
       dispatch(setLoginData({ token: '' }));
     }
 
-    if (token == 'unauthorized') {
+    if (token === 'unauthorized') {
       if (initializing) setInitializing(false);
     }
 
@@ -188,7 +178,7 @@ function Main() {
       }, 5500);
       // }
     }
-  }, [token, user, initializing]);
+  }, [token, user, initializing, dispatch]);
 
   const linking: LinkingOptions<MainStackParamList> = {
     prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
@@ -247,7 +237,7 @@ function Main() {
       }
 
       // Check if there is an initial firebase notification
-      const message = await getInitialNotification(firebaseMessaging);
+      const message = await getMessaging(getApp()).getInitialNotification();
 
       // Get the `url` property from the notification which corresponds to a screen
       // This property needs to be set on the notification payload when sending it
@@ -260,7 +250,7 @@ function Main() {
       const subscription = Linking.addEventListener('url', onReceiveURL);
 
       // Listen to firebase push notifications
-      const unsubscribeNotification = onNotificationOpenedApp(firebaseMessaging, (message) => {
+      const unsubscribeNotification = getMessaging(getApp()).onNotificationOpenedApp((message) => {
         const url = message.data?.url as string;
 
         if (url) {
@@ -389,6 +379,7 @@ function Main() {
                       scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
                   },
                   headerTransparent: false,
+                  headerShown: Platform.OS !== 'android',
                 }}
               />
               <MainStack.Screen
@@ -423,7 +414,11 @@ function Main() {
           <MainStack.Screen
             name="ConfirmLogin"
             component={ConfirmLogin}
-            options={{ presentation: 'modal', ...headerOptions }}
+            options={{
+              presentation: 'modal',
+              ...headerOptions,
+              headerShown: Platform.OS !== 'android',
+            }}
           />
           <MainStack.Screen
             name="VideoPost"

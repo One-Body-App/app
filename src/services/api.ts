@@ -2,9 +2,8 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 import { getAuth, getIdToken } from '@react-native-firebase/auth';
 import { DevSettings } from 'react-native';
 import { BASE_URL } from './constants';
-import { getFirebaseApp } from './firebaseApp';
 
-export const ApiCall = async ({
+export const ApiCall = async <T = any>({
   params,
   route,
   verb,
@@ -23,14 +22,14 @@ export const ApiCall = async ({
   external?: boolean;
   isFormUrlEncode?: boolean;
   timeoutMs?: number;
-}): Promise<{ status: number; response: unknown }> => {
+}): Promise<{ status: number; response: T }> => {
   try {
     let tokenToUse = '';
     if (token !== undefined) {
       if (typeof token === 'string' && token.length > 0) {
         tokenToUse = token;
       } else {
-        const firebaseAuth = getAuth(getFirebaseApp());
+        const firebaseAuth = getAuth();
         tokenToUse = firebaseAuth.currentUser ? await getIdToken(firebaseAuth.currentUser) : '';
       }
     }
@@ -98,10 +97,10 @@ export const ApiCall = async ({
         break;
 
       default:
-        return { status: 400, response: 'method not found' };
+        return { status: 400, response: 'method not found' as any };
     }
 
-    return { status: 200, response: response?.data };
+    return { status: 200, response: response?.data as T };
   } catch (err: unknown) {
     const axiosError = err as AxiosError;
     const message = axiosError.response?.data ?? axiosError.message ?? err;
@@ -116,7 +115,7 @@ export const ApiCall = async ({
     const status =
       axiosError?.response?.status ?? (axiosError?.code === 'ECONNABORTED' ? 408 : 400);
     const friendlyMessage = `That was a glitch on our part. Try again! (${status})`;
-    return { status, response: { message: friendlyMessage } };
+    return { status, response: { message: friendlyMessage } as any };
   }
 };
 

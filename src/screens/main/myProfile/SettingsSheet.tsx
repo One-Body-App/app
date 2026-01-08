@@ -23,7 +23,6 @@ import Button from '@/components/Button';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { logout } from '@/src/redux/actions/AuthActions';
 import CustomModal from '@/src/components/CustomModal';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 const options = {
   AppleAppID: '1637542382',
@@ -190,7 +189,7 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
             text="Help & Support"
             leftIcon={
               <AntDesignIcon
-                name="customerservice"
+                name="customer-service"
                 color={Colors.neutral.brand}
                 size={20}
                 style={{ marginRight: spacing.x10 }}
@@ -252,7 +251,7 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
             onPress={async () => {
               LoginManager.logOut();
               dispatch(logout());
-              await signOut(getAuth(getFirebaseApp()));
+              await signOut(getAuth());
             }}
             btnStyle={{ marginBottom: spacing.x32 }}
             leftIcon={

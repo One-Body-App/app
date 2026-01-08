@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Text, View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import StyledText from './styled/Text';

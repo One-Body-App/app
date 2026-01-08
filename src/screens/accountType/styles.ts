@@ -38,8 +38,7 @@ const styles = StyleSheet.create({
     width: '80%',
     textAlign: 'center',
     marginTop: getHeight(7),
-    width: getWidth(80),
-    textAlign: 'center',
+
     fontFamily: 'OpenSans-Regular',
   },
 

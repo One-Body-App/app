@@ -16,6 +16,7 @@ import {
   Animated,
   Easing,
   Dimensions,
+  Platform,
 } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -24,6 +25,7 @@ import {
   getIdToken,
   getIdTokenResult,
   onIdTokenChanged,
+  reload,
   signOut,
 } from '@react-native-firebase/auth';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -36,7 +38,7 @@ import {
   getInitialNotification,
   onNotificationOpenedApp,
 } from '@react-native-firebase/messaging';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent, logScreenView } from '@react-native-firebase/analytics';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
@@ -64,7 +66,6 @@ import SinglePost from '../screens/post/Single'; // Adjust path
 import VideoPost from '../screens/post/VideoPost'; // Adjust path
 import RssPost from '../screens/post/RssPost'; // Adjust path
 import { headerOptions } from './global'; // Adjust path
-import { getFirebaseApp } from '../services/firebaseApp';
 
 const closeIcon = require('../assets/images/close.png'); // Adjust path
 
@@ -91,8 +92,6 @@ const serializeFirebaseUser = (firebaseUser: FirebaseAuthTypes.User | null) => {
     isAnonymous: firebaseUser.isAnonymous,
     metadata: firebaseUser.metadata,
     providerId: firebaseUser.providerId,
-    refreshToken: firebaseUser.refreshToken,
-    tenantId: firebaseUser.tenantId,
   };
 };
 
@@ -120,12 +119,11 @@ function AppContent() {
   const [navigationReady, setNavigationReady] = useState<boolean>(false);
   const unverifiedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const screenHeight = useRef(Dimensions.get('window').height).current;
-  const firebaseApp = getFirebaseApp();
-  const firebaseAuth = getAuth(firebaseApp);
-  const firebaseMessaging = getMessaging(firebaseApp);
-  const firebaseAnalytics = getAnalytics(firebaseApp);
+  const firebaseAuth = getAuth();
+  const firebaseMessaging = getMessaging();
+  const firebaseAnalytics = getAnalytics();
   const navigationRef = useNavigationContainerRef<MainStackParamList>();
-  const routeNameRef = useRef<string | undefined>();
+  const routeNameRef = useRef<string | undefined>(undefined);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const handleConfirmBackPress = useCallback(async () => {
@@ -277,12 +275,9 @@ function AppContent() {
     const currentRouteName = navigationRef.getCurrentRoute()?.name;
     const hasValidToken = !!user && token !== '' && token !== 'unauthorized';
     const isProfileCompleted = authState.getProfileData?.isProfileCompleted;
-    const hasAccountType =
-      authState.getProfileData?.accountType === 'individual' ||
-      authState.getProfileData?.accountType === 'organization';
-
-    // Only navigate to MainRoot if user has verified email AND has completed their profile with account type
-    if (hasValidToken && user?.emailVerified && isProfileCompleted && hasAccountType) {
+    // Navigate to MainRoot if user has verified email
+    // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
+    if (hasValidToken && user?.emailVerified) {
       if (currentRouteName !== 'MainRoot') {
         navigationRef.dispatch(CommonActions.navigate('MainRoot'));
       }
@@ -330,7 +325,7 @@ function AppContent() {
       const adjustedPath = normalizedPath.startsWith('/verify-email')
         ? normalizedPath.replace('/verify-email', '/auth/action')
         : normalizedPath;
-      return getStateFromPathDefault(adjustedPath, options ?? linkingConfig);
+      return getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
     },
     async getInitialURL() {
       const url = await Linking.getInitialURL();
@@ -396,7 +391,7 @@ function AppContent() {
         routeNameRef.current = routeName;
         setNavigationReady(true);
         if (routeName) {
-          logEvent(firebaseAnalytics, 'screen_view', {
+          logScreenView(firebaseAnalytics, {
             screen_name: routeName,
             screen_class: routeName,
           });
@@ -406,7 +401,7 @@ function AppContent() {
         const previousRouteName = routeNameRef.current;
         const currentRouteName = navigationRef.getCurrentRoute()?.name;
         if (currentRouteName && previousRouteName !== currentRouteName) {
-          logEvent(firebaseAnalytics, 'screen_view', {
+          logScreenView(firebaseAnalytics, {
             screen_name: currentRouteName,
             screen_class: currentRouteName,
           });
@@ -441,55 +436,96 @@ function AppContent() {
               })}
             />
 
-            <MainStack.Screen name="Intro" component={Intro} options={{ headerShown: false }} />
-            <MainStack.Screen name="AccountType" component={AccountType} options={headerOptions} />
+            <MainStack.Screen
+              name="Intro"
+              component={Intro}
+              options={{
+                headerShown: false,
+                ...(Platform.OS === 'android' && { animation: 'slide_from_right' }),
+              }}
+            />
+            <MainStack.Screen
+              name="AccountType"
+              component={AccountType}
+              options={{
+                ...(Platform.OS === 'ios' ? headerOptions : {}),
+                ...(Platform.OS === 'android' && {
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                }),
+              }}
+            />
             <MainStack.Screen
               name="Login"
               component={Login}
               options={{
-                ...headerOptions,
-                headerStyle: {
-                  backgroundColor:
-                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                },
-                headerTransparent: false,
+                ...(Platform.OS === 'ios'
+                  ? {
+                      ...headerOptions,
+                      headerStyle: {
+                        backgroundColor:
+                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      },
+                      headerTransparent: false,
+                    }
+                  : {
+                      headerShown: false,
+                    }),
               }}
             />
             <MainStack.Screen
               name="SignUp"
               component={Signup}
               options={{
-                ...headerOptions,
-                headerTransparent: false,
-                headerStyle: {
-                  backgroundColor:
-                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                },
+                ...(Platform.OS === 'ios'
+                  ? {
+                      ...headerOptions,
+                      headerTransparent: false,
+                      headerStyle: {
+                        backgroundColor:
+                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      },
+                    }
+                  : {
+                      headerShown: false,
+                    }),
               }}
             />
             <MainStack.Screen
               name="ForgotPassword"
               component={ForgotPassword}
               options={{
-                ...headerOptions,
-                headerTransparent: false,
-                headerStyle: {
-                  backgroundColor:
-                    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                },
+                ...(Platform.OS === 'ios'
+                  ? {
+                      ...headerOptions,
+                      headerTransparent: false,
+                      headerStyle: {
+                        backgroundColor:
+                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      },
+                    }
+                  : {
+                      headerShown: false,
+                    }),
               }}
             />
             <MainStack.Screen
               name="ConfirmLogin"
               component={ConfirmLogin}
-              options={{
+              options={({ navigation }) => ({
                 presentation: 'modal',
-                ...headerOptions,
-                headerTintColor: Colors.primary.brand,
-                headerBackTitle: '',
-                headerBackTitleVisible: false,
-                headerLeft: renderConfirmBackButton,
-              }}
+                ...(Platform.OS === 'ios'
+                  ? {
+                      ...headerOptions,
+                      headerTintColor: Colors.primary.brand,
+                      headerBackTitle: '',
+                      headerBackTitleVisible: false,
+                      headerLeft: renderConfirmBackButton,
+                    }
+                  : {
+                      headerShown: false,
+                    }),
+              })}
             />
             <MainStack.Screen
               name="VideoPost"

@@ -26,6 +26,7 @@ import { button } from '@/src/styles/buttons';
 
 // Logic & Types
 import { signUp } from '@/src/redux/actions/AuthActions';
+import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MainStackParamList } from '@/src/navigator/types';
@@ -34,8 +35,6 @@ import StyledText from '@/components/styled/Text';
 import SignupButtons from '@/components/SignupButtons';
 import Button from '@/components/Button';
 import StyledTextInput from '@/components/styled/TextInput';
-import { ApiCall } from '@/services/api';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { appColor } from '@/src/constants';
 
@@ -167,7 +166,7 @@ function SignupForm({ navigation, route }: Props) {
   const { accountType } = route.params;
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth();
 
   const inputRefs = {
     username: useRef<TextInput>(null),
@@ -347,7 +346,10 @@ function SignupForm({ navigation, route }: Props) {
 
   useEffect(() => {
     if (authState.signUpSuccess === false && authState.error) {
-      Toast.show(authState.error ?? 'Unable to create account. Please try again.', Toast.SHORT);
+      const displayError = Array.isArray(authState.error)
+        ? authState.error.join(', ')
+        : (authState.error ?? 'Unable to create account. Please try again.');
+      Toast.show(displayError, Toast.SHORT);
       setIsloading(false);
     }
   }, [authState.signUpSuccess, authState.error]);
@@ -443,6 +445,7 @@ function SignupForm({ navigation, route }: Props) {
   return (
     <UserStepsLayout
       backgroundColor={Colors.main.white}
+      showCustomHeaderOnAndroid
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -466,7 +469,7 @@ function SignupForm({ navigation, route }: Props) {
           <StyledText
             style={[
               Typography.subheader.M,
-              { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x4 },
+              { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x5 },
             ]}
           >
             {accountType.charAt(0).toUpperCase() + accountType.slice(1)}
@@ -493,14 +496,14 @@ function SignupForm({ navigation, route }: Props) {
         ]}
       >
         <TouchableOpacity
-          style={{ flexDirection: 'row', marginBottom: spacing.x40 }}
+          style={{ flexDirection: 'row', marginBottom: spacing.x32 }}
           onPress={() => navigation.replace('Login')}
         >
           <StyledText>Already have an account? </StyledText>
           <StyledText style={{ color: '#41dbe1' }}>Sign in</StyledText>
         </TouchableOpacity>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x13 }}>
           <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
           <StyledText
             style={{ marginHorizontal: 10, color: dark ? brandWhite : Colors.primary.brand }}
@@ -510,7 +513,7 @@ function SignupForm({ navigation, route }: Props) {
           <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
         </View>
 
-        <Animated.View style={[{ marginTop: spacing.x12, alignItems: 'center' }, orbitStyle]}>
+        <Animated.View style={[{ marginTop: spacing.x13, alignItems: 'center' }, orbitStyle]}>
           <SignupButtons
             socialLogin={() => {}}
             navigation={navigation}
@@ -599,7 +602,7 @@ function SignupForm({ navigation, route }: Props) {
               return (
                 <View
                   key={rule.key}
-                  style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.x4 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.x5 }}
                 >
                   <MaterialCommunityIcons name={iconName} size={16} color={color} />
                   <StyledText style={{ color, fontSize: 12, marginLeft: spacing.x8 }}>
@@ -650,7 +653,7 @@ function SignupForm({ navigation, route }: Props) {
               marginTop: spacing.x24,
               width: '100%',
               alignSelf: 'stretch',
-              paddingVertical: spacing.x25,
+              paddingVertical: spacing.x24,
               paddingHorizontal: spacing.x20,
               minHeight: 52,
               borderRadius: 60,
@@ -694,12 +697,12 @@ function SignupForm({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginBottom: spacing.x50,
+    marginBottom: spacing.x48,
     paddingVertical: spacing.x16,
     width: '100%',
   },
   inputLabel: {
-    marginBottom: spacing.x4,
+    marginBottom: spacing.x5,
     color: Colors.primary.brand,
     fontSize: 14,
   },

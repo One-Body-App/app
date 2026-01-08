@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
@@ -30,13 +30,7 @@ function OnboardingInterests({ navigation, route }: Props) {
   const toast = useToast();
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    if (token) {
-      getInterest();
-    }
-  }, [token]);
-
-  const getInterest = async () => {
+  const getInterest = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'tags/interest',
@@ -44,17 +38,22 @@ function OnboardingInterests({ navigation, route }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
-        setInterest(res?.response);
-        setSearchInterest(res?.response);
-      } else {
+      if (res?.status === 200) {
+        setInterest(res?.response as Interest[]);
+        setSearchInterest(res?.response as Interest[]);
+      } else if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('saga error -- ', e.toString());
+      }
     }
-  };
-  const addInterests = async () => {
+  }, [token]);
+
+  const addInterests = useCallback(async () => {
     dispatch(setLoader(true));
 
     try {
@@ -65,22 +64,34 @@ function OnboardingInterests({ navigation, route }: Props) {
         verb: 'patch',
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(setLoader(false));
         navigation.navigate('OnboardingInfluencers', {
           ...route.params,
         });
       } else {
         dispatch(setLoader(false));
-        console.log('error', res);
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('error', res);
+        }
       }
     } catch (e: any) {
       toast.show('There was an error please try again', {
         type: 'danger',
       });
-      console.log('saga error -- ', e.toString());
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('saga error -- ', e.toString());
+      }
     }
-  };
+  }, [dispatch, navigation, route.params, selectedInterest, toast, token]);
+
+  useEffect(() => {
+    if (token) {
+      getInterest();
+    }
+  }, [token, getInterest]);
 
   return (
     <OnboardingStepsLayout
@@ -95,7 +106,7 @@ function OnboardingInterests({ navigation, route }: Props) {
         }
       }}
       onboardingType={route.params.profileType}
-      activeStep={route.params.profileType == AccountType.individual ? 5 : 4}
+      activeStep={route.params.profileType === AccountType.individual ? 5 : 4}
       disabled={selectedInterest.length < 3}
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>

@@ -23,7 +23,6 @@ import {
 } from '@/services/constants';
 import { getProfile, removeSocialAccountRequest } from '@/src/redux/actions/AuthActions';
 import { SettingsStackParamsList } from '@/src/navigator/types';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerSettings'>;
 const twitterRedirectUrl = 'onebodyapp://influencer-settings/connect/twitter';
@@ -44,7 +43,7 @@ function InfluencerSettings({ navigation, route }: Props) {
 
   const [twitterStateConfirmation] = useState(Math.random().toString(36).substring(2, 30));
   const [twitterCodeConfirmation, setTwitterCodeConfirmation] = useState<string>('');
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth();
 
   const onTwitterButtonPress = async () => {
     try {

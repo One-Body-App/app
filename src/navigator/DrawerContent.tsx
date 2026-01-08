@@ -21,7 +21,6 @@ import { profileImageList } from '../styles/items';
 import { Colors, Typography } from '../styles';
 import { borderRadius, borderWidth } from '../styles/outlines';
 import { logout } from '../redux/actions/AuthActions';
-import { getFirebaseApp } from '../services/firebaseApp';
 
 export default function DrawerContent({
   descriptors,
@@ -174,7 +173,7 @@ export default function DrawerContent({
                     onPress: async () => {
                       LoginManager.logOut();
                       dispatch(logout());
-                      await signOut(getAuth(getFirebaseApp()));
+                      await signOut(getAuth());
                     },
                   },
                 ],

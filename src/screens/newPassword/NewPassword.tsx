@@ -30,7 +30,6 @@ import { Colors, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
-import { getFirebaseApp } from '@/src/services/firebaseApp';
 
 type NewPasswordScreenRouteProp = RouteProp<MainStackParamList, 'NewPassword'>;
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'NewPassword'>;
@@ -58,7 +57,7 @@ function NewPassword({ oobCode, ...props }: Props) {
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   const { colors } = useTheme();
   const toast = useToast();
-  const firebaseAuth = getAuth(getFirebaseApp());
+  const firebaseAuth = getAuth();
 
   const PasswordUpdate = async () => {
     const { passwordC, passwordN } = state;

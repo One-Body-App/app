@@ -74,8 +74,8 @@ function AccountType({ navigation }: Props) {
 
   const cardAnimatedStyle = (anim: Animated.Value, selected: boolean) => ({
     backgroundColor: colors.card,
-    justifyContent: 'space-between',
-    alignItems: 'stretch',
+    justifyContent: 'space-between' as const,
+    alignItems: 'stretch' as const,
     borderWidth: 1,
     borderColor: selected ? Colors.secondary.brand : Colors.primary.brand,
     height: anim.interpolate({ inputRange: [0, 1], outputRange: [110, 200] }),
@@ -180,7 +180,7 @@ function AccountType({ navigation }: Props) {
   }, [cardsAnim, footerAnim, headerAnim, optionOneAnim, optionTwoAnim]);
 
   return (
-    <UserStepsLayout backgroundColor={colors.background}>
+    <UserStepsLayout backgroundColor={colors.background} showCustomHeaderOnAndroid>
       <View
         style={{
           flex: 1,
