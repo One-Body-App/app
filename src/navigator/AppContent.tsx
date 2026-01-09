@@ -38,7 +38,7 @@ import {
   getInitialNotification,
   onNotificationOpenedApp,
 } from '@react-native-firebase/messaging';
-import { getAnalytics, logEvent, logScreenView } from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
@@ -210,7 +210,7 @@ function AppContent() {
     const subscriber = onIdTokenChanged(firebaseAuth, onAuthStateChanged);
     setTimeout(() => {
       LottieSplashScreen.hide();
-    }, 750);
+    }, 375);
 
     return subscriber;
     // Cleanup subscription on unmount
@@ -222,7 +222,7 @@ function AppContent() {
       setAuthChecked(true);
       setInitializing(false);
       LottieSplashScreen.hide();
-    }, 750);
+    }, 375);
     return () => clearTimeout(timer);
   }, []);
 
@@ -264,7 +264,7 @@ function AppContent() {
     if (!initializing) {
       setTimeout(() => {
         LottieSplashScreen.hide();
-      }, 2750);
+      }, 1375);
     }
   }, [dispatch, initializing, token, user]);
 
@@ -275,9 +275,23 @@ function AppContent() {
     const currentRouteName = navigationRef.getCurrentRoute()?.name;
     const hasValidToken = !!user && token !== '' && token !== 'unauthorized';
     const isProfileCompleted = authState.getProfileData?.isProfileCompleted;
+    const isProfileLoading = authState.isLoading;
+    const hasProfileError = authState.getProfileError;
+
+    // Don't navigate while profile is loading to avoid race conditions
+    // This ensures we have complete profile data before making navigation decisions
+    if (hasValidToken && isProfileLoading) {
+      return;
+    }
+
+    // If profile fetch failed but user is authenticated, still allow navigation
+    // DrawerNav will show onboarding since getProfileData will be null/undefined
+    const shouldNavigate =
+      hasValidToken && (authState.getProfileData !== undefined || hasProfileError);
+
     // Navigate to MainRoot if user has verified email
     // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
-    if (hasValidToken && user?.emailVerified) {
+    if (hasValidToken && user?.emailVerified && (shouldNavigate || !isProfileLoading)) {
       if (currentRouteName !== 'MainRoot') {
         navigationRef.dispatch(CommonActions.navigate('MainRoot'));
       }
@@ -286,7 +300,15 @@ function AppContent() {
         navigationRef.dispatch(CommonActions.navigate('ConfirmLogin'));
       }
     }
-  }, [navigationReady, navigationRef, token, user, authState.getProfileData]);
+  }, [
+    navigationReady,
+    navigationRef,
+    token,
+    user,
+    authState.getProfileData,
+    authState.isLoading,
+    authState.getProfileError,
+  ]);
 
   const linkingConfig: LinkingOptions<MainStackParamList>['config'] = {
     screens: {
@@ -322,9 +344,13 @@ function AppContent() {
     config: linkingConfig,
     getStateFromPath(path, options) {
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-      const adjustedPath = normalizedPath.startsWith('/verify-email')
-        ? normalizedPath.replace('/verify-email', '/auth/action')
-        : normalizedPath;
+      // Handle both old and new Firebase Auth verification URL patterns
+      let adjustedPath = normalizedPath;
+      if (normalizedPath.startsWith('/verify-email')) {
+        adjustedPath = normalizedPath.replace('/verify-email', '/auth/action');
+      } else if (normalizedPath.startsWith('/auth/verify')) {
+        adjustedPath = normalizedPath.replace('/auth/verify', '/auth/action');
+      }
       return getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
     },
     async getInitialURL() {
@@ -391,7 +417,7 @@ function AppContent() {
         routeNameRef.current = routeName;
         setNavigationReady(true);
         if (routeName) {
-          logScreenView(firebaseAnalytics, {
+          logEvent(firebaseAnalytics, 'screen_view', {
             screen_name: routeName,
             screen_class: routeName,
           });
@@ -401,7 +427,7 @@ function AppContent() {
         const previousRouteName = routeNameRef.current;
         const currentRouteName = navigationRef.getCurrentRoute()?.name;
         if (currentRouteName && previousRouteName !== currentRouteName) {
-          logScreenView(firebaseAnalytics, {
+          logEvent(firebaseAnalytics, 'screen_view', {
             screen_name: currentRouteName,
             screen_class: currentRouteName,
           });

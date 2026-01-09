@@ -456,7 +456,7 @@ function SignupForm({ navigation, route }: Props) {
     >
       <Animated.View
         style={[
-          { marginTop: spacing.x24, marginBottom: spacing.x10, marginHorizontal: spacing.x20 },
+          { marginTop: spacing.x20, marginBottom: spacing.x10, marginHorizontal: spacing.x20 },
           textPopStyle,
         ]}
       >
@@ -496,7 +496,7 @@ function SignupForm({ navigation, route }: Props) {
         ]}
       >
         <TouchableOpacity
-          style={{ flexDirection: 'row', marginBottom: spacing.x32 }}
+          style={{ flexDirection: 'row', marginBottom: spacing.x20 }}
           onPress={() => navigation.replace('Login')}
         >
           <StyledText>Already have an account? </StyledText>
@@ -513,7 +513,7 @@ function SignupForm({ navigation, route }: Props) {
           <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
         </View>
 
-        <Animated.View style={[{ marginTop: spacing.x13, alignItems: 'center' }, orbitStyle]}>
+        <Animated.View style={[{ marginTop: spacing.x7, alignItems: 'center' }, orbitStyle]}>
           <SignupButtons
             socialLogin={() => {}}
             navigation={navigation}
@@ -697,12 +697,12 @@ function SignupForm({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginBottom: spacing.x48,
+    marginBottom: spacing.x14,
     paddingVertical: spacing.x16,
     width: '100%',
   },
   inputLabel: {
-    marginBottom: spacing.x5,
+    marginBottom: spacing.x10,
     color: Colors.primary.brand,
     fontSize: 14,
   },

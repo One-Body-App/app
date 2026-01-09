@@ -16,8 +16,19 @@ export default function CustomHeader({ showBackButton = true }: CustomHeaderProp
   const navigation = useNavigation();
   const { dark } = useTheme();
 
+  const androidBackgroundColor = dark ? Colors.neutral[900] : '#f5f5f5';
+  const androidBorderColor = dark ? Colors.neutral[800] : '#e0e0e0';
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: Platform.OS === 'android' ? androidBackgroundColor : 'transparent',
+          borderBottomColor: Platform.OS === 'android' ? androidBorderColor : 'transparent',
+        },
+      ]}
+    >
       {showBackButton && (
         <TouchableOpacity
           style={styles.backButton}
@@ -47,9 +58,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     height: Platform.OS === 'android' ? 56 : 44,
     paddingHorizontal: 8,
-    backgroundColor: Platform.OS === 'android' ? '#f5f5f5' : 'transparent',
     borderBottomWidth: Platform.OS === 'android' ? 1 : 0,
-    borderBottomColor: '#e0e0e0',
   },
   backButton: {
     padding: 8,

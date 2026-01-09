@@ -3,7 +3,12 @@ import { ScrollView, AppState, AppStateStatus, Platform } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
-import { getAuth, getIdToken, reload } from '@react-native-firebase/auth';
+import {
+  getAuth,
+  getIdToken,
+  reload,
+  fetchSignInMethodsForEmail,
+} from '@react-native-firebase/auth';
 import { getApp } from '@react-native-firebase/app';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import LoginComponent from '@/components/loginComponent';
@@ -31,8 +36,10 @@ function ConfirmLogin({ route, navigation }: Props) {
     useCallback(() => {
       const { currentUser } = getAuth(getApp());
       if (currentUser) {
-        reload(currentUser).then(() => {
+        reload(currentUser).then(async () => {
           if (getAuth(getApp()).currentUser?.emailVerified) {
+            // Force token refresh to ensure profile is fetched
+            await getIdToken(currentUser, true);
             navigation.reset({
               index: 0,
               routes: [{ name: 'MainRoot' }],
@@ -52,9 +59,8 @@ function ConfirmLogin({ route, navigation }: Props) {
     }
     if (authReducer.userData?.email) {
       const getSignInMethods = async () => {
-        const providers = await getAuth(getApp()).fetchSignInMethodsForEmail(
-          authReducer.userData?.email ?? ''
-        );
+        const auth = getAuth(getApp());
+        const providers = await fetchSignInMethodsForEmail(auth, authReducer.userData?.email ?? '');
 
         setEnabledLoginProviders(providers);
       };
@@ -65,10 +71,10 @@ function ConfirmLogin({ route, navigation }: Props) {
       if (nextAppState === 'active') {
         const { currentUser } = getAuth(getApp());
         if (currentUser) {
-          reload(currentUser).then(() => {
+          reload(currentUser).then(async () => {
             if (getAuth(getApp()).currentUser?.emailVerified) {
-              // Force token refresh to ensure global state updates
-              getIdToken(currentUser, true);
+              // Force token refresh to ensure global state updates and profile is fetched
+              await getIdToken(currentUser, true);
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'MainRoot' }],

@@ -8,7 +8,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Platform, useColorScheme } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { getAuth } from '@react-native-firebase/auth';
+import { getAuth, getIdToken } from '@react-native-firebase/auth';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { getApp } from '@react-native-firebase/app';
 import { useToast } from 'react-native-toast-notifications';
@@ -68,7 +68,7 @@ const serializeFirebaseUser = (firebaseUser: FirebaseAuthTypes.User | null) => {
 
 const getIdTokenWithTimeout = async (firebaseUser: FirebaseAuthTypes.User, timeoutMs = 5000) => {
   return Promise.race([
-    firebaseUser.getIdToken(),
+    getIdToken(firebaseUser),
     new Promise<string>((_resolve, reject) => {
       setTimeout(() => reject(new Error('getIdToken timeout')), timeoutMs);
     }),
@@ -148,7 +148,7 @@ function Main() {
       setAuthChecked(true);
       setInitializing(false);
       LottieSplashScreen.hide();
-    }, 1500);
+    }, 750);
     return () => clearTimeout(timer);
   }, []);
 
@@ -175,7 +175,7 @@ function Main() {
       // } else {
       setTimeout(() => {
         LottieSplashScreen.hide();
-      }, 5500);
+      }, 2750);
       // }
     }
   }, [token, user, initializing, dispatch]);

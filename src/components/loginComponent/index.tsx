@@ -14,6 +14,8 @@ import {
   signInWithEmailAndPassword,
   reload,
   sendEmailVerification,
+  checkActionCode,
+  applyActionCode,
 } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { LoginManager } from 'react-native-fbsdk-next';
@@ -43,6 +45,7 @@ import {
   logout,
   sendVerificationEmail,
   signUp,
+  getProfile,
 } from '@/src/redux/actions/AuthActions';
 
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
@@ -188,19 +191,31 @@ function LoginComponent({
     if (mode === 'verifyEmail' && action === 'action' && oobCode) {
       const verifyEmail = async () => {
         try {
-          const result = await firebaseAuth.checkActionCode(oobCode);
+          const result = await checkActionCode(firebaseAuth, oobCode);
 
           if (result.operation === 'VERIFY_EMAIL') {
-            await firebaseAuth.applyActionCode(oobCode);
+            await applyActionCode(firebaseAuth, oobCode);
 
             // Reload the current user to update emailVerified status
             const { currentUser } = firebaseAuth;
             if (currentUser) {
               await reload(currentUser);
-              // Force token refresh to ensure global state updates
-              await currentUser.getIdToken(true);
+              // Force token refresh to ensure global state updates and profile fetch
+              const newToken = await getIdToken(currentUser, true);
 
-              // Navigate to MainRoot if user is now verified
+              // Explicitly trigger profile fetch to ensure it happens on iOS
+              // This is critical because onIdTokenChanged might not fire quickly enough
+              if (newToken) {
+                dispatch(getProfile.Request({ token: newToken }));
+              }
+
+              // Wait a brief moment to allow profile fetch to start
+              // This is critical on iOS where navigation timing can cause race conditions
+              await new Promise<void>((resolve) => {
+                setTimeout(() => resolve(), 500);
+              });
+
+              // Now navigate - AppContent will have profile data or be loading it
               if (firebaseAuth.currentUser?.emailVerified) {
                 navigation.reset({
                   index: 0,
@@ -223,8 +238,8 @@ function LoginComponent({
     if (mode === 'verifyAndChangeEmail' && action === 'action' && oobCode) {
       const verifyAndChangeEmail = async () => {
         try {
-          const result = await firebaseAuth.checkActionCode(oobCode);
-          await firebaseAuth.applyActionCode(oobCode);
+          const result = await checkActionCode(firebaseAuth, oobCode);
+          await applyActionCode(firebaseAuth, oobCode);
 
           setSuccess('Email changed successful. Please Sign in to your account');
           setState({ ...state, email: result.data.email ?? '' });
@@ -252,6 +267,7 @@ function LoginComponent({
     toast,
     setSuccess,
     seterror,
+    dispatch,
   ]);
 
   useEffect(() => {
