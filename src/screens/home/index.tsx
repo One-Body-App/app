@@ -278,11 +278,11 @@ function Home({ navigation, route }: Props) {
                     : [styles.menuItemText, { color: Colors.neutral[400] }]
                 }
               >
-                {feedOptions.type === FeedTypes.Read
-                  ? 'Feed'
-                  : feedSubType === FeedTypes.Connected
-                    ? 'Connected'
-                    : 'For You'}
+                {(() => {
+                  if (feedOptions.type === FeedTypes.Read) return 'Feed';
+                  if (feedSubType === FeedTypes.Connected) return 'Connected';
+                  return 'For You';
+                })()}
               </StyledText>
               {feedOptions.type === FeedTypes.Read ? null : (
                 <ArrowDown2

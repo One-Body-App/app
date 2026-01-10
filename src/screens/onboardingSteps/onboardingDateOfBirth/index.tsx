@@ -158,6 +158,7 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
       activeStep={1}
       disabled={!year}
       dontUseScrollView
+      showCustomHeaderOnAndroid
       reasonText={
         <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
           Your year of birth helps us to understand the type of content you would be most interested

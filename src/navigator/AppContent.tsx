@@ -25,7 +25,6 @@ import {
   getIdToken,
   getIdTokenResult,
   onIdTokenChanged,
-  reload,
   signOut,
 } from '@react-native-firebase/auth';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -61,13 +60,22 @@ import ConfirmLogin from '../screens/login/ConfirmLogin'; // Adjust path
 
 import DrawerNav from './DrawerStack';
 import NewPost from '../screens/post/NewPost'; // Adjust path
-
 import SinglePost from '../screens/post/Single'; // Adjust path
-import VideoPost from '../screens/post/VideoPost'; // Adjust path
 import RssPost from '../screens/post/RssPost'; // Adjust path
 import { headerOptions } from './global'; // Adjust path
 
 const closeIcon = require('../assets/images/close.png'); // Adjust path
+
+// Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
+// This fixes Android crash: "Cannot read property 'DocumentDir' of null"
+const LazyVideoPost = React.lazy(() => import('../screens/post/VideoPost'));
+function VideoPost({ navigation, route }: { navigation: any; route: any }) {
+  return (
+    <React.Suspense fallback={<ActivityIndicator size="large" />}>
+      <LazyVideoPost navigation={navigation} route={route} />
+    </React.Suspense>
+  );
+}
 
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
@@ -301,6 +309,7 @@ function AppContent() {
   useEffect(() => {
     if (!navigationReady) {
       if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('[AppContent Navigation] Skipping - navigation not ready');
       }
       return;
@@ -312,6 +321,7 @@ function AppContent() {
     const hasProfileError = authState.getProfileError;
 
     if (__DEV__) {
+      // eslint-disable-next-line no-console
       console.log('[AppContent Navigation] Effect triggered:', {
         currentRoute: currentRouteName,
         hasValidToken,
@@ -324,10 +334,24 @@ function AppContent() {
       });
     }
 
+    // On iOS, if we're on ConfirmLogin screen, skip AppContent navigation
+    // LoginComponent handles the verification flow and navigation
+    // This prevents race condition where both components try to navigate
+    if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin') {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log(
+          '[AppContent Navigation] iOS - on ConfirmLogin, letting LoginComponent handle navigation'
+        );
+      }
+      return;
+    }
+
     // Don't navigate while profile is loading to avoid race conditions
     // This ensures we have complete profile data before making navigation decisions
     if (hasValidToken && isProfileLoading) {
       if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('[AppContent Navigation] Waiting - profile is loading');
       }
       return;
@@ -339,6 +363,7 @@ function AppContent() {
       hasValidToken && (authState.getProfileData !== undefined || hasProfileError);
 
     if (__DEV__) {
+      // eslint-disable-next-line no-console
       console.log('[AppContent Navigation] shouldNavigate:', shouldNavigate);
     }
 
@@ -347,22 +372,27 @@ function AppContent() {
     if (hasValidToken && user?.emailVerified && (shouldNavigate || !isProfileLoading)) {
       if (currentRouteName !== 'MainRoot') {
         if (__DEV__) {
+          // eslint-disable-next-line no-console
           console.log('[AppContent Navigation] Navigating to MainRoot (email verified)');
         }
         navigationRef.dispatch(CommonActions.navigate('MainRoot'));
       } else if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('[AppContent Navigation] Already on MainRoot');
       }
     } else if (hasValidToken && !user?.emailVerified) {
       if (currentRouteName !== 'ConfirmLogin') {
         if (__DEV__) {
+          // eslint-disable-next-line no-console
           console.log('[AppContent Navigation] Navigating to ConfirmLogin (email not verified)');
         }
         navigationRef.dispatch(CommonActions.navigate('ConfirmLogin'));
       } else if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('[AppContent Navigation] Already on ConfirmLogin');
       }
     } else if (__DEV__) {
+      // eslint-disable-next-line no-console
       console.log('[AppContent Navigation] No navigation action taken');
     }
   }, [
@@ -438,27 +468,66 @@ function AppContent() {
     }
     try {
       const parsed = new URL(rawUrl);
+
+      // Firebase Dynamic Links use a 'link' parameter that contains the actual deep link
+      // Example: https://app.onebodyapp.com/?link=https://app.onebodyapp.com/auth/action?...
       const nestedLink = parsed.searchParams.get('link');
       if (nestedLink) {
         const decoded = decodeURIComponent(nestedLink);
         if (__DEV__) {
           // eslint-disable-next-line no-console
-          console.log('[Deep Link normalizeLink] Extracted nested link:', decoded);
+          console.log('[Deep Link normalizeLink] Extracted Firebase Dynamic Link:', decoded);
         }
         return decoded;
       }
+
+      // Also check for 'ifl' parameter (iOS fallback link in Firebase Dynamic Links)
+      const iosFallbackLink = parsed.searchParams.get('ifl');
+      if (iosFallbackLink) {
+        const decoded = decodeURIComponent(iosFallbackLink);
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link normalizeLink] Extracted iOS fallback link:', decoded);
+        }
+        return decoded;
+      }
+
       if (__DEV__) {
         // eslint-disable-next-line no-console
-        console.log('[Deep Link normalizeLink] No nested link, returning raw URL');
+        console.log('[Deep Link normalizeLink] No nested link found, returning raw URL');
       }
       return rawUrl;
-    } catch {
+    } catch (error) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
-        console.log('[Deep Link normalizeLink] URL parse failed, returning raw');
+        console.log('[Deep Link normalizeLink] URL parse failed:', error, 'returning raw');
       }
       return rawUrl;
     }
+  };
+
+  // Deep link deduplication to prevent iOS from processing the same link twice
+  const lastProcessedUrl = useRef<{ url: string; timestamp: number } | null>(null);
+  const DEDUP_WINDOW_MS = 2000; // 2 second window for deduplication
+
+  const shouldProcessUrl = (url: string | null): boolean => {
+    if (!url) return false;
+
+    const now = Date.now();
+    const last = lastProcessedUrl.current;
+
+    // Check if this is the same URL within the deduplication window
+    if (last && last.url === url && now - last.timestamp < DEDUP_WINDOW_MS) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Deep Link] SKIPPING duplicate URL within', DEDUP_WINDOW_MS, 'ms:', url);
+      }
+      return false;
+    }
+
+    // Update the last processed URL
+    lastProcessedUrl.current = { url, timestamp: now };
+    return true;
   };
 
   const linking: LinkingOptions<MainStackParamList> = {
@@ -473,26 +542,32 @@ function AppContent() {
       // Handle both old and new Firebase Auth verification URL patterns
       let adjustedPath = normalizedPath;
 
-      // Firebase uses __/auth/action for email verification
+      // Firebase uses __/auth/action for email verification (new Firebase hosting pattern)
       if (normalizedPath.startsWith('/__/auth/action')) {
         adjustedPath = normalizedPath.replace('/__/auth/action', '/auth/action');
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[Deep Link getStateFromPath] Adjusted __/auth/action to:', adjustedPath);
         }
-      } else if (normalizedPath.startsWith('/verify-email')) {
+      }
+      // Legacy /verify-email pattern (fallback)
+      else if (normalizedPath.startsWith('/verify-email')) {
         adjustedPath = normalizedPath.replace('/verify-email', '/auth/action');
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[Deep Link getStateFromPath] Adjusted /verify-email to:', adjustedPath);
         }
-      } else if (normalizedPath.startsWith('/auth/verify')) {
+      }
+      // Legacy /auth/verify pattern - DEPRECATED, but kept for backwards compatibility
+      // New links should use /auth/action directly from the API
+      else if (normalizedPath.startsWith('/auth/verify')) {
         adjustedPath = normalizedPath.replace('/auth/verify', '/auth/action');
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[Deep Link getStateFromPath] Adjusted /auth/verify to:', adjustedPath);
         }
       }
+
       const state = getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
       if (__DEV__) {
         // eslint-disable-next-line no-console
@@ -505,32 +580,71 @@ function AppContent() {
     },
     async getInitialURL() {
       const rawUrl = await Linking.getInitialURL();
-      console.log('[Deep Link] getInitialURL RAW (before normalize):', rawUrl);
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Deep Link] getInitialURL RAW (before normalize):', rawUrl);
+      }
       const url = normalizeLink(rawUrl);
-      console.log('[Deep Link] getInitialURL NORMALIZED:', sanitizeUrl(url));
-      if (url) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Deep Link] getInitialURL NORMALIZED:', sanitizeUrl(url));
+      }
+      if (url && shouldProcessUrl(url)) {
         return url;
+      }
+      if (url) {
+        // URL was filtered out as duplicate
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link] getInitialURL: URL filtered as duplicate');
+        }
+        return null;
       }
       const message = await getInitialNotification(firebaseMessaging);
       const notificationUrl = normalizeLink(message?.data?.url as string);
-      console.log('[Deep Link] Notification URL:', sanitizeUrl(notificationUrl));
-      return notificationUrl;
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Deep Link] Notification URL:', sanitizeUrl(notificationUrl));
+      }
+      if (notificationUrl && shouldProcessUrl(notificationUrl)) {
+        return notificationUrl;
+      }
+      return null;
     },
     subscribe(listener) {
       const onReceiveURL = ({ url }: { url: string }) => {
-        console.log('[Deep Link] subscribe onReceiveURL RAW:', url);
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link] subscribe onReceiveURL RAW:', url);
+        }
         const normalized = normalizeLink(url);
-        console.log('[Deep Link] subscribe onReceiveURL NORMALIZED:', sanitizeUrl(normalized));
-        if (normalized) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link] subscribe onReceiveURL NORMALIZED:', sanitizeUrl(normalized));
+        }
+        if (normalized && shouldProcessUrl(normalized)) {
           listener(normalized);
+        } else if (normalized) {
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[Deep Link] subscribe: URL filtered as duplicate');
+          }
         }
       };
       const subscription = Linking.addEventListener('url', onReceiveURL);
       const unsubscribeNotification = onNotificationOpenedApp(firebaseMessaging, (message) => {
         const url = normalizeLink(message.data?.url as string);
-        console.log('[Deep Link] Notification opened with URL:', sanitizeUrl(url));
-        if (url) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link] Notification opened with URL:', sanitizeUrl(url));
+        }
+        if (url && shouldProcessUrl(url)) {
           listener(url);
+        } else if (url) {
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[Deep Link] Notification: URL filtered as duplicate');
+          }
         }
       });
       return () => {
@@ -566,6 +680,7 @@ function AppContent() {
 
   const scheme = useColorScheme();
 
+  // Early return after all hooks have been called
   if (!authChecked && initializing) {
     return null;
   }
@@ -704,7 +819,7 @@ function AppContent() {
             <MainStack.Screen
               name="ConfirmLogin"
               component={ConfirmLogin}
-              options={({ navigation }) => ({
+              options={() => ({
                 presentation: 'modal',
                 ...(Platform.OS === 'ios'
                   ? {

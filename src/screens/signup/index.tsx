@@ -116,6 +116,7 @@ const InputField = React.forwardRef(
         </StyledText>
         <StyledTextInput
           ref={ref}
+          value={value}
           onFocus={(e) => {
             setFocused(true);
             onFocus?.(e);
@@ -148,7 +149,6 @@ const InputField = React.forwardRef(
           accessibilityLabel={accessibilityLabel}
           testID={testID}
           selectionColor={selectionColor}
-          defaultValue={defaultValue}
           rightIcon={rightIcon as any}
         />
         {error ? (
@@ -235,23 +235,23 @@ function SignupForm({ navigation, route }: Props) {
     !passwordRules.uppercase;
 
   const onRefresh = () => {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[Signup] onRefresh triggered - clearing all fields');
+    }
     setRefreshing(true);
     setIsloading(false);
     setHidePass(true);
     setShowPasswordHint(false);
-    setState({
-      username: '',
-      usernameError: '',
-      name: '',
-      nameError: '',
-      email: '',
-      emailError: '',
-      password: '',
-      passwordError: '',
-      cPassword: '',
-      cPasswordError: '',
-    });
-    setTimeout(() => setRefreshing(false), 400);
+    setHasPasswordInteracted(false);
+    setState(initialFormState);
+    setTimeout(() => {
+      setRefreshing(false);
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Signup] onRefresh complete');
+      }
+    }, 400);
   };
 
   const signUpUser = async () => {
@@ -311,12 +311,14 @@ function SignupForm({ navigation, route }: Props) {
     }
   };
 
-  const changeHandler = (type: string, value: string) =>
+  const changeHandler = (type: string, value: string) => {
+    const errorField = `${type}Error`;
     setState((prev) => ({
       ...prev,
       [type]: value,
-      ...(type === 'email' ? { emailError: '' } : {}),
+      [errorField]: '',
     }));
+  };
   const { dark } = useTheme();
   const isIos = Platform.OS === 'ios';
   const createAccountRadius =
@@ -400,6 +402,8 @@ function SignupForm({ navigation, route }: Props) {
       setState(initialFormState);
       setHidePass(true);
       setShowPasswordHint(false);
+      setHasPasswordInteracted(false);
+      setIsloading(false);
     }, [])
   );
 

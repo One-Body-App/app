@@ -20,6 +20,7 @@ import { spacing } from '@/src/styles/spacing';
 import { header } from '@/src/styles/typography';
 import { AccountType } from '@/utils/types';
 import CustomModal from '@/src/components/CustomModal';
+import CustomHeader from '@/src/components/CustomHeader';
 
 type Props = {
   children: ReactElement;
@@ -31,6 +32,7 @@ type Props = {
   disabled?: boolean;
   loading?: boolean;
   dontUseScrollView?: boolean;
+  showCustomHeaderOnAndroid?: boolean;
 };
 
 const indicatorStyle: ViewStyle = {
@@ -52,6 +54,7 @@ function OnboardingStepsLayout({
   reasonText,
   dontUseScrollView,
   loading,
+  showCustomHeaderOnAndroid = false,
 }: Props) {
   const { colors, dark } = useTheme();
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -63,6 +66,9 @@ function OnboardingStepsLayout({
         marginBottom: Platform.OS == 'android' ? spacing.x24 : 0,
       }}
     >
+      {showCustomHeaderOnAndroid && Platform.OS === 'android' ? (
+        <CustomHeader showBackButton />
+      ) : null}
       <View style={{ marginTop: spacing.x10 }}>
         {onboardingType == AccountType.individual ? (
           <View style={{ flexDirection: 'row' }}>

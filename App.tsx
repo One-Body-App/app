@@ -8,7 +8,7 @@ import LottieSplashScreen from 'react-native-lottie-splash-screen'; // Note: Lot
 
 // import ZendeskChat from 'react-native-zendesk-chat';
 import { getDynamicLinks, onLink } from '@react-native-firebase/dynamic-links';
-import { Linking, Text } from 'react-native'; // Text might not be needed here if not directly used
+import { Linking } from 'react-native';
 import { ToastProvider } from 'react-native-toast-notifications';
 
 import * as Sentry from '@sentry/react-native';
@@ -26,7 +26,6 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { persistor, store } from './src/redux/store'; // Make sure this path is correct
 import AppContent from './src/navigator/AppContent'; // Import the new component
-import Main from './src/navigator/Main';
 import { getFirebaseApp } from './src/services/firebaseApp';
 
 Sentry.init({
@@ -37,15 +36,14 @@ Sentry.init({
 function App() {
   const firebaseApp = getFirebaseApp();
   const links = getDynamicLinks(firebaseApp);
-  const handleDynamicLink = (link: string) => {
-    // console.log('Dynamic Link:', link);
-    // LottieSplashScreen.hide();
-    // console.log('LottieSplashScreen.hide() called');
+  const handleDynamicLink = () => {
+    // Placeholder for dynamic link handling
+    // Deep linking is handled by AppContent.tsx
   };
 
   useEffect(() => {
-    const event = Linking.addEventListener('url', ({ url }) => handleDynamicLink(url));
-    const unsubscribe = onLink(links, (url) => handleDynamicLink(url.url));
+    const event = Linking.addEventListener('url', () => handleDynamicLink());
+    const unsubscribe = onLink(links, () => handleDynamicLink());
     return () => {
       event.remove();
       unsubscribe();
@@ -55,7 +53,7 @@ function App() {
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
       if (url) {
-        handleDynamicLink(url);
+        handleDynamicLink();
       }
     });
   }, []);

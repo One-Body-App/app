@@ -30,7 +30,10 @@ function OnboardingStack() {
       <Stack.Screen
         name="OnboardingDateOfBirth"
         component={OnboardingDateOfBirth}
-        options={headerOptions}
+        options={{
+          ...(Platform.OS === 'ios' ? headerOptions : {}),
+          ...(Platform.OS === 'android' && { headerShown: false }),
+        }}
       />
       <Stack.Screen
         name="OnboardingInfluencers"

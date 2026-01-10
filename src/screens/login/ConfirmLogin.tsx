@@ -25,52 +25,98 @@ type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
 function ConfirmLogin({ route, navigation }: Props) {
   const [enabledLoginProviders, setEnabledLoginProviders] = useState<string[]>();
+  const hasNavigatedRef = React.useRef(false);
 
   const authReducer = useSelector((state: RootState) => state.auth);
   const userData = useSelector((state: RootState) => state.auth.userData);
   const dispatch = useDispatch();
   const { dark, colors } = useTheme();
 
-  useFocusEffect(
-    useCallback(() => {
+  // Consolidated verification check that prevents double navigation
+  const checkAndNavigateIfVerified = useCallback(async () => {
+    // Prevent multiple navigation attempts
+    if (hasNavigatedRef.current) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
-        console.log('[ConfirmLogin useFocusEffect] Screen focused');
+        console.log('[ConfirmLogin] Navigation already triggered, skipping check');
       }
-      const { currentUser } = getAuth(getApp());
-      if (currentUser) {
+      return;
+    }
+
+    const { currentUser } = getAuth(getApp());
+    if (!currentUser) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[ConfirmLogin] No current user');
+      }
+      return;
+    }
+
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[ConfirmLogin] Checking verification status...');
+    }
+
+    await reload(currentUser);
+    const verified = getAuth(getApp()).currentUser?.emailVerified;
+
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[ConfirmLogin] After reload, emailVerified:', verified);
+    }
+
+    if (verified && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true;
+      // Force token refresh to ensure profile is fetched
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[ConfirmLogin] Getting fresh token and navigating...');
+      }
+      await getIdToken(currentUser, true);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainRoot' }],
+      });
+    }
+  }, [navigation]);
+
+  // Disable focus-based navigation check entirely on iOS
+  // LoginComponent handles verification and navigation reliably
+  // This prevents duplicate navigation attempts that cause the "flash" bug
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'ios') {
         if (__DEV__) {
           // eslint-disable-next-line no-console
-          console.log('[ConfirmLogin useFocusEffect] Current user exists, reloading...');
+          console.log(
+            '[ConfirmLogin useFocusEffect] iOS - skipping focus check, LoginComponent handles navigation'
+          );
         }
-        reload(currentUser).then(async () => {
-          const verified = getAuth(getApp()).currentUser?.emailVerified;
-          if (__DEV__) {
-            // eslint-disable-next-line no-console
-            console.log('[ConfirmLogin useFocusEffect] After reload, emailVerified:', verified);
-          }
-          if (verified) {
-            // Force token refresh to ensure profile is fetched
-            if (__DEV__) {
-              // eslint-disable-next-line no-console
-              console.log('[ConfirmLogin useFocusEffect] Getting fresh token...');
-            }
-            await getIdToken(currentUser, true);
-            if (__DEV__) {
-              // eslint-disable-next-line no-console
-              console.log('[ConfirmLogin useFocusEffect] Navigating to MainRoot');
-            }
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainRoot' }],
-            });
-          }
-        });
-      } else if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.log('[ConfirmLogin useFocusEffect] No current user');
+        return;
       }
-    }, [navigation])
+
+      if (!route.params?.oobCode) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log(
+            '[ConfirmLogin useFocusEffect] No oobCode, skipping focus check (LoginComponent will handle)'
+          );
+        }
+        return;
+      }
+
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[ConfirmLogin useFocusEffect] Screen focused with oobCode');
+      }
+
+      // Small delay to allow LoginComponent's verification to complete first
+      const timer = setTimeout(() => {
+        checkAndNavigateIfVerified();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }, [route.params?.oobCode, checkAndNavigateIfVerified])
   );
 
   useEffect(() => {
@@ -82,7 +128,18 @@ function ConfirmLogin({ route, navigation }: Props) {
         hasOobCode: !!route.params?.oobCode,
         oobCodeLength: route.params?.oobCode?.length,
         platform: Platform.OS,
+        allParams: route.params,
       });
+    }
+
+    // Log if we received email verification parameters
+    if (route.params?.mode === 'verifyEmail' && route.params?.oobCode) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log(
+          '[ConfirmLogin] Email verification link detected - will process in LoginComponent'
+        );
+      }
     }
 
     navigation.setOptions({ gestureEnabled: false });
@@ -106,40 +163,17 @@ function ConfirmLogin({ route, navigation }: Props) {
         // eslint-disable-next-line no-console
         console.log('[ConfirmLogin AppState] App state changed to:', nextAppState);
       }
-      if (nextAppState === 'active') {
-        const { currentUser } = getAuth(getApp());
-        if (currentUser) {
-          if (__DEV__) {
-            // eslint-disable-next-line no-console
-            console.log('[ConfirmLogin AppState] Current user exists, reloading...');
-          }
-          reload(currentUser).then(async () => {
-            const verified = getAuth(getApp()).currentUser?.emailVerified;
-            if (__DEV__) {
-              // eslint-disable-next-line no-console
-              console.log('[ConfirmLogin AppState] After reload, emailVerified:', verified);
-            }
-            if (verified) {
-              // Force token refresh to ensure global state updates and profile is fetched
-              if (__DEV__) {
-                // eslint-disable-next-line no-console
-                console.log('[ConfirmLogin AppState] Getting fresh token...');
-              }
-              await getIdToken(currentUser, true);
-              if (__DEV__) {
-                // eslint-disable-next-line no-console
-                console.log('[ConfirmLogin AppState] Navigating to MainRoot');
-              }
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MainRoot' }],
-              });
-            }
-          });
-        } else if (__DEV__) {
+      // Disable AppState navigation on iOS - LoginComponent handles it
+      if (Platform.OS === 'ios') {
+        if (__DEV__) {
           // eslint-disable-next-line no-console
-          console.log('[ConfirmLogin AppState] No current user');
+          console.log('[ConfirmLogin AppState] iOS - skipping, LoginComponent handles navigation');
         }
+        return;
+      }
+      if (nextAppState === 'active') {
+        // Use the consolidated check to prevent double navigation
+        checkAndNavigateIfVerified();
       }
     };
 
@@ -148,7 +182,7 @@ function ConfirmLogin({ route, navigation }: Props) {
     return () => {
       subscription.remove();
     };
-  }, [navigation, route.params, authReducer.userData?.email, dispatch]);
+  }, [navigation, route.params, authReducer.userData?.email, dispatch, checkAndNavigateIfVerified]);
 
   return (
     <UserStepsLayout

@@ -210,12 +210,20 @@ function LoginComponent({
 
   useFocusEffect(
     useCallback(() => {
+      resetForm();
+
+      // Skip focus check if we have an oobCode - the verification useEffect will handle it
+      if (oobCode) {
+        logVerifyEmail(
+          '[VerifyEmail] focus check skipped, oobCode present - useEffect will handle'
+        );
+        return;
+      }
+
       if (hasRunFocusVerifyCheck.current) {
-        resetForm();
         return;
       }
       hasRunFocusVerifyCheck.current = true;
-      resetForm();
 
       const checkVerifiedAndNavigate = async () => {
         const { currentUser } = firebaseAuth;
@@ -241,7 +249,7 @@ function LoginComponent({
       };
 
       checkVerifiedAndNavigate();
-    }, [firebaseAuth, navigation, resetForm])
+    }, [firebaseAuth, navigation, resetForm, oobCode])
   );
 
   useEffect(() => {
@@ -303,7 +311,7 @@ function LoginComponent({
               /* eslint-disable no-await-in-loop */
               for (let i = 0; i < 3 && !verified; i += 1) {
                 await new Promise<void>((resolve) => {
-                  setTimeout(resolve, 500);
+                  setTimeout(resolve, 1000);
                 });
                 await reload(currentUser);
                 verified = currentUser.emailVerified;
@@ -332,7 +340,7 @@ function LoginComponent({
               // This is critical on iOS where navigation timing can cause race conditions
               logVerifyEmail('[VerifyEmail] Step 13: Waiting for profile fetch to start');
               await new Promise<void>((resolve) => {
-                setTimeout(() => resolve(), 600);
+                setTimeout(() => resolve(), 300);
               });
 
               // Now navigate - AppContent will have profile data or be loading it

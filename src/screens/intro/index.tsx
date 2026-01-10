@@ -431,14 +431,10 @@ function IntroScreen({ navigation }: Props) {
                     ]}
                   >
                     {isIos ? (
-                      <BlurView
-                        blurType={dark ? 'dark' : 'light'}
-                        blurAmount={18}
-                        reducedTransparencyFallbackColor={
-                          dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-                        }
+                      <View
                         style={{
                           width: '100%',
+                          alignSelf: 'stretch',
                           borderRadius: glassRadius,
                           overflow: 'hidden',
                           borderWidth: 1,
@@ -447,6 +443,14 @@ function IntroScreen({ navigation }: Props) {
                           marginBottom: 15,
                         }}
                       >
+                        <BlurView
+                          blurType={dark ? 'dark' : 'light'}
+                          blurAmount={18}
+                          reducedTransparencyFallbackColor={
+                            dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+                          }
+                          style={StyleSheet.absoluteFillObject}
+                        />
                         <Button
                           btnStyle={[
                             button.primary,
@@ -459,7 +463,7 @@ function IntroScreen({ navigation }: Props) {
                           text="Join the Family"
                           btnTextStyle={{ color: 'white' }}
                         />
-                      </BlurView>
+                      </View>
                     ) : (
                       <Button
                         btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
@@ -486,14 +490,10 @@ function IntroScreen({ navigation }: Props) {
                     ]}
                   >
                     {isIos ? (
-                      <BlurView
-                        blurType={dark ? 'dark' : 'light'}
-                        blurAmount={18}
-                        reducedTransparencyFallbackColor={
-                          dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-                        }
+                      <View
                         style={{
                           width: '100%',
+                          alignSelf: 'stretch',
                           borderRadius: glassRadius,
                           overflow: 'hidden',
                           borderWidth: 1,
@@ -501,6 +501,14 @@ function IntroScreen({ navigation }: Props) {
                           backgroundColor: glassBackground,
                         }}
                       >
+                        <BlurView
+                          blurType={dark ? 'dark' : 'light'}
+                          blurAmount={18}
+                          reducedTransparencyFallbackColor={
+                            dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+                          }
+                          style={StyleSheet.absoluteFillObject}
+                        />
                         <Button
                           btnStyle={[
                             button.outline,
@@ -517,7 +525,7 @@ function IntroScreen({ navigation }: Props) {
                           text="I have an account"
                           btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
                         />
-                      </BlurView>
+                      </View>
                     ) : (
                       <Button
                         btnStyle={[
