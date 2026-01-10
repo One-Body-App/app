@@ -20,7 +20,6 @@ import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import CustomHeader from '@/src/components/CustomHeader';
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
@@ -51,6 +50,17 @@ function ConfirmLogin({ route, navigation }: Props) {
   );
 
   useEffect(() => {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[ConfirmLogin] Screen loaded with params:', {
+        mode: route.params?.mode,
+        action: route.params?.action,
+        hasOobCode: !!route.params?.oobCode,
+        oobCodeLength: route.params?.oobCode?.length,
+        platform: Platform.OS,
+      });
+    }
+
     navigation.setOptions({ gestureEnabled: false });
     if (route.params?.toScreen) {
       dispatch(

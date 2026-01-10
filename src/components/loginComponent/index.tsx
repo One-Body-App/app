@@ -16,6 +16,7 @@ import {
   sendEmailVerification,
   checkActionCode,
   applyActionCode,
+  signOut,
 } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { LoginManager } from 'react-native-fbsdk-next';
@@ -23,7 +24,7 @@ import axios from 'axios';
 import { getApp } from '@react-native-firebase/app';
 
 import { useToast } from 'react-native-toast-notifications';
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { useNavigation, useTheme, useFocusEffect } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import { openInbox } from 'react-native-email-link';
@@ -82,6 +83,13 @@ interface Props {
   enabledLoginProviders?: string[];
 }
 
+const logVerifyEmail = (...args: any[]) => {
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.log(...args);
+  }
+};
+
 function LoginComponent({
   showConfirmationEmailMessage,
   oauth_token,
@@ -119,6 +127,14 @@ function LoginComponent({
     password: '',
     passwordError: '',
   });
+  const resetForm = useCallback(() => {
+    setState({
+      email: currentUserEmail ?? '',
+      emailError: '',
+      password: '',
+      passwordError: '',
+    });
+  }, [currentUserEmail]);
 
   const toast = useToast();
   const firebaseAuth = getAuth(getApp());
@@ -132,13 +148,18 @@ function LoginComponent({
 
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
+  const hasRunFocusVerifyCheck = useRef(false);
 
   const accountType = useSelector((rootState: RootState) => rootState.general.accountType);
 
-  const changeHandler = useCallback(
-    (type: string, value: string) => setState((prevState) => ({ ...prevState, [type]: value })),
-    []
-  );
+  const changeHandler = useCallback((type: 'email' | 'password', value: string) => {
+    setState((prevState) => ({
+      ...prevState,
+      [type]: value,
+      ...(type === 'email' ? { emailError: '' } : {}),
+      ...(type === 'password' ? { passwordError: '' } : {}),
+    }));
+  }, []);
   const gotoSignup = useCallback(async () => {
     setNewUserCredentials(null);
     dispatch(setAccountType(''));
@@ -187,48 +208,163 @@ function LoginComponent({
     }
   }, [token, firebaseAuth.currentUser, navigation]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (hasRunFocusVerifyCheck.current) {
+        resetForm();
+        return;
+      }
+      hasRunFocusVerifyCheck.current = true;
+      resetForm();
+
+      const checkVerifiedAndNavigate = async () => {
+        const { currentUser } = firebaseAuth;
+        if (!currentUser) {
+          return;
+        }
+        try {
+          await reload(currentUser);
+          logVerifyEmail('[VerifyEmail] focus check after reload', {
+            emailVerified: currentUser.emailVerified,
+            uid: currentUser.uid,
+            platform: Platform.OS,
+          });
+          if (currentUser.emailVerified) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainRoot' }],
+            });
+          }
+        } catch (err) {
+          logVerifyEmail('[VerifyEmail] focus check failed', err);
+        }
+      };
+
+      checkVerifiedAndNavigate();
+    }, [firebaseAuth, navigation, resetForm])
+  );
+
   useEffect(() => {
+    logVerifyEmail('[VerifyEmail] effect check', {
+      mode,
+      action,
+      hasOobCode: !!oobCode,
+      oobCodeLength: oobCode?.length,
+      platform: Platform.OS,
+      hasCurrentUser: !!firebaseAuth.currentUser,
+      currentUserEmail: firebaseAuth.currentUser?.email,
+    });
+
     if (mode === 'verifyEmail' && action === 'action' && oobCode) {
+      logVerifyEmail('[VerifyEmail] Starting verification process', {
+        mode,
+        action,
+        hasOobCode: !!oobCode,
+        oobCodeLength: oobCode?.length,
+        platform: Platform.OS,
+        hasCurrentUser: !!firebaseAuth.currentUser,
+        currentUserEmail: firebaseAuth.currentUser?.email,
+      });
+
       const verifyEmail = async () => {
         try {
+          logVerifyEmail('[VerifyEmail] Step 1: Checking action code');
           const result = await checkActionCode(firebaseAuth, oobCode);
+          logVerifyEmail('[VerifyEmail] Step 2: Action code checked', {
+            operation: result.operation,
+            email: result.data.email,
+          });
 
           if (result.operation === 'VERIFY_EMAIL') {
+            logVerifyEmail('[VerifyEmail] Step 3: Applying action code');
             await applyActionCode(firebaseAuth, oobCode);
+            logVerifyEmail('[VerifyEmail] Step 4: Action code applied');
 
             // Reload the current user to update emailVerified status
             const { currentUser } = firebaseAuth;
+            logVerifyEmail('[VerifyEmail] Step 5: Current user check', {
+              hasCurrentUser: !!currentUser,
+              currentUserEmail: currentUser?.email,
+            });
+
             if (currentUser) {
+              logVerifyEmail('[VerifyEmail] Step 6: Reloading user');
               await reload(currentUser);
+              logVerifyEmail('[VerifyEmail] Step 7: After reload', {
+                emailVerified: currentUser.emailVerified,
+                uid: currentUser.uid,
+              });
+
+              // Poll briefly to allow emailVerified to propagate (iOS can lag)
+              let verified = currentUser.emailVerified;
+              logVerifyEmail('[VerifyEmail] Step 8: Starting polling loop', {
+                initialVerified: verified,
+              });
+              /* eslint-disable no-await-in-loop */
+              for (let i = 0; i < 5 && !verified; i += 1) {
+                await new Promise<void>((resolve) => {
+                  setTimeout(resolve, 1000);
+                });
+                await reload(currentUser);
+                verified = currentUser.emailVerified;
+                logVerifyEmail('[VerifyEmail] Polling emailVerified', {
+                  emailVerified: verified,
+                  attempt: i + 1,
+                });
+              }
+              /* eslint-enable no-await-in-loop */
+
+              logVerifyEmail('[VerifyEmail] Step 9: Polling complete', { finalVerified: verified });
+
               // Force token refresh to ensure global state updates and profile fetch
+              logVerifyEmail('[VerifyEmail] Step 10: Getting new ID token');
               const newToken = await getIdToken(currentUser, true);
+              logVerifyEmail('[VerifyEmail] Step 11: Got new token', { hasToken: !!newToken });
 
               // Explicitly trigger profile fetch to ensure it happens on iOS
               // This is critical because onIdTokenChanged might not fire quickly enough
               if (newToken) {
+                logVerifyEmail('[VerifyEmail] Step 12: Dispatching profile fetch');
                 dispatch(getProfile.Request({ token: newToken }));
               }
 
               // Wait a brief moment to allow profile fetch to start
               // This is critical on iOS where navigation timing can cause race conditions
+              logVerifyEmail('[VerifyEmail] Step 13: Waiting for profile fetch to start');
               await new Promise<void>((resolve) => {
-                setTimeout(() => resolve(), 500);
+                setTimeout(() => resolve(), 1200);
               });
 
               // Now navigate - AppContent will have profile data or be loading it
+              logVerifyEmail('[VerifyEmail] Step 14: Preparing navigation', {
+                emailVerified: firebaseAuth.currentUser?.emailVerified,
+              });
+
               if (firebaseAuth.currentUser?.emailVerified) {
+                logVerifyEmail('[VerifyEmail] Step 15: Navigating to MainRoot');
                 navigation.reset({
                   index: 0,
                   routes: [{ name: 'MainRoot' }],
                 });
               } else {
+                logVerifyEmail('[VerifyEmail] Step 15: Showing success message (not verified)');
                 setSuccess('Email verification successful. Please Sign in to your account');
               }
             } else {
+              logVerifyEmail('[VerifyEmail] No current user - showing success message');
               setSuccess('Email verification successful. Please Sign in to your account');
             }
+          } else {
+            logVerifyEmail('[VerifyEmail] Operation was not VERIFY_EMAIL', {
+              operation: result.operation,
+            });
           }
         } catch (e: any) {
+          logVerifyEmail('[VerifyEmail] ERROR', {
+            message: e?.message,
+            code: e?.code,
+            platform: Platform.OS,
+          });
           seterror('Invalid Verification code, please try again.');
         }
       };
@@ -307,7 +443,7 @@ function LoginComponent({
         seterror('User not found, please register to continue');
         newUserCredentials.user.delete();
         LoginManager.logOut();
-        await firebaseAuth.signOut();
+        await signOut(firebaseAuth);
         if (firebaseAuth.currentUser) {
           await reload(firebaseAuth.currentUser);
         }
@@ -850,7 +986,7 @@ function LoginComponent({
               if (!onlyPassword) {
                 dispatch(signUp.Reset());
                 LoginManager.logOut();
-                await firebaseAuth.signOut();
+                await signOut(firebaseAuth);
                 dispatch(logout());
               }
             }}
@@ -1024,7 +1160,7 @@ function LoginComponent({
                     if (!onlyPassword) {
                       dispatch(signUp.Reset());
                       LoginManager.logOut();
-                      await firebaseAuth.signOut();
+                      await signOut(firebaseAuth);
                       dispatch(logout());
                     }
                   }}

@@ -1395,7 +1395,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.25.0, @babel/runtime@npm:^7.6.3, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.25.0, @babel/runtime@npm:^7.6.3":
   version: 7.27.6
   resolution: "@babel/runtime@npm:7.27.6"
   checksum: 10/cc957a12ba3781241b83d528eb69ddeb86ca5ac43179a825e83aa81263a6b3eb88c57bed8a937cdeacfc3192e07ec24c73acdfea4507d0c0428c8e23d6322bfe
@@ -3994,23 +3994,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reduxjs/toolkit@npm:^1.8.3":
-  version: 1.9.7
-  resolution: "@reduxjs/toolkit@npm:1.9.7"
+"@reduxjs/toolkit@npm:^2.0.0":
+  version: 2.11.2
+  resolution: "@reduxjs/toolkit@npm:2.11.2"
   dependencies:
-    immer: "npm:^9.0.21"
-    redux: "npm:^4.2.1"
-    redux-thunk: "npm:^2.4.2"
-    reselect: "npm:^4.1.8"
+    "@standard-schema/spec": "npm:^1.0.0"
+    "@standard-schema/utils": "npm:^0.3.0"
+    immer: "npm:^11.0.0"
+    redux: "npm:^5.0.1"
+    redux-thunk: "npm:^3.1.0"
+    reselect: "npm:^5.1.0"
   peerDependencies:
-    react: ^16.9.0 || ^17.0.0 || ^18
-    react-redux: ^7.2.1 || ^8.0.2
+    react: ^16.9.0 || ^17.0.0 || ^18 || ^19
+    react-redux: ^7.2.1 || ^8.1.3 || ^9.0.0
   peerDependenciesMeta:
     react:
       optional: true
     react-redux:
       optional: true
-  checksum: 10/11c718270bb378e5b26e172eb84cc549d6f263748b6f330b07ee9c366c6474b013fd410e5b2f65a5742e73b7873a3ac14e06cae4bb01480ba03b423c4fd92583
+  checksum: 10/2e1098c7fcd10b770344d0b39c58a3b9cb3aec7da0979c02f1ac1ef8f56619ac787c623e480bef0cf6f2c05f1c13fd4d44045c794e2c2d3460f9bf0d2875995c
   languageName: node
   linkType: hard
 
@@ -4289,6 +4291,20 @@ __metadata:
   dependencies:
     "@sinonjs/commons": "npm:^3.0.0"
   checksum: 10/78155c7bd866a85df85e22028e046b8d46cf3e840f72260954f5e3ed5bd97d66c595524305a6841ffb3f681a08f6e5cef572a2cce5442a8a232dc29fb409b83e
+  languageName: node
+  linkType: hard
+
+"@standard-schema/spec@npm:^1.0.0":
+  version: 1.1.0
+  resolution: "@standard-schema/spec@npm:1.1.0"
+  checksum: 10/a209615c9e8b2ea535d7db0a5f6aa0f962fd4ab73ee86a46c100fb78116964af1f55a27c1794d4801e534a196794223daa25ff5135021e03c7828aa3d95e1763
+  languageName: node
+  linkType: hard
+
+"@standard-schema/utils@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "@standard-schema/utils@npm:0.3.0"
+  checksum: 10/7084f875d322792f2e0a5904009434c8374b9345b09ba89828b68fd56fa3c2b366d35bf340d9e8c72736ef01793c2f70d350c372ed79845dc3566c58d34b4b51
   languageName: node
   linkType: hard
 
@@ -4782,12 +4798,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*, @types/react@npm:^19.1.0":
+"@types/react@npm:*":
   version: 19.1.8
   resolution: "@types/react@npm:19.1.8"
   dependencies:
     csstype: "npm:^3.0.2"
   checksum: 10/a3e6fe0f60f22828ef887f30993aa147b71532d7b1219dd00d246277eb7a9ca01ec533096237fa21ca1bccb3653373b4e8e59e5ae59f9c793058384bbc1f4d5c
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:^19.2.0":
+  version: 19.2.7
+  resolution: "@types/react@npm:19.2.7"
+  dependencies:
+    csstype: "npm:^3.2.2"
+  checksum: 10/dc0b756eee2c9782d282ae47eaa8d537b2a569eb889a6808c4b172d70fb690b2b1d8fe6239db451aa1c90d2a947cc21c9b537ce177ba9e6121468e403e4079c5
   languageName: node
   linkType: hard
 
@@ -6859,6 +6884,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"csstype@npm:^3.2.2":
+  version: 3.2.3
+  resolution: "csstype@npm:3.2.3"
+  checksum: 10/ad41baf7e2ffac65ab544d79107bf7cd1a4bb9bab9ac3302f59ab4ba655d5e30942a8ae46e10ba160c6f4ecea464cc95b975ca2fefbdeeacd6ac63f12f99fe1f
+  languageName: node
+  linkType: hard
+
 "custom-media-element@npm:~1.3.1, custom-media-element@npm:~1.3.2":
   version: 1.3.3
   resolution: "custom-media-element@npm:1.3.3"
@@ -7678,17 +7710,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-airbnb-typescript@npm:^17.1.0":
-  version: 17.1.0
-  resolution: "eslint-config-airbnb-typescript@npm:17.1.0"
+"eslint-config-airbnb-typescript@npm:^18.0.0":
+  version: 18.0.0
+  resolution: "eslint-config-airbnb-typescript@npm:18.0.0"
   dependencies:
     eslint-config-airbnb-base: "npm:^15.0.0"
   peerDependencies:
-    "@typescript-eslint/eslint-plugin": ^5.13.0 || ^6.0.0
-    "@typescript-eslint/parser": ^5.0.0 || ^6.0.0
-    eslint: ^7.32.0 || ^8.2.0
-    eslint-plugin-import: ^2.25.3
-  checksum: 10/a2238d820909ac005704e04d29ed495cebbe024869c488330273ea108e18cbf74b6b13e09d54d22a598fe793b9ed5ae593a7e8f9bdc6ea17614d5f2add340960
+    "@typescript-eslint/eslint-plugin": ^7.0.0
+    "@typescript-eslint/parser": ^7.0.0
+    eslint: ^8.56.0
+  checksum: 10/b913670baf3aa457aa1d514ea63813e76f2232a7efdb149ce96cecb10d836cadea6776a304529f1ae371d2e721479540461e89735bdde85a949e2bf62eb3187c
   languageName: node
   linkType: hard
 
@@ -9290,10 +9321,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"immer@npm:^9.0.21":
-  version: 9.0.21
-  resolution: "immer@npm:9.0.21"
-  checksum: 10/8455d6b4dc8abfe40f06eeec9bcc944d147c81279424c0f927a4d4905ae34e5af19ab6da60bcc700c14f51c452867d7089b3b9236f5a9a2248e39b4a09ee89de
+"immer@npm:^11.0.0":
+  version: 11.1.3
+  resolution: "immer@npm:11.1.3"
+  checksum: 10/d0c591381d8022fcad868d36f087635d5e5cddfd7f43c069bc0d2fee946ddc9969cd5f886e76a4ef0a36f2ce81b5e0228177e2cb4d85b3215aca40e6cb53ad2a
   languageName: node
   linkType: hard
 
@@ -12247,7 +12278,7 @@ __metadata:
     "@react-navigation/native": "npm:^6.1.7"
     "@react-navigation/native-stack": "npm:^6.9.13"
     "@react-navigation/stack": "npm:^6.3.17"
-    "@reduxjs/toolkit": "npm:^1.8.3"
+    "@reduxjs/toolkit": "npm:^2.0.0"
     "@sentry/react-native": "npm:^6.16.1"
     "@svanboxel/visibility-sensor-react-native": "npm:^1.0.2"
     "@types/base-64": "npm:^1"
@@ -12256,7 +12287,7 @@ __metadata:
     "@types/node": "npm:^20.4.6"
     "@types/prop-types": "npm:^15"
     "@types/qs": "npm:^6.9.7"
-    "@types/react": "npm:^19.1.0"
+    "@types/react": "npm:^19.2.0"
     "@types/react-dom": "npm:^19"
     "@types/react-native": "npm:^0.73.0"
     "@types/react-native-asset": "npm:^2"
@@ -12278,7 +12309,8 @@ __metadata:
     deprecated-react-native-prop-types: "npm:^5.0.0"
     eslint: "npm:^8.57.0"
     eslint-config-airbnb: "npm:^19.0.4"
-    eslint-config-airbnb-typescript: "npm:^17.1.0"
+    eslint-config-airbnb-base: "npm:^15.0.0"
+    eslint-config-airbnb-typescript: "npm:^18.0.0"
     eslint-config-prettier: "npm:^9.1.0"
     eslint-plugin-import: "npm:^2.29.1"
     eslint-plugin-jest: "npm:^27.6.3"
@@ -12353,6 +12385,7 @@ __metadata:
     react-native-select-dropdown: "npm:^3.3.4"
     react-native-share: "npm:12.1.0"
     react-native-simple-toast: "npm:^3.0.1"
+    react-native-sound: "npm:^0.13.0"
     react-native-svg: "npm:^15.12.0"
     react-native-svg-transformer: "npm:^1.2.0"
     react-native-swipe-list-view: "npm:^3.2.9"
@@ -12367,7 +12400,7 @@ __metadata:
     react-native-vision-camera: "npm:^4.7.0"
     react-native-webview: "npm:^13.6.3"
     react-native-worklets-core: "npm:^1.6.2"
-    react-redux: "npm:^9.0.4"
+    react-redux: "npm:^9.2.0"
     react-test-renderer: "npm:19.1.0"
     redux: "npm:^5.0.1"
     redux-persist: "npm:^6.0.0"
@@ -13857,6 +13890,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-sound@npm:^0.13.0":
+  version: 0.13.0
+  resolution: "react-native-sound@npm:0.13.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/523953995299148e1b5d6d71f3a8b72efeeedcad32f0c85d379dd399d22c42f42fab476bcbc15ac7a223b35ba63400325952ed3a1a5d816695befad9157f724a
+  languageName: node
+  linkType: hard
+
 "react-native-svg-transformer@npm:^1.2.0":
   version: 1.5.1
   resolution: "react-native-svg-transformer@npm:1.5.1"
@@ -14093,7 +14136,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-redux@npm:^9.0.4":
+"react-redux@npm:^9.2.0":
   version: 9.2.0
   resolution: "react-redux@npm:9.2.0"
   dependencies:
@@ -14240,21 +14283,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"redux-thunk@npm:^2.4.2":
-  version: 2.4.2
-  resolution: "redux-thunk@npm:2.4.2"
+"redux-thunk@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "redux-thunk@npm:3.1.0"
   peerDependencies:
-    redux: ^4
-  checksum: 10/9bcb1193835128ecebf1e1a1b1a37bc15e8dfbdf6b6ee1b5566dd4c8e4ca05a81175f0c6dda34ab47f87053cd13b74d9f881d59446691d7b192831852b5d7a72
-  languageName: node
-  linkType: hard
-
-"redux@npm:^4.2.1":
-  version: 4.2.1
-  resolution: "redux@npm:4.2.1"
-  dependencies:
-    "@babel/runtime": "npm:^7.9.2"
-  checksum: 10/371e4833b671193303a7dea7803c8fdc8e0d566740c78f580e0a3b77b4161da25037626900a2205a5d616117fa6ad09a4232e5a110bd437186b5c6355a041750
+    redux: ^5.0.0
+  checksum: 10/38c563db5f0bbec90d2e65cc27f3c870c1b6102e0c071258734fac41cb0e51d31d894125815c2f4133b20aff231f51f028ad99bccc05a7e3249f1a5d5a959ed3
   languageName: node
   linkType: hard
 
@@ -14413,10 +14447,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"reselect@npm:^4.1.7, reselect@npm:^4.1.8":
+"reselect@npm:^4.1.7":
   version: 4.1.8
   resolution: "reselect@npm:4.1.8"
   checksum: 10/199984d9872f71cd207f4aa6e6fd2bd48d95154f7aa9b3aee3398335f39f5491059e732f28c12e9031d5d434adab2c458dc8af5afb6564d0ad37e1644445e09c
+  languageName: node
+  linkType: hard
+
+"reselect@npm:^5.1.0":
+  version: 5.1.1
+  resolution: "reselect@npm:5.1.1"
+  checksum: 10/1fdae11a39ed9c8d85a24df19517c8372ee24fefea9cce3fae9eaad8e9cefbba5a3d4940c6fe31296b6addf76e035588c55798f7e6e147e1b7c0855f119e7fa5
   languageName: node
   linkType: hard
 

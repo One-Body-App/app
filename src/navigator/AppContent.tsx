@@ -312,7 +312,16 @@ function AppContent() {
 
   const linkingConfig: LinkingOptions<MainStackParamList>['config'] = {
     screens: {
-      ConfirmLogin: { path: '/auth/:action' },
+      ConfirmLogin: {
+        path: '/auth/:action',
+        parse: {
+          action: (action: string) => action,
+          mode: (mode: string) => mode,
+          oobCode: (oobCode: string) => oobCode,
+          apiKey: (apiKey: string) => apiKey,
+          lang: (lang: string) => lang,
+        },
+      },
       SignUp: { path: '/signup/:action' },
       Login: { path: '/login/:action' },
       MainRoot: {
@@ -339,8 +348,39 @@ function AppContent() {
     },
   };
 
+  const sanitizeUrl = (rawUrl?: string | null) => {
+    if (!rawUrl) {
+      return rawUrl ?? null;
+    }
+    try {
+      const url = new URL(rawUrl);
+      ['apiKey', 'oobCode', 'token', 'access_token'].forEach((key) => {
+        url.searchParams.delete(key);
+      });
+      return url.toString();
+    } catch {
+      return rawUrl;
+    }
+  };
+
+  const normalizeLink = (rawUrl?: string | null) => {
+    if (!rawUrl) {
+      return rawUrl ?? null;
+    }
+    try {
+      const parsed = new URL(rawUrl);
+      const nestedLink = parsed.searchParams.get('link');
+      if (nestedLink) {
+        return decodeURIComponent(nestedLink);
+      }
+      return rawUrl;
+    } catch {
+      return rawUrl;
+    }
+  };
+
   const linking: LinkingOptions<MainStackParamList> = {
-    prefixes: ['https://app.onebodyapp.com', 'onebodyapp://'],
+    prefixes: ['https://app.onebodyapp.com', 'https://auth.onebodyapp.com', 'onebodyapp://'],
     config: linkingConfig,
     getStateFromPath(path, options) {
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -354,18 +394,31 @@ function AppContent() {
       return getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
     },
     async getInitialURL() {
-      const url = await Linking.getInitialURL();
-      if (url != null) {
+      const rawUrl = await Linking.getInitialURL();
+      console.log('[Deep Link] getInitialURL RAW (before normalize):', rawUrl);
+      const url = normalizeLink(rawUrl);
+      console.log('[Deep Link] getInitialURL NORMALIZED:', sanitizeUrl(url));
+      if (url) {
         return url;
       }
       const message = await getInitialNotification(firebaseMessaging);
-      return message?.data?.url as string;
+      const notificationUrl = normalizeLink(message?.data?.url as string);
+      console.log('[Deep Link] Notification URL:', sanitizeUrl(notificationUrl));
+      return notificationUrl;
     },
     subscribe(listener) {
-      const onReceiveURL = ({ url }: { url: string }) => listener(url);
+      const onReceiveURL = ({ url }: { url: string }) => {
+        console.log('[Deep Link] subscribe onReceiveURL RAW:', url);
+        const normalized = normalizeLink(url);
+        console.log('[Deep Link] subscribe onReceiveURL NORMALIZED:', sanitizeUrl(normalized));
+        if (normalized) {
+          listener(normalized);
+        }
+      };
       const subscription = Linking.addEventListener('url', onReceiveURL);
       const unsubscribeNotification = onNotificationOpenedApp(firebaseMessaging, (message) => {
-        const url = message.data?.url as string;
+        const url = normalizeLink(message.data?.url as string);
+        console.log('[Deep Link] Notification opened with URL:', sanitizeUrl(url));
         if (url) {
           listener(url);
         }

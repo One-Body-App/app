@@ -496,14 +496,14 @@ function SignupForm({ navigation, route }: Props) {
         ]}
       >
         <TouchableOpacity
-          style={{ flexDirection: 'row', marginBottom: spacing.x20 }}
+          style={{ flexDirection: 'row', marginBottom: spacing.x10 }}
           onPress={() => navigation.replace('Login')}
         >
           <StyledText>Already have an account? </StyledText>
           <StyledText style={{ color: '#41dbe1' }}>Sign in</StyledText>
         </TouchableOpacity>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x13 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x8 }}>
           <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
           <StyledText
             style={{ marginHorizontal: 10, color: dark ? brandWhite : Colors.primary.brand }}
@@ -650,10 +650,10 @@ function SignupForm({ navigation, route }: Props) {
             button.primary,
             dropShadow,
             {
-              marginTop: spacing.x24,
+              marginTop: spacing.x20,
               width: '100%',
               alignSelf: 'stretch',
-              paddingVertical: spacing.x24,
+              paddingVertical: spacing.x20,
               paddingHorizontal: spacing.x20,
               minHeight: 52,
               borderRadius: 60,
@@ -697,8 +697,8 @@ function SignupForm({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginBottom: spacing.x14,
-    paddingVertical: spacing.x16,
+    marginBottom: spacing.x8,
+    paddingVertical: spacing.x8,
     width: '100%',
   },
   inputLabel: {

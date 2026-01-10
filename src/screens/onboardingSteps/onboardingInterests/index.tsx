@@ -106,7 +106,7 @@ function OnboardingInterests({ navigation, route }: Props) {
         }
       }}
       onboardingType={route.params.profileType}
-      activeStep={route.params.profileType === AccountType.individual ? 5 : 4}
+      activeStep={route.params.profileType === AccountType.individual ? 3 : 4}
       disabled={selectedInterest.length < 3}
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>

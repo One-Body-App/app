@@ -5,8 +5,6 @@ import { Platform } from 'react-native';
 import { OnboardingStackParamList } from './types';
 
 import OnboardingIntro from '../screens/onboardingSteps/onboardingIntro';
-import OnboardingChurchAttend from '../screens/onboardingSteps/onboardingChurchAttend';
-import OnboardingChurchType from '../screens/onboardingSteps/onboardingChurchType';
 import OnboardingDateOfBirth from '../screens/onboardingSteps/onboardingDateOfBirth';
 import OnboardingInfluencers from '../screens/onboardingSteps/onboardingInfluencers';
 import OnboardingInterests from '../screens/onboardingSteps/onboardingInterests';
@@ -28,16 +26,6 @@ function OnboardingStack() {
           ...headerOptions,
           headerShown: Platform.OS !== 'android',
         }}
-      />
-      <Stack.Screen
-        name="OnboardingChurchAttend"
-        component={OnboardingChurchAttend}
-        options={headerOptions}
-      />
-      <Stack.Screen
-        name="OnboardingChurchType"
-        component={OnboardingChurchType}
-        options={headerOptions}
       />
       <Stack.Screen
         name="OnboardingDateOfBirth"

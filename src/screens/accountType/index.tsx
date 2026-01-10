@@ -10,6 +10,7 @@ import {
 import { StackScreenProps } from '@react-navigation/stack';
 import { Profile, People } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
@@ -22,6 +23,7 @@ import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 import { savePendingAccountType } from '@/src/services/accountTypeStorage';
+import { HapticService } from '@/src/services/haptic';
 
 type Props = StackScreenProps<MainStackParamList, 'AccountType'>;
 
@@ -52,6 +54,12 @@ function AccountType({ navigation }: Props) {
   };
 
   const animateSelection = (type: AccountTypeType) => {
+    // Trigger light haptic feedback
+    ReactNativeHapticFeedback.trigger('impactLight', {
+      enableVibrateFallback: true,
+      ignoreAndroidSystemSettings: false,
+    });
+
     setAccountType(type);
     const targetIndividual = type === AccountTypeType.individual ? 1 : 0;
     const targetOrganization = type === AccountTypeType.organization ? 1 : 0;
@@ -78,7 +86,7 @@ function AccountType({ navigation }: Props) {
     alignItems: 'stretch' as const,
     borderWidth: 1,
     borderColor: selected ? Colors.secondary.brand : Colors.primary.brand,
-    height: anim.interpolate({ inputRange: [0, 1], outputRange: [110, 200] }),
+    height: anim.interpolate({ inputRange: [0, 1], outputRange: [120, 180] }),
     transform: [
       {
         translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-3, 0] }),
@@ -206,7 +214,8 @@ function AccountType({ navigation }: Props) {
                 { color: primaryTextColor, marginTop: 10, marginBottom: 5 },
               ]}
             >
-              Get started on your experience in connecting with others. Let&#39;s setup your account
+              Pick an account type so that we can curate your experience. You will not be able to
+              change this later.
             </StyledText>
           </Animated.View>
 
@@ -216,10 +225,16 @@ function AccountType({ navigation }: Props) {
               cardAnimatedStyle(individualAnim, accountType === AccountTypeType.individual),
               optionEntryStyle(optionOneAnim),
               fadeUp(cardsAnim, 10),
+              { marginBottom: 7 },
             ]}
           >
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingHorizontal: 10 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flex: 1,
+                paddingHorizontal: 10,
+              }}
               activeOpacity={0.9}
               onPress={() => animateSelection(AccountTypeType.individual)}
             >
@@ -298,7 +313,12 @@ function AccountType({ navigation }: Props) {
             ]}
           >
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingHorizontal: 10 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flex: 1,
+                paddingHorizontal: 10,
+              }}
               activeOpacity={0.9}
               onPress={() => animateSelection(AccountTypeType.organization)}
             >
@@ -374,7 +394,7 @@ function AccountType({ navigation }: Props) {
         <Animated.View
           style={[
             {
-              marginVertical: spacing.x24,
+              marginVertical: spacing.x6,
               width: isTablet ? '100%' : undefined,
               maxWidth: isTablet ? CONTENT_MAX_WIDTH : undefined,
             },
@@ -386,6 +406,7 @@ function AccountType({ navigation }: Props) {
               button.primary,
               {
                 marginBottom: 35,
+                marginTop: 25,
                 opacity: accountType == null ? 0.4 : 1,
                 ...dropShadow,
               },
@@ -395,6 +416,7 @@ function AccountType({ navigation }: Props) {
               if (!accountType) {
                 return;
               }
+              HapticService.trigger('impactMedium');
               await savePendingAccountType(accountType);
               navigation.navigate('SignUp', { accountType });
             }}

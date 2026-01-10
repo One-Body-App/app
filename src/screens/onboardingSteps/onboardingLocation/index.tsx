@@ -35,7 +35,7 @@ function OnboardingLocation({ navigation, route }: Props) {
         });
       }}
       onboardingType={AccountType.individual}
-      activeStep={4}
+      activeStep={2}
       reasonText={
         <>
           <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
