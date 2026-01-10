@@ -472,7 +472,15 @@ function AppContent() {
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
       // Handle both old and new Firebase Auth verification URL patterns
       let adjustedPath = normalizedPath;
-      if (normalizedPath.startsWith('/verify-email')) {
+
+      // Firebase uses __/auth/action for email verification
+      if (normalizedPath.startsWith('/__/auth/action')) {
+        adjustedPath = normalizedPath.replace('/__/auth/action', '/auth/action');
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link getStateFromPath] Adjusted __/auth/action to:', adjustedPath);
+        }
+      } else if (normalizedPath.startsWith('/verify-email')) {
         adjustedPath = normalizedPath.replace('/verify-email', '/auth/action');
         if (__DEV__) {
           // eslint-disable-next-line no-console
