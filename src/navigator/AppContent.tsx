@@ -157,6 +157,14 @@ function AppContent() {
   const onAuthStateChanged = async function onAuthStateChanged(
     firebaseUser: FirebaseAuthTypes.User | null
   ) {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[AppContent onAuthStateChanged] Auth state changed:', {
+        hasUser: !!firebaseUser,
+        emailVerified: firebaseUser?.emailVerified,
+        platform: Platform.OS,
+      });
+    }
     let firebaseToken: string | undefined;
     try {
       firebaseToken = firebaseUser ? await getIdTokenWithTimeout(firebaseUser) : undefined;
@@ -174,6 +182,10 @@ function AppContent() {
         }
       }
 
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[AppContent onAuthStateChanged] User changed, updating state');
+      }
       setUser(firebaseUser);
       dispatch(
         setUserData({
@@ -185,6 +197,10 @@ function AppContent() {
 
     const nextToken = firebaseToken && firebaseToken.length > 0 ? firebaseToken : 'unauthorized';
     if (!isEqual(nextToken, token)) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[AppContent onAuthStateChanged] Token changed, updating');
+      }
       setToken(nextToken);
     }
     if (!authChecked) {
@@ -246,8 +262,22 @@ function AppContent() {
 
   useEffect(() => {
     const hasValidToken = !!user && token !== '' && token !== 'unauthorized';
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[AppContent Token Effect] Token changed:', {
+        hasValidToken,
+        hasUser: !!user,
+        emailVerified: user?.emailVerified,
+        tokenLength: token?.length,
+        platform: Platform.OS,
+      });
+    }
     if (hasValidToken) {
       dispatch(setLoginData({ token }));
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[AppContent Token Effect] Dispatching getProfile.Request');
+      }
       dispatch(
         getProfile.Request({
           token,
@@ -270,6 +300,9 @@ function AppContent() {
 
   useEffect(() => {
     if (!navigationReady) {
+      if (__DEV__) {
+        console.log('[AppContent Navigation] Skipping - navigation not ready');
+      }
       return;
     }
     const currentRouteName = navigationRef.getCurrentRoute()?.name;
@@ -278,9 +311,25 @@ function AppContent() {
     const isProfileLoading = authState.isLoading;
     const hasProfileError = authState.getProfileError;
 
+    if (__DEV__) {
+      console.log('[AppContent Navigation] Effect triggered:', {
+        currentRoute: currentRouteName,
+        hasValidToken,
+        emailVerified: user?.emailVerified,
+        isProfileLoading,
+        hasProfileData: !!authState.getProfileData,
+        isProfileCompleted,
+        hasProfileError: !!hasProfileError,
+        platform: Platform.OS,
+      });
+    }
+
     // Don't navigate while profile is loading to avoid race conditions
     // This ensures we have complete profile data before making navigation decisions
     if (hasValidToken && isProfileLoading) {
+      if (__DEV__) {
+        console.log('[AppContent Navigation] Waiting - profile is loading');
+      }
       return;
     }
 
@@ -289,16 +338,32 @@ function AppContent() {
     const shouldNavigate =
       hasValidToken && (authState.getProfileData !== undefined || hasProfileError);
 
+    if (__DEV__) {
+      console.log('[AppContent Navigation] shouldNavigate:', shouldNavigate);
+    }
+
     // Navigate to MainRoot if user has verified email
     // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
     if (hasValidToken && user?.emailVerified && (shouldNavigate || !isProfileLoading)) {
       if (currentRouteName !== 'MainRoot') {
+        if (__DEV__) {
+          console.log('[AppContent Navigation] Navigating to MainRoot (email verified)');
+        }
         navigationRef.dispatch(CommonActions.navigate('MainRoot'));
+      } else if (__DEV__) {
+        console.log('[AppContent Navigation] Already on MainRoot');
       }
     } else if (hasValidToken && !user?.emailVerified) {
       if (currentRouteName !== 'ConfirmLogin') {
+        if (__DEV__) {
+          console.log('[AppContent Navigation] Navigating to ConfirmLogin (email not verified)');
+        }
         navigationRef.dispatch(CommonActions.navigate('ConfirmLogin'));
+      } else if (__DEV__) {
+        console.log('[AppContent Navigation] Already on ConfirmLogin');
       }
+    } else if (__DEV__) {
+      console.log('[AppContent Navigation] No navigation action taken');
     }
   }, [
     navigationReady,
@@ -367,14 +432,31 @@ function AppContent() {
     if (!rawUrl) {
       return rawUrl ?? null;
     }
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[Deep Link normalizeLink] RAW URL:', rawUrl);
+    }
     try {
       const parsed = new URL(rawUrl);
       const nestedLink = parsed.searchParams.get('link');
       if (nestedLink) {
-        return decodeURIComponent(nestedLink);
+        const decoded = decodeURIComponent(nestedLink);
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link normalizeLink] Extracted nested link:', decoded);
+        }
+        return decoded;
+      }
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Deep Link normalizeLink] No nested link, returning raw URL');
       }
       return rawUrl;
     } catch {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Deep Link normalizeLink] URL parse failed, returning raw');
+      }
       return rawUrl;
     }
   };
@@ -383,15 +465,35 @@ function AppContent() {
     prefixes: ['https://app.onebodyapp.com', 'https://auth.onebodyapp.com', 'onebodyapp://'],
     config: linkingConfig,
     getStateFromPath(path, options) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Deep Link getStateFromPath] Input path:', path);
+      }
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
       // Handle both old and new Firebase Auth verification URL patterns
       let adjustedPath = normalizedPath;
       if (normalizedPath.startsWith('/verify-email')) {
         adjustedPath = normalizedPath.replace('/verify-email', '/auth/action');
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link getStateFromPath] Adjusted /verify-email to:', adjustedPath);
+        }
       } else if (normalizedPath.startsWith('/auth/verify')) {
         adjustedPath = normalizedPath.replace('/auth/verify', '/auth/action');
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link getStateFromPath] Adjusted /auth/verify to:', adjustedPath);
+        }
       }
-      return getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
+      const state = getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log(
+          '[Deep Link getStateFromPath] Resulting state:',
+          JSON.stringify(state, null, 2)
+        );
+      }
+      return state;
     },
     async getInitialURL() {
       const rawUrl = await Linking.getInitialURL();
@@ -527,7 +629,9 @@ function AppContent() {
               name="AccountType"
               component={AccountType}
               options={{
-                ...(Platform.OS === 'ios' ? headerOptions : {}),
+                ...(Platform.OS === 'ios'
+                  ? { ...headerOptions, animation: 'slide_from_right' }
+                  : {}),
                 ...(Platform.OS === 'android' && {
                   headerShown: false,
                   animation: 'slide_from_right',
@@ -559,6 +663,7 @@ function AppContent() {
                 ...(Platform.OS === 'ios'
                   ? {
                       ...headerOptions,
+                      animation: 'slide_from_right',
                       headerTransparent: false,
                       headerStyle: {
                         backgroundColor:

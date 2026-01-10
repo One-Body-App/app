@@ -3145,6 +3145,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-community/blur@npm:^4.4.1":
+  version: 4.4.1
+  resolution: "@react-native-community/blur@npm:4.4.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/6fa84036db480af765df08d680955e9b5acaa631a54678b8eef970799fc04bdc7f906cb06a94f2da9af097c52ddb56ca4cff2172372d1d5f7717864f43965e0a
+  languageName: node
+  linkType: hard
+
 "@react-native-community/cli-clean@npm:19.0.0":
   version: 19.0.0
   resolution: "@react-native-community/cli-clean@npm:19.0.0"
@@ -12248,6 +12258,7 @@ __metadata:
     "@r0b0t3d/react-native-collapsible": "npm:^1.4.3"
     "@react-native-async-storage/async-storage": "npm:^1.21.0"
     "@react-native-camera-roll/camera-roll": "npm:^7.10.1"
+    "@react-native-community/blur": "npm:^4.4.1"
     "@react-native-community/cli": "npm:19.0.0"
     "@react-native-community/cli-platform-android": "npm:19.0.0"
     "@react-native-community/cli-platform-ios": "npm:19.0.0"

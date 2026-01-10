@@ -12,6 +12,7 @@ import { useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
+import { BlurView } from '@react-native-community/blur';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { OnboardingStackParamList } from '@/src/navigator/types';
@@ -31,6 +32,7 @@ type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
 function OnboardingIntro({ navigation }: Props) {
   const authState = useSelector((state: RootState) => state.auth);
   const { dark } = useTheme();
+  const isIos = Platform.OS === 'ios';
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -91,6 +93,10 @@ function OnboardingIntro({ navigation }: Props) {
   const bgLayerOpacity = 0.15; // even more subtle
   const textColor = dark ? Colors.main.black : Colors.primary.brand;
   const headerColor = dark ? Colors.primarySapphire[400] : Colors.primary.brand;
+  const glassBorderColor = dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.35)';
+  const glassBackground = dark ? 'rgba(10, 18, 24, 0.35)' : 'rgba(255, 255, 255, 0.22)';
+  const glassRadius =
+    typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
 
   return (
     <>
@@ -173,12 +179,37 @@ function OnboardingIntro({ navigation }: Props) {
           </View>
 
           <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-            <Button
-              text="Get Started"
-              btnStyle={[button.primary, { flex: 1 }]}
-              onPress={handleNext}
-              btnTextStyle={{ color: '#FFF' }}
-            />
+            {isIos ? (
+              <BlurView
+                blurType={dark ? 'dark' : 'light'}
+                blurAmount={18}
+                reducedTransparencyFallbackColor={
+                  dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+                }
+                style={{
+                  width: '100%',
+                  borderRadius: glassRadius,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: glassBorderColor,
+                  backgroundColor: glassBackground,
+                }}
+              >
+                <Button
+                  text="Get Started"
+                  btnStyle={[button.primary, { flex: 1, backgroundColor: 'transparent' }]}
+                  onPress={handleNext}
+                  btnTextStyle={{ color: '#FFF' }}
+                />
+              </BlurView>
+            ) : (
+              <Button
+                text="Get Started"
+                btnStyle={[button.primary, { flex: 1 }]}
+                onPress={handleNext}
+                btnTextStyle={{ color: '#FFF' }}
+              />
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>

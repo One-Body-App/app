@@ -28,6 +28,7 @@
     "@r0b0t3d/react-native-collapsible": "^1.4.3",
     "@react-native-async-storage/async-storage": "^1.21.0",
     "@react-native-camera-roll/camera-roll": "^7.10.1",
+    "@react-native-community/blur": "^4.4.1",
     "@react-native-community/cli": "latest",
     "@react-native-community/cli-platform-android": "19.0.0",
     "@react-native-community/cli-platform-ios": "19.0.0",

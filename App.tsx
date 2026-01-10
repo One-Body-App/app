@@ -68,7 +68,7 @@ function App() {
         // Define the MINIMUM time you want the splash screen to be visible.
         // This should be *slightly longer* than your Lottie animation's actual duration.
         // Example: If your Lottie is 2 seconds, use 2500ms (2.5 seconds).
-        const MIN_SPLASH_DISPLAY_TIME_MS = 6000; // Adjust this value!
+        const MIN_SPLASH_DISPLAY_TIME_MS = 3500; // Adjust this value!
 
         // Record when the JS side starts its initialization (approximate start of splash screen visibility)
         const jsLoadStartTime = Date.now();

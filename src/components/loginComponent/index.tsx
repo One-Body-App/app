@@ -301,9 +301,9 @@ function LoginComponent({
                 initialVerified: verified,
               });
               /* eslint-disable no-await-in-loop */
-              for (let i = 0; i < 5 && !verified; i += 1) {
+              for (let i = 0; i < 3 && !verified; i += 1) {
                 await new Promise<void>((resolve) => {
-                  setTimeout(resolve, 1000);
+                  setTimeout(resolve, 500);
                 });
                 await reload(currentUser);
                 verified = currentUser.emailVerified;
@@ -332,7 +332,7 @@ function LoginComponent({
               // This is critical on iOS where navigation timing can cause race conditions
               logVerifyEmail('[VerifyEmail] Step 13: Waiting for profile fetch to start');
               await new Promise<void>((resolve) => {
-                setTimeout(() => resolve(), 1200);
+                setTimeout(() => resolve(), 600);
               });
 
               // Now navigate - AppContent will have profile data or be loading it
@@ -925,7 +925,7 @@ function LoginComponent({
               ]}
               btnTextStyle={{ color: '#FFF', fontSize: 14, fontWeight: '500', lineHeight: 24 }}
               onPress={() => {
-                // No-op: users can open their email app manually
+                openInbox();
               }}
             />
 

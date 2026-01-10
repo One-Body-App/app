@@ -7,6 +7,7 @@ import {
   TextInput,
   Easing,
   InteractionManager,
+  Platform,
   StyleSheet,
   RefreshControl,
 } from 'react-native';
@@ -15,6 +16,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createUserWithEmailAndPassword, getAuth, getIdToken } from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
+import { BlurView } from '@react-native-community/blur';
 import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
 import Toast from 'react-native-simple-toast';
 
@@ -316,6 +318,10 @@ function SignupForm({ navigation, route }: Props) {
       ...(type === 'email' ? { emailError: '' } : {}),
     }));
   const { dark } = useTheme();
+  const isIos = Platform.OS === 'ios';
+  const createAccountRadius =
+    typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
+  const createAccountGlassFill = 'rgba(18, 107, 135, 0.75)';
 
   const onVerify = () => {
     const { email, password, name, username } = state;
@@ -644,27 +650,66 @@ function SignupForm({ navigation, route }: Props) {
           size="invisible"
         />
 
-        <Button
-          text="Create account"
-          btnStyle={[
-            button.primary,
-            dropShadow,
-            {
-              marginTop: spacing.x20,
-              width: '100%',
-              alignSelf: 'stretch',
-              paddingVertical: spacing.x20,
-              paddingHorizontal: spacing.x20,
-              minHeight: 52,
-              borderRadius: 60,
-              opacity: isSubmitDisabled ? 0.4 : 1,
-            },
-          ]}
-          btnTextStyle={{ color: '#FFF', fontSize: 14, fontWeight: '500', lineHeight: 24 }}
-          wrapperViewBtnStyle={{ width: '100%' }}
-          onPress={signUpUser}
-          disabled={isSubmitDisabled || !!confirmPasswordError}
-        />
+        {isIos ? (
+          <View
+            style={[
+              dropShadow,
+              {
+                marginTop: spacing.x20,
+                width: '100%',
+                alignSelf: 'stretch',
+                borderRadius: createAccountRadius,
+                overflow: 'hidden',
+                opacity: isSubmitDisabled ? 0.4 : 1,
+              },
+            ]}
+          >
+            <BlurView
+              pointerEvents="none"
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={18}
+              reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
+            />
+            <Button
+              text="Create account"
+              btnStyle={[
+                button.primary,
+                {
+                  width: '100%',
+                  alignSelf: 'stretch',
+                  backgroundColor: 'transparent',
+                },
+              ]}
+              btnTextStyle={{ color: '#FFF' }}
+              wrapperViewBtnStyle={{ width: '100%' }}
+              onPress={signUpUser}
+              disabled={isSubmitDisabled || !!confirmPasswordError}
+            />
+          </View>
+        ) : (
+          <Button
+            text="Create account"
+            btnStyle={[
+              button.primary,
+              dropShadow,
+              {
+                marginTop: spacing.x20,
+                width: '100%',
+                alignSelf: 'stretch',
+                opacity: isSubmitDisabled ? 0.4 : 1,
+              },
+            ]}
+            btnTextStyle={{ color: '#FFF' }}
+            wrapperViewBtnStyle={{ width: '100%' }}
+            onPress={signUpUser}
+            disabled={isSubmitDisabled || !!confirmPasswordError}
+          />
+        )}
 
         <View style={{ marginTop: spacing.x16 }}>
           <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>

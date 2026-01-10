@@ -6,11 +6,14 @@ import {
   Easing,
   InteractionManager,
   useWindowDimensions,
+  Platform,
+  StyleSheet,
 } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { Profile, People } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import { BlurView } from '@react-native-community/blur';
 
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
@@ -34,7 +37,14 @@ function AccountType({ navigation }: Props) {
   const { colors, dark } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const isTablet = windowWidth >= 768;
+  const isIos = Platform.OS === 'ios';
   const primaryTextColor = dark ? '#f6f6f6' : Colors.primary.brand;
+  const cardRadius = typeof card.borderRadius === 'number' ? card.borderRadius : 14;
+  const glassOverlayStyle = {
+    backgroundColor: colors.card,
+    opacity: dark ? 0.55 : 0.75,
+  };
+  const continueGlassFill = 'rgba(18, 107, 135, 0.75)';
 
   const individualAnim = useRef(new Animated.Value(0)).current;
   const organizationAnim = useRef(new Animated.Value(0)).current;
@@ -81,11 +91,11 @@ function AccountType({ navigation }: Props) {
   };
 
   const cardAnimatedStyle = (anim: Animated.Value, selected: boolean) => ({
-    backgroundColor: colors.card,
+    backgroundColor: isIos ? 'transparent' : colors.card,
     justifyContent: 'space-between' as const,
     alignItems: 'stretch' as const,
     borderWidth: 1,
-    borderColor: selected ? Colors.secondary.brand : Colors.primary.brand,
+    borderColor: selected ? Colors.secondary.brand : Colors.primarySapphire.brand,
     height: anim.interpolate({ inputRange: [0, 1], outputRange: [120, 180] }),
     transform: [
       {
@@ -228,6 +238,23 @@ function AccountType({ navigation }: Props) {
               { marginBottom: 7 },
             ]}
           >
+            {isIos ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  { borderRadius: cardRadius, overflow: 'hidden' },
+                ]}
+              >
+                <BlurView
+                  blurType={dark ? 'dark' : 'light'}
+                  blurAmount={18}
+                  reducedTransparencyFallbackColor={colors.card}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View style={[StyleSheet.absoluteFillObject, glassOverlayStyle]} />
+              </View>
+            ) : null}
             <TouchableOpacity
               style={{
                 flexDirection: 'row',
@@ -293,7 +320,7 @@ function AccountType({ navigation }: Props) {
                     borderColor:
                       accountType === AccountTypeType.individual
                         ? Colors.secondary.brand
-                        : Colors.primary.brand,
+                        : Colors.primarySapphire.brand,
                   },
                 ]}
               >
@@ -312,6 +339,23 @@ function AccountType({ navigation }: Props) {
               fadeUp(cardsAnim, 10),
             ]}
           >
+            {isIos ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  { borderRadius: cardRadius, overflow: 'hidden' },
+                ]}
+              >
+                <BlurView
+                  blurType={dark ? 'dark' : 'light'}
+                  blurAmount={18}
+                  reducedTransparencyFallbackColor={colors.card}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View style={[StyleSheet.absoluteFillObject, glassOverlayStyle]} />
+              </View>
+            ) : null}
             <TouchableOpacity
               style={{
                 flexDirection: 'row',
@@ -380,7 +424,7 @@ function AccountType({ navigation }: Props) {
                     borderColor:
                       accountType === AccountTypeType.organization
                         ? Colors.secondary.brand
-                        : Colors.primary.brand,
+                        : Colors.primarySapphire.brand,
                   },
                 ]}
               >
@@ -408,6 +452,7 @@ function AccountType({ navigation }: Props) {
                 marginBottom: 35,
                 marginTop: 25,
                 opacity: accountType == null ? 0.4 : 1,
+                ...(isIos ? { overflow: 'hidden', backgroundColor: 'transparent' } : {}),
                 ...dropShadow,
               },
             ]}
@@ -421,6 +466,21 @@ function AccountType({ navigation }: Props) {
               navigation.navigate('SignUp', { accountType });
             }}
           >
+            {isIos ? (
+              <>
+                <BlurView
+                  pointerEvents="none"
+                  blurType={dark ? 'dark' : 'light'}
+                  blurAmount={18}
+                  reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View
+                  pointerEvents="none"
+                  style={[StyleSheet.absoluteFillObject, { backgroundColor: continueGlassFill }]}
+                />
+              </>
+            ) : null}
             <StyledText style={{ color: '#FFF' }}>Continue</StyledText>
           </TouchableOpacity>
           <TouchableOpacity

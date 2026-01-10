@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
+import { BlurView } from '@react-native-community/blur';
+import Color from 'color';
 import { header, subheader } from '@/src/styles/typography';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -52,6 +54,7 @@ function IntroScreen({ navigation }: Props) {
   const { colors, dark } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const isTablet = windowWidth >= 768;
+  const isIos = Platform.OS === 'ios';
 
   // 1. Entry Animations (Legacy)
   const orbitAnim = useRef(new Animated.Value(0)).current;
@@ -209,6 +212,11 @@ function IntroScreen({ navigation }: Props) {
     backgroundColor: dark ? colors.card : '#fff',
     shadowColor: Colors.primary.brand,
   };
+  const glassBorderColor = dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.35)';
+  const glassBackground = dark ? 'rgba(10, 18, 24, 0.35)' : 'rgba(255, 255, 255, 0.22)';
+  const glassRadius =
+    typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
+  const primaryGlassFill = Color(Colors.primarySapphire.brand).alpha(0.75).rgb().string();
 
   return (
     <>
@@ -422,15 +430,47 @@ function IntroScreen({ navigation }: Props) {
                       buttonWobble(primaryBtnAnim),
                     ]}
                   >
-                    <Button
-                      btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
-                      onPress={() => {
-                        HapticService.trigger();
-                        navigation.navigate('AccountType');
-                      }}
-                      text="Join the Family"
-                      btnTextStyle={{ color: 'white' }}
-                    />
+                    {isIos ? (
+                      <BlurView
+                        blurType={dark ? 'dark' : 'light'}
+                        blurAmount={18}
+                        reducedTransparencyFallbackColor={
+                          dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+                        }
+                        style={{
+                          width: '100%',
+                          borderRadius: glassRadius,
+                          overflow: 'hidden',
+                          borderWidth: 1,
+                          borderColor: glassBorderColor,
+                          backgroundColor: glassBackground,
+                          marginBottom: 15,
+                        }}
+                      >
+                        <Button
+                          btnStyle={[
+                            button.primary,
+                            { flex: 1, backgroundColor: primaryGlassFill },
+                          ]}
+                          onPress={() => {
+                            HapticService.trigger();
+                            navigation.navigate('AccountType');
+                          }}
+                          text="Join the Family"
+                          btnTextStyle={{ color: 'white' }}
+                        />
+                      </BlurView>
+                    ) : (
+                      <Button
+                        btnStyle={[button.primary, { marginBottom: 15, flex: 1 }]}
+                        onPress={() => {
+                          HapticService.trigger();
+                          navigation.navigate('AccountType');
+                        }}
+                        text="Join the Family"
+                        btnTextStyle={{ color: 'white' }}
+                      />
+                    )}
                   </Animated.View>
 
                   <Animated.View
@@ -445,18 +485,53 @@ function IntroScreen({ navigation }: Props) {
                       buttonWobble(secondaryBtnAnim),
                     ]}
                   >
-                    <Button
-                      btnStyle={[
-                        button.outline,
-                        { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
-                      ]}
-                      onPress={() => {
-                        HapticService.trigger();
-                        navigation.navigate('Login');
-                      }}
-                      text="I have an account"
-                      btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
-                    />
+                    {isIos ? (
+                      <BlurView
+                        blurType={dark ? 'dark' : 'light'}
+                        blurAmount={18}
+                        reducedTransparencyFallbackColor={
+                          dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+                        }
+                        style={{
+                          width: '100%',
+                          borderRadius: glassRadius,
+                          overflow: 'hidden',
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          backgroundColor: glassBackground,
+                        }}
+                      >
+                        <Button
+                          btnStyle={[
+                            button.outline,
+                            {
+                              flex: 1,
+                              backgroundColor: 'transparent',
+                              borderColor: colors.border,
+                            },
+                          ]}
+                          onPress={() => {
+                            HapticService.trigger();
+                            navigation.navigate('Login');
+                          }}
+                          text="I have an account"
+                          btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
+                        />
+                      </BlurView>
+                    ) : (
+                      <Button
+                        btnStyle={[
+                          button.outline,
+                          { flex: 1, backgroundColor: colors.card, borderColor: colors.border },
+                        ]}
+                        onPress={() => {
+                          HapticService.trigger();
+                          navigation.navigate('Login');
+                        }}
+                        text="I have an account"
+                        btnTextStyle={{ color: dark ? '#f6f6f6' : Colors.primary.brand }}
+                      />
+                    )}
                   </Animated.View>
                 </View>
               </View>

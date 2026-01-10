@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, useColorScheme, Platform, ViewStyle } from 'react-native';
+import { Text, View, useColorScheme, Platform, ViewStyle, StyleSheet } from 'react-native';
 
 import { useDispatch } from 'react-redux';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -13,6 +13,7 @@ import {
 import { getApp } from '@react-native-firebase/app';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
+import { BlurView } from '@react-native-community/blur';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import Button from '../Button';
@@ -115,6 +116,8 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
 
   const scheme = useColorScheme();
   const { dark, colors } = useTheme();
+  const isIos = Platform.OS === 'ios';
+  const glassOverlay = dark ? 'rgba(10, 18, 24, 0.35)' : 'rgba(255, 255, 255, 0.22)';
 
   const getButtonTextStyle = () => {
     return { ...styles.btnTitle, color: scheme === 'dark' ? '#838383' : '#032F3C' };
@@ -124,6 +127,21 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
     return {
       ...styles.buttonContainer,
       borderColor: appColor.SecoundryColor,
+    };
+  };
+  const getGlassWrapperStyle = () => {
+    return {
+      ...getButtonContainer(),
+      borderWidth: 0,
+      borderColor: 'transparent',
+      overflow: 'hidden',
+    };
+  };
+  const getGlassButtonStyle = () => {
+    return {
+      ...getButtonContainer(),
+      marginHorizontal: 0,
+      backgroundColor: 'transparent',
     };
   };
 
@@ -141,47 +159,97 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
       borderColor: appColor.SecoundryColor,
     };
   };
+  const getGlassDisabledButtonStyle = () => {
+    return {
+      ...getDisabledButtonStyle(),
+      marginHorizontal: 0,
+      backgroundColor: 'transparent',
+    };
+  };
 
   return (
     <>
       <View style={[styles.buttonList, wrapperStyles]}>
-        <Button
-          disabled={disabled}
-          leftIcon={<G height={40} />}
-          btnStyle={getButtonContainer()}
-          btnTextStyle={getButtonTextStyle()}
-          onPress={() => {
-            if (!disabled) {
-              googleSignIn();
-            }
-          }}
-          disabledBtnStyle={getDisabledButtonStyle()}
-          disabledBtnTextStyle={getDisabledButtonTextStyle()}
-          wrapperViewBtnStyle={styles.buttonsWrapper}
-        />
-        {Platform.OS === 'ios' ? (
+        {isIos ? (
+          <View style={getGlassWrapperStyle()}>
+            <BlurView
+              pointerEvents="none"
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={18}
+              reducedTransparencyFallbackColor={colors.card}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFillObject, { backgroundColor: glassOverlay }]}
+            />
+            <Button
+              disabled={disabled}
+              leftIcon={<G height={40} />}
+              btnStyle={getGlassButtonStyle()}
+              btnTextStyle={getButtonTextStyle()}
+              onPress={() => {
+                if (!disabled) {
+                  googleSignIn();
+                }
+              }}
+              disabledBtnStyle={getGlassDisabledButtonStyle()}
+              disabledBtnTextStyle={getDisabledButtonTextStyle()}
+              wrapperViewBtnStyle={styles.buttonsWrapper}
+            />
+          </View>
+        ) : (
           <Button
             disabled={disabled}
-            leftIcon={
-              <FontAwesome
-                name="apple"
-                style={{
-                  color: dark ? colors.text : '#B3C1C5',
-                }}
-                size={30}
-              />
-            }
+            leftIcon={<G height={40} />}
+            btnStyle={getButtonContainer()}
+            btnTextStyle={getButtonTextStyle()}
             onPress={() => {
               if (!disabled) {
-                onAppleButtonPress();
+                googleSignIn();
               }
             }}
-            btnStyle={getButtonContainer()}
             disabledBtnStyle={getDisabledButtonStyle()}
-            btnTextStyle={getButtonTextStyle()}
             disabledBtnTextStyle={getDisabledButtonTextStyle()}
             wrapperViewBtnStyle={styles.buttonsWrapper}
           />
+        )}
+        {isIos ? (
+          <View style={getGlassWrapperStyle()}>
+            <BlurView
+              pointerEvents="none"
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={18}
+              reducedTransparencyFallbackColor={colors.card}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFillObject, { backgroundColor: glassOverlay }]}
+            />
+            <Button
+              disabled={disabled}
+              leftIcon={
+                <FontAwesome
+                  name="apple"
+                  style={{
+                    color: dark ? colors.text : '#B3C1C5',
+                  }}
+                  size={30}
+                />
+              }
+              onPress={() => {
+                if (!disabled) {
+                  onAppleButtonPress();
+                }
+              }}
+              btnStyle={getGlassButtonStyle()}
+              disabledBtnStyle={getGlassDisabledButtonStyle()}
+              btnTextStyle={getButtonTextStyle()}
+              disabledBtnTextStyle={getDisabledButtonTextStyle()}
+              wrapperViewBtnStyle={styles.buttonsWrapper}
+            />
+          </View>
         ) : null}
       </View>
 

@@ -33,18 +33,42 @@ function ConfirmLogin({ route, navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[ConfirmLogin useFocusEffect] Screen focused');
+      }
       const { currentUser } = getAuth(getApp());
       if (currentUser) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[ConfirmLogin useFocusEffect] Current user exists, reloading...');
+        }
         reload(currentUser).then(async () => {
-          if (getAuth(getApp()).currentUser?.emailVerified) {
+          const verified = getAuth(getApp()).currentUser?.emailVerified;
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[ConfirmLogin useFocusEffect] After reload, emailVerified:', verified);
+          }
+          if (verified) {
             // Force token refresh to ensure profile is fetched
+            if (__DEV__) {
+              // eslint-disable-next-line no-console
+              console.log('[ConfirmLogin useFocusEffect] Getting fresh token...');
+            }
             await getIdToken(currentUser, true);
+            if (__DEV__) {
+              // eslint-disable-next-line no-console
+              console.log('[ConfirmLogin useFocusEffect] Navigating to MainRoot');
+            }
             navigation.reset({
               index: 0,
               routes: [{ name: 'MainRoot' }],
             });
           }
         });
+      } else if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[ConfirmLogin useFocusEffect] No current user');
       }
     }, [navigation])
   );
@@ -78,19 +102,43 @@ function ConfirmLogin({ route, navigation }: Props) {
     }
 
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[ConfirmLogin AppState] App state changed to:', nextAppState);
+      }
       if (nextAppState === 'active') {
         const { currentUser } = getAuth(getApp());
         if (currentUser) {
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[ConfirmLogin AppState] Current user exists, reloading...');
+          }
           reload(currentUser).then(async () => {
-            if (getAuth(getApp()).currentUser?.emailVerified) {
+            const verified = getAuth(getApp()).currentUser?.emailVerified;
+            if (__DEV__) {
+              // eslint-disable-next-line no-console
+              console.log('[ConfirmLogin AppState] After reload, emailVerified:', verified);
+            }
+            if (verified) {
               // Force token refresh to ensure global state updates and profile is fetched
+              if (__DEV__) {
+                // eslint-disable-next-line no-console
+                console.log('[ConfirmLogin AppState] Getting fresh token...');
+              }
               await getIdToken(currentUser, true);
+              if (__DEV__) {
+                // eslint-disable-next-line no-console
+                console.log('[ConfirmLogin AppState] Navigating to MainRoot');
+              }
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'MainRoot' }],
               });
             }
           });
+        } else if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[ConfirmLogin AppState] No current user');
         }
       }
     };
