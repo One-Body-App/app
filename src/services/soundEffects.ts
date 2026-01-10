@@ -4,6 +4,7 @@
 //   await playSoundEffect('click');
 
 // @ts-expect-error - module has no bundled types in this project
+import { Image } from 'react-native';
 import Sound from 'react-native-sound';
 
 type SoundInstance = {
@@ -15,6 +16,7 @@ type SoundInstance = {
 };
 
 const soundCache: Record<string, SoundInstance> = {};
+const soundVolumeCache: Record<string, number> = {};
 
 // Set category once on module load
 Sound.setCategory('Ambient', true);
@@ -24,36 +26,39 @@ if (__DEV__) {
   console.log('🔊 Sound module loaded (static import)');
 }
 
-export const preloadSoundEffect = async (key: string, asset: any) => {
+export const preloadSoundEffect = async (key: string, asset: any, volume = 1) => {
   return new Promise<void>((resolve, reject) => {
-    const instance = new Sound(
-      asset,
-      typeof asset === 'number' ? Sound.MAIN_BUNDLE : undefined,
-      (error?: Error) => {
-        if (error) {
-          if (__DEV__) {
-            console.error(`Failed to create sound instance for "${key}":`, error);
-          }
-          reject(error);
-          return;
-        }
-        // Set volume to maximum for clear playback
-        instance.setVolume(1.0);
-        soundCache[key] = instance;
+    const resolvedAsset =
+      typeof asset === 'number' ? Image.resolveAssetSource(asset)?.uri : undefined;
+    const source = resolvedAsset ?? asset;
+    if (typeof source !== 'string') {
+      reject(new Error(`Unsupported sound asset for "${key}"`));
+      return;
+    }
+
+    const instance = new Sound(source, undefined, (error?: Error) => {
+      if (error) {
         if (__DEV__) {
-          // eslint-disable-next-line no-console
-          console.log(
-            `Sound "${key}" added to cache. Cache now contains:`,
-            Object.keys(soundCache)
-          );
+          console.error(`Failed to create sound instance for "${key}":`, error);
         }
-        resolve();
+        reject(error);
+        return;
       }
-    );
+      // Set volume (0.0 - 1.0) and cache it for playback
+      const clampedVolume = Math.max(0, Math.min(1, volume));
+      instance.setVolume(clampedVolume);
+      soundVolumeCache[key] = clampedVolume;
+      soundCache[key] = instance;
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log(`Sound "${key}" added to cache. Cache now contains:`, Object.keys(soundCache));
+      }
+      resolve();
+    });
   });
 };
 
-export const playSoundEffect = async (key: string) => {
+export const playSoundEffect = async (key: string, volume?: number) => {
   const instance = soundCache[key];
   if (!instance) {
     if (__DEV__) {
@@ -68,6 +73,12 @@ export const playSoundEffect = async (key: string) => {
       console.warn(`Sound effect "${key}" is not loaded yet`);
     }
     return;
+  }
+
+  const resolvedVolume =
+    typeof volume === 'number' ? Math.max(0, Math.min(1, volume)) : soundVolumeCache[key];
+  if (typeof resolvedVolume === 'number') {
+    instance.setVolume(resolvedVolume);
   }
 
   // Play immediately without stopping (for quick successive sounds)

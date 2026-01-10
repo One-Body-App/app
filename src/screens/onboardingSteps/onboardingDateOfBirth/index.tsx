@@ -1,8 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Animated, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-// @ts-expect-error - module has no bundled types
-import Sound from 'react-native-sound';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useToast } from 'react-native-toast-notifications';
@@ -13,6 +11,9 @@ import { AccountType } from '@/utils/types';
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors, Typography } from '@/src/styles';
+import { preloadSoundEffect, playSoundEffect } from '@/src/services/soundEffects';
+// eslint-disable-next-line import/extensions
+import pickerClickSound from '../../../assets/sounds/click.wav';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
 
@@ -20,46 +21,6 @@ type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>
 const ITEM_HEIGHT = 60; // Height of each year item
 const VISIBLE_ITEMS = 3; // How many items to see (1 center, 1 above, 1 below)
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
-
-// Sound setup - direct implementation for immediate playback
-Sound.setCategory('Ambient', true);
-const PICKER_CLICK_SOUND = require('../../../assets/sounds/click.wav');
-
-let clickSound: Sound | null = null;
-
-// Initialize sound synchronously at module level
-// For require() objects, omit the basePath parameter
-try {
-  clickSound = new Sound(PICKER_CLICK_SOUND, (error) => {
-    if (error) {
-      if (__DEV__) {
-        console.error('❌ Failed to load picker click sound:', error);
-      }
-      clickSound = null;
-      return;
-    }
-    if (clickSound) {
-      clickSound.setVolume(1.0);
-      if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.log('✅ Picker click sound loaded and ready');
-      }
-    }
-  });
-} catch (error) {
-  if (__DEV__) {
-    console.error('❌ Failed to create Sound instance:', error);
-  }
-  clickSound = null;
-}
-
-const playClickSound = () => {
-  if (clickSound && clickSound.isLoaded()) {
-    clickSound.play();
-  } else if (__DEV__ && clickSound === null) {
-    console.warn('🔇 Click sound is not available');
-  }
-};
 
 function OnboardingDateOfBirth({ navigation, route }: Props) {
   const { dark, colors } = useTheme();
@@ -120,7 +81,7 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
           enableVibrateFallback: true,
           ignoreAndroidSystemSettings: false,
         });
-        playClickSound();
+        playSoundEffect('pickerClick', 0.025);
       }
     },
   });
@@ -133,6 +94,15 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
       lastTriggeredIndex.current = 0;
     }
   }, [years, year]);
+
+  useEffect(() => {
+    preloadSoundEffect('pickerClick', pickerClickSound, 0.2).catch(() => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn('🔇 Picker click sound failed to preload');
+      }
+    });
+  }, []);
 
   const renderItem = ({ item, index }: { item: string; index: number }) => {
     const inputRange = [(index - 1) * ITEM_HEIGHT, index * ITEM_HEIGHT, (index + 1) * ITEM_HEIGHT];
