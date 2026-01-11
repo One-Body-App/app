@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, useColorScheme, Platform } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  useColorScheme,
+  Platform,
+  AppState,
+  AppStateStatus,
+} from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -149,6 +156,8 @@ function LoginComponent({
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
   const hasRunFocusVerifyCheck = useRef(false);
+  const hasProcessedVerification = useRef(false);
+  const lastOobCode = useRef<string | null>(null);
 
   const accountType = useSelector((rootState: RootState) => rootState.general.accountType);
 
@@ -220,7 +229,11 @@ function LoginComponent({
         return;
       }
 
-      if (hasRunFocusVerifyCheck.current) {
+      if (hasRunFocusVerifyCheck.current && Platform.OS !== 'ios') {
+        return;
+      }
+      // On iOS, we want to allow the check to run when focusing if we are in the verifyAccount state
+      if (hasRunFocusVerifyCheck.current && Platform.OS === 'ios' && !verifyAccount) {
         return;
       }
       hasRunFocusVerifyCheck.current = true;
@@ -249,7 +262,7 @@ function LoginComponent({
       };
 
       checkVerifiedAndNavigate();
-    }, [firebaseAuth, navigation, resetForm, oobCode])
+    }, [firebaseAuth, navigation, resetForm, oobCode, verifyAccount])
   );
 
   useEffect(() => {
@@ -261,9 +274,19 @@ function LoginComponent({
       platform: Platform.OS,
       hasCurrentUser: !!firebaseAuth.currentUser,
       currentUserEmail: firebaseAuth.currentUser?.email,
+      alreadyProcessed: hasProcessedVerification.current,
     });
 
     if (mode === 'verifyEmail' && action === 'action' && oobCode) {
+      // Prevent multiple runs for the same code
+      if (hasProcessedVerification.current && lastOobCode.current === oobCode) {
+        logVerifyEmail('[VerifyEmail] Skipping - already processed this code');
+        return;
+      }
+
+      hasProcessedVerification.current = true;
+      lastOobCode.current = oobCode;
+
       logVerifyEmail('[VerifyEmail] Starting verification process', {
         mode,
         action,
@@ -337,16 +360,11 @@ function LoginComponent({
               }
 
               // Wait a brief moment to allow profile fetch to start
-              // This is critical on iOS where navigation timing can cause race conditions
               logVerifyEmail('[VerifyEmail] Step 13: Waiting for profile fetch to start');
               await new Promise<void>((resolve) => {
-                setTimeout(() => resolve(), 300);
+                setTimeout(resolve, 500);
               });
-
-              // Now navigate - AppContent will have profile data or be loading it
-              logVerifyEmail('[VerifyEmail] Step 14: Preparing navigation', {
-                emailVerified: firebaseAuth.currentUser?.emailVerified,
-              });
+              logVerifyEmail('[VerifyEmail] Step 14: Wait complete');
 
               if (firebaseAuth.currentUser?.emailVerified) {
                 logVerifyEmail('[VerifyEmail] Step 15: Navigating to MainRoot');
@@ -363,9 +381,78 @@ function LoginComponent({
               setSuccess('Email verification successful. Please Sign in to your account');
             }
           } else {
-            logVerifyEmail('[VerifyEmail] Operation was not VERIFY_EMAIL', {
-              operation: result.operation,
-            });
+            // Operation is UNKNOWN - this means the code was likely already used
+            // But let's try to apply it anyway in case it still works
+            logVerifyEmail(
+              '[VerifyEmail] Operation was not VERIFY_EMAIL, attempting to apply anyway',
+              {
+                operation: result.operation,
+              }
+            );
+
+            const { currentUser } = firebaseAuth;
+            if (currentUser) {
+              try {
+                // Try to apply the code anyway
+                logVerifyEmail('[VerifyEmail] Attempting to apply UNKNOWN action code');
+                await applyActionCode(firebaseAuth, oobCode);
+                logVerifyEmail('[VerifyEmail] Successfully applied UNKNOWN action code');
+
+                // Reload and check
+                await reload(currentUser);
+                await getIdToken(currentUser, true);
+
+                logVerifyEmail('[VerifyEmail] After applying UNKNOWN code', {
+                  emailVerified: currentUser.emailVerified,
+                  uid: currentUser.uid,
+                });
+
+                if (currentUser.emailVerified) {
+                  logVerifyEmail('[VerifyEmail] Email is verified! Navigating to MainRoot');
+                  const newToken = await getIdToken(currentUser, true);
+                  if (newToken) {
+                    dispatch(getProfile.Request({ token: newToken }));
+                  }
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'MainRoot' }],
+                  });
+                  return; // Exit early on success
+                }
+              } catch (applyError: any) {
+                logVerifyEmail('[VerifyEmail] Failed to apply UNKNOWN action code', {
+                  error: applyError.message,
+                  code: applyError.code,
+                });
+              }
+
+              // If applying failed or email still not verified, check if it's already verified
+              await reload(currentUser);
+              await getIdToken(currentUser, true);
+
+              logVerifyEmail('[VerifyEmail] Checked current user after UNKNOWN operation', {
+                emailVerified: currentUser.emailVerified,
+                uid: currentUser.uid,
+              });
+
+              if (currentUser.emailVerified) {
+                logVerifyEmail('[VerifyEmail] Email is verified! Navigating to MainRoot');
+                const newToken = await getIdToken(currentUser, true);
+                if (newToken) {
+                  dispatch(getProfile.Request({ token: newToken }));
+                }
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'MainRoot' }],
+                });
+              } else {
+                logVerifyEmail('[VerifyEmail] Email still not verified');
+                setSuccess('Verification link may have expired. Please request a new one.');
+              }
+            } else {
+              logVerifyEmail('[VerifyEmail] No current user - showing success message');
+              setSuccess('Email verification successful. Please Sign in to your account');
+            }
           }
         } catch (e: any) {
           logVerifyEmail('[VerifyEmail] ERROR', {
@@ -386,7 +473,7 @@ function LoginComponent({
           await applyActionCode(firebaseAuth, oobCode);
 
           setSuccess('Email changed successful. Please Sign in to your account');
-          setState({ ...state, email: result.data.email ?? '' });
+          setState((prev) => ({ ...prev, email: result.data.email ?? '' }));
         } catch (e: any) {
           if (updateParent) {
             updateParent(false);
@@ -406,7 +493,6 @@ function LoginComponent({
     oobCode,
     firebaseAuth,
     navigation,
-    state,
     updateParent,
     toast,
     setSuccess,
@@ -427,6 +513,67 @@ function LoginComponent({
     };
     restoreAccountType();
   }, [success, dispatch]);
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      logVerifyEmail('[VerifyEmail] AppState changed', {
+        nextAppState,
+        verifyAccount,
+        hasCurrentUser: !!firebaseAuth.currentUser,
+      });
+
+      if (nextAppState === 'active') {
+        const { currentUser } = firebaseAuth;
+        if (!currentUser) {
+          logVerifyEmail('[VerifyEmail] No current user in AppState handler');
+          return;
+        }
+
+        logVerifyEmail('[VerifyEmail] App became active, checking verification status...');
+
+        try {
+          // Force reload from Firebase servers
+          await reload(currentUser);
+
+          // Get fresh token to ensure we have latest claims
+          await getIdToken(currentUser, true);
+
+          logVerifyEmail('[VerifyEmail] AppState check after reload', {
+            emailVerified: currentUser.emailVerified,
+            uid: currentUser.uid,
+            email: currentUser.email,
+          });
+
+          if (currentUser.emailVerified) {
+            logVerifyEmail('[VerifyEmail] Email is verified! Fetching profile and navigating...');
+
+            // Force token refresh to ensure profile is fetched and state is updated
+            const newToken = await getIdToken(currentUser, true);
+            if (newToken) {
+              dispatch(getProfile.Request({ token: newToken }));
+            }
+
+            // Navigate to onboarding
+            logVerifyEmail('[VerifyEmail] Navigating to MainRoot');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainRoot' }],
+            });
+          } else {
+            logVerifyEmail('[VerifyEmail] Email still not verified after reload');
+          }
+        } catch (err) {
+          logVerifyEmail('[VerifyEmail] AppState verification check failed', err);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [firebaseAuth, navigation, dispatch, verifyAccount]);
 
   // useEffect(() => {
   //   if (action == 'confirmation' && provider == 'twitter') {
@@ -856,6 +1003,47 @@ function LoginComponent({
           rightIcon={
             <StyledText style={{ color: Colors.primarySapphire.brand }}>Resend email</StyledText>
           }
+        />
+        <Button
+          onPress={async () => {
+            const { currentUser } = firebaseAuth;
+            if (!currentUser) {
+              Toast.show('Please log in again', Toast.SHORT);
+              return;
+            }
+
+            try {
+              await reload(currentUser);
+              await getIdToken(currentUser, true);
+
+              if (currentUser.emailVerified) {
+                const newToken = await getIdToken(currentUser, true);
+                if (newToken) {
+                  dispatch(getProfile.Request({ token: newToken }));
+                }
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'MainRoot' }],
+                });
+              } else {
+                Toast.show(
+                  'Email not verified yet. Please check your email and click the verification link.',
+                  Toast.LONG
+                );
+              }
+            } catch (error) {
+              Toast.show('Unable to check verification status. Please try again.', Toast.SHORT);
+            }
+          }}
+          text="I've verified my email"
+          btnStyle={[
+            button.primary,
+            {
+              flex: 1,
+              marginTop: 20,
+            },
+          ]}
+          btnTextStyle={[{ color: '#fff' }]}
         />
       </View>
     );

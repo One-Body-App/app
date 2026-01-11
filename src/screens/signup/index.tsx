@@ -193,6 +193,8 @@ function SignupForm({ navigation, route }: Props) {
   const [showPasswordHint, setShowPasswordHint] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const { dark } = useTheme();
   const orbitAnim = useRef(new Animated.Value(0)).current;
   const textAnim = useRef(new Animated.Value(0)).current;
   const fieldsAnim = useRef(new Animated.Value(0)).current;
@@ -277,10 +279,18 @@ function SignupForm({ navigation, route }: Props) {
         } else {
           setIsloading(false);
           if (userValidation.status === 409) {
-            setState((prev) => ({
-              ...prev,
-              emailError: 'User already exists. Try again with a different email account!',
-            }));
+            const errorMessage = userValidation.response?.message || '';
+            if (errorMessage.toLowerCase().includes('username')) {
+              setState((prev) => ({
+                ...prev,
+                usernameError: errorMessage,
+              }));
+            } else {
+              setState((prev) => ({
+                ...prev,
+                emailError: 'User already exists. Try again with a different email account!',
+              }));
+            }
           }
           Toast.show(
             userValidation.response?.message ??
@@ -319,7 +329,44 @@ function SignupForm({ navigation, route }: Props) {
       [errorField]: '',
     }));
   };
-  const { dark } = useTheme();
+
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setState((prev) => ({
+        ...prev,
+        usernameError:
+          username.length > 0 && username.length < 3
+            ? 'Username must be at least 3 characters'
+            : '',
+      }));
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    try {
+      const userValidation = await ApiCall({
+        route: 'user/validateUserInfo',
+        params: { username, email: '', name: '', accountType, userId: '' },
+        verb: 'post',
+      });
+
+      if (userValidation.status === 200) {
+        setState((prev) => ({ ...prev, usernameError: '' }));
+      } else if (userValidation.status === 409) {
+        const errorMessage = userValidation.response?.message || '';
+        if (errorMessage.toLowerCase().includes('username')) {
+          setState((prev) => ({
+            ...prev,
+            usernameError: 'Sorry, this username is already in use. Please choose another username',
+          }));
+        }
+      }
+    } catch (error) {
+      // Silently fail - validation will happen on submit anyway
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
   const isIos = Platform.OS === 'ios';
   const createAccountRadius =
     typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
@@ -542,6 +589,7 @@ function SignupForm({ navigation, route }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           onChangeText={(username: string) => changeHandler('username', username.trim())}
+          onBlur={() => checkUsernameAvailability(state.username)}
           onSubmitEditing={() => inputRefs.name.current?.focus()}
         />
 

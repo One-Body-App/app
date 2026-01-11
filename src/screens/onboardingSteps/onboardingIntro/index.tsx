@@ -7,12 +7,14 @@ import {
   Animated,
   Easing,
   StatusBar,
+  TouchableOpacity,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import FastImage from 'react-native-fast-image';
-import { useTheme } from '@react-navigation/native';
+import { useTheme, CommonActions } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { OnboardingStackParamList } from '@/src/navigator/types';
@@ -89,6 +91,16 @@ function OnboardingIntro({ navigation }: Props) {
     }
   };
 
+  const handleBack = () => {
+    HapticService.trigger('impactMedium');
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Intro' }],
+      })
+    );
+  };
+
   // Theme-aware colors (adjusted to match your original intent)
   const bgLayerOpacity = 0.15; // even more subtle
   const textColor = dark ? Colors.main.black : Colors.primary.brand;
@@ -110,6 +122,63 @@ function OnboardingIntro({ navigation }: Props) {
           marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
         }}
       >
+        {isIos ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: 80,
+              left: 0,
+              zIndex: 10,
+              borderRadius: 20,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: glassBorderColor,
+              backgroundColor: glassBackground,
+            }}
+          >
+            <BlurView
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={18}
+              reducedTransparencyFallbackColor={
+                dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+              }
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <TouchableOpacity
+                onPress={handleBack}
+                style={{
+                  width: 40,
+                  height: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="chevron-back" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </BlurView>
+          </View>
+        ) : (
+          <TouchableOpacity
+            onPress={handleBack}
+            style={{
+              position: 'absolute',
+              top: spacing.x32,
+              left: 0,
+              zIndex: 10,
+              width: 40,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="chevron-back" size={24} color={headerColor} />
+          </TouchableOpacity>
+        )}
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View
             style={{

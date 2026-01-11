@@ -572,8 +572,9 @@ function AppContent() {
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.log(
-          '[Deep Link getStateFromPath] Resulting state:',
-          JSON.stringify(state, null, 2)
+          '[Deep Link getStateFromPath] Match result:',
+          state?.routes?.[0]?.name,
+          state?.routes?.[0]?.params
         );
       }
       return state;
