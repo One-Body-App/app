@@ -3,7 +3,7 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { borderRadius } from '../styles/outlines';
 import { Colors } from '../styles';
 
-export const GeneralStyle = StyleSheet.create({
+const GeneralStyle = StyleSheet.create({
   continer: {
     flex: 1,
     backgroundColor: 'white',
@@ -84,3 +84,5 @@ export const GeneralStyle = StyleSheet.create({
     marginRight: 10,
   },
 });
+
+export default GeneralStyle;

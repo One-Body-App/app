@@ -8,7 +8,8 @@ import { sha256 } from 'js-sha256';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 
-export const { BASE_URL } = Config;
+// TEMP: Hardcode BASE_URL to staging to bypass env issues. Remove when env is correct.
+export const BASE_URL = 'https://stagingapi.onebodyapp.com/api';
 export const { PRIVACY_POLICY_URL } = Config;
 export const { TERMS_CONDITIONS_URL } = Config;
 export const { GOOGLE_LOGIN_CLIENT_ID } = Config;
@@ -45,7 +46,7 @@ export const OpenURLButton = async (
             enableDefaultShare: false,
           });
 
-          if (result.type == 'success') {
+          if (result.type === 'success') {
             Linking.openURL(result.url);
           }
         } else {
@@ -132,6 +133,7 @@ export const getInstagramAuthToken = async (
     }
   } catch (error: any) {
     console.log(error);
+    return undefined;
   }
 };
 
@@ -171,6 +173,7 @@ export const getTwitterAuthToken = async (
         twitterRefreshToken: result.data?.twitterRefreshToken,
       };
     }
+    return undefined;
   } catch (error: any) {
     if (error.response) {
       // The request was made and the server responded with a status code
@@ -188,5 +191,6 @@ export const getTwitterAuthToken = async (
       console.log('Error', error.message);
     }
     console.log(error.config);
+    return undefined;
   }
 };

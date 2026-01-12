@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { GeneralStyle } from '../../constants/GeneralStyle';
+import GeneralStyle from '../../constants/GeneralStyle';
 import { ApiCall } from '@/src/services/api';
 import Button from '@/components/Button';
 
@@ -67,7 +67,7 @@ function ForgotPassword({ navigation }: Props) {
   };
   const { dark } = useTheme();
   return (
-    <UserStepsLayout backgroundColor={colors.background}>
+    <UserStepsLayout backgroundColor={colors.background} showCustomHeaderOnAndroid>
       <ScrollView style={{ flexGrow: 1 }}>
         <View style={{ marginHorizontal: spacing.x16 }}>
           <View style={{ marginVertical: spacing.x16 }}>

@@ -4,7 +4,7 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useDispatch } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { checkActionCode, confirmPasswordReset, getAuth } from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   CompositeScreenProps,
@@ -16,7 +16,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useToast } from 'react-native-toast-notifications';
 
-import { GeneralStyle } from '../../constants/GeneralStyle';
+import GeneralStyle from '../../constants/GeneralStyle';
 import Button from '../../components/Button';
 
 import { validateFields } from '@/utils/validation/validate-fields';
@@ -57,6 +57,7 @@ function NewPassword({ oobCode, ...props }: Props) {
   const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
   const { colors } = useTheme();
   const toast = useToast();
+  const firebaseAuth = getAuth();
 
   const PasswordUpdate = async () => {
     const { passwordC, passwordN } = state;
@@ -69,10 +70,10 @@ function NewPassword({ oobCode, ...props }: Props) {
 
       if (passwordC == passwordN) {
         try {
-          const result = await auth().checkActionCode(oobCode);
+          const result = await checkActionCode(firebaseAuth, oobCode);
 
           if (result.operation == 'PASSWORD_RESET') {
-            await auth().confirmPasswordReset(oobCode, passwordN);
+            await confirmPasswordReset(firebaseAuth, oobCode, passwordN);
 
             const res = await ApiCall({
               route: 'auth/sendPasswordChangeConfirmation',

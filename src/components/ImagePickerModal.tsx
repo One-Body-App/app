@@ -20,7 +20,7 @@ function ImagePickerModal(props: Props) {
         <View style={[styles.headLine, { backgroundColor: Colors.neutral[600] }]} />
         <View style={[styles.container, { backgroundColor: Colors.neutral[800] }]}>
           <TouchableOpacity style={styles.boxes} onPress={galleryImage}>
-            <Icon name="photo-video" size={35} color="#126B87" />
+            <Icon name="image" size={35} color="#126B87" />
             <StyledText
               style={{
                 width: '50%',

@@ -6,11 +6,9 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   buttonsWrapper: {
-    flex: 1,
-    flexGrow: 1,
-
     justifyContent: 'center',
     alignItems: 'center',
+    flex: 1,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -20,7 +18,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     borderRadius: 10,
-    margin: 10,
+    marginHorizontal: 8,
   },
   disabledButtonContainer: {},
   btnIcon: {
@@ -40,8 +38,10 @@ export const styles = StyleSheet.create({
   },
   buttonList: {
     marginTop: 16,
-    flex: 1,
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
   },
   footer: {
     position: 'absolute',

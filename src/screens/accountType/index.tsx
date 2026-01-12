@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  TouchableOpacity,
+  Animated,
+  Easing,
+  InteractionManager,
+  useWindowDimensions,
+  Platform,
+  StyleSheet,
+} from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { Profile, People } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import { BlurView } from '@react-native-community/blur';
 
-// import { ParamListBase } from '@react-navigation/native';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
 import UserStepsLayout from '../layout/UserStepsLayout';
@@ -14,49 +24,254 @@ import { AccountType as AccountTypeType } from '@/utils/types';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import GeneralStyle from '@/src/constants/GeneralStyle';
+import { savePendingAccountType } from '@/src/services/accountTypeStorage';
+import { HapticService } from '@/src/services/haptic';
 
 type Props = StackScreenProps<MainStackParamList, 'AccountType'>;
 
-function AccountType({ route, navigation }: Props) {
+const CONTENT_MAX_WIDTH = 720;
+
+function AccountType({ navigation }: Props) {
   const [accountType, setAccountType] = useState<AccountTypeType | null>(null);
-  const { dark, colors } = useTheme();
+  const { colors, dark } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
+  const isTablet = windowWidth >= 768;
+  const isIos = Platform.OS === 'ios';
+  const primaryTextColor = dark ? '#f6f6f6' : Colors.primary.brand;
+  const cardRadius = typeof card.borderRadius === 'number' ? card.borderRadius : 14;
+  const glassOverlayStyle = {
+    backgroundColor: colors.card,
+    opacity: dark ? 0.55 : 0.75,
+  };
+  const continueGlassFill = 'rgba(18, 107, 135, 0.75)';
+
+  const individualAnim = useRef(new Animated.Value(0)).current;
+  const organizationAnim = useRef(new Animated.Value(0)).current;
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const cardsAnim = useRef(new Animated.Value(0)).current;
+  const optionOneAnim = useRef(new Animated.Value(0)).current;
+  const optionTwoAnim = useRef(new Animated.Value(0)).current;
+  const footerAnim = useRef(new Animated.Value(0)).current;
+  const hasAnimated = useRef(false);
+
+  const dropShadow = {
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 8,
+  };
+
+  const animateSelection = (type: AccountTypeType) => {
+    // Trigger light haptic feedback
+    ReactNativeHapticFeedback.trigger('impactLight', {
+      enableVibrateFallback: true,
+      ignoreAndroidSystemSettings: false,
+    });
+
+    setAccountType(type);
+    const targetIndividual = type === AccountTypeType.individual ? 1 : 0;
+    const targetOrganization = type === AccountTypeType.organization ? 1 : 0;
+
+    Animated.parallel([
+      Animated.spring(individualAnim, {
+        toValue: targetIndividual,
+        friction: 7,
+        tension: 70,
+        useNativeDriver: false,
+      }),
+      Animated.spring(organizationAnim, {
+        toValue: targetOrganization,
+        friction: 7,
+        tension: 70,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const cardAnimatedStyle = (anim: Animated.Value, selected: boolean) => ({
+    backgroundColor: isIos ? 'transparent' : colors.card,
+    justifyContent: 'space-between' as const,
+    alignItems: 'stretch' as const,
+    borderWidth: 1,
+    borderColor: selected ? Colors.secondary.brand : Colors.primarySapphire.brand,
+    height: anim.interpolate({ inputRange: [0, 1], outputRange: [120, 180] }),
+    transform: [
+      {
+        translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-3, 0] }),
+      },
+    ],
+    ...dropShadow,
+  });
+
+  const descriptionAnimatedStyle = (anim: Animated.Value) => ({
+    opacity: anim,
+    maxHeight: anim.interpolate({ inputRange: [0, 1], outputRange: [0, 200] }),
+  });
+
+  const fadeUp = (anim: Animated.Value, distance = 18) => ({
+    opacity: anim,
+    transform: [
+      {
+        translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }),
+      },
+    ],
+  });
+
+  const optionEntryStyle = (anim: Animated.Value) => ({
+    opacity: anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.7, 1] }),
+    transform: [
+      {
+        translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }),
+      },
+      {
+        rotate: anim.interpolate({
+          inputRange: [0, 0.8, 1],
+          outputRange: ['8deg', '-5deg', '0deg'],
+        }),
+      },
+      {
+        scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }),
+      },
+    ],
+  });
+
+  useEffect(() => {
+    let task: ReturnType<typeof InteractionManager.runAfterInteractions> | undefined;
+
+    if (!hasAnimated.current) {
+      task = InteractionManager.runAfterInteractions(() => {
+        hasAnimated.current = true;
+
+        const playWobble = (anim: Animated.Value) =>
+          Animated.sequence([
+            Animated.timing(anim, {
+              toValue: 1,
+              duration: 260,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.timing(anim, {
+              toValue: 0.9,
+              duration: 120,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false,
+            }),
+            Animated.spring(anim, {
+              toValue: 1,
+              friction: 6,
+              tension: 90,
+              useNativeDriver: false,
+            }),
+          ]);
+
+        Animated.sequence([
+          Animated.timing(headerAnim, {
+            toValue: 1,
+            duration: 240,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(cardsAnim, {
+            toValue: 1,
+            duration: 220,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(footerAnim, {
+            toValue: 1,
+            duration: 200,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.stagger(120, [playWobble(optionOneAnim), playWobble(optionTwoAnim)]),
+        ]).start();
+      });
+    }
+
+    return () => {
+      if (task) {
+        task.cancel();
+      }
+    };
+  }, [cardsAnim, footerAnim, headerAnim, optionOneAnim, optionTwoAnim]);
 
   return (
-    <UserStepsLayout backgroundColor={Colors.neutral[700]}>
-      <View style={{ flexGrow: 1, paddingHorizontal: 30, justifyContent: 'space-between' }}>
-        <View>
-          <StyledText style={[Typography.header.h1, { color: Colors.neutral[200], marginTop: 45 }]}>
-            What account type best describes you?
-          </StyledText>
-          <StyledText
-            style={[
-              Typography.subheader.R,
-              { color: Colors.neutral[300], marginTop: 15, marginBottom: 25 },
-            ]}
-          >
-            Get started on your experience in connecting with others. Let&#39;s setup your account
-          </StyledText>
+    <UserStepsLayout backgroundColor={colors.background} showCustomHeaderOnAndroid>
+      <View
+        style={{
+          flex: 1,
+          flexGrow: 1,
+          paddingHorizontal: 30,
+          justifyContent: 'space-between',
+          alignItems: isTablet ? 'center' : undefined,
+        }}
+      >
+        <View
+          style={{
+            width: isTablet ? '100%' : undefined,
+            maxWidth: isTablet ? CONTENT_MAX_WIDTH : undefined,
+          }}
+        >
+          <Animated.View style={fadeUp(headerAnim, 12)}>
+            <StyledText style={[Typography.header.h1, { color: primaryTextColor, marginTop: 45 }]}>
+              What account type best describes you?
+            </StyledText>
+            <StyledText
+              style={[
+                Typography.subheader.R,
+                { color: primaryTextColor, marginTop: 10, marginBottom: 5 },
+              ]}
+            >
+              Pick an account type so that we can curate your experience. You will not be able to
+              change this later.
+            </StyledText>
+          </Animated.View>
 
-          <TouchableOpacity
+          <Animated.View
             style={[
               card,
-              {
-                backgroundColor: Colors.main.white,
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderColor:
-                  accountType == AccountTypeType.individual
-                    ? Colors.primarySapphire.brand
-                    : Colors.neutral[800],
-              },
+              cardAnimatedStyle(individualAnim, accountType === AccountTypeType.individual),
+              optionEntryStyle(optionOneAnim),
+              fadeUp(cardsAnim, 10),
+              { marginBottom: 7 },
             ]}
-            onPress={() => {
-              setAccountType(AccountTypeType.individual);
-            }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            {isIos ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  { borderRadius: cardRadius, overflow: 'hidden' },
+                ]}
+              >
+                <BlurView
+                  blurType={dark ? 'dark' : 'light'}
+                  blurAmount={18}
+                  reducedTransparencyFallbackColor={colors.card}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View style={[StyleSheet.absoluteFillObject, glassOverlayStyle]} />
+              </View>
+            ) : null}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flex: 1,
+                paddingHorizontal: 10,
+              }}
+              activeOpacity={0.9}
+              onPress={() => animateSelection(AccountTypeType.individual)}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: accountType === AccountTypeType.individual ? 'flex-start' : 'center',
+                  flex: 1,
+                }}
+              >
                 <View
                   style={{
                     backgroundColor: Colors.neutral[800],
@@ -64,27 +279,38 @@ function AccountType({ route, navigation }: Props) {
                     padding: spacing.x10,
                     height: 40,
                     width: 40,
+                    alignSelf: accountType === AccountTypeType.individual ? 'flex-start' : 'center',
+                    marginTop: -2,
                   }}
                 >
                   <Profile color={Colors.primary.brand} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <StyledText style={{ marginLeft: 15, ...Typography.body.x3 }}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <StyledText
+                    style={{
+                      marginLeft: 10,
+                      ...Typography.body.x3,
+                      color: primaryTextColor,
+                      fontWeight: '700',
+                    }}
+                  >
                     I am an Individual
                   </StyledText>
-                  {accountType == AccountTypeType.individual ? (
+                  <Animated.View
+                    style={[descriptionAnimatedStyle(individualAnim), { marginTop: 6 }]}
+                  >
                     <StyledText
                       style={{
-                        marginLeft: 15,
-                        marginRight: 5,
+                        marginLeft: 10,
+                        marginRight: 8,
                         ...Typography.body.x2,
-                        color: Colors.neutral[300],
+                        color: primaryTextColor,
                       }}
                     >
                       Individual profiles are for individuals, leaders, or any one person that
                       desires to create a One Body profile.
                     </StyledText>
-                  ) : null}
+                  </Animated.View>
                 </View>
               </View>
               <View
@@ -92,38 +318,62 @@ function AccountType({ route, navigation }: Props) {
                   GeneralStyle.radioButton,
                   {
                     borderColor:
-                      accountType == AccountTypeType.individual
-                        ? Colors.primarySapphire.brand
-                        : Colors.neutral[200],
+                      accountType === AccountTypeType.individual
+                        ? Colors.secondary.brand
+                        : Colors.primarySapphire.brand,
                   },
                 ]}
               >
-                {accountType == AccountTypeType.individual ? (
+                {accountType === AccountTypeType.individual ? (
                   <View style={GeneralStyle.radioButtonIcon} />
                 ) : null}
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
 
-          <TouchableOpacity
+          <Animated.View
             style={[
               card,
-              {
-                backgroundColor: Colors.main.white,
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderColor:
-                  accountType == AccountTypeType.organization
-                    ? Colors.primarySapphire.brand
-                    : Colors.neutral[800],
-              },
+              cardAnimatedStyle(organizationAnim, accountType === AccountTypeType.organization),
+              optionEntryStyle(optionTwoAnim),
+              fadeUp(cardsAnim, 10),
             ]}
-            onPress={() => {
-              setAccountType(AccountTypeType.organization);
-            }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            {isIos ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  { borderRadius: cardRadius, overflow: 'hidden' },
+                ]}
+              >
+                <BlurView
+                  blurType={dark ? 'dark' : 'light'}
+                  blurAmount={18}
+                  reducedTransparencyFallbackColor={colors.card}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View style={[StyleSheet.absoluteFillObject, glassOverlayStyle]} />
+              </View>
+            ) : null}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flex: 1,
+                paddingHorizontal: 10,
+              }}
+              activeOpacity={0.9}
+              onPress={() => animateSelection(AccountTypeType.organization)}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems:
+                    accountType === AccountTypeType.organization ? 'flex-start' : 'center',
+                  flex: 1,
+                }}
+              >
                 <View
                   style={{
                     backgroundColor: Colors.neutral[800],
@@ -131,28 +381,40 @@ function AccountType({ route, navigation }: Props) {
                     padding: 10,
                     height: 40,
                     width: 40,
+                    alignSelf:
+                      accountType === AccountTypeType.organization ? 'flex-start' : 'center',
+                    marginTop: -2,
                   }}
                 >
                   <People color={Colors.primary.brand} />
                 </View>
 
-                <View style={{ flex: 1 }}>
-                  <StyledText style={{ marginLeft: 15, ...Typography.body.x3 }}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <StyledText
+                    style={{
+                      marginLeft: 10,
+                      ...Typography.body.x3,
+                      color: primaryTextColor,
+                      fontWeight: '700',
+                    }}
+                  >
                     We are an Organization
                   </StyledText>
-                  {accountType == AccountTypeType.organization ? (
+                  <Animated.View
+                    style={[descriptionAnimatedStyle(organizationAnim), { marginTop: 6 }]}
+                  >
                     <StyledText
                       style={{
-                        marginLeft: 15,
-                        marginRight: 5,
+                        marginLeft: 10,
+                        marginRight: 8,
                         ...Typography.body.x2,
-                        color: Colors.neutral[300],
+                        color: primaryTextColor,
                       }}
                     >
                       Organization accounts are for Churches, Non-Profits, Businesses, or any
                       Christian entities that desire to create a One Body profile.
                     </StyledText>
-                  ) : null}
+                  </Animated.View>
                 </View>
               </View>
               <View
@@ -160,33 +422,65 @@ function AccountType({ route, navigation }: Props) {
                   GeneralStyle.radioButton,
                   {
                     borderColor:
-                      accountType == AccountTypeType.organization
-                        ? Colors.primarySapphire.brand
-                        : Colors.neutral[200],
+                      accountType === AccountTypeType.organization
+                        ? Colors.secondary.brand
+                        : Colors.primarySapphire.brand,
                   },
                 ]}
               >
-                {accountType == AccountTypeType.organization ? (
+                {accountType === AccountTypeType.organization ? (
                   <View style={GeneralStyle.radioButtonIcon} />
                 ) : null}
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
-        <View style={{ marginVertical: spacing.x24 }}>
+        <Animated.View
+          style={[
+            {
+              marginVertical: spacing.x6,
+              width: isTablet ? '100%' : undefined,
+              maxWidth: isTablet ? CONTENT_MAX_WIDTH : undefined,
+            },
+            fadeUp(footerAnim, 10),
+          ]}
+        >
           <TouchableOpacity
             style={[
               button.primary,
               {
                 marginBottom: 35,
+                marginTop: 25,
                 opacity: accountType == null ? 0.4 : 1,
+                ...(isIos ? { overflow: 'hidden', backgroundColor: 'transparent' } : {}),
+                ...dropShadow,
               },
             ]}
             disabled={accountType == null}
-            onPress={() => {
-              if (accountType) navigation.navigate('SignUp', { accountType });
+            onPress={async () => {
+              if (!accountType) {
+                return;
+              }
+              HapticService.trigger('impactMedium');
+              await savePendingAccountType(accountType);
+              navigation.navigate('SignUp', { accountType });
             }}
           >
+            {isIos ? (
+              <>
+                <BlurView
+                  pointerEvents="none"
+                  blurType={dark ? 'dark' : 'light'}
+                  blurAmount={18}
+                  reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View
+                  pointerEvents="none"
+                  style={[StyleSheet.absoluteFillObject, { backgroundColor: continueGlassFill }]}
+                />
+              </>
+            ) : null}
             <StyledText style={{ color: '#FFF' }}>Continue</StyledText>
           </TouchableOpacity>
           <TouchableOpacity
@@ -195,12 +489,13 @@ function AccountType({ route, navigation }: Props) {
               navigation.replace('Login');
             }}
           >
-            <StyledText>Already have an account? </StyledText>
-            <StyledText style={{ color: Colors.primarySapphire.brand }}>Sign in</StyledText>
+            <StyledText style={{ color: primaryTextColor }}>Already have an account? </StyledText>
+            <StyledText style={{ color: Colors.secondary.brand }}>Sign in</StyledText>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </UserStepsLayout>
   );
 }
+
 export default AccountType;

@@ -220,28 +220,11 @@ export type PrayerWallStackParamsList = {
 
 export type OnboardingStackParamList = {
   OnboardingIntro: undefined;
-  OnboardingChurchAttend: {
-    selectedChurchType: string;
-    selectedChurchSubType?: string;
-  };
-  OnboardingChurchType: undefined;
-  OnboardingDateOfBirth: {
-    selectedChurchType: string;
-    selectedChurchSubType?: string;
-
-    selectedChurchAttendence: string;
-  };
+  OnboardingDateOfBirth: undefined;
   OnboardingLocation: {
-    selectedChurchType: string;
-    selectedChurchSubType?: string;
-    selectedChurchAttendence: string;
-
     dateOfBirth: string;
   };
   OnboardingInterests: {
-    selectedChurchType?: string;
-    selectedChurchSubType?: string;
-    selectedChurchAttendence?: string;
     dateOfBirth?: string;
 
     longitude?: number;
@@ -257,9 +240,6 @@ export type OnboardingStackParamList = {
     organizationContactPhoneNumber?: string;
   };
   OnboardingInfluencers: {
-    selectedChurchType?: string;
-    selectedChurchSubType?: string;
-    selectedChurchAttendence?: string;
     dateOfBirth?: string;
     longitude?: number;
     latitude?: number;

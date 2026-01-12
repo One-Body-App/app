@@ -1,11 +1,10 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { Platform } from 'react-native';
 
 import { OnboardingStackParamList } from './types';
 
 import OnboardingIntro from '../screens/onboardingSteps/onboardingIntro';
-import OnboardingChurchAttend from '../screens/onboardingSteps/onboardingChurchAttend';
-import OnboardingChurchType from '../screens/onboardingSteps/onboardingChurchType';
 import OnboardingDateOfBirth from '../screens/onboardingSteps/onboardingDateOfBirth';
 import OnboardingInfluencers from '../screens/onboardingSteps/onboardingInfluencers';
 import OnboardingInterests from '../screens/onboardingSteps/onboardingInterests';
@@ -20,21 +19,21 @@ const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 function OnboardingStack() {
   return (
     <Stack.Navigator initialRouteName="OnboardingIntro">
-      <Stack.Screen name="OnboardingIntro" component={OnboardingIntro} options={headerOptions} />
       <Stack.Screen
-        name="OnboardingChurchAttend"
-        component={OnboardingChurchAttend}
-        options={headerOptions}
-      />
-      <Stack.Screen
-        name="OnboardingChurchType"
-        component={OnboardingChurchType}
-        options={headerOptions}
+        name="OnboardingIntro"
+        component={OnboardingIntro}
+        options={{
+          ...headerOptions,
+          headerShown: Platform.OS !== 'android',
+        }}
       />
       <Stack.Screen
         name="OnboardingDateOfBirth"
         component={OnboardingDateOfBirth}
-        options={headerOptions}
+        options={{
+          ...(Platform.OS === 'ios' ? headerOptions : {}),
+          ...(Platform.OS === 'android' && { headerShown: false }),
+        }}
       />
       <Stack.Screen
         name="OnboardingInfluencers"

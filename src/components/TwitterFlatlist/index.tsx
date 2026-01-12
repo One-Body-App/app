@@ -10,7 +10,7 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { User } from '@/utils/types';
 import Button from '../Button';
 import { OpenURLButton } from '@/services/constants';
-import { GeneralStyle } from '@/src/constants/GeneralStyle';
+import GeneralStyle from '@/src/constants/GeneralStyle';
 
 function TwitterFlatlist({
   currentUser,

@@ -59,6 +59,14 @@ buck-out/
 # Bundle artifact
 *.jsbundle
 
+# Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+
 # Ruby / CocoaPods
 **/Pods/
 /vendor/bundle/
@@ -83,7 +91,10 @@ android/app/release/*
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
 
+
+#Env
 .env
+.env.local
 
 # testing
 /coverage

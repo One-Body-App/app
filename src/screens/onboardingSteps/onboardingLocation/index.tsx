@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useSelector } from 'react-redux';
 import { ArrowDown2 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import Button from '@/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
-import { RootState } from '@/src/redux/reducers/rootReducer';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
@@ -14,7 +12,6 @@ import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import MapBox, { MapSuggestion } from '@/components/MapBox';
 import { borderRadius } from '@/src/styles/outlines';
-import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
 
@@ -38,7 +35,7 @@ function OnboardingLocation({ navigation, route }: Props) {
         });
       }}
       onboardingType={AccountType.individual}
-      activeStep={4}
+      activeStep={2}
       reasonText={
         <>
           <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>

@@ -1,4 +1,4 @@
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { FirebaseAuthTypes, getIdToken } from '@react-native-firebase/auth';
 import axios from 'axios';
 import { Dispatch } from '@reduxjs/toolkit';
 import { ApiCall } from '@/services/api';
@@ -11,7 +11,15 @@ export const processLogin = async (
   setNewUserCredentials: Function,
   setToken?: Function
 ) => {
-  const token = await userCredentials.user.getIdToken();
+  const token = await getIdToken(userCredentials.user);
+  if (__DEV__) {
+    console.log('[login] processLogin start', {
+      hasToken: !!token,
+      tokenLength: token?.length ?? 0,
+      isNewUser: !!userCredentials.additionalUserInfo?.isNewUser,
+      baseUrl: BASE_URL,
+    });
+  }
 
   if (setToken && token) {
     setToken(token);
@@ -27,6 +35,13 @@ export const processLogin = async (
       route: 'user/my-profile',
       verb: 'get',
     });
+    if (__DEV__) {
+      console.log('[login] user/my-profile result', {
+        status: userProfileResult.status,
+        hasResponse: !!userProfileResult.response,
+        responseType: typeof userProfileResult.response,
+      });
+    }
     if (userProfileResult.status === 200) {
       if (userProfileResult.response == '') {
         setNewUserCredentials(userCredentials);

@@ -16,7 +16,10 @@ function Login({ route, navigation }: Props) {
   const { dark, colors } = useTheme();
 
   return (
-    <UserStepsLayout backgroundColor={dark ? colors.background : Colors.neutral[700]}>
+    <UserStepsLayout
+      backgroundColor={dark ? colors.background : Colors.neutral[700]}
+      showCustomHeaderOnAndroid
+    >
       <ScrollView
         keyboardShouldPersistTaps="always"
         removeClippedSubviews={false}

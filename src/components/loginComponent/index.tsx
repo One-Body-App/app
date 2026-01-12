@@ -1,15 +1,37 @@
-import React, { FC, useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, ScrollView, useColorScheme, Platform } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  View,
+  TouchableOpacity,
+  useColorScheme,
+  Platform,
+  AppState,
+  AppStateStatus,
+} from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 
 import { useDispatch, useSelector } from 'react-redux';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import {
+  AppleAuthProvider,
+  FirebaseAuthTypes,
+  GoogleAuthProvider,
+  TwitterAuthProvider,
+  getAuth,
+  getIdToken,
+  sendEmailVerification,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  reload,
+  checkActionCode,
+  applyActionCode,
+  signOut,
+} from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
+import { LoginManager } from 'react-native-fbsdk-next';
 import axios from 'axios';
+import { getApp } from '@react-native-firebase/app';
 
 import { useToast } from 'react-native-toast-notifications';
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { useNavigation, useTheme, useFocusEffect } from '@react-navigation/native';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import { openInbox } from 'react-native-email-link';
@@ -17,7 +39,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
-import { GeneralStyle } from '../../constants/GeneralStyle';
+import GeneralStyle from '../../constants/GeneralStyle';
 import Google from '@/assets/svg/G.svg';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Apple from '@/assets/svg/Apple.svg';
@@ -26,12 +48,12 @@ import Button from '../Button';
 import { styles } from './styles';
 import { requestUserPermission } from '@/services/notification/notificationServices';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import GradientButton from '../GradientButton';
 import {
   loginSocialRequest,
   logout,
   sendVerificationEmail,
   signUp,
+  getProfile,
 } from '@/src/redux/actions/AuthActions';
 
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
@@ -46,7 +68,7 @@ import { button } from '@/src/styles/buttons';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import StyledTextInput from '../styled/TextInput';
 import { fontSize } from '@/src/styles/typography';
-import CustomModal from '../CustomModal';
+import { loadPendingAccountType, clearPendingAccountType } from '@/src/services/accountTypeStorage';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'ConfirmLogin'>;
 
@@ -56,20 +78,24 @@ interface Props {
   oauth_token?: string;
   oauth_verifier?: string;
 
-  provider?: string;
   action?: string;
-  apiKey?: string;
-  lang?: string;
+
   mode?: string;
   oobCode?: string;
   currentUserEmail?: string;
   onlyPassword?: boolean;
   toScreenRouteParams?: Record<string, string>;
-  errorFromLogin?: string;
   updateParent?: Function;
 
   enabledLoginProviders?: string[];
 }
+
+const logVerifyEmail = (...args: any[]) => {
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.log(...args);
+  }
+};
 
 function LoginComponent({
   showConfirmationEmailMessage,
@@ -89,16 +115,18 @@ function LoginComponent({
   const dispatch = useDispatch();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
 
-  const authState = useSelector((state: RootState) => state.auth);
-  const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
-  const toScreen = useSelector((state: RootState) => state.general.loginVerficationBackPage);
+  const authState = useSelector((rootState: RootState) => rootState.auth);
+  const userProfile = useSelector((rootState: RootState) => rootState.auth.getProfileData);
+  const toScreen = useSelector(
+    (rootState: RootState) => rootState.general.loginVerficationBackPage
+  );
   const toScreenParams = useSelector(
-    (state: RootState) => state.general.loginVerficationBackPageParams
+    (rootState: RootState) => rootState.general.loginVerficationBackPageParams
   );
 
   const inputRefs = {
-    email: useRef<any>(),
-    password: useRef<any>(),
+    email: useRef<any>(null),
+    password: useRef<any>(null),
   };
   const [state, setState] = useState({
     email: currentUserEmail ?? '',
@@ -106,22 +134,55 @@ function LoginComponent({
     password: '',
     passwordError: '',
   });
+  const resetForm = useCallback(() => {
+    setState({
+      email: currentUserEmail ?? '',
+      emailError: '',
+      password: '',
+      passwordError: '',
+    });
+  }, [currentUserEmail]);
 
   const toast = useToast();
+  const firebaseAuth = getAuth(getApp());
 
   const [error, seterror] = useState<string>();
   const [success, setSuccess] = useState<string>('');
   const [hidePass, setHidePass] = useState(true);
   const [isVerificationNeeded, setIsVerificationNeeded] = useState<boolean>(false);
   const [token, setToken] = useState('');
-  const [showConfirmEmail, setShowConfirmEmail] = useState<boolean>(false);
+  const [verificationEmailRequested, setVerificationEmailRequested] = useState(false);
 
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
+  const hasRunFocusVerifyCheck = useRef(false);
+  const hasProcessedVerification = useRef(false);
+  const lastOobCode = useRef<string | null>(null);
 
-  const [showSendEmailConfirmation, setShowSendEmailConfirmation] = useState<boolean>(true);
+  const accountType = useSelector((rootState: RootState) => rootState.general.accountType);
 
-  const accountType = useSelector((state: RootState) => state.general.accountType);
+  const changeHandler = useCallback((type: 'email' | 'password', value: string) => {
+    setState((prevState) => ({
+      ...prevState,
+      [type]: value,
+      ...(type === 'email' ? { emailError: '' } : {}),
+      ...(type === 'password' ? { passwordError: '' } : {}),
+    }));
+  }, []);
+  const gotoSignup = useCallback(async () => {
+    setNewUserCredentials(null);
+    dispatch(setAccountType(''));
+
+    if (firebaseAuth.currentUser) {
+      await reload(firebaseAuth.currentUser);
+    }
+    if (firebaseAuth.currentUser) {
+      await getIdToken(firebaseAuth.currentUser, true);
+    }
+  }, [dispatch, firebaseAuth]);
+  const sendFcm = useCallback((fcmToken: string) => {
+    requestUserPermission(fcmToken, true);
+  }, []);
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -132,10 +193,10 @@ function LoginComponent({
 
     // navigation.addListener('beforeRemove', (e) => {
     //   LoginManager.logOut();
-    //   if (auth().currentUser?.uid) {
-    //     auth().signOut();
+    //   if (firebaseAuth.currentUser?.uid) {
+    //     firebaseAuth.signOut();
 
-    //     auth().currentUser?.reload();
+    //     firebaseAuth.currentUser?.reload();
     //   }
     //   dispatch(logout());
     // });
@@ -143,7 +204,9 @@ function LoginComponent({
 
   useEffect(() => {
     if (token) {
-      auth().currentUser?.reload();
+      if (firebaseAuth.currentUser) {
+        reload(firebaseAuth.currentUser);
+      }
 
       if (Platform.OS === 'android') {
         navigation.replace('MainRoot', {
@@ -152,34 +215,273 @@ function LoginComponent({
         });
       }
     }
-  }, [token]);
+  }, [token, firebaseAuth.currentUser, navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      resetForm();
+
+      // Skip focus check if we have an oobCode - the verification useEffect will handle it
+      if (oobCode) {
+        logVerifyEmail(
+          '[VerifyEmail] focus check skipped, oobCode present - useEffect will handle'
+        );
+        return;
+      }
+
+      // On iOS with verifyAccount mode, also skip - AppState handler will check after Safari
+      if (Platform.OS === 'ios' && verifyAccount) {
+        logVerifyEmail(
+          '[VerifyEmail] focus check skipped on iOS verifyAccount mode - AppState will handle'
+        );
+        return;
+      }
+
+      if (hasRunFocusVerifyCheck.current && Platform.OS !== 'ios') {
+        return;
+      }
+      // On iOS, we want to allow the check to run when focusing if we are in the verifyAccount state
+      if (hasRunFocusVerifyCheck.current && Platform.OS === 'ios' && !verifyAccount) {
+        return;
+      }
+      hasRunFocusVerifyCheck.current = true;
+
+      const checkVerifiedAndNavigate = async () => {
+        const { currentUser } = firebaseAuth;
+        if (!currentUser) {
+          return;
+        }
+        try {
+          await reload(currentUser);
+          logVerifyEmail('[VerifyEmail] focus check after reload', {
+            emailVerified: currentUser.emailVerified,
+            uid: currentUser.uid,
+            platform: Platform.OS,
+          });
+          if (currentUser.emailVerified) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainRoot' }],
+            });
+          }
+        } catch (err) {
+          logVerifyEmail('[VerifyEmail] focus check failed', err);
+        }
+      };
+
+      checkVerifiedAndNavigate();
+    }, [firebaseAuth, navigation, resetForm, oobCode, verifyAccount])
+  );
 
   useEffect(() => {
-    if (mode == 'verifyEmail' && action == 'action' && oobCode) {
-      const action = async () => {
+    logVerifyEmail('[VerifyEmail] effect check', {
+      mode,
+      action,
+      hasOobCode: !!oobCode,
+      oobCodeLength: oobCode?.length,
+      platform: Platform.OS,
+      hasCurrentUser: !!firebaseAuth.currentUser,
+      currentUserEmail: firebaseAuth.currentUser?.email,
+      alreadyProcessed: hasProcessedVerification.current,
+    });
+
+    if (mode === 'verifyEmail' && action === 'action' && oobCode) {
+      // Prevent multiple runs for the same code
+      if (hasProcessedVerification.current && lastOobCode.current === oobCode) {
+        logVerifyEmail('[VerifyEmail] Skipping - already processed this code');
+        return;
+      }
+
+      hasProcessedVerification.current = true;
+      lastOobCode.current = oobCode;
+
+      logVerifyEmail('[VerifyEmail] Starting verification process', {
+        mode,
+        action,
+        hasOobCode: !!oobCode,
+        oobCodeLength: oobCode?.length,
+        platform: Platform.OS,
+        hasCurrentUser: !!firebaseAuth.currentUser,
+        currentUserEmail: firebaseAuth.currentUser?.email,
+      });
+
+      const verifyEmail = async () => {
         try {
-          const result = await auth().checkActionCode(oobCode);
+          logVerifyEmail('[VerifyEmail] Step 1: Checking action code');
+          const result = await checkActionCode(firebaseAuth, oobCode);
+          logVerifyEmail('[VerifyEmail] Step 2: Action code checked', {
+            operation: result.operation,
+            email: result.data.email,
+          });
 
-          if (result.operation == 'VERIFY_EMAIL') {
-            await auth().applyActionCode(oobCode);
+          if (result.operation === 'VERIFY_EMAIL') {
+            logVerifyEmail('[VerifyEmail] Step 3: Applying action code');
+            await applyActionCode(firebaseAuth, oobCode);
+            logVerifyEmail('[VerifyEmail] Step 4: Action code applied');
 
-            setSuccess('Email verification successful. Please Sign in to your account');
+            // Reload the current user to update emailVerified status
+            const { currentUser } = firebaseAuth;
+            logVerifyEmail('[VerifyEmail] Step 5: Current user check', {
+              hasCurrentUser: !!currentUser,
+              currentUserEmail: currentUser?.email,
+            });
+
+            if (currentUser) {
+              logVerifyEmail('[VerifyEmail] Step 6: Reloading user');
+              await reload(currentUser);
+              logVerifyEmail('[VerifyEmail] Step 7: After reload', {
+                emailVerified: currentUser.emailVerified,
+                uid: currentUser.uid,
+              });
+
+              // Poll briefly to allow emailVerified to propagate (iOS can lag)
+              let verified = currentUser.emailVerified;
+              logVerifyEmail('[VerifyEmail] Step 8: Starting polling loop', {
+                initialVerified: verified,
+              });
+              /* eslint-disable no-await-in-loop */
+              for (let i = 0; i < 3 && !verified; i += 1) {
+                await new Promise<void>((resolve) => {
+                  setTimeout(resolve, 1000);
+                });
+                await reload(currentUser);
+                verified = currentUser.emailVerified;
+                logVerifyEmail('[VerifyEmail] Polling emailVerified', {
+                  emailVerified: verified,
+                  attempt: i + 1,
+                });
+              }
+              /* eslint-enable no-await-in-loop */
+
+              logVerifyEmail('[VerifyEmail] Step 9: Polling complete', { finalVerified: verified });
+
+              // Force token refresh to ensure global state updates and profile fetch
+              logVerifyEmail('[VerifyEmail] Step 10: Getting new ID token');
+              const newToken = await getIdToken(currentUser, true);
+              logVerifyEmail('[VerifyEmail] Step 11: Got new token', { hasToken: !!newToken });
+
+              // Explicitly trigger profile fetch to ensure it happens on iOS
+              // This is critical because onIdTokenChanged might not fire quickly enough
+              if (newToken) {
+                logVerifyEmail('[VerifyEmail] Step 12: Dispatching profile fetch');
+                dispatch(getProfile.Request({ token: newToken }));
+              }
+
+              // Wait a brief moment to allow profile fetch to start
+              logVerifyEmail('[VerifyEmail] Step 13: Waiting for profile fetch to start');
+              await new Promise<void>((resolve) => {
+                setTimeout(resolve, 500);
+              });
+              logVerifyEmail('[VerifyEmail] Step 14: Wait complete');
+
+              if (firebaseAuth.currentUser?.emailVerified) {
+                logVerifyEmail('[VerifyEmail] Step 15: Navigating to MainRoot');
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'MainRoot' }],
+                });
+              } else {
+                logVerifyEmail('[VerifyEmail] Step 15: Showing success message (not verified)');
+                setSuccess('Email verification successful. Please Sign in to your account');
+              }
+            } else {
+              logVerifyEmail('[VerifyEmail] No current user - showing success message');
+              setSuccess('Email verification successful. Please Sign in to your account');
+            }
+          } else {
+            // Operation is UNKNOWN - this means the code was likely already used
+            // But let's try to apply it anyway in case it still works
+            logVerifyEmail(
+              '[VerifyEmail] Operation was not VERIFY_EMAIL, attempting to apply anyway',
+              {
+                operation: result.operation,
+              }
+            );
+
+            const { currentUser } = firebaseAuth;
+            if (currentUser) {
+              try {
+                // Try to apply the code anyway
+                logVerifyEmail('[VerifyEmail] Attempting to apply UNKNOWN action code');
+                await applyActionCode(firebaseAuth, oobCode);
+                logVerifyEmail('[VerifyEmail] Successfully applied UNKNOWN action code');
+
+                // Reload and check
+                await reload(currentUser);
+                await getIdToken(currentUser, true);
+
+                logVerifyEmail('[VerifyEmail] After applying UNKNOWN code', {
+                  emailVerified: currentUser.emailVerified,
+                  uid: currentUser.uid,
+                });
+
+                if (currentUser.emailVerified) {
+                  logVerifyEmail('[VerifyEmail] Email is verified! Navigating to MainRoot');
+                  const newToken = await getIdToken(currentUser, true);
+                  if (newToken) {
+                    dispatch(getProfile.Request({ token: newToken }));
+                  }
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'MainRoot' }],
+                  });
+                  return; // Exit early on success
+                }
+              } catch (applyError: any) {
+                logVerifyEmail('[VerifyEmail] Failed to apply UNKNOWN action code', {
+                  error: applyError.message,
+                  code: applyError.code,
+                });
+              }
+
+              // If applying failed or email still not verified, check if it's already verified
+              await reload(currentUser);
+              await getIdToken(currentUser, true);
+
+              logVerifyEmail('[VerifyEmail] Checked current user after UNKNOWN operation', {
+                emailVerified: currentUser.emailVerified,
+                uid: currentUser.uid,
+              });
+
+              if (currentUser.emailVerified) {
+                logVerifyEmail('[VerifyEmail] Email is verified! Navigating to MainRoot');
+                const newToken = await getIdToken(currentUser, true);
+                if (newToken) {
+                  dispatch(getProfile.Request({ token: newToken }));
+                }
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'MainRoot' }],
+                });
+              } else {
+                logVerifyEmail('[VerifyEmail] Email still not verified');
+                setSuccess('Verification link may have expired. Please request a new one.');
+              }
+            } else {
+              logVerifyEmail('[VerifyEmail] No current user - showing success message');
+              setSuccess('Email verification successful. Please Sign in to your account');
+            }
           }
         } catch (e: any) {
+          logVerifyEmail('[VerifyEmail] ERROR', {
+            message: e?.message,
+            code: e?.code,
+            platform: Platform.OS,
+          });
           seterror('Invalid Verification code, please try again.');
         }
       };
-      action();
+      verifyEmail();
     }
 
-    if (mode == 'verifyAndChangeEmail' && action == 'action' && oobCode) {
-      const action = async () => {
+    if (mode === 'verifyAndChangeEmail' && action === 'action' && oobCode) {
+      const verifyAndChangeEmail = async () => {
         try {
-          const result = await auth().checkActionCode(oobCode);
-          await auth().applyActionCode(oobCode);
+          const result = await checkActionCode(firebaseAuth, oobCode);
+          await applyActionCode(firebaseAuth, oobCode);
 
           setSuccess('Email changed successful. Please Sign in to your account');
-          setState({ ...state, email: result.data.email ?? '' });
+          setState((prev) => ({ ...prev, email: result.data.email ?? '' }));
         } catch (e: any) {
           if (updateParent) {
             updateParent(false);
@@ -191,9 +493,111 @@ function LoginComponent({
           });
         }
       };
-      action();
+      verifyAndChangeEmail();
     }
-  }, [mode]);
+  }, [
+    mode,
+    action,
+    oobCode,
+    firebaseAuth,
+    navigation,
+    updateParent,
+    toast,
+    setSuccess,
+    seterror,
+    dispatch,
+  ]);
+
+  useEffect(() => {
+    if (!success) {
+      return;
+    }
+    const restoreAccountType = async () => {
+      const pendingType = await loadPendingAccountType();
+      if (pendingType) {
+        dispatch(setAccountType(pendingType));
+        await clearPendingAccountType();
+      }
+    };
+    restoreAccountType();
+  }, [success, dispatch]);
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      logVerifyEmail('[VerifyEmail] AppState changed', {
+        nextAppState,
+        verifyAccount,
+        hasOobCode: !!oobCode,
+        hasCurrentUser: !!firebaseAuth.currentUser,
+      });
+
+      // Skip AppState handler when we have an oobCode - the verification useEffect handles it
+      if (oobCode) {
+        logVerifyEmail(
+          '[VerifyEmail] AppState check skipped - oobCode present, useEffect handles it'
+        );
+        return;
+      }
+
+      // Only run AppState checks when user is waiting for email verification
+      // (verifyAccount mode without oobCode)
+      if (!verifyAccount) {
+        logVerifyEmail('[VerifyEmail] AppState check skipped - not in verifyAccount mode');
+        return;
+      }
+
+      if (nextAppState === 'active') {
+        const { currentUser } = firebaseAuth;
+        if (!currentUser) {
+          logVerifyEmail('[VerifyEmail] No current user in AppState handler');
+          return;
+        }
+
+        logVerifyEmail('[VerifyEmail] App became active, checking verification status...');
+
+        try {
+          // Force reload from Firebase servers
+          await reload(currentUser);
+
+          // Get fresh token to ensure we have latest claims
+          await getIdToken(currentUser, true);
+
+          logVerifyEmail('[VerifyEmail] AppState check after reload', {
+            emailVerified: currentUser.emailVerified,
+            uid: currentUser.uid,
+            email: currentUser.email,
+          });
+
+          if (currentUser.emailVerified) {
+            logVerifyEmail('[VerifyEmail] Email is verified! Fetching profile and navigating...');
+
+            // Force token refresh to ensure profile is fetched and state is updated
+            const newToken = await getIdToken(currentUser, true);
+            if (newToken) {
+              dispatch(getProfile.Request({ token: newToken }));
+            }
+
+            // Navigate to onboarding
+            logVerifyEmail('[VerifyEmail] Navigating to MainRoot');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainRoot' }],
+            });
+          } else {
+            logVerifyEmail('[VerifyEmail] Email still not verified after reload');
+          }
+        } catch (err) {
+          logVerifyEmail('[VerifyEmail] AppState verification check failed', err);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [firebaseAuth, navigation, dispatch, verifyAccount, oobCode]);
 
   // useEffect(() => {
   //   if (action == 'confirmation' && provider == 'twitter') {
@@ -218,8 +622,10 @@ function LoginComponent({
         seterror('User not found, please register to continue');
         newUserCredentials.user.delete();
         LoginManager.logOut();
-        await auth().signOut();
-        await auth().currentUser?.reload();
+        await signOut(firebaseAuth);
+        if (firebaseAuth.currentUser) {
+          await reload(firebaseAuth.currentUser);
+        }
         dispatch(logout());
       }
     };
@@ -227,7 +633,7 @@ function LoginComponent({
     if (newUserCredentials) {
       checkNewUserCredentials();
     }
-  }, [newUserCredentials]);
+  }, [newUserCredentials, accountType, token, dispatch, gotoSignup, firebaseAuth, sendFcm]);
 
   useEffect(() => {
     if (oauth_token && oauth_verifier) {
@@ -251,11 +657,8 @@ function LoginComponent({
               return item.split('=')[1];
             });
 
-            const twitterCredential = auth.TwitterAuthProvider.credential(
-              tokenData[0],
-              tokenData[1]
-            );
-            const userCredentials = await auth().signInWithCredential(twitterCredential);
+            const twitterCredential = TwitterAuthProvider.credential(tokenData[0], tokenData[1]);
+            const userCredentials = await signInWithCredential(firebaseAuth, twitterCredential);
 
             if (
               !!verifyAccount &&
@@ -288,26 +691,89 @@ function LoginComponent({
               processLogin(userCredentials, setNewUserCredentials, setToken);
             }
           }
-        } catch (error: any) {
-          if (error.nativeErrorMessage.includes('auth/user-not-found')) {
+        } catch (twitterAuthError: any) {
+          if (twitterAuthError.nativeErrorMessage.includes('auth/user-not-found')) {
             seterror('User/password combination not found');
           } else {
-            seterror(error.nativeErrorMessage);
+            seterror(twitterAuthError.nativeErrorMessage);
           }
         }
       };
       getTwitterAuthToken();
     }
-  }, [oauth_token]);
+  }, [
+    oauth_token,
+    oauth_verifier,
+    firebaseAuth,
+    verifyAccount,
+    onlyPassword,
+    currentUserEmail,
+    updateParent,
+    navigation,
+    toast,
+    toScreen,
+    toScreenParams,
+  ]);
 
   useEffect(() => {
-    if (authState?.sendVerificationEmailSuccess == true) {
+    if (authState?.sendVerificationEmailSuccess === true) {
       toast.show(`Verification email successfully sent. Check your inbox.`, {
         type: 'success',
         placement: 'top',
       });
     }
-  }, [authState?.sendVerificationEmailSuccess]);
+  }, [authState?.sendVerificationEmailSuccess, toast]);
+
+  useEffect(() => {
+    if (authState?.sendVerificationEmailSuccess === false) {
+      toast.show(`We couldn't send the verification email. Please try again.`, {
+        type: 'danger',
+        placement: 'top',
+      });
+    }
+  }, [authState?.sendVerificationEmailSuccess, toast]);
+
+  useEffect(() => {
+    // Auto-send verification email when:
+    // 1. User needs verification after login (isVerificationNeeded)
+    // 2. Explicitly requested via prop (showConfirmationEmailMessage)
+    // 3. Landed on ConfirmLogin with verifyAccount (from signup flow)
+    const shouldAutoSend =
+      (isVerificationNeeded || showConfirmationEmailMessage || verifyAccount) &&
+      !verificationEmailRequested;
+
+    if (!shouldAutoSend) {
+      return;
+    }
+
+    const sendVerification = async () => {
+      const { currentUser } = firebaseAuth;
+      if (Platform.OS === 'android' && currentUser) {
+        try {
+          await sendEmailVerification(currentUser);
+          setVerificationEmailRequested(true);
+          return;
+        } catch {
+          // Fall back to backend email if Firebase fails.
+        }
+      }
+
+      const firebaseToken = currentUser ? await getIdToken(currentUser) : undefined;
+      if (firebaseToken) {
+        setVerificationEmailRequested(true);
+        dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
+      }
+    };
+
+    sendVerification();
+  }, [
+    dispatch,
+    isVerificationNeeded,
+    showConfirmationEmailMessage,
+    verifyAccount,
+    verificationEmailRequested,
+    firebaseAuth.currentUser,
+  ]);
 
   const signInUser = async () => {
     try {
@@ -315,6 +781,14 @@ function LoginComponent({
       const emailError = await validator('email', email);
       const passwordError = await validator('password', password);
       seterror('');
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[login] signInUser submit', {
+          email,
+          verifyAccount: !!verifyAccount,
+          onlyPassword: !!onlyPassword,
+        });
+      }
 
       if (!!verifyAccount && !!onlyPassword && email !== currentUserEmail) {
         throw new Error("Please login with the current user's email");
@@ -323,13 +797,20 @@ function LoginComponent({
       if (!emailError && !passwordError) {
         dispatch(setLoader(true));
 
-        const emailCredential = await auth().signInWithEmailAndPassword(email, password);
+        const emailCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[login] firebase signIn success', {
+            uid: emailCredential.user.uid,
+            emailVerified: !!emailCredential.user.emailVerified,
+          });
+        }
 
         if (verifyAccount) {
           setState({ ...state, password: '' });
 
-          if (mode == 'verifyEmail') {
-            if (Platform.OS == 'ios') {
+          if (mode === 'verifyEmail') {
+            if (Platform.OS === 'ios') {
               navigation.pop();
             }
             await processLogin(emailCredential, setNewUserCredentials, setToken);
@@ -346,6 +827,7 @@ function LoginComponent({
             navigation.goBack();
           }
         } else if (emailCredential.user.emailVerified) {
+          await processLogin(emailCredential, setNewUserCredentials, setToken);
           dispatch(setLoader(false));
         } else {
           setIsVerificationNeeded(true);
@@ -358,32 +840,29 @@ function LoginComponent({
       } else {
         setState({ ...state, emailError, passwordError });
       }
-    } catch (error: any) {
+    } catch (signInUserError: any) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[login] signInUser error', {
+          message: signInUserError?.message,
+          code: signInUserError?.code,
+        });
+      }
       let message = 'User/password combination not found';
       if (
-        error.message &&
-        !error.message.includes('auth/user-not-found') &&
-        !error.message.includes('auth/wrong-password')
+        signInUserError.message &&
+        !signInUserError.message.includes('auth/user-not-found') &&
+        !signInUserError.message.includes('auth/wrong-password')
       ) {
-        message = error.message;
+        message = signInUserError.message;
+      }
+      if (__DEV__) {
+        console.warn('signInUser error', signInUserError?.code, signInUserError?.message);
       }
       seterror(message);
       dispatch(setLoader(false));
     }
   };
-  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
-  const gotoSignup = async () => {
-    setShowConfirmEmail(false);
-    setNewUserCredentials(null);
-    dispatch(setAccountType(''));
-
-    await auth().currentUser?.reload();
-    await auth().currentUser?.getIdToken(true);
-  };
-  const sendFcm = (token: string) => {
-    requestUserPermission(token, true);
-  };
-
   const onTwitterButtonPress = async () => {
     try {
       seterror('');
@@ -404,7 +883,7 @@ function LoginComponent({
         // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
       }
     } catch (e) {
-      console.log(e);
+      // Error handled silently or via other mechanisms
     }
   };
 
@@ -441,19 +920,20 @@ function LoginComponent({
 
       // Create a Firebase credential from the response
       const { identityToken, nonce } = appleAuthRequestResponse;
-      const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+      const appleCredential = AppleAuthProvider.credential(identityToken, nonce);
 
       const credentialState = await appleAuth.getCredentialStateForUser(
         appleAuthRequestResponse.user
       );
 
       if (credentialState === appleAuth.State.AUTHORIZED) {
-        const userCredentials = await auth().signInWithCredential(appleCredential);
+        const userCredentials = await signInWithCredential(firebaseAuth, appleCredential);
 
         processLogin(userCredentials, setNewUserCredentials, setToken);
       }
-    } catch (error: any) {
-      if (error.code != appleAuth.Error.CANCELED && error.message) seterror(error.message);
+    } catch (appleAuthError: any) {
+      if (appleAuthError.code !== appleAuth.Error.CANCELED && appleAuthError.message)
+        seterror(appleAuthError.message);
     }
   }
 
@@ -467,8 +947,8 @@ function LoginComponent({
       const { idToken } = await GoogleSignin.signIn();
 
       // Create a Google credential with the token
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const userCredentials = await auth().signInWithCredential(googleCredential);
+      const googleCredential = GoogleAuthProvider.credential(idToken);
+      const userCredentials = await signInWithCredential(firebaseAuth, googleCredential);
 
       if (!!verifyAccount && !!onlyPassword && userCredentials.user.email !== currentUserEmail) {
         navigation.goBack();
@@ -494,22 +974,32 @@ function LoginComponent({
         await processLogin(userCredentials, setNewUserCredentials, setToken);
       }
       dispatch(setLoader(false));
-    } catch (error: any) {
-      if (!error.message.includes('Code=-5')) {
-        seterror(error.message.replace(`[${error.code}]`, ''));
+    } catch (signInError: any) {
+      if (!signInError.message.includes('Code=-5')) {
+        seterror(signInError.message.replace(`[${signInError.code}]`, ''));
       }
     }
   };
 
   const scheme = useColorScheme();
   const { colors } = useTheme();
+  const isDark = scheme === 'dark';
+  const brandWhite = '#f6f6f7';
+
+  const [resendAttempts, setResendAttempts] = useState(0);
+  const [resendMessage, setResendMessage] = useState<string>('');
 
   if (isVerificationNeeded || (showConfirmationEmailMessage && userProfile)) {
     return (
       <View style={{ marginHorizontal: spacing.x16, flex: 1, marginTop: spacing.x24 }}>
-        <StyledText style={Typography.header.h1}>Verify your email address</StyledText>
+        <StyledText style={[Typography.header.h1, isDark ? { color: brandWhite } : undefined]}>
+          Verify your email address
+        </StyledText>
         <StyledText
-          style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+          style={[
+            Typography.subheader.R,
+            { color: isDark ? brandWhite : Colors.neutral[300], marginTop: spacing.x8 },
+          ]}
         >
           You’ll need to verify your email to complete your account activation.
         </StyledText>
@@ -518,7 +1008,7 @@ function LoginComponent({
             Typography.subheader.R,
             {
               ...fontSize.x1,
-              color: Colors.primarySapphire[300],
+              color: isDark ? brandWhite : Colors.primarySapphire[300],
               marginTop: spacing.x8,
               marginBottom: spacing.x48,
             },
@@ -540,8 +1030,11 @@ function LoginComponent({
           btnTextStyle={[{ color: '#fff' }]}
         />
         <Button
-          onPress={() => {
-            dispatch(sendVerificationEmail.Request({ token: userProfile?.token }));
+          onPress={async () => {
+            const firebaseToken = firebaseAuth.currentUser
+              ? await getIdToken(firebaseAuth.currentUser)
+              : undefined;
+            dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
           }}
           text="Didn’t receive the mail? "
           wrapperViewBtnStyle={{ marginTop: 40, justifyContent: 'center' }}
@@ -550,12 +1043,53 @@ function LoginComponent({
             <StyledText style={{ color: Colors.primarySapphire.brand }}>Resend email</StyledText>
           }
         />
+        <Button
+          onPress={async () => {
+            const { currentUser } = firebaseAuth;
+            if (!currentUser) {
+              Toast.show('Please log in again', Toast.SHORT);
+              return;
+            }
+
+            try {
+              await reload(currentUser);
+              await getIdToken(currentUser, true);
+
+              if (currentUser.emailVerified) {
+                const newToken = await getIdToken(currentUser, true);
+                if (newToken) {
+                  dispatch(getProfile.Request({ token: newToken }));
+                }
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'MainRoot' }],
+                });
+              } else {
+                Toast.show(
+                  'Email not verified yet. Please check your email and click the verification link.',
+                  Toast.LONG
+                );
+              }
+            } catch (error) {
+              Toast.show('Unable to check verification status. Please try again.', Toast.SHORT);
+            }
+          }}
+          text="I've verified my email"
+          btnStyle={[
+            button.primary,
+            {
+              flex: 1,
+              marginTop: 20,
+            },
+          ]}
+          btnTextStyle={[{ color: '#fff' }]}
+        />
       </View>
     );
   }
 
   const getButtonTextStyle = () => {
-    return { ...styles.btnTitle, color: scheme == 'dark' ? '#838383' : Colors.primary.brand };
+    return { ...styles.btnTitle, color: scheme === 'dark' ? '#838383' : Colors.primary.brand };
   };
 
   const getButtonContainer = () => {
@@ -565,7 +1099,7 @@ function LoginComponent({
   const getDisabledButtonTextStyle = () => {
     return {
       ...styles.disabledBtnTextStyle,
-      color: scheme == 'dark' ? '#3a3a3a' : '#B3C1C5',
+      color: scheme === 'dark' ? '#3a3a3a' : '#B3C1C5',
       borderColor: colors.border,
     };
   };
@@ -573,6 +1107,138 @@ function LoginComponent({
   const getDisabledButtonStyle = () => {
     return { ...styles.disabledButtonContainer, borderColor: colors.border };
   };
+
+  if (verifyAccount) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          marginHorizontal: spacing.x16,
+          paddingVertical: spacing.x24,
+          justifyContent: 'space-between',
+        }}
+      >
+        <View>
+          <StyledText
+            style={[Typography.header.h1, { color: isDark ? brandWhite : Colors.primary.brand }]}
+          >
+            Verify your Email address
+          </StyledText>
+          <StyledText
+            style={[
+              Typography.subheader.R,
+              {
+                color: isDark ? brandWhite : Colors.primary.brand,
+                marginTop: spacing.x8,
+                lineHeight: 21,
+              },
+            ]}
+          >
+            You’ll need to verify your email to complete your account activation.
+          </StyledText>
+
+          <View
+            style={{
+              marginTop: spacing.x24,
+              paddingHorizontal: spacing.x16,
+              paddingVertical: spacing.x20,
+              backgroundColor: colors.card,
+              borderRadius: borderRadius.base,
+              borderWidth: 1,
+              borderColor: Colors.neutral[800],
+            }}
+          >
+            <Button
+              text="Open email app"
+              btnStyle={[
+                button.primary,
+                {
+                  width: '100%',
+                  paddingVertical: spacing.x13,
+                  borderRadius: 60,
+                },
+              ]}
+              btnTextStyle={{ color: '#FFF', fontSize: 14, fontWeight: '500', lineHeight: 24 }}
+              onPress={() => {
+                openInbox();
+              }}
+            />
+
+            <TouchableOpacity
+              style={{ marginTop: spacing.x16, alignSelf: 'center' }}
+              onPress={async () => {
+                if (resendAttempts >= 5) {
+                  setResendMessage('Please wait before requesting another verification email.');
+                  return;
+                }
+                const { currentUser } = firebaseAuth;
+                if (!currentUser) {
+                  setResendMessage('Please log in again to resend the verification email.');
+                  return;
+                }
+                try {
+                  if (Platform.OS === 'android') {
+                    await sendEmailVerification(currentUser);
+                  } else {
+                    const firebaseToken = await getIdToken(currentUser, true);
+                    if (!firebaseToken) {
+                      setResendMessage('Please log in again to resend the verification email.');
+                      return;
+                    }
+                    dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
+                  }
+                  setResendAttempts((prev) => prev + 1);
+                  setResendMessage('Verification email sent. Please check your inbox.');
+                } catch {
+                  setResendMessage('Unable to resend right now. Please try again later.');
+                }
+              }}
+            >
+              <StyledText style={{ color: Colors.neutral[300] }}>
+                Didn’t get mail?{' '}
+                <StyledText style={{ color: Colors.primary.brand }}>Resend email</StyledText>
+              </StyledText>
+            </TouchableOpacity>
+            {resendMessage ? (
+              <StyledText
+                style={{
+                  color: Colors.primary.brand,
+                  textAlign: 'center',
+                  marginTop: spacing.x8,
+                  fontSize: 12,
+                }}
+              >
+                {resendMessage}
+              </StyledText>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={{ marginTop: spacing.x20 }}>
+          <Button
+            text="Cancel"
+            btnStyle={{
+              paddingVertical: spacing.x10,
+            }}
+            onPress={async () => {
+              if (updateParent) {
+                updateParent(false);
+              }
+
+              navigation.goBack();
+              if (!onlyPassword) {
+                dispatch(signUp.Reset());
+                LoginManager.logOut();
+                await signOut(firebaseAuth);
+                dispatch(logout());
+              }
+            }}
+            btnTextStyle={{ color: Colors.neutral[300] }}
+          />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -650,8 +1316,8 @@ function LoginComponent({
                 autoCapitalize="none"
                 onFocus={() => setState({ ...state, emailError: '' })}
                 onBlur={() =>
-                  validateFields(state.email, 'email', (error: string) =>
-                    setState({ ...state, emailError: error })
+                  validateFields(state.email, 'email', (validationError: string) =>
+                    setState({ ...state, emailError: validationError })
                   )
                 }
                 onSubmitEditing={() => inputRefs.password?.current.focus()}
@@ -737,8 +1403,7 @@ function LoginComponent({
                     if (!onlyPassword) {
                       dispatch(signUp.Reset());
                       LoginManager.logOut();
-                      await auth().signOut();
-                      await auth().currentUser?.reload();
+                      await signOut(firebaseAuth);
                       dispatch(logout());
                     }
                   }}
@@ -909,7 +1574,7 @@ function LoginComponent({
                   {enabledLoginProviders &&
                   enabledLoginProviders?.includes('apple') &&
                   enabledLoginProviders?.includes('password') &&
-                  Platform.OS == 'ios' ? (
+                  Platform.OS === 'ios' ? (
                     <View style={{ paddingHorizontal: spacing.x10, flex: 1 }}>
                       <Button
                         onPress={() => onAppleButtonPress()}
@@ -967,61 +1632,7 @@ function LoginComponent({
           </View>
         </View>
 
-        <View>
-          {!verifyAccount ? (
-            <CustomModal
-              modalVisible={showConfirmEmail}
-              onclose={() => setShowConfirmEmail(false)}
-              style={styles.bottomView}
-            >
-              <View style={styles.content2}>
-                <View style={{ ...styles.contanier, paddingHorizontal: 15 }}>
-                  <View>
-                    <Button
-                      text="Cancel"
-                      onPress={async () => {
-                        const FBToken = await AccessToken.getCurrentAccessToken();
-                        if (FBToken) {
-                          LoginManager.logOut();
-                          await auth().signOut();
-                          await auth().currentUser?.reload();
-                        }
-                        setShowConfirmEmail(false);
-                        setNewUserCredentials(null);
-                      }}
-                    />
-                  </View>
-
-                  <ScrollView>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'stretch',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <StyledText>Please Confirm email</StyledText>
-                    </View>
-                  </ScrollView>
-
-                  {showSendEmailConfirmation ? (
-                    <GradientButton
-                      text="SEND EMAIL CONFIRMATION"
-                      btnStyle={styles.btn2}
-                      btnTextStyle={styles.btnText2}
-                      onPress={() => {
-                        setShowSendEmailConfirmation(false);
-                        auth().currentUser?.sendEmailVerification();
-                      }}
-                    />
-                  ) : (
-                    <StyledText>Confirmation email sent</StyledText>
-                  )}
-                </View>
-              </View>
-            </CustomModal>
-          ) : null}
-        </View>
+        <View />
       </View>
     </View>
   );

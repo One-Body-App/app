@@ -1,733 +1,871 @@
 import React, { useRef, useState, useEffect } from 'react';
-
 import {
   View,
   TouchableOpacity,
   Animated,
-  Dimensions,
-  Platform,
   Keyboard,
-  StatusBar,
   TextInput,
-  ScrollView,
+  Easing,
+  InteractionManager,
+  Platform,
+  StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-
 import { useDispatch, useSelector } from 'react-redux';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  getIdToken,
+  sendEmailVerification,
+} from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useTheme } from '@react-navigation/native';
+import { useTheme, useFocusEffect } from '@react-navigation/native';
+import { BlurView } from '@react-native-community/blur';
 import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
-import axios from 'axios';
+import Toast from 'react-native-simple-toast';
 
-import { useHeaderHeight } from '@react-navigation/elements';
+// Styles & Constraints
+import { Colors, Typography } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
+import { borderRadius } from '@/src/styles/outlines';
+import { button } from '@/src/styles/buttons';
 
-import { validateFields } from '@/utils/validation/validate-fields';
-import { loginSocialRequest, signUp } from '@/src/redux/actions/AuthActions';
+// Logic & Types
+import {
+  sendVerificationEmail as sendVerificationEmailAction,
+  signUp,
+} from '@/src/redux/actions/AuthActions';
+import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
-import { GeneralStyle } from '../../constants/GeneralStyle';
-
-import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MainStackParamList } from '@/src/navigator/types';
-import UserStepsLayout, { BottomStepsText } from '../layout/UserStepsLayout';
-import { button } from '@/src/styles/buttons';
-import StyledTextInput from '@/components/styled/TextInput';
-import { Colors, Typography } from '@/src/styles';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
-import { spacing } from '@/src/styles/spacing';
+import UserStepsLayout from '../layout/UserStepsLayout';
 import StyledText from '@/components/styled/Text';
-import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
-import { requestUserPermission } from '@/services/notification/notificationServices';
-import { processLogin } from '@/services/login';
 import SignupButtons from '@/components/SignupButtons';
 import Button from '@/components/Button';
-import { ApiCall } from '@/services/api';
+import StyledTextInput from '@/components/styled/TextInput';
+import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
+import { appColor } from '@/src/constants';
 
-const { width: wWidth } = Dimensions.get('window');
+const brandWhite = '#f6f6f7';
+
+const initialFormState = {
+  username: '',
+  usernameError: '',
+  name: '',
+  nameError: '',
+  email: '',
+  emailError: '',
+  password: '',
+  passwordError: '',
+  cPassword: '',
+  cPasswordError: '',
+};
+
+const InputField = React.forwardRef(
+  (
+    {
+      label,
+      error,
+      rightIcon,
+      wrapperStyle,
+      inputWrapperStyle,
+      isDark,
+      ...props
+    }: {
+      label: string;
+      error?: string;
+      rightIcon?: React.ReactNode;
+      wrapperStyle?: object;
+      inputWrapperStyle?: object;
+      isDark: boolean;
+    } & React.ComponentProps<typeof TextInput>,
+    ref: any
+  ) => {
+    const [focused, setFocused] = useState(false);
+    const {
+      value,
+      placeholder,
+      onFocus,
+      onBlur,
+      autoCapitalize,
+      autoCorrect,
+      keyboardType,
+      secureTextEntry,
+      onChangeText,
+      onSubmitEditing,
+      editable,
+      maxLength,
+      multiline,
+      returnKeyType,
+      textContentType,
+      autoComplete,
+      accessibilityLabel,
+      testID,
+      selectionColor,
+      defaultValue,
+    } = props;
+    const { 200: errorBorderColor } = Colors.errorFeedback;
+    const { 900: neutral900, 600: neutral600 } = Colors.neutral;
+    const hidePlaceholder = focused || !!(value && value.length > 0);
+    let borderColor = isDark ? neutral900 : neutral600;
+    if (focused) {
+      borderColor = appColor.SecoundryColor;
+    }
+    if (error) {
+      borderColor = errorBorderColor;
+    }
+
+    return (
+      <View style={[styles.inputContainer, wrapperStyle]}>
+        <StyledText style={[styles.inputLabel, isDark ? { color: brandWhite } : undefined]}>
+          {label}
+        </StyledText>
+        <StyledTextInput
+          ref={ref}
+          value={value}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
+          placeholder={hidePlaceholder ? '' : placeholder}
+          placeholderTextColor={Colors.neutral[400]}
+          inputWrapperStyle={{
+            borderColor,
+            backgroundColor: isDark ? Colors.neutral[800] : Colors.neutral[700],
+            borderRadius: borderRadius.small,
+            minHeight: 54,
+            ...inputWrapperStyle,
+          }}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          keyboardType={keyboardType}
+          secureTextEntry={secureTextEntry}
+          onChangeText={onChangeText}
+          onSubmitEditing={onSubmitEditing}
+          editable={editable}
+          maxLength={maxLength}
+          multiline={multiline}
+          returnKeyType={returnKeyType}
+          textContentType={textContentType}
+          autoComplete={autoComplete}
+          accessibilityLabel={accessibilityLabel}
+          testID={testID}
+          selectionColor={selectionColor}
+          rightIcon={rightIcon as any}
+        />
+        {error ? (
+          <StyledText style={{ color: Colors.errorFeedback[200], fontSize: 12, marginTop: 4 }}>
+            {error}
+          </StyledText>
+        ) : null}
+      </View>
+    );
+  }
+);
 
 type Props = StackScreenProps<MainStackParamList, 'SignUp'>;
-const animatedBarWidth = new Animated.Value(0);
-const animatedInnerBarWidth = new Animated.Value(0);
-const widthByPercent = (percentage: number, containerWidth = wWidth) => {
-  const value = (percentage * containerWidth) / 100;
-  return Math.round(value);
-};
-
-const showFullBar = (isShow = true) => {
-  const barWidth = isShow ? widthByPercent(70) : 0;
-  Animated.timing(animatedBarWidth, {
-    toValue: barWidth,
-    duration: 20,
-    useNativeDriver: true,
-  }).start();
-};
 
 function SignupForm({ navigation, route }: Props) {
   const recaptcha = useRef<RecaptchaRef | null>(null);
-  const scrollView = useRef<ScrollView | null>(null);
   const { accountType } = route.params;
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const [token, setToken] = useState('');
-  const [newUserCredentials, setNewUserCredentials] =
-    useState<FirebaseAuthTypes.UserCredential | null>(null);
+  const firebaseAuth = getAuth();
 
   const inputRefs = {
+    username: useRef<TextInput>(null),
+    name: useRef<TextInput>(null),
     email: useRef<TextInput>(null),
     password: useRef<TextInput>(null),
     cPassword: useRef<TextInput>(null),
-    name: useRef<TextInput>(null),
-    username: useRef<TextInput>(null),
   };
-  const [state, setState] = useState({
-    email: '',
-    emailError: '',
-    password: '',
-    passwordError: '',
-    cPassword: '',
-    cPasswordError: '',
-    name: '',
-    nameError: '',
-    username: '',
-    usernameError: '',
-  });
-  const [error, setError] = React.useState<string>();
-  const [socialError, setSocialError] = React.useState<string>();
+
+  const dropShadow = {
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 8,
+  };
+
+  const [state, setState] = useState(initialFormState);
+
   const [hidePass, setHidePass] = useState(true);
-  const [chidePass, setcHidePass] = useState(true);
   const [loading, setIsloading] = useState(false);
+  const [showPasswordHint, setShowPasswordHint] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [signUpToken, setSignUpToken] = useState<string | null>(null);
+  const hasSentVerificationEmailRef = useRef(false);
+  const { dark } = useTheme();
+  const orbitAnim = useRef(new Animated.Value(0)).current;
+  const textAnim = useRef(new Animated.Value(0)).current;
+  const fieldsAnim = useRef(new Animated.Value(0)).current;
+  const hasStartedAnimation = useRef(false);
+
+  const passwordRules = {
+    sixCharsOrMore: state.password.length >= 6,
+    number: /[0-9]/.test(state.password),
+    specialChar: /[#?!@$%^&*-]/.test(state.password),
+    uppercase: /[A-Z]/.test(state.password),
+  };
+
+  const confirmPasswordError =
+    hasPasswordInteracted &&
+    (!passwordRules.sixCharsOrMore ||
+      !passwordRules.number ||
+      !passwordRules.specialChar ||
+      !passwordRules.uppercase ||
+      state.password !== state.cPassword)
+      ? 'Both passwords must match and meet requirements.'
+      : state.cPasswordError;
+
+  const isSubmitDisabled =
+    loading ||
+    !state.email ||
+    !state.password ||
+    !state.cPassword ||
+    !state.username ||
+    !state.name ||
+    !accountType ||
+    state.emailError !== '' ||
+    state.passwordError !== '' ||
+    state.cPasswordError !== '' ||
+    state.usernameError !== '' ||
+    state.nameError !== '' ||
+    state.password !== state.cPassword ||
+    !passwordRules.sixCharsOrMore ||
+    !passwordRules.number ||
+    !passwordRules.specialChar ||
+    !passwordRules.uppercase;
+
+  const onRefresh = () => {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[Signup] onRefresh triggered - clearing all fields');
+    }
+    setRefreshing(true);
+    setIsloading(false);
+    setHidePass(true);
+    setShowPasswordHint(false);
+    setHasPasswordInteracted(false);
+    setState(initialFormState);
+    setTimeout(() => {
+      setRefreshing(false);
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Signup] onRefresh complete');
+      }
+    }, 400);
+  };
 
   const signUpUser = async () => {
     setIsloading(true);
-    setError('');
-    const { email, password, name, cPassword, username } = state;
+    const { email, password, cPassword, username, name } = state;
     const emailError = await validator('email', email);
-    const nameError = await validator('name', name);
-    const usernameError = await validator('username', username);
     const passwordError = await validator('password', password);
     const cPasswordError = await validator('cPassword', cPassword, { password });
+    const usernameError = username ? '' : 'Username is required';
+    const nameError = name ? '' : 'Name is required';
 
-    if (!emailError && !passwordError && !nameError && !cPasswordError && !usernameError) {
-      if (password == cPassword) {
-        const { email, password, name, cPassword, username } = state;
-        const data = {
-          email,
-          name,
-          accountType,
-          userId: '',
-          username,
-        };
+    if (!emailError && !passwordError && !cPasswordError && !usernameError && !nameError) {
+      if (password === cPassword) {
+        const data = { email, name, accountType, userId: '', username };
         const userValidation = await ApiCall({
           route: 'user/validateUserInfo',
           params: data,
           verb: 'post',
         });
-        if (userValidation.status == 200) {
+
+        if (userValidation.status === 200) {
           recaptcha.current?.open();
         } else {
           setIsloading(false);
-          setError(userValidation.response.message);
+          if (userValidation.status === 409) {
+            const errorMessage = userValidation.response?.message || '';
+            if (errorMessage.toLowerCase().includes('username')) {
+              setState((prev) => ({
+                ...prev,
+                usernameError: errorMessage,
+              }));
+            } else {
+              setState((prev) => ({
+                ...prev,
+                emailError: 'User already exists. Try again with a different email account!',
+              }));
+            }
+          }
+          Toast.show(
+            userValidation.response?.message ??
+              'Unable to validate this account. Please try again.',
+            Toast.SHORT
+          );
         }
-        //
       } else {
-        setError('Both passwords must match. Please make sure they are identical.');
+        setIsloading(false);
+        setState((prev) => ({
+          ...prev,
+          cPasswordError: 'Both passwords must match.',
+        }));
+        Toast.show('Both passwords must match.', Toast.SHORT);
       }
     } else {
       setIsloading(false);
-      if (usernameError) {
-        scrollView.current?.scrollTo({ y: 130 });
-      } else if (nameError) {
-        scrollView.current?.scrollTo({ y: 190 });
-      } else if (emailError) {
-        scrollView.current?.scrollTo({ y: 250 });
-      } else if (cPasswordError) {
-        scrollView.current?.scrollTo({ y: 310 });
-      }
-      Keyboard.dismiss();
       setState({
         ...state,
         emailError,
         passwordError,
         cPasswordError,
-        nameError,
         usernameError,
+        nameError,
       });
+      Keyboard.dismiss();
+      Toast.show('Please fix the highlighted fields.', Toast.SHORT);
     }
   };
 
-  const changeHandler = (type: string, value: string) => setState({ ...state, [type]: value });
-  const { dark, colors } = useTheme();
+  const changeHandler = (type: string, value: string) => {
+    const errorField = `${type}Error`;
+    setState((prev) => ({
+      ...prev,
+      [type]: value,
+      [errorField]: '',
+    }));
+  };
 
-  const onVerify = (token: string) => {
-    const { email, password, name, cPassword, username } = state;
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setState((prev) => ({
+        ...prev,
+        usernameError:
+          username.length > 0 && username.length < 3
+            ? 'Username must be at least 3 characters'
+            : '',
+      }));
+      return;
+    }
 
-    const data = {
-      email,
-      name,
-      accountType,
-      userId: '',
-      username,
-    };
-    auth()
-      .createUserWithEmailAndPassword(email, password)
+    setIsCheckingUsername(true);
+    try {
+      const userValidation = await ApiCall({
+        route: 'user/validateUserInfo',
+        params: { username, email: '', name: '', accountType, userId: '' },
+        verb: 'post',
+      });
+
+      if (userValidation.status === 200) {
+        setState((prev) => ({ ...prev, usernameError: '' }));
+      } else if (userValidation.status === 409) {
+        const errorMessage = userValidation.response?.message || '';
+        if (errorMessage.toLowerCase().includes('username')) {
+          setState((prev) => ({
+            ...prev,
+            usernameError: 'Sorry, this username is already in use. Please choose another username',
+          }));
+        }
+      }
+    } catch (error) {
+      // Silently fail - validation will happen on submit anyway
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+  const isIos = Platform.OS === 'ios';
+  const createAccountRadius =
+    typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
+  const createAccountGlassFill = 'rgba(18, 107, 135, 0.75)';
+
+  const onVerify = () => {
+    const { email, password, name, username } = state;
+    const data = { email, name, accountType, userId: '', username, skipVerificationEmail: true };
+
+    return createUserWithEmailAndPassword(firebaseAuth, email, password)
       .then(async (user) => {
-        // await user.user.sendEmailVerification();
-        const token = await user.user.getIdToken();
-        // user.user.updatePhoneNumber()
+        const idToken = await getIdToken(user.user);
+        setSignUpToken(idToken);
         data.userId = user.user.uid;
-
-        // dispatch(setLoginData({ token: await user.user.getIdToken() }));
-        dispatch(signUp.Request({ data, token }));
+        dispatch(signUp.Request({ data, token: idToken }));
       })
-      .catch((error) => {
+      .catch((err) => {
+        Toast.show(err?.message ?? 'Unable to create account. Please try again.', Toast.SHORT);
         setIsloading(false);
-        if (error.code === 'auth/email-already-in-use') {
-          setError(
-            'A user already exists with this email address. Please use another email address'
-          );
-        }
-
-        if (error.code === 'auth/invalid-email') {
-          setError(
-            'The email address you provided is not valid. Please enter a valid email address.'
-          );
-        }
       });
   };
 
   useEffect(() => {
     if (authState.signUpSuccess) {
-      setIsloading(false);
-      navigation.replace('Login', { showConfirmationEmailMessage: true });
-    } else if (authState.signUpSuccess === false) {
-      if (loading) {
+      const handleSignUpSuccess = async () => {
+        if (!hasSentVerificationEmailRef.current) {
+          hasSentVerificationEmailRef.current = true;
+
+          const { currentUser } = firebaseAuth;
+
+          // On iOS, always use backend email to ensure it uses correct domain
+          if (Platform.OS === 'ios') {
+            const firebaseToken =
+              signUpToken ?? (currentUser ? await getIdToken(currentUser) : null);
+            if (firebaseToken) {
+              dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
+            }
+          } else if (currentUser) {
+            // Android: try Firebase first, fallback to backend
+            try {
+              await sendEmailVerification(currentUser);
+            } catch {
+              const firebaseToken = signUpToken ?? (await getIdToken(currentUser));
+              if (firebaseToken) {
+                dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
+              }
+            }
+          }
+        }
+
+        Toast.show('Your account was created successfully. Welcome to the Family!', Toast.SHORT);
         setIsloading(false);
-      }
 
-      if (authState?.error && authState?.error.length > 0 && authState?.error[0] != error) {
-        setError(authState?.error ? authState?.error[0] : '');
-      }
+        // On iOS, AppContent handles navigation to ConfirmLogin automatically
+        // Navigating from here causes a race condition and double-mount
+        if (Platform.OS !== 'ios') {
+          navigation.replace('ConfirmLogin', { toScreen: 'MainRoot' });
+        }
+      };
+
+      handleSignUpSuccess();
     }
-
     return () => {
       dispatch(signUp.Reset());
     };
-  }, [authState.signUpSuccess]);
-
-  const onExpire = () => {
-    console.warn('expired!');
-  };
-
-  const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/g;
-  const atLeastOneUppercase = /[A-Z]/g; // capital letters from A to Z
-  const atLeastOneLowercase = /[a-z]/g; // small letters from a to z
-  const atLeastOneNumeric = /[0-9]/g; // numbers from 0 to 9
-  const atLeastOneSpecialChar = /[#?!@$%^&*-]/g; // any of the special characters within the square brackets
-  const sixCharsOrMore = /.{6,}/g; // six characters or more
-
-  const passwordTracker = {
-    uppercase: state.password.match(atLeastOneUppercase),
-    // lowercase: state.password.match(atLeastOneLowercase),
-    number: state.password.match(atLeastOneNumeric),
-    specialChar: state.password.match(atLeastOneSpecialChar),
-    sixCharsOrMore: state.password.match(sixCharsOrMore),
-  };
-
-  const passwordStrength = Object.values(passwordTracker).filter((value) => value).length;
-
-  const gotoSignup = async () => {
-    setNewUserCredentials(null);
-    dispatch(setAccountType(''));
-    dispatch(setLoader(false));
-
-    await auth().currentUser?.reload();
-    await auth().currentUser?.getIdToken(true);
-  };
-
-  const sendFcm = (token: string) => {
-    requestUserPermission(token, true);
-  };
-
-  const socialLogin = (newUserCredentials: FirebaseAuthTypes.UserCredential | null) => {
-    if (newUserCredentials) {
-      const emailParts = newUserCredentials?.user.email?.split('@');
-
-      if (emailParts && emailParts[0]) {
-        const data = {
-          email: newUserCredentials?.user.email,
-          name: newUserCredentials?.user.displayName,
-          socialData: newUserCredentials?.additionalUserInfo,
-          userId: newUserCredentials.user.uid,
-          username: emailParts[0],
-
-          accountType,
-          token,
-        };
-
-        dispatch(loginSocialRequest({ data, seterror: setSocialError, gotoSignup, sendFcm }));
-      }
-    }
-  };
+  }, [authState.signUpSuccess, dispatch, firebaseAuth, navigation, signUpToken]);
 
   useEffect(() => {
-    socialLogin(newUserCredentials);
-  }, [newUserCredentials]);
+    if (authState.signUpSuccess === false && authState.error) {
+      const displayError = Array.isArray(authState.error)
+        ? authState.error.join(', ')
+        : (authState.error ?? 'Unable to create account. Please try again.');
+      Toast.show(displayError, Toast.SHORT);
+      setIsloading(false);
+    }
+  }, [authState.signUpSuccess, authState.error]);
 
   useEffect(() => {
-    if (route.params?.oauth_token && route.params?.oauth_verifier) {
-      const getTwitterAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: 'https://api.twitter.com/oauth/access_token',
-            params: {
-              oauth_token: route.params?.oauth_token,
-              oauth_verifier: route.params?.oauth_verifier,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          };
-          const result = await axios.request(options);
-
-          if (result.data) {
-            const tokenData = result.data.split('&')?.map((item: string) => {
-              return item.split('=')[1];
-            });
-
-            const twitterCredential = auth.TwitterAuthProvider.credential(
-              tokenData[0],
-              tokenData[1]
-            );
-
-            const userCredentials = await auth().signInWithCredential(twitterCredential);
-
-            await processLogin(userCredentials, setNewUserCredentials, setToken);
-          }
-        } catch (error: any) {
-          setSocialError(error.nativeErrorMessage);
-        }
-      };
-      getTwitterAuthToken();
+    if (hasStartedAnimation.current) {
+      return undefined;
     }
-  }, [route.params]);
+    const task = InteractionManager.runAfterInteractions(() => {
+      hasStartedAnimation.current = true;
+      Animated.sequence([
+        Animated.delay(120),
+        Animated.parallel([
+          Animated.timing(textAnim, {
+            toValue: 1,
+            duration: 1200,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(orbitAnim, {
+            toValue: 1,
+            duration: 1400,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(fieldsAnim, {
+            toValue: 1,
+            duration: 1400,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    });
+    return () => {
+      task.cancel();
+    };
+  }, [fieldsAnim, orbitAnim, textAnim]);
 
-  const headerHeight = useHeaderHeight();
+  useFocusEffect(
+    React.useCallback(() => {
+      setState(initialFormState);
+      setHidePass(true);
+      setShowPasswordHint(false);
+      setHasPasswordInteracted(false);
+      setIsloading(false);
+    }, [])
+  );
 
-  // const insets = useSafeAreaInsets();
-  // console.log(headerHeight);
-  // const [topPadding, setTopPadding] = useState(insets.top);
-  // console.log(topPadding);
-  // useEffect(() => {
-  //   // This useEffect is needed because insets are undefined at first for some reason
-  //   // https://github.com/th3rdwave/react-native-safe-area-context/issues/54
+  const orbitStyle = {
+    transform: [
+      {
+        translateY: orbitAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-40, 0],
+        }),
+      },
+    ],
+    opacity: orbitAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+    }),
+  };
 
-  //   setTopPadding(insets.top);
-  // }, [insets.top]);
+  const textPopStyle = {
+    opacity: textAnim,
+    transform: [
+      {
+        scale: textAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.9, 1],
+        }),
+      },
+      {
+        translateY: textAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-20, 0],
+        }),
+      },
+    ],
+  };
+
+  const fieldsPopStyle = {
+    opacity: fieldsAnim,
+    transform: [
+      {
+        translateY: fieldsAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-45, 0],
+        }),
+      },
+    ],
+  };
 
   return (
-    // <ScrollView
-    //   ref={scrollView}
-    //   // showsVerticalScrollIndicator={false}
-    //   // bounces={false}
-    //   // style={{ overflow: 'scroll', backgroundColor: 'red' }}
-    //   // style={{
-    //   //   flex: 1,
-    //   //   // padding: 25,
-    //   //   // marginTop: 40,
-    //   // }}
-    // >
     <UserStepsLayout
-      backgroundColor={dark ? colors.background : Colors.neutral[700]}
-      // keyboardVerticalOffset={
-      //   headerHeight + (Platform.OS == 'ios' ? 0 : 150) + (StatusBar.currentHeight ?? 0)
-      // }
-
-      hideBottomText
+      backgroundColor={Colors.main.white}
+      showCustomHeaderOnAndroid
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={Colors.primary.brand}
+        />
+      }
     >
-      <View
-        style={{
-          marginTop: spacing.x24,
-          marginBottom: spacing.x24,
-          marginHorizontal: spacing.x16,
-        }}
+      <Animated.View
+        style={[
+          { marginTop: spacing.x20, marginBottom: spacing.x10, marginHorizontal: spacing.x20 },
+          textPopStyle,
+        ]}
       >
-        <StyledText style={[Typography.header.h1]}>
-          Create an account (
-          {route.params.accountType
-            ? `${route.params.accountType
-                ?.charAt(0)
-                .toUpperCase()}${route.params.accountType?.slice(1)}`
-            : ''}
-          )
-        </StyledText>
         <StyledText
-          style={[Typography.subheader.R, { color: Colors.neutral[300], marginTop: spacing.x8 }]}
+          style={[Typography.header.h1, { color: dark ? brandWhite : Colors.primary.brand }]}
+        >
+          Create your account details
+        </StyledText>
+        {accountType ? (
+          <StyledText
+            style={[
+              Typography.subheader.M,
+              { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x5 },
+            ]}
+          >
+            {accountType.charAt(0).toUpperCase() + accountType.slice(1)}
+          </StyledText>
+        ) : null}
+        <StyledText
+          style={[
+            Typography.subheader.R,
+            { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x8 },
+          ]}
         >
           Enter your details so that we can get you setup:
         </StyledText>
-      </View>
-      <View
-        style={{
-          marginHorizontal: spacing.x16,
-          paddingHorizontal: spacing.x16,
-          paddingVertical: spacing.x24,
-          // flex: 1,
-          backgroundColor: colors.card,
-          borderRadius: borderRadius.base,
-          marginBottom: spacing.x64,
-        }}
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.cardContainer,
+          {
+            backgroundColor: Colors.neutral[700],
+            borderColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+          },
+          fieldsPopStyle,
+        ]}
       >
         <TouchableOpacity
-          style={{ flexDirection: 'row', marginBottom: spacing.x24 }}
-          onPress={() => {
-            navigation.replace('Login');
-          }}
+          style={{ flexDirection: 'row', marginBottom: spacing.x10 }}
+          onPress={() => navigation.replace('Login')}
         >
           <StyledText>Already have an account? </StyledText>
-          <StyledText style={{ color: Colors.primarySapphire.brand }}>Sign in</StyledText>
+          <StyledText style={{ color: '#41dbe1' }}>Sign in</StyledText>
         </TouchableOpacity>
-        <View style={{ marginBottom: spacing.x10 }}>
-          <SignupButtons
-            wrapperStyles={{ flex: 0 }}
-            socialLogin={socialLogin}
-            navigation={navigation}
-            route={route}
-            errorFromLogin={socialError}
-            disabled={!accountType}
-          />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-          <View
-            style={{
-              borderBottomColor: Colors.neutral[800],
-              borderBottomWidth: borderWidth.thin,
-              flex: 1,
-            }}
-          />
 
-          <StyledText style={{ paddingHorizontal: spacing.x10, color: Colors.neutral[300] }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x8 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
+          <StyledText
+            style={{ marginHorizontal: 10, color: dark ? brandWhite : Colors.primary.brand }}
+          >
             Or
           </StyledText>
-          <View
-            style={{
-              borderBottomColor: Colors.neutral[800],
-              borderBottomWidth: borderWidth.thin,
-              flex: 1,
-            }}
-          />
+          <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
         </View>
-        <StyledTextInput
-          wrapperStyle={{ marginTop: spacing.x16 }}
+
+        <Animated.View style={[{ marginTop: spacing.x7, alignItems: 'center' }, orbitStyle]}>
+          <SignupButtons
+            socialLogin={() => {}}
+            navigation={navigation}
+            route={route}
+            disabled={!accountType}
+          />
+        </Animated.View>
+
+        <InputField
           ref={inputRefs.username}
-          value={state.username}
-          returnKeyType="next"
-          returnKeyLabel="next"
           label="Username"
+          isDark={dark}
+          placeholder={state.username ? '' : 'e.g. onebodyusername'}
+          value={state.username}
+          error={state.usernameError}
           autoCapitalize="none"
-          onFocus={() => setState({ ...state, usernameError: '' })}
-          placeholder="Enter username"
-          onBlur={
-            () => {}
-            // validateFields(state.username, 'username', (error) =>
-            //   setState({ ...state, usernameError: error })
-            // )
-          }
+          autoCorrect={false}
+          onChangeText={(username: string) => changeHandler('username', username.trim())}
+          onBlur={() => checkUsernameAvailability(state.username)}
           onSubmitEditing={() => inputRefs.name.current?.focus()}
-          onChangeText={(username) => changeHandler('username', username)}
-          autoCorrect={false}
-          autoComplete="username"
-          keyboardType="default"
-          textContentType="username"
-          blurOnSubmit={false}
         />
 
-        {state.usernameError ? (
-          <StyledText style={{ ...GeneralStyle.InputError }}>{state.usernameError}</StyledText>
-        ) : null}
-
-        <StyledTextInput
-          wrapperStyle={{ marginTop: 15 }}
+        <InputField
           ref={inputRefs.name}
-          label="Full Name"
-          placeholder="Enter your full name"
+          label="Full Name (Org Name)"
+          isDark={dark}
+          placeholder={state.name ? '' : 'e.g. John Baptist / Johns Seminary Institute'}
           value={state.name}
-          returnKeyType="next"
-          returnKeyLabel="next"
-          onFocus={() => setState({ ...state, nameError: '' })}
-          onBlur={
-            () => {}
-            // validateFields(state.name, 'name', (error) =>
-            //   setState({ ...state, nameError: error })
-            // )
-          }
-          onSubmitEditing={() => inputRefs.email.current?.focus()}
-          onChangeText={(name) => changeHandler('name', name)}
-          keyboardType="default"
+          error={state.nameError}
           autoCapitalize="words"
-          blurOnSubmit={false}
+          onChangeText={(name: string) => changeHandler('name', name)}
+          onSubmitEditing={() => inputRefs.email.current?.focus()}
         />
 
-        {state.nameError ? (
-          <StyledText style={{ ...GeneralStyle.InputError }}>{state.nameError}</StyledText>
-        ) : null}
-
-        <StyledTextInput
-          wrapperStyle={{ marginTop: 15 }}
+        <InputField
           ref={inputRefs.email}
-          value={state.email}
           label="Email"
-          placeholder="Enter your email"
-          returnKeyType="next"
-          returnKeyLabel="next"
+          isDark={dark}
+          placeholder={state.email ? '' : 'e.g. mypersonalemail@example.com'}
+          value={state.email}
+          error={state.emailError}
           keyboardType="email-address"
-          autoCorrect={false}
-          onFocus={() => setState({ ...state, emailError: '' })}
-          onBlur={
-            () => {}
-            // validateFields(state.email, 'email', (error) =>
-            //   setState({ ...state, emailError: error })
-            // )
-          }
+          autoCapitalize="none"
+          onChangeText={(email: string) => changeHandler('email', email.trim())}
           onSubmitEditing={() => inputRefs.password.current?.focus()}
-          onChangeText={(email) => changeHandler('email', email.trim())}
-          autoCapitalize="none"
-          autoComplete="email"
-          textContentType="emailAddress"
-          blurOnSubmit={false}
         />
 
-        {state.emailError ? (
-          <StyledText style={{ ...GeneralStyle.InputError }}>{state.emailError}</StyledText>
-        ) : null}
-
-        <StyledTextInput
+        <InputField
           ref={inputRefs.password}
-          value={state.password}
           label="Password"
-          returnKeyType="next"
-          returnKeyLabel="next"
-          secureTextEntry={!!hidePass}
-          textContentType="newPassword"
+          isDark={dark}
+          placeholder={state.password ? '' : 'e.g. Create a secure password'}
+          secureTextEntry={hidePass}
+          value={state.password}
+          error={state.passwordError}
           autoCapitalize="none"
-          autoCorrect={false}
-          passwordRules="minlength: 6; required: digit; required: special; allowed: upper,lower;"
-          autoComplete="password-new"
-          placeholder="Enter your password"
-          blurOnSubmit={false}
-          rightIcon={
-            <View style={{ justifyContent: 'center' }}>
-              <MaterialCommunityIcons
-                name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-                size={20}
-                color={Colors.primarySapphire[500]}
-                style={{
-                  alignSelf: 'center',
-                }}
-                onPress={() => setHidePass(!hidePass)}
-              />
-            </View>
-          }
-          wrapperStyle={{ marginTop: 15 }}
           onFocus={() => {
-            setState({ ...state, passwordError: '' });
+            setShowPasswordHint(true);
+            setHasPasswordInteracted(true);
           }}
-          onBlur={() =>
-            validateFields(state.password, 'password', (error) =>
-              setState({ ...state, passwordError: error })
-            )
-          }
+          onChangeText={(password: string) => changeHandler('password', password)}
           onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
-          onChangeText={(password) => {
-            changeHandler('password', password);
-          }}
-          onEndEditing={(event) => {
-            if (event.nativeEvent.text.length === 0) {
-              changeHandler('password', '');
-            }
-          }}
+          rightIcon={
+            <MaterialCommunityIcons
+              name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+              size={22}
+              color="#41dbe1"
+              onPress={() => setHidePass(!hidePass)}
+              style={{ alignSelf: 'center' }}
+            />
+          }
         />
-
-        {/* <View style={[styles.passwordStrengthWrapper]}>
-              <Animated.View
-                style={[
-                  styles.passwordStrengthBar,
-
-                  { backgroundColor: '#ffffff', width: animatedBarWidth },
-                ]}
-              >
-                <Animated.View
-                  style={[styles.innerPasswordStrengthBar, { width: animatedInnerBarWidth }]}
-                />
-              </Animated.View>
-            </View> */}
-
-        {state.password && state.password != '' && state.password.length > 2 ? (
-          <View style={{ marginVertical: 10 }}>
-            {passwordStrength < 5 ? (
-              <View style={{ flexDirection: 'row' }}>
-                <MaterialCommunityIcons
-                  name={!passwordTracker.sixCharsOrMore ? 'close' : 'check'}
-                  size={20}
-                  color={!passwordTracker.sixCharsOrMore ? 'red' : 'green'}
-                  style={
-                    {
-                      // alignSelf: 'center',
-                      // justifyContent: 'center',
-                      // marginTop: getHeight(1),
-                    }
-                  }
-                />
-                <StyledText style={{ color: !passwordTracker.sixCharsOrMore ? 'red' : 'green' }}>
-                  At least 6 characters
-                </StyledText>
-              </View>
-            ) : null}
-
-            <View style={{ flexDirection: 'row' }}>
-              <MaterialCommunityIcons
-                name={!passwordTracker.specialChar ? 'close' : 'check'}
-                size={20}
-                color={!passwordTracker.specialChar ? 'red' : 'green'}
-              />
-              <StyledText style={{ color: !passwordTracker.specialChar ? 'red' : 'green' }}>
-                At least 1 special character
-              </StyledText>
-            </View>
-
-            <View style={{ flexDirection: 'row' }}>
-              <MaterialCommunityIcons
-                name={!passwordTracker.number ? 'close' : 'check'}
-                size={20}
-                color={!passwordTracker.number ? 'red' : 'green'}
-              />
-              <StyledText style={{ color: !passwordTracker.number ? 'red' : 'green' }}>
-                Contains at least 1 number
-              </StyledText>
-            </View>
+        {showPasswordHint ? (
+          <View style={{ marginBottom: spacing.x16 }}>
+            <StyledText style={{ color: dark ? brandWhite : Colors.primary.brand, fontSize: 12 }}>
+              Password must include:
+            </StyledText>
+            {[
+              { key: 'sixCharsOrMore', label: 'At least 6 characters' },
+              { key: 'number', label: 'A number' },
+              { key: 'specialChar', label: 'A special character' },
+              { key: 'uppercase', label: 'An uppercase letter' },
+            ].map((rule) => {
+              const satisfied = passwordRules[rule.key as keyof typeof passwordRules];
+              const color = satisfied ? '#1DB954' : '#E35640';
+              const iconName = satisfied ? 'check-circle' : 'close-circle';
+              return (
+                <View
+                  key={rule.key}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.x5 }}
+                >
+                  <MaterialCommunityIcons name={iconName} size={16} color={color} />
+                  <StyledText style={{ color, fontSize: 12, marginLeft: spacing.x8 }}>
+                    {rule.label}
+                  </StyledText>
+                </View>
+              );
+            })}
           </View>
         ) : null}
 
-        <StyledTextInput
+        <InputField
           ref={inputRefs.cPassword}
-          value={state.cPassword}
-          returnKeyType="done"
-          returnKeyLabel="done"
           label="Confirm Password"
+          isDark={dark}
+          placeholder={state.cPassword ? '' : 'Repeat your password'}
+          secureTextEntry={hidePass}
+          value={state.cPassword}
+          error={confirmPasswordError}
           autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="Confirm your password"
-          secureTextEntry={!!chidePass}
-          blurOnSubmit={false}
+          onChangeText={(cPassword: string) => changeHandler('cPassword', cPassword)}
+          onSubmitEditing={signUpUser}
           rightIcon={
-            <View style={{ justifyContent: 'center' }}>
-              <MaterialCommunityIcons
-                name={chidePass ? 'eye-outline' : 'eye-off-outline'}
-                size={20}
-                color={Colors.primarySapphire[500]}
-                style={{
-                  alignSelf: 'center',
-                }}
-                onPress={() => setcHidePass(!chidePass)}
-              />
-            </View>
+            <MaterialCommunityIcons
+              name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+              size={22}
+              color="#41dbe1"
+              onPress={() => setHidePass(!hidePass)}
+              style={{ alignSelf: 'center' }}
+            />
           }
-          wrapperStyle={{ marginTop: 15 }}
-          onFocus={() => setState({ ...state, cPasswordError: '' })}
-          onBlur={() =>
-            validateFields(
-              state.cPassword,
-              'cPassword',
-              (error) => setState({ ...state, cPasswordError: error }),
-              { password: state.password }
-            )
-          }
-          onSubmitEditing={() => signUpUser()}
-          onChangeText={(cPassword) => changeHandler('cPassword', cPassword)}
         />
-        <StyledText style={{ ...GeneralStyle.InputError }}>{state.cPasswordError}</StyledText>
 
         <Recaptcha
           ref={recaptcha}
           siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
           baseUrl="http://www.onebodyapp.com"
           onVerify={onVerify}
-          onExpire={onExpire}
           size="invisible"
         />
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: spacing.x24 }}>
-          <StyledText style={{ color: dark ? colors.text : '#032F3C' }}>
+        {isIos ? (
+          <View
+            style={[
+              dropShadow,
+              {
+                marginTop: spacing.x20,
+                width: '100%',
+                alignSelf: 'stretch',
+                borderRadius: createAccountRadius,
+                overflow: 'hidden',
+                opacity: isSubmitDisabled ? 0.4 : 1,
+              },
+            ]}
+          >
+            <BlurView
+              pointerEvents="none"
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={18}
+              reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
+            />
+            <Button
+              text="Create account"
+              btnStyle={[
+                button.primary,
+                {
+                  width: '100%',
+                  alignSelf: 'stretch',
+                  backgroundColor: 'transparent',
+                },
+              ]}
+              btnTextStyle={{ color: '#FFF' }}
+              wrapperViewBtnStyle={{ width: '100%' }}
+              onPress={signUpUser}
+              disabled={isSubmitDisabled || !!confirmPasswordError}
+            />
+          </View>
+        ) : (
+          <Button
+            text="Create account"
+            btnStyle={[
+              button.primary,
+              dropShadow,
+              {
+                marginTop: spacing.x20,
+                width: '100%',
+                alignSelf: 'stretch',
+                opacity: isSubmitDisabled ? 0.4 : 1,
+              },
+            ]}
+            btnTextStyle={{ color: '#FFF' }}
+            wrapperViewBtnStyle={{ width: '100%' }}
+            onPress={signUpUser}
+            disabled={isSubmitDisabled || !!confirmPasswordError}
+          />
+        )}
+
+        <View style={{ marginTop: spacing.x16 }}>
+          <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
             By creating an account, you agree to our{' '}
-          </StyledText>
-
-          <TouchableOpacity onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}>
-            <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
-              User Agreements
-            </StyledText>
-          </TouchableOpacity>
-          <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
-            {' '}
-            &{' '}
-          </StyledText>
-          <TouchableOpacity onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}>
-            <StyledText style={[{ color: dark ? colors.text : Colors.primarySapphire.brand }]}>
-              Privacy Policy
-            </StyledText>
-          </TouchableOpacity>
-        </View>
-
-        {error && error != '' ? (
-          <View style={{ padding: 5, flexDirection: 'row', marginBottom: 10 }}>
             <StyledText
               style={{
-                color: 'red',
-                // left: getWidth(3),
-                // width: getWidth(78),
-                // fontSize: getFontSize(2),
+                color: dark ? appColor.SecoundryColor : Colors.primary.brand,
+                textDecorationLine: 'underline',
               }}
+              onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
             >
-              {error}
+              User Agreements
+            </StyledText>{' '}
+            &{' '}
+            <StyledText
+              style={{
+                color: dark ? appColor.SecoundryColor : Colors.primary.brand,
+                textDecorationLine: 'underline',
+              }}
+              onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}
+            >
+              Privacy Policy
             </StyledText>
-          </View>
-        ) : null}
-
-        <Button
-          text="Create Account"
-          btnStyle={[
-            button.primary,
-            {
-              flex: 1,
-            },
-          ]}
-          disabledBtnStyle={[
-            button.primary,
-            {
-              flex: 1,
-              opacity: 0.4,
-            },
-          ]}
-          onPress={() => {
-            signUpUser();
-          }}
-          btnTextStyle={{ color: '#FFF' }}
-          disabledBtnTextStyle={{ color: '#FFF' }}
-          disabled={
-            loading ||
-            !state.cPassword ||
-            !state.password ||
-            !state.email ||
-            !state.name ||
-            !state.username
-          }
-        />
-      </View>
-
-      <BottomStepsText />
+          </StyledText>
+        </View>
+      </Animated.View>
     </UserStepsLayout>
-    // </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  inputContainer: {
+    marginBottom: spacing.x8,
+    paddingVertical: spacing.x8,
+    width: '100%',
+  },
+  inputLabel: {
+    marginBottom: spacing.x10,
+    color: Colors.primary.brand,
+    fontSize: 14,
+  },
+  errorText: {
+    color: Colors.errorFeedback[200],
+    fontSize: 12,
+    marginTop: 4,
+  },
+  cardContainer: {
+    marginHorizontal: spacing.x16,
+    paddingHorizontal: spacing.x16,
+    paddingVertical: spacing.x30,
+    backgroundColor: Colors.main.white,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: Colors.neutral[800],
+    marginBottom: spacing.x60,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+  },
+});
 
 export default SignupForm;

@@ -2,4 +2,4 @@
 BUNDLE_FORCE_RUBY_PLATFORM: "1"
 BUNDLE_DEPLOYMENT: "true"
 BUNDLE_FROZEN: "false"
-BUNDLE_PATH: "/Users/runner/work/app/app/vendor/bundle"
+BUNDLE_PATH: "vendor/bundle"

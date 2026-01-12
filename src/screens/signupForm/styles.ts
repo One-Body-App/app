@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: '#FFF',
@@ -107,7 +107,7 @@ export const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: '#fff',
-    paddingTop: 7,
+    paddingTop: 5,
     paddingBottom: 10,
     fontSize: 20,
   },
@@ -142,3 +142,5 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
+export default styles;

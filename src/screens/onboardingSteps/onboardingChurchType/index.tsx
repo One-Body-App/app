@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useToast } from 'react-native-toast-notifications';
 import { useTheme } from '@react-navigation/native';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
@@ -15,7 +14,6 @@ import { ApiCall } from '@/services/api';
 
 import StyledSelect from '@/components/styled/Select';
 import { OnboardingStackParamList } from '@/src/navigator/types';
-import { header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchType'>;
 
@@ -27,7 +25,7 @@ function OnboardingChurchType({ navigation }: Props) {
   const [selectedChurchType, setSelectedChurchType] = useState<ChurchType['_id']>('');
   const [selectedChurchSubType, setSelectedChurchSubType] = useState<ChurchType['_id']>('');
 
-  const getChurchTypes = async () => {
+  const getChurchTypes = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'global/church-type',
@@ -35,24 +33,28 @@ function OnboardingChurchType({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
-        setChurchTypes(res?.response);
-      } else {
+      if (res?.status === 200) {
+        setChurchTypes(res?.response as ChurchType[]);
+      } else if (__DEV__) {
+        // eslint-disable-next-line no-console
         console.log('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('saga error -- ', e.toString());
+      }
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (token) {
       getChurchTypes();
     }
-  }, [token]);
+  }, [token, getChurchTypes]);
 
   const selectedChurchTypeFiltered = churchTypes.filter((item) => {
-    return item._id == selectedChurchType;
+    return item._id === selectedChurchType;
   });
 
   const selectedChurchTypeName =
@@ -61,7 +63,7 @@ function OnboardingChurchType({ navigation }: Props) {
   const selectedChurchSubTypeFiltered =
     selectedChurchTypeFiltered.length > 0
       ? selectedChurchTypeFiltered[0].children.filter((item) => {
-          return item._id == selectedChurchSubType;
+          return item._id === selectedChurchSubType;
         })
       : [];
 
@@ -122,7 +124,7 @@ function OnboardingChurchType({ navigation }: Props) {
             })}
             label="Denomination"
             selectedItem={selectedChurchType}
-            btnText={selectedChurchType == '' ? 'Select' : selectedChurchTypeName}
+            btnText={selectedChurchType === '' ? 'Select' : selectedChurchTypeName}
             modalTitle="Select your Denomination"
             showAllWithoutSearch
             onChange={(item) => {
@@ -142,7 +144,7 @@ function OnboardingChurchType({ navigation }: Props) {
                 };
               })}
               label="Sub Denomination or Association"
-              btnText={selectedChurchSubType == '' ? 'Select' : selectedChurchSubTypeName}
+              btnText={selectedChurchSubType === '' ? 'Select' : selectedChurchSubTypeName}
               onChange={(item) => {
                 setSelectedChurchSubType(item);
               }}

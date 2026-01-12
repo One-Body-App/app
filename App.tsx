@@ -7,8 +7,8 @@ import { PersistGate } from 'redux-persist/integration/react';
 import LottieSplashScreen from 'react-native-lottie-splash-screen'; // Note: LottieSplashScreen.hide() is now in AppContent
 
 // import ZendeskChat from 'react-native-zendesk-chat';
-import dynamicLinks from '@react-native-firebase/dynamic-links';
-import { Linking, Text } from 'react-native'; // Text might not be needed here if not directly used
+import { getDynamicLinks, onLink } from '@react-native-firebase/dynamic-links';
+import { Linking } from 'react-native';
 import { ToastProvider } from 'react-native-toast-notifications';
 
 import * as Sentry from '@sentry/react-native';
@@ -26,7 +26,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { persistor, store } from './src/redux/store'; // Make sure this path is correct
 import AppContent from './src/navigator/AppContent'; // Import the new component
-import Main from './src/navigator/Main';
+import { getFirebaseApp } from './src/services/firebaseApp';
 
 Sentry.init({
   dsn: 'https://5a54913b45c44079b31e038fc1e7b4aa@o4504958486642688.ingest.sentry.io/4504958800560128',
@@ -34,25 +34,26 @@ Sentry.init({
 });
 
 function App() {
-  const handleDynamicLink = (link: string) => {
-    // console.log('Dynamic Link:', link);
-    // LottieSplashScreen.hide();
-    // console.log('LottieSplashScreen.hide() called');
+  const firebaseApp = getFirebaseApp();
+  const links = getDynamicLinks(firebaseApp);
+  const handleDynamicLink = () => {
+    // Placeholder for dynamic link handling
+    // Deep linking is handled by AppContent.tsx
   };
 
   useEffect(() => {
-    const event = Linking.addEventListener('url', ({ url }) => handleDynamicLink(url));
-    const unsubscribe = dynamicLinks().onLink((url) => handleDynamicLink(url.url));
+    const event = Linking.addEventListener('url', () => handleDynamicLink());
+    const unsubscribe = onLink(links, () => handleDynamicLink());
     return () => {
       event.remove();
       unsubscribe();
     };
-  }, []);
+  }, [links]);
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
       if (url) {
-        handleDynamicLink(url);
+        handleDynamicLink();
       }
     });
   }, []);
@@ -65,7 +66,7 @@ function App() {
         // Define the MINIMUM time you want the splash screen to be visible.
         // This should be *slightly longer* than your Lottie animation's actual duration.
         // Example: If your Lottie is 2 seconds, use 2500ms (2.5 seconds).
-        const MIN_SPLASH_DISPLAY_TIME_MS = 6000; // Adjust this value!
+        const MIN_SPLASH_DISPLAY_TIME_MS = 3500; // Adjust this value!
 
         // Record when the JS side starts its initialization (approximate start of splash screen visibility)
         const jsLoadStartTime = Date.now();

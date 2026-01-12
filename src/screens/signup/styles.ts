@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import { appColor } from '../../constants';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -139,3 +139,5 @@ export const styles = StyleSheet.create({
     fontSize: getFontSize(2),
   },
 });
+
+export default styles;

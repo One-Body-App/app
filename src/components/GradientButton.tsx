@@ -2,7 +2,6 @@ import React, { ReactNode } from 'react';
 import {
   GestureResponderEvent,
   StyleProp,
-  Text,
   TextStyle,
   TouchableOpacity,
   View,
@@ -37,7 +36,7 @@ function GradientButton({
       <LinearGradient colors={gradientcolors} style={btnStyle}>
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={(event) => (onPress ? onPress(event) : console.log('null'))}
+          onPress={onPress}
           disabled={disabled}
           style={{
             justifyContent: 'center',

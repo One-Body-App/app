@@ -4,11 +4,11 @@ import {
   DrawerItemList,
 } from '@react-navigation/drawer';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
-import auth from '@react-native-firebase/auth';
+import { getAuth, signOut } from '@react-native-firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Logout, LogoutCurve, Setting2 } from 'iconsax-react-native';
+import { LogoutCurve, Setting2 } from 'iconsax-react-native';
 import { LoginManager } from 'react-native-fbsdk-next';
 import Icon from '@react-native-vector-icons/ant-design';
 import { useTheme } from '@react-navigation/native';
@@ -24,12 +24,11 @@ import { logout } from '../redux/actions/AuthActions';
 
 export default function DrawerContent({
   descriptors,
-  state,
+  state: drawerState,
   navigation,
-  ...rest
 }: DrawerContentComponentProps) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const focusedRoute = state.routes[state.index];
+  const focusedRoute = drawerState.routes[drawerState.index];
   const focusedDescriptor = descriptors[focusedRoute.key];
   const focusedOptions = focusedDescriptor.options;
 
@@ -40,7 +39,6 @@ export default function DrawerContent({
 
   return (
     <DrawerContentScrollView
-      {...rest}
       contentContainerStyle={[
         drawerContentContainerStyle,
         {
@@ -136,12 +134,7 @@ export default function DrawerContent({
               </View>
             </View>
           </TouchableOpacity>
-          <DrawerItemList
-            descriptors={descriptors}
-            state={state}
-            navigation={navigation}
-            {...rest}
-          />
+          <DrawerItemList descriptors={descriptors} state={drawerState} navigation={navigation} />
         </View>
         <View
           style={{
@@ -180,7 +173,7 @@ export default function DrawerContent({
                     onPress: async () => {
                       LoginManager.logOut();
                       dispatch(logout());
-                      await auth().signOut();
+                      await signOut(getAuth());
                     },
                   },
                 ],
@@ -194,7 +187,7 @@ export default function DrawerContent({
             text=""
             btnStyle={{
               backgroundColor:
-                state.routeNames[state.index] == 'Settings'
+                drawerState.routeNames[drawerState.index] === 'Settings'
                   ? focusedOptions.drawerActiveBackgroundColor
                   : Colors.neutral[700],
 

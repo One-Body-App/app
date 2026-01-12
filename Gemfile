@@ -9,7 +9,7 @@ gem 'concurrent-ruby', '< 1.3.4'
 gem 'abbrev'
 gem 'logger'
 gem 'csv'
-gem "fastlane"
+gem "fastlane", "2.230.0"
 
 
 # Ruby 3.4.0 has removed some libraries from the standard library.

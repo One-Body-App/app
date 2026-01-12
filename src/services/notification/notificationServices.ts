@@ -1,11 +1,19 @@
-import messaging from '@react-native-firebase/messaging';
+import {
+  AuthorizationStatus,
+  getMessaging,
+  getToken,
+  onMessage,
+  onNotificationOpenedApp,
+  requestPermission,
+} from '@react-native-firebase/messaging';
 import { ApiCall } from '@/src/services/api';
 
+const getMessagingInstance = () => getMessaging();
+
 export const requestUserPermission = async (token: string, notificationStatus: boolean) => {
-  const authStatus = await messaging().requestPermission();
+  const authStatus = await requestPermission(getMessagingInstance());
   const enabled =
-    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+    authStatus === AuthorizationStatus.AUTHORIZED || authStatus === AuthorizationStatus.PROVISIONAL;
 
   if (enabled && notificationStatus) {
     getFcmToken(token);
@@ -14,7 +22,7 @@ export const requestUserPermission = async (token: string, notificationStatus: b
 export const getFcmToken = async (token: string) => {
   try {
     // if (fcmToken == null) {
-    const fcmtoken = await messaging().getToken();
+    const fcmtoken = await getToken(getMessagingInstance());
     sendFcm(token, fcmtoken);
     console.log('fcmToken is genrated', fcmtoken);
 
@@ -42,7 +50,7 @@ const sendFcm = async (token: string, fcmtoken: string) => {
 };
 
 export const appListner = async (navigation, getAllSms) => {
-  messaging().onNotificationOpenedApp((remoteMessage) => {
+  onNotificationOpenedApp(getMessagingInstance(), (remoteMessage) => {
     console.log(
       'Notification caused app to open from background state:',
       remoteMessage.notification
@@ -59,7 +67,7 @@ export const appListner = async (navigation, getAllSms) => {
     }
   });
 
-  messaging().onMessage(async (remoteMessage) => {
+  onMessage(getMessagingInstance(), async (remoteMessage) => {
     if (remoteMessage) {
       console.log('Notification caused app to open from quit state:', remoteMessage.notification);
       console.log('forground state', remoteMessage);

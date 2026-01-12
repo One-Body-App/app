@@ -8,7 +8,7 @@ import Feather from '@react-native-vector-icons/feather';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import AntDesignIcon from '@react-native-vector-icons/ant-design';
 import { useDispatch } from 'react-redux';
-import auth from '@react-native-firebase/auth';
+import { getAuth, signOut } from '@react-native-firebase/auth';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -189,7 +189,7 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
             text="Help & Support"
             leftIcon={
               <AntDesignIcon
-                name="customerservice"
+                name="customer-service"
                 color={Colors.neutral.brand}
                 size={20}
                 style={{ marginRight: spacing.x10 }}
@@ -251,7 +251,7 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
             onPress={async () => {
               LoginManager.logOut();
               dispatch(logout());
-              await auth().signOut();
+              await signOut(getAuth());
             }}
             btnStyle={{ marginBottom: spacing.x32 }}
             leftIcon={

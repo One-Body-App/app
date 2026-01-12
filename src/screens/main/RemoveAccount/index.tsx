@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-icons';
-import auth from '@react-native-firebase/auth';
+import { deleteUser, getAuth, signOut } from '@react-native-firebase/auth';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { useToast } from 'react-native-toast-notifications';
 import Button from '@/components/Button';
@@ -35,6 +35,7 @@ function RemoveAccount({ navigation }: Props) {
   const { colors } = useTheme();
   const dispatch = useDispatch();
   const toast = useToast();
+  const firebaseAuth = getAuth();
 
   const options = [
     {
@@ -77,8 +78,10 @@ function RemoveAccount({ navigation }: Props) {
         LoginManager.logOut();
         dispatch(logout());
 
-        auth().currentUser?.delete();
-        auth().signOut();
+        if (firebaseAuth.currentUser) {
+          await deleteUser(firebaseAuth.currentUser);
+        }
+        await signOut(firebaseAuth);
       } else {
         dispatch(setLoader(false));
       }

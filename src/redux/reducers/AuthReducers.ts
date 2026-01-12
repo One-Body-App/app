@@ -22,6 +22,7 @@ type AuthReducer = {
   getBadgesSuccess?: boolean;
   setUserBadgesSuccess?: boolean;
   getProfileSuccess?: boolean;
+  getProfileError?: string[] | null;
   getBadgesData: any[] | null | undefined;
   getProfileData: User | null | undefined;
   userToken: string;
@@ -48,6 +49,7 @@ const initialState: AuthReducer = {
   sendVerificationEmailData: null,
   getBadgesData: null,
   getProfileData: null,
+  getProfileError: null,
   isLoading: false,
 };
 
@@ -110,6 +112,8 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
         loginErrors: [],
         userData: null,
         getProfileData: null,
+        getProfileError: null,
+        isLoading: false,
       };
 
     case ACTIONS.SET_USER_NOTIFICATIONS:
@@ -216,6 +220,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         getProfileSuccess: undefined,
+        getProfileError: null,
         isLoading: true,
         error: null,
       };
@@ -223,6 +228,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         getProfileSuccess: true,
+        getProfileError: null,
         isLoading: false,
         getProfileData: action.payload,
       };
@@ -230,6 +236,7 @@ const authReducer: Reducer<AuthReducer> = (state = initialState, action: AnyActi
       return {
         ...state,
         getProfileSuccess: false,
+        getProfileError: action.payload,
         isLoading: false,
         error: action.payload,
       };
