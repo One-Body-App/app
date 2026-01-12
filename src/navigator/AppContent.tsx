@@ -132,6 +132,7 @@ function AppContent() {
   const firebaseAnalytics = getAnalytics();
   const navigationRef = useNavigationContainerRef<MainStackParamList>();
   const routeNameRef = useRef<string | undefined>(undefined);
+  const lastNavigationRef = useRef<{ route: string; timestamp: number } | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const handleConfirmBackPress = useCallback(async () => {
@@ -381,15 +382,27 @@ function AppContent() {
         console.log('[AppContent Navigation] Already on MainRoot');
       }
     } else if (hasValidToken && !user?.emailVerified) {
-      if (currentRouteName !== 'ConfirmLogin') {
+      // Check if we recently navigated to ConfirmLogin (within last 2 seconds)
+      // This prevents duplicate navigation when SignUp screen and AppContent both try to navigate
+      const now = Date.now();
+      const recentNavigation = lastNavigationRef.current;
+      const wasRecentlyNavigated =
+        recentNavigation?.route === 'ConfirmLogin' && now - recentNavigation.timestamp < 2000;
+
+      if (currentRouteName !== 'ConfirmLogin' && !wasRecentlyNavigated) {
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[AppContent Navigation] Navigating to ConfirmLogin (email not verified)');
         }
+        lastNavigationRef.current = { route: 'ConfirmLogin', timestamp: now };
         navigationRef.dispatch(CommonActions.navigate('ConfirmLogin'));
       } else if (__DEV__) {
         // eslint-disable-next-line no-console
-        console.log('[AppContent Navigation] Already on ConfirmLogin');
+        console.log(
+          wasRecentlyNavigated
+            ? '[AppContent Navigation] Skipping - recently navigated to ConfirmLogin'
+            : '[AppContent Navigation] Already on ConfirmLogin'
+        );
       }
     } else if (__DEV__) {
       // eslint-disable-next-line no-console

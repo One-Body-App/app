@@ -114,6 +114,23 @@ target 'onebody' do
           config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = minimum_target
         end
       end
+
+      # Fix Xcode 15+ warnings about script phases not specifying outputs
+      target.build_phases.each do |phase|
+        if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
+          # Skip phases that already have outputs
+          next if phase.output_paths && !phase.output_paths.empty?
+
+          case phase.name
+          when "Create Symlinks to Header Folders"
+            # Add a dummy output file to satisfy Xcode's dependency analysis
+            phase.output_paths = ["$(DERIVED_FILE_DIR)/$(PRODUCT_NAME)-symlinks.stamp"]
+          when "[CP-User] [Hermes] Replace Hermes for the right configuration, if needed"
+            # Add a dummy output file for Hermes script
+            phase.output_paths = ["$(DERIVED_FILE_DIR)/hermes-config.stamp"]
+          end
+        end
+      end
     end
   end
 

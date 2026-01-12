@@ -20,6 +20,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // Allow haptics during audio session (e.g. camera recording)
     try? AVAudioSession.sharedInstance().setAllowHapticsAndSystemSoundsDuringRecording(true)
 
+    // CRITICAL: Check if app was launched via universal link
+    if let userActivity = launchOptions?[.userActivityDictionary] as? [AnyHashable: Any],
+       let activity = userActivity["UIApplicationLaunchOptionsUserActivityKey"] as? NSUserActivity,
+       activity.activityType == NSUserActivityTypeBrowsingWeb,
+       let url = activity.webpageURL {
+      print("[iOS Deep Link] App LAUNCHED with universal link: \(url.absoluteString)")
+    }
+
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -44,6 +52,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     continue userActivity: NSUserActivity,
     restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
   ) -> Bool {
+    print("[iOS Deep Link] application:continue:restorationHandler CALLED")
+    print("[iOS Deep Link] Activity type: \(userActivity.activityType)")
+    print("[iOS Deep Link] App state: \(application.applicationState.rawValue)") // 0=active, 1=inactive, 2=background
+
     // Handle Universal Links for email verification
     if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
        let url = userActivity.webpageURL {
@@ -60,11 +72,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
            let oobCode = queryItems.first(where: { $0.name == "oobCode" })?.value {
           print("[iOS Deep Link] Email verification link detected - mode: \(mode), oobCode length: \(oobCode.count)")
         }
+
+        // Check for Firebase Dynamic Link format
+        if let linkParam = queryItems.first(where: { $0.name == "link" })?.value {
+          print("[iOS Deep Link] Firebase Dynamic Link wrapper detected, nested link: \(linkParam)")
+        }
       }
 
       // RCTLinkingManager will handle passing this to React Native
-      return RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
+      let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
+      print("[iOS Deep Link] RCTLinkingManager returned: \(result)")
+      return result
     }
+    print("[iOS Deep Link] Not a web browsing activity, returning false")
     return false
   }
 

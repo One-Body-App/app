@@ -13,7 +13,12 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { createUserWithEmailAndPassword, getAuth, getIdToken } from '@react-native-firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  getIdToken,
+  sendEmailVerification,
+} from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
@@ -27,7 +32,10 @@ import { borderRadius } from '@/src/styles/outlines';
 import { button } from '@/src/styles/buttons';
 
 // Logic & Types
-import { signUp } from '@/src/redux/actions/AuthActions';
+import {
+  sendVerificationEmail as sendVerificationEmailAction,
+  signUp,
+} from '@/src/redux/actions/AuthActions';
 import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -194,6 +202,8 @@ function SignupForm({ navigation, route }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [signUpToken, setSignUpToken] = useState<string | null>(null);
+  const hasSentVerificationEmailRef = useRef(false);
   const { dark } = useTheme();
   const orbitAnim = useRef(new Animated.Value(0)).current;
   const textAnim = useRef(new Animated.Value(0)).current;
@@ -374,11 +384,12 @@ function SignupForm({ navigation, route }: Props) {
 
   const onVerify = () => {
     const { email, password, name, username } = state;
-    const data = { email, name, accountType, userId: '', username };
+    const data = { email, name, accountType, userId: '', username, skipVerificationEmail: true };
 
     return createUserWithEmailAndPassword(firebaseAuth, email, password)
       .then(async (user) => {
         const idToken = await getIdToken(user.user);
+        setSignUpToken(idToken);
         data.userId = user.user.uid;
         dispatch(signUp.Request({ data, token: idToken }));
       })
@@ -390,14 +401,48 @@ function SignupForm({ navigation, route }: Props) {
 
   useEffect(() => {
     if (authState.signUpSuccess) {
-      Toast.show('Your account was created successfully. Welcome to the Family!', Toast.SHORT);
-      setIsloading(false);
-      navigation.replace('ConfirmLogin', { toScreen: 'MainRoot' });
+      const handleSignUpSuccess = async () => {
+        if (!hasSentVerificationEmailRef.current) {
+          hasSentVerificationEmailRef.current = true;
+
+          const { currentUser } = firebaseAuth;
+
+          // On iOS, always use backend email to ensure it uses correct domain
+          if (Platform.OS === 'ios') {
+            const firebaseToken =
+              signUpToken ?? (currentUser ? await getIdToken(currentUser) : null);
+            if (firebaseToken) {
+              dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
+            }
+          } else if (currentUser) {
+            // Android: try Firebase first, fallback to backend
+            try {
+              await sendEmailVerification(currentUser);
+            } catch {
+              const firebaseToken = signUpToken ?? (await getIdToken(currentUser));
+              if (firebaseToken) {
+                dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
+              }
+            }
+          }
+        }
+
+        Toast.show('Your account was created successfully. Welcome to the Family!', Toast.SHORT);
+        setIsloading(false);
+
+        // On iOS, AppContent handles navigation to ConfirmLogin automatically
+        // Navigating from here causes a race condition and double-mount
+        if (Platform.OS !== 'ios') {
+          navigation.replace('ConfirmLogin', { toScreen: 'MainRoot' });
+        }
+      };
+
+      handleSignUpSuccess();
     }
     return () => {
       dispatch(signUp.Reset());
     };
-  }, [authState.signUpSuccess, navigation, dispatch]);
+  }, [authState.signUpSuccess, dispatch, firebaseAuth, navigation, signUpToken]);
 
   useEffect(() => {
     if (authState.signUpSuccess === false && authState.error) {

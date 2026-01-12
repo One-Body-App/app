@@ -17,10 +17,10 @@ import {
   TwitterAuthProvider,
   getAuth,
   getIdToken,
+  sendEmailVerification,
   signInWithCredential,
   signInWithEmailAndPassword,
   reload,
-  sendEmailVerification,
   checkActionCode,
   applyActionCode,
   signOut,
@@ -225,6 +225,14 @@ function LoginComponent({
       if (oobCode) {
         logVerifyEmail(
           '[VerifyEmail] focus check skipped, oobCode present - useEffect will handle'
+        );
+        return;
+      }
+
+      // On iOS with verifyAccount mode, also skip - AppState handler will check after Safari
+      if (Platform.OS === 'ios' && verifyAccount) {
+        logVerifyEmail(
+          '[VerifyEmail] focus check skipped on iOS verifyAccount mode - AppState will handle'
         );
         return;
       }
@@ -519,8 +527,24 @@ function LoginComponent({
       logVerifyEmail('[VerifyEmail] AppState changed', {
         nextAppState,
         verifyAccount,
+        hasOobCode: !!oobCode,
         hasCurrentUser: !!firebaseAuth.currentUser,
       });
+
+      // Skip AppState handler when we have an oobCode - the verification useEffect handles it
+      if (oobCode) {
+        logVerifyEmail(
+          '[VerifyEmail] AppState check skipped - oobCode present, useEffect handles it'
+        );
+        return;
+      }
+
+      // Only run AppState checks when user is waiting for email verification
+      // (verifyAccount mode without oobCode)
+      if (!verifyAccount) {
+        logVerifyEmail('[VerifyEmail] AppState check skipped - not in verifyAccount mode');
+        return;
+      }
 
       if (nextAppState === 'active') {
         const { currentUser } = firebaseAuth;
@@ -573,7 +597,7 @@ function LoginComponent({
     return () => {
       subscription.remove();
     };
-  }, [firebaseAuth, navigation, dispatch, verifyAccount]);
+  }, [firebaseAuth, navigation, dispatch, verifyAccount, oobCode]);
 
   // useEffect(() => {
   //   if (action == 'confirmation' && provider == 'twitter') {
@@ -710,17 +734,31 @@ function LoginComponent({
   }, [authState?.sendVerificationEmailSuccess, toast]);
 
   useEffect(() => {
+    // Auto-send verification email when:
+    // 1. User needs verification after login (isVerificationNeeded)
+    // 2. Explicitly requested via prop (showConfirmationEmailMessage)
+    // 3. Landed on ConfirmLogin with verifyAccount (from signup flow)
     const shouldAutoSend =
-      (isVerificationNeeded || showConfirmationEmailMessage) && !verificationEmailRequested;
+      (isVerificationNeeded || showConfirmationEmailMessage || verifyAccount) &&
+      !verificationEmailRequested;
 
     if (!shouldAutoSend) {
       return;
     }
 
     const sendVerification = async () => {
-      const firebaseToken = firebaseAuth.currentUser
-        ? await getIdToken(firebaseAuth.currentUser)
-        : undefined;
+      const { currentUser } = firebaseAuth;
+      if (Platform.OS === 'android' && currentUser) {
+        try {
+          await sendEmailVerification(currentUser);
+          setVerificationEmailRequested(true);
+          return;
+        } catch {
+          // Fall back to backend email if Firebase fails.
+        }
+      }
+
+      const firebaseToken = currentUser ? await getIdToken(currentUser) : undefined;
       if (firebaseToken) {
         setVerificationEmailRequested(true);
         dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
@@ -732,6 +770,7 @@ function LoginComponent({
     dispatch,
     isVerificationNeeded,
     showConfirmationEmailMessage,
+    verifyAccount,
     verificationEmailRequested,
     firebaseAuth.currentUser,
   ]);
@@ -1127,23 +1166,31 @@ function LoginComponent({
 
             <TouchableOpacity
               style={{ marginTop: spacing.x16, alignSelf: 'center' }}
-              onPress={() => {
+              onPress={async () => {
                 if (resendAttempts >= 5) {
                   setResendMessage('Please wait before requesting another verification email.');
                   return;
                 }
                 const { currentUser } = firebaseAuth;
-                if (currentUser) {
-                  sendEmailVerification(currentUser)
-                    .then(() => {
-                      setResendAttempts((prev) => prev + 1);
-                      setResendMessage('Verification email sent. Please check your inbox.');
-                    })
-                    .catch(() => {
-                      setResendMessage('Unable to resend right now. Please try again later.');
-                    });
-                } else {
+                if (!currentUser) {
                   setResendMessage('Please log in again to resend the verification email.');
+                  return;
+                }
+                try {
+                  if (Platform.OS === 'android') {
+                    await sendEmailVerification(currentUser);
+                  } else {
+                    const firebaseToken = await getIdToken(currentUser, true);
+                    if (!firebaseToken) {
+                      setResendMessage('Please log in again to resend the verification email.');
+                      return;
+                    }
+                    dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
+                  }
+                  setResendAttempts((prev) => prev + 1);
+                  setResendMessage('Verification email sent. Please check your inbox.');
+                } catch {
+                  setResendMessage('Unable to resend right now. Please try again later.');
                 }
               }}
             >
