@@ -278,11 +278,17 @@ function SignupForm({ navigation, route }: Props) {
     if (!emailError && !passwordError && !cPasswordError && !usernameError && !nameError) {
       if (password === cPassword) {
         const data = { email, name, accountType, userId: '', username };
+        console.log('[SignUp] Validating user with data:', JSON.stringify(data, null, 2));
         const userValidation = await ApiCall({
           route: 'user/validateUserInfo',
           params: data,
           verb: 'post',
         });
+        console.log(
+          '[SignUp] Validation response:',
+          userValidation.status,
+          JSON.stringify(userValidation.response, null, 2)
+        );
 
         if (userValidation.status === 200) {
           recaptcha.current?.open();
@@ -615,7 +621,7 @@ function SignupForm({ navigation, route }: Props) {
           <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
         </View>
 
-        <Animated.View style={[{ marginTop: spacing.x7, alignItems: 'center' }, orbitStyle]}>
+        <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
           <SignupButtons
             socialLogin={() => {}}
             navigation={navigation}

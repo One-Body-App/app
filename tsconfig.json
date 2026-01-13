@@ -12,8 +12,6 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
     "jsx": "react-native",
     // "baseUrl": ".",
-
-    "jsx": "react-native",
     "types": ["react-native", "jest", "node"],
 
     "paths": {

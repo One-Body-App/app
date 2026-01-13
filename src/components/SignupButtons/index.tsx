@@ -49,8 +49,6 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
-      offlineAccess: true,
-      forceCodeForRefreshToken: true,
     });
   }, []);
 
@@ -129,7 +127,7 @@ function SignupButtons({ errorFromLogin, socialLogin, disabled, wrapperStyles }:
       borderColor: appColor.SecoundryColor,
     };
   };
-  const getGlassWrapperStyle = () => {
+  const getGlassWrapperStyle = (): ViewStyle => {
     return {
       ...getButtonContainer(),
       borderWidth: 0,

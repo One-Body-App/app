@@ -14,7 +14,7 @@ export const ApiCall = async <T = any>({
   timeoutMs = 300000,
 }: //
 {
-  params?: Record<string, unknown>;
+  params?: Record<string, unknown> | FormData;
   route: string;
   verb: 'post' | 'get' | 'delete' | 'patch';
   token?: string;
@@ -60,14 +60,17 @@ export const ApiCall = async <T = any>({
           authHeader
             ? {
                 headers: {
-                  'Content-Type': isFormUrlEncode
-                    ? 'multipart/form-data'
-                    : 'application/x-www-form-urlencoded',
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
                   ...authHeader,
                 },
                 timeout: timeoutMs,
               }
-            : { timeout: timeoutMs }
+            : {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                },
+                timeout: timeoutMs,
+              }
         );
         break;
       case 'patch':
@@ -78,14 +81,17 @@ export const ApiCall = async <T = any>({
           authHeader
             ? {
                 headers: {
-                  'Content-Type': isFormUrlEncode
-                    ? 'multipart/form-data'
-                    : 'application/x-www-form-urlencoded',
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
                   ...authHeader,
                 },
                 timeout: timeoutMs,
               }
-            : { timeout: timeoutMs }
+            : {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                },
+                timeout: timeoutMs,
+              }
         );
         break;
       case 'delete':

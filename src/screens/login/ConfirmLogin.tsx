@@ -92,7 +92,7 @@ function ConfirmLogin({ route, navigation }: Props) {
             '[ConfirmLogin useFocusEffect] iOS - skipping focus check, LoginComponent handles navigation'
           );
         }
-        return;
+        return () => undefined;
       }
 
       if (!route.params?.oobCode) {
@@ -102,7 +102,7 @@ function ConfirmLogin({ route, navigation }: Props) {
             '[ConfirmLogin useFocusEffect] No oobCode, skipping focus check (LoginComponent will handle)'
           );
         }
-        return;
+        return () => undefined;
       }
 
       if (__DEV__) {
