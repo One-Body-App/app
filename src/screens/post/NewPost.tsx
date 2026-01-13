@@ -48,7 +48,7 @@ import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 import ErrorBoundary from '@/src/components/ErrorBoundry';
 
 GiphySDK.configure({
-  apiKey: Platform.OS == 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID,
+  apiKey: Platform.OS === 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID,
 });
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
@@ -111,7 +111,7 @@ function NewPost({ navigation, route }: Props) {
 
       setIsLoading(false);
 
-      if (result.status == 200) {
+      if (result.status === 200) {
         setContent('');
         navigation.popToTop();
         navigation.navigate('MainRoot', {
@@ -200,15 +200,15 @@ function NewPost({ navigation, route }: Props) {
 
       let message = 'There was a problem on our end. Please try again later.';
       if (e?.moderationPassed === false) {
-        if (e.moderationTypeFailure == 'image') {
+        if (e.moderationTypeFailure === 'image') {
           message = 'Photo violates terms of use ';
         }
 
-        if (e.moderationTypeFailure == 'text') {
+        if (e.moderationTypeFailure === 'text') {
           message =
             'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
         }
-      } else if (e.message == 'Network Error') {
+      } else if (e.message === 'Network Error') {
         message = 'Network Error. Please try again later.';
       }
       toast.show(message, {
@@ -317,17 +317,17 @@ function NewPost({ navigation, route }: Props) {
 
         return;
       }
-      if (response.errorCode == 'camera_unavailable') {
+      if (response.errorCode === 'camera_unavailable') {
         console.log('Camera not available on device');
 
         return;
       }
-      if (response.errorCode == 'permission') {
+      if (response.errorCode === 'permission') {
         console.log('Permission not satisfied');
 
         return;
       }
-      if (response.errorCode == 'others') {
+      if (response.errorCode === 'others') {
         console.log(response.errorMessage);
 
         return;
@@ -491,7 +491,7 @@ function NewPost({ navigation, route }: Props) {
                             onPress={() => {
                               setImagesToUpload(
                                 imagesToUpload.filter((item, filterIndex) => {
-                                  return filterIndex != index;
+                                  return filterIndex !== index;
                                 })
                               );
                             }}
@@ -532,7 +532,7 @@ function NewPost({ navigation, route }: Props) {
                             onPress={() => {
                               setImagesObject(
                                 imagesObject.filter((item, filterIndex) => {
-                                  return filterIndex != index;
+                                  return filterIndex !== index;
                                 })
                               );
                             }}

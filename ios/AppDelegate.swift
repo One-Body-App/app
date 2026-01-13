@@ -188,10 +188,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 //      return success
 //    }
 
-  // Deep link handlers commented out to allow email verification to happen in Safari first
-  // The verification link needs to open the web page to apply the oobCode,
-  // then the web page redirects back to the app
-  /*
   func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
     return RCTLinkingManager.application(app, open: url, options: options)
   }
@@ -199,7 +195,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
     return RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
   }
-  */
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {

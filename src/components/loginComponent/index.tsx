@@ -187,8 +187,6 @@ function LoginComponent({
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_LOGIN_CLIENT_ID,
-      offlineAccess: true,
-      forceCodeForRefreshToken: true,
     });
 
     // navigation.addListener('beforeRemove', (e) => {

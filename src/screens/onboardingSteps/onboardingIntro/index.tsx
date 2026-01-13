@@ -9,12 +9,14 @@ import {
   StatusBar,
   TouchableOpacity,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import FastImage from 'react-native-fast-image';
 import { useTheme, CommonActions } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { LoginManager } from 'react-native-fbsdk-next';
+import { getAuth, signOut } from '@react-native-firebase/auth';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { OnboardingStackParamList } from '@/src/navigator/types';
@@ -24,6 +26,7 @@ import { Colors, Typography } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
 import { HapticService } from '@/src/services/haptic';
+import { logout } from '@/src/redux/actions/AuthActions';
 
 const introImage = require('@/assets/images/onboarding_intro.png');
 
@@ -33,6 +36,7 @@ type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
 
 function OnboardingIntro({ navigation }: Props) {
   const authState = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
   const { dark } = useTheme();
   const isIos = Platform.OS === 'ios';
 
@@ -91,14 +95,26 @@ function OnboardingIntro({ navigation }: Props) {
     }
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     HapticService.trigger('impactMedium');
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Intro' }],
-      })
-    );
+    try {
+      LoginManager.logOut();
+      await signOut(getAuth());
+    } catch {
+      // Ignore logout failures to avoid blocking navigation.
+    }
+    dispatch(logout());
+    const parentNavigation = navigation.getParent();
+    const resetAction = CommonActions.reset({
+      index: 0,
+      routes: [{ name: 'Intro' }],
+    });
+
+    if (parentNavigation) {
+      parentNavigation.dispatch(resetAction);
+    } else {
+      navigation.dispatch(resetAction);
+    }
   };
 
   // Theme-aware colors (adjusted to match your original intent)
@@ -135,6 +151,7 @@ function OnboardingIntro({ navigation }: Props) {
               borderColor: glassBorderColor,
               backgroundColor: glassBackground,
             }}
+            pointerEvents="box-none"
           >
             <BlurView
               blurType={dark ? 'dark' : 'light'}
@@ -148,19 +165,24 @@ function OnboardingIntro({ navigation }: Props) {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
+              pointerEvents="none"
+            />
+            <TouchableOpacity
+              onPress={handleBack}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2,
+              }}
             >
-              <TouchableOpacity
-                onPress={handleBack}
-                style={{
-                  width: 40,
-                  height: 40,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="chevron-back" size={24} color="#FFF" />
-              </TouchableOpacity>
-            </BlurView>
+              <Ionicons name="chevron-back" size={24} color="#FFF" />
+            </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity

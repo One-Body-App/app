@@ -133,6 +133,7 @@ function AppContent() {
   const navigationRef = useNavigationContainerRef<MainStackParamList>();
   const routeNameRef = useRef<string | undefined>(undefined);
   const lastNavigationRef = useRef<{ route: string; timestamp: number } | null>(null);
+  const ignoreAuthLinksRef = useRef(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const handleConfirmBackPress = useCallback(async () => {
@@ -148,6 +149,16 @@ function AppContent() {
       />
     ),
     [handleConfirmBackPress]
+  );
+
+  const logScreenViewEvent = useCallback(
+    (screenName: string) => {
+      logEvent(firebaseAnalytics, 'screen_view', {
+        firebase_screen: screenName,
+        firebase_screen_class: screenName,
+      });
+    },
+    [firebaseAnalytics]
   );
 
   useEffect(() => {
@@ -166,6 +177,7 @@ function AppContent() {
   const onAuthStateChanged = async function onAuthStateChanged(
     firebaseUser: FirebaseAuthTypes.User | null
   ) {
+    ignoreAuthLinksRef.current = !!firebaseUser?.emailVerified;
     if (__DEV__) {
       // eslint-disable-next-line no-console
       console.log('[AppContent onAuthStateChanged] Auth state changed:', {
@@ -316,6 +328,8 @@ function AppContent() {
       return;
     }
     const currentRouteName = navigationRef.getCurrentRoute()?.name;
+    const rootState = navigationRef.getRootState();
+    const rootRouteName = rootState?.routes?.[rootState.index ?? 0]?.name;
     const hasValidToken = !!user && token !== '' && token !== 'unauthorized';
     const isProfileCompleted = authState.getProfileData?.isProfileCompleted;
     const isProfileLoading = authState.isLoading;
@@ -335,14 +349,13 @@ function AppContent() {
       });
     }
 
-    // On iOS, if we're on ConfirmLogin screen, skip AppContent navigation
-    // LoginComponent handles the verification flow and navigation
-    // This prevents race condition where both components try to navigate
-    if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin') {
+    // On iOS, avoid navigation races while email is still unverified on ConfirmLogin.
+    // Once verified, allow AppContent to move to MainRoot.
+    if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin' && !user?.emailVerified) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.log(
-          '[AppContent Navigation] iOS - on ConfirmLogin, letting LoginComponent handle navigation'
+          '[AppContent Navigation] iOS - on ConfirmLogin (unverified), letting LoginComponent handle navigation'
         );
       }
       return;
@@ -371,7 +384,19 @@ function AppContent() {
     // Navigate to MainRoot if user has verified email
     // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
     if (hasValidToken && user?.emailVerified && (shouldNavigate || !isProfileLoading)) {
-      if (currentRouteName !== 'MainRoot') {
+      ignoreAuthLinksRef.current = true;
+      if (currentRouteName === 'ConfirmLogin') {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[AppContent Navigation] Closing ConfirmLogin modal after verification');
+        }
+        navigationRef.dispatch(CommonActions.navigate('MainRoot'));
+        if (navigationRef.canGoBack()) {
+          navigationRef.dispatch(CommonActions.goBack());
+        }
+        return;
+      }
+      if (rootRouteName !== 'MainRoot') {
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[AppContent Navigation] Navigating to MainRoot (email verified)');
@@ -543,6 +568,12 @@ function AppContent() {
     return true;
   };
 
+  const shouldIgnoreAuthLink = (url?: string | null) => {
+    if (!url) return false;
+    if (!ignoreAuthLinksRef.current) return false;
+    return url.includes('/auth/action') || url.includes('/__/auth/action');
+  };
+
   const linking: LinkingOptions<MainStackParamList> = {
     prefixes: ['https://app.onebodyapp.com', 'https://auth.onebodyapp.com', 'onebodyapp://'],
     config: linkingConfig,
@@ -599,6 +630,13 @@ function AppContent() {
         console.log('[Deep Link] getInitialURL RAW (before normalize):', rawUrl);
       }
       const url = normalizeLink(rawUrl);
+      if (shouldIgnoreAuthLink(url)) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link] getInitialURL: Ignoring auth link after verification');
+        }
+        return null;
+      }
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.log('[Deep Link] getInitialURL NORMALIZED:', sanitizeUrl(url));
@@ -616,6 +654,13 @@ function AppContent() {
       }
       const message = await getInitialNotification(firebaseMessaging);
       const notificationUrl = normalizeLink(message?.data?.url as string);
+      if (shouldIgnoreAuthLink(notificationUrl)) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link] Notification URL ignored after verification');
+        }
+        return null;
+      }
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.log('[Deep Link] Notification URL:', sanitizeUrl(notificationUrl));
@@ -632,6 +677,13 @@ function AppContent() {
           console.log('[Deep Link] subscribe onReceiveURL RAW:', url);
         }
         const normalized = normalizeLink(url);
+        if (shouldIgnoreAuthLink(normalized)) {
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[Deep Link] subscribe: Ignoring auth link after verification');
+          }
+          return;
+        }
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[Deep Link] subscribe onReceiveURL NORMALIZED:', sanitizeUrl(normalized));
@@ -648,6 +700,13 @@ function AppContent() {
       const subscription = Linking.addEventListener('url', onReceiveURL);
       const unsubscribeNotification = onNotificationOpenedApp(firebaseMessaging, (message) => {
         const url = normalizeLink(message.data?.url as string);
+        if (shouldIgnoreAuthLink(url)) {
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[Deep Link] Notification ignored after verification');
+          }
+          return;
+        }
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[Deep Link] Notification opened with URL:', sanitizeUrl(url));
@@ -709,20 +768,14 @@ function AppContent() {
         routeNameRef.current = routeName;
         setNavigationReady(true);
         if (routeName) {
-          logEvent(firebaseAnalytics, 'screen_view', {
-            screen_name: routeName,
-            screen_class: routeName,
-          });
+          logScreenViewEvent(routeName);
         }
       }}
       onStateChange={() => {
         const previousRouteName = routeNameRef.current;
         const currentRouteName = navigationRef.getCurrentRoute()?.name;
         if (currentRouteName && previousRouteName !== currentRouteName) {
-          logEvent(firebaseAnalytics, 'screen_view', {
-            screen_name: currentRouteName,
-            screen_class: currentRouteName,
-          });
+          logScreenViewEvent(currentRouteName);
         }
         routeNameRef.current = currentRouteName;
       }}

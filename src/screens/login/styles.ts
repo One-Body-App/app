@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import { appColor } from '../../constants';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -61,3 +61,5 @@ export const styles = StyleSheet.create({
     shadowRadius: 20,
   },
 });
+
+export default styles;
