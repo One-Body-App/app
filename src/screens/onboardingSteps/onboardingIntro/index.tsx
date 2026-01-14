@@ -8,6 +8,7 @@ import {
   Easing,
   StatusBar,
   TouchableOpacity,
+  StyleSheet,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -138,69 +139,6 @@ function OnboardingIntro({ navigation }: Props) {
           marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
         }}
       >
-        {isIos ? (
-          <View
-            style={{
-              position: 'absolute',
-              top: 80,
-              left: 0,
-              zIndex: 10,
-              borderRadius: 20,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: glassBorderColor,
-              backgroundColor: glassBackground,
-            }}
-            pointerEvents="box-none"
-          >
-            <BlurView
-              blurType={dark ? 'dark' : 'light'}
-              blurAmount={18}
-              reducedTransparencyFallbackColor={
-                dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-              }
-              style={{
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              pointerEvents="none"
-            />
-            <TouchableOpacity
-              onPress={handleBack}
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 2,
-              }}
-            >
-              <Ionicons name="chevron-back" size={24} color="#FFF" />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity
-            onPress={handleBack}
-            style={{
-              position: 'absolute',
-              top: spacing.x32,
-              left: 0,
-              zIndex: 10,
-              width: 40,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="chevron-back" size={24} color={headerColor} />
-          </TouchableOpacity>
-        )}
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View
             style={{
@@ -303,9 +241,52 @@ function OnboardingIntro({ navigation }: Props) {
             )}
           </View>
         </ScrollView>
+        <TouchableOpacity
+          onPress={handleBack}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          style={[
+            styles.backButton,
+            isIos
+              ? {
+                  top: 80,
+                  borderWidth: 1,
+                  borderColor: glassBorderColor,
+                  backgroundColor: glassBackground,
+                }
+              : { top: spacing.x32 },
+          ]}
+        >
+          {isIos && (
+            <BlurView
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={18}
+              reducedTransparencyFallbackColor={
+                dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+              }
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+          )}
+          <Ionicons name="chevron-back" size={24} color={isIos ? '#FFF' : headerColor} />
+        </TouchableOpacity>
       </SafeAreaView>
     </>
   );
 }
 
 export default OnboardingIntro;
+
+const styles = StyleSheet.create({
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    zIndex: 20,
+    elevation: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

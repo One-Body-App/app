@@ -13,12 +13,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  createUserWithEmailAndPassword,
-  getAuth,
-  getIdToken,
-  sendEmailVerification,
-} from '@react-native-firebase/auth';
+import { createUserWithEmailAndPassword, getAuth, getIdToken } from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
@@ -277,8 +272,8 @@ function SignupForm({ navigation, route }: Props) {
 
     if (!emailError && !passwordError && !cPasswordError && !usernameError && !nameError) {
       if (password === cPassword) {
-        const data = { email, name, accountType, userId: '', username };
-        console.log('[SignUp] Validating user with data:', JSON.stringify(data, null, 2));
+        const data = { email };
+        console.log('[SignUp] Validating user email with data:', JSON.stringify(data, null, 2));
         const userValidation = await ApiCall({
           route: 'user/validateUserInfo',
           params: data,
@@ -295,18 +290,10 @@ function SignupForm({ navigation, route }: Props) {
         } else {
           setIsloading(false);
           if (userValidation.status === 409) {
-            const errorMessage = userValidation.response?.message || '';
-            if (errorMessage.toLowerCase().includes('username')) {
-              setState((prev) => ({
-                ...prev,
-                usernameError: errorMessage,
-              }));
-            } else {
-              setState((prev) => ({
-                ...prev,
-                emailError: 'User already exists. Try again with a different email account!',
-              }));
-            }
+            setState((prev) => ({
+              ...prev,
+              emailError: 'User already exists. Try again with a different email account!',
+            }));
           }
           Toast.show(
             userValidation.response?.message ??
@@ -361,21 +348,18 @@ function SignupForm({ navigation, route }: Props) {
     setIsCheckingUsername(true);
     try {
       const userValidation = await ApiCall({
-        route: 'user/validateUserInfo',
-        params: { username, email: '', name: '', accountType, userId: '' },
+        route: 'user/validateUsername',
+        params: { username },
         verb: 'post',
       });
 
       if (userValidation.status === 200) {
         setState((prev) => ({ ...prev, usernameError: '' }));
       } else if (userValidation.status === 409) {
-        const errorMessage = userValidation.response?.message || '';
-        if (errorMessage.toLowerCase().includes('username')) {
-          setState((prev) => ({
-            ...prev,
-            usernameError: 'Sorry, this username is already in use. Please choose another username',
-          }));
-        }
+        setState((prev) => ({
+          ...prev,
+          usernameError: 'Sorry! This username is already taken. Try again.',
+        }));
       }
     } catch (error) {
       // Silently fail - validation will happen on submit anyway
@@ -413,22 +397,12 @@ function SignupForm({ navigation, route }: Props) {
 
           const { currentUser } = firebaseAuth;
 
-          // On iOS, always use backend email to ensure it uses correct domain
+          // iOS sends immediately; Android sends from ConfirmLogin to avoid duplicate emails.
           if (Platform.OS === 'ios') {
             const firebaseToken =
               signUpToken ?? (currentUser ? await getIdToken(currentUser) : null);
             if (firebaseToken) {
               dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
-            }
-          } else if (currentUser) {
-            // Android: try Firebase first, fallback to backend
-            try {
-              await sendEmailVerification(currentUser);
-            } catch {
-              const firebaseToken = signUpToken ?? (await getIdToken(currentUser));
-              if (firebaseToken) {
-                dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
-              }
             }
           }
         }

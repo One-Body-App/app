@@ -17,7 +17,6 @@ import {
   TwitterAuthProvider,
   getAuth,
   getIdToken,
-  sendEmailVerification,
   signInWithCredential,
   signInWithEmailAndPassword,
   reload,
@@ -152,6 +151,7 @@ function LoginComponent({
   const [isVerificationNeeded, setIsVerificationNeeded] = useState<boolean>(false);
   const [token, setToken] = useState('');
   const [verificationEmailRequested, setVerificationEmailRequested] = useState(false);
+  const [backendVerificationRequested, setBackendVerificationRequested] = useState(false);
 
   const [newUserCredentials, setNewUserCredentials] =
     useState<FirebaseAuthTypes.UserCredential | null>(null);
@@ -713,23 +713,27 @@ function LoginComponent({
     toScreenParams,
   ]);
 
+  const shouldShowVerificationToast =
+    backendVerificationRequested &&
+    (verifyAccount || showConfirmationEmailMessage || isVerificationNeeded);
+
   useEffect(() => {
-    if (authState?.sendVerificationEmailSuccess === true) {
+    if (authState?.sendVerificationEmailSuccess === true && shouldShowVerificationToast) {
       toast.show(`Verification email successfully sent. Check your inbox.`, {
         type: 'success',
         placement: 'top',
       });
     }
-  }, [authState?.sendVerificationEmailSuccess, toast]);
+  }, [authState?.sendVerificationEmailSuccess, shouldShowVerificationToast, toast]);
 
   useEffect(() => {
-    if (authState?.sendVerificationEmailSuccess === false) {
+    if (authState?.sendVerificationEmailSuccess === false && shouldShowVerificationToast) {
       toast.show(`We couldn't send the verification email. Please try again.`, {
         type: 'danger',
         placement: 'top',
       });
     }
-  }, [authState?.sendVerificationEmailSuccess, toast]);
+  }, [authState?.sendVerificationEmailSuccess, shouldShowVerificationToast, toast]);
 
   useEffect(() => {
     // Auto-send verification email when:
@@ -746,19 +750,10 @@ function LoginComponent({
 
     const sendVerification = async () => {
       const { currentUser } = firebaseAuth;
-      if (Platform.OS === 'android' && currentUser) {
-        try {
-          await sendEmailVerification(currentUser);
-          setVerificationEmailRequested(true);
-          return;
-        } catch {
-          // Fall back to backend email if Firebase fails.
-        }
-      }
-
-      const firebaseToken = currentUser ? await getIdToken(currentUser) : undefined;
+      const firebaseToken = currentUser ? await getIdToken(currentUser, true) : undefined;
       if (firebaseToken) {
         setVerificationEmailRequested(true);
+        setBackendVerificationRequested(true);
         dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
       }
     };
@@ -1175,16 +1170,13 @@ function LoginComponent({
                   return;
                 }
                 try {
-                  if (Platform.OS === 'android') {
-                    await sendEmailVerification(currentUser);
-                  } else {
-                    const firebaseToken = await getIdToken(currentUser, true);
-                    if (!firebaseToken) {
-                      setResendMessage('Please log in again to resend the verification email.');
-                      return;
-                    }
-                    dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
+                  const firebaseToken = await getIdToken(currentUser, true);
+                  if (!firebaseToken) {
+                    setResendMessage('Please log in again to resend the verification email.');
+                    return;
                   }
+                  setBackendVerificationRequested(true);
+                  dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
                   setResendAttempts((prev) => prev + 1);
                   setResendMessage('Verification email sent. Please check your inbox.');
                 } catch {
