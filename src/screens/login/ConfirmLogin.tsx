@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, AppState, AppStateStatus, Platform } from 'react-native';
+import {
+  ScrollView,
+  AppState,
+  AppStateStatus,
+  Platform,
+  StatusBar,
+  useColorScheme,
+} from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
@@ -31,6 +38,8 @@ function ConfirmLogin({ route, navigation }: Props) {
   const userData = useSelector((state: RootState) => state.auth.userData);
   const dispatch = useDispatch();
   const { dark, colors } = useTheme();
+  const colorScheme = useColorScheme();
+  const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
 
   // Consolidated verification check that prevents double navigation
   const checkAndNavigateIfVerified = useCallback(async () => {
@@ -119,6 +128,14 @@ function ConfirmLogin({ route, navigation }: Props) {
     }, [route.params?.oobCode, checkAndNavigateIfVerified])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'ios') {
+        StatusBar.setBarStyle(statusBarStyle);
+      }
+    }, [statusBarStyle])
+  );
+
   useEffect(() => {
     if (__DEV__) {
       // eslint-disable-next-line no-console
@@ -185,30 +202,33 @@ function ConfirmLogin({ route, navigation }: Props) {
   }, [navigation, route.params, authReducer.userData?.email, dispatch, checkAndNavigateIfVerified]);
 
   return (
-    <UserStepsLayout
-      backgroundColor={dark ? colors.background : Colors.neutral[700]}
-      hideBottomText
-      showCustomHeaderOnAndroid
-    >
-      <ScrollView style={{ flexGrow: 1, marginTop: spacing.x24 }}>
-        {route?.params?.mode === 'resetPassword' ? (
-          <NewPassword oobCode={route.params?.oobCode} />
-        ) : (
-          <LoginComponent
-            showConfirmationEmailMessage={false}
-            currentUserEmail={userData?.email ?? ''}
-            enabledLoginProviders={enabledLoginProviders}
-            action={route.params?.action}
-            mode={route.params?.mode}
-            oobCode={route.params?.oobCode}
-            onlyPassword={route.params?.onlyPassword}
-            toScreenRouteParams={route.params?.toScreenRouteParams}
-            updateParent={route.params?.updateParent}
-            verifyAccount
-          />
-        )}
-      </ScrollView>
-    </UserStepsLayout>
+    <>
+      {Platform.OS === 'ios' && <StatusBar barStyle={statusBarStyle} />}
+      <UserStepsLayout
+        backgroundColor={dark ? colors.background : Colors.neutral[700]}
+        hideBottomText
+        showCustomHeaderOnAndroid
+      >
+        <ScrollView style={{ flexGrow: 1, marginTop: spacing.x24 }}>
+          {route?.params?.mode === 'resetPassword' ? (
+            <NewPassword oobCode={route.params?.oobCode} />
+          ) : (
+            <LoginComponent
+              showConfirmationEmailMessage={false}
+              currentUserEmail={userData?.email ?? ''}
+              enabledLoginProviders={enabledLoginProviders}
+              action={route.params?.action}
+              mode={route.params?.mode}
+              oobCode={route.params?.oobCode}
+              onlyPassword={route.params?.onlyPassword}
+              toScreenRouteParams={route.params?.toScreenRouteParams}
+              updateParent={route.params?.updateParent}
+              verifyAccount
+            />
+          )}
+        </ScrollView>
+      </UserStepsLayout>
+    </>
   );
 }
 

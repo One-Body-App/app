@@ -10,6 +10,8 @@ import {
   Platform,
   StyleSheet,
   RefreshControl,
+  StatusBar,
+  useColorScheme,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch, useSelector } from 'react-redux';
@@ -21,6 +23,7 @@ import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
 import Toast from 'react-native-simple-toast';
 
 // Styles & Constraints
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
@@ -30,7 +33,10 @@ import { button } from '@/src/styles/buttons';
 import {
   sendVerificationEmail as sendVerificationEmailAction,
   signUp,
+  loginSocialRequest,
 } from '@/src/redux/actions/AuthActions';
+import { setAccountType } from '@/src/redux/actions/GeneralActions';
+import { requestUserPermission } from '@/services/notification/notificationServices';
 import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -198,8 +204,67 @@ function SignupForm({ navigation, route }: Props) {
   const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [signUpToken, setSignUpToken] = useState<string | null>(null);
+  const [newUserCredentials, setNewUserCredentials] =
+    useState<FirebaseAuthTypes.UserCredential | null>(null);
+  const [socialLoginError, setSocialLoginError] = useState<string>('');
   const hasSentVerificationEmailRef = useRef(false);
   const { dark } = useTheme();
+  const colorScheme = useColorScheme();
+  const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
+
+  // Set accountType in Redux when screen loads so social login can access it
+  useEffect(() => {
+    if (accountType) {
+      dispatch(setAccountType(accountType));
+    }
+  }, [accountType, dispatch]);
+
+  // Handle social login credentials when they arrive
+  useEffect(() => {
+    const handleSocialSignup = async () => {
+      if (!newUserCredentials || !accountType) return;
+
+      try {
+        const token = await getIdToken(newUserCredentials.user);
+        const data = {
+          email: newUserCredentials.user.email,
+          name: newUserCredentials.user.displayName,
+          socialData: newUserCredentials.additionalUserInfo,
+          userId: newUserCredentials.user.uid,
+          username: newUserCredentials.user.email?.replace('@', ''),
+          accountType,
+          token,
+        };
+
+        const sendFcm = async (fcmToken: string) => {
+          try {
+            await requestUserPermission(fcmToken, true);
+          } catch (e) {
+            // FCM registration is non-critical
+          }
+        };
+
+        const gotoSignup = () => {
+          // Navigate to confirm login for email verification if needed
+          navigation.navigate('ConfirmLogin', {});
+        };
+
+        dispatch(
+          loginSocialRequest({
+            data,
+            seterror: setSocialLoginError,
+            gotoSignup,
+            sendFcm,
+          })
+        );
+      } catch (e: any) {
+        setSocialLoginError(e?.message || 'Social login failed');
+      }
+    };
+
+    handleSocialSignup();
+  }, [newUserCredentials, accountType, dispatch, navigation]);
+
   const orbitAnim = useRef(new Animated.Value(0)).current;
   const textAnim = useRef(new Animated.Value(0)).current;
   const fieldsAnim = useRef(new Animated.Value(0)).current;
@@ -471,12 +536,15 @@ function SignupForm({ navigation, route }: Props) {
 
   useFocusEffect(
     React.useCallback(() => {
+      if (Platform.OS === 'ios') {
+        StatusBar.setBarStyle(statusBarStyle);
+      }
       setState(initialFormState);
       setHidePass(true);
       setShowPasswordHint(false);
       setHasPasswordInteracted(false);
       setIsloading(false);
-    }, [])
+    }, [statusBarStyle])
   );
 
   const orbitStyle = {
@@ -525,241 +593,263 @@ function SignupForm({ navigation, route }: Props) {
   };
 
   return (
-    <UserStepsLayout
-      backgroundColor={Colors.main.white}
-      showCustomHeaderOnAndroid
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={Colors.primary.brand}
-        />
-      }
-    >
-      <Animated.View
-        style={[
-          { marginTop: spacing.x20, marginBottom: spacing.x10, marginHorizontal: spacing.x20 },
-          textPopStyle,
-        ]}
+    <>
+      {Platform.OS === 'ios' && <StatusBar barStyle={statusBarStyle} />}
+      <UserStepsLayout
+        backgroundColor={Colors.main.white}
+        showCustomHeaderOnAndroid
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.primary.brand}
+          />
+        }
       >
-        <StyledText
-          style={[Typography.header.h1, { color: dark ? brandWhite : Colors.primary.brand }]}
-        >
-          Create your account details
-        </StyledText>
-        {accountType ? (
-          <StyledText
-            style={[
-              Typography.subheader.M,
-              { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x5 },
-            ]}
-          >
-            {accountType.charAt(0).toUpperCase() + accountType.slice(1)}
-          </StyledText>
-        ) : null}
-        <StyledText
+        <Animated.View
           style={[
-            Typography.subheader.R,
-            { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x8 },
+            { marginTop: spacing.x20, marginBottom: spacing.x10, marginHorizontal: spacing.x20 },
+            textPopStyle,
           ]}
         >
-          Enter your details so that we can get you setup:
-        </StyledText>
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.cardContainer,
-          {
-            backgroundColor: Colors.neutral[700],
-            borderColor: dark ? Colors.neutral[900] : Colors.neutral[800],
-          },
-          fieldsPopStyle,
-        ]}
-      >
-        <TouchableOpacity
-          style={{ flexDirection: 'row', marginBottom: spacing.x10 }}
-          onPress={() => navigation.replace('Login')}
-        >
-          <StyledText>Already have an account? </StyledText>
-          <StyledText style={{ color: '#41dbe1' }}>Sign in</StyledText>
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x8 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
           <StyledText
-            style={{ marginHorizontal: 10, color: dark ? brandWhite : Colors.primary.brand }}
+            style={[Typography.header.h1, { color: dark ? brandWhite : Colors.primary.brand }]}
           >
-            Or
+            Create your account details
           </StyledText>
-          <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
-        </View>
-
-        <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
-          <SignupButtons
-            socialLogin={() => {}}
-            navigation={navigation}
-            route={route}
-            disabled={!accountType}
-          />
-        </Animated.View>
-
-        <InputField
-          ref={inputRefs.username}
-          label="Username"
-          isDark={dark}
-          placeholder={state.username ? '' : 'e.g. onebodyusername'}
-          value={state.username}
-          error={state.usernameError}
-          autoCapitalize="none"
-          autoCorrect={false}
-          onChangeText={(username: string) => changeHandler('username', username.trim())}
-          onBlur={() => checkUsernameAvailability(state.username)}
-          onSubmitEditing={() => inputRefs.name.current?.focus()}
-        />
-
-        <InputField
-          ref={inputRefs.name}
-          label="Full Name (Org Name)"
-          isDark={dark}
-          placeholder={state.name ? '' : 'e.g. John Baptist / Johns Seminary Institute'}
-          value={state.name}
-          error={state.nameError}
-          autoCapitalize="words"
-          onChangeText={(name: string) => changeHandler('name', name)}
-          onSubmitEditing={() => inputRefs.email.current?.focus()}
-        />
-
-        <InputField
-          ref={inputRefs.email}
-          label="Email"
-          isDark={dark}
-          placeholder={state.email ? '' : 'e.g. mypersonalemail@example.com'}
-          value={state.email}
-          error={state.emailError}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          onChangeText={(email: string) => changeHandler('email', email.trim())}
-          onSubmitEditing={() => inputRefs.password.current?.focus()}
-        />
-
-        <InputField
-          ref={inputRefs.password}
-          label="Password"
-          isDark={dark}
-          placeholder={state.password ? '' : 'e.g. Create a secure password'}
-          secureTextEntry={hidePass}
-          value={state.password}
-          error={state.passwordError}
-          autoCapitalize="none"
-          onFocus={() => {
-            setShowPasswordHint(true);
-            setHasPasswordInteracted(true);
-          }}
-          onChangeText={(password: string) => changeHandler('password', password)}
-          onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
-          rightIcon={
-            <MaterialCommunityIcons
-              name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-              size={22}
-              color="#41dbe1"
-              onPress={() => setHidePass(!hidePass)}
-              style={{ alignSelf: 'center' }}
-            />
-          }
-        />
-        {showPasswordHint ? (
-          <View style={{ marginBottom: spacing.x16 }}>
-            <StyledText style={{ color: dark ? brandWhite : Colors.primary.brand, fontSize: 12 }}>
-              Password must include:
+          {accountType ? (
+            <StyledText
+              style={[
+                Typography.subheader.M,
+                { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x5 },
+              ]}
+            >
+              {accountType.charAt(0).toUpperCase() + accountType.slice(1)}
             </StyledText>
-            {[
-              { key: 'sixCharsOrMore', label: 'At least 6 characters' },
-              { key: 'number', label: 'A number' },
-              { key: 'specialChar', label: 'A special character' },
-              { key: 'uppercase', label: 'An uppercase letter' },
-            ].map((rule) => {
-              const satisfied = passwordRules[rule.key as keyof typeof passwordRules];
-              const color = satisfied ? '#1DB954' : '#E35640';
-              const iconName = satisfied ? 'check-circle' : 'close-circle';
-              return (
-                <View
-                  key={rule.key}
-                  style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.x5 }}
-                >
-                  <MaterialCommunityIcons name={iconName} size={16} color={color} />
-                  <StyledText style={{ color, fontSize: 12, marginLeft: spacing.x8 }}>
-                    {rule.label}
-                  </StyledText>
-                </View>
-              );
-            })}
-          </View>
-        ) : null}
-
-        <InputField
-          ref={inputRefs.cPassword}
-          label="Confirm Password"
-          isDark={dark}
-          placeholder={state.cPassword ? '' : 'Repeat your password'}
-          secureTextEntry={hidePass}
-          value={state.cPassword}
-          error={confirmPasswordError}
-          autoCapitalize="none"
-          onChangeText={(cPassword: string) => changeHandler('cPassword', cPassword)}
-          onSubmitEditing={signUpUser}
-          rightIcon={
-            <MaterialCommunityIcons
-              name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-              size={22}
-              color="#41dbe1"
-              onPress={() => setHidePass(!hidePass)}
-              style={{ alignSelf: 'center' }}
-            />
-          }
-        />
-
-        <Recaptcha
-          ref={recaptcha}
-          siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
-          baseUrl="http://www.onebodyapp.com"
-          onVerify={onVerify}
-          size="invisible"
-        />
-
-        {isIos ? (
-          <View
+          ) : null}
+          <StyledText
             style={[
-              dropShadow,
-              {
-                marginTop: spacing.x20,
-                width: '100%',
-                alignSelf: 'stretch',
-                borderRadius: createAccountRadius,
-                overflow: 'hidden',
-                opacity: isSubmitDisabled ? 0.4 : 1,
-              },
+              Typography.subheader.R,
+              { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x8 },
             ]}
           >
-            <BlurView
-              pointerEvents="none"
-              blurType={dark ? 'dark' : 'light'}
-              blurAmount={18}
-              reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
-              style={StyleSheet.absoluteFillObject}
+            Enter your details so that we can get you setup:
+          </StyledText>
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.cardContainer,
+            {
+              backgroundColor: Colors.neutral[700],
+              borderColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+            },
+            fieldsPopStyle,
+          ]}
+        >
+          <TouchableOpacity
+            style={{ flexDirection: 'row', marginBottom: spacing.x10 }}
+            onPress={() => navigation.replace('Login')}
+          >
+            <StyledText>Already have an account? </StyledText>
+            <StyledText style={{ color: '#41dbe1' }}>Sign in</StyledText>
+          </TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x8 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
+            <StyledText
+              style={{ marginHorizontal: 10, color: dark ? brandWhite : Colors.primary.brand }}
+            >
+              Or
+            </StyledText>
+            <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
+          </View>
+
+          <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
+            <SignupButtons
+              socialLogin={setNewUserCredentials}
+              navigation={navigation}
+              route={route}
+              disabled={!accountType}
+              errorFromLogin={socialLoginError}
             />
+          </Animated.View>
+
+          <InputField
+            ref={inputRefs.username}
+            label="Username"
+            isDark={dark}
+            placeholder={state.username ? '' : 'e.g. onebodyusername'}
+            value={state.username}
+            error={state.usernameError}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={(username: string) => changeHandler('username', username.trim())}
+            onBlur={() => checkUsernameAvailability(state.username)}
+            onSubmitEditing={() => inputRefs.name.current?.focus()}
+          />
+
+          <InputField
+            ref={inputRefs.name}
+            label="Full Name (Org Name)"
+            isDark={dark}
+            placeholder={state.name ? '' : 'e.g. John Baptist / Johns Seminary Institute'}
+            value={state.name}
+            error={state.nameError}
+            autoCapitalize="words"
+            onChangeText={(name: string) => changeHandler('name', name)}
+            onSubmitEditing={() => inputRefs.email.current?.focus()}
+          />
+
+          <InputField
+            ref={inputRefs.email}
+            label="Email"
+            isDark={dark}
+            placeholder={state.email ? '' : 'e.g. mypersonalemail@example.com'}
+            value={state.email}
+            error={state.emailError}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            onChangeText={(email: string) => changeHandler('email', email.trim())}
+            onSubmitEditing={() => inputRefs.password.current?.focus()}
+          />
+
+          <InputField
+            ref={inputRefs.password}
+            label="Password"
+            isDark={dark}
+            placeholder={state.password ? '' : 'e.g. Create a secure password'}
+            secureTextEntry={hidePass}
+            value={state.password}
+            error={state.passwordError}
+            autoCapitalize="none"
+            onFocus={() => {
+              setShowPasswordHint(true);
+              setHasPasswordInteracted(true);
+            }}
+            onChangeText={(password: string) => changeHandler('password', password)}
+            onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
+            rightIcon={
+              <MaterialCommunityIcons
+                name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                size={22}
+                color="#41dbe1"
+                onPress={() => setHidePass(!hidePass)}
+                style={{ alignSelf: 'center' }}
+              />
+            }
+          />
+          {showPasswordHint ? (
+            <View style={{ marginBottom: spacing.x16 }}>
+              <StyledText style={{ color: dark ? brandWhite : Colors.primary.brand, fontSize: 12 }}>
+                Password must include:
+              </StyledText>
+              {[
+                { key: 'sixCharsOrMore', label: 'At least 6 characters' },
+                { key: 'number', label: 'A number' },
+                { key: 'specialChar', label: 'A special character' },
+                { key: 'uppercase', label: 'An uppercase letter' },
+              ].map((rule) => {
+                const satisfied = passwordRules[rule.key as keyof typeof passwordRules];
+                const color = satisfied ? '#1DB954' : '#E35640';
+                const iconName = satisfied ? 'check-circle' : 'close-circle';
+                return (
+                  <View
+                    key={rule.key}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.x5 }}
+                  >
+                    <MaterialCommunityIcons name={iconName} size={16} color={color} />
+                    <StyledText style={{ color, fontSize: 12, marginLeft: spacing.x8 }}>
+                      {rule.label}
+                    </StyledText>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+
+          <InputField
+            ref={inputRefs.cPassword}
+            label="Confirm Password"
+            isDark={dark}
+            placeholder={state.cPassword ? '' : 'Repeat your password'}
+            secureTextEntry={hidePass}
+            value={state.cPassword}
+            error={confirmPasswordError}
+            autoCapitalize="none"
+            onChangeText={(cPassword: string) => changeHandler('cPassword', cPassword)}
+            onSubmitEditing={signUpUser}
+            rightIcon={
+              <MaterialCommunityIcons
+                name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                size={22}
+                color="#41dbe1"
+                onPress={() => setHidePass(!hidePass)}
+                style={{ alignSelf: 'center' }}
+              />
+            }
+          />
+
+          <Recaptcha
+            ref={recaptcha}
+            siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
+            baseUrl="http://www.onebodyapp.com"
+            onVerify={onVerify}
+            size="invisible"
+          />
+
+          {isIos ? (
             <View
-              pointerEvents="none"
-              style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
-            />
+              style={[
+                dropShadow,
+                {
+                  marginTop: spacing.x20,
+                  width: '100%',
+                  alignSelf: 'stretch',
+                  borderRadius: createAccountRadius,
+                  overflow: 'hidden',
+                  opacity: isSubmitDisabled ? 0.4 : 1,
+                },
+              ]}
+            >
+              <BlurView
+                pointerEvents="none"
+                blurType={dark ? 'dark' : 'light'}
+                blurAmount={18}
+                reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
+                style={StyleSheet.absoluteFillObject}
+              />
+              <View
+                pointerEvents="none"
+                style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
+              />
+              <Button
+                text="Create account"
+                btnStyle={[
+                  button.primary,
+                  {
+                    width: '100%',
+                    alignSelf: 'stretch',
+                    backgroundColor: 'transparent',
+                  },
+                ]}
+                btnTextStyle={{ color: '#FFF' }}
+                wrapperViewBtnStyle={{ width: '100%' }}
+                onPress={signUpUser}
+                disabled={isSubmitDisabled || !!confirmPasswordError}
+              />
+            </View>
+          ) : (
             <Button
               text="Create account"
               btnStyle={[
                 button.primary,
+                dropShadow,
                 {
+                  marginTop: spacing.x20,
                   width: '100%',
                   alignSelf: 'stretch',
-                  backgroundColor: 'transparent',
+                  opacity: isSubmitDisabled ? 0.4 : 1,
                 },
               ]}
               btnTextStyle={{ color: '#FFF' }}
@@ -767,53 +857,35 @@ function SignupForm({ navigation, route }: Props) {
               onPress={signUpUser}
               disabled={isSubmitDisabled || !!confirmPasswordError}
             />
-          </View>
-        ) : (
-          <Button
-            text="Create account"
-            btnStyle={[
-              button.primary,
-              dropShadow,
-              {
-                marginTop: spacing.x20,
-                width: '100%',
-                alignSelf: 'stretch',
-                opacity: isSubmitDisabled ? 0.4 : 1,
-              },
-            ]}
-            btnTextStyle={{ color: '#FFF' }}
-            wrapperViewBtnStyle={{ width: '100%' }}
-            onPress={signUpUser}
-            disabled={isSubmitDisabled || !!confirmPasswordError}
-          />
-        )}
+          )}
 
-        <View style={{ marginTop: spacing.x16 }}>
-          <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
-            By creating an account, you agree to our{' '}
-            <StyledText
-              style={{
-                color: dark ? appColor.SecoundryColor : Colors.primary.brand,
-                textDecorationLine: 'underline',
-              }}
-              onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
-            >
-              User Agreements
-            </StyledText>{' '}
-            &{' '}
-            <StyledText
-              style={{
-                color: dark ? appColor.SecoundryColor : Colors.primary.brand,
-                textDecorationLine: 'underline',
-              }}
-              onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}
-            >
-              Privacy Policy
+          <View style={{ marginTop: spacing.x16 }}>
+            <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
+              By creating an account, you agree to our{' '}
+              <StyledText
+                style={{
+                  color: dark ? appColor.SecoundryColor : Colors.primary.brand,
+                  textDecorationLine: 'underline',
+                }}
+                onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
+              >
+                User Agreements
+              </StyledText>{' '}
+              &{' '}
+              <StyledText
+                style={{
+                  color: dark ? appColor.SecoundryColor : Colors.primary.brand,
+                  textDecorationLine: 'underline',
+                }}
+                onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}
+              >
+                Privacy Policy
+              </StyledText>
             </StyledText>
-          </StyledText>
-        </View>
-      </Animated.View>
-    </UserStepsLayout>
+          </View>
+        </Animated.View>
+      </UserStepsLayout>
+    </>
   );
 }
 

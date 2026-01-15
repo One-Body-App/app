@@ -43,25 +43,26 @@ export const processLogin = async (
       });
     }
     if (userProfileResult.status === 200) {
-      if (userProfileResult.response == '') {
-        setNewUserCredentials(userCredentials);
-      } else {
-        if (!userCredentials.user.email || !userCredentials.user.emailVerified) {
-          if (!userCredentials.user.email && userCredentials.additionalUserInfo?.profile?.email) {
-            await userCredentials.user.updateEmail(
-              userCredentials.additionalUserInfo?.profile?.email
-            );
-          }
+      if (!userProfileResult.response || typeof userProfileResult.response !== 'object') {
+        if (__DEV__) {
+          console.warn('[login] user/my-profile returned empty or non-object response');
         }
-
-        if (!userProfileResult.response.FCM) {
-          await requestUserPermission(token, userProfileResult.response.pushNotificationsEnabled);
-        }
-
-        return userProfileResult.response;
+        return;
       }
-    } else {
-      setNewUserCredentials(userCredentials);
+
+      if (!userCredentials.user.email || !userCredentials.user.emailVerified) {
+        if (!userCredentials.user.email && userCredentials.additionalUserInfo?.profile?.email) {
+          await userCredentials.user.updateEmail(
+            userCredentials.additionalUserInfo?.profile?.email
+          );
+        }
+      }
+
+      if (!userProfileResult.response.FCM) {
+        await requestUserPermission(token, userProfileResult.response.pushNotificationsEnabled);
+      }
+
+      return userProfileResult.response;
     }
   }
 };

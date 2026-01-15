@@ -206,7 +206,7 @@ export default function DrawerContent({
               padding: spacing.x16,
               borderRadius: borderRadius.base,
             }}
-            leftIcon={<Icon name="customerservice" size={25} color={Colors.neutral[200]} />}
+            leftIcon={<Icon name="customer-service" size={25} color={Colors.neutral[200]} />}
             onPress={() => {
               OpenURLButton('https://onebody.tawk.help/');
             }}

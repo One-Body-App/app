@@ -385,22 +385,41 @@ function AppContent() {
     // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
     if (hasValidToken && user?.emailVerified && (shouldNavigate || !isProfileLoading)) {
       ignoreAuthLinksRef.current = true;
+      const now = Date.now();
+      const recentNavigation = lastNavigationRef.current;
+      const wasRecentlyNavigatedToMainRoot =
+        recentNavigation?.route === 'MainRoot' && now - recentNavigation.timestamp < 2000;
       if (currentRouteName === 'ConfirmLogin') {
         if (__DEV__) {
           // eslint-disable-next-line no-console
-          console.log('[AppContent Navigation] Closing ConfirmLogin modal after verification');
+          console.log(
+            '[AppContent Navigation] Email verified on ConfirmLogin, resetting to MainRoot'
+          );
         }
-        navigationRef.dispatch(CommonActions.navigate('MainRoot'));
-        if (navigationRef.canGoBack()) {
-          navigationRef.dispatch(CommonActions.goBack());
-        }
+        lastNavigationRef.current = { route: 'MainRoot', timestamp: now };
+        // Use reset to clear the navigation stack and go directly to MainRoot
+        // This avoids issues with goBack() potentially undoing the navigation
+        navigationRef.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'MainRoot' }],
+          })
+        );
         return;
       }
       if (rootRouteName !== 'MainRoot') {
+        if (wasRecentlyNavigatedToMainRoot) {
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[AppContent Navigation] Skipping - recently navigated to MainRoot');
+          }
+          return;
+        }
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[AppContent Navigation] Navigating to MainRoot (email verified)');
         }
+        lastNavigationRef.current = { route: 'MainRoot', timestamp: now };
         navigationRef.dispatch(CommonActions.navigate('MainRoot'));
       } else if (__DEV__) {
         // eslint-disable-next-line no-console

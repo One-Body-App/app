@@ -12,7 +12,6 @@ import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { Colors, Typography } from '@/src/styles';
 import { preloadSoundEffect, playSoundEffect } from '@/src/services/soundEffects';
-// eslint-disable-next-line import/extensions
 import pickerClickSound from '../../../assets/sounds/click.wav';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingDateOfBirth'>;
@@ -30,10 +29,10 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
   // Animations
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Generate years dynamically (Min age 16, Max age 90)
+  // Generate years dynamically (Min age 7, Max age 90)
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    const maxYear = currentYear - 16;
+    const maxYear = currentYear - 7;
     const minYear = currentYear - 90;
     const yearList = [];
     for (let i = maxYear; i >= minYear; i--) {
@@ -45,7 +44,6 @@ function OnboardingDateOfBirth({ navigation, route }: Props) {
   const handleNext = () => {
     if (year) {
       navigation.navigate('OnboardingLocation', {
-        ...route.params,
         dateOfBirth: year,
       });
     } else {

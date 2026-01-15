@@ -61,7 +61,7 @@ export default function CustomModal({
         style={styles.wrapper}
       >
         <GestureDetector gesture={panGesture}>
-          <Animated.View style={[style, styles.modalContainer, { transform: [{ translateY }] }]}>
+          <Animated.View style={[styles.modalContainer, style, { transform: [{ translateY }] }]}>
             {children}
           </Animated.View>
         </GestureDetector>

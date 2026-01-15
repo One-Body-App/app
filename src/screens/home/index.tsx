@@ -83,18 +83,13 @@ function Home({ navigation, route }: Props) {
   ]);
 
   const [feedData, setFeedData] = useState<any>();
-  const [show, setShow] = useState<boolean>();
-  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
 
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectVisible, setSelectVisible] = useState(false);
 
-  const showModal = (item: ArticleType) => {
-    setCurrentPopupItem(item);
-    setShow(true);
-  };
+  const showModal = (_item: ArticleType) => {};
 
   const getFeedData = async (type: FeedTypes, pageNumber: number) => {
     setIsLoading(true);
@@ -168,8 +163,13 @@ function Home({ navigation, route }: Props) {
     }
   }, [isRefreshing]);
 
-  const listRef = useRef<FlatList | null>(null);
-  useScrollToTop(listRef);
+  const listRef = useRef<FlatList<any>>(null);
+  // React Navigation expects a looser scrollToOffset signature than FlatList provides.
+  useScrollToTop(
+    listRef as unknown as React.RefObject<{
+      scrollToOffset(options: { offset?: number; animated?: boolean }): void;
+    }>
+  );
 
   const filterUpdate = (itemValue: FeedTypes) => {
     setIsRefreshing(false);

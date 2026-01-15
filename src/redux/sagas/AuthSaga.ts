@@ -258,7 +258,12 @@ export function* SignUpSaga() {
   yield takeLatest(SignUp.REQUEST, signUpSaga);
 }
 
-function* sendVerificationEmailSaga(params: { data: any; token: string; type: string }) {
+function* sendVerificationEmailSaga(params: {
+  data: any;
+  token: string;
+  type: string;
+  allowFalseSuccess?: boolean;
+}) {
   console.log('SEND VERIFICATION EMAIL SAGA', params);
   try {
     const res: ResponseGenerator = yield ApiCall({
@@ -269,7 +274,7 @@ function* sendVerificationEmailSaga(params: { data: any; token: string; type: st
     });
 
     console.log('SEND VERIFICATION EMAIL SAGA', res);
-    if (res?.status == 200 && res?.response === true) {
+    if (res?.status == 200 && (res?.response === true || params.allowFalseSuccess)) {
       yield put(sendVerificationEmail.Success(res?.response));
     } else {
       yield put(sendVerificationEmail.Failed(res?.response));

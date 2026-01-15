@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   View,
@@ -10,9 +10,10 @@ import {
   useWindowDimensions,
   StatusBar,
   Platform,
+  useColorScheme,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Color from 'color';
 import { header, subheader } from '@/src/styles/typography';
@@ -52,6 +53,8 @@ type Props = StackScreenProps<MainStackParamList, 'Intro'>;
 
 function IntroScreen({ navigation }: Props) {
   const { colors, dark } = useTheme();
+  const colorScheme = useColorScheme();
+  const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
   const { width: windowWidth } = useWindowDimensions();
   const isTablet = windowWidth >= 768;
   const isIos = Platform.OS === 'ios';
@@ -124,6 +127,14 @@ function IntroScreen({ navigation }: Props) {
     });
     return () => task.cancel();
   }, [orbitAnim, textAnim, loopAnim, primaryBtnAnim, secondaryBtnAnim]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'ios') {
+        StatusBar.setBarStyle(statusBarStyle);
+      }
+    }, [statusBarStyle])
+  );
 
   // --- Interpolations ---
 
@@ -222,7 +233,7 @@ function IntroScreen({ navigation }: Props) {
     <>
       <StatusBar
         backgroundColor={dark ? colors.background : Colors.main.white}
-        barStyle={dark ? 'light-content' : 'dark-content'}
+        barStyle={Platform.OS === 'ios' ? statusBarStyle : dark ? 'light-content' : 'dark-content'}
       />
 
       <UserStepsLayout backgroundColor={colors.background}>

@@ -59,96 +59,104 @@ function OnboardingStepsLayout({
   const { colors, dark } = useTheme();
   const [showModal, setShowModal] = useState<boolean>(false);
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        marginHorizontal: spacing.x24,
-        marginBottom: Platform.OS == 'android' ? spacing.x24 : 0,
-      }}
-    >
-      {showCustomHeaderOnAndroid && Platform.OS === 'android' ? (
-        <CustomHeader showBackButton />
-      ) : null}
-      <View style={{ marginTop: spacing.x10 }}>
-        {onboardingType == AccountType.individual ? (
-          <View style={{ flexDirection: 'row' }}>
-            <View
-              style={[
-                indicatorStyle,
-                { marginHorizontal: 0 },
-                activeStep >= 1 ? { opacity: 1 } : null,
-              ]}
-            />
-            <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]} />
-            <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]} />
-            <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]} />
-            <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]} />
-            <View style={[indicatorStyle, activeStep >= 6 ? { opacity: 1 } : null]} />
-          </View>
-        ) : (
-          <View style={{ flexDirection: 'row' }}>
-            <View style={[indicatorStyle, activeStep >= 1 ? { opacity: 1 } : null]} />
-            <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]} />
-            <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]} />
-            <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]} />
-            <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]} />
-          </View>
-        )}
-      </View>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          marginHorizontal: spacing.x24,
+          marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
+        }}
       >
-        {dontUseScrollView ? children : <ScrollView style={{ flex: 1 }}>{children}</ScrollView>}
-      </KeyboardAvoidingView>
-
-      <View style={{ justifyContent: 'center' }}>
-        {reasonText ? (
-          <Button
-            text="Why are we asking this?"
-            onPress={() => {
-              setShowModal(true);
-            }}
-            btnStyle={{ ...Buttons.buttonText, marginBottom: spacing.x16, flex: 1 }}
-            btnTextStyle={{ ...Typography.body.x1, color: Colors.primarySapphire[500] }}
-          />
+        {showCustomHeaderOnAndroid && Platform.OS === 'android' ? (
+          <CustomHeader showBackButton />
         ) : null}
+        <View style={{ marginTop: spacing.x10 }}>
+          {onboardingType === AccountType.individual ? (
+            <View style={{ flexDirection: 'row' }}>
+              <View
+                style={[
+                  indicatorStyle,
+                  { marginHorizontal: 0 },
+                  activeStep >= 1 ? { opacity: 1 } : null,
+                ]}
+              />
+              <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]} />
+              <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]} />
+              <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]} />
+              <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]} />
+              <View style={[indicatorStyle, activeStep >= 6 ? { opacity: 1 } : null]} />
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row' }}>
+              <View style={[indicatorStyle, activeStep >= 1 ? { opacity: 1 } : null]} />
+              <View style={[indicatorStyle, activeStep >= 2 ? { opacity: 1 } : null]} />
+              <View style={[indicatorStyle, activeStep >= 3 ? { opacity: 1 } : null]} />
+              <View style={[indicatorStyle, activeStep >= 4 ? { opacity: 1 } : null]} />
+              <View style={[indicatorStyle, activeStep >= 5 ? { opacity: 1 } : null]} />
+            </View>
+          )}
+        </View>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          {dontUseScrollView ? children : <ScrollView style={{ flex: 1 }}>{children}</ScrollView>}
+        </KeyboardAvoidingView>
 
-        <Button
-          text={loading ? '' : buttonText}
-          content={
-            loading ? (
-              <View>
-                <ActivityIndicator animating={loading} size="small" color={colors.text} />
-              </View>
-            ) : null
-          }
-          disabled={disabled}
-          btnStyle={[
-            button.primary,
-            {
-              flex: 1,
-            },
-          ]}
-          disabledBtnStyle={[
-            button.primary,
-            {
-              flex: 1,
-              opacity: 0.4,
-            },
-          ]}
-          onPress={() => {
-            onPress();
-          }}
-          btnTextStyle={{ color: '#FFF' }}
-          disabledBtnTextStyle={{ color: '#FFF' }}
-        />
-      </View>
+        <View style={{ justifyContent: 'center' }}>
+          {reasonText ? (
+            <Button
+              text="Why are we asking this?"
+              onPress={() => {
+                setShowModal(true);
+              }}
+              btnStyle={{ ...Buttons.buttonText, marginBottom: spacing.x16, flex: 1 }}
+              btnTextStyle={{ ...Typography.body.x1, color: Colors.primarySapphire[500] }}
+            />
+          ) : null}
+
+          <Button
+            text={loading ? '' : buttonText}
+            content={
+              loading ? (
+                <View>
+                  <ActivityIndicator animating={loading} size="small" color={colors.text} />
+                </View>
+              ) : null
+            }
+            disabled={disabled}
+            btnStyle={[
+              button.primary,
+              {
+                flex: 1,
+              },
+            ]}
+            disabledBtnStyle={[
+              button.primary,
+              {
+                flex: 1,
+                opacity: 0.4,
+              },
+            ]}
+            onPress={() => {
+              onPress();
+            }}
+            btnTextStyle={{ color: '#FFF' }}
+            disabledBtnTextStyle={{ color: '#FFF' }}
+          />
+        </View>
+      </SafeAreaView>
 
       <CustomModal
         modalVisible={showModal}
         onclose={() => setShowModal(false)}
-        style={{ margin: 0, justifyContent: 'flex-end' }}
+        style={{
+          margin: 0,
+          justifyContent: 'flex-end',
+          flex: 0,
+          minHeight: 0,
+          maxHeight: '30%',
+        }}
       >
         <View
           style={{
@@ -157,10 +165,9 @@ function OnboardingStepsLayout({
             padding: spacing.x16,
             borderTopRightRadius: borderRadius.base,
             borderTopLeftRadius: borderRadius.base,
-            height: '40%',
           }}
         >
-          <View style={{ flex: 1, flexGrow: 1 }}>
+          <View style={{ flexShrink: 1 }}>
             <View
               style={{
                 alignItems: 'flex-end',
@@ -181,7 +188,7 @@ function OnboardingStepsLayout({
                 />
               </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={{ flex: 1 }}>
+            <ScrollView contentContainerStyle={{ paddingBottom: spacing.x16 }}>
               <StyledText
                 style={[
                   header.h1,
@@ -195,7 +202,7 @@ function OnboardingStepsLayout({
           </View>
         </View>
       </CustomModal>
-    </SafeAreaView>
+    </>
   );
 }
 export default OnboardingStepsLayout;

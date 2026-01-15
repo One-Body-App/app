@@ -14,7 +14,6 @@ import {
   AppleAuthProvider,
   FirebaseAuthTypes,
   GoogleAuthProvider,
-  TwitterAuthProvider,
   getAuth,
   getIdToken,
   signInWithCredential,
@@ -26,7 +25,6 @@ import {
 } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { LoginManager } from 'react-native-fbsdk-next';
-import axios from 'axios';
 import { getApp } from '@react-native-firebase/app';
 
 import { useToast } from 'react-native-toast-notifications';
@@ -40,7 +38,6 @@ import { validateFields } from '@/utils/validation/validate-fields';
 import validator from '@/utils/validation/validator';
 import GeneralStyle from '../../constants/GeneralStyle';
 import Google from '@/assets/svg/G.svg';
-import Twitter from '@/assets/svg/Twitter.svg';
 import Apple from '@/assets/svg/Apple.svg';
 import Button from '../Button';
 
@@ -57,8 +54,8 @@ import {
 
 import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 
-import { getTwitterLoginToken, processLogin } from '@/services/login';
-import { GOOGLE_LOGIN_CLIENT_ID, OpenURLButton } from '@/services/constants';
+import { processLogin } from '@/services/login';
+import { GOOGLE_LOGIN_CLIENT_ID } from '@/services/constants';
 import { MainStackParamList } from '@/src/navigator/types';
 import StyledText from '../styled/Text';
 import { Colors, Typography } from '@/src/styles';
@@ -98,8 +95,6 @@ const logVerifyEmail = (...args: any[]) => {
 
 function LoginComponent({
   showConfirmationEmailMessage,
-  oauth_token,
-  oauth_verifier,
   oobCode,
   mode,
   action,
@@ -403,28 +398,6 @@ function LoginComponent({
                 logVerifyEmail('[VerifyEmail] Attempting to apply UNKNOWN action code');
                 await applyActionCode(firebaseAuth, oobCode);
                 logVerifyEmail('[VerifyEmail] Successfully applied UNKNOWN action code');
-
-                // Reload and check
-                await reload(currentUser);
-                await getIdToken(currentUser, true);
-
-                logVerifyEmail('[VerifyEmail] After applying UNKNOWN code', {
-                  emailVerified: currentUser.emailVerified,
-                  uid: currentUser.uid,
-                });
-
-                if (currentUser.emailVerified) {
-                  logVerifyEmail('[VerifyEmail] Email is verified! Navigating to MainRoot');
-                  const newToken = await getIdToken(currentUser, true);
-                  if (newToken) {
-                    dispatch(getProfile.Request({ token: newToken }));
-                  }
-                  navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'MainRoot' }],
-                  });
-                  return; // Exit early on success
-                }
               } catch (applyError: any) {
                 logVerifyEmail('[VerifyEmail] Failed to apply UNKNOWN action code', {
                   error: applyError.message,
@@ -432,28 +405,49 @@ function LoginComponent({
                 });
               }
 
-              // If applying failed or email still not verified, check if it's already verified
-              await reload(currentUser);
-              await getIdToken(currentUser, true);
+              // Force token refresh - this triggers onIdTokenChanged in AppContent
+              // which has the correct emailVerified state from Firebase
+              logVerifyEmail('[VerifyEmail] Forcing token refresh to sync auth state');
+              const newToken = await getIdToken(currentUser, true);
 
-              logVerifyEmail('[VerifyEmail] Checked current user after UNKNOWN operation', {
-                emailVerified: currentUser.emailVerified,
-                uid: currentUser.uid,
+              // On iOS, currentUser.emailVerified may not update immediately after reload()
+              // The auth state listener (onIdTokenChanged) gets the correct state
+              // So we dispatch profile fetch and let AppContent handle navigation
+              if (newToken) {
+                logVerifyEmail(
+                  '[VerifyEmail] Dispatching profile fetch, letting AppContent navigate'
+                );
+                dispatch(getProfile.Request({ token: newToken }));
+              }
+
+              // Wait briefly then check auth state - on iOS the listener may have already updated
+              await new Promise<void>((resolve) => {
+                setTimeout(resolve, 1500);
               });
 
-              if (currentUser.emailVerified) {
+              // Re-fetch current user to get latest state
+              await reload(currentUser);
+              const refreshedUser = firebaseAuth.currentUser;
+
+              logVerifyEmail('[VerifyEmail] After wait, checking auth state', {
+                emailVerified: refreshedUser?.emailVerified,
+                uid: refreshedUser?.uid,
+              });
+
+              if (refreshedUser?.emailVerified) {
                 logVerifyEmail('[VerifyEmail] Email is verified! Navigating to MainRoot');
-                const newToken = await getIdToken(currentUser, true);
-                if (newToken) {
-                  dispatch(getProfile.Request({ token: newToken }));
-                }
                 navigation.reset({
                   index: 0,
                   routes: [{ name: 'MainRoot' }],
                 });
               } else {
-                logVerifyEmail('[VerifyEmail] Email still not verified');
-                setSuccess('Verification link may have expired. Please request a new one.');
+                // If still not showing verified locally, check if AppContent already navigated
+                // by checking if we're still on ConfirmLogin
+                logVerifyEmail(
+                  '[VerifyEmail] Local state not verified, AppContent may handle navigation'
+                );
+                // Don't show error - AppContent's auth listener has the correct state
+                // and will navigate if emailVerified is true there
               }
             } else {
               logVerifyEmail('[VerifyEmail] No current user - showing success message');
@@ -633,86 +627,6 @@ function LoginComponent({
     }
   }, [newUserCredentials, accountType, token, dispatch, gotoSignup, firebaseAuth, sendFcm]);
 
-  useEffect(() => {
-    if (oauth_token && oauth_verifier) {
-      const getTwitterAuthToken = async () => {
-        try {
-          const options = {
-            method: 'POST',
-            url: 'https://api.twitter.com/oauth/access_token',
-            params: {
-              oauth_token,
-              oauth_verifier,
-            },
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          };
-          const result = await axios.request(options);
-
-          if (result.data) {
-            const tokenData = result.data.split('&')?.map((item: string) => {
-              return item.split('=')[1];
-            });
-
-            const twitterCredential = TwitterAuthProvider.credential(tokenData[0], tokenData[1]);
-            const userCredentials = await signInWithCredential(firebaseAuth, twitterCredential);
-
-            if (
-              !!verifyAccount &&
-              !!onlyPassword &&
-              userCredentials.user.email !== currentUserEmail
-            ) {
-              if (updateParent) {
-                updateParent(false);
-              }
-              navigation.goBack();
-              toast.show(`Please login with the current user's email`, {
-                type: 'error',
-                placement: 'top',
-              });
-            } else if (verifyAccount) {
-              if (toScreen) {
-                navigation.goBack();
-
-                navigation.push(toScreen as keyof MainStackParamList, {
-                  // setError: seterror,
-                  ...toScreenParams,
-                });
-              } else {
-                if (updateParent) {
-                  updateParent(true);
-                }
-                navigation.goBack();
-              }
-            } else {
-              processLogin(userCredentials, setNewUserCredentials, setToken);
-            }
-          }
-        } catch (twitterAuthError: any) {
-          if (twitterAuthError.nativeErrorMessage.includes('auth/user-not-found')) {
-            seterror('User/password combination not found');
-          } else {
-            seterror(twitterAuthError.nativeErrorMessage);
-          }
-        }
-      };
-      getTwitterAuthToken();
-    }
-  }, [
-    oauth_token,
-    oauth_verifier,
-    firebaseAuth,
-    verifyAccount,
-    onlyPassword,
-    currentUserEmail,
-    updateParent,
-    navigation,
-    toast,
-    toScreen,
-    toScreenParams,
-  ]);
-
   const shouldShowVerificationToast =
     backendVerificationRequested &&
     (verifyAccount || showConfirmationEmailMessage || isVerificationNeeded);
@@ -754,7 +668,12 @@ function LoginComponent({
       if (firebaseToken) {
         setVerificationEmailRequested(true);
         setBackendVerificationRequested(true);
-        dispatch(sendVerificationEmail.Request({ token: firebaseToken }));
+        dispatch(
+          sendVerificationEmail.Request({
+            token: firebaseToken,
+            allowFalseSuccess: Platform.OS === 'android',
+          })
+        );
       }
     };
 
@@ -856,30 +775,6 @@ function LoginComponent({
       dispatch(setLoader(false));
     }
   };
-  const onTwitterButtonPress = async () => {
-    try {
-      seterror('');
-      setState({ ...state, emailError: '', passwordError: '' });
-
-      const urlToken = await getTwitterLoginToken(false, verifyAccount);
-
-      if (urlToken) {
-        OpenURLButton(
-          `https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`,
-          false,
-          true,
-          verifyAccount
-            ? 'onebodyapp://app.onebodyapp.com/auth/confirmation'
-            : 'onebodyapp://app.onebodyapp.com/login/twitter'
-        );
-
-        // Linking.openURL(`https://api.twitter.com/oauth/authenticate?oauth_token=${urlToken}`);
-      }
-    } catch (e) {
-      // Error handled silently or via other mechanisms
-    }
-  };
-
   async function onAppleButtonPress() {
     // performs login request
     // const appleAuthRequestResponse = await appleAuth.performRequest({
@@ -1100,6 +995,10 @@ function LoginComponent({
   const getDisabledButtonStyle = () => {
     return { ...styles.disabledButtonContainer, borderColor: colors.border };
   };
+
+  const hasGoogleLogin = !!enabledLoginProviders?.includes('google.com');
+  const hasAppleLogin = Platform.OS === 'ios' && !!enabledLoginProviders?.includes('apple');
+  const hasSocialLogin = hasGoogleLogin || hasAppleLogin;
 
   if (verifyAccount) {
     return (
@@ -1410,9 +1309,7 @@ function LoginComponent({
 
             {enabledLoginProviders &&
             enabledLoginProviders?.includes('password') &&
-            ((enabledLoginProviders && enabledLoginProviders?.includes('google.com')) ||
-              (enabledLoginProviders && enabledLoginProviders?.includes('facebook.com')) ||
-              (enabledLoginProviders && enabledLoginProviders?.includes('twitter.com'))) ? (
+            hasSocialLogin ? (
               <View
                 style={{
                   flexDirection: 'row',
@@ -1453,7 +1350,7 @@ function LoginComponent({
               >
                 <View style={{ flexDirection: 'row', flex: 1 }}>
                   {enabledLoginProviders &&
-                  enabledLoginProviders?.includes('google.com') &&
+                  hasGoogleLogin &&
                   enabledLoginProviders?.includes('password') ? (
                     <View style={{ paddingHorizontal: 10, flex: 1 }}>
                       <Button
@@ -1466,7 +1363,7 @@ function LoginComponent({
                   ) : (
                     // eslint-disable-next-line react/jsx-no-useless-fragment
                     <>
-                      {enabledLoginProviders && enabledLoginProviders?.includes('google.com') ? (
+                      {hasGoogleLogin ? (
                         <Button
                           text="Log in with Google"
                           leftIcon={<Google style={{ marginRight: 7 }} height={getHeight(5)} />}
@@ -1519,52 +1416,8 @@ function LoginComponent({
         )} */}
 
                   {enabledLoginProviders &&
-                  enabledLoginProviders?.includes('twitter.com') &&
+                  hasAppleLogin &&
                   enabledLoginProviders?.includes('password') ? (
-                    <View style={{ paddingHorizontal: spacing.x10, flex: 1 }}>
-                      <Button
-                        onPress={() => onTwitterButtonPress()}
-                        wrapperViewBtnStyle={{ flex: 1 }}
-                        leftIcon={<Twitter fill="#00acee" style={{ alignSelf: 'center' }} />}
-                        btnStyle={[
-                          getButtonContainer(),
-                          {
-                            marginHorizontal: 0,
-                            flex: 1,
-                          },
-                        ]}
-                      />
-                    </View>
-                  ) : (
-                    // eslint-disable-next-line react/jsx-no-useless-fragment
-                    <>
-                      {enabledLoginProviders && enabledLoginProviders?.includes('twitter.com') ? (
-                        <Button
-                          text="Login with Twitter"
-                          leftIcon={
-                            <Twitter
-                              style={{ marginRight: 7 }}
-                              height={getHeight(5)}
-                              fill="#00acee"
-                            />
-                          }
-                          btnStyle={getButtonContainer()}
-                          btnTextStyle={getButtonTextStyle()}
-                          onPress={() => {
-                            onTwitterButtonPress();
-                          }}
-                          disabledBtnStyle={getDisabledButtonStyle()}
-                          disabledBtnTextStyle={getDisabledButtonTextStyle()}
-                          wrapperBtnStyle={{ width: '100%' }}
-                        />
-                      ) : null}
-                    </>
-                  )}
-
-                  {enabledLoginProviders &&
-                  enabledLoginProviders?.includes('apple') &&
-                  enabledLoginProviders?.includes('password') &&
-                  Platform.OS === 'ios' ? (
                     <View style={{ paddingHorizontal: spacing.x10, flex: 1 }}>
                       <Button
                         onPress={() => onAppleButtonPress()}
@@ -1587,9 +1440,7 @@ function LoginComponent({
                   ) : (
                     // eslint-disable-next-line react/jsx-no-useless-fragment
                     <>
-                      {enabledLoginProviders &&
-                      enabledLoginProviders?.includes('apple') &&
-                      Platform.OS === 'ios' ? (
+                      {hasAppleLogin ? (
                         <Button
                           text="Login with Apple"
                           leftIcon={<Apple style={{ marginRight: 7 }} height={getHeight(5)} />}

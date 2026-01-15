@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   View,
   SafeAreaView,
@@ -9,11 +9,12 @@ import {
   StatusBar,
   TouchableOpacity,
   StyleSheet,
+  useColorScheme,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import FastImage from 'react-native-fast-image';
-import { useTheme, CommonActions } from '@react-navigation/native';
+import { useFocusEffect, useTheme, CommonActions } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { LoginManager } from 'react-native-fbsdk-next';
@@ -39,6 +40,8 @@ function OnboardingIntro({ navigation }: Props) {
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const { dark } = useTheme();
+  const colorScheme = useColorScheme();
+  const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
   const isIos = Platform.OS === 'ios';
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -82,6 +85,14 @@ function OnboardingIntro({ navigation }: Props) {
     };
   }, [pulseAnim, spinAnim]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'ios') {
+        StatusBar.setBarStyle(statusBarStyle);
+      }
+    }, [statusBarStyle])
+  );
+
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -124,6 +135,7 @@ function OnboardingIntro({ navigation }: Props) {
   const headerColor = dark ? Colors.primarySapphire[400] : Colors.primary.brand;
   const glassBorderColor = dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.35)';
   const glassBackground = dark ? 'rgba(10, 18, 24, 0.35)' : 'rgba(255, 255, 255, 0.22)';
+  const glassButtonBackground = dark ? 'rgba(18, 107, 135, 0.7)' : 'rgba(18, 107, 135, 0.65)';
   const glassRadius =
     typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
 
@@ -132,6 +144,7 @@ function OnboardingIntro({ navigation }: Props) {
       {Platform.OS === 'android' && (
         <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
       )}
+      {Platform.OS === 'ios' && <StatusBar barStyle={statusBarStyle} />}
       <SafeAreaView
         style={{
           flex: 1,
@@ -212,16 +225,14 @@ function OnboardingIntro({ navigation }: Props) {
               <BlurView
                 blurType={dark ? 'dark' : 'light'}
                 blurAmount={18}
-                reducedTransparencyFallbackColor={
-                  dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-                }
+                reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
                 style={{
                   width: '100%',
                   borderRadius: glassRadius,
                   overflow: 'hidden',
                   borderWidth: 1,
                   borderColor: glassBorderColor,
-                  backgroundColor: glassBackground,
+                  backgroundColor: glassButtonBackground,
                 }}
               >
                 <Button
@@ -234,7 +245,15 @@ function OnboardingIntro({ navigation }: Props) {
             ) : (
               <Button
                 text="Get Started"
-                btnStyle={[button.primary, { flex: 1 }]}
+                btnStyle={[
+                  button.primary,
+                  {
+                    flex: 1,
+                    backgroundColor: glassButtonBackground,
+                    borderWidth: 1,
+                    borderColor: glassBorderColor,
+                  },
+                ]}
                 onPress={handleNext}
                 btnTextStyle={{ color: '#FFF' }}
               />
@@ -246,6 +265,7 @@ function OnboardingIntro({ navigation }: Props) {
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           style={[
             styles.backButton,
+            isIos ? styles.backButtonIos : styles.backButtonAndroid,
             isIos
               ? {
                   top: 80,
@@ -267,7 +287,11 @@ function OnboardingIntro({ navigation }: Props) {
               pointerEvents="none"
             />
           )}
-          <Ionicons name="chevron-back" size={24} color={isIos ? '#FFF' : headerColor} />
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={isIos ? (dark ? '#FFF' : Colors.primary.brand) : headerColor}
+          />
         </TouchableOpacity>
       </SafeAreaView>
     </>
@@ -282,11 +306,16 @@ const styles = StyleSheet.create({
     left: 0,
     zIndex: 20,
     elevation: 20,
+  },
+  backButtonIos: {
     width: 44,
     height: 44,
     borderRadius: 22,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  backButtonAndroid: {
+    padding: 6,
   },
 });
