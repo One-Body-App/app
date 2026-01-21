@@ -1,28 +1,35 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ArrowDown2 } from 'iconsax-react-native';
 import { useToast } from 'react-native-toast-notifications';
-import Button from '@/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import MapBox, { MapSuggestion } from '@/components/MapBox';
-import { borderRadius } from '@/src/styles/outlines';
+import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
 import StyledTextInput from '@/components/styled/TextInput';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationInfo'>;
 
 function OnboardingLocation({ navigation, route }: Props) {
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [longitude, setLongitude] = useState<number>();
   const [latitude, setLatitude] = useState<number>();
   const [locationData, setLocationData] = useState<MapSuggestion | null>(null);
   const [organizationName, setOrganizationName] = useState<string>('');
+  const [countryCode, setCountryCode] = useState<string | undefined>();
   const toast = useToast();
+
+  useEffect(() => {
+    const { locale } = Intl.DateTimeFormat().resolvedOptions();
+    const match = locale.match(/[-_](\w{2})\b/);
+    const region = match?.[1]?.toLowerCase();
+
+    if (region) {
+      setCountryCode(region);
+    }
+  }, []);
 
   return (
     <OnboardingStepsLayout
@@ -53,6 +60,8 @@ function OnboardingLocation({ navigation, route }: Props) {
       onboardingType={AccountType.organization}
       activeStep={2}
       disabled={!longitude || !latitude || !organizationName}
+      dontUseScrollView
+      showCustomHeaderOnAndroid
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1 }}>
@@ -62,15 +71,15 @@ function OnboardingLocation({ navigation, route }: Props) {
           <StyledText
             style={[Typography.subheader.R, { color: Colors.neutral[200], marginTop: spacing.x8 }]}
           >
-            Fill in name and select organization location
+            Fill in the trade name of your Org and location
           </StyledText>
         </View>
 
-        <View style={{ flex: 4, marginTop: spacing.x32 }}>
-          <View style={{ flex: 1, paddingBottom: 30 }}>
+        <View style={{ flex: 4, marginTop: spacing.x8 }}>
+          <View style={{ marginBottom: spacing.x32 }}>
             <StyledTextInput
               label="Organization Name"
-              wrapperStyle={{ flex: 1 }}
+              wrapperStyle={{}}
               value={organizationName}
               placeholder="Name"
               onChangeText={(text) => {
@@ -78,42 +87,16 @@ function OnboardingLocation({ navigation, route }: Props) {
               }}
             />
           </View>
-          <View style={{ flex: 4.2 }}>
+          <View style={{ flex: 1 }}>
             <StyledText style={{ marginBottom: 10 }}>Organization Location</StyledText>
-            <Button
-              text={locationData ? locationData?.place_name : 'Select'}
-              btnStyle={{
-                flex: 1,
-                backgroundColor: Colors.neutral[700],
-                borderColor: Colors.neutral[800],
-                borderRadius: borderRadius.xs,
-              }}
-              wrapperBtnStyle={{
-                justifyContent: 'space-between',
-                paddingHorizontal: 14,
-                paddingVertical: 16,
-              }}
-              btnTextStyle={{
-                color: locationData ? Colors.neutral[300] : Colors.neutral[400],
-              }}
-              onPress={() => setModalVisible(true)}
-              rightIcon={
-                <ArrowDown2
-                  onPress={() => setModalVisible(true)}
-                  style={{ paddingTop: 6 }}
-                  size={15}
-                  color={Colors.neutral[300]}
-                />
-              }
-            />
-
             <MapBox
               location={locationData}
               setLongitude={setLongitude}
               setLatitude={setLatitude}
-              modalVisible={modalVisible}
-              setModalVisible={setModalVisible}
               setLocation={setLocationData}
+              types={[MapBoxTypes.address]}
+              countries={countryCode ? [countryCode] : undefined}
+              inline
               modalTitle={
                 <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
                   In what{' '}

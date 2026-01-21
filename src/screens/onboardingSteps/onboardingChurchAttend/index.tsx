@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
-import { useToast } from 'react-native-toast-notifications';
 import { useTheme } from '@react-navigation/native';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
@@ -12,7 +11,6 @@ import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { card } from '@/src/styles/items';
 import GeneralStyle from '@/src/constants/GeneralStyle';
-import { fontSize, header } from '@/src/styles/typography';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingChurchAttend'>;
 
@@ -31,6 +29,7 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
       }}
       onboardingType={AccountType.individual}
       activeStep={2}
+      showCustomHeaderOnAndroid
       reasonText={
         <StyledText style={{ color: dark ? Colors.main.black : Colors.primary.brand }}>
           Your frequency of church attendance helps us to understand the type of content you would
@@ -71,7 +70,7 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderColor:
-                  churchAttend == 'Weekly' ? Colors.primarySapphire.brand : Colors.neutral[800],
+                  churchAttend === 'Weekly' ? Colors.primarySapphire.brand : Colors.neutral[800],
               },
             ]}
             onPress={() => {
@@ -86,11 +85,11 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 GeneralStyle.radioButton,
                 {
                   borderColor:
-                    churchAttend == 'Weekly' ? Colors.primarySapphire.brand : Colors.neutral[200],
+                    churchAttend === 'Weekly' ? Colors.primarySapphire.brand : Colors.neutral[200],
                 },
               ]}
             >
-              {churchAttend == 'Weekly' ? <View style={GeneralStyle.radioButtonIcon} /> : null}
+              {churchAttend === 'Weekly' ? <View style={GeneralStyle.radioButtonIcon} /> : null}
             </View>
           </TouchableOpacity>
 
@@ -102,7 +101,7 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderColor:
-                  churchAttend == 'Bi-Weekly' ? Colors.primarySapphire.brand : Colors.neutral[800],
+                  churchAttend === 'Bi-Weekly' ? Colors.primarySapphire.brand : Colors.neutral[800],
               },
             ]}
             onPress={() => {
@@ -117,13 +116,13 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 GeneralStyle.radioButton,
                 {
                   borderColor:
-                    churchAttend == 'Bi-Weekly'
+                    churchAttend === 'Bi-Weekly'
                       ? Colors.primarySapphire.brand
                       : Colors.neutral[200],
                 },
               ]}
             >
-              {churchAttend == 'Bi-Weekly' ? <View style={GeneralStyle.radioButtonIcon} /> : null}
+              {churchAttend === 'Bi-Weekly' ? <View style={GeneralStyle.radioButtonIcon} /> : null}
             </View>
           </TouchableOpacity>
 
@@ -135,7 +134,7 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderColor:
-                  churchAttend == 'Once a Month'
+                  churchAttend === 'Once a Month'
                     ? Colors.primarySapphire.brand
                     : Colors.neutral[800],
               },
@@ -152,13 +151,13 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 GeneralStyle.radioButton,
                 {
                   borderColor:
-                    churchAttend == 'Once a Month'
+                    churchAttend === 'Once a Month'
                       ? Colors.primarySapphire.brand
                       : Colors.neutral[200],
                 },
               ]}
             >
-              {churchAttend == 'Once a Month' ? (
+              {churchAttend === 'Once a Month' ? (
                 <View style={GeneralStyle.radioButtonIcon} />
               ) : null}
             </View>
@@ -172,7 +171,7 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderColor:
-                  churchAttend == 'I only Watch at Home'
+                  churchAttend === 'I only Watch at Home'
                     ? Colors.primarySapphire.brand
                     : Colors.neutral[800],
               },
@@ -189,13 +188,13 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
                 GeneralStyle.radioButton,
                 {
                   borderColor:
-                    churchAttend == 'I only Watch at Home'
+                    churchAttend === 'I only Watch at Home'
                       ? Colors.primarySapphire.brand
                       : Colors.neutral[200],
                 },
               ]}
             >
-              {churchAttend == 'I only Watch at Home' ? (
+              {churchAttend === 'I only Watch at Home' ? (
                 <View style={GeneralStyle.radioButtonIcon} />
               ) : null}
             </View>

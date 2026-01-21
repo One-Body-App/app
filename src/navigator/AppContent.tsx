@@ -11,6 +11,8 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
+  Alert,
   Linking,
   useColorScheme,
   Animated,
@@ -20,17 +22,8 @@ import {
 } from 'react-native';
 
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  getAuth,
-  getIdToken,
-  getIdTokenResult,
-  onIdTokenChanged,
-  signOut,
-} from '@react-native-firebase/auth';
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
 
-import { isEqual } from 'lodash';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   getMessaging,
@@ -44,7 +37,8 @@ import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import { HeaderBackButton } from '@react-navigation/elements';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relative to AppContent.tsx
-import { setLoginData, setUserData, getProfile } from '../redux/actions/AuthActions'; // Adjust path
+import { setLoginData, getProfile, logout } from '../redux/actions/AuthActions'; // Adjust path
+import { clearAuthTokens, getValidAccessToken } from '../services/authTokens';
 
 import ForgotPassword from '../screens/forgotPassword'; // Adjust path
 import Login from '../screens/login'; // Adjust path
@@ -79,38 +73,11 @@ function VideoPost({ navigation, route }: { navigation: any; route: any }) {
 
 GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
+const PUBLIC_ROUTES = new Set(['Intro', 'Login', 'SignUp', 'ForgotPassword', 'ConfirmLogin']);
 
 function ConfirmBackImage() {
   return <MaterialCommunityIcons name="chevron-left" size={24} color={Colors.primary.brand} />;
 }
-
-const serializeFirebaseUser = (firebaseUser: FirebaseAuthTypes.User | null) => {
-  if (!firebaseUser) {
-    return null;
-  }
-
-  return {
-    uid: firebaseUser.uid,
-    email: firebaseUser.email,
-    emailVerified: firebaseUser.emailVerified,
-    displayName: firebaseUser.displayName,
-    photoURL: firebaseUser.photoURL,
-    phoneNumber: firebaseUser.phoneNumber,
-    providerData: firebaseUser.providerData,
-    isAnonymous: firebaseUser.isAnonymous,
-    metadata: firebaseUser.metadata,
-    providerId: firebaseUser.providerId,
-  };
-};
-
-const getIdTokenWithTimeout = async (firebaseUser: FirebaseAuthTypes.User, timeoutMs = 5000) => {
-  return Promise.race([
-    getIdToken(firebaseUser),
-    new Promise<string>((_resolve, reject) => {
-      setTimeout(() => reject(new Error('getIdToken timeout')), timeoutMs);
-    }),
-  ]);
-};
 
 // This component now contains all the logic that was in your original Main.tsx
 function AppContent() {
@@ -122,12 +89,8 @@ function AppContent() {
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
-  const [token, setToken] = useState<string>('');
   const [navigationReady, setNavigationReady] = useState<boolean>(false);
-  const unverifiedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const screenHeight = useRef(Dimensions.get('window').height).current;
-  const firebaseAuth = getAuth();
   const firebaseMessaging = getMessaging();
   const firebaseAnalytics = getAnalytics();
   const navigationRef = useNavigationContainerRef<MainStackParamList>();
@@ -136,10 +99,15 @@ function AppContent() {
   const ignoreAuthLinksRef = useRef(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const overlayTranslate = useRef(new Animated.Value(0)).current;
+  const appStateRef = useRef(AppState.currentState);
+  const token = authState.userToken;
+  const hasFetchedProfileRef = useRef(false);
+  const hasPromptedTwoFactorRef = useRef(false);
   const handleConfirmBackPress = useCallback(async () => {
-    await signOut(firebaseAuth);
+    await clearAuthTokens();
+    dispatch(logout());
     navigationRef.navigate('Intro');
-  }, [firebaseAuth, navigationRef]);
+  }, [dispatch, navigationRef]);
   const renderConfirmBackButton = useCallback(
     () => (
       <HeaderBackButton
@@ -174,94 +142,111 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loader]);
 
-  const onAuthStateChanged = async function onAuthStateChanged(
-    firebaseUser: FirebaseAuthTypes.User | null
-  ) {
-    ignoreAuthLinksRef.current = !!firebaseUser?.emailVerified;
-    if (__DEV__) {
-      // eslint-disable-next-line no-console
-      console.log('[AppContent onAuthStateChanged] Auth state changed:', {
-        hasUser: !!firebaseUser,
-        emailVerified: firebaseUser?.emailVerified,
-        platform: Platform.OS,
-      });
-    }
-    let firebaseToken: string | undefined;
-    try {
-      firebaseToken = firebaseUser ? await getIdTokenWithTimeout(firebaseUser) : undefined;
-    } catch (error) {
-      firebaseToken = undefined;
-    }
+  useEffect(() => {
+    let cancelled = false;
 
-    if (!isEqual(firebaseUser, user)) {
-      let tokenResult: FirebaseAuthTypes.IdTokenResult | undefined;
-      if (firebaseUser) {
-        try {
-          tokenResult = await getIdTokenResult(firebaseUser);
-        } catch (error) {
-          /* noop on token result fetch failure */
+    (async () => {
+      try {
+        const accessToken = await getValidAccessToken();
+        if (cancelled) return;
+
+        if (accessToken) {
+          dispatch(setLoginData({ token: accessToken }));
+        } else {
+          await clearAuthTokens();
+          dispatch(logout());
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthChecked(true);
+          setInitializing(false);
+          setTimeout(() => {
+            LottieSplashScreen.hide();
+          }, 375);
         }
       }
+    })();
 
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch]);
+
+  const refreshTokenOnResume = useCallback(async () => {
+    try {
+      const accessToken = await getValidAccessToken();
+      if (accessToken && accessToken !== token) {
+        dispatch(setLoginData({ token: accessToken }));
+      } else if (!accessToken && token) {
+        await clearAuthTokens();
+        dispatch(logout());
+      }
+    } catch (error) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
-        console.log('[AppContent onAuthStateChanged] User changed, updating state');
+        console.log('[AppContent Token Refresh] Failed to refresh token on resume', error);
       }
-      setUser(firebaseUser);
-      dispatch(
-        setUserData({
-          ...serializeFirebaseUser(firebaseUser),
-          tokenResult,
-        })
-      );
     }
-
-    const nextToken = firebaseToken && firebaseToken.length > 0 ? firebaseToken : 'unauthorized';
-    if (!isEqual(nextToken, token)) {
-      if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.log('[AppContent onAuthStateChanged] Token changed, updating');
-      }
-      setToken(nextToken);
-    }
-    if (!authChecked) {
-      setAuthChecked(true);
-      setInitializing(false);
-    }
-
-    if (unverifiedTimeoutRef.current) {
-      clearTimeout(unverifiedTimeoutRef.current);
-      unverifiedTimeoutRef.current = null;
-    }
-    if (firebaseUser && !firebaseUser.emailVerified) {
-      unverifiedTimeoutRef.current = setTimeout(
-        () => {
-          signOut(firebaseAuth);
-        },
-        60 * 60 * 1000
-      );
-    }
-  };
+  }, [dispatch, token]);
 
   useEffect(() => {
-    const subscriber = onIdTokenChanged(firebaseAuth, onAuthStateChanged);
-    setTimeout(() => {
-      LottieSplashScreen.hide();
-    }, 375);
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      const wasBackground = appStateRef.current.match(/inactive|background/);
+      appStateRef.current = nextAppState;
+      if (wasBackground && nextAppState === 'active') {
+        refreshTokenOnResume().catch(() => undefined);
+      }
+    });
 
-    return subscriber;
-    // Cleanup subscription on unmount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      subscription.remove();
+    };
+  }, [refreshTokenOnResume]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAuthChecked(true);
-      setInitializing(false);
-      LottieSplashScreen.hide();
-    }, 375);
-    return () => clearTimeout(timer);
-  }, []);
+    ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;
+  }, [authState.getProfileData?.emailVerified]);
+
+  useEffect(() => {
+    if (!token) {
+      hasFetchedProfileRef.current = false;
+      return;
+    }
+
+    if (hasFetchedProfileRef.current) {
+      return;
+    }
+
+    hasFetchedProfileRef.current = true;
+    dispatch(getProfile.Request({ token }));
+  }, [dispatch, token]);
+
+  useEffect(() => {
+    if (!token) {
+      hasPromptedTwoFactorRef.current = false;
+      return;
+    }
+
+    if (hasPromptedTwoFactorRef.current) {
+      return;
+    }
+
+    const isProfileLoaded = !!authState.getProfileData && !authState.isLoading;
+    if (!isProfileLoaded) {
+      return;
+    }
+
+    if (authState.getProfileData?.twoFactorEnabled) {
+      return;
+    }
+
+    hasPromptedTwoFactorRef.current = true;
+    Alert.alert(
+      'Add an Authenticator',
+      'For better security, set up an authenticator app (TOTP). Email verification will be used when needed until you do.',
+      [{ text: 'OK' }]
+    );
+  }, [authState.getProfileData, authState.isLoading, token]);
 
   useEffect(() => {
     if (authChecked) {
@@ -282,44 +267,6 @@ function AppContent() {
   }, [authChecked, fadeAnim, overlayTranslate, screenHeight]);
 
   useEffect(() => {
-    const hasValidToken = !!user && token !== '' && token !== 'unauthorized';
-    if (__DEV__) {
-      // eslint-disable-next-line no-console
-      console.log('[AppContent Token Effect] Token changed:', {
-        hasValidToken,
-        hasUser: !!user,
-        emailVerified: user?.emailVerified,
-        tokenLength: token?.length,
-        platform: Platform.OS,
-      });
-    }
-    if (hasValidToken) {
-      dispatch(setLoginData({ token }));
-      if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.log('[AppContent Token Effect] Dispatching getProfile.Request');
-      }
-      dispatch(
-        getProfile.Request({
-          token,
-        })
-      );
-    } else if (token === 'unauthorized') {
-      dispatch(setLoginData({ token: '' }));
-    }
-
-    if (token === 'unauthorized') {
-      if (initializing) setInitializing(false);
-    }
-
-    if (!initializing) {
-      setTimeout(() => {
-        LottieSplashScreen.hide();
-      }, 1375);
-    }
-  }, [dispatch, initializing, token, user]);
-
-  useEffect(() => {
     if (!navigationReady) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
@@ -330,17 +277,18 @@ function AppContent() {
     const currentRouteName = navigationRef.getCurrentRoute()?.name;
     const rootState = navigationRef.getRootState();
     const rootRouteName = rootState?.routes?.[rootState.index ?? 0]?.name;
-    const hasValidToken = !!user && token !== '' && token !== 'unauthorized';
+    const hasValidToken = token !== '';
     const isProfileCompleted = authState.getProfileData?.isProfileCompleted;
     const isProfileLoading = authState.isLoading;
     const hasProfileError = authState.getProfileError;
+    const isEmailVerified = !!authState.getProfileData?.emailVerified;
 
     if (__DEV__) {
       // eslint-disable-next-line no-console
       console.log('[AppContent Navigation] Effect triggered:', {
         currentRoute: currentRouteName,
         hasValidToken,
-        emailVerified: user?.emailVerified,
+        emailVerified: isEmailVerified,
         isProfileLoading,
         hasProfileData: !!authState.getProfileData,
         isProfileCompleted,
@@ -349,9 +297,30 @@ function AppContent() {
       });
     }
 
+    if (!hasValidToken) {
+      if (currentRouteName && !PUBLIC_ROUTES.has(currentRouteName)) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log(
+            '[AppContent Navigation] Invalid token, resetting to Login',
+            currentRouteName
+          );
+        }
+        clearAuthTokens().catch(() => undefined);
+        dispatch(logout());
+        navigationRef.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          })
+        );
+      }
+      return;
+    }
+
     // On iOS, avoid navigation races while email is still unverified on ConfirmLogin.
     // Once verified, allow AppContent to move to MainRoot.
-    if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin' && !user?.emailVerified) {
+    if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin' && !isEmailVerified) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.log(
@@ -383,7 +352,7 @@ function AppContent() {
 
     // Navigate to MainRoot if user has verified email
     // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
-    if (hasValidToken && user?.emailVerified && (shouldNavigate || !isProfileLoading)) {
+    if (hasValidToken && isEmailVerified && (shouldNavigate || !isProfileLoading)) {
       ignoreAuthLinksRef.current = true;
       const now = Date.now();
       const recentNavigation = lastNavigationRef.current;
@@ -425,7 +394,7 @@ function AppContent() {
         // eslint-disable-next-line no-console
         console.log('[AppContent Navigation] Already on MainRoot');
       }
-    } else if (hasValidToken && !user?.emailVerified) {
+    } else if (hasValidToken && !isEmailVerified) {
       // Check if we recently navigated to ConfirmLogin (within last 2 seconds)
       // This prevents duplicate navigation when SignUp screen and AppContent both try to navigate
       const now = Date.now();
@@ -456,10 +425,10 @@ function AppContent() {
     navigationReady,
     navigationRef,
     token,
-    user,
     authState.getProfileData,
     authState.isLoading,
     authState.getProfileError,
+    dispatch,
   ]);
 
   const linkingConfig: LinkingOptions<MainStackParamList>['config'] = {

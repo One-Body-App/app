@@ -445,7 +445,10 @@ function ProfileHeader({
                   }`}
                   {`${
                     profileData?.profile?.typeOfOrganization
-                      ? `${profileData?.profile?.typeOfOrganization?.name}`
+                      ? `${
+                          profileData?.profile?.typeOfOrganization?.organizationType ??
+                          profileData?.profile?.typeOfOrganization?.name
+                        }`
                       : ''
                   }`}
                 </StyledText>

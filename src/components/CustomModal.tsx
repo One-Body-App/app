@@ -59,6 +59,7 @@ export default function CustomModal({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.wrapper}
+        pointerEvents="box-none"
       >
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.modalContainer, style, { transform: [{ translateY }] }]}>
@@ -71,22 +72,20 @@ export default function CustomModal({
 }
 const styles = StyleSheet.create({
   backdrop: {
-    flex: 1,
-
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
   wrapper: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
     padding: 0,
     margin: 0,
   },
   modalContainer: {
-    flex: 1,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    // padding: 20,
     maxHeight: '100%',
     minHeight: '50%',
+    width: '100%',
   },
 });

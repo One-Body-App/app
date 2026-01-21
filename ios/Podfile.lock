@@ -2953,6 +2953,10 @@ PODS:
     - React-perflogger (= 0.80.0)
     - React-utils (= 0.80.0)
     - SocketRocket
+  - RecaptchaEnterprise (18.8.2):
+    - RecaptchaEnterpriseSDK (= 18.8.2)
+    - RecaptchaInterop (~> 101.0.0)
+  - RecaptchaEnterpriseSDK (18.8.2)
   - RecaptchaInterop (101.0.0)
   - rn-fetch-blob (0.12.0):
     - React-Core
@@ -3673,6 +3677,7 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios`)
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - RecaptchaEnterprise
   - RecaptchaInterop
   - rn-fetch-blob (from `../node_modules/rn-fetch-blob`)
   - "RNAppleAuthentication (from `../node_modules/@invertase/react-native-apple-authentication`)"
@@ -3739,6 +3744,8 @@ SPEC REPOS:
     - lottie-ios
     - nanopb
     - PromisesObjC
+    - RecaptchaEnterprise
+    - RecaptchaEnterpriseSDK
     - RecaptchaInterop
     - SDWebImage
     - SDWebImageWebPCoder
@@ -4138,6 +4145,8 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 3267432b637c9b38e86961b287f784ee1b08dde0
   ReactCodegen: a492cab89cc8de48b8b65bda6714808786a411bd
   ReactCommon: 3d916b13ac777fc387b8035ab80ceb90aca4f747
+  RecaptchaEnterprise: 2d06f415c94253c3e92214a4d1472b5875442cdc
+  RecaptchaEnterpriseSDK: 2fd06a12a27f943c24f643f8814404a27cc74288
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   rn-fetch-blob: 25612b6d6f6e980c6f17ed98ba2f58f5696a51ca
   RNAppleAuthentication: c3dddf5918126c9aae85dc2e2ce9fb87835e9e04
@@ -4174,6 +4183,6 @@ SPEC CHECKSUMS:
   VisionCamera: 1470a7fa013e22de7481640a4d9c597ad6f13919
   Yoga: c6dc84349a2b99e1900fe5729f5c34df75c009f2
 
-PODFILE CHECKSUM: 92211545153b484a583cfbaa70b0a931fe223335
+PODFILE CHECKSUM: 975a0deb6209f4349d40420ec133b249b916c4cd
 
 COCOAPODS: 1.15.2

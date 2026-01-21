@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Image, TouchableOpacity, ScrollView, FlatList, RefreshControl } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Image, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { serialize } from 'object-to-formdata';
 import { useTheme } from '@react-navigation/native';
-import { styles } from './styles';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, User } from '@/utils/types';
@@ -24,6 +23,14 @@ import { profileImageList } from '@/src/styles/items';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
+function EmptyInfluencersList() {
+  return (
+    <StyledText style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}>
+      No Search Results
+    </StyledText>
+  );
+}
+
 function OnboardingInfluencers({ route }: Props) {
   const { dark } = useTheme();
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -40,45 +47,45 @@ function OnboardingInfluencers({ route }: Props) {
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (token) {
-      getInfluencers(page);
-      setLoadingMore(true);
-    }
-  }, [token, searchText, page]);
+  const getInfluencers = useCallback(
+    async (pageNumber: number) => {
+      try {
+        const res = await ApiCall({
+          route: `user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`,
+          verb: 'get',
+          token,
+        });
 
-  const getInfluencers = async (pageNumber: number) => {
-    try {
-      const res = await ApiCall({
-        route: `user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`,
-        verb: 'get',
-        token,
-      });
+        if (res?.status === 200) {
+          let userData = [];
 
-      if (res?.status == 200) {
-        let userData = [];
-
-        if (pageNumber == 1) {
-          userData = res?.response.data ?? [];
-          setIsEndOfList(false);
-        } else {
-          userData = [...influencers, ...(res?.response.data ?? [])];
-          if (res?.response.data.length < 1) {
-            setIsEndOfList(true);
+          if (pageNumber === 1) {
+            userData = res?.response.data ?? [];
+            setIsEndOfList(false);
+          } else {
+            userData = [...influencers, ...(res?.response.data ?? [])];
+            if (res?.response.data.length < 1) {
+              setIsEndOfList(true);
+            }
           }
-        }
 
-        setInfluencers(userData);
-      } else {
-        console.log('error', res?.response);
+          setInfluencers(userData);
+        } else if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('error', res?.response);
+        }
+        setLoadingMore(false);
+        setIsRefreshing(false);
+      } catch (e: any) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('saga error -- ', e.toString());
+        }
+        setLoadingMore(false);
       }
-      setLoadingMore(false);
-      setIsRefreshing(false);
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
-      setLoadingMore(false);
-    }
-  };
+    },
+    [influencers, searchText, token]
+  );
 
   const addFollowing = async () => {
     try {
@@ -89,75 +96,86 @@ function OnboardingInfluencers({ route }: Props) {
         verb: 'patch',
       });
 
-      if (res?.status != 200) {
+      if (res?.status !== 200) {
         // getInfluencers();
         // dispatch(setLoader(false));
 
         // next();
         // } else {
         dispatch(setLoader(false));
-        console.log('error', res);
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('error', res);
+        }
       }
     } catch (e: any) {
       toast.show('There was an error please try again', {
         type: 'danger',
       });
-      console.log('saga error -- ', e.toString());
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('saga error -- ', e.toString());
+      }
     }
   };
 
+  useEffect(() => {
+    if (token) {
+      getInfluencers(page);
+      setLoadingMore(true);
+    }
+  }, [getInfluencers, page, searchText, token]);
+
   return (
     <OnboardingStepsLayout
-      buttonText="Done"
+      buttonText={selectedInfluencers.length > 0 ? 'Next' : 'Skip'}
       dontUseScrollView
       onPress={async () => {
         if (selectedInfluencers.length > 0) {
           await addFollowing();
+        }
 
-          if (route.params.profileType == AccountType.individual) {
-            const data: Record<string, any> = {
-              churchType: route.params.selectedChurchType,
-              churchSubType: route.params.selectedChurchSubType,
-              oftenChurch: route.params.selectedChurchAttendence,
-              dateOfBirth: route.params.dateOfBirth,
+        if (route.params.profileType === AccountType.individual) {
+          const data: Record<string, any> = {
+            dateOfBirth: route.params.dateOfBirth,
+          };
+
+          if (route.params.longitude && route.params.latitude && route.params.address) {
+            data.location = {
+              longitude: route.params.longitude,
+              latitude: route.params.latitude,
+              address: route.params.address,
             };
-
-            if (route.params.longitude && route.params.latitude && route.params.address) {
-              data.location = {
-                longitude: route.params.longitude,
-                latitude: route.params.latitude,
-                address: route.params.address,
-              };
-            }
-            dispatch(
-              profileUpdate({
-                data: serialize(data),
-                token,
-                accountType: route.params.profileType,
-              })
-            );
-          } else {
-            const data = {
-              typeOfOrganization: route.params.selectedOrganizationType,
-              contactEmail: route.params.organizationContactEmail,
-              companyName: route.params.organizationName,
-              contactName: route.params.organizationContactName,
-              contactPhoneNumber: route.params.organizationContactPhoneNumber,
-              location: {
-                longitude: route.params.longitude,
-                latitude: route.params.latitude,
-                address: route.params.address,
-              },
-            };
-
-            dispatch(orgprofileUpdate({ data, token }));
           }
+          dispatch(
+            profileUpdate({
+              data: serialize(data),
+              token,
+              accountType: route.params.profileType,
+            })
+          );
+        } else {
+          const data = {
+            typeOfOrganization: route.params.selectedOrganizationType,
+            contactEmail: route.params.organizationContactEmail,
+            companyName: route.params.organizationName,
+            contactName: route.params.organizationContactName,
+            contactPhoneNumber: route.params.organizationContactPhoneNumber,
+            location: {
+              longitude: route.params.longitude,
+              latitude: route.params.latitude,
+              address: route.params.address,
+            },
+          };
+
+          dispatch(orgprofileUpdate({ data, token }));
         }
       }}
       onboardingType={route.params.profileType}
-      activeStep={route.params.profileType == AccountType.individual ? 4 : 5}
-      disabled={selectedInfluencers.length == 0 || isLoading}
+      activeStep={route.params.profileType === AccountType.individual ? 4 : 5}
+      disabled={isLoading}
       loading={isLoading}
+      showCustomHeaderOnAndroid
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>
@@ -167,7 +185,7 @@ function OnboardingInfluencers({ route }: Props) {
               { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
             ]}
           >
-            Select Influencers & Organizations to connect to
+            Select Ministries and Creators to connect with
           </StyledText>
         </View>
 
@@ -262,7 +280,7 @@ function OnboardingInfluencers({ route }: Props) {
                     resizeMode="contain"
                     source={{
                       uri:
-                        item?.profileImage && item?.profileImage != ''
+                        item?.profileImage && item?.profileImage !== ''
                           ? item?.profileImage
                           : 'https://cdn.onebodyapp.com/user/no-image.png',
                     }}
@@ -292,18 +310,14 @@ function OnboardingInfluencers({ route }: Props) {
                         ...fontSize.x1,
                       }}
                     >
-                      {item?.profile?.whatIDo?.name ?? item?.profile?.typeOfOrganization?.name}
+                      {item?.profile?.whatIDo?.name ??
+                        item?.profile?.typeOfOrganization?.organizationType ??
+                        item?.profile?.typeOfOrganization?.name}
                     </StyledText>
                   </View>
                 </TouchableOpacity>
               )}
-              ListEmptyComponent={() => (
-                <StyledText
-                  style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}
-                >
-                  No Search Results
-                </StyledText>
-              )}
+              ListEmptyComponent={EmptyInfluencersList}
             />
           </View>
         </View>

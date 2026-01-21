@@ -77,6 +77,7 @@ target 'onebody' do
   pod 'FirebaseAppCheckInterop'
   pod 'FirebaseCoreExtension'
   pod 'RecaptchaInterop'
+  pod 'RecaptchaEnterprise'
 
   # ✅ updated version
   #pod 'fmt', '~> 8.1.1'     ✅ resolves char8_t crash
@@ -143,6 +144,7 @@ target 'onebody' do
   'FirebaseCoreExtension',
   'GoogleUtilities',
   'RecaptchaInterop',
+  'RecaptchaEnterprise',
   'FirebaseCoreInternal',
   'FirebaseInstallations',
   'GoogleDataTransport',

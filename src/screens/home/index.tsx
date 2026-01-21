@@ -1,21 +1,38 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
+import {
+  View,
+  TouchableOpacity,
+  FlatList,
+  RefreshControl,
+  ActivityIndicator,
+  ScrollView,
+  TextInput,
+  Image,
+  ListRenderItem,
+} from 'react-native';
 
 import { useSelector } from 'react-redux';
 import { CompositeScreenProps, useTheme, useScrollToTop } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
-import { ArrowDown2 } from 'iconsax-react-native';
-import { styles } from './styles';
+import {
+  Heart,
+  Message,
+  Send2,
+  ArchiveMinus,
+  More,
+  Gallery,
+  ArrowDown2,
+} from 'iconsax-react-native';
 
+import styles from './styles';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
-import SocialItem from '@/components/listItems/SocialItem';
+import StyledText from '@/components/styled/Text';
 import ArticleItem from '@/components/listItems/ArticleItem';
-
-import { ArticleType } from '@/utils/types';
-import { styles as globalStyle } from '@/components/listItems/style';
+import SocialItem from '@/components/listItems/SocialItem';
+import { ArticleType, SocialPost, User } from '@/utils/types';
 
 import {
   HomeStackParamsList,
@@ -23,10 +40,57 @@ import {
   MainDrawerParamsList,
   MainStackParamList,
 } from '@/src/navigator/types';
-import StyledText from '@/components/styled/Text';
-import { spacing } from '@/src/styles/spacing';
-import { Colors } from '@/src/styles';
-import { getHeight } from '@/utils/ResponsiveFun';
+
+// --- BRAND HEX CODES ---
+const BRAND = {
+  gray100: '#e6eaec',
+  gray200: '#cdd5d8',
+  gray400: '#9aacb1',
+  gray800: '#355963',
+  black: '#032f3c',
+  cardDark: '#3c4b64',
+  white: '#FFFFFF',
+  primary: '#126b87',
+  primaryBase: '#41899f',
+  primaryLight: '#a0c4cf',
+};
+
+// --- TYPES ---
+type FeedPost = (ArticleType | SocialPost) & {
+  type?: 'social' | 'posts';
+  body?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  source?: string | { name: string };
+  user?: {
+    name?: string;
+    avatar?: string;
+    profile_image?: string;
+  };
+  media?: { url: string; type?: string }[];
+  image?: ArticleType['image'] | string;
+  imageUrl?: string;
+  mediaUrl?: string;
+  images?: string[];
+  likesCount?: number;
+  commentsCount?: number;
+  timestamp?: string;
+};
+
+type TasteBreakerItem = {
+  type: 'tasteBreaker';
+  items: FeedPost[];
+  id?: string | number;
+};
+
+type RelatedContentItem = {
+  type: 'relatedContent';
+  item: FeedPost;
+};
+
+type FeedEntry = FeedPost | TasteBreakerItem | RelatedContentItem;
+
+type UserProfile = User & { avatar?: string; profile_image?: string };
 
 export enum FeedTypes {
   Connected = 'connected',
@@ -41,8 +105,219 @@ type FeedOptions = {
   page: number;
 };
 
-const feedTypes: FeedTypes[] = [FeedTypes.Read, FeedTypes.Pray, FeedTypes.Watch];
+const mainTabs = [
+  { label: 'Feed', value: FeedTypes.Connected },
+  { label: 'Read', value: FeedTypes.Read },
+  { label: 'Pray', value: FeedTypes.Pray },
+  { label: 'Watch', value: FeedTypes.Watch },
+];
 
+// --- COMPONENT 1: Status Input ---
+function StatusInput({ userAvatar }: { userAvatar?: string }) {
+  const { dark, colors } = useTheme();
+
+  return (
+    <View
+      style={[styles.promptContainer, { backgroundColor: dark ? BRAND.cardDark : BRAND.white }]}
+    >
+      <Image
+        source={{ uri: userAvatar || 'https://via.placeholder.com/40' }}
+        style={styles.avatarSmall}
+      />
+      <TextInput
+        placeholder="What's on your mind?"
+        placeholderTextColor={BRAND.gray400}
+        style={[styles.promptInput, { color: colors.text }]}
+      />
+      <TouchableOpacity
+        style={[
+          styles.promptIcon,
+          { backgroundColor: dark ? 'rgba(18, 107, 135, 0.2)' : 'rgba(18, 107, 135, 0.1)' },
+        ]}
+      >
+        <Gallery size={20} color={BRAND.primary} variant="Bold" />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// --- COMPONENT 2: Discovery Section ---
+function DiscoverySection({ visible }: { visible: boolean }) {
+  const { dark } = useTheme();
+
+  if (!visible) return null;
+
+  return (
+    <View style={styles.discoveryContainer}>
+      <View style={[styles.discoveryHeader]}>
+        <StyledText
+          style={{ fontWeight: '700', fontSize: 16, color: dark ? BRAND.white : BRAND.black }}
+        >
+          People You May Know
+        </StyledText>
+        <TouchableOpacity>
+          <StyledText style={{ color: BRAND.primary, fontWeight: '700', fontSize: 14 }}>
+            See all
+          </StyledText>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
+      >
+        {[1, 2, 3].map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.discoveryCard,
+              {
+                backgroundColor: dark ? BRAND.cardDark : BRAND.white,
+                borderColor: dark ? BRAND.gray800 : BRAND.gray100,
+              },
+            ]}
+          >
+            <View style={styles.avatarSmall} />
+            <StyledText
+              style={{ fontWeight: 'bold', marginTop: 4, color: dark ? BRAND.white : '#000' }}
+            >
+              User {i + 1}
+            </StyledText>
+            <StyledText style={{ fontSize: 10, color: BRAND.gray400, marginBottom: 8 }}>
+              2 mutual friends
+            </StyledText>
+            <TouchableOpacity
+              style={{
+                backgroundColor: BRAND.primaryLight,
+                paddingVertical: 6,
+                width: '100%',
+                alignItems: 'center',
+                borderRadius: 20,
+              }}
+            >
+              <StyledText style={{ color: BRAND.primary, fontSize: 12, fontWeight: '700' }}>
+                Connect
+              </StyledText>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+// --- COMPONENT 3: Modern Feed Card (Smart) ---
+// Accepts navigation handlers and data
+interface ModernCardProps {
+  item: FeedPost;
+  onPress: () => void;
+  onPressProfile?: () => void;
+}
+
+const ModernFeedCard = memo(({ item, onPress, onPressProfile }: ModernCardProps) => {
+  const { dark } = useTheme();
+
+  // Normalize Data fields
+  const authorName =
+    item.authorName ||
+    (typeof item.source === 'object' ? item.source.name : item.source) ||
+    item.user?.name ||
+    item.userData?.name ||
+    'One Body User';
+
+  const authorAvatar =
+    item.authorAvatar ||
+    item.user?.avatar ||
+    item.user?.profile_image ||
+    item.userData?.profileImage ||
+    'https://via.placeholder.com/40';
+
+  const contentText =
+    item.content ||
+    item.body ||
+    (typeof item.title === 'object' ? item.title?.a?.$text : item.title) ||
+    '';
+
+  const mediaUrl =
+    item.media?.[0]?.url ||
+    (typeof item.image === 'string' ? item.image : item.image?.url) ||
+    item.imageUrl ||
+    item.mediaUrl ||
+    item.images?.[0];
+
+  const likes = item.likesCount || 0;
+  const comments = item.commentsCount || 0;
+
+  return (
+    <View style={[styles.cardContainer, { backgroundColor: dark ? BRAND.cardDark : BRAND.white }]}>
+      {/* Header */}
+      <View style={styles.cardHeader}>
+        <TouchableOpacity style={styles.userInfo} onPress={onPressProfile}>
+          <Image source={{ uri: authorAvatar }} style={styles.avatarSmall} />
+          <View>
+            <StyledText style={[styles.userName, { color: dark ? BRAND.white : BRAND.black }]}>
+              {authorName}
+            </StyledText>
+            <StyledText style={[styles.timeAgo, { color: BRAND.gray400 }]}>2 hours ago</StyledText>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <More size={20} color={BRAND.gray400} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Main Clickable Content Area */}
+      <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+        {/* Caption */}
+        {contentText ? (
+          <StyledText
+            numberOfLines={4}
+            style={[styles.caption, { color: dark ? BRAND.gray200 : BRAND.black }]}
+          >
+            {contentText}
+          </StyledText>
+        ) : null}
+
+        {/* Media */}
+        {mediaUrl && (
+          <View style={styles.mediaContainer}>
+            <Image source={{ uri: mediaUrl }} resizeMode="cover" style={styles.mediaImage} />
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {/* Actions Bar */}
+      <View style={[styles.actionsBar, { borderTopColor: dark ? BRAND.gray800 : BRAND.gray100 }]}>
+        <View style={styles.actionGroup}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Heart size={24} color={BRAND.gray400} />
+            <StyledText style={[styles.actionText, { color: BRAND.gray400 }]}>
+              {likes > 0 ? likes : 'Like'}
+            </StyledText>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton}>
+            <Message size={24} color={BRAND.gray400} />
+            <StyledText style={[styles.actionText, { color: BRAND.gray400 }]}>
+              {comments > 0 ? comments : 'Reply'}
+            </StyledText>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton}>
+            <Send2 size={24} color={BRAND.gray400} />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity>
+          <ArchiveMinus size={24} color={BRAND.gray400} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
+// --- MAIN HOME COMPONENT ---
 type Props = CompositeScreenProps<
   StackScreenProps<HomeStackParamsList, 'Home'>,
   CompositeScreenProps<
@@ -56,6 +331,10 @@ type Props = CompositeScreenProps<
 
 function Home({ navigation, route }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const userProfile = useSelector(
+    (state: RootState) => state.auth.getProfileData
+  ) as UserProfile | null;
+  const { dark } = useTheme();
 
   const [feedOptions, setFeedOptions] = useState<FeedOptions>({
     type: route.params?.selectedTab ?? FeedTypes.Connected,
@@ -63,514 +342,263 @@ function Home({ navigation, route }: Props) {
   });
 
   const [feedSubType, setFeedSubType] = useState<FeedTypes>(FeedTypes.Connected);
-
-  const [visibleItemsIndex, setVisibleItemsIndex] = useState<number[]>([]);
-
-  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
-    if (viewableItems && viewableItems.length > 0) {
-      setVisibleItemsIndex(viewableItems.map((item: any) => item.index));
-    }
-  }, []);
-
-  const viewabilityConfigCallbackPairs = useRef([
-    {
-      viewabilityConfig: {
-        minimumViewTime: 100,
-        itemVisiblePercentThreshold: 75,
-      },
-      onViewableItemsChanged,
-    },
-  ]);
-
-  const [feedData, setFeedData] = useState<any>();
-
+  const [feedData, setFeedData] = useState<FeedEntry[]>([]);
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectVisible, setSelectVisible] = useState(false);
 
-  const showModal = (_item: ArticleType) => {};
+  const getFeedData = useCallback(
+    async (type: FeedTypes, pageNumber: number) => {
+      const actualType = type === FeedTypes.Connected ? feedSubType : type;
 
-  const getFeedData = async (type: FeedTypes, pageNumber: number) => {
-    setIsLoading(true);
-    try {
-      const res = await ApiCall({
-        route: `user/get-following-feed/${type}/${pageNumber}`,
-        token,
-        verb: 'get',
-      });
-      let newFeedData = [];
+      setIsLoading(true);
+      try {
+        const res = await ApiCall({
+          route: `user/get-following-feed/${actualType}/${pageNumber}`,
+          token,
+          verb: 'get',
+        });
 
-      if (res?.status === 200) {
-        newFeedData = [];
-
-        if (pageNumber === 1) {
-          newFeedData = res?.response ?? [];
-
-          setIsEndOfList(false);
-        } else {
-          newFeedData = [...feedData, ...(res?.response ?? [])];
-          if (res?.response.length < 1) {
+        if (res?.status === 200) {
+          const response = Array.isArray(res?.response) ? (res.response as FeedEntry[]) : [];
+          if (pageNumber === 1) {
+            setIsEndOfList(false);
+            setFeedData(response);
+          } else if (response.length < 1) {
             setIsEndOfList(true);
+          } else {
+            setFeedData((previous) => [...previous, ...response]);
           }
+        } else {
+          setFeedData([]);
+          setIsEndOfList(true);
         }
-
-        setFeedData(newFeedData);
-      } else {
-        console.log('error', res?.response);
+      } catch (e: any) {
         setFeedData([]);
-        setIsEndOfList(true);
       }
-    } catch (e: any) {
-      setFeedData([]);
-      console.log(`saga get twitter timline  error -- `, e.toString());
-    }
-
-    setIsLoading(false);
-    setIsRefreshing(false);
-  };
-
-  const { colors, dark } = useTheme();
-
-  useEffect(() => {
-    // getData(page);
-    getFeedData(feedOptions.type, feedOptions.page);
-    if (feedOptions.type === FeedTypes.Watch) {
-      navigation.setOptions({
-        headerShown: false,
-      });
-    } else {
-      navigation.setOptions({
-        headerShown: true,
-      });
-    }
-  }, [feedOptions]);
-
-  useEffect(() => {
-    if (route.params?.selectedTab) {
-      setFeedOptions({
-        type: route.params?.selectedTab,
-        page: 1,
-      });
-    }
-  }, [route.params]);
-
-  useEffect(() => {
-    // getData(page);
-    if (isRefreshing) {
-      getFeedData(feedOptions.type, feedOptions.page);
-      setIsEndOfList(false);
-    }
-  }, [isRefreshing]);
-
-  const listRef = useRef<FlatList<any>>(null);
-  // React Navigation expects a looser scrollToOffset signature than FlatList provides.
-  useScrollToTop(
-    listRef as unknown as React.RefObject<{
-      scrollToOffset(options: { offset?: number; animated?: boolean }): void;
-    }>
+      setIsLoading(false);
+      setIsRefreshing(false);
+    },
+    [token, feedSubType]
   );
 
-  const filterUpdate = (itemValue: FeedTypes) => {
+  useEffect(() => {
+    getFeedData(feedOptions.type, feedOptions.page);
+  }, [feedOptions, feedSubType, getFeedData]);
+
+  const handleTabChange = (tabValue: FeedTypes) => {
+    if (tabValue === FeedTypes.Watch) {
+      navigation.navigate('MainRoot', {
+        screen: 'Main',
+        params: { screen: 'HomeTab', params: { screen: 'WatchPortal' } },
+      });
+      return;
+    }
     setIsRefreshing(false);
-
-    listRef.current?.scrollToOffset({
-      animated: true,
-      offset: 0,
-    });
-
-    setFeedOptions({
-      type: itemValue,
-      page: 1,
-    });
-
-    // listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    setFeedOptions({ type: tabValue, page: 1 });
   };
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      setIsRefreshing(true);
-    });
+  const toggleFeedSubType = () => {
+    const newType = feedSubType === FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected;
+    setFeedSubType(newType);
+    setFeedOptions((prev) => ({ ...prev, page: 1 }));
+  };
 
-    return unsubscribe;
-  }, [navigation]);
-
-  const [isScrollEnable, setIsScrollEnable] = useState(true);
-
-  const removePost = async (type: string, id: string) => {
-    try {
-      const res = await ApiCall({
-        route: `social/remove-post/${id}`,
-        verb: 'delete',
-        token,
-      });
-
-      if (res?.status === 200) {
-        getFeedData(feedOptions.type, feedOptions.page);
-      }
-    } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+  // --- NAVIGATION HANDLERS ---
+  const navigateToDetail = (item: FeedPost) => {
+    // Logic from your old code to determine destination
+    if (item.type === 'social' || item.postId) {
+      navigation.navigate('SinglePost', {
+        postId: item.postId || item.id,
+      } as any);
+    } else {
+      navigation.navigate('SingleRss', {
+        postId: item.id,
+      } as any);
     }
   };
 
-  const editPost = async (id: string) => {
-    navigation.navigate('Post');
-    // try {
-    //   const res = await ApiCall({
-    //     route: `social/edit-post/${id}`,
-    //     verb: 'patch',
-    //     token: token,
-    //   });
+  const navigateToProfile = (item: FeedPost) => {
+    // Placeholder: Navigate to profile if ID exists
+    // navigation.navigate('UserProfile', { userId: item.user?.id });
+    console.log('Navigating to user:', item.user?.name);
+  };
 
-    //   if (res?.status == 200) {
-    //     getFeedData(feedOptions.type, feedOptions.page);
-    //   }
-    // } catch (e: any) {
-    //   console.log('saga error -- ', e.toString());
-    // }
+  const listRef = useRef<FlatList<FeedEntry>>(null);
+  useScrollToTop(listRef);
+
+  const unwrapFeedItem = (entry: FeedEntry): FeedPost | null => {
+    if (entry.type === 'tasteBreaker') {
+      return entry.items?.[0] ?? null;
+    }
+    if (entry.type === 'relatedContent') {
+      return entry.item ?? null;
+    }
+    return entry;
+  };
+
+  const normalizeFeedImage = (entry: FeedPost): FeedPost => {
+    if (typeof entry.image === 'string') {
+      return { ...entry, image: { url: entry.image } };
+    }
+    return entry;
+  };
+
+  const isSocialPost = (entry: FeedPost): entry is SocialPost & { type?: 'social' } =>
+    entry.type === 'social';
+
+  const isRssPost = (entry: FeedPost): entry is ArticleType & { type?: 'posts' } =>
+    entry.type === 'posts';
+
+  // --- RENDER ITEM LOGIC (Fixes "Data not generating") ---
+  const renderFeedItem: ListRenderItem<FeedEntry> = ({ item }) => {
+    const unwrapped = unwrapFeedItem(item);
+    if (!unwrapped) return null;
+
+    const normalizedWithImage = normalizeFeedImage(unwrapped);
+
+    if (isSocialPost(normalizedWithImage)) {
+      const socialItem: SocialPost = {
+        ...normalizedWithImage,
+        reactions: normalizedWithImage.reactions ?? [],
+      };
+      return (
+        <SocialItem
+          itemData={socialItem}
+          removePost={() => undefined}
+          parentRefreshContent={() => {
+            getFeedData(feedOptions.type, 1);
+          }}
+          fromSavedPosts={false}
+        />
+      );
+    }
+
+    if (isRssPost(normalizedWithImage)) {
+      const rssItem: ArticleType = {
+        ...normalizedWithImage,
+        image:
+          typeof normalizedWithImage.image === 'string'
+            ? { url: normalizedWithImage.image }
+            : normalizedWithImage.image,
+        reactions: normalizedWithImage.reactions ?? [],
+      };
+      return (
+        <ArticleItem
+          item={rssItem}
+          imageSizeType="cover"
+          showModal={() => undefined}
+          onPress={() => {
+            navigateToDetail(normalizedWithImage);
+          }}
+        />
+      );
+    }
+
+    return (
+      <ModernFeedCard
+        item={normalizedWithImage}
+        onPress={() => navigateToDetail(normalizedWithImage)}
+        onPressProfile={() => navigateToProfile(normalizedWithImage)}
+      />
+    );
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <View
-        style={{
-          flex: 0,
-          flexDirection: 'row',
-          marginHorizontal: spacing.x5,
-          // marginBottom: 20,
+    <View style={[styles.container, { backgroundColor: dark ? BRAND.black : BRAND.gray100 }]}>
+      {/* Navigation Tabs */}
+      <View style={styles.tabContainer}>
+        {mainTabs.map((tab) => {
+          const { label, value } = tab;
+          const isActive = feedOptions.type === value;
 
-          height: getHeight(5.8),
-        }}
-      >
-        <View style={{ flex: 1.4 }} key="main">
-          <TouchableOpacity
-            onPress={() => {
-              if (
-                feedOptions.type === FeedTypes.Connected ||
-                feedOptions.type === FeedTypes.ForYou
-              ) {
-                setFeedSubType(
-                  feedOptions.type === FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
-                );
-                filterUpdate(
-                  feedOptions.type === FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected
-                );
-              } else {
-                filterUpdate(
-                  feedSubType === FeedTypes.Connected ? FeedTypes.Connected : FeedTypes.ForYou
-                );
-              }
-            }}
-            style={
-              feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou
-                ? [styles.menuItemSelected]
-                : [styles.menuItem]
+          if (value === FeedTypes.Connected) {
+            let feedLabel = 'Feed';
+            if (isActive) {
+              feedLabel = feedSubType === FeedTypes.Connected ? 'Connected' : 'For You';
             }
-          >
-            <View style={{ flexDirection: 'row' }}>
-              <StyledText
-                style={
-                  feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou
-                    ? [
-                        styles.menuItemText,
-                        { fontWeight: 'bold', color: Colors.primarySapphire.brand },
-                      ]
-                    : [styles.menuItemText, { color: Colors.neutral[400] }]
-                }
-              >
-                {(() => {
-                  if (feedOptions.type === FeedTypes.Read) return 'Feed';
-                  if (feedSubType === FeedTypes.Connected) return 'Connected';
-                  return 'For You';
-                })()}
-              </StyledText>
-              {feedOptions.type === FeedTypes.Read ? null : (
-                <ArrowDown2
-                  size={20}
-                  color={
-                    feedOptions.type === FeedTypes.Connected ||
-                    feedOptions.type === FeedTypes.ForYou
-                      ? Colors.primarySapphire.brand
-                      : Colors.neutral[400]
-                  }
-                  style={{ marginLeft: spacing.x5 }}
-                />
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
 
-        {feedTypes.map((feedType, index) => (
-          <View style={{ flex: index === 2 ? 1.3 : 0.8 }} key={feedType}>
-            <TouchableOpacity
-              onPress={() => {
-                if (
-                  (feedOptions.type === FeedTypes.Connected ||
-                    feedOptions.type === FeedTypes.ForYou) &&
-                  (feedType === FeedTypes.Connected || feedType === FeedTypes.ForYou)
-                ) {
-                  setSelectVisible(true);
-                } else if (feedType === FeedTypes.Pray) {
-                  navigation.navigate('MainRoot', {
-                    screen: 'PrayerWall',
-                  });
-                } else if (feedType === FeedTypes.Watch) {
-                  navigation.navigate('MainRoot', {
-                    screen: 'Main',
-                    params: {
-                      screen: 'HomeTab',
-                      params: {
-                        screen: 'WatchPortal',
-                      },
-                    },
-                  });
-                } else if (feedOptions.type !== feedType) {
-                  filterUpdate(feedType);
-                }
-              }}
-              style={
-                feedOptions.type === feedType ||
-                (feedType === FeedTypes.Connected && feedOptions.type === FeedTypes.ForYou)
-                  ? [styles.menuItemSelected, { borderBottomColor: Colors.neutral.brand }]
-                  : [
-                      styles.menuItem,
-                      {
-                        marginLeft: 0,
-                      },
-                    ]
-              }
-            >
-              <StyledText
-                style={
-                  feedOptions.type === feedType
-                    ? [
-                        styles.menuItemText,
-                        {
-                          fontWeight: 'bold',
-                          color: Colors.primarySapphire.brand,
-                          textAlign: 'left',
-                        },
-                      ]
-                    : [
-                        styles.menuItemText,
-                        {
-                          color: Colors.neutral[400],
-                          textAlign: 'left',
-                        },
-                      ]
-                }
+            return (
+              <TouchableOpacity
+                key={value}
+                style={[styles.tabItem, isActive && styles.tabItemSelected]}
+                onPress={() => {
+                  if (isActive) toggleFeedSubType();
+                  else handleTabChange(value);
+                }}
               >
-                {feedType}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
+                    {feedLabel}
+                  </StyledText>
+                  {isActive && (
+                    <ArrowDown2
+                      size={14}
+                      color={BRAND.primary}
+                      style={{ marginLeft: 4 }}
+                      variant="Bold"
+                    />
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          }
+
+          return (
+            <TouchableOpacity
+              key={value}
+              style={[styles.tabItem, isActive && styles.tabItemSelected]}
+              onPress={() => handleTabChange(value)}
+            >
+              <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
+                {label}
               </StyledText>
             </TouchableOpacity>
-          </View>
-        ))}
+          );
+        })}
       </View>
 
-      {isLoading && feedOptions.page == 1 && !isRefreshing ? (
-        <View style={{ marginTop: 10 }}>
-          <ActivityIndicator size="small" />
+      {/* Main Feed */}
+      {isLoading && feedOptions.page === 1 ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={BRAND.primary} />
         </View>
       ) : (
-        feedOptions.type !== 'watch' && (
-          <View style={{ flex: 1 }}>
-            <FlatList
-              viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-              data={feedData}
-              ref={listRef}
-              keyExtractor={(item, index) => {
-                const baseId = item.id || item.postId || item.item?.id || item?.items?.[0]?.id;
-                return baseId ? baseId.toString() : `feed-${index}`;
-              }}
-              contentContainerStyle={{
-                flexGrow: 1,
-              }}
-              scrollEnabled={isScrollEnable}
-              renderItem={({ item, index }) => {
-                if (item.type == 'social') {
-                  return (
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (item.postId) {
-                          navigation.navigate('SinglePost', {
-                            postId: item.postId,
-                          });
-                        }
-                      }}
-                    >
-                      <SocialItem
-                        index={index}
-                        onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                        itemData={item}
-                        visible={
-                          visibleItemsIndex && visibleItemsIndex.length > 0
-                            ? visibleItemsIndex?.indexOf(index) > -1
-                            : false
-                        }
-                        socialPostviewStyle={{ backgroundColor: colors.card }}
-                        removePost={removePost}
-                        editPost={editPost}
-                      />
-                    </TouchableOpacity>
-                  );
+        <FlatList
+          ref={listRef}
+          data={feedData}
+          keyExtractor={(item, index) =>
+            `${item.type ?? 'item'}-${item.id ?? item.postId ?? 'row'}-${index}`
+          }
+          contentContainerStyle={{ paddingBottom: 100 }}
+          ListHeaderComponent={
+            <>
+              <StatusInput
+                userAvatar={
+                  userProfile?.avatar ?? userProfile?.profile_image ?? userProfile?.profileImage
                 }
-
-                if (item.type === 'tasteBreaker') {
-                  const itemToUse = item?.items[0];
-                  return (
-                    <View>
-                      {/* <FlatList
-                        nestedScrollEnabled
-                        data={item.items}
-                        horizontal={true}
-                        showsHorizontalScrollIndicator={true}
-                        keyExtractor={(nestedItem, nestedIndex) =>
-                          `${nestedItem?.id || nestedItem?.postId || nestedItem?.created || 'nested'}-${nestedIndex}`
-                        }
-                        renderItem={({ item }) => (
-                          <ArticleItem
-                            pillText="Taste Breakers"
-                            key={`article_${item.id}`}
-                            item={item}
-                            imageSizeType="cover"
-                            blogPostStyle={{
-                              ...globalStyle.blogpostview,
-                              backgroundColor: cardSecondaryColor,
-                              height: 400,
-                              width: Dimensions.get('screen').width - 30,
-                              // width: 350,
-                            }}
-                            blogPostImageStyle={[globalStyle.newspostimage]}
-                            blogPostTitleStyle={{
-                              flexDirection: 'row',
-                              justifyContent: 'space-between',
-                            }}
-                            showModal={showModal}
-                          />
-                        )}
-                      /> */}
-
-                      <TouchableOpacity
-                        onPress={() => {
-                          if (itemToUse.id) {
-                            navigation.navigate('SingleRss', {
-                              postId: itemToUse.id,
-                            });
-                          }
-                        }}
-                      >
-                        <ArticleItem
-                          pillText="Taste Breakers"
-                          item={itemToUse}
-                          imageSizeType="cover"
-                          // blogPostStyle={{
-                          //   ...globalStyle.blogpostview,
-                          //   backgroundColor: cardSecondaryColor,
-                          // }}
-                          // blogPostImageStyle={globalStyle.newspostimage}
-                          // blogPostTitleStyle={{
-                          //   flexWrap: 'wrap',
-                          // }}
-                          blogPostStyle={{
-                            ...globalStyle.blogpostview,
-                          }}
-                          blogPostImageStyle={globalStyle.newspostimage}
-                          blogPostTitleStyle={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                          }}
-                          showModal={showModal}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                }
-
-                if (item.type == 'relatedContent') {
-                  return (
-                    <View>
-                      <TouchableOpacity
-                        onPress={() => {
-                          if (item.item.id) {
-                            navigation.navigate('SingleRss', {
-                              postId: item.item.id,
-                            });
-                          }
-                        }}
-                      >
-                        <ArticleItem
-                          pillText="Suggested"
-                          item={item.item}
-                          imageSizeType="cover"
-                          blogPostStyle={globalStyle.blogpostview}
-                          blogPostImageStyle={globalStyle.newspostimage}
-                          blogPostTitleStyle={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                          }}
-                          showModal={showModal}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                }
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (item.id) {
-                        navigation.navigate('SingleRss', {
-                          postId: item.id,
-                        });
-                      }
-                    }}
-                  >
-                    <ArticleItem
-                      key={`article_${item.id}`}
-                      item={item}
-                      imageSizeType="cover"
-                      blogPostImageStyle={globalStyle.newspostimage}
-                      blogPostTitleStyle={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                      }}
-                      showModal={showModal}
-                    />
-                  </TouchableOpacity>
-                );
+              />
+              <DiscoverySection visible={feedOptions.type === FeedTypes.Connected} />
+            </>
+          }
+          renderItem={renderFeedItem}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => {
+                setIsRefreshing(true);
+                getFeedData(feedOptions.type, 1);
               }}
-              refreshing={isLoading}
-              refreshControl={
-                <RefreshControl
-                  enabled
-                  refreshing={isRefreshing}
-                  colors={
-                    dark
-                      ? ['rgba(18, 210, 217, 1)', 'rgba(18, 210, 217, 1)']
-                      : ['rgba(3, 47, 60, 1)', 'rgba(18, 107, 135, 1)']
-                  }
-                  tintColor={dark ? 'rgba(18, 210, 217, 1)' : 'rgba(18, 107, 135, 1)'}
-                  onRefresh={() => {
-                    setIsRefreshing(true);
-                  }}
-                />
-              }
-              onEndReachedThreshold={0.5}
-              onEndReached={() => {
-                if (!isLoading && !isRefreshing && !isEndOfList) {
-                  setFeedOptions({
-                    ...feedOptions,
-                    page: feedOptions.page + 1,
-                  });
-                }
-              }}
-              ListFooterComponent={() => (
-                <View>
-                  {isLoading && !isRefreshing ? <ActivityIndicator size="small" /> : null}
-                </View>
-              )}
+              tintColor={BRAND.primary}
             />
-          </View>
-        )
+          }
+          onEndReachedThreshold={0.5}
+          onEndReached={() => {
+            if (!isLoading && !isEndOfList) {
+              setFeedOptions((prev) => ({ ...prev, page: prev.page + 1 }));
+            }
+          }}
+        />
       )}
     </View>
   );

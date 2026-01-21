@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   View,
@@ -48,6 +48,13 @@ function Connected({ navigation }: Props) {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
 
+  const devLog = useCallback((...args: any[]) => {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log(...args);
+    }
+  }, []);
+
   const [filter, setFilter] = useState<'connectors' | 'connected'>('connected');
 
   const [searchChannelsText, setSearchChannelsText] = useState<string>('');
@@ -67,25 +74,27 @@ function Connected({ navigation }: Props) {
         route: 'user/remove-interests',
         token,
         params: {
-          interests: selectedInterest.filter((interest) => interest._id != newInterest._id),
+          interests: selectedInterest.filter((interest) => interest._id !== newInterest._id),
         },
         verb: 'patch',
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(setLoader(false));
-        selectedInterest.filter((itemToFilter) => itemToFilter._id == newInterest?._id).length > 0
-          ? setSelectedInterest(
-              selectedInterest.filter(function (item2) {
-                return item2._id !== newInterest?._id;
-              })
-            )
-          : setSelectedInterest([...selectedInterest, newInterest]);
+        const exists = selectedInterest.some((interest) => interest._id === newInterest?._id);
+        if (exists) {
+          setSelectedInterest((prev) =>
+            prev.filter((interest) => interest._id !== newInterest?._id)
+          );
+        } else {
+          setSelectedInterest((prev) => [...prev, newInterest]);
+        }
       } else {
         dispatch(setLoader(false));
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      dispatch(setLoader(false));
+      devLog('saga error -- ', e.toString());
     }
   };
 
@@ -96,19 +105,19 @@ function Connected({ navigation }: Props) {
         token,
         verb: 'patch',
       });
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         // dispatch(getuserGet({ token: token, get: 'following', role: user?.role }));
         await getFollowing();
       } else {
-        const result = following.filter((item) => item._id != id);
-        // setSubscibe(result);
+        setFollowing((prev) => prev.filter((item) => item._id !== id));
+        setSearchResultsFollowing((prev) => prev.filter((item) => item._id !== id));
       }
     } catch (e) {
-      console.log('saga sign up err --- ', e);
+      devLog('saga sign up err --- ', e);
     }
   };
 
-  const getFollowing = async () => {
+  const getFollowing = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'user/get-following',
@@ -116,18 +125,18 @@ function Connected({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setFollowing(res?.response?.data);
         setSearchResultsFollowing(res?.response?.data);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
-  const getFollowers = async () => {
+  const getFollowers = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'user/get-followers',
@@ -135,21 +144,20 @@ function Connected({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setFollowers(res?.response?.data);
         setSearchResultsFollowers(res?.response?.data);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
     }
-    // console.log(user);
     // setFollowers([]);
     // setSearchResultsFollowers([]);
-  };
+  }, [devLog, token]);
 
-  const getInterests = async () => {
+  const getInterests = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await ApiCall({
@@ -158,16 +166,17 @@ function Connected({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setInterests(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
-      setIsLoading(false);
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [devLog, token]);
 
   const addInterests = async (newInterest: Interest) => {
     setIsLoading(true);
@@ -180,23 +189,25 @@ function Connected({ navigation }: Props) {
         verb: 'patch',
       });
 
-      if (res?.status == 200) {
-        selectedInterest.filter((itemToFilter) => itemToFilter._id == newInterest?._id).length > 0
-          ? setSelectedInterest(
-              selectedInterest.filter(function (item2) {
-                return item2._id !== newInterest?._id;
-              })
-            )
-          : setSelectedInterest([...selectedInterest, newInterest]);
+      if (res?.status === 200) {
+        const exists = selectedInterest.some((interest) => interest._id === newInterest?._id);
+        if (exists) {
+          setSelectedInterest((prev) =>
+            prev.filter((interest) => interest._id !== newInterest?._id)
+          );
+        } else {
+          setSelectedInterest((prev) => [...prev, newInterest]);
+        }
         dispatch(getuserAll({ token }));
       }
-      setIsLoading(false);
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getFilteredUsers = (users: User[], text: string) => {
+  const getFilteredUsers = useCallback((users: User[], text: string) => {
     const newSearchChannels = [];
     for (let i = 0; i < users.length; i++) {
       if (users[i] && users[i].name) {
@@ -206,30 +217,37 @@ function Connected({ navigation }: Props) {
       }
     }
     return newSearchChannels;
-  };
+  }, []);
+
+  const formatCount = useCallback((value?: number) => {
+    const count = value ?? 0;
+    if (count > 999999) return `${(count / 1000000).toFixed(2)}m`;
+    if (count > 999) return `${(count / 1000).toFixed(2)}k`;
+    return `${count}`;
+  }, []);
 
   useEffect(() => {
     getFollowing();
     getFollowers();
 
     getInterests();
-  }, [user]);
+  }, [getFollowers, getFollowing, getInterests, user]);
 
   useEffect(() => {
     if (searchChannelsText) {
-      setSearchResultsFollowing(getFilteredUsers(searchResultsFollowing, searchChannelsText));
+      setSearchResultsFollowing(getFilteredUsers(following, searchChannelsText));
     } else {
       setSearchResultsFollowing(following);
     }
 
     if (searchChannelsText) {
-      setSearchResultsFollowers(getFilteredUsers(searchResultsFollowers, searchChannelsText));
+      setSearchResultsFollowers(getFilteredUsers(followers, searchChannelsText));
     } else {
       setSearchResultsFollowers(followers);
     }
 
     setIsLoading(false);
-  }, [searchChannelsText, user]);
+  }, [followers, following, getFilteredUsers, searchChannelsText]);
 
   const { colors } = useTheme();
 
@@ -322,11 +340,7 @@ function Connected({ navigation }: Props) {
                 >
                   {/* <StyledText>{searchResultsFollowers.length} Connectors</StyledText> */}
                   <StyledText style={[Typography.body.x3M]}>
-                    {user?.followerCount && user?.followerCount > 999
-                      ? `${(user.followerCount / 1000).toFixed(2)}k`
-                      : user?.followerCount && user?.followerCount > 999999
-                        ? `${(user.followerCount / 1000000).toFixed(2)}m`
-                        : (user?.followerCount ?? 0)}{' '}
+                    {formatCount(user?.followerCount)}{' '}
                     <StyledText style={{ color: Colors.neutral[300] }}>Connectors</StyledText>
                   </StyledText>
                 </View>
@@ -336,14 +350,14 @@ function Connected({ navigation }: Props) {
             <View style={{ flex: 1, alignItems: 'center' }}>
               <TouchableOpacity
                 onPress={() => {
-                  if (filter != 'connected') setFilter('connected');
+                  if (filter !== 'connected') setFilter('connected');
                 }}
               >
                 <View
                   style={{
                     paddingBottom: spacing.x10,
                     borderBottomColor: Colors.neutral.brand,
-                    borderBottomWidth: filter == 'connected' ? 2 : 0,
+                    borderBottomWidth: filter === 'connected' ? 2 : 0,
                     alignSelf: 'flex-start',
                   }}
                 >
@@ -356,11 +370,7 @@ function Connected({ navigation }: Props) {
                       },
                     ]}
                   >
-                    {user?.following.length && user?.following.length > 999
-                      ? `${(user.following.length / 1000).toFixed(2)}k`
-                      : user?.following.length && user?.following.length > 999999
-                        ? `${(user.following.length / 1000000).toFixed(2)}m`
-                        : (user?.following.length ?? 0)}{' '}
+                    {formatCount(user?.following.length)}{' '}
                     <StyledText style={{ color: Colors.neutral[300] }}>Connected</StyledText>
                   </StyledText>
                 </View>
@@ -371,7 +381,7 @@ function Connected({ navigation }: Props) {
 
         <View style={{ flex: 1 }}>
           <FlatList
-            data={filter == 'connectors' ? searchResultsFollowers : searchResultsFollowing}
+            data={filter === 'connectors' ? searchResultsFollowers : searchResultsFollowing}
             contentContainerStyle={{ flexGrow: 1 }}
             renderItem={({ item }) => {
               return (
@@ -410,7 +420,7 @@ function Connected({ navigation }: Props) {
                         style={profileImageList}
                         source={{
                           uri:
-                            item?.profileImage && item?.profileImage != ''
+                            item?.profileImage && item?.profileImage !== ''
                               ? item?.profileImage
                               : 'https://cdn.onebodyapp.com/user/no-image.png',
                         }}
@@ -432,16 +442,15 @@ function Connected({ navigation }: Props) {
                             color: Colors.neutral[300],
                           }}
                         >
-                          {item.profile.whatIDo
-                            ? item.profile.whatIDo?.name
-                            : item.profile.typeOfOrganization
-                              ? item.profile.typeOfOrganization?.name
-                              : ''}
+                          {item.profile.whatIDo?.name ??
+                            item.profile.typeOfOrganization?.organizationType ??
+                            item.profile.typeOfOrganization?.name ??
+                            ''}
                         </StyledText>
                       ) : null}
                     </View>
 
-                    {filter == 'connected' ? (
+                    {filter === 'connected' ? (
                       <Button
                         btnStyle={{
                           paddingVertical: spacing.x10,
@@ -523,12 +532,12 @@ function Connected({ navigation }: Props) {
                 }}
               >
                 {interests.length < 1 ? <StyledText>No Search Results</StyledText> : null}
-                {interests.map((item, index) => (
+                {interests.map((item) => (
                   <TouchableOpacity
-                    key={index}
+                    key={item?._id ?? item?.name}
                     onPress={() => {
                       if (
-                        selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                        selectedInterest.filter((itemToFilter) => itemToFilter._id === item?._id)
                           .length > 0
                       ) {
                         removeInterests(item);
@@ -537,7 +546,7 @@ function Connected({ navigation }: Props) {
                       }
                     }}
                     style={
-                      selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                      selectedInterest.filter((itemToFilter) => itemToFilter._id === item?._id)
                         .length > 0
                         ? [
                             iterestListItem,
@@ -552,7 +561,7 @@ function Connected({ navigation }: Props) {
                     <StyledText
                       numberOfLines={1}
                       style={
-                        selectedInterest.filter((itemToFilter) => itemToFilter._id == item?._id)
+                        selectedInterest.filter((itemToFilter) => itemToFilter._id === item?._id)
                           .length > 0
                           ? { color: 'white' }
                           : { color: Colors.neutral[400] }

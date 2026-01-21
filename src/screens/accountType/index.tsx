@@ -232,7 +232,7 @@ function AccountType({ navigation }: Props) {
               <StyledText
                 style={[Typography.header.h1, { color: primaryTextColor, marginTop: 45 }]}
               >
-                What account type best describes you?
+                How will you join us?
               </StyledText>
               <StyledText
                 style={[
@@ -240,8 +240,8 @@ function AccountType({ navigation }: Props) {
                   { color: primaryTextColor, marginTop: 10, marginBottom: 5 },
                 ]}
               >
-                Pick an account type so that we can curate your experience. You will not be able to
-                change this later.
+                Choose the profile type that fits you best. This helps us unlock the right tools for
+                your journey. (Note: This cannot be changed later).
               </StyledText>
             </Animated.View>
 
@@ -325,8 +325,8 @@ function AccountType({ navigation }: Props) {
                           color: primaryTextColor,
                         }}
                       >
-                        Individual profiles are for individuals, leaders, or any one person that
-                        desires to create a One Body profile.
+                        For believers, leaders, and creators looking to connect, pray, and grow in
+                        fellowship with the Body of Christ.
                       </StyledText>
                     </Animated.View>
                   </View>
@@ -429,8 +429,8 @@ function AccountType({ navigation }: Props) {
                           color: primaryTextColor,
                         }}
                       >
-                        Organization accounts are for Churches, Non-Profits, Businesses, or any
-                        Christian entities that desire to create a One Body profile.
+                        For Churches, Ministries, Non-Profits, and Christian businesses looking to
+                        manage pages, events, and community resources.
                       </StyledText>
                     </Animated.View>
                   </View>
@@ -456,7 +456,7 @@ function AccountType({ navigation }: Props) {
           <Animated.View
             style={[
               {
-                marginVertical: spacing.x6,
+                marginVertical: spacing.x10,
                 width: isTablet ? '100%' : undefined,
                 maxWidth: isTablet ? CONTENT_MAX_WIDTH : undefined,
               },

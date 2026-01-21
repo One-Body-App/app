@@ -1,70 +1,114 @@
-import { FirebaseAuthTypes, getIdToken } from '@react-native-firebase/auth';
 import axios from 'axios';
-import { Dispatch } from '@reduxjs/toolkit';
 import { ApiCall } from '@/services/api';
 import { BASE_URL } from './constants';
-import { loginSocialRequest } from '../redux/actions/AuthActions';
+import { saveAuthTokens } from './authTokens';
 import { requestUserPermission } from './notification/notificationServices';
 
-export const processLogin = async (
-  userCredentials: FirebaseAuthTypes.UserCredential,
-  setNewUserCredentials: Function,
-  setToken?: Function
-) => {
-  const token = await getIdToken(userCredentials.user);
-  if (__DEV__) {
-    console.log('[login] processLogin start', {
-      hasToken: !!token,
-      tokenLength: token?.length ?? 0,
-      isNewUser: !!userCredentials.additionalUserInfo?.isNewUser,
-      baseUrl: BASE_URL,
-    });
+type AuthApiTokens = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  refreshExpiresIn: number;
+};
+
+type AuthApiResponse<TUser = any> = {
+  user: TUser;
+  tokens: AuthApiTokens;
+};
+
+type EmailTwoFactorChallenge = {
+  twoFactorRequired: true;
+  method: 'email';
+  emailMasked: string;
+  reason: 'new_location' | 'admin_policy';
+};
+
+export const registerWithEmailAndPassword = async (params: {
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+  accountType?: string | null;
+}) => {
+  const res = await ApiCall<AuthApiResponse>({
+    route: 'auth/register',
+    verb: 'post',
+    params: {
+      ...params,
+      accountType: params.accountType ?? undefined,
+    },
+  });
+
+  if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
+    await saveAuthTokens((res.response as any).tokens);
   }
 
-  if (setToken && token) {
-    setToken(token);
+  return res;
+};
+
+export const loginWithEmailAndPassword = async (params: {
+  email: string;
+  password: string;
+  twoFactorCode?: string;
+}) => {
+  const res = await ApiCall<AuthApiResponse | EmailTwoFactorChallenge>({
+    route: 'auth/login',
+    verb: 'post',
+    params,
+  });
+
+  if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
+    await saveAuthTokens((res.response as any).tokens);
   }
 
-  let userProfileResult;
+  return res;
+};
 
-  if (userCredentials.additionalUserInfo?.isNewUser) {
-    setNewUserCredentials(userCredentials);
-  } else {
-    userProfileResult = await ApiCall({
-      token,
-      route: 'user/my-profile',
-      verb: 'get',
-    });
-    if (__DEV__) {
-      console.log('[login] user/my-profile result', {
-        status: userProfileResult.status,
-        hasResponse: !!userProfileResult.response,
-        responseType: typeof userProfileResult.response,
-      });
+export const verifyEmailTwoFactorCode = async (params: { email: string; code: string }) => {
+  const res = await ApiCall<AuthApiResponse>({
+    route: 'auth/two-factor/email/verify',
+    verb: 'post',
+    params,
+  });
+
+  if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
+    await saveAuthTokens((res.response as any).tokens);
+  }
+
+  return res;
+};
+
+export const refreshWithStoredToken = async (refreshToken: string) => {
+  const options = {
+    method: 'POST',
+    url: `${BASE_URL}/auth/refresh`,
+    headers: { 'Content-Type': 'application/json' },
+    data: { refreshToken },
+  };
+
+  return axios.request(options);
+};
+
+export const processLogin = async (accessToken: string) => {
+  const userProfileResult = await ApiCall({
+    token: accessToken,
+    route: 'user/my-profile',
+    verb: 'get',
+  });
+
+  if (userProfileResult.status !== 200) {
+    return undefined;
+  }
+
+  if (userProfileResult.response && typeof userProfileResult.response === 'object') {
+    if (!userProfileResult.response.FCM) {
+      await requestUserPermission(accessToken, userProfileResult.response.pushNotificationsEnabled);
     }
-    if (userProfileResult.status === 200) {
-      if (!userProfileResult.response || typeof userProfileResult.response !== 'object') {
-        if (__DEV__) {
-          console.warn('[login] user/my-profile returned empty or non-object response');
-        }
-        return;
-      }
 
-      if (!userCredentials.user.email || !userCredentials.user.emailVerified) {
-        if (!userCredentials.user.email && userCredentials.additionalUserInfo?.profile?.email) {
-          await userCredentials.user.updateEmail(
-            userCredentials.additionalUserInfo?.profile?.email
-          );
-        }
-      }
-
-      if (!userProfileResult.response.FCM) {
-        await requestUserPermission(token, userProfileResult.response.pushNotificationsEnabled);
-      }
-
-      return userProfileResult.response;
-    }
+    return userProfileResult.response;
   }
+
+  return undefined;
 };
 
 export const getTwitterLoginToken = async (
@@ -98,41 +142,4 @@ export const getTwitterLoginToken = async (
   const token = result.data?.oAuthToken;
 
   return token;
-};
-
-export const socialLogin = (
-  newUserCredentials: FirebaseAuthTypes.UserCredential | null,
-  dispatch: Dispatch<any>,
-  data: {
-    accountType?: string | null;
-    token: string;
-    seterror: React.Dispatch<any>;
-    gotoSignup: Function;
-    sendFcm: Function;
-  }
-) => {
-  if (newUserCredentials) {
-    const emailParts = newUserCredentials?.user.email?.split('@');
-    const username = newUserCredentials?.user.email?.replace('@', '');
-
-    const dataToSend = {
-      email: newUserCredentials?.user.email,
-      name: newUserCredentials?.user.displayName,
-      socialData: newUserCredentials?.additionalUserInfo,
-      userId: newUserCredentials.user.uid,
-      username,
-
-      accountType: data.accountType,
-      token: data.token,
-    };
-
-    dispatch(
-      loginSocialRequest({
-        data: dataToSend,
-        seterror: data.seterror,
-        gotoSignup: data.gotoSignup,
-        sendFcm: data.sendFcm,
-      })
-    );
-  }
 };

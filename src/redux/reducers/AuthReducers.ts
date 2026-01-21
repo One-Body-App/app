@@ -1,4 +1,3 @@
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AnyAction, Reducer } from 'redux';
 import { User } from '@/utils/types';
 import {
@@ -10,8 +9,12 @@ import {
   SendVerificationEmail,
 } from '../action-types';
 
-interface UserData extends FirebaseAuthTypes.User {
-  tokenResult: FirebaseAuthTypes.IdTokenResult;
+interface UserData {
+  email?: string | null;
+  emailVerified?: boolean;
+  uid?: string;
+  tokenResult?: any;
+  [key: string]: any;
 }
 
 type AuthReducer = {

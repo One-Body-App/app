@@ -4,7 +4,6 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { LoginManager } from 'react-native-fbsdk-next';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { deleteUser, getAuth, signOut } from '@react-native-firebase/auth';
 import { useToast } from 'react-native-toast-notifications';
 import { useTheme } from '@react-navigation/native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
@@ -14,6 +13,7 @@ import { styles } from './styles';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import { logout } from '@/src/redux/actions/AuthActions';
+import { clearAuthTokens } from '@/services/authTokens';
 import GeneralStatusBar from '@/components/GeneralStatusBar';
 import GeneralStyle from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -31,7 +31,6 @@ function DeactivateAccountConfirm({ navigation, route }: Props) {
   const dispatch = useDispatch();
   const toast = useToast();
   const { colors } = useTheme();
-  const firebaseAuth = getAuth();
   const accountDeactivate = async () => {
     dispatch(setLoader(true));
     try {
@@ -50,12 +49,8 @@ function DeactivateAccountConfirm({ navigation, route }: Props) {
 
         dispatch(setLoader(false));
         LoginManager.logOut();
+        await clearAuthTokens();
         dispatch(logout());
-
-        if (firebaseAuth.currentUser) {
-          await deleteUser(firebaseAuth.currentUser);
-        }
-        await signOut(firebaseAuth);
       } else {
         dispatch(setLoader(false));
       }

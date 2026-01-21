@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ArrowDown2 } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
-import Button from '@/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
@@ -11,13 +9,11 @@ import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
 import MapBox, { MapSuggestion } from '@/components/MapBox';
-import { borderRadius } from '@/src/styles/outlines';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingLocation'>;
 
 function OnboardingLocation({ navigation, route }: Props) {
   const { dark, colors } = useTheme();
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [longitude, setLongitude] = useState<number>();
   const [latitude, setLatitude] = useState<number>();
   const [locationData, setLocationData] = useState<MapSuggestion | null>(null);
@@ -36,15 +32,18 @@ function OnboardingLocation({ navigation, route }: Props) {
       }}
       onboardingType={AccountType.individual}
       activeStep={2}
+      dontUseScrollView
+      showCustomHeaderOnAndroid
       reasonText={
         <>
           <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
-            Your location info helps us to understand the type of content you would be most
-            interested in seeing so that we may enhance your One Body experience.
+            We use your city to help you find churches, events, and fellowship opportunities nearby
+            in the Connect Portal.
           </StyledText>
           <StyledText> </StyledText>
           <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
-            You can decide if you want this info to be Public or Private in your Profile settings.
+            Your privacy is our priority. You can choose to make this info Public or Private anytime
+            in your Profile settings.
           </StyledText>
         </>
       }
@@ -57,7 +56,7 @@ function OnboardingLocation({ navigation, route }: Props) {
               { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
             ]}
           >
-            Where are you Located?
+            Where do you call home?
           </StyledText>
           <StyledText
             style={[
@@ -65,55 +64,28 @@ function OnboardingLocation({ navigation, route }: Props) {
               { color: dark ? colors.text : Colors.neutral[300], marginTop: spacing.x8 },
             ]}
           >
-            Enter your present City
+            To connect you with your local community, we just need your city. We do not need your
+            exact address.
           </StyledText>
         </View>
 
         <View style={{ flex: 4, marginTop: spacing.x32 }}>
-          <StyledText style={{ marginBottom: 10 }}>Location</StyledText>
-          <Button
-            text={locationData ? locationData?.place_name : 'Select'}
-            btnStyle={{
-              flex: 1,
-              backgroundColor: Colors.neutral[700],
-              borderColor: Colors.neutral[800],
-              borderRadius: borderRadius.xs,
-            }}
-            wrapperBtnStyle={{
-              justifyContent: 'space-between',
-              paddingHorizontal: 14,
-              paddingVertical: 16,
-            }}
-            btnTextStyle={{
-              color: locationData ? Colors.neutral[300] : Colors.neutral[400],
-            }}
-            onPress={() => setModalVisible(true)}
-            rightIcon={
-              <ArrowDown2
-                onPress={() => setModalVisible(true)}
-                style={{ paddingTop: 6 }}
-                size={15}
-                color={Colors.neutral[300]}
-              />
-            }
-          />
-
+          <StyledText style={{ marginBottom: 10 }}>City & State</StyledText>
           <MapBox
             location={locationData}
             setLongitude={setLongitude}
             setLatitude={setLatitude}
-            modalVisible={modalVisible}
-            setModalVisible={setModalVisible}
             setLocation={setLocationData}
+            inline
             modalTitle={
               <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
-                In what{' '}
+                Search for your{' '}
                 <StyledText
                   style={{ fontSize: 18, color: Colors.primary.brand, fontWeight: 'bold' }}
                 >
                   city
                 </StyledText>{' '}
-                are you located?
+                to get connected
               </StyledText>
             }
           />

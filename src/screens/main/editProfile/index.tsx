@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity, ScrollView, Dimensions, Switch, TextInput } from 'react-native';
 import {
   CameraOptions,
@@ -27,7 +27,7 @@ import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { AccountType, ChurchType, Interest, Tag } from '@/utils/types';
+import { AccountType, ChurchType, Interest, OrganizationType, Tag } from '@/utils/types';
 
 import MapBox, { MapSuggestion } from '@/components/MapBox';
 import { spacing } from '@/src/styles/spacing';
@@ -46,7 +46,7 @@ import {
   MainDrawerParamsList,
   MyProfileStackParamsList,
 } from '@/src/navigator/types';
-import { requestCameraPermission, requestExternalWritePermission } from '@/utils/ImageAndCamera';
+import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 
 type Props = CompositeScreenProps<
   StackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
@@ -93,7 +93,15 @@ function EditProfile({ navigation }: Props) {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [gender, setGender] = useState(user?.gender);
+
+  const devLog = useCallback((...args: any[]) => {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log(...args);
+    }
+  }, []);
+
+  const [gender] = useState(user?.gender);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
   const [headerImagePickerModalVisibile, setHeaderImagePickerModalVisibile] = useState(false);
   const [imageToUpload, setImageToUpload] = useState('');
@@ -106,7 +114,7 @@ function EditProfile({ navigation }: Props) {
     name: string;
   }>();
   const [fullname, setFullName] = useState<string>(
-    user?.accountType == 'individual' ? (user?.name ?? '') : (user?.profile.companyName ?? '')
+    user?.accountType === 'individual' ? (user?.name ?? '') : (user?.profile.companyName ?? '')
   );
 
   const [username, setUsername] = useState<string>(user?.username ?? '');
@@ -114,7 +122,7 @@ function EditProfile({ navigation }: Props) {
   const [isValidWebsite, setIsValidWebsite] = useState<boolean | null>(null);
   const [bio, setBio] = useState<string>(user?.bio ?? '');
   const [whatIDo, setWhatIDo] = useState<string>(user?.profile.whatIDo?._id || '');
-  const [organizationType, setOrganizationType] = useState<Tag | null>(
+  const [organizationType, setOrganizationType] = useState<OrganizationType | null>(
     user?.profile.typeOfOrganization ? user?.profile.typeOfOrganization : null
   );
 
@@ -131,7 +139,7 @@ function EditProfile({ navigation }: Props) {
   );
 
   const [whatIDoList, setWhatIDoList] = useState<Tag[]>([]);
-  const [organizationTypes, setOrganizationTypes] = useState<Tag[]>([]);
+  const [organizationTypes, setOrganizationTypes] = useState<OrganizationType[]>([]);
   const dispatch = useDispatch();
   const [date, setDate] = useState<string>(user?.profile?.dateOfBirth ?? '');
   const [open, setOpen] = useState(false);
@@ -220,7 +228,7 @@ function EditProfile({ navigation }: Props) {
   //   });
   // }, [navigation, user]);
 
-  const getChurchTypes = async () => {
+  const getChurchTypes = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'global/church-type',
@@ -228,15 +236,15 @@ function EditProfile({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setChurchTypes(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
   const captureImage = async (contentType: MediaType, imageType: 'header' | 'photo') => {
     const options: CameraOptions = {
@@ -249,25 +257,25 @@ function EditProfile({ navigation }: Props) {
     if (isStoragePermitted) {
       const response = await launchCamera(options);
 
-      console.log('Response = ', response);
+      devLog('Response = ', response);
 
       if (response.didCancel) {
-        console.log('User cancelled camera picker');
+        devLog('User cancelled camera picker');
 
         return;
       }
-      if (response.errorCode == 'camera_unavailable') {
-        console.log('Camera not available on device');
+      if (response.errorCode === 'camera_unavailable') {
+        devLog('Camera not available on device');
 
         return;
       }
-      if (response.errorCode == 'permission') {
-        console.log('Permission not satisfied');
+      if (response.errorCode === 'permission') {
+        devLog('Permission not satisfied');
 
         return;
       }
-      if (response.errorCode == 'others') {
-        console.log(response.errorMessage);
+      if (response.errorCode === 'others') {
+        devLog(response.errorMessage);
 
         return;
       }
@@ -283,40 +291,40 @@ function EditProfile({ navigation }: Props) {
       // console.log('no ', isCameraPermitted);
     }
   };
-  const getWhatIDo = async () => {
+  const getWhatIDo = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'tags/professions',
         token,
         verb: 'get',
       });
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setWhatIDoList(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error on what i Do -- ', e.toString());
+      devLog('saga error on what i Do -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
-  const getOrganizationTypes = async () => {
+  const getOrganizationTypes = useCallback(async () => {
     try {
       const res = await ApiCall({
-        route: 'tags/organization-types',
+        route: 'global/OrganizationType',
         verb: 'get',
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setOrganizationTypes(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
   const addInterests = async () => {
     try {
@@ -329,10 +337,10 @@ function EditProfile({ navigation }: Props) {
 
       if (res?.status !== 200) {
         dispatch(setLoader(false));
-        console.log('error', res);
+        devLog('error', res);
       }
     } catch (e: any) {
-      console.log(e);
+      devLog(e);
     }
   };
 
@@ -346,27 +354,25 @@ function EditProfile({ navigation }: Props) {
     const response = await launchImageLibrary(options);
 
     if (response.didCancel) {
-      console.log('User cancelled camera picker');
+      devLog('User cancelled camera picker');
 
       return;
     }
-    if (response.errorCode == 'camera_unavailable') {
-      console.log('Camera not available on device');
+    if (response.errorCode === 'camera_unavailable') {
+      devLog('Camera not available on device');
 
       return;
     }
-    if (response.errorCode == 'permission') {
-      console.log('Permission not satisfied');
+    if (response.errorCode === 'permission') {
+      devLog('Permission not satisfied');
 
       return;
     }
-    if (response.errorCode == 'others') {
-      console.log(response.errorMessage);
+    if (response.errorCode === 'others') {
+      devLog(response.errorMessage);
       return;
     }
     const uri = response?.assets ? response?.assets[0]?.uri : '';
-    const type = response?.assets ? response?.assets[0]?.type : '';
-    const name = response?.assets ? response?.assets[0]?.fileName : '';
     // if (imageType == 'photo') {
     //   setImageObject({ uri: uri ?? '', type: type ?? '', name: name ?? '' });
     //   setImageToUpload(uri ?? '');
@@ -382,10 +388,10 @@ function EditProfile({ navigation }: Props) {
     try {
       setTimeout(async () => {
         const image = await ImagePicker.openCropper({
-          height: imageType == 'header' ? (Dimensions.get('screen').width * 9) / 16 : undefined,
-          width: imageType == 'header' ? Dimensions.get('screen').width : undefined,
+          height: imageType === 'header' ? (Dimensions.get('screen').width * 9) / 16 : undefined,
+          width: imageType === 'header' ? Dimensions.get('screen').width : undefined,
           mediaType: 'photo',
-          cropperCircleOverlay: imageType == 'photo',
+          cropperCircleOverlay: imageType === 'photo',
           path: uri,
           forceJpg: true,
           maxFiles: 1,
@@ -397,7 +403,7 @@ function EditProfile({ navigation }: Props) {
           type: image?.mime,
         };
 
-        if (imageType == 'photo') {
+        if (imageType === 'photo') {
           setImageToUpload(image?.path);
           setImageObject({
             ...MyObject,
@@ -414,7 +420,7 @@ function EditProfile({ navigation }: Props) {
         }
       }, 500);
     } catch (e) {
-      console.log(e);
+      devLog(e);
     }
   };
   const go = () => {
@@ -423,13 +429,13 @@ function EditProfile({ navigation }: Props) {
 
   useEffect(() => {
     if (user) {
-      if (user?.accountType == 'individual') {
+      if (user?.accountType === 'individual') {
         getWhatIDo();
       } else {
         getOrganizationTypes();
       }
     }
-  }, [user]);
+  }, [getOrganizationTypes, getWhatIDo, user]);
 
   useEffect(() => {
     if (user && interest) {
@@ -437,14 +443,7 @@ function EditProfile({ navigation }: Props) {
     }
   }, [user, interest]);
 
-  useEffect(() => {
-    if (token) {
-      getChurchTypes();
-      getInterest();
-    }
-  }, [token]);
-
-  const getInterest = async () => {
+  const getInterest = useCallback(async () => {
     try {
       const res = await ApiCall({
         route: 'tags/interest',
@@ -452,37 +451,44 @@ function EditProfile({ navigation }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setInterest(res?.response);
         setSearchInterest(res?.response);
       } else {
-        console.log('error', res?.response);
+        devLog('error', res?.response);
       }
     } catch (e: any) {
-      console.log('saga error -- ', e.toString());
+      devLog('saga error -- ', e.toString());
     }
-  };
+  }, [devLog, token]);
 
-  const selectedWhatIDo = whatIDoList.filter((type) => type._id == whatIDo);
+  useEffect(() => {
+    if (token) {
+      getChurchTypes();
+      getInterest();
+    }
+  }, [getChurchTypes, getInterest, token]);
+
+  const selectedWhatIDo = whatIDoList.filter((type) => type._id === whatIDo);
   const selectedWhatIDoName = selectedWhatIDo.length > 0 ? selectedWhatIDo[0].name : '';
 
-  const selectedChurchType = churchTypes.filter((type) => type.churchType == churchType);
+  const selectedChurchType = churchTypes.filter((type) => type.churchType === churchType);
   const selectedChurchTypeName =
     selectedChurchType.length > 0 ? selectedChurchType[0].churchType : '';
 
   const selectedChurchSubType =
     selectedChurchType.length > 0
       ? selectedChurchType[0].children.filter((item) => {
-          return item.churchType == churchSubType;
+          return item.churchType === churchSubType;
         })
       : [];
 
-  const selectedChurchSubTypeName =
-    churchSubType == 'none'
-      ? 'None'
-      : selectedChurchSubType.length > 0
-        ? selectedChurchSubType[0].churchType
-        : '';
+  let selectedChurchSubTypeName = '';
+  if (churchSubType === 'none') {
+    selectedChurchSubTypeName = 'None';
+  } else if (selectedChurchSubType.length > 0) {
+    selectedChurchSubTypeName = selectedChurchSubType[0].churchType;
+  }
 
   const websiteRef = useRef<TextInput>(null);
   const urlRegex = /^[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$/i;
@@ -687,9 +693,9 @@ function EditProfile({ navigation }: Props) {
                   androidVariant="nativeAndroid"
                   open={open}
                   date={date ? parse(date, 'MM/dd/yyyy', new Date()) : new Date()}
-                  onConfirm={(date) => {
+                  onConfirm={(selectedDate) => {
                     setOpen(false);
-                    setDate(format(date, 'MM/dd/yyyy'));
+                    setDate(format(selectedDate, 'MM/dd/yyyy'));
                   }}
                   onCancel={() => {
                     setOpen(false);
@@ -718,16 +724,22 @@ function EditProfile({ navigation }: Props) {
                 <StyledSelect
                   items={organizationTypes.map((item) => {
                     return {
-                      text: item.name,
+                      text: item.organizationType ?? item.name ?? '',
                       value: item._id,
                     };
                   })}
                   label="Type"
                   selectedItem={organizationType?._id}
-                  btnText={!organizationType ? 'Select' : organizationType.name}
+                  btnText={
+                    !organizationType
+                      ? 'Select'
+                      : (organizationType.organizationType ?? organizationType.name ?? 'Select')
+                  }
                   modalTitle="Select one"
                   onChange={(_id) => {
-                    const newOrganizationType = organizationTypes.filter((item) => item._id == _id);
+                    const newOrganizationType = organizationTypes.filter(
+                      (item) => item._id === _id
+                    );
 
                     if (newOrganizationType && newOrganizationType.length > 0) {
                       setOrganizationType(newOrganizationType[0]);
@@ -736,7 +748,7 @@ function EditProfile({ navigation }: Props) {
                   wrapperStyle={{ marginTop: spacing.x16 }}
                 />
               )}
-              {user?.isInfluencer == true || user?.accountType == 'organization' ? (
+              {user?.isInfluencer === true || user?.accountType === 'organization' ? (
                 <StyledTextInput
                   multiline
                   numberOfLines={3}
@@ -870,7 +882,7 @@ function EditProfile({ navigation }: Props) {
               ) : null}
             </View>
 
-            {user?.accountType == 'individual' ? (
+            {user?.accountType === 'individual' ? (
               <View
                 style={[
                   styles.inputGroup,
@@ -889,7 +901,7 @@ function EditProfile({ navigation }: Props) {
                   })}
                   label="Denomination"
                   selectedItem={churchType}
-                  btnText={selectedChurchTypeName == '' ? 'Select' : selectedChurchTypeName}
+                  btnText={selectedChurchTypeName === '' ? 'Select' : selectedChurchTypeName}
                   modalTitle="Select your Denomination"
                   onChange={(item) => {
                     setChurchType(item);
@@ -914,7 +926,9 @@ function EditProfile({ navigation }: Props) {
                       }),
                     ]}
                     label="Sub Denomination or Association"
-                    btnText={selectedChurchSubTypeName == '' ? 'Select' : selectedChurchSubTypeName}
+                    btnText={
+                      selectedChurchSubTypeName === '' ? 'Select' : selectedChurchSubTypeName
+                    }
                     onChange={(item) => {
                       setSubChurchType(item);
                     }}
@@ -959,7 +973,7 @@ function EditProfile({ navigation }: Props) {
                     };
                   })}
                   label="Church attendence"
-                  btnText={oftenChurch == '' ? 'Select' : oftenChurch}
+                  btnText={oftenChurch === '' ? 'Select' : oftenChurch}
                   onChange={(item) => {
                     setOftenChurch(item);
                   }}
@@ -968,7 +982,7 @@ function EditProfile({ navigation }: Props) {
               </View>
             ) : null}
 
-            {user?.accountType == 'organization' ? (
+            {user?.accountType === 'organization' ? (
               <View
                 style={[
                   styles.inputGroup,
@@ -1060,16 +1074,14 @@ function EditProfile({ navigation }: Props) {
                         No Search Results
                       </StyledText>
                     ) : null}
-                    {searchInterest.map((item, index) => {
+                    {searchInterest.map((item) => {
                       return (
                         <TouchableOpacity
-                          key={index}
+                          key={item?._id ?? item?.name}
                           onPress={() =>
                             selectedInterest.includes(item?._id)
                               ? setSelectedInterest(
-                                  selectedInterest.filter(function (item2) {
-                                    return item2 !== item?._id;
-                                  })
+                                  selectedInterest.filter((selectedId) => selectedId !== item?._id)
                                 )
                               : setSelectedInterest([...selectedInterest, item?._id])
                           }
@@ -1120,7 +1132,7 @@ function EditProfile({ navigation }: Props) {
           >
             <Button
               text="SAVE"
-              disabled={website != '' && isValidWebsite === false}
+              disabled={website !== '' && isValidWebsite === false}
               onPress={async () => {
                 let validWebsite = null;
 
@@ -1133,19 +1145,19 @@ function EditProfile({ navigation }: Props) {
                 if (!website || (website && validWebsite === true)) {
                   const data: EditProfileDTO = {
                     churchType,
-                    churchSubType: churchSubType == 'none' ? '' : churchSubType,
+                    churchSubType: churchSubType === 'none' ? '' : churchSubType,
                     isChurchTypePublic: isPublicChurchTypeEnabled,
                     isLocationPublic: isPublicLocationEnabled,
                   };
 
-                  if (fullname && user?.accountType == 'individual') data.name = fullname;
-                  if (fullname && user?.accountType == 'organization') data.companyName = fullname;
+                  if (fullname && user?.accountType === 'individual') data.name = fullname;
+                  if (fullname && user?.accountType === 'organization') data.companyName = fullname;
 
-                  if (organizationContactEmail && user?.accountType == 'organization')
+                  if (organizationContactEmail && user?.accountType === 'organization')
                     data.contactEmail = organizationContactEmail;
-                  if (organizationContactName && user?.accountType == 'organization')
+                  if (organizationContactName && user?.accountType === 'organization')
                     data.contactName = organizationContactName;
-                  if (organizationContactPhone && user?.accountType == 'organization')
+                  if (organizationContactPhone && user?.accountType === 'organization')
                     data.contactPhoneNumber = organizationContactPhone;
 
                   if (gender) data.gender = gender;
@@ -1171,7 +1183,7 @@ function EditProfile({ navigation }: Props) {
 
                   if (selectedInterest.length > 0) await addInterests();
 
-                  if (user?.accountType == AccountType.individual) {
+                  if (user?.accountType === AccountType.individual) {
                     dispatch(
                       profileUpdate({
                         data: serialize(data),

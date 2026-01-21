@@ -589,7 +589,8 @@ function Explore({ navigation }: Props) {
                           {item.profile.whatIDo
                             ? item.profile.whatIDo?.name
                             : item.profile.typeOfOrganization
-                              ? item.profile.typeOfOrganization?.name
+                              ? (item.profile.typeOfOrganization?.organizationType ??
+                                item.profile.typeOfOrganization?.name)
                               : ''}
                         </StyledText>
                       ) : null}
@@ -866,7 +867,8 @@ function Explore({ navigation }: Props) {
                               {item.profile.whatIDo
                                 ? item.profile.whatIDo?.name
                                 : item.profile.typeOfOrganization
-                                  ? item.profile.typeOfOrganization?.name
+                                  ? (item.profile.typeOfOrganization?.organizationType ??
+                                    item.profile.typeOfOrganization?.name)
                                   : ''}
                             </StyledText>
                           ) : null}

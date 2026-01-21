@@ -12,6 +12,11 @@ export type Interest = {
   deleteFlag: boolean;
   _id: string;
 };
+export type OrganizationType = {
+  _id: string;
+  organizationType: string;
+  name?: string;
+};
 export type Tag = {
   _id: string;
   deleteFlag: boolean;
@@ -58,7 +63,7 @@ type Profile = {
   contactEmail?: string;
   contactPhoneNumber?: string;
   whatIDo?: Tag;
-  typeOfOrganization?: Tag;
+  typeOfOrganization?: OrganizationType;
   isLocationPublic?: boolean;
   isChurchTypePublic?: boolean;
 };
@@ -86,6 +91,8 @@ export type User = {
   createdAt: string;
   deactivated: { isDeactivated: boolean };
   email: string;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
   interests: Interest[];
   isInfluencer: boolean;
   isProfileCompleted: boolean;
@@ -116,7 +123,7 @@ export type User = {
   savedPost?: SavedPost[];
   savedPostData?: SocialPost[];
   whatIDo?: Tag;
-  typeOfOrganization?: Tag;
+  typeOfOrganization?: OrganizationType;
 };
 
 type InfluencerProfile = {

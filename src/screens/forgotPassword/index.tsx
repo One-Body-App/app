@@ -19,7 +19,7 @@ import { button } from '@/src/styles/buttons';
 
 type Props = StackScreenProps<MainStackParamList, 'ForgotPassword'>;
 
-function ForgotPassword({ navigation }: Props) {
+function ForgotPassword({ route }: Props) {
   const [email, setEmail] = React.useState<string>('');
   const [emailError, setEmailError] = React.useState<boolean>();
   const [error, seterror] = React.useState<string>('');
@@ -36,6 +36,15 @@ function ForgotPassword({ navigation }: Props) {
     return false;
   };
   const dispatch = useDispatch();
+
+  React.useEffect(() => {
+    const prefill = route?.params?.email;
+    if (prefill && !email) {
+      setEmail(prefill);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route?.params?.email]);
+
   const forget = async () => {
     if (!emailvalidate(email) && email != null) {
       setEmailError(false);
@@ -47,7 +56,7 @@ function ForgotPassword({ navigation }: Props) {
           params: { email },
           verb: 'patch',
         });
-        if (res?.status == 200) {
+        if (res?.status === 200) {
           setEmail('');
           dispatch(setLoader(false));
           setShowSuccess(true);

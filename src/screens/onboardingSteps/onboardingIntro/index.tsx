@@ -18,7 +18,7 @@ import { useFocusEffect, useTheme, CommonActions } from '@react-navigation/nativ
 import { BlurView } from '@react-native-community/blur';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { LoginManager } from 'react-native-fbsdk-next';
-import { getAuth, signOut } from '@react-native-firebase/auth';
+import { clearAuthTokens } from '@/services/authTokens';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { OnboardingStackParamList } from '@/src/navigator/types';
@@ -111,7 +111,7 @@ function OnboardingIntro({ navigation }: Props) {
     HapticService.trigger('impactMedium');
     try {
       LoginManager.logOut();
-      await signOut(getAuth());
+      await clearAuthTokens();
     } catch {
       // Ignore logout failures to avoid blocking navigation.
     }
@@ -290,7 +290,10 @@ function OnboardingIntro({ navigation }: Props) {
           <Ionicons
             name="chevron-back"
             size={24}
-            color={isIos ? (dark ? '#FFF' : Colors.primary.brand) : headerColor}
+            color={(() => {
+              if (!isIos) return headerColor;
+              return dark ? '#FFF' : Colors.primary.brand;
+            })()}
           />
         </TouchableOpacity>
       </SafeAreaView>

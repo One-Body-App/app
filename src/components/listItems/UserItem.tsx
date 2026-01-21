@@ -158,9 +158,13 @@ function UserItem({ item }: { item: User }) {
             <StyledText numberOfLines={2} style={[{ color: colors.text }]}>
               {item.name}
             </StyledText>
-            {item?.profile?.whatIDo?.name || item.profile?.typeOfOrganization?.name ? (
+            {item?.profile?.whatIDo?.name ||
+            item.profile?.typeOfOrganization?.organizationType ||
+            item.profile?.typeOfOrganization?.name ? (
               <StyledText numberOfLines={1} style={[{ color: Colors.neutral[500] }]}>
-                {item?.profile.whatIDo?.name ?? item.profile.typeOfOrganization?.name}
+                {item?.profile.whatIDo?.name ??
+                  item.profile.typeOfOrganization?.organizationType ??
+                  item.profile.typeOfOrganization?.name}
               </StyledText>
             ) : null}
           </View>

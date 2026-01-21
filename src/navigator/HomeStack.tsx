@@ -101,12 +101,12 @@ function HomeStack() {
 
           headerBackTitleVisible: false,
           title: 'Watch',
-          headerTitle: (props) => (
+          headerTitle: ({ children, tintColor }) => (
             <Text
-              {...props}
+              numberOfLines={1}
               style={{
                 fontWeight: 'bold',
-                color: 'white',
+                color: tintColor ?? 'white',
                 fontSize: fontSize.x4.fontSize,
                 textShadowColor: 'rgba(0,0,0,0.3)',
                 textShadowRadius: 1,
@@ -115,7 +115,9 @@ function HomeStack() {
                   height: 1,
                 },
               }}
-            />
+            >
+              {children}
+            </Text>
           ),
 
           // headerStyle: {

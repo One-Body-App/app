@@ -1,5 +1,5 @@
 import { useTheme } from '@react-navigation/native';
-import { ReactElement, useState } from 'react';
+import { Children, ReactElement, ReactNode, cloneElement, isValidElement, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -7,7 +7,9 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  useWindowDimensions,
   View,
+  TextStyle,
   ViewStyle,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -33,6 +35,8 @@ type Props = {
   loading?: boolean;
   dontUseScrollView?: boolean;
   showCustomHeaderOnAndroid?: boolean;
+  buttonStyle?: ViewStyle;
+  buttonTextStyle?: TextStyle;
 };
 
 const indicatorStyle: ViewStyle = {
@@ -42,6 +46,31 @@ const indicatorStyle: ViewStyle = {
   marginHorizontal: 5,
   borderRadius: borderRadius.base,
   opacity: 0.2,
+};
+
+const applyReasonTextColor = (node: ReactNode, color: string): ReactNode => {
+  if (node == null || typeof node === 'string' || typeof node === 'number') {
+    return node;
+  }
+
+  if (!isValidElement(node)) {
+    return node;
+  }
+
+  const element = node as ReactElement<{ children?: ReactNode; style?: unknown }>;
+  const children = element.props?.children;
+  const nextChildren = children
+    ? Children.map(children, (child) => applyReasonTextColor(child, color))
+    : children;
+
+  if (element.type === StyledText) {
+    const style = element.props?.style;
+    const mergedStyle = Array.isArray(style) ? [...style, { color }] : [style, { color }];
+
+    return cloneElement(element, { style: mergedStyle, children: nextChildren });
+  }
+
+  return cloneElement(element, { children: nextChildren });
 };
 
 function OnboardingStepsLayout({
@@ -55,11 +84,19 @@ function OnboardingStepsLayout({
   dontUseScrollView,
   loading,
   showCustomHeaderOnAndroid = false,
+  buttonStyle,
+  buttonTextStyle,
 }: Props) {
   const { colors, dark } = useTheme();
+  const { height: windowHeight } = useWindowDimensions();
   const [showModal, setShowModal] = useState<boolean>(false);
+  const modalHeight = Math.round(windowHeight * 0.3);
+  const reasonContent = reasonText && dark ? applyReasonTextColor(reasonText, '#FFF') : reasonText;
   return (
     <>
+      {showCustomHeaderOnAndroid && Platform.OS === 'android' ? (
+        <CustomHeader showBackButton />
+      ) : null}
       <SafeAreaView
         style={{
           flex: 1,
@@ -67,9 +104,6 @@ function OnboardingStepsLayout({
           marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
         }}
       >
-        {showCustomHeaderOnAndroid && Platform.OS === 'android' ? (
-          <CustomHeader showBackButton />
-        ) : null}
         <View style={{ marginTop: spacing.x10 }}>
           {onboardingType === AccountType.individual ? (
             <View style={{ flexDirection: 'row' }}>
@@ -130,6 +164,7 @@ function OnboardingStepsLayout({
               {
                 flex: 1,
               },
+              buttonStyle,
             ]}
             disabledBtnStyle={[
               button.primary,
@@ -137,12 +172,13 @@ function OnboardingStepsLayout({
                 flex: 1,
                 opacity: 0.4,
               },
+              buttonStyle,
             ]}
             onPress={() => {
               onPress();
             }}
-            btnTextStyle={{ color: '#FFF' }}
-            disabledBtnTextStyle={{ color: '#FFF' }}
+            btnTextStyle={[{ color: '#FFF' }, buttonTextStyle]}
+            disabledBtnTextStyle={[{ color: '#FFF' }, buttonTextStyle]}
           />
         </View>
       </SafeAreaView>
@@ -152,14 +188,16 @@ function OnboardingStepsLayout({
         onclose={() => setShowModal(false)}
         style={{
           margin: 0,
-          justifyContent: 'flex-end',
+          justifyContent: 'flex-start',
           flex: 0,
-          minHeight: 0,
-          maxHeight: '30%',
+          height: modalHeight,
+          minHeight: modalHeight,
+          maxHeight: modalHeight,
         }}
       >
         <View
           style={{
+            flex: 1,
             backgroundColor: colors.background,
 
             padding: spacing.x16,
@@ -167,37 +205,46 @@ function OnboardingStepsLayout({
             borderTopLeftRadius: borderRadius.base,
           }}
         >
-          <View style={{ flexShrink: 1 }}>
-            <View
-              style={{
-                alignItems: 'flex-end',
-                marginBottom: spacing.x10,
-              }}
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: spacing.x16 }}
+              contentInsetAdjustmentBehavior="never"
             >
-              <TouchableOpacity
-                onPress={() => {
-                  // setModalVisible(false);
-                  setShowModal(false);
-                  // setModalVisible(false);
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
                 }}
               >
-                <MaterialCommunityIcons
-                  name="window-close"
-                  size={24}
-                  color={dark ? Colors.primarySapphire[400] : Colors.primary.brand}
-                />
-              </TouchableOpacity>
-            </View>
-            <ScrollView contentContainerStyle={{ paddingBottom: spacing.x16 }}>
-              <StyledText
-                style={[
-                  header.h1,
-                  { color: dark ? Colors.primarySapphire[400] : Colors.primary.brand },
-                ]}
-              >
-                Why are we asking this?
-              </StyledText>
-              {reasonText}
+                <StyledText
+                  style={[
+                    header.h1,
+                    {
+                      color: dark ? Colors.primarySapphire[400] : Colors.primary.brand,
+                      flex: 1,
+                      paddingRight: spacing.x16,
+                    },
+                  ]}
+                >
+                  Why are we asking this?
+                </StyledText>
+                <TouchableOpacity
+                  onPress={() => {
+                    // setModalVisible(false);
+                    setShowModal(false);
+                    // setModalVisible(false);
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="window-close"
+                    size={24}
+                    color={dark ? Colors.primarySapphire[400] : Colors.primary.brand}
+                  />
+                </TouchableOpacity>
+              </View>
+              {reasonContent}
             </ScrollView>
           </View>
         </View>

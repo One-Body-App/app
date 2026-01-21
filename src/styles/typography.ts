@@ -30,14 +30,21 @@ export const fontSize: Record<FontSize, TextStyle> = {
 };
 
 type FontWeight = 'light' | 'regular' | 'medium' | 'semibold' | 'bold';
+const safeSystemWeights = systemWeights ?? {
+  light: { fontWeight: '300' },
+  regular: { fontWeight: '400' },
+  semibold: { fontWeight: '600' },
+  bold: { fontWeight: '700' },
+};
+
 export const fontWeight: Record<FontWeight, TextStyle> = {
-  light: systemWeights.light,
-  regular: systemWeights.regular,
+  light: safeSystemWeights.light,
+  regular: safeSystemWeights.regular,
   medium: {
     fontWeight: '500',
   },
-  semibold: systemWeights.semibold,
-  bold: systemWeights.bold,
+  semibold: safeSystemWeights.semibold,
+  bold: safeSystemWeights.bold,
 };
 
 // type LetterSpacing = 'x30' | 'x40';

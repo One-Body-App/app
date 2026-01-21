@@ -11,8 +11,8 @@ import { Colors } from '@/src/styles';
 
 type Props = StackScreenProps<MainStackParamList, 'Login'>;
 
-function Login({ route, navigation }: Props) {
-  const loginProviders = ['password', 'google.com', 'facebook.com', 'twitter.com', 'apple'];
+function Login({ route }: Props) {
+  const loginProviders = ['password'];
   const { dark, colors } = useTheme();
 
   return (
@@ -29,7 +29,10 @@ function Login({ route, navigation }: Props) {
         <LoginComponent
           showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
           enabledLoginProviders={loginProviders}
-          {...route.params}
+          state={route?.params?.state}
+          code={route?.params?.code}
+          oauth_token={route?.params?.oauth_token}
+          oauth_verifier={route?.params?.oauth_verifier}
         />
       </ScrollView>
     </UserStepsLayout>

@@ -1,5 +1,5 @@
 // --------------- LIBRARIES ---------------
-import { put, takeEvery, takeLatest } from 'redux-saga/effects';
+import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
 import { Alert } from 'react-native';
 import { setAccountType, setLoader } from '../actions/GeneralActions';
 
@@ -26,6 +26,7 @@ import {
   sendVerificationEmail,
 } from '../actions/AuthActions';
 import { AccountType, ResponseGenerator } from '@/utils/types';
+import { saveAuthTokens } from '@/services/authTokens';
 
 function* updateProfileRequest(params: {
   data: {
@@ -230,18 +231,23 @@ export function* RemoveSocialAccountSaga() {
   yield takeLatest(ACTIONS.REMOVE_SOCIAL_ACCOUNT, removeSocialAccountRequest);
 }
 
-function* signUpSaga(params: { data: any; token: string; type: string }) {
+function* signUpSaga(params: { data: any; type: string }) {
   try {
     const res: ResponseGenerator = yield ApiCall({
       params: params.data,
-      route: 'user/register',
+      route: 'auth/register',
       verb: 'post',
-      token: params.token,
     });
 
     if (res?.status === 200 && res?.response) {
+      const tokens = (res?.response as any)?.tokens;
+      const accessToken = tokens?.accessToken;
+      if (tokens?.accessToken && tokens?.refreshToken) {
+        yield call(saveAuthTokens, tokens);
+        yield put(setLoginData({ token: accessToken }));
+      }
       yield put(setAccountType(''));
-      yield put(signUp.Success(res?.response));
+      yield put(signUp.Success((res?.response as any)?.user ?? res?.response));
     } else {
       const fallbackMessage =
         (res?.response as any)?.message ??
@@ -260,17 +266,17 @@ export function* SignUpSaga() {
 
 function* sendVerificationEmailSaga(params: {
   data: any;
-  token: string;
+  token: string | boolean;
   type: string;
   allowFalseSuccess?: boolean;
 }) {
   console.log('SEND VERIFICATION EMAIL SAGA', params);
   try {
     const res: ResponseGenerator = yield ApiCall({
-      params: params.data,
+      params: params.data ?? {},
       route: 'auth/sendVerificationEmail',
       verb: 'post',
-      token: params.token,
+      token: params.token ?? true,
     });
 
     console.log('SEND VERIFICATION EMAIL SAGA', res);

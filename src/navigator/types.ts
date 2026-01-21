@@ -220,7 +220,18 @@ export type PrayerWallStackParamsList = {
 
 export type OnboardingStackParamList = {
   OnboardingIntro: undefined;
-  OnboardingDateOfBirth: undefined;
+  OnboardingDateOfBirth:
+    | {
+        selectedChurchType?: string;
+        selectedChurchSubType?: string;
+        selectedChurchAttendence?: string;
+      }
+    | undefined;
+  OnboardingChurchType: undefined;
+  OnboardingChurchAttend: {
+    selectedChurchType?: string;
+    selectedChurchSubType?: string;
+  };
   OnboardingLocation: {
     dateOfBirth: string;
   };
@@ -300,7 +311,7 @@ export type MainStackParamList = {
     accountType?: AccountType;
   };
 
-  ForgotPassword: undefined;
+  ForgotPassword: { email?: string } | undefined;
 
   ConfirmLogin: ConfirmLoginScreen;
   VideoPost: undefined;
@@ -312,6 +323,7 @@ type ConfirmLoginScreen = {
   onlyPassword?: boolean;
   mode?: string;
   toScreenRouteParams?: Record<string, string>;
+  showConfirmationEmailMessage?: boolean;
   oobCode?: string;
   updateParent?: Function;
 

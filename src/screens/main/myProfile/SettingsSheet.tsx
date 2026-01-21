@@ -8,7 +8,6 @@ import Feather from '@react-native-vector-icons/feather';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import AntDesignIcon from '@react-native-vector-icons/ant-design';
 import { useDispatch } from 'react-redux';
-import { getAuth, signOut } from '@react-native-firebase/auth';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -21,6 +20,7 @@ import { Colors, Typography } from '@/src/styles';
 import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
+import { clearAuthTokens } from '@/services/authTokens';
 import { logout } from '@/src/redux/actions/AuthActions';
 import CustomModal from '@/src/components/CustomModal';
 
@@ -250,8 +250,8 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
             text="Log out"
             onPress={async () => {
               LoginManager.logOut();
+              await clearAuthTokens();
               dispatch(logout());
-              await signOut(getAuth());
             }}
             btnStyle={{ marginBottom: spacing.x32 }}
             leftIcon={

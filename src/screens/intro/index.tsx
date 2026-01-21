@@ -233,7 +233,10 @@ function IntroScreen({ navigation }: Props) {
     <>
       <StatusBar
         backgroundColor={dark ? colors.background : Colors.main.white}
-        barStyle={Platform.OS === 'ios' ? statusBarStyle : dark ? 'light-content' : 'dark-content'}
+        barStyle={(() => {
+          if (Platform.OS === 'ios') return statusBarStyle;
+          return dark ? 'light-content' : 'dark-content';
+        })()}
       />
 
       <UserStepsLayout backgroundColor={colors.background}>

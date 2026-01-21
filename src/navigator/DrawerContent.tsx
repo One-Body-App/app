@@ -4,7 +4,6 @@ import {
   DrawerItemList,
 } from '@react-navigation/drawer';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { getAuth, signOut } from '@react-native-firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +20,7 @@ import { profileImageList } from '../styles/items';
 import { Colors, Typography } from '../styles';
 import { borderRadius, borderWidth } from '../styles/outlines';
 import { logout } from '../redux/actions/AuthActions';
+import { clearAuthTokens } from '../services/authTokens';
 
 export default function DrawerContent({
   descriptors,
@@ -172,8 +172,8 @@ export default function DrawerContent({
                     text: 'Yes',
                     onPress: async () => {
                       LoginManager.logOut();
+                      await clearAuthTokens();
                       dispatch(logout());
-                      await signOut(getAuth());
                     },
                   },
                 ],

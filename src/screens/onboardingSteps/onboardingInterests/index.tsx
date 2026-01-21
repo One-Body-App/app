@@ -108,6 +108,7 @@ function OnboardingInterests({ navigation, route }: Props) {
       onboardingType={route.params.profileType}
       activeStep={route.params.profileType === AccountType.individual ? 3 : 4}
       disabled={selectedInterest.length < 3}
+      showCustomHeaderOnAndroid
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>
@@ -172,16 +173,14 @@ function OnboardingInterests({ navigation, route }: Props) {
                   No Search Results
                 </StyledText>
               ) : null}
-              {searchInterest.map((item, index) => {
+              {searchInterest.map((item) => {
                 return (
                   <TouchableOpacity
-                    key={index}
+                    key={item?._id}
                     onPress={() =>
                       selectedInterest.includes(item?._id)
                         ? setSelectedInterest(
-                            selectedInterest.filter(function (item2) {
-                              return item2 !== item?._id;
-                            })
+                            selectedInterest.filter((item2) => item2 !== item?._id)
                           )
                         : setSelectedInterest([...selectedInterest, item?._id])
                     }

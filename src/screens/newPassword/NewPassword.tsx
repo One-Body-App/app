@@ -4,7 +4,11 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useDispatch } from 'react-redux';
 import Toast from 'react-native-simple-toast';
 
-import { checkActionCode, confirmPasswordReset, getAuth } from '@react-native-firebase/auth';
+import {
+  confirmPasswordReset,
+  getAuth,
+  verifyPasswordResetCode,
+} from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   CompositeScreenProps,
@@ -31,7 +35,7 @@ import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 
-type NewPasswordScreenRouteProp = RouteProp<MainStackParamList, 'NewPassword'>;
+type NewPasswordScreenRouteProp = RouteProp<MainStackParamList, 'ConfirmLogin'>;
 type ProfileScreenNavigationProp = NativeStackNavigationProp<MainStackParamList, 'NewPassword'>;
 
 type Props = MainStackParamList['ConfirmLogin'];
@@ -50,6 +54,7 @@ function NewPassword({ oobCode, ...props }: Props) {
   });
 
   const [error, seterror] = React.useState<string>();
+  const route = useRoute<NewPasswordScreenRouteProp>();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
 
   const [hidePassN, setHidePassN] = useState(true);
@@ -58,6 +63,38 @@ function NewPassword({ oobCode, ...props }: Props) {
   const { colors } = useTheme();
   const toast = useToast();
   const firebaseAuth = getAuth();
+  const resetCode = oobCode ?? route.params?.oobCode;
+  const resetApiKey = route.params?.apiKey;
+
+  const getPasswordResetErrorMessage = (code: string) => {
+    switch (code) {
+      case 'auth/expired-action-code':
+        return 'This reset link has expired. Please request a new one.';
+      case 'auth/invalid-action-code':
+        return 'This reset link is invalid or expired. Please request a new one.';
+      case 'auth/user-not-found':
+        return 'No account was found for this reset link.';
+      case 'auth/user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      default:
+        return 'Unable to reset password. Please try again.';
+    }
+  };
+
+  const getPasswordResetApiErrorMessage = (code: string) => {
+    switch (code) {
+      case 'EXPIRED_OOB_CODE':
+        return 'This reset link has expired. Please request a new one.';
+      case 'INVALID_OOB_CODE':
+        return 'This reset link is invalid or expired. Please request a new one.';
+      case 'USER_DISABLED':
+        return 'This account has been disabled. Please contact support.';
+      case 'EMAIL_NOT_FOUND':
+        return 'No account was found for this reset link.';
+      default:
+        return 'Unable to reset password. Please try again.';
+    }
+  };
 
   const PasswordUpdate = async () => {
     const { passwordC, passwordN } = state;
@@ -65,38 +102,83 @@ function NewPassword({ oobCode, ...props }: Props) {
     const passwordErrorC = await validator('passwordC', passwordC);
     const passwordErrorN = await validator('passwordN', passwordN);
 
-    if (!passwordErrorC && !passwordErrorN && oobCode) {
-      dispatch(setLoader(true));
-
-      if (passwordC == passwordN) {
-        try {
-          const result = await checkActionCode(firebaseAuth, oobCode);
-
-          if (result.operation == 'PASSWORD_RESET') {
-            await confirmPasswordReset(firebaseAuth, oobCode, passwordN);
-
-            const res = await ApiCall({
-              route: 'auth/sendPasswordChangeConfirmation',
-              params: { email: result.data.email },
-              verb: 'post',
-            });
-
-            navigation.navigate('Login');
-            toast.show('Password Reset Sucessfuly', {
-              type: 'success',
-              duration: 3500,
-            });
-            dispatch(setLoader(false));
-          }
-        } catch (e: any) {
-          seterror('Expired code, please try again.');
-          console.log('saga error -- ', e.toString());
-        }
-      } else {
-        seterror('Both passwords MUST match!');
-      }
-    } else {
+    if (passwordErrorC || passwordErrorN) {
       setState({ ...state, passwordErrorN, passwordErrorC });
+      return;
+    }
+
+    if (!resetCode) {
+      seterror('This reset link is invalid or expired. Please request a new one.');
+      return;
+    }
+
+    if (passwordC !== passwordN) {
+      seterror('Both passwords MUST match!');
+      return;
+    }
+
+    dispatch(setLoader(true));
+    try {
+      const email = await verifyPasswordResetCode(firebaseAuth, resetCode);
+      await confirmPasswordReset(firebaseAuth, resetCode, passwordN);
+
+      await ApiCall({
+        route: 'auth/sendPasswordChangeConfirmation',
+        params: { email },
+        verb: 'post',
+      });
+
+      navigation.navigate('Login');
+      toast.show('Password Reset Sucessfuly', {
+        type: 'success',
+        duration: 3500,
+      });
+    } catch (e: any) {
+      const code = e?.code ?? '';
+      if (code === 'auth/invalid-action-code' && resetApiKey) {
+        try {
+          const response = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=${resetApiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                oobCode: resetCode,
+                newPassword: passwordN,
+              }),
+            }
+          );
+          const data = await response.json();
+          if (!response.ok) {
+            const apiError = data?.error?.message ?? 'UNKNOWN';
+            throw new Error(apiError);
+          }
+
+          await ApiCall({
+            route: 'auth/sendPasswordChangeConfirmation',
+            params: { email: data?.email },
+            verb: 'post',
+          });
+
+          navigation.navigate('Login');
+          toast.show('Password Reset Sucessfuly', {
+            type: 'success',
+            duration: 3500,
+          });
+          return;
+        } catch (fallbackError: any) {
+          const apiMessage = fallbackError?.message ?? '';
+          const fallbackMessage = getPasswordResetApiErrorMessage(apiMessage);
+          seterror(fallbackMessage);
+          console.log('saga error -- ', fallbackError.toString());
+          return;
+        }
+      }
+      const message = getPasswordResetErrorMessage(code);
+      seterror(message);
+      console.log('saga error -- ', e.toString());
+    } finally {
+      dispatch(setLoader(false));
     }
   };
 
@@ -123,6 +205,16 @@ function NewPassword({ oobCode, ...props }: Props) {
         }}
       >
         <View style={{ flex: 1 }}>
+          {error ? (
+            <View
+              style={[
+                GeneralStyle.MessageView,
+                { backgroundColor: Colors.errorFeedback.background },
+              ]}
+            >
+              <StyledText style={{ color: Colors.errorFeedback.text, flex: 1 }}>{error}</StyledText>
+            </View>
+          ) : null}
           {/* {showSuccess ? (
             <View
               style={[
@@ -146,13 +238,13 @@ function NewPassword({ oobCode, ...props }: Props) {
             rightIcon={
               <View style={{ justifyContent: 'center' }}>
                 <MaterialCommunityIcons
-                  name={hidePassN ? 'eye-outline' : 'eye-off-outline'}
+                  name={hidePassC ? 'eye-outline' : 'eye-off-outline'}
                   size={20}
                   color={Colors.primarySapphire[500]}
                   style={{
                     alignSelf: 'center',
                   }}
-                  onPress={() => setHidePassN(!hidePassN)}
+                  onPress={() => setHidePassC(!hidePassC)}
                 />
               </View>
             }
@@ -161,8 +253,8 @@ function NewPassword({ oobCode, ...props }: Props) {
             placeholder="New Password"
             onFocus={() => setState({ ...state, passwordErrorN: '' })}
             onBlur={() =>
-              validateFields(state.passwordN, 'passwordN', (error) =>
-                setState({ ...state, passwordErrorN: error })
+              validateFields(state.passwordN, 'passwordN', (validationError) =>
+                setState({ ...state, passwordErrorN: validationError })
               )
             }
             onSubmitEditing={() => {
@@ -202,8 +294,8 @@ function NewPassword({ oobCode, ...props }: Props) {
             placeholder="Confirm Password"
             onFocus={() => setState({ ...state, passwordErrorC: '' })}
             onBlur={() =>
-              validateFields(state.passwordC, 'passwordC', (error) =>
-                setState({ ...state, passwordErrorC: error })
+              validateFields(state.passwordC, 'passwordC', (validationError) =>
+                setState({ ...state, passwordErrorC: validationError })
               )
             }
             onSubmitEditing={() => PasswordUpdate()}

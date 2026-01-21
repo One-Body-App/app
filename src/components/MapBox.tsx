@@ -36,13 +36,14 @@ type MapBoxProps = {
   location: MapSuggestion | null;
   setLongitude?: Dispatch<SetStateAction<number | undefined>>;
   setLatitude?: Dispatch<SetStateAction<number | undefined>>;
-  modalVisible: boolean;
-  setModalVisible: Dispatch<SetStateAction<boolean>>;
+  modalVisible?: boolean;
+  setModalVisible?: Dispatch<SetStateAction<boolean>>;
   setLocation: Dispatch<SetStateAction<MapSuggestion | null>>;
   types?: MapBoxTypes[];
   countries?: string[];
   hideSearchMyLocation?: boolean;
   modalTitle: ReactElement;
+  inline?: boolean;
 };
 
 export type MapSuggestion = {
@@ -72,6 +73,7 @@ function MapBox({
   setLatitude,
   modalTitle,
   hideSearchMyLocation,
+  inline = false,
 }: MapBoxProps) {
   const { colors } = useTheme();
 
@@ -79,10 +81,19 @@ function MapBox({
   const [loading, setLoading] = useState<boolean>(false);
   const [suggetions, setSuggetions] = useState<MapSuggestion[]>(location ? [location] : []);
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
+  const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
+
+  const focusSelectionStart = () => {
+    setSelection({ start: 0, end: 0 });
+    requestAnimationFrame(() => {
+      setSelection(undefined);
+    });
+  };
 
   const getSuggestion = async (val: string) => {
     setLoading(true);
     if (timer) clearTimeout(timer);
+    setSelection(undefined);
     setsearchLocation(val);
     if (val) {
       timer = setTimeout(() => {
@@ -93,7 +104,11 @@ function MapBox({
         )
           .then((response) => response.json())
           .then((data) => {
-            data?.features == undefined ? setshown(false) : setshown(true);
+            if (data?.features == undefined) {
+              setshown(false);
+            } else {
+              setshown(true);
+            }
             setSuggetions(data?.features);
             setLoading(false);
           });
@@ -104,8 +119,14 @@ function MapBox({
     }
   };
   const onclose = () => {
+    if (inline) {
+      setSuggetions([]);
+      setshown(false);
+      return;
+    }
+
     setsearchLocation('');
-    setModalVisible(false);
+    setModalVisible?.(false);
     setSuggetions([]);
     setshown(false);
     // setCheckIn(false);
@@ -146,6 +167,7 @@ function MapBox({
       .then((data) => {
         setLocation(data?.features[0]);
         setsearchLocation(data?.features[0]?.place_name);
+        focusSelectionStart();
         if (setLatitude) setLatitude(latitude);
         if (setLongitude) setLongitude(longitude);
         // dispatch(setLoader(false));
@@ -155,23 +177,106 @@ function MapBox({
       });
   };
 
-  return (
-    <CustomModal modalVisible={modalVisible} onclose={() => onclose()}>
-      <View
-        style={{
-          paddingVertical: 18,
-          borderTopRightRadius: borderRadius.large,
-          borderTopLeftRadius: borderRadius.large,
-          height: '60%',
-          backgroundColor: colors.background,
-        }}
-      >
-        <View style={{ flex: 2, maxHeight: 110, paddingHorizontal: 18 }}>
+  const searchInput = (
+    <StyledTextInput
+      wrapperStyle={{ flex: 0 }}
+      value={searchLocation}
+      selection={selection}
+      returnKeyType="search"
+      placeholder="Search"
+      onChangeText={(val) => getSuggestion(val)}
+      leftIcon={
+        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+          <SearchIcon
+            style={{ height: 20, width: 20, marginRight: 10 }}
+            stroke={Colors.neutral[200]}
+          />
+        </View>
+      }
+      rightIcon={
+        !hideSearchMyLocation ? (
+          <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+            {location != null && searchLocation ? null : (
+              // eslint-disable-next-line react/jsx-no-useless-fragment
+              <>
+                {loading ? (
+                  <ActivityIndicator animating size="small" color={colors.text} />
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setLoading(true);
+                      getlocationPermison();
+                    }}
+                  >
+                    <Gps size={20} color={Colors.primarySapphire.brand} />
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
+        ) : undefined
+      }
+    />
+  );
+
+  const suggestionsList = (
+    <FlatList
+      style={{ flex: 1, paddingVertical: 10 }}
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled
+      data={suggetions}
+      ListEmptyComponent={
+        // eslint-disable-next-line react/jsx-no-useless-fragment
+        <>
+          {searchLocation && !loading && location == null ? (
+            <StyledText style={[Typography.body.x2M, { padding: 18, textAlign: 'center' }]}>
+              No results found
+            </StyledText>
+          ) : null}
+        </>
+      }
+      renderItem={({ item }) => {
+        return (
+          <TouchableOpacity
+            onPress={() => {
+              if (setLongitude) setLongitude(item?.center[0]);
+              if (setLatitude) setLatitude(item?.center[1]);
+
+              setLocation(item);
+              setsearchLocation(item.place_name);
+              focusSelectionStart();
+
+              onclose();
+            }}
+          >
+            <View>
+              <StyledText style={{ color: colors.text, marginHorizontal: 18, marginVertical: 10 }}>
+                {item.place_name}
+              </StyledText>
+            </View>
+          </TouchableOpacity>
+        );
+      }}
+    />
+  );
+
+  const content = (
+    <View
+      style={{
+        paddingVertical: inline ? 0 : 18,
+        borderTopRightRadius: inline ? 0 : borderRadius.large,
+        borderTopLeftRadius: inline ? 0 : borderRadius.large,
+        height: inline ? undefined : '60%',
+        backgroundColor: colors.background,
+        flex: inline ? 1 : undefined,
+      }}
+    >
+      <View style={{ paddingHorizontal: inline ? 0 : 18 }}>
+        {!inline ? (
           <View
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
-              flex: 1,
               paddingBottom: 10,
             }}
           >
@@ -186,94 +291,20 @@ function MapBox({
               <MaterialCommunityIcons name="window-close" size={18} color={Colors.primary.brand} />
             </TouchableOpacity>
           </View>
-          <View style={{ flex: 3 }}>
-            <StyledTextInput
-              wrapperStyle={{ flex: 0 }}
-              value={searchLocation}
-              returnKeyType="search"
-              placeholder="Search"
-              onChangeText={(val) => getSuggestion(val)}
-              leftIcon={
-                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                  <SearchIcon
-                    style={{ height: 20, width: 20, marginRight: 10 }}
-                    stroke={Colors.neutral[200]}
-                  />
-                </View>
-                // <MaterialCommunityIcons
-                //   name="magnify"
-                //   size={20}
-                //   style={{ marginRight: 10 }}
-                //   color={Colors.neutral[200]}
-                // />
-              }
-              rightIcon={
-                !hideSearchMyLocation ? (
-                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    {location != null && searchLocation ? null : (
-                      // eslint-disable-next-line react/jsx-no-useless-fragment
-                      <>
-                        {loading ? (
-                          <ActivityIndicator animating size="small" color={colors.text} />
-                        ) : (
-                          <TouchableOpacity
-                            onPress={() => {
-                              setLoading(true);
-                              getlocationPermison();
-                            }}
-                          >
-                            <Gps size={20} color={Colors.primarySapphire.brand} />
-                          </TouchableOpacity>
-                        )}
-                      </>
-                    )}
-                  </View>
-                ) : undefined
-              }
-            />
-          </View>
-        </View>
-        <View style={{ flex: 5 }}>
-          <FlatList
-            style={{ flex: 1, paddingVertical: 10 }}
-            nestedScrollEnabled
-            data={suggetions}
-            ListEmptyComponent={
-              // eslint-disable-next-line react/jsx-no-useless-fragment
-              <>
-                {searchLocation && !loading ? (
-                  <StyledText style={[Typography.body.x2M, { padding: 18, textAlign: 'center' }]}>
-                    No results found
-                  </StyledText>
-                ) : null}
-              </>
-            }
-            renderItem={({ item }) => {
-              return (
-                <TouchableOpacity
-                  onPress={() => {
-                    if (setLongitude) setLongitude(item?.center[0]);
-                    if (setLatitude) setLatitude(item?.center[1]);
-
-                    setLocation(item);
-                    setsearchLocation(item.place_name);
-
-                    onclose();
-                  }}
-                >
-                  <View>
-                    <StyledText
-                      style={{ color: colors.text, marginHorizontal: 18, marginVertical: 10 }}
-                    >
-                      {item.place_name}
-                    </StyledText>
-                  </View>
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </View>
+        ) : null}
+        {searchInput}
       </View>
+      <View style={{ flex: 1 }}>{suggestionsList}</View>
+    </View>
+  );
+
+  if (inline) {
+    return content;
+  }
+
+  return (
+    <CustomModal modalVisible={modalVisible ?? false} onclose={() => onclose()}>
+      {content}
     </CustomModal>
   );
 }

@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { Platform, SafeAreaView, View, ViewStyle } from 'react-native';
+import { Platform, RefreshControlProps, SafeAreaView, View, ViewStyle } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -14,7 +14,7 @@ type Props = {
   backgroundColor?: string;
   bottomOffset?: number;
   hideBottomText?: boolean;
-  refreshControl?: React.ReactElement;
+  refreshControl?: ReactElement<RefreshControlProps>;
   showCustomHeaderOnAndroid?: boolean;
 };
 

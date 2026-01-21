@@ -15,15 +15,12 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { createUserWithEmailAndPassword, getAuth, getIdToken } from '@react-native-firebase/auth';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
-import Toast from 'react-native-simple-toast';
 
 // Styles & Constraints
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
@@ -33,10 +30,8 @@ import { button } from '@/src/styles/buttons';
 import {
   sendVerificationEmail as sendVerificationEmailAction,
   signUp,
-  loginSocialRequest,
 } from '@/src/redux/actions/AuthActions';
 import { setAccountType } from '@/src/redux/actions/GeneralActions';
-import { requestUserPermission } from '@/services/notification/notificationServices';
 import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -48,6 +43,7 @@ import Button from '@/components/Button';
 import StyledTextInput from '@/components/styled/TextInput';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { appColor } from '@/src/constants';
+import GeneralStyle from '@/src/constants/GeneralStyle';
 
 const brandWhite = '#f6f6f7';
 
@@ -120,6 +116,7 @@ const InputField = React.forwardRef(
 
     return (
       <View style={[styles.inputContainer, wrapperStyle]}>
+        {error ? <StyledText style={styles.errorText}>{error}</StyledText> : null}
         <StyledText style={[styles.inputLabel, isDark ? { color: brandWhite } : undefined]}>
           {label}
         </StyledText>
@@ -160,11 +157,6 @@ const InputField = React.forwardRef(
           selectionColor={selectionColor}
           rightIcon={rightIcon as any}
         />
-        {error ? (
-          <StyledText style={{ color: Colors.errorFeedback[200], fontSize: 12, marginTop: 4 }}>
-            {error}
-          </StyledText>
-        ) : null}
       </View>
     );
   }
@@ -177,7 +169,6 @@ function SignupForm({ navigation, route }: Props) {
   const { accountType } = route.params;
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const firebaseAuth = getAuth();
 
   const inputRefs = {
     username: useRef<TextInput>(null),
@@ -196,6 +187,8 @@ function SignupForm({ navigation, route }: Props) {
   };
 
   const [state, setState] = useState(initialFormState);
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
 
   const [hidePass, setHidePass] = useState(true);
   const [loading, setIsloading] = useState(false);
@@ -203,10 +196,6 @@ function SignupForm({ navigation, route }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const [signUpToken, setSignUpToken] = useState<string | null>(null);
-  const [newUserCredentials, setNewUserCredentials] =
-    useState<FirebaseAuthTypes.UserCredential | null>(null);
-  const [socialLoginError, setSocialLoginError] = useState<string>('');
   const hasSentVerificationEmailRef = useRef(false);
   const { dark } = useTheme();
   const colorScheme = useColorScheme();
@@ -219,51 +208,7 @@ function SignupForm({ navigation, route }: Props) {
     }
   }, [accountType, dispatch]);
 
-  // Handle social login credentials when they arrive
-  useEffect(() => {
-    const handleSocialSignup = async () => {
-      if (!newUserCredentials || !accountType) return;
-
-      try {
-        const token = await getIdToken(newUserCredentials.user);
-        const data = {
-          email: newUserCredentials.user.email,
-          name: newUserCredentials.user.displayName,
-          socialData: newUserCredentials.additionalUserInfo,
-          userId: newUserCredentials.user.uid,
-          username: newUserCredentials.user.email?.replace('@', ''),
-          accountType,
-          token,
-        };
-
-        const sendFcm = async (fcmToken: string) => {
-          try {
-            await requestUserPermission(fcmToken, true);
-          } catch (e) {
-            // FCM registration is non-critical
-          }
-        };
-
-        const gotoSignup = () => {
-          // Navigate to confirm login for email verification if needed
-          navigation.navigate('ConfirmLogin', {});
-        };
-
-        dispatch(
-          loginSocialRequest({
-            data,
-            seterror: setSocialLoginError,
-            gotoSignup,
-            sendFcm,
-          })
-        );
-      } catch (e: any) {
-        setSocialLoginError(e?.message || 'Social login failed');
-      }
-    };
-
-    handleSocialSignup();
-  }, [newUserCredentials, accountType, dispatch, navigation]);
+  // Social signup is temporarily disabled during JWT migration.
 
   const orbitAnim = useRef(new Animated.Value(0)).current;
   const textAnim = useRef(new Animated.Value(0)).current;
@@ -328,6 +273,8 @@ function SignupForm({ navigation, route }: Props) {
 
   const signUpUser = async () => {
     setIsloading(true);
+    setFormError('');
+    setFormSuccess('');
     const { email, password, cPassword, username, name } = state;
     const emailError = await validator('email', email);
     const passwordError = await validator('password', password);
@@ -359,11 +306,10 @@ function SignupForm({ navigation, route }: Props) {
               ...prev,
               emailError: 'User already exists. Try again with a different email account!',
             }));
+            return;
           }
-          Toast.show(
-            userValidation.response?.message ??
-              'Unable to validate this account. Please try again.',
-            Toast.SHORT
+          setFormError(
+            userValidation.response?.message ?? 'Unable to validate this account. Please try again.'
           );
         }
       } else {
@@ -372,7 +318,6 @@ function SignupForm({ navigation, route }: Props) {
           ...prev,
           cPasswordError: 'Both passwords must match.',
         }));
-        Toast.show('Both passwords must match.', Toast.SHORT);
       }
     } else {
       setIsloading(false);
@@ -384,13 +329,15 @@ function SignupForm({ navigation, route }: Props) {
         usernameError,
         nameError,
       });
+      setFormError('Please fix the highlighted fields.');
       Keyboard.dismiss();
-      Toast.show('Please fix the highlighted fields.', Toast.SHORT);
     }
   };
 
   const changeHandler = (type: string, value: string) => {
     const errorField = `${type}Error`;
+    setFormError('');
+    setFormSuccess('');
     setState((prev) => ({
       ...prev,
       [type]: value,
@@ -439,19 +386,17 @@ function SignupForm({ navigation, route }: Props) {
 
   const onVerify = () => {
     const { email, password, name, username } = state;
-    const data = { email, name, accountType, userId: '', username, skipVerificationEmail: true };
-
-    return createUserWithEmailAndPassword(firebaseAuth, email, password)
-      .then(async (user) => {
-        const idToken = await getIdToken(user.user);
-        setSignUpToken(idToken);
-        data.userId = user.user.uid;
-        dispatch(signUp.Request({ data, token: idToken }));
+    dispatch(
+      signUp.Request({
+        data: {
+          email,
+          name,
+          username,
+          password,
+          accountType,
+        },
       })
-      .catch((err) => {
-        Toast.show(err?.message ?? 'Unable to create account. Please try again.', Toast.SHORT);
-        setIsloading(false);
-      });
+    );
   };
 
   useEffect(() => {
@@ -459,27 +404,20 @@ function SignupForm({ navigation, route }: Props) {
       const handleSignUpSuccess = async () => {
         if (!hasSentVerificationEmailRef.current) {
           hasSentVerificationEmailRef.current = true;
-
-          const { currentUser } = firebaseAuth;
-
-          // iOS sends immediately; Android sends from ConfirmLogin to avoid duplicate emails.
-          if (Platform.OS === 'ios') {
-            const firebaseToken =
-              signUpToken ?? (currentUser ? await getIdToken(currentUser) : null);
-            if (firebaseToken) {
-              dispatch(sendVerificationEmailAction.Request({ token: firebaseToken }));
-            }
-          }
+          dispatch(
+            sendVerificationEmailAction.Request({
+              token: true,
+              data: {},
+              allowFalseSuccess: true,
+            })
+          );
         }
 
-        Toast.show('Your account was created successfully. Welcome to the Family!', Toast.SHORT);
+        setFormError('');
+        setFormSuccess('Your account was created successfully. Check your email to verify.');
         setIsloading(false);
 
-        // On iOS, AppContent handles navigation to ConfirmLogin automatically
-        // Navigating from here causes a race condition and double-mount
-        if (Platform.OS !== 'ios') {
-          navigation.replace('ConfirmLogin', { toScreen: 'MainRoot' });
-        }
+        navigation.replace('ConfirmLogin', { showConfirmationEmailMessage: true } as any);
       };
 
       handleSignUpSuccess();
@@ -487,14 +425,15 @@ function SignupForm({ navigation, route }: Props) {
     return () => {
       dispatch(signUp.Reset());
     };
-  }, [authState.signUpSuccess, dispatch, firebaseAuth, navigation, signUpToken]);
+  }, [authState.signUpSuccess, dispatch, navigation]);
 
   useEffect(() => {
     if (authState.signUpSuccess === false && authState.error) {
       const displayError = Array.isArray(authState.error)
         ? authState.error.join(', ')
         : (authState.error ?? 'Unable to create account. Please try again.');
-      Toast.show(displayError, Toast.SHORT);
+      setFormSuccess('');
+      setFormError(displayError);
       setIsloading(false);
     }
   }, [authState.signUpSuccess, authState.error]);
@@ -667,13 +606,40 @@ function SignupForm({ navigation, route }: Props) {
 
           <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
             <SignupButtons
-              socialLogin={setNewUserCredentials}
+              socialLogin={() => undefined}
               navigation={navigation}
               route={route}
               disabled={!accountType}
-              errorFromLogin={socialLoginError}
             />
           </Animated.View>
+          {formSuccess ? (
+            <View
+              style={[
+                GeneralStyle.MessageView,
+                { backgroundColor: Colors.successFeedback.background, marginBottom: spacing.x16 },
+              ]}
+            >
+              <StyledText style={GeneralStyle.successtext}>{formSuccess}</StyledText>
+            </View>
+          ) : null}
+          {formError ? (
+            <View style={{ marginBottom: spacing.x16 }}>
+              <StyledText style={[styles.errorText, { marginBottom: spacing.x8 }]}>
+                {formError}
+              </StyledText>
+              {typeof formError === 'string' &&
+              formError.toLowerCase().includes('email already in use') ? (
+                <Button
+                  text="Already have an account? Reset password"
+                  onPress={() =>
+                    navigation.navigate('ForgotPassword' as any, { email: state.email })
+                  }
+                  btnTextStyle={[Typography.subheader.R, { color: Colors.primary.brand }]}
+                  btnStyle={{ backgroundColor: 'transparent' }}
+                />
+              ) : null}
+            </View>
+          ) : null}
 
           <InputField
             ref={inputRefs.username}
@@ -691,7 +657,7 @@ function SignupForm({ navigation, route }: Props) {
 
           <InputField
             ref={inputRefs.name}
-            label="Full Name (Org Name)"
+            label="Full Name (Org Representative)"
             isDark={dark}
             placeholder={state.name ? '' : 'e.g. John Baptist / Johns Seminary Institute'}
             value={state.name}
@@ -903,7 +869,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: Colors.errorFeedback[200],
     fontSize: 12,
-    marginTop: 4,
+    marginBottom: spacing.x6,
   },
   cardContainer: {
     marginHorizontal: spacing.x16,

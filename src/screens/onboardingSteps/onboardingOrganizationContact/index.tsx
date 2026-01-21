@@ -29,7 +29,7 @@ function OnboardingLocation({ navigation, route }: Props) {
   const inputRefContactEmail = useRef<TextInput>(null);
   const inputRefContactPhoneNumber = useRef<TextInput>(null);
   const submit = () => {
-    if (contactName != '' && contactEmail != '' && contactPhoneNumber != '') {
+    if (contactName !== '' && contactEmail !== '') {
       navigation.navigate('OnboardingInterests', {
         ...route.params,
 
@@ -42,12 +42,10 @@ function OnboardingLocation({ navigation, route }: Props) {
     } else {
       let message = '';
 
-      if (!contactName || contactName == '') {
+      if (!contactName || contactName === '') {
         message = 'Organization contact name is required';
-      } else if (!contactEmail || contactEmail == '') {
+      } else if (!contactEmail || contactEmail === '') {
         message = 'Organization contact email is required';
-      } else if (!contactPhoneNumber || contactPhoneNumber == '') {
-        message = 'Organization contact phone number is required';
       }
 
       toast.show(message, {
@@ -61,7 +59,8 @@ function OnboardingLocation({ navigation, route }: Props) {
       onPress={submit}
       onboardingType={AccountType.organization}
       activeStep={3}
-      disabled={contactName == '' || contactEmail == '' || contactPhoneNumber == ''}
+      disabled={contactName === '' || contactEmail === ''}
+      showCustomHeaderOnAndroid
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1, paddingBottom: 40 }}>
@@ -110,7 +109,7 @@ function OnboardingLocation({ navigation, route }: Props) {
 
           <View style={{ flex: 1, paddingBottom: 30 }}>
             <StyledTextInput
-              label="Phone Number"
+              label="Phone Number (Optional)"
               wrapperStyle={{ flex: 1 }}
               value={contactPhoneNumber}
               placeholder="Enter phone number"

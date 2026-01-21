@@ -5,6 +5,20 @@ import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 
 export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    width: '100%',
+  },
+  Header: {
+    fontSize: getFontSize(3),
+    fontFamily: 'OpenSans-Bold',
+    color: Colors.neutral?.[900] ?? '#032F3C',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   contanier: {
     flex: 1,
 
@@ -35,10 +49,6 @@ export const styles = StyleSheet.create({
     borderColor: '#F6F6F6',
     color: '#B3C1C5',
   },
-  btnTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-  },
   paragraph: {
     fontWeight: '400',
     fontFamily: 'OpenSans-Regular',
@@ -66,11 +76,32 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
   },
+  btn: {
+    backgroundColor: '#032F3C',
+    width: getWidth(80),
+    margin: 10,
+    height: getHeight(7),
+    justifyContent: 'center',
+    alignSelf: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
   btnText2: {
     color: 'white',
     fontSize: getFontSize(2),
     letterSpacing: 1,
     fontFamily: 'OpenSans-Medium',
+  },
+  btnTitle: {
+    color: 'white',
+    fontSize: getFontSize(2),
+    letterSpacing: 1,
+    fontFamily: 'OpenSans-Medium',
+  },
+  fieldError: {
+    color: Colors.errorFeedback?.text ?? 'red',
+    marginTop: getHeight(0.5),
+    marginBottom: getHeight(1.5),
   },
 
   Errorview: {
@@ -81,6 +112,23 @@ export const styles = StyleSheet.create({
   },
   errortext: {
     color: 'red',
+  },
+  helight: {
+    color: appColor.SecoundryColor,
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  simpleText: {
+    fontFamily: 'OpenSans-Medium',
+    color: Colors.neutral?.[700] ?? '#304248',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: 12,
   },
   successtext: {
     color: Colors.successFeedback.text,

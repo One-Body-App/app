@@ -7,7 +7,7 @@ import { Menu } from 'iconoir-react-native';
 import FastImage from 'react-native-fast-image';
 import { getDrawerStatusFromState } from '@react-navigation/drawer';
 import { HeaderProps } from './types';
-import { styles } from './styles';
+import styles from './styles';
 
 const logoWhite = require('@/assets/images/logo_header_white.png');
 const logoHeader = require('@/assets/images/logo_header.png');
