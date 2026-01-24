@@ -66,11 +66,11 @@ function InfluencerSettings({ navigation, route }: Props) {
   };
 
   useEffect(() => {
-    if (route.params?.service == 'instagram' && route.params?.code) {
+    if (route.params?.service === 'instagram' && route.params?.code) {
       getInstagramAuthToken(
         route.params?.code,
         userToken,
-        route.params?.action == 'reconnect'
+        route.params?.action === 'reconnect'
           ? INSTAGRAM_RECONNECT_REDIRECT
           : INSTAGRAM_CONNECT_REDIRECT
       ).then((result) => {
@@ -86,10 +86,10 @@ function InfluencerSettings({ navigation, route }: Props) {
     }
 
     if (
-      route.params?.service == 'twitter' &&
+      route.params?.service === 'twitter' &&
       route.params?.state &&
       route.params?.code &&
-      route.params?.state == twitterStateConfirmation
+      route.params?.state === twitterStateConfirmation
     ) {
       getTwitterAuthToken(
         route.params?.code,
@@ -225,7 +225,7 @@ function InfluencerSettings({ navigation, route }: Props) {
     <View style={{ ...styles.container, backgroundColor: colors.background }}>
       <View style={styles.innerContainer}>
         <View style={{ paddingHorizontal: 25, paddingTop: 25 }}>
-          {userProfile?.influencerProfile?.influencerStatus != 'approved' ? (
+          {userProfile?.influencerProfile?.influencerStatus !== 'approved' ? (
             <View style={{ backgroundColor: 'yellow', padding: 10, marginBottom: 10 }}>
               <Text style={{ color: '#000' }}>
                 All changes made on this view needs to go through the account approval process

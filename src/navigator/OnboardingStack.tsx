@@ -1,6 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 
 import { OnboardingStackParamList } from './types';
 
@@ -17,8 +17,18 @@ import { headerOptions } from './global';
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 
 function OnboardingStack() {
+  const colorScheme = useColorScheme();
+  const dark = colorScheme === 'dark';
+
   return (
-    <Stack.Navigator initialRouteName="OnboardingIntro">
+    <Stack.Navigator
+      initialRouteName="OnboardingIntro"
+      screenOptions={{
+        statusBarStyle: dark ? 'light' : 'dark',
+        headerTransparent: true,
+        headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
+      }}
+    >
       <Stack.Screen
         name="OnboardingIntro"
         component={OnboardingIntro}

@@ -55,8 +55,8 @@ export default function mainPageOptions(
 }
 
 export const headerOptions: NativeStackNavigationOptions = {
-  headerShadowVisible: Platform.OS !== 'ios',
-  headerTransparent: Platform.OS === 'ios',
+  headerShadowVisible: false,
+  headerTransparent: true,
   headerBackTitleVisible: false,
   headerTitle() {
     // eslint-disable-next-line react-hooks/rules-of-hooks

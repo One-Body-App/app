@@ -203,7 +203,7 @@ function AccountType({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === 'android') {
         StatusBar.setBarStyle(statusBarStyle);
       }
     }, [statusBarStyle])
@@ -211,7 +211,9 @@ function AccountType({ navigation }: Props) {
 
   return (
     <>
-      {Platform.OS === 'ios' && <StatusBar barStyle={statusBarStyle} />}
+      {Platform.OS === 'android' && (
+        <StatusBar backgroundColor={colors.background} barStyle={statusBarStyle} />
+      )}
       <UserStepsLayout backgroundColor={colors.background} showCustomHeaderOnAndroid>
         <View
           style={{
@@ -230,9 +232,17 @@ function AccountType({ navigation }: Props) {
           >
             <Animated.View style={fadeUp(headerAnim, 12)}>
               <StyledText
-                style={[Typography.header.h1, { color: primaryTextColor, marginTop: 45 }]}
+                style={[
+                  {
+                    fontFamily: 'Rubik',
+                    fontWeight: '600',
+                    fontSize: 32,
+                    lineHeight: 40,
+                  },
+                  { color: primaryTextColor, marginTop: 18 },
+                ]}
               >
-                How will you join us?
+                Choose an account type
               </StyledText>
               <StyledText
                 style={[
@@ -240,8 +250,16 @@ function AccountType({ navigation }: Props) {
                   { color: primaryTextColor, marginTop: 10, marginBottom: 5 },
                 ]}
               >
-                Choose the profile type that fits you best. This helps us unlock the right tools for
-                your journey. (Note: This cannot be changed later).
+                Select the profile that fits you best. This helps us tailor the right tools for your
+                journey.
+              </StyledText>
+              <StyledText
+                style={[
+                  Typography.subheader.R,
+                  { color: primaryTextColor, marginTop: 6, marginBottom: 5 },
+                ]}
+              >
+                THIS CAN NOT BE CHANGED LATER.
               </StyledText>
             </Animated.View>
 
@@ -312,7 +330,7 @@ function AccountType({ navigation }: Props) {
                         fontWeight: '700',
                       }}
                     >
-                      I am an Individual
+                      Individual
                     </StyledText>
                     <Animated.View
                       style={[descriptionAnimatedStyle(individualAnim), { marginTop: 6 }]}
@@ -325,8 +343,8 @@ function AccountType({ navigation }: Props) {
                           color: primaryTextColor,
                         }}
                       >
-                        For believers, leaders, and creators looking to connect, pray, and grow in
-                        fellowship with the Body of Christ.
+                        For believers, leaders, and creators who want to connect, pray, and grow
+                        together.
                       </StyledText>
                     </Animated.View>
                   </View>
@@ -416,7 +434,7 @@ function AccountType({ navigation }: Props) {
                         fontWeight: '700',
                       }}
                     >
-                      We are an Organization
+                      Organization
                     </StyledText>
                     <Animated.View
                       style={[descriptionAnimatedStyle(organizationAnim), { marginTop: 6 }]}
@@ -429,8 +447,8 @@ function AccountType({ navigation }: Props) {
                           color: primaryTextColor,
                         }}
                       >
-                        For Churches, Ministries, Non-Profits, and Christian businesses looking to
-                        manage pages, events, and community resources.
+                        For churches, ministries, nonprofits, and Christian businesses managing
+                        pages, events, and community resources.
                       </StyledText>
                     </Animated.View>
                   </View>

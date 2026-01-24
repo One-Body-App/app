@@ -83,7 +83,7 @@ function MyProfile({ navigation, route }: Props) {
         </View>
       ),
     });
-  }, [navigation, user]);
+  }, [colors.text, dark, navigation, user]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {

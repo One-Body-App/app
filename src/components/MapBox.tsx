@@ -1,4 +1,4 @@
-import React, { useState, SetStateAction, Dispatch, ReactElement } from 'react';
+import React, { useState, SetStateAction, Dispatch, ReactElement, useEffect } from 'react';
 import {
   FlatList,
   Platform,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import Geolocation from '@react-native-community/geolocation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -82,6 +83,13 @@ function MapBox({
   const [suggetions, setSuggetions] = useState<MapSuggestion[]>(location ? [location] : []);
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
+  const [locationPrompted, setLocationPrompted] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('location_permission_requested').then((val) => {
+      setLocationPrompted(val === '1');
+    });
+  }, []);
 
   const focusSelectionStart = () => {
     setSelection({ start: 0, end: 0 });
@@ -132,29 +140,40 @@ function MapBox({
     // setCheckIn(false);
   };
   const getlocationPermison = async () => {
-    if (Platform.OS === 'ios') {
-      Geolocation.getCurrentPosition((info) => {
-        getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-      });
-    } else {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+    try {
+      if (locationPrompted) {
+        Geolocation.getCurrentPosition((info) => {
+          getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+        });
+        return;
+      }
+
+      let granted = false;
+      if (Platform.OS === 'android') {
+        const result = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
             title: 'Location Access Required',
-            message: 'This App needs to Access your location',
-            buttonPositive: '',
+            message: 'This App needs to access your location',
+            buttonPositive: 'Allow',
           }
         );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          // To Check, If Permission is granted
-          Geolocation.getCurrentPosition((info) => {
-            getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-          });
-        }
-      } catch (err) {
-        console.warn(err);
+        granted = result === PermissionsAndroid.RESULTS.GRANTED;
+      } else {
+        const status = await Geolocation.requestAuthorization('whenInUse');
+        granted = status === 'granted';
       }
+
+      if (granted) {
+        Geolocation.getCurrentPosition((info) => {
+          getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
+        });
+      }
+    } catch (err) {
+      console.warn(err);
+    } finally {
+      await AsyncStorage.setItem('location_permission_requested', '1');
+      setLocationPrompted(true);
     }
   };
   const getcurrentLocation = (longitude: number, latitude: number) => {

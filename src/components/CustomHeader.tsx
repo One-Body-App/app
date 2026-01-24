@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import React, { ReactNode } from 'react';
+import { View, TouchableOpacity, Platform, StyleSheet, StatusBar } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -10,14 +10,44 @@ const logoHeader = require('@/assets/images/logo_header.png');
 
 interface CustomHeaderProps {
   showBackButton?: boolean;
+  leftSlot?: ReactNode;
+  rightSlot?: ReactNode;
+  contentHeight?: number;
 }
 
-export default function CustomHeader({ showBackButton = true }: CustomHeaderProps) {
+export default function CustomHeader({
+  showBackButton = true,
+  leftSlot,
+  rightSlot,
+  contentHeight,
+}: CustomHeaderProps) {
   const navigation = useNavigation();
   const { dark } = useTheme();
+  const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
+  const resolvedContentHeight = contentHeight ?? (Platform.OS === 'android' ? 44 : 44);
+  const iconSize = 44;
+  const sideSlotStyle = {
+    width: 50,
+    height: resolvedContentHeight,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+  const headerRowStyle = Platform.OS === 'android' ? styles.headerRowAndroid : styles.headerRow;
 
   const androidBackgroundColor = dark ? Colors.neutral[900] : '#f5f5f5';
   const androidBorderColor = dark ? Colors.neutral[800] : '#e0e0e0';
+  const leftElement =
+    leftSlot ??
+    (showBackButton ? (
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+      >
+        <MaterialCommunityIcons name="chevron-left" size={iconSize} color={Colors.primary.brand} />
+      </TouchableOpacity>
+    ) : null);
+  const rightElement = rightSlot ?? null;
 
   return (
     <View
@@ -26,27 +56,21 @@ export default function CustomHeader({ showBackButton = true }: CustomHeaderProp
         {
           backgroundColor: Platform.OS === 'android' ? androidBackgroundColor : 'transparent',
           borderBottomColor: Platform.OS === 'android' ? androidBorderColor : 'transparent',
+          height: resolvedContentHeight + statusBarHeight,
+          paddingTop: statusBarHeight,
         },
       ]}
     >
-      {showBackButton && (
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={28} color={Colors.primary.brand} />
-        </TouchableOpacity>
-      )}
-      <View style={styles.logoContainer}>
+      <View style={[styles.headerRow, headerRowStyle]}>
+        {leftElement ? <View style={sideSlotStyle}>{leftElement}</View> : null}
         <FastImage
-          style={styles.logo}
+          style={[styles.logo, Platform.OS === 'android' ? styles.logoAndroid : null]}
           resizeMode={FastImage.resizeMode.contain}
           source={dark ? logoWhite : logoHeader}
         />
       </View>
-      {/* Spacer to keep logo centered when back button is present */}
-      {showBackButton && <View style={styles.spacer} />}
+      {/* Spacer/right slot to keep logo centered */}
+      <View style={sideSlotStyle}>{rightElement}</View>
     </View>
   );
 }
@@ -56,24 +80,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: Platform.OS === 'android' ? 56 : 44,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 36,
     borderBottomWidth: Platform.OS === 'android' ? 1 : 0,
   },
-  backButton: {
-    padding: 8,
-    marginTop: Platform.OS === 'android' ? -8 : 0,
-  },
-  logoContainer: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    alignItems: 'flex-start',
-    marginTop: Platform.OS === 'android' ? -8 : 0,
+  },
+  headerRowAndroid: {
+    justifyContent: 'flex-start',
+  },
+  backButton: {
+    padding: 1,
   },
   logo: {
-    width: 100,
-    height: 28,
+    width: 120,
+    height: 40,
   },
-  spacer: {
-    width: 44,
+  logoAndroid: {
+    marginLeft: 7,
   },
 });

@@ -31,7 +31,14 @@ function SettingsStack() {
   const { dark, colors } = useTheme();
 
   return (
-    <Stack.Navigator initialRouteName="SettingsMain">
+    <Stack.Navigator
+      initialRouteName="SettingsMain"
+      screenOptions={{
+        statusBarStyle: dark ? 'light' : 'dark',
+        headerTransparent: true,
+        headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
+      }}
+    >
       <Stack.Screen
         name="SettingsMain"
         component={Settings}

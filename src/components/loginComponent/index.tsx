@@ -1,329 +1,290 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, RefreshControl, ScrollView, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  RefreshControl,
+  ScrollView,
+  TouchableOpacity,
+  View,
+  Image,
+  Platform,
+  PermissionsAndroid,
+} from 'react-native';
 import { useDispatch } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import Geolocation from '@react-native-community/geolocation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import validator from '@/utils/validation/validator';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { setLoginData } from '@/src/redux/actions/AuthActions';
 import { loginWithEmailAndPassword, verifyEmailTwoFactorCode } from '@/services/login';
-import { ApiCall } from '@/src/services/api';
 
 import Button from '../Button';
 import StyledText from '../styled/Text';
 import StyledTextInput from '../styled/TextInput';
-import { styles } from './styles';
+import createLoginStyles from './styles';
 
 type Nav = NativeStackNavigationProp<MainStackParamList, 'Login'>;
 
-interface Props {
-  showConfirmationEmailMessage: boolean;
-  currentUserEmail?: string;
-  onlyPassword?: boolean;
-  enabledLoginProviders?: string[];
-  [key: string]: any;
-}
+const googleIcon = require('@/assets/icons/google.png');
 
-function LoginComponent({ showConfirmationEmailMessage, currentUserEmail, onlyPassword }: Props) {
+function LoginComponent({ currentUserEmail }: any) {
   const dispatch = useDispatch();
   const navigation = useNavigation<Nav>();
-
-  const emailRef = useRef(currentUserEmail ?? '');
-  const passwordRef = useRef('');
-  const totpRef = useRef('');
-
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
-  const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
-  const [needsEmailTwoFactor, setNeedsEmailTwoFactor] = useState(false);
-  const [isVerificationNeeded, setIsVerificationNeeded] = useState(false);
+  const { dark } = useTheme();
+  const styles = useMemo(() => createLoginStyles(dark), [dark]);
 
   const [form, setForm] = useState({
     email: currentUserEmail ?? '',
     emailError: '',
     password: '',
     passwordError: '',
-    twoFactorCode: '',
     emailTwoFactorCode: '',
   });
+  const [hidePass, setHidePass] = useState(true);
 
-  const canEditEmail = !onlyPassword;
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [needsEmailTwoFactor, setNeedsEmailTwoFactor] = useState(false);
+  const [locationPrompted, setLocationPrompted] = useState(false);
 
-  const resolvedEmail = useMemo(() => (form.email || emailRef.current || '').trim(), [form.email]);
-  const resolvedPassword = useMemo(() => form.password || passwordRef.current, [form.password]);
-  const resolvedTwoFactor = useMemo(
-    () => form.twoFactorCode || totpRef.current,
-    [form.twoFactorCode]
-  );
-
-  const resetForm = useCallback(() => {
-    emailRef.current = currentUserEmail ?? '';
-    passwordRef.current = '';
-    totpRef.current = '';
-    setForm({
-      email: currentUserEmail ?? '',
-      emailError: '',
-      password: '',
-      passwordError: '',
-      twoFactorCode: '',
-      emailTwoFactorCode: '',
+  useEffect(() => {
+    AsyncStorage.getItem('location_permission_requested').then((val) => {
+      setLocationPrompted(val === '1');
     });
-    setError('');
-    setSuccess('');
-    setNeedsTwoFactor(false);
-    setNeedsEmailTwoFactor(false);
-    setIsVerificationNeeded(false);
-  }, [currentUserEmail]);
+  }, []);
 
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true);
-    resetForm();
-    setIsRefreshing(false);
-  }, [resetForm]);
-
-  const sendVerificationEmail = useCallback(async () => {
+  const ensureLocationPermission = useCallback(async () => {
+    if (locationPrompted) return;
     try {
-      dispatch(setLoader(true));
-      await ApiCall({
-        route: 'auth/sendVerificationEmail',
-        verb: 'post',
-        token: true,
-        params: {},
-      });
-      setSuccess('Verification email sent. Check your inbox.');
-      setError('');
-    } catch {
-      setError('Unable to send verification email. Please try again.');
+      let granted = false;
+      if (Platform.OS === 'android') {
+        const result = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Allow location',
+            message: 'We use your city to help secure your login.',
+            buttonPositive: 'Allow',
+          }
+        );
+        granted = result === PermissionsAndroid.RESULTS.GRANTED;
+      } else {
+        const status = await Geolocation.requestAuthorization('whenInUse');
+        granted = status === 'granted';
+      }
+
+      if (granted) {
+        Geolocation.getCurrentPosition(
+          () => undefined,
+          () => undefined,
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
+        );
+      }
+    } catch (e) {
+      // ignore permission errors; login can proceed
     } finally {
-      dispatch(setLoader(false));
+      await AsyncStorage.setItem('location_permission_requested', '1');
+      setLocationPrompted(true);
     }
-  }, [dispatch]);
+  }, [locationPrompted]);
 
   const signInUser = useCallback(async () => {
     try {
       setError('');
-      setSuccess('');
-
-      if (!!onlyPassword && resolvedEmail !== (currentUserEmail ?? '')) {
-        setError("Please login with the current user's email.");
-        return;
-      }
-
-      if (!needsEmailTwoFactor) {
-        const emailError = await validator('email', resolvedEmail);
-        const passwordError = await validator('password', resolvedPassword);
-        setForm((prev) => ({ ...prev, emailError, passwordError }));
-        if (emailError || passwordError) {
-          return;
-        }
-      }
-
       dispatch(setLoader(true));
+      await ensureLocationPermission();
 
       if (needsEmailTwoFactor) {
-        const code = (form.emailTwoFactorCode || '').trim();
-        if (!code) {
+        if (!form.email || !form.emailTwoFactorCode) {
           setError('Enter the code we sent to your email.');
           return;
         }
-
         const res = await verifyEmailTwoFactorCode({
-          email: resolvedEmail,
-          code,
+          email: form.email,
+          code: form.emailTwoFactorCode,
         });
-
-        if (res.status !== 200) {
-          const message = (res.response as any)?.message ?? 'Invalid code. Please try again.';
-          setError(message);
-          return;
-        }
-
-        const accessToken = (res.response as any)?.tokens?.accessToken;
-        const user = (res.response as any)?.user;
-        if (!accessToken) {
-          setError('Unable to sign in. Please try again.');
-          return;
-        }
-
-        dispatch(setLoginData({ token: accessToken }));
-
-        if (user?.emailVerified) {
+        if (res.status === 200) {
+          dispatch(setLoginData({ token: (res.response as any).tokens.accessToken }));
           navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
-          return;
-        }
-
-        setIsVerificationNeeded(true);
-        navigation.navigate('ConfirmLogin' as any, { showConfirmationEmailMessage: true });
-        return;
-      }
-
-      const res = await loginWithEmailAndPassword({
-        email: resolvedEmail,
-        password: resolvedPassword,
-        twoFactorCode: needsTwoFactor ? resolvedTwoFactor : undefined,
-      });
-
-      if (res.status !== 200) {
-        const message = (res.response as any)?.message ?? 'Unable to sign in. Please try again.';
-        if (typeof message === 'string' && message.toLowerCase().includes('two-factor')) {
-          setNeedsTwoFactor(true);
-          setError('Enter your authenticator code to continue.');
         } else {
-          setError(message);
+          setError('Invalid code. Please try again.');
         }
         return;
       }
 
-      if ((res.response as any)?.twoFactorRequired && (res.response as any)?.method === 'email') {
-        setNeedsEmailTwoFactor(true);
-        setSuccess('Check your email for a login code, then enter it below.');
+      if (!form.email || !form.password) {
+        setError('Enter your email and password.');
         return;
       }
+      const res = await loginWithEmailAndPassword({ email: form.email, password: form.password });
 
-      const accessToken = (res.response as any)?.tokens?.accessToken;
-      const user = (res.response as any)?.user;
-
-      if (!accessToken) {
-        setError('Unable to sign in. Please try again.');
-        return;
+      if (res.status === 200) {
+        if ((res.response as any)?.twoFactorRequired) {
+          setNeedsEmailTwoFactor(true);
+        } else {
+          dispatch(setLoginData({ token: (res.response as any).tokens.accessToken }));
+          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+        }
+      } else {
+        const apiMessage = (res.response as any)?.message;
+        setError(
+          typeof apiMessage === 'string'
+            ? apiMessage
+            : 'Unable to sign in. Please check your credentials.'
+        );
       }
-
-      dispatch(setLoginData({ token: accessToken }));
-
-      if (user?.emailVerified) {
-        navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
-        return;
-      }
-
-      setIsVerificationNeeded(true);
-      navigation.navigate('ConfirmLogin' as any, { showConfirmationEmailMessage: true });
     } catch (e: any) {
-      setError(e?.message ?? 'Unable to sign in. Please try again.');
+      setError(e?.message ?? 'Sign in failed.');
     } finally {
       dispatch(setLoader(false));
     }
-  }, [
-    currentUserEmail,
-    dispatch,
-    navigation,
-    needsEmailTwoFactor,
-    needsTwoFactor,
-    onlyPassword,
-    resolvedEmail,
-    resolvedPassword,
-    resolvedTwoFactor,
-    form.emailTwoFactorCode,
-  ]);
-
-  const showVerifyPrompt = showConfirmationEmailMessage || isVerificationNeeded;
+  }, [form, needsEmailTwoFactor, dispatch, navigation, ensureLocationPermission]);
 
   return (
-    <ScrollView
-      keyboardShouldPersistTaps="always"
-      removeClippedSubviews={false}
-      showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
-    >
-      <View style={styles.container}>
-        <StyledText style={styles.Header}>Welcome back</StyledText>
-
-        {!!error && (
-          <View style={styles.Errorview}>
-            <StyledText style={styles.errortext}>{error}</StyledText>
-          </View>
-        )}
-
-        {!!success && (
-          <View style={styles.center}>
-            <StyledText style={styles.text}>{success}</StyledText>
-          </View>
-        )}
-
-        <StyledTextInput
-          label="Email"
-          value={form.email}
-          editable={canEditEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          onChangeText={(value: string) => {
-            emailRef.current = value;
-            setForm((prev) => ({ ...prev, email: value, emailError: '' }));
-          }}
-        />
-        {!!form.emailError && <StyledText style={styles.fieldError}>{form.emailError}</StyledText>}
-
-        <StyledTextInput
-          label="Password"
-          value={form.password}
-          secureTextEntry
-          autoCapitalize="none"
-          onChangeText={(value: string) => {
-            passwordRef.current = value;
-            setForm((prev) => ({ ...prev, password: value, passwordError: '' }));
-          }}
-        />
-        {!!form.passwordError && (
-          <StyledText style={styles.fieldError}>{form.passwordError}</StyledText>
-        )}
-
-        {needsTwoFactor && (
-          <StyledTextInput
-            label="Authenticator Code"
-            value={form.twoFactorCode}
-            keyboardType="number-pad"
-            onChangeText={(value: string) => {
-              totpRef.current = value;
-              setForm((prev) => ({ ...prev, twoFactorCode: value }));
+    <View style={styles.screenContainer}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => {
+              setIsRefreshing(true);
+              setTimeout(() => setIsRefreshing(false), 250);
             }}
           />
-        )}
+        }
+      >
+        <View style={styles.headerFrame}>
+          <StyledText style={styles.welcomeText}>Welcome back</StyledText>
+          {!needsEmailTwoFactor && (
+            <StyledText style={styles.subHeaderText}>Sign in to your account</StyledText>
+          )}
+        </View>
 
-        {needsEmailTwoFactor && (
-          <StyledTextInput
-            label="Email Code"
-            value={form.emailTwoFactorCode}
-            keyboardType="number-pad"
-            onChangeText={(value: string) => {
-              setForm((prev) => ({ ...prev, emailTwoFactorCode: value }));
-            }}
-          />
-        )}
+        <View style={styles.cardContainer}>
+          {!needsEmailTwoFactor ? (
+            <View style={styles.newAccountRow}>
+              <StyledText style={styles.newAccountText}>New to One Body? </StyledText>
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('AccountType' as any);
+                }}
+              >
+                <StyledText style={styles.newAccountLink}>Create an account</StyledText>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
-        <Button
-          text={needsEmailTwoFactor ? 'Verify code' : 'Sign in'}
-          btnStyle={styles.btn}
-          btnTextStyle={styles.btnTitle}
-          onPress={signInUser}
-        />
+          {needsEmailTwoFactor && (
+            <View style={styles.successAlertBox}>
+              <StyledText style={styles.successAlertText}>
+                Success! A verification code has been sent to your email.
+              </StyledText>
+            </View>
+          )}
 
-        {showVerifyPrompt && (
-          <View style={styles.center}>
-            <StyledText style={styles.simpleText}>
-              Verify your email to continue. Tap below to resend the verification email.
-            </StyledText>
-            <TouchableOpacity
-              onPress={() => {
-                sendVerificationEmail();
-              }}
-            >
-              <StyledText style={styles.helight}>Resend verification email</StyledText>
-            </TouchableOpacity>
+          <View style={styles.inputSpacer}>
+            <StyledText style={styles.inputLabel}>Email</StyledText>
+            <StyledTextInput
+              placeholder="Email Address"
+              placeholderTextColor={dark ? '#999DA1' : '#838584'}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={form.email}
+              backgroundColor={dark ? '#202328' : '#F2F3F3'}
+              inputWrapperStyle={styles.inputWrapper}
+              onChangeText={(v) => setForm({ ...form, email: v.trim() })}
+            />
           </View>
-        )}
 
-        <TouchableOpacity
-          onPress={() => {
-            Alert.alert('Forgot password', 'We’ll email you a link to set a new password.');
-            navigation.navigate('ForgotPassword' as any, { email: resolvedEmail } as any);
-          }}
-        >
-          <StyledText style={styles.helight}>Forgot password?</StyledText>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          {!needsEmailTwoFactor ? (
+            <View style={styles.inputSpacer}>
+              <StyledText style={styles.inputLabel}>Password</StyledText>
+              <StyledTextInput
+                placeholder="Password"
+                placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                secureTextEntry={hidePass}
+                value={form.password}
+                backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                inputWrapperStyle={styles.inputWrapper}
+                onChangeText={(v) => setForm({ ...form, password: v })}
+                rightIcon={
+                  <MaterialCommunityIcons
+                    name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+                    size={22}
+                    color="#41dbe1"
+                    onPress={() => setHidePass(!hidePass)}
+                    style={{ alignSelf: 'center' }}
+                  />
+                }
+              />
+            </View>
+          ) : (
+            <View style={styles.inputSpacer}>
+              <StyledText style={styles.inputLabel}>Verification code</StyledText>
+              <StyledTextInput
+                placeholder="Enter 6-digit code"
+                placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                keyboardType="number-pad"
+                value={form.emailTwoFactorCode}
+                backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                inputWrapperStyle={styles.inputWrapper}
+                onChangeText={(v) => setForm({ ...form, emailTwoFactorCode: v })}
+              />
+            </View>
+          )}
+
+          {!!error && <StyledText style={styles.fieldError}>{error}</StyledText>}
+
+          <Button
+            text={needsEmailTwoFactor ? 'Verify Account' : 'Sign In'}
+            btnStyle={styles.primaryBtn}
+            btnTextStyle={styles.primaryBtnText}
+            onPress={signInUser}
+          />
+
+          {!needsEmailTwoFactor ? (
+            <View style={styles.socialSection}>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <StyledText style={styles.orText}>Or</StyledText>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <View style={styles.socialIconsRow}>
+                <TouchableOpacity
+                  style={styles.socialBtn}
+                  onPress={() => Alert.alert('Coming soon', 'Google sign-in is coming soon.')}
+                >
+                  <Image source={googleIcon} style={styles.socialIcon} />
+                </TouchableOpacity>
+
+                {Platform.OS === 'ios' ? (
+                  <TouchableOpacity
+                    style={styles.socialBtn}
+                    onPress={() => Alert.alert('Coming soon', 'Apple sign-in is coming soon.')}
+                  >
+                    <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFFF' : '#212121'} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('ForgotPassword' as any, { email: form.email } as any);
+                }}
+              >
+                <StyledText style={styles.forgotPasswordText}>Forgot Password?</StyledText>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 

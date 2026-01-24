@@ -328,6 +328,7 @@ type ConfirmLoginScreen = {
   updateParent?: Function;
 
   action?: string;
+  token?: string;
   apiKey?: string;
   lang?: string;
 };

@@ -1,18 +1,14 @@
 import React, { useRef, useState } from 'react';
-import { KeyboardAvoidingView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ArrowDown2 } from 'iconsax-react-native';
 import { useToast } from 'react-native-toast-notifications';
 import { useSelector } from 'react-redux';
-import Button from '@/components/Button';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import MapBox, { MapSuggestion } from '@/components/MapBox';
-import { borderRadius } from '@/src/styles/outlines';
 import StyledTextInput from '@/components/styled/TextInput';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
@@ -20,8 +16,8 @@ type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationC
 
 function OnboardingLocation({ navigation, route }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const [contactName, setContactName] = useState<string>(user?.name ?? '');
-  const [contactEmail, setContactEmail] = useState<string>(user?.email ?? '');
+  const [contactName, setContactName] = useState<string>('');
+  const [contactEmail, setContactEmail] = useState<string>('');
   const [contactPhoneNumber, setContactPhoneNumber] = useState<string>('');
   const toast = useToast();
 

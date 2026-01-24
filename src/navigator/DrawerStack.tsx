@@ -8,7 +8,6 @@ import { useTheme } from '@react-navigation/native';
 import Feather from '@react-native-vector-icons/feather';
 import { HandsPraying } from 'phosphor-react-native';
 
-import Geolocation from '@react-native-community/geolocation';
 import { getMessaging, requestPermission } from '@react-native-firebase/messaging';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { MainDrawerParamsList } from './types';
@@ -37,33 +36,9 @@ function DrawerNav() {
     await requestPermission(firebaseMessaging);
   }, [firebaseMessaging]);
 
-  const requestlocationPermison = useCallback(async () => {
-    try {
-      if (Platform.OS === 'ios') {
-        Geolocation.requestAuthorization();
-
-        // if (permissions == 'granted') {
-        //   Geolocation.getCurrentPosition((info) => {
-        //     getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-        //   });
-        // }
-      } else {
-        // if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        //   //To Check, If Permission is granted
-        //   Geolocation.getCurrentPosition((info) => {
-        //     getcurrentLocation(info.coords?.longitude, info.coords?.latitude);
-        //   });
-        // }
-      }
-    } catch (err) {
-      // Ignore location permission errors; app functions without location
-    }
-  }, []);
-
   useEffect(() => {
     requestNotificationPermission();
-    requestlocationPermison();
-  }, [requestNotificationPermission, requestlocationPermison]);
+  }, [requestNotificationPermission]);
 
   if (authState.getProfileData?.isProfileCompleted) {
     let drawerType: 'front' | 'back' | 'slide' | 'permanent' = 'front';

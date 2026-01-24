@@ -1,9 +1,11 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import {
+  Alert,
   View,
   TouchableOpacity,
   Animated,
   Keyboard,
+  ActivityIndicator,
   TextInput,
   Easing,
   InteractionManager,
@@ -12,8 +14,10 @@ import {
   RefreshControl,
   StatusBar,
   useColorScheme,
+  Image,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme, useFocusEffect } from '@react-navigation/native';
@@ -38,7 +42,6 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MainStackParamList } from '@/src/navigator/types';
 import UserStepsLayout from '../layout/UserStepsLayout';
 import StyledText from '@/components/styled/Text';
-import SignupButtons from '@/components/SignupButtons';
 import Button from '@/components/Button';
 import StyledTextInput from '@/components/styled/TextInput';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
@@ -46,6 +49,7 @@ import { appColor } from '@/src/constants';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 
 const brandWhite = '#f6f6f7';
+const googleIcon = require('@/assets/icons/google.png');
 
 const initialFormState = {
   username: '',
@@ -60,6 +64,20 @@ const initialFormState = {
   cPasswordError: '',
 };
 
+type SignupPalette = {
+  background: string;
+  card: string;
+  cardBorder: string;
+  textMain: string;
+  textSecondary: string;
+  primary: string;
+  divider: string;
+  inputBg: string;
+  inputBorder: string;
+  placeholder: string;
+  errorBorder: string;
+};
+
 const InputField = React.forwardRef(
   (
     {
@@ -68,7 +86,7 @@ const InputField = React.forwardRef(
       rightIcon,
       wrapperStyle,
       inputWrapperStyle,
-      isDark,
+      palette,
       ...props
     }: {
       label: string;
@@ -76,7 +94,7 @@ const InputField = React.forwardRef(
       rightIcon?: React.ReactNode;
       wrapperStyle?: object;
       inputWrapperStyle?: object;
-      isDark: boolean;
+      palette: SignupPalette;
     } & React.ComponentProps<typeof TextInput>,
     ref: any
   ) => {
@@ -101,25 +119,20 @@ const InputField = React.forwardRef(
       accessibilityLabel,
       testID,
       selectionColor,
-      defaultValue,
     } = props;
-    const { 200: errorBorderColor } = Colors.errorFeedback;
-    const { 900: neutral900, 600: neutral600 } = Colors.neutral;
     const hidePlaceholder = focused || !!(value && value.length > 0);
-    let borderColor = isDark ? neutral900 : neutral600;
+    let borderColor = palette.inputBorder;
     if (focused) {
-      borderColor = appColor.SecoundryColor;
+      borderColor = palette.primary;
     }
     if (error) {
-      borderColor = errorBorderColor;
+      borderColor = palette.errorBorder;
     }
 
     return (
       <View style={[styles.inputContainer, wrapperStyle]}>
         {error ? <StyledText style={styles.errorText}>{error}</StyledText> : null}
-        <StyledText style={[styles.inputLabel, isDark ? { color: brandWhite } : undefined]}>
-          {label}
-        </StyledText>
+        <StyledText style={[styles.inputLabel, { color: palette.textMain }]}>{label}</StyledText>
         <StyledTextInput
           ref={ref}
           value={value}
@@ -132,11 +145,11 @@ const InputField = React.forwardRef(
             onBlur?.(e);
           }}
           placeholder={hidePlaceholder ? '' : placeholder}
-          placeholderTextColor={Colors.neutral[400]}
+          placeholderTextColor={palette.placeholder}
           inputWrapperStyle={{
             borderColor,
-            backgroundColor: isDark ? Colors.neutral[800] : Colors.neutral[700],
-            borderRadius: borderRadius.small,
+            backgroundColor: palette.inputBg,
+            borderRadius: 12,
             minHeight: 54,
             ...inputWrapperStyle,
           }}
@@ -196,10 +209,56 @@ function SignupForm({ navigation, route }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const hasSentVerificationEmailRef = useRef(false);
-  const { dark } = useTheme();
+  const { dark, colors } = useTheme();
   const colorScheme = useColorScheme();
   const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
+
+  const palette: SignupPalette = {
+    background: Colors.neutral[700],
+    card: dark ? '#0D0D0D' : '#FFFFFF',
+    cardBorder: dark ? 'rgba(255, 255, 255, 0.08)' : '#F2F3F3',
+    textMain: dark ? '#FFFFF7' : '#032F3C',
+    textSecondary: dark ? '#999DA1' : '#5A5C5B',
+    primary: '#126B87',
+    divider: dark ? 'rgba(255, 255, 255, 0.08)' : '#F2F3F3',
+    inputBg: dark ? '#202328' : '#F2F3F3',
+    inputBorder: dark ? 'rgba(255, 255, 255, 0.08)' : '#F2F3F3',
+    placeholder: dark ? '#999DA1' : '#838584',
+    errorBorder: Colors.errorFeedback[200],
+  };
+
+  const showSocialUnavailable = useCallback(() => {
+    Alert.alert(
+      'Coming soon',
+      'Social sign-in is temporarily unavailable while we migrate authentication. Please use email/password.'
+    );
+  }, []);
+
+  const normalizeUsername = useCallback((value: string) => {
+    return value?.toLowerCase().trim().replace(/\s+/g, '') ?? '';
+  }, []);
+
+  const generateUsernameSuggestions = useCallback(
+    (rawUsername: string, rawName?: string) => {
+      const base = normalizeUsername(rawUsername);
+      const normalizedName = normalizeUsername(rawName ?? '');
+      const nameBase = normalizedName.length >= 3 ? normalizedName.slice(0, 12) : '';
+
+      const candidates = [
+        `${base}1`,
+        `${base}2`,
+        `${base}3`,
+        nameBase ? `${nameBase}1` : '',
+        nameBase ? `${nameBase}${base.slice(0, 4)}` : '',
+      ].filter(Boolean);
+
+      const unique = Array.from(new Set(candidates)).filter((v) => v.length >= 3);
+      return unique.slice(0, 5);
+    },
+    [normalizeUsername]
+  );
 
   // Set accountType in Redux when screen loads so social login can access it
   useEffect(() => {
@@ -229,7 +288,7 @@ function SignupForm({ navigation, route }: Props) {
       !passwordRules.specialChar ||
       !passwordRules.uppercase ||
       state.password !== state.cPassword)
-      ? 'Both passwords must match and meet requirements.'
+      ? 'Passwords must match and meet security standards.'
       : state.cPasswordError;
 
   const isSubmitDisabled =
@@ -285,17 +344,23 @@ function SignupForm({ navigation, route }: Props) {
     if (!emailError && !passwordError && !cPasswordError && !usernameError && !nameError) {
       if (password === cPassword) {
         const data = { email };
-        console.log('[SignUp] Validating user email with data:', JSON.stringify(data, null, 2));
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[SignUp] Validating user email with data:', JSON.stringify(data, null, 2));
+        }
         const userValidation = await ApiCall({
           route: 'user/validateUserInfo',
           params: data,
           verb: 'post',
         });
-        console.log(
-          '[SignUp] Validation response:',
-          userValidation.status,
-          JSON.stringify(userValidation.response, null, 2)
-        );
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log(
+            '[SignUp] Validation response:',
+            userValidation.status,
+            JSON.stringify(userValidation.response, null, 2)
+          );
+        }
 
         if (userValidation.status === 200) {
           recaptcha.current?.open();
@@ -304,12 +369,14 @@ function SignupForm({ navigation, route }: Props) {
           if (userValidation.status === 409) {
             setState((prev) => ({
               ...prev,
-              emailError: 'User already exists. Try again with a different email account!',
+              emailError:
+                'Email already in use. If you already have an account, use "Forgot password" to set or reset your password and sign in.',
             }));
             return;
           }
           setFormError(
-            userValidation.response?.message ?? 'Unable to validate this account. Please try again.'
+            userValidation.response?.message ??
+              'Unable to validate account. Please check your connection.'
           );
         }
       } else {
@@ -329,7 +396,7 @@ function SignupForm({ navigation, route }: Props) {
         usernameError,
         nameError,
       });
-      setFormError('Please fix the highlighted fields.');
+      setFormError('Please complete all required fields.');
       Keyboard.dismiss();
     }
   };
@@ -338,6 +405,9 @@ function SignupForm({ navigation, route }: Props) {
     const errorField = `${type}Error`;
     setFormError('');
     setFormSuccess('');
+    if (type === 'username') {
+      setUsernameSuggestions([]);
+    }
     setState((prev) => ({
       ...prev,
       [type]: value,
@@ -346,14 +416,20 @@ function SignupForm({ navigation, route }: Props) {
   };
 
   const checkUsernameAvailability = async (username: string) => {
-    if (!username || username.length < 3) {
+    const normalized = normalizeUsername(username);
+    if (normalized && normalized !== state.username) {
+      setState((prev) => ({ ...prev, username: normalized }));
+    }
+
+    if (!normalized || normalized.length < 3) {
       setState((prev) => ({
         ...prev,
         usernameError:
-          username.length > 0 && username.length < 3
-            ? 'Username must be at least 3 characters'
+          normalized.length > 0 && normalized.length < 3
+            ? 'Usernames must be at least 3 characters'
             : '',
       }));
+      setUsernameSuggestions([]);
       return;
     }
 
@@ -361,17 +437,19 @@ function SignupForm({ navigation, route }: Props) {
     try {
       const userValidation = await ApiCall({
         route: 'user/validateUsername',
-        params: { username },
+        params: { username: normalized },
         verb: 'post',
       });
 
       if (userValidation.status === 200) {
         setState((prev) => ({ ...prev, usernameError: '' }));
+        setUsernameSuggestions([]);
       } else if (userValidation.status === 409) {
         setState((prev) => ({
           ...prev,
-          usernameError: 'Sorry! This username is already taken. Try again.',
+          usernameError: 'This username is already in use. If it belongs to you, please sign in.',
         }));
+        setUsernameSuggestions(generateUsernameSuggestions(normalized, state.name));
       }
     } catch (error) {
       // Silently fail - validation will happen on submit anyway
@@ -414,7 +492,7 @@ function SignupForm({ navigation, route }: Props) {
         }
 
         setFormError('');
-        setFormSuccess('Your account was created successfully. Check your email to verify.');
+        setFormSuccess('Welcome to the family! Check your inbox to verify your account.');
         setIsloading(false);
 
         navigation.replace('ConfirmLogin', { showConfirmationEmailMessage: true } as any);
@@ -431,12 +509,30 @@ function SignupForm({ navigation, route }: Props) {
     if (authState.signUpSuccess === false && authState.error) {
       const displayError = Array.isArray(authState.error)
         ? authState.error.join(', ')
-        : (authState.error ?? 'Unable to create account. Please try again.');
+        : (authState.error ?? 'Something went wrong. Please try again.');
       setFormSuccess('');
       setFormError(displayError);
+      const lower = displayError.toLowerCase();
+      const isUsernameTaken =
+        lower.includes('username already') ||
+        lower.includes('username is already') ||
+        (lower.includes('username') && lower.includes('exists'));
+      if (isUsernameTaken) {
+        setState((prev) => ({
+          ...prev,
+          usernameError: 'Username is unavailable. Choose a unique name for your profile.',
+        }));
+        setUsernameSuggestions(generateUsernameSuggestions(state.username, state.name));
+      }
       setIsloading(false);
     }
-  }, [authState.signUpSuccess, authState.error]);
+  }, [
+    authState.signUpSuccess,
+    authState.error,
+    generateUsernameSuggestions,
+    state.name,
+    state.username,
+  ]);
 
   useEffect(() => {
     if (hasStartedAnimation.current) {
@@ -475,7 +571,7 @@ function SignupForm({ navigation, route }: Props) {
 
   useFocusEffect(
     React.useCallback(() => {
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === 'android') {
         StatusBar.setBarStyle(statusBarStyle);
       }
       setState(initialFormState);
@@ -533,9 +629,11 @@ function SignupForm({ navigation, route }: Props) {
 
   return (
     <>
-      {Platform.OS === 'ios' && <StatusBar barStyle={statusBarStyle} />}
+      {Platform.OS === 'android' && (
+        <StatusBar backgroundColor={colors.background} barStyle={statusBarStyle} />
+      )}
       <UserStepsLayout
-        backgroundColor={Colors.main.white}
+        backgroundColor={Colors.neutral[700]}
         showCustomHeaderOnAndroid
         refreshControl={
           <RefreshControl
@@ -551,28 +649,22 @@ function SignupForm({ navigation, route }: Props) {
             textPopStyle,
           ]}
         >
-          <StyledText
-            style={[Typography.header.h1, { color: dark ? brandWhite : Colors.primary.brand }]}
-          >
-            Create your account details
+          <StyledText style={[styles.headerTitle, { color: palette.textMain }]}>
+            Create your account
           </StyledText>
           {accountType ? (
             <StyledText
-              style={[
-                Typography.subheader.M,
-                { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x5 },
-              ]}
+              style={[styles.headerAccountType, { color: palette.textMain, marginTop: spacing.x5 }]}
             >
-              {accountType.charAt(0).toUpperCase() + accountType.slice(1)}
+              {accountType === 'individual'
+                ? 'Personal Account (Individual)'
+                : 'Ministry Account (Organization)'}
             </StyledText>
           ) : null}
           <StyledText
-            style={[
-              Typography.subheader.R,
-              { color: dark ? brandWhite : Colors.primary.brand, marginTop: spacing.x8 },
-            ]}
+            style={[styles.headerSubtitle, { color: palette.textSecondary, marginTop: spacing.x8 }]}
           >
-            Enter your details so that we can get you setup:
+            Create your profile to start connecting with the Body.
           </StyledText>
         </Animated.View>
 
@@ -580,37 +672,47 @@ function SignupForm({ navigation, route }: Props) {
           style={[
             styles.cardContainer,
             {
-              backgroundColor: Colors.neutral[700],
-              borderColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+              backgroundColor: palette.card,
+              borderColor: palette.cardBorder,
             },
             fieldsPopStyle,
           ]}
         >
-          <TouchableOpacity
-            style={{ flexDirection: 'row', marginBottom: spacing.x10 }}
-            onPress={() => navigation.replace('Login')}
-          >
-            <StyledText>Already have an account? </StyledText>
-            <StyledText style={{ color: '#41dbe1' }}>Sign in</StyledText>
+          <TouchableOpacity style={styles.signInRow} onPress={() => navigation.replace('Login')}>
+            <StyledText style={{ color: palette.textSecondary }}>Already a member? </StyledText>
+            <StyledText style={{ color: palette.primary }}>Sign in here</StyledText>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.x8 }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
-            <StyledText
-              style={{ marginHorizontal: 10, color: dark ? brandWhite : Colors.primary.brand }}
-            >
-              Or
-            </StyledText>
-            <View style={{ flex: 1, height: 1, backgroundColor: Colors.neutral[800] }} />
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
+            <StyledText style={[styles.orText, { color: palette.textSecondary }]}>or</StyledText>
+            <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
           </View>
 
           <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
-            <SignupButtons
-              socialLogin={() => undefined}
-              navigation={navigation}
-              route={route}
-              disabled={!accountType}
-            />
+            <View style={styles.socialIconsRow}>
+              <TouchableOpacity
+                style={[
+                  styles.socialBtn,
+                  { borderColor: palette.inputBorder, backgroundColor: palette.card },
+                ]}
+                onPress={showSocialUnavailable}
+              >
+                <Image source={googleIcon} style={styles.socialIcon} />
+              </TouchableOpacity>
+
+              {Platform.OS === 'ios' ? (
+                <TouchableOpacity
+                  style={[
+                    styles.socialBtn,
+                    { borderColor: palette.inputBorder, backgroundColor: palette.card },
+                  ]}
+                  onPress={showSocialUnavailable}
+                >
+                  <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFF7' : '#212121'} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </Animated.View>
           {formSuccess ? (
             <View
@@ -628,12 +730,10 @@ function SignupForm({ navigation, route }: Props) {
                 {formError}
               </StyledText>
               {typeof formError === 'string' &&
-              formError.toLowerCase().includes('email already in use') ? (
+              formError.toLowerCase().includes('already in use') ? (
                 <Button
-                  text="Already have an account? Reset password"
-                  onPress={() =>
-                    navigation.navigate('ForgotPassword' as any, { email: state.email })
-                  }
+                  text="Sign in to your existing account"
+                  onPress={() => navigation.navigate('Login')}
                   btnTextStyle={[Typography.subheader.R, { color: Colors.primary.brand }]}
                   btnStyle={{ backgroundColor: 'transparent' }}
                 />
@@ -643,23 +743,80 @@ function SignupForm({ navigation, route }: Props) {
 
           <InputField
             ref={inputRefs.username}
-            label="Username"
-            isDark={dark}
-            placeholder={state.username ? '' : 'e.g. onebodyusername'}
+            label="Create a Username"
+            palette={palette}
+            placeholder={state.username ? '' : 'e.g. brother_john'}
             value={state.username}
             error={state.usernameError}
             autoCapitalize="none"
             autoCorrect={false}
-            onChangeText={(username: string) => changeHandler('username', username.trim())}
+            rightIcon={
+              isCheckingUsername ? (
+                <View style={{ justifyContent: 'center', paddingRight: spacing.x8 }}>
+                  <ActivityIndicator size="small" color={Colors.primary.brand} />
+                </View>
+              ) : undefined
+            }
+            onChangeText={(username: string) =>
+              changeHandler('username', normalizeUsername(username))
+            }
             onBlur={() => checkUsernameAvailability(state.username)}
             onSubmitEditing={() => inputRefs.name.current?.focus()}
           />
+          {usernameSuggestions.length > 0 ? (
+            <View style={{ marginTop: spacing.x8, marginBottom: spacing.x8 }}>
+              <StyledText style={[Typography.subheader.R, { color: Colors.neutral[300] }]}>
+                Suggested usernames:
+              </StyledText>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  marginTop: spacing.x8,
+                }}
+              >
+                {usernameSuggestions.map((suggestion) => (
+                  <TouchableOpacity
+                    key={suggestion}
+                    onPress={() => {
+                      changeHandler('username', suggestion);
+                      checkUsernameAvailability(suggestion);
+                    }}
+                    style={{
+                      paddingHorizontal: spacing.x13,
+                      paddingVertical: spacing.x8,
+                      borderRadius: borderRadius.small,
+                      backgroundColor: Colors.neutral[700],
+                      borderWidth: 1,
+                      borderColor: Colors.neutral[800],
+                      marginRight: spacing.x8,
+                      marginBottom: spacing.x8,
+                    }}
+                  >
+                    <StyledText style={[Typography.subheader.R, { color: Colors.neutral[200] }]}>
+                      {suggestion}
+                    </StyledText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.replace('Login');
+                }}
+                style={{ marginTop: spacing.x13 }}
+              >
+                <StyledText style={[Typography.subheader.R, { color: Colors.primary.brand }]}>
+                  Belong to you? Sign in to access your profile.
+                </StyledText>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <InputField
             ref={inputRefs.name}
-            label="Full Name (Org Representative)"
-            isDark={dark}
-            placeholder={state.name ? '' : 'e.g. John Baptist / Johns Seminary Institute'}
+            label={accountType === 'individual' ? 'Display Name' : 'Organization / Ministry Name'}
+            palette={palette}
+            placeholder={state.name ? '' : 'How should we address you?'}
             value={state.name}
             error={state.nameError}
             autoCapitalize="words"
@@ -669,9 +826,9 @@ function SignupForm({ navigation, route }: Props) {
 
           <InputField
             ref={inputRefs.email}
-            label="Email"
-            isDark={dark}
-            placeholder={state.email ? '' : 'e.g. mypersonalemail@example.com'}
+            label="Email Address"
+            palette={palette}
+            placeholder={state.email ? '' : 'email@example.com'}
             value={state.email}
             error={state.emailError}
             keyboardType="email-address"
@@ -682,9 +839,9 @@ function SignupForm({ navigation, route }: Props) {
 
           <InputField
             ref={inputRefs.password}
-            label="Password"
-            isDark={dark}
-            placeholder={state.password ? '' : 'e.g. Create a secure password'}
+            label="Create a Password"
+            palette={palette}
+            placeholder={state.password ? '' : 'Enter a secure password'}
             secureTextEntry={hidePass}
             value={state.password}
             error={state.passwordError}
@@ -708,13 +865,13 @@ function SignupForm({ navigation, route }: Props) {
           {showPasswordHint ? (
             <View style={{ marginBottom: spacing.x16 }}>
               <StyledText style={{ color: dark ? brandWhite : Colors.primary.brand, fontSize: 12 }}>
-                Password must include:
+                Security Requirements:
               </StyledText>
               {[
-                { key: 'sixCharsOrMore', label: 'At least 6 characters' },
-                { key: 'number', label: 'A number' },
-                { key: 'specialChar', label: 'A special character' },
-                { key: 'uppercase', label: 'An uppercase letter' },
+                { key: 'sixCharsOrMore', label: 'Minimum 6 characters' },
+                { key: 'number', label: 'Includes a number' },
+                { key: 'specialChar', label: 'Includes a special character' },
+                { key: 'uppercase', label: 'Includes an uppercase letter' },
               ].map((rule) => {
                 const satisfied = passwordRules[rule.key as keyof typeof passwordRules];
                 const color = satisfied ? '#1DB954' : '#E35640';
@@ -737,8 +894,8 @@ function SignupForm({ navigation, route }: Props) {
           <InputField
             ref={inputRefs.cPassword}
             label="Confirm Password"
-            isDark={dark}
-            placeholder={state.cPassword ? '' : 'Repeat your password'}
+            palette={palette}
+            placeholder={state.cPassword ? '' : 'Re-enter password for security'}
             secureTextEntry={hidePass}
             value={state.cPassword}
             error={confirmPasswordError}
@@ -790,7 +947,7 @@ function SignupForm({ navigation, route }: Props) {
                 style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
               />
               <Button
-                text="Create account"
+                text="Join the Body"
                 btnStyle={[
                   button.primary,
                   {
@@ -807,7 +964,7 @@ function SignupForm({ navigation, route }: Props) {
             </View>
           ) : (
             <Button
-              text="Create account"
+              text="Join the Body"
               btnStyle={[
                 button.primary,
                 dropShadow,
@@ -827,7 +984,7 @@ function SignupForm({ navigation, route }: Props) {
 
           <View style={{ marginTop: spacing.x16 }}>
             <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
-              By creating an account, you agree to our{' '}
+              By joining, you agree to our{' '}
               <StyledText
                 style={{
                   color: dark ? appColor.SecoundryColor : Colors.primary.brand,
@@ -835,7 +992,7 @@ function SignupForm({ navigation, route }: Props) {
                 }}
                 onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
               >
-                User Agreements
+                Community Standards
               </StyledText>{' '}
               &{' '}
               <StyledText
@@ -863,26 +1020,80 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     marginBottom: spacing.x10,
-    color: Colors.primary.brand,
     fontSize: 14,
   },
   errorText: {
     color: Colors.errorFeedback[200],
     fontSize: 12,
-    marginBottom: spacing.x6,
+    marginBottom: spacing.x5,
   },
   cardContainer: {
     marginHorizontal: spacing.x16,
     paddingHorizontal: spacing.x16,
-    paddingVertical: spacing.x30,
-    backgroundColor: Colors.main.white,
-    borderRadius: 0,
+    paddingVertical: spacing.x16,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.neutral[800],
     marginBottom: spacing.x60,
-    width: '100%',
+    width: '97%',
     maxWidth: 480,
     alignSelf: 'center',
+  },
+  headerTitle: {
+    fontFamily: 'Rubik',
+    fontWeight: '600',
+    fontSize: 34,
+    lineHeight: 40,
+  },
+  headerAccountType: {
+    fontFamily: 'Lato',
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
+  },
+  headerSubtitle: {
+    fontFamily: 'Lato',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  signInRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: spacing.x10,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.x16,
+    width: '100%',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  orText: {
+    marginHorizontal: 10,
+    fontFamily: 'Lato',
+    fontSize: 16,
+  },
+  socialIconsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    width: '100%',
+    marginTop: spacing.x8,
+    marginBottom: spacing.x13,
+  },
+  socialBtn: {
+    width: 64,
+    height: 56,
+    borderWidth: 1,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  socialIcon: {
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
   },
 });
 

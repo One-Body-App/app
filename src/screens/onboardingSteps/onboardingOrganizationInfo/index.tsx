@@ -8,7 +8,7 @@ import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import { Colors, Typography } from '@/src/styles';
-import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
+import MapBox, { MapSuggestion } from '@/components/MapBox';
 import StyledTextInput from '@/components/styled/TextInput';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingOrganizationInfo'>;
@@ -46,7 +46,7 @@ function OnboardingLocation({ navigation, route }: Props) {
         } else {
           let message = '';
 
-          if (!longitude || !latitude || locationData) {
+          if (!longitude || !latitude || !locationData) {
             message = 'Organization locations is required';
           } else if (!organizationName || organizationName === '') {
             message = 'Organization name is required';
@@ -59,7 +59,7 @@ function OnboardingLocation({ navigation, route }: Props) {
       }}
       onboardingType={AccountType.organization}
       activeStep={2}
-      disabled={!longitude || !latitude || !organizationName}
+      disabled={!longitude || !latitude || !locationData || !organizationName}
       dontUseScrollView
       showCustomHeaderOnAndroid
     >
@@ -88,24 +88,23 @@ function OnboardingLocation({ navigation, route }: Props) {
             />
           </View>
           <View style={{ flex: 1 }}>
-            <StyledText style={{ marginBottom: 10 }}>Organization Location</StyledText>
+            <StyledText style={{ marginBottom: 10 }}>City & State</StyledText>
             <MapBox
               location={locationData}
               setLongitude={setLongitude}
               setLatitude={setLatitude}
               setLocation={setLocationData}
-              types={[MapBoxTypes.address]}
               countries={countryCode ? [countryCode] : undefined}
               inline
               modalTitle={
                 <StyledText style={{ fontSize: 18, color: Colors.primary.brand }}>
-                  In what{' '}
+                  Search for your{' '}
                   <StyledText
                     style={{ fontSize: 18, color: Colors.primary.brand, fontWeight: 'bold' }}
                   >
                     city
                   </StyledText>{' '}
-                  are you located?
+                  to get connected
                 </StyledText>
               }
             />

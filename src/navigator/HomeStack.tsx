@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
 import { Notification } from 'iconsax-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Home, { FeedTypes } from '../screens/home';
@@ -27,7 +27,10 @@ function HomeStack() {
       screenOptions={() => {
         return {
           // drawerType,
+          statusBarStyle: dark ? 'light' : 'dark',
           headerTintColor: dark ? colors.text : Colors.primary.brand,
+          headerTransparent: true,
+          headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
 
           drawerActiveBackgroundColor: Colors.neutral[600],
           drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
@@ -41,8 +44,15 @@ function HomeStack() {
           selectedTab: FeedTypes.Connected,
         }}
         options={({ navigation }) => {
+          if (Platform.OS === 'android') {
+            return {
+              headerShown: false,
+            };
+          }
+
           return {
             ...mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Home'),
+            contentStyle: { paddingTop: 100 },
             title: 'Home',
             headerTitleAlign: 'center',
             headerTitle: () => {
@@ -73,13 +83,6 @@ function HomeStack() {
                     strokeWidth={0.2}
                   />
                 </TouchableOpacity>
-                {/* <TouchableOpacity onPress={() => {}}>
-                            <Message
-                              style={{ height: 24, width: 24 }}
-                              stroke={Colors.primary.brand}
-                              strokeWidth={0.2}
-                            />
-                          </TouchableOpacity> */}
               </View>
             ),
           };

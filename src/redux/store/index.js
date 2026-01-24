@@ -27,7 +27,14 @@ export const store = configureStore({
       // Redux-persist dispatches actions that are not serializable,
       // so we ignore them to prevent console warnings.
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE', 'persist/REGISTER'],
+        ignoredActions: [
+          'persist/PERSIST',
+          'persist/REHYDRATE',
+          'persist/REGISTER',
+          'Profile_Update',
+          'ORGProfile_Update',
+        ],
+        ignoredActionPaths: ['data.data'],
       },
     }).concat(sagaMiddleware), // Add sagaMiddleware to the default middleware
   // Enable Redux DevTools only in development

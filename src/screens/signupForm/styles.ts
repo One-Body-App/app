@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
-    fontFamily: 'OpenSans-Regular',
+    fontFamily: 'Lato-Regular',
     color: '#032F3C',
     marginTop: 20,
   },
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   paragraph: {
     color: '#4F6D77',
     fontWeight: '400',
-    fontFamily: 'OpenSans-Regular',
+    fontFamily: 'Lato-Regular',
     fontSize: 15.5,
     lineHeight: 20,
     marginTop: getHeight(0.5),
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     color: '#304248',
     fontWeight: '400',
     fontStyle: 'italic',
-    fontFamily: 'OpenSans-Bold',
+    fontFamily: 'Rubik-Bold',
     fontSize: 15.5,
     lineHeight: 20,
     marginTop: getHeight(0.5),
@@ -60,16 +60,16 @@ const styles = StyleSheet.create({
   simpleText: {
     color: '#81979E',
     marginTop: 2,
-    fontFamily: 'OpenSans-Medium',
+    fontFamily: 'Lato-Medium',
   },
   text: {
     marginTop: 2,
-    fontFamily: 'OpenSans-Medium',
+    fontFamily: 'Lato-Medium',
   },
   btnText: {
     fontSize: getFontSize(1.8),
 
-    fontFamily: 'OpenSans-Medium',
+    fontFamily: 'Lato-Medium',
   },
   btnSelected: {
     width: getWidth(42),

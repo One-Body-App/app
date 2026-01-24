@@ -144,8 +144,8 @@ function InviteFriend() {
               onPress={async () => {
                 await Share.share({
                   title: `${userProfile?.name} invites You to join them on One Body`,
-                  url: Platform.OS == 'ios' && shareUrl ? shareUrl : '',
-                  message: Platform.OS == 'android' && shareUrl ? shareUrl : '',
+                  url: Platform.OS === 'ios' && shareUrl ? shareUrl : '',
+                  message: Platform.OS === 'android' && shareUrl ? shareUrl : '',
                 });
               }}
             >
@@ -158,7 +158,7 @@ function InviteFriend() {
                   marginBottom: spacing.x10,
                 }}
               >
-                {Platform.OS == 'android' ? (
+                {Platform.OS === 'android' ? (
                   <ShareAndroid color={Colors.neutral[300]} height={25} width={25} />
                 ) : (
                   <ShareIos color={Colors.neutral[300]} height={25} width={25} />

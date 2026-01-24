@@ -14,7 +14,13 @@ function ExploreStack() {
   const { dark, colors } = useTheme();
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        statusBarStyle: dark ? 'light' : 'dark',
+        headerTransparent: true,
+        headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
+      }}
+    >
       <Stack.Screen
         name="Explore"
         component={Explore}

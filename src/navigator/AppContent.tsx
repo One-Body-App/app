@@ -14,6 +14,7 @@ import {
   AppState,
   Alert,
   Linking,
+  StatusBar,
   useColorScheme,
   Animated,
   Easing,
@@ -236,6 +237,19 @@ function AppContent() {
       return;
     }
 
+    // Don't prompt for TOTP until after email is verified, and never during ConfirmLogin flow.
+    const isEmailVerified = !!authState.getProfileData?.emailVerified;
+    if (!isEmailVerified) {
+      return;
+    }
+    if (!navigationRef.isReady()) {
+      return;
+    }
+    const currentRouteName = navigationRef.getCurrentRoute()?.name;
+    if (currentRouteName === 'ConfirmLogin') {
+      return;
+    }
+
     if (authState.getProfileData?.twoFactorEnabled) {
       return;
     }
@@ -246,7 +260,7 @@ function AppContent() {
       'For better security, set up an authenticator app (TOTP). Email verification will be used when needed until you do.',
       [{ text: 'OK' }]
     );
-  }, [authState.getProfileData, authState.isLoading, token]);
+  }, [authState.getProfileData, authState.isLoading, navigationRef, token]);
 
   useEffect(() => {
     if (authChecked) {
@@ -439,6 +453,7 @@ function AppContent() {
           action: (action: string) => action,
           mode: (mode: string) => mode,
           oobCode: (oobCode: string) => oobCode,
+          token: (tokenParam: string) => tokenParam,
           apiKey: (apiKey: string) => apiKey,
           lang: (lang: string) => lang,
         },
@@ -563,7 +578,12 @@ function AppContent() {
   };
 
   const linking: LinkingOptions<MainStackParamList> = {
-    prefixes: ['https://app.onebodyapp.com', 'https://auth.onebodyapp.com', 'onebodyapp://'],
+    prefixes: [
+      'https://app.onebodyapp.com',
+      'https://auth.onebodyapp.com',
+      'https://stagingauth.onebodyapp.com',
+      'onebodyapp://',
+    ],
     config: linkingConfig,
     getStateFromPath(path, options) {
       if (__DEV__) {
@@ -588,6 +608,14 @@ function AppContent() {
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.log('[Deep Link getStateFromPath] Adjusted /verify-email to:', adjustedPath);
+        }
+      }
+      // New universal link pattern (JWT auth): /verify/<type>?token=...
+      else if (normalizedPath.startsWith('/verify/')) {
+        adjustedPath = normalizedPath.replace('/verify/', '/auth/');
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Deep Link getStateFromPath] Adjusted /verify/* to:', adjustedPath);
         }
       }
       // Legacy /auth/verify pattern - DEPRECATED, but kept for backwards compatibility
@@ -740,6 +768,15 @@ function AppContent() {
   };
 
   const scheme = useColorScheme();
+  const statusBarStyle = scheme === 'dark' ? 'light-content' : 'dark-content';
+  const statusBarBackground =
+    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background;
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    StatusBar.setBarStyle(statusBarStyle);
+    StatusBar.setBackgroundColor(statusBarBackground);
+  }, [statusBarBackground, statusBarStyle]);
 
   // Early return after all hooks have been called
   if (!authChecked && initializing) {
@@ -747,178 +784,189 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer
-      ref={navigationRef}
-      linking={linking}
-      theme={scheme === 'dark' ? darkTheme : theme}
-      onReady={() => {
-        const routeName = navigationRef.getCurrentRoute()?.name;
-        routeNameRef.current = routeName;
-        setNavigationReady(true);
-        if (routeName) {
-          logScreenViewEvent(routeName);
-        }
-      }}
-      onStateChange={() => {
-        const previousRouteName = routeNameRef.current;
-        const currentRouteName = navigationRef.getCurrentRoute()?.name;
-        if (currentRouteName && previousRouteName !== currentRouteName) {
-          logScreenViewEvent(currentRouteName);
-        }
-        routeNameRef.current = currentRouteName;
-      }}
-    >
-      <ReactionProvider>
-        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <MainStack.Navigator initialRouteName="Intro">
-            <MainStack.Screen
-              name="MainRoot"
-              component={DrawerNav}
-              options={{ headerShown: false }}
-            />
-            <MainStack.Screen
-              name="SinglePost"
-              component={SinglePost}
-              options={{ headerBackTitleVisible: false, title: 'Comment' }}
-            />
-            <MainStack.Screen
-              name="SingleRss"
-              component={RssPost}
-              options={{ headerBackTitleVisible: false, title: 'Comment' }}
-            />
-            <MainStack.Screen
-              name="Post"
-              component={NewPost}
-              options={({ route }) => ({
-                title: route.params?.postId ? 'Edit Post' : 'Create Post',
-                headerBackTitleVisible: false,
-              })}
-            />
+    <>
+      {Platform.OS === 'android' && (
+        <StatusBar barStyle={statusBarStyle} backgroundColor={statusBarBackground} />
+      )}
+      <NavigationContainer
+        ref={navigationRef}
+        linking={linking}
+        theme={scheme === 'dark' ? darkTheme : theme}
+        onReady={() => {
+          const routeName = navigationRef.getCurrentRoute()?.name;
+          routeNameRef.current = routeName;
+          setNavigationReady(true);
+          if (routeName) {
+            logScreenViewEvent(routeName);
+          }
+        }}
+        onStateChange={() => {
+          const previousRouteName = routeNameRef.current;
+          const currentRouteName = navigationRef.getCurrentRoute()?.name;
+          if (currentRouteName && previousRouteName !== currentRouteName) {
+            logScreenViewEvent(currentRouteName);
+          }
+          routeNameRef.current = currentRouteName;
+        }}
+      >
+        <ReactionProvider>
+          <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+            <MainStack.Navigator initialRouteName="Intro">
+              <MainStack.Screen
+                name="MainRoot"
+                component={DrawerNav}
+                options={{ headerShown: false }}
+              />
+              <MainStack.Screen
+                name="SinglePost"
+                component={SinglePost}
+                options={{ headerBackTitleVisible: false, title: 'Comment' }}
+              />
+              <MainStack.Screen
+                name="SingleRss"
+                component={RssPost}
+                options={{ headerBackTitleVisible: false, title: 'Comment' }}
+              />
+              <MainStack.Screen
+                name="Post"
+                component={NewPost}
+                options={({ route }) => ({
+                  title: route.params?.postId ? 'Edit Post' : 'Create Post',
+                  headerBackTitleVisible: false,
+                })}
+              />
 
-            <MainStack.Screen
-              name="Intro"
-              component={Intro}
-              options={{
-                headerShown: false,
-                ...(Platform.OS === 'android' && { animation: 'slide_from_right' }),
-              }}
-            />
-            <MainStack.Screen
-              name="AccountType"
-              component={AccountType}
-              options={{
-                ...(Platform.OS === 'ios'
-                  ? { ...headerOptions, animation: 'slide_from_right' }
-                  : {}),
-                ...(Platform.OS === 'android' && {
+              <MainStack.Screen
+                name="Intro"
+                component={Intro}
+                options={{
                   headerShown: false,
-                  animation: 'slide_from_right',
-                }),
+                  ...(Platform.OS === 'android' && { animation: 'slide_from_right' }),
+                }}
+              />
+              <MainStack.Screen
+                name="AccountType"
+                component={AccountType}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? { ...headerOptions, animation: 'slide_from_right' }
+                    : {}),
+                  ...(Platform.OS === 'android' && {
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                  }),
+                }}
+              />
+              <MainStack.Screen
+                name="Login"
+                component={Login}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        ...headerOptions,
+                        headerStyle: {
+                          backgroundColor:
+                            scheme === 'dark'
+                              ? darkTheme.colors.background
+                              : theme.colors.background,
+                        },
+                        headerTransparent: false,
+                      }
+                    : {
+                        headerShown: false,
+                      }),
+                }}
+              />
+              <MainStack.Screen
+                name="SignUp"
+                component={Signup}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        ...headerOptions,
+                        animation: 'slide_from_right',
+                        headerTransparent: false,
+                        headerStyle: {
+                          backgroundColor:
+                            scheme === 'dark'
+                              ? darkTheme.colors.background
+                              : theme.colors.background,
+                        },
+                      }
+                    : {
+                        headerShown: false,
+                      }),
+                }}
+              />
+              <MainStack.Screen
+                name="ForgotPassword"
+                component={ForgotPassword}
+                options={{
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        ...headerOptions,
+                        headerTransparent: false,
+                        headerStyle: {
+                          backgroundColor:
+                            scheme === 'dark'
+                              ? darkTheme.colors.background
+                              : theme.colors.background,
+                        },
+                      }
+                    : {
+                        headerShown: false,
+                      }),
+                }}
+              />
+              <MainStack.Screen
+                name="ConfirmLogin"
+                component={ConfirmLogin}
+                options={() => ({
+                  presentation: 'modal',
+                  ...(Platform.OS === 'ios'
+                    ? {
+                        ...headerOptions,
+                        headerTintColor: Colors.primary.brand,
+                        headerBackTitle: '',
+                        headerBackTitleVisible: false,
+                        headerLeft: renderConfirmBackButton,
+                      }
+                    : {
+                        headerShown: false,
+                      }),
+                })}
+              />
+              <MainStack.Screen
+                name="VideoPost"
+                component={VideoPost}
+                options={{
+                  headerShown: true,
+                  headerTransparent: true,
+                  title: 'Create',
+                  headerBackImageSource: closeIcon,
+                  headerTitleAlign: 'center',
+                  headerBackTitleVisible: false,
+                  headerTintColor: 'white',
+                  headerTitleStyle: { fontSize: 20 },
+                }}
+              />
+            </MainStack.Navigator>
+            <Animated.View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: Colors.main.white,
+                transform: [{ translateY: overlayTranslate }],
               }}
             />
-            <MainStack.Screen
-              name="Login"
-              component={Login}
-              options={{
-                ...(Platform.OS === 'ios'
-                  ? {
-                      ...headerOptions,
-                      headerStyle: {
-                        backgroundColor:
-                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      },
-                      headerTransparent: false,
-                    }
-                  : {
-                      headerShown: false,
-                    }),
-              }}
-            />
-            <MainStack.Screen
-              name="SignUp"
-              component={Signup}
-              options={{
-                ...(Platform.OS === 'ios'
-                  ? {
-                      ...headerOptions,
-                      animation: 'slide_from_right',
-                      headerTransparent: false,
-                      headerStyle: {
-                        backgroundColor:
-                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      },
-                    }
-                  : {
-                      headerShown: false,
-                    }),
-              }}
-            />
-            <MainStack.Screen
-              name="ForgotPassword"
-              component={ForgotPassword}
-              options={{
-                ...(Platform.OS === 'ios'
-                  ? {
-                      ...headerOptions,
-                      headerTransparent: false,
-                      headerStyle: {
-                        backgroundColor:
-                          scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
-                      },
-                    }
-                  : {
-                      headerShown: false,
-                    }),
-              }}
-            />
-            <MainStack.Screen
-              name="ConfirmLogin"
-              component={ConfirmLogin}
-              options={() => ({
-                presentation: 'modal',
-                ...(Platform.OS === 'ios'
-                  ? {
-                      ...headerOptions,
-                      headerTintColor: Colors.primary.brand,
-                      headerBackTitle: '',
-                      headerBackTitleVisible: false,
-                      headerLeft: renderConfirmBackButton,
-                    }
-                  : {
-                      headerShown: false,
-                    }),
-              })}
-            />
-            <MainStack.Screen
-              name="VideoPost"
-              component={VideoPost}
-              options={{
-                headerShown: true,
-                headerTransparent: true,
-                title: 'Create',
-                headerBackImageSource: closeIcon,
-                headerTitleAlign: 'center',
-                headerBackTitleVisible: false,
-                headerTintColor: 'white',
-                headerTitleStyle: { fontSize: 20 },
-              }}
-            />
-          </MainStack.Navigator>
-          <Animated.View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: Colors.main.white,
-              transform: [{ translateY: overlayTranslate }],
-            }}
-          />
-        </Animated.View>
-      </ReactionProvider>
-    </NavigationContainer>
+          </Animated.View>
+        </ReactionProvider>
+      </NavigationContainer>
+    </>
   );
 }
 

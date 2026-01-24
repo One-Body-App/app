@@ -39,7 +39,7 @@ type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
 function OnboardingIntro({ navigation }: Props) {
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const { dark } = useTheme();
+  const { dark, colors } = useTheme();
   const colorScheme = useColorScheme();
   const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
   const isIos = Platform.OS === 'ios';
@@ -87,7 +87,7 @@ function OnboardingIntro({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === 'android') {
         StatusBar.setBarStyle(statusBarStyle);
       }
     }, [statusBarStyle])
@@ -142,9 +142,8 @@ function OnboardingIntro({ navigation }: Props) {
   return (
     <>
       {Platform.OS === 'android' && (
-        <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
+        <StatusBar backgroundColor={colors.background} barStyle={statusBarStyle} />
       )}
-      {Platform.OS === 'ios' && <StatusBar barStyle={statusBarStyle} />}
       <SafeAreaView
         style={{
           flex: 1,

@@ -1,4 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  memo,
+  useMemo,
+} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -9,12 +17,27 @@ import {
   TextInput,
   Image,
   ListRenderItem,
+  Platform,
+  Animated,
+  StyleProp,
+  StyleSheet,
+  ViewStyle,
 } from 'react-native';
 
 import { useSelector } from 'react-redux';
-import { CompositeScreenProps, useTheme, useScrollToTop } from '@react-navigation/native';
+import {
+  CompositeScreenProps,
+  useNavigation,
+  useTheme,
+  useScrollToTop,
+  DrawerActions,
+  useFocusEffect,
+} from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BlurView } from '@react-native-community/blur';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Heart,
   Message,
@@ -23,7 +46,9 @@ import {
   More,
   Gallery,
   ArrowDown2,
+  Notification,
 } from 'iconsax-react-native';
+import { Menu } from 'iconoir-react-native';
 
 import styles from './styles';
 import { ApiCall } from '@/services/api';
@@ -33,6 +58,11 @@ import StyledText from '@/components/styled/Text';
 import ArticleItem from '@/components/listItems/ArticleItem';
 import SocialItem from '@/components/listItems/SocialItem';
 import { ArticleType, SocialPost, User } from '@/utils/types';
+import { Colors } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
+import { getHeight } from '@/utils/ResponsiveFun';
+import Logo from '@/assets/icons/logo.svg';
+import LogoWhite from '@/assets/icons/logo_white.svg';
 
 import {
   HomeStackParamsList,
@@ -59,6 +89,8 @@ const BRAND = {
 type FeedPost = (ArticleType | SocialPost) & {
   type?: 'social' | 'posts';
   body?: string;
+  content?: string;
+  postId?: string;
   authorName?: string;
   authorAvatar?: string;
   source?: string | { name: string };
@@ -104,6 +136,8 @@ type FeedOptions = {
   type: FeedTypes;
   page: number;
 };
+
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<FeedEntry>);
 
 const mainTabs = [
   { label: 'Feed', value: FeedTypes.Connected },
@@ -167,9 +201,9 @@ function DiscoverySection({ visible }: { visible: boolean }) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}
       >
-        {[1, 2, 3].map((_, i) => (
+        {[1, 2, 3].map((id) => (
           <View
-            key={i}
+            key={`discovery-${id}`}
             style={[
               styles.discoveryCard,
               {
@@ -182,7 +216,7 @@ function DiscoverySection({ visible }: { visible: boolean }) {
             <StyledText
               style={{ fontWeight: 'bold', marginTop: 4, color: dark ? BRAND.white : '#000' }}
             >
-              User {i + 1}
+              User {id}
             </StyledText>
             <StyledText style={{ fontSize: 10, color: BRAND.gray400, marginBottom: 8 }}>
               2 mutual friends
@@ -330,11 +364,36 @@ type Props = CompositeScreenProps<
 >;
 
 function Home({ navigation, route }: Props) {
+  const stackNavigation = useNavigation<NativeStackNavigationProp<HomeStackParamsList, 'Home'>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector(
     (state: RootState) => state.auth.getProfileData
   ) as UserProfile | null;
-  const { dark } = useTheme();
+  const { dark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const headerHeightRef = useRef(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const headerRowHeight = getHeight(7);
+  const headerSideWidth = headerRowHeight;
+  const defaultHeaderHeight = insets.top + headerRowHeight + spacing.x10 + spacing.x8 + 20;
+  const glassOverlayColor = dark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+  const androidHeaderBackground = colors.background;
+  const androidHeaderBorderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const tabContainerGlassStyle = useMemo(
+    () => ({
+      backgroundColor: 'transparent',
+      borderBottomColor: dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
+    }),
+    [dark]
+  );
+  const androidTabContainerStyle = useMemo(
+    () => ({
+      backgroundColor: androidHeaderBackground,
+      borderBottomWidth: 0,
+      borderBottomColor: 'transparent',
+    }),
+    [androidHeaderBackground]
+  );
 
   const [feedOptions, setFeedOptions] = useState<FeedOptions>({
     type: route.params?.selectedTab ?? FeedTypes.Connected,
@@ -386,23 +445,204 @@ function Home({ navigation, route }: Props) {
     getFeedData(feedOptions.type, feedOptions.page);
   }, [feedOptions, feedSubType, getFeedData]);
 
-  const handleTabChange = (tabValue: FeedTypes) => {
-    if (tabValue === FeedTypes.Watch) {
-      navigation.navigate('MainRoot', {
-        screen: 'Main',
-        params: { screen: 'HomeTab', params: { screen: 'WatchPortal' } },
-      });
-      return;
-    }
-    setIsRefreshing(false);
-    setFeedOptions({ type: tabValue, page: 1 });
-  };
+  const handleTabChange = useCallback(
+    (tabValue: FeedTypes) => {
+      if (tabValue === FeedTypes.Watch) {
+        navigation.navigate('MainRoot', {
+          screen: 'Main',
+          params: { screen: 'HomeTab', params: { screen: 'WatchPortal' } },
+        });
+        return;
+      }
+      setIsRefreshing(false);
+      setFeedOptions({ type: tabValue, page: 1 });
+    },
+    [navigation]
+  );
 
-  const toggleFeedSubType = () => {
+  const toggleFeedSubType = useCallback(() => {
     const newType = feedSubType === FeedTypes.Connected ? FeedTypes.ForYou : FeedTypes.Connected;
     setFeedSubType(newType);
     setFeedOptions((prev) => ({ ...prev, page: 1 }));
-  };
+  }, [feedSubType]);
+
+  const handleHeaderLayout = useCallback(
+    (event: { nativeEvent: { layout: { height: number } } }) => {
+      const nextHeight = Math.round(event.nativeEvent.layout.height);
+      if (nextHeight > 0 && nextHeight !== headerHeightRef.current) {
+        headerHeightRef.current = nextHeight;
+        setHeaderHeight(nextHeight);
+      }
+    },
+    []
+  );
+
+  const handleOpenDrawer = useCallback(() => {
+    navigation.dispatch(DrawerActions.toggleDrawer());
+  }, [navigation]);
+
+  const handleNotifications = useCallback(() => {
+    navigation.navigate('MainRoot', {
+      screen: 'Main',
+      params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
+    });
+  }, [navigation]);
+
+  const renderTabs = useCallback(
+    (containerStyle?: StyleProp<ViewStyle>) => (
+      <View style={[styles.tabContainer, containerStyle]}>
+        {mainTabs.map((tab) => {
+          const { label, value } = tab;
+          const isActive = feedOptions.type === value;
+
+          if (value === FeedTypes.Connected) {
+            let feedLabel = 'Feed';
+            if (isActive) {
+              feedLabel = feedSubType === FeedTypes.Connected ? 'Connected' : 'For You';
+            }
+
+            return (
+              <TouchableOpacity
+                key={value}
+                style={[styles.tabItem, isActive && styles.tabItemSelected]}
+                onPress={() => {
+                  if (isActive) toggleFeedSubType();
+                  else handleTabChange(value);
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
+                    {feedLabel}
+                  </StyledText>
+                  {isActive && (
+                    <ArrowDown2
+                      size={14}
+                      color={BRAND.primary}
+                      style={{ marginLeft: 4 }}
+                      variant="Bold"
+                    />
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          }
+
+          return (
+            <TouchableOpacity
+              key={value}
+              style={[styles.tabItem, isActive && styles.tabItemSelected]}
+              onPress={() => handleTabChange(value)}
+            >
+              <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
+                {label}
+              </StyledText>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    ),
+    [feedOptions.type, feedSubType, handleTabChange, toggleFeedSubType]
+  );
+
+  const renderHeader = useCallback(
+    () => (
+      <View onLayout={handleHeaderLayout} style={{ paddingTop: insets.top, overflow: 'hidden' }}>
+        <BlurView
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+          blurType={dark ? 'dark' : 'light'}
+          blurAmount={20}
+          reducedTransparencyFallbackColor={colors.background}
+        />
+        <View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { backgroundColor: glassOverlayColor }]}
+        />
+        <View
+          style={{
+            height: headerRowHeight,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: spacing.x16,
+          }}
+        >
+          <View
+            style={{
+              width: headerSideWidth,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={handleOpenDrawer}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Menu
+                color={dark ? Colors.neutral[300] : Colors.primary.brand}
+                height={24}
+                width={24}
+              />
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <View style={{ height: 28, width: 28 }}>
+              {dark ? (
+                <LogoWhite style={{ height: 28, width: 28 }} />
+              ) : (
+                <Logo style={{ height: 28, width: 28 }} />
+              )}
+            </View>
+          </View>
+          <View
+            style={{
+              width: headerSideWidth,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={handleNotifications}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Notification
+                size={24}
+                color={dark ? Colors.neutral[300] : Colors.primary.brand}
+                strokeWidth={0.2}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+        {renderTabs(tabContainerGlassStyle)}
+      </View>
+    ),
+    [
+      colors.background,
+      dark,
+      glassOverlayColor,
+      handleHeaderLayout,
+      handleNotifications,
+      handleOpenDrawer,
+      headerRowHeight,
+      headerSideWidth,
+      insets.top,
+      renderTabs,
+      tabContainerGlassStyle,
+    ]
+  );
+
+  useLayoutEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const resolvedHeaderHeight = headerHeight || defaultHeaderHeight;
+
+    stackNavigation.setOptions({
+      header: renderHeader,
+      headerTransparent: true,
+      headerShadowVisible: false,
+      contentStyle: { paddingTop: resolvedHeaderHeight },
+    });
+  }, [defaultHeaderHeight, headerHeight, renderHeader, stackNavigation]);
 
   // --- NAVIGATION HANDLERS ---
   const navigateToDetail = (item: FeedPost) => {
@@ -418,14 +658,10 @@ function Home({ navigation, route }: Props) {
     }
   };
 
-  const navigateToProfile = (item: FeedPost) => {
-    // Placeholder: Navigate to profile if ID exists
-    // navigation.navigate('UserProfile', { userId: item.user?.id });
-    console.log('Navigating to user:', item.user?.name);
-  };
+  const navigateToProfile = () => {};
 
   const listRef = useRef<FlatList<FeedEntry>>(null);
-  useScrollToTop(listRef);
+  useScrollToTop(listRef as any);
 
   const unwrapFeedItem = (entry: FeedEntry): FeedPost | null => {
     if (entry.type === 'tasteBreaker') {
@@ -499,64 +735,128 @@ function Home({ navigation, route }: Props) {
       <ModernFeedCard
         item={normalizedWithImage}
         onPress={() => navigateToDetail(normalizedWithImage)}
-        onPressProfile={() => navigateToProfile(normalizedWithImage)}
+        onPressProfile={navigateToProfile}
       />
     );
   };
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerOpacity = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, 120],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollY]
+  );
+  useFocusEffect(
+    useCallback(() => {
+      const parent = navigation.getParent?.();
+      if (!parent) return undefined;
+
+      const baseTabStyle = {
+        height: getHeight(7),
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        backgroundColor: colors.background,
+      };
+
+      parent.setOptions({
+        tabBarStyle: [baseTabStyle, { opacity: 1 }],
+      });
+
+      const listenerId = scrollY.addListener(({ value }) => {
+        const opacity = Math.max(0, Math.min(1, 1 - value / 160));
+        parent.setOptions({
+          tabBarStyle: [baseTabStyle, { opacity }],
+        });
+      });
+
+      return () => {
+        scrollY.removeListener(listenerId);
+        parent.setOptions({
+          tabBarStyle: [baseTabStyle, { opacity: 1 }],
+        });
+      };
+    }, [colors.background, colors.border, navigation, scrollY])
+  );
+
   return (
-    <View style={[styles.container, { backgroundColor: dark ? BRAND.black : BRAND.gray100 }]}>
-      {/* Navigation Tabs */}
-      <View style={styles.tabContainer}>
-        {mainTabs.map((tab) => {
-          const { label, value } = tab;
-          const isActive = feedOptions.type === value;
-
-          if (value === FeedTypes.Connected) {
-            let feedLabel = 'Feed';
-            if (isActive) {
-              feedLabel = feedSubType === FeedTypes.Connected ? 'Connected' : 'For You';
-            }
-
-            return (
-              <TouchableOpacity
-                key={value}
-                style={[styles.tabItem, isActive && styles.tabItemSelected]}
-                onPress={() => {
-                  if (isActive) toggleFeedSubType();
-                  else handleTabChange(value);
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
-                    {feedLabel}
-                  </StyledText>
-                  {isActive && (
-                    <ArrowDown2
-                      size={14}
-                      color={BRAND.primary}
-                      style={{ marginLeft: 4 }}
-                      variant="Bold"
-                    />
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          }
-
-          return (
-            <TouchableOpacity
-              key={value}
-              style={[styles.tabItem, isActive && styles.tabItemSelected]}
-              onPress={() => handleTabChange(value)}
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: dark ? Colors.neutral[900] : Colors.neutral[700] },
+      ]}
+    >
+      {Platform.OS === 'android' && (
+        <Animated.View
+          style={{
+            opacity: headerOpacity,
+            backgroundColor: androidHeaderBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: androidHeaderBorderColor,
+          }}
+        >
+          <View
+            style={{
+              height: headerRowHeight,
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: spacing.x16,
+            }}
+          >
+            <View
+              style={{
+                width: headerSideWidth,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
-                {label}
-              </StyledText>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={handleOpenDrawer}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Menu
+                  color={dark ? Colors.neutral[300] : Colors.primary.brand}
+                  height={24}
+                  width={24}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <View style={{ height: 28, width: 28 }}>
+                {dark ? (
+                  <LogoWhite style={{ height: 28, width: 28 }} />
+                ) : (
+                  <Logo style={{ height: 28, width: 28 }} />
+                )}
+              </View>
+            </View>
+            <View
+              style={{
+                width: headerSideWidth,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={handleNotifications}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Notification
+                  size={24}
+                  color={dark ? Colors.neutral[300] : Colors.primary.brand}
+                  strokeWidth={0.2}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+          {renderTabs(androidTabContainerStyle)}
+        </Animated.View>
+      )}
 
       {/* Main Feed */}
       {isLoading && feedOptions.page === 1 ? (
@@ -564,12 +864,15 @@ function Home({ navigation, route }: Props) {
           <ActivityIndicator size="large" color={BRAND.primary} />
         </View>
       ) : (
-        <FlatList
+        <AnimatedFlatList
           ref={listRef}
           data={feedData}
-          keyExtractor={(item, index) =>
-            `${item.type ?? 'item'}-${item.id ?? item.postId ?? 'row'}-${index}`
-          }
+          keyExtractor={(item, index) => {
+            if (item.type === 'tasteBreaker') return `tasteBreaker-${index}`;
+            if (item.type === 'relatedContent') return `related-${index}`;
+            const baseId = (item as FeedPost).id ?? (item as FeedPost).postId ?? `row-${index}`;
+            return `${item.type ?? 'item'}-${baseId}-${index}`;
+          }}
           contentContainerStyle={{ paddingBottom: 100 }}
           ListHeaderComponent={
             <>
@@ -598,6 +901,10 @@ function Home({ navigation, route }: Props) {
               setFeedOptions((prev) => ({ ...prev, page: prev.page + 1 }));
             }
           }}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+          })}
+          scrollEventThrottle={16}
         />
       )}
     </View>

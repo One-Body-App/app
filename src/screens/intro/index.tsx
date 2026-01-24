@@ -130,7 +130,7 @@ function IntroScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === 'android') {
         StatusBar.setBarStyle(statusBarStyle);
       }
     }, [statusBarStyle])
@@ -231,13 +231,12 @@ function IntroScreen({ navigation }: Props) {
 
   return (
     <>
-      <StatusBar
-        backgroundColor={dark ? colors.background : Colors.main.white}
-        barStyle={(() => {
-          if (Platform.OS === 'ios') return statusBarStyle;
-          return dark ? 'light-content' : 'dark-content';
-        })()}
-      />
+      {Platform.OS === 'android' && (
+        <StatusBar
+          backgroundColor={dark ? colors.background : Colors.main.white}
+          barStyle={statusBarStyle}
+        />
+      )}
 
       <UserStepsLayout backgroundColor={colors.background}>
         <View

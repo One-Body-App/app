@@ -155,8 +155,8 @@ const VideoItem = gestureHandlerRootHOC(
         setIsCommentsRefreshing(false);
         let newComments = [];
 
-        if (result.status == 200) {
-          if (page == 1) {
+        if (result.status === 200) {
+          if (page === 1) {
             newComments = result?.response.content ?? [];
 
             setIsEndOfCommentsList(false);
@@ -191,7 +191,7 @@ const VideoItem = gestureHandlerRootHOC(
 
         setIsLoading(false);
 
-        if (result.status == 200) {
+        if (result.status === 200) {
           refreshContent();
           getComments(1);
           // commentList.current?.scrollToEnd();
@@ -213,7 +213,7 @@ const VideoItem = gestureHandlerRootHOC(
           },
         });
 
-        if (res?.status == 200) {
+        if (res?.status === 200) {
           toast.show('Comment modified successfully', {
             id: 'successMessage',
             type: 'success',
@@ -234,7 +234,7 @@ const VideoItem = gestureHandlerRootHOC(
           token,
         });
 
-        if (res?.status == 200) {
+        if (res?.status === 200) {
           await getComments(1);
         }
       } catch (e: any) {
@@ -261,7 +261,7 @@ const VideoItem = gestureHandlerRootHOC(
           ) : null}
         </BottomSheetFooter>
       ),
-      [isEditingComment]
+      [isEditingComment, mediaGif, publishComment]
     );
 
     return (
@@ -330,7 +330,7 @@ const VideoItem = gestureHandlerRootHOC(
             onShowDismissCard={onShowDismissCard}
             index={currentIndex}
             onPress={() => {
-              if (item.userData._id != user?._id) {
+              if (item.userData._id !== user?._id) {
                 navigation.navigate('Main', {
                   screen: 'HomeTab',
                   params: {
@@ -395,7 +395,7 @@ const VideoItem = gestureHandlerRootHOC(
               let myReaction: SocialPostReaction | undefined;
 
               item.reactions?.forEach((reaction: SocialPostReaction) => {
-                if (reaction.userId == user?._id) {
+                if (reaction.userId === user?._id) {
                   myReaction = reaction;
                 }
               });
@@ -423,7 +423,7 @@ const VideoItem = gestureHandlerRootHOC(
                     myReaction,
                     edited: item.edited,
                     gif:
-                      isEditingComment && editingCommentId == item.commentId ? mediaGif : item.gif,
+                      isEditingComment && editingCommentId === item.commentId ? mediaGif : item.gif,
                   }}
                   userData={item.userData}
                 />

@@ -1,6 +1,8 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 /* eslint-disable react/no-unstable-nested-components */
 import FastImage from 'react-native-fast-image';
+import { BlurView } from '@react-native-community/blur';
+import { Platform, StyleSheet } from 'react-native';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
@@ -24,6 +26,7 @@ const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
 function BottomStack() {
   const { dark, colors } = useTheme();
+  const isAndroid = Platform.OS === 'android';
 
   const authState = useSelector((state: RootState) => state.auth);
 
@@ -37,15 +40,26 @@ function BottomStack() {
         },
 
         tabBarActiveTintColor: dark ? colors.text : Colors.primarySapphire.brand,
-        tabBarInactiveTintColor: dark ? undefined : Colors.neutral[400],
+        tabBarInactiveTintColor: dark ? 'rgba(246,247,248,0.6)' : Colors.neutral[400],
         tabBarShowLabel: false,
 
         tabBarLabelStyle: { paddingTop: 4 },
         tabBarStyle: {
-          height: getHeight(9),
+          height: getHeight(7),
           borderTopWidth: 1,
-          borderTopColor: colors.border,
+          borderTopColor: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          backgroundColor: isAndroid ? colors.background : 'transparent',
+          elevation: 0,
         },
+        tabBarBackground: () =>
+          Platform.OS === 'ios' ? (
+            <BlurView
+              style={StyleSheet.absoluteFill}
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={20}
+              reducedTransparencyFallbackColor={colors.background}
+            />
+          ) : null,
 
         tabBarAllowFontScaling: false,
       }}

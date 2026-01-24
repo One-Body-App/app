@@ -102,10 +102,11 @@ function BaseItem({
   reelLayout = false,
   onCommentsPress,
 }: BaseItemProps) {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const cardBackground = dark ? Colors.neutral[900] : Colors.neutral[700];
 
   const [myReaction, setMyReaction] = useState<SocialPostReaction | undefined>(postData.myReaction);
   // const [reactions, setReactions] = useState<SocialPostReaction[]>(postData.reactions ?? []);
@@ -342,7 +343,13 @@ function BaseItem({
 
   if (reelLayout)
     return (
-      <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
+      <View
+        style={[
+          styles.postView,
+          { backgroundColor: cardBackground, borderBottomColor: cardBackground },
+          style,
+        ]}
+      >
         <View
           style={{
             flex: 1,
@@ -515,11 +522,7 @@ function BaseItem({
 
                         {postData.locationName ? (
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Location
-                              size={15}
-                              color="white"
-                              style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
-                            />
+                            <Location size={15} color="white" style={{ marginRight: spacing.x5 }} />
                             <StyledText
                               style={[
                                 fontSize.x1,
@@ -861,7 +864,13 @@ function BaseItem({
       </View>
     );
   return (
-    <View style={[styles.postView, { borderBottomColor: Colors.primarySapphire[900] }, style]}>
+    <View
+      style={[
+        styles.postView,
+        { backgroundColor: cardBackground, borderBottomColor: cardBackground },
+        style,
+      ]}
+    >
       <View
         style={{
           flexDirection: 'row',
@@ -878,8 +887,7 @@ function BaseItem({
             flexDirection: 'row',
             justifyContent: 'flex-start',
             alignItems: 'center',
-            maxWidth: 0,
-            marginTop: spacing.x5,
+            marginTop: 0,
           }}
         >
           {userData.profileIcon && !userData.profileImage ? (
@@ -891,8 +899,8 @@ function BaseItem({
                 borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
                 padding: spacing.x5,
-                marginBottom: spacing.x5,
-                marginLeft: spacing.x10,
+                marginBottom: 0,
+                marginLeft: 0,
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -909,10 +917,10 @@ function BaseItem({
                 width: 40,
                 height: 40,
                 borderRadius: borderRadius.max,
-                marginBottom: spacing.x5,
+                marginBottom: 0,
                 borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
-                marginLeft: spacing.x10,
+                marginLeft: 0,
               }}
               resizeMode="contain"
             />
@@ -943,7 +951,7 @@ function BaseItem({
                         color: transparency ? Colors.neutral[500] : Colors.neutral.brand,
                         alignItems: 'center',
                         ...fontSize.x1,
-                        marginLeft: spacing.x48,
+                        marginLeft: 0,
                         marginTop: spacing.x5,
                         fontWeight: 'bold',
                       }}
@@ -966,7 +974,7 @@ function BaseItem({
                       color: transparency ? Colors.neutral[600] : Colors.neutral[300],
                       alignItems: 'center',
                       ...fontSize.x1,
-                      marginLeft: spacing.x48,
+                      marginLeft: 0,
                       marginTop: 0,
                     }}
                   >
@@ -1026,7 +1034,7 @@ function BaseItem({
                       <Location
                         size={15}
                         color={Colors.neutral[300]}
-                        style={{ marginRight: spacing.x5, marginLeft: spacing.x48 }}
+                        style={{ marginRight: spacing.x5 }}
                       />
                       <StyledText
                         style={[

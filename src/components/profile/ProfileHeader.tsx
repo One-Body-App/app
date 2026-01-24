@@ -34,7 +34,6 @@ import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 
-import { styles } from '../loginComponent/styles';
 import StyledText from '../styled/Text';
 import { AccountType, Badge } from '@/utils/types';
 import Selected from '@/assets/svg/Selected.svg';
@@ -55,6 +54,20 @@ type ScreenNavigationProp = CompositeNavigationProp<
     BottomTabNavigationProp<MainBottomStackParamsList, 'MyProfileTab'>
   >
 >;
+
+const modalStyles = StyleSheet.create({
+  bottomView: {
+    justifyContent: 'flex-end',
+    margin: 0,
+  },
+  content2: {
+    alignItems: 'center',
+    padding: 13,
+    borderTopRightRadius: 17,
+    borderTopLeftRadius: 17,
+    flex: 1,
+  },
+});
 
 function ProfileHeader({
   profileData,
@@ -732,9 +745,9 @@ function ProfileHeader({
         onclose={() => {
           setRequestModal(false);
         }}
-        style={styles.bottomView}
+        style={modalStyles.bottomView}
       >
-        <View style={[styles.content2, { backgroundColor: colors.background }]}>
+        <View style={[modalStyles.content2, { backgroundColor: colors.background }]}>
           <SafeAreaView>
             <StyledText
               style={{

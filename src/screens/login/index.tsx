@@ -13,18 +13,16 @@ type Props = StackScreenProps<MainStackParamList, 'Login'>;
 
 function Login({ route }: Props) {
   const loginProviders = ['password'];
-  const { dark, colors } = useTheme();
+  useTheme();
 
   return (
-    <UserStepsLayout
-      backgroundColor={dark ? colors.background : Colors.neutral[700]}
-      showCustomHeaderOnAndroid
-    >
+    <UserStepsLayout backgroundColor={Colors.neutral[700]} showCustomHeaderOnAndroid>
       <ScrollView
         keyboardShouldPersistTaps="always"
         removeClippedSubviews={false}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        contentInsetAdjustmentBehavior="automatic"
       >
         <LoginComponent
           showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
