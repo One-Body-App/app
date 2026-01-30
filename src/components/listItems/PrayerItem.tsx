@@ -114,7 +114,7 @@ function PrayerItem({
         },
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setShowModal(false);
 
         toast.show('Prayer marked as answered', {
@@ -138,7 +138,7 @@ function PrayerItem({
   useEffect(() => {
     setIsPlaying(visible ?? false);
     if (!visible && !isMuted) setIsMuted(true);
-  }, [visible]);
+  }, [isMuted, visible]);
 
   useEffect(() => {
     setImageInfo([]);
@@ -162,13 +162,13 @@ function PrayerItem({
   let myReaction: SocialPostReaction | undefined;
 
   item.reactions?.forEach((reaction) => {
-    if (reaction.userId == user?._id) {
+    if (reaction.userId === user?._id) {
       myReaction = reaction;
     }
   });
 
   const getMediaInfo = async (media: Media[]) => {
-    const images = media.filter((item) => item.type == 'photo');
+    const images = media.filter((item) => item.type === 'photo');
 
     if (images.length > 0) {
       const imagePromises = images.map((img) => {
@@ -244,7 +244,7 @@ function PrayerItem({
       onShowDismissCard={onShowDismissCard}
       index={index}
       onPress={() => {
-        if (!item.private && item?.userData._id && item.userData._id != user?._id) {
+        if (!item.private && item?.userData._id && item.userData._id !== user?._id) {
           navigation.navigate('UserProfile', {
             id: item?.userData._id,
           });
@@ -395,9 +395,9 @@ function PrayerItem({
         )}
       </View>
 
-      {item?.userData?._id == user?._id &&
+      {item?.userData?._id === user?._id &&
       !item.answered &&
-      item.category == PrayerWallCategory.Request ? (
+      item.category === PrayerWallCategory.Request ? (
         <View
           style={{
             // paddingHorizontal: spacing.x10,
@@ -528,7 +528,7 @@ function PrayerItem({
               ) : undefined
             }
             onPress={() => {
-              if (item?.userData?._id == user?._id) {
+              if (item?.userData?._id === user?._id) {
                 answeredPrayer();
               }
             }}

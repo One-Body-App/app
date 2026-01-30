@@ -108,7 +108,6 @@ function OnboardingInterests({ navigation, route }: Props) {
       onboardingType={route.params.profileType}
       activeStep={route.params.profileType === AccountType.individual ? 3 : 4}
       disabled={selectedInterest.length < 3}
-      showCustomHeaderOnAndroid
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>

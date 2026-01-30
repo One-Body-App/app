@@ -14,7 +14,6 @@ import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import { logout } from '@/src/redux/actions/AuthActions';
 import { clearAuthTokens } from '@/services/authTokens';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
 import GeneralStyle from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { RootStackParamList } from '@/src/_Navigation/types';
@@ -61,12 +60,6 @@ function DeactivateAccountConfirm({ navigation, route }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent
-      />
       <Header
         title="Remove account"
         leftView={

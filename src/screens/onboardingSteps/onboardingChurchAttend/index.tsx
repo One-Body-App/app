@@ -29,7 +29,6 @@ function OnboardingChurchAttend({ navigation, route }: Props) {
       }}
       onboardingType={AccountType.individual}
       activeStep={2}
-      showCustomHeaderOnAndroid
       reasonText={
         <StyledText style={{ color: dark ? Colors.main.black : Colors.primary.brand }}>
           Your frequency of church attendance helps us to understand the type of content you would

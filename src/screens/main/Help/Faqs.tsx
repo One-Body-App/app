@@ -25,7 +25,6 @@ import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import { styles } from './styles';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
 // import ZendeskChat from 'react-native-zendesk-chat';
 
 function Faqs({ navigation }) {
@@ -34,13 +33,6 @@ function Faqs({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent
-      />
-
       <Header
         title="FAQs"
         leftView={

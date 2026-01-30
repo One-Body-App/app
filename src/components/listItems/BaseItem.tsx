@@ -73,7 +73,6 @@ interface BaseItemProps {
   isApprovedInfluencer?: boolean;
 
   onShowDismissCard?: (e?: boolean) => void;
-  isScrollEnable?: boolean;
   index?: number;
   parentRefreshContent?: Function;
   removePost?: (type: string, postId: string) => void;
@@ -113,6 +112,23 @@ function BaseItem({
 
   const [showOptions, setShowOptions] = useState(false);
 
+  const getUserHandle = () => {
+    if (source === 'twitter' && userData?.twitterHandler) {
+      return userData.twitterHandler;
+    }
+    if (source === 'instagram' && userData?.instagramHandler) {
+      return userData.instagramHandler;
+    }
+    if (userData?.username) {
+      return userData.username;
+    }
+    return undefined;
+  };
+
+  const userHandle = getUserHandle();
+  const formattedHandle = userHandle ? `@${userHandle}` : '';
+  const hasHandle = Boolean(formattedHandle);
+
   const reactPost = async (type?: SocialPostReactionType) => {
     dispatch(setLoader(true));
     try {
@@ -126,20 +142,20 @@ function BaseItem({
         },
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         // dispatch(getuserGet({ token }));
         // setMyReaction()
         if (res.response?.reactions?.length > 0) {
-          let myReaction: SocialPostReaction | undefined;
+          let foundReaction: SocialPostReaction | undefined;
           res.response?.reactions.forEach((reaction: SocialPostReaction) => {
-            if (reaction.userId == user?._id) {
-              myReaction = reaction;
+            if (reaction.userId === user?._id) {
+              foundReaction = reaction;
             }
           });
 
-          // if (myReaction) setReactions([...reactions, myReaction]);
+          // if (foundReaction) setReactions([...reactions, foundReaction]);
           // setShowActions(false);
-          if (myReaction) setMyReaction(myReaction);
+          if (foundReaction) setMyReaction(foundReaction);
         } else {
           setMyReaction(undefined);
         }
@@ -166,19 +182,18 @@ function BaseItem({
         },
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         // dispatch(getuserGet({ token }));
 
         if (res.response?.reactions?.length > 0) {
-          let myReaction;
-          const indexToRemove = -1;
+          let foundReaction: SocialPostReaction | undefined;
           res.response?.reactions.forEach((reaction: any) => {
-            if (reaction.userId == user?._id) {
-              myReaction = reaction;
+            if (reaction.userId === user?._id) {
+              foundReaction = reaction;
             }
           });
 
-          setMyReaction(myReaction);
+          setMyReaction(foundReaction);
         } else {
           setMyReaction(undefined);
         }
@@ -218,7 +233,7 @@ function BaseItem({
         },
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(getuserGet({ token, pullSavedData: fromSavedPosts }));
       }
       dispatch(setLoader(false));
@@ -242,7 +257,7 @@ function BaseItem({
         },
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(getuserGet({ token, pullSavedData: fromSavedPosts }));
       }
       dispatch(setLoader(false));
@@ -253,17 +268,17 @@ function BaseItem({
 
   let isThisPostSaved = false;
 
-  if (postData.type == PostType.prayer && user?.savedPrayers && user?.savedPrayers.length > 0) {
+  if (postData.type === PostType.prayer && user?.savedPrayers && user?.savedPrayers.length > 0) {
     user?.savedPrayers.forEach((savedPrayer) => {
-      if (savedPrayer == postData?.id) {
+      if (savedPrayer === postData?.id) {
         isThisPostSaved = true;
       }
     });
-  } else if (postData.type != PostType.prayer && user?.savedPost && user?.savedPost.length > 0) {
+  } else if (postData.type !== PostType.prayer && user?.savedPost && user?.savedPost.length > 0) {
     user?.savedPost.forEach((savedPost) => {
       if (
-        (savedPost.link != undefined && savedPost.link == postData.postlink) ||
-        (savedPost.postId != undefined && savedPost.postId == postData?.id)
+        (savedPost.link !== undefined && savedPost.link === postData.postlink) ||
+        (savedPost.postId !== undefined && savedPost.postId === postData?.id)
       ) {
         isThisPostSaved = true;
       }
@@ -388,7 +403,7 @@ function BaseItem({
                     width: 40,
                     height: 40,
                     borderRadius: borderRadius.max,
-                    borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                    borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                     borderWidth: borderWidth.thin,
                     padding: spacing.x5,
                     marginBottom: spacing.x5,
@@ -469,25 +484,11 @@ function BaseItem({
                             marginTop: 0,
                           }}
                         >
-                          {(source == 'twitter' && userData?.twitterHandler) ||
-                          (source == 'instagram' && userData?.instagramHandler) ||
-                          userData?.username
-                            ? `@${
-                                source === 'twitter'
-                                  ? userData?.twitterHandler
-                                  : source === 'instagram'
-                                    ? userData?.instagramHandler
-                                    : userData?.username
-                              }`
-                            : ''}
+                          {formattedHandle}
 
                           {created ? (
                             <>
-                              {(source === 'twitter' && userData?.twitterHandler) ||
-                              (source === 'instagram' && userData?.instagramHandler) ||
-                              userData?.username
-                                ? ` • `
-                                : ''}
+                              {hasHandle ? ` • ` : ''}
                               <StyledText
                                 style={[
                                   fontSize.x1,
@@ -787,11 +788,11 @@ function BaseItem({
                     style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
                   >
                     <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
-                      {source == 'instagram' ? (
+                      {source === 'instagram' ? (
                         <Instagram height={getHeight(2.5)} fill="#00acee" />
                       ) : null}
 
-                      {source == 'twitter' ? (
+                      {source === 'twitter' ? (
                         <Twitter height={getHeight(2.5)} fill="#00acee" />
                       ) : null}
                     </View>
@@ -803,7 +804,7 @@ function BaseItem({
                 ) : null}
               </View>
               <View style={{ alignItems: 'center' }}>
-                {postData.type == PostType.rss ? (
+                {postData.type === PostType.rss ? (
                   <View
                     style={
                       {
@@ -819,9 +820,9 @@ function BaseItem({
                       onPress={() => {
                         Share.share({
                           title: `${postData?.title}`,
-                          url: Platform.OS == 'ios' && postData.postlink ? postData?.postlink : '',
+                          url: Platform.OS === 'ios' && postData.postlink ? postData?.postlink : '',
                           message:
-                            Platform.OS == 'android' && postData?.postlink
+                            Platform.OS === 'android' && postData?.postlink
                               ? postData?.postlink
                               : '',
                         });
@@ -896,7 +897,7 @@ function BaseItem({
                 width: 40,
                 height: 40,
                 borderRadius: borderRadius.max,
-                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
                 padding: spacing.x5,
                 marginBottom: 0,
@@ -918,7 +919,7 @@ function BaseItem({
                 height: 40,
                 borderRadius: borderRadius.max,
                 marginBottom: 0,
-                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
                 marginLeft: 0,
               }}
@@ -978,13 +979,13 @@ function BaseItem({
                       marginTop: 0,
                     }}
                   >
-                    {(source == 'twitter' && userData?.twitterHandler) ||
-                    (source == 'instagram' && userData?.instagramHandler) ||
+                    {(source === 'twitter' && userData?.twitterHandler) ||
+                    (source === 'instagram' && userData?.instagramHandler) ||
                     userData?.username
                       ? `@${
-                          source == 'twitter'
+                          source === 'twitter'
                             ? userData?.twitterHandler
-                            : source == 'instagram'
+                            : source === 'instagram'
                               ? userData?.instagramHandler
                               : userData?.username
                         }`
@@ -992,8 +993,8 @@ function BaseItem({
 
                     {created ? (
                       <>
-                        {(source == 'twitter' && userData?.twitterHandler) ||
-                        (source == 'instagram' && userData?.instagramHandler) ||
+                        {(source === 'twitter' && userData?.twitterHandler) ||
+                        (source === 'instagram' && userData?.instagramHandler) ||
                         userData?.username
                           ? ` • `
                           : ''}
@@ -1180,11 +1181,11 @@ function BaseItem({
                   style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
                 >
                   <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
-                    {source == 'instagram' ? (
+                    {source === 'instagram' ? (
                       <Instagram height={getHeight(2.5)} fill="#00acee" />
                     ) : null}
 
-                    {source == 'twitter' ? (
+                    {source === 'twitter' ? (
                       <Twitter height={getHeight(2.5)} fill="#00acee" />
                     ) : null}
                   </View>
@@ -1212,7 +1213,7 @@ function BaseItem({
                   }}
                   onTap={async (item) => {
                     if (item) {
-                      if (myReaction?.type == item.type) {
+                      if (myReaction?.type === item.type) {
                         await removeReactPost();
                       } else {
                         await reactPost(item.type);
@@ -1310,7 +1311,7 @@ function BaseItem({
               </View>
             </View>
             <View style={{ alignItems: 'center' }}>
-              {postData.type == PostType.rss ? (
+              {postData.type === PostType.rss ? (
                 <View
                   style={
                     {
@@ -1326,9 +1327,9 @@ function BaseItem({
                     onPress={() => {
                       Share.share({
                         title: `${postData?.title}`,
-                        url: Platform.OS == 'ios' && postData.postlink ? postData?.postlink : '',
+                        url: Platform.OS === 'ios' && postData.postlink ? postData?.postlink : '',
                         message:
-                          Platform.OS == 'android' && postData?.postlink ? postData?.postlink : '',
+                          Platform.OS === 'android' && postData?.postlink ? postData?.postlink : '',
                       });
                     }}
                   >

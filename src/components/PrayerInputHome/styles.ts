@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   requestModel: {
     opacity: 0.9,
 
@@ -88,3 +88,5 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
 });
+
+export default styles;

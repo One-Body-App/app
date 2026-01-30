@@ -7,7 +7,6 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   SafeAreaView,
-  StatusBar,
   ScrollView,
   StyleSheet,
   Animated,

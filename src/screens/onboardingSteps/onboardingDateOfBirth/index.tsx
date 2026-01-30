@@ -168,7 +168,6 @@ function OnboardingDateOfBirth({ navigation }: Props) {
       onboardingType={AccountType.individual}
       activeStep={1}
       dontUseScrollView
-      showCustomHeaderOnAndroid
       reasonText={
         <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>
           We use this to recommend relevant groups and fellowship opportunities. Your age is{' '}

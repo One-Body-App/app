@@ -85,7 +85,7 @@ function OptionsModal({
         },
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(getuserGet({ token }));
       }
       dispatch(setLoader(false));
@@ -121,7 +121,7 @@ function OptionsModal({
         },
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(getuserGet({ token }));
       }
       dispatch(setLoader(false));
@@ -131,26 +131,26 @@ function OptionsModal({
   };
   let isThisPostSaved = false;
   if (
-    currentPopupItem?.type == PostType.prayer &&
+    currentPopupItem?.type === PostType.prayer &&
     user?.savedPrayers &&
     user?.savedPrayers.length > 0
   ) {
     user?.savedPrayers.forEach((savedPrayers) => {
-      if (savedPrayers == currentPopupItem?.id) {
+      if (savedPrayers === currentPopupItem?.id) {
         isThisPostSaved = true;
       }
     });
   } else if (
-    currentPopupItem?.type != PostType.prayer &&
+    currentPopupItem?.type !== PostType.prayer &&
     user?.savedPost &&
     user?.savedPost.length > 0
   ) {
     user?.savedPost.forEach((savedPost) => {
       if (
         (currentPopupItem &&
-          savedPost.link != undefined &&
-          savedPost.link == currentPopupItem?.postlink) ||
-        (savedPost.postId != undefined && savedPost.postId == currentPopupItem?.id)
+          savedPost.link !== undefined &&
+          savedPost.link === currentPopupItem?.postlink) ||
+        (savedPost.postId !== undefined && savedPost.postId === currentPopupItem?.id)
       ) {
         isThisPostSaved = true;
       }
@@ -205,7 +205,7 @@ function OptionsModal({
         </View>
         <ScrollView style={{ flexGrow: 1, minHeight: 200 }}>
           <View>
-            {currentPopupItem?.userData?._id != user?._id && !isPrivate ? (
+            {currentPopupItem?.userData?._id !== user?._id && !isPrivate ? (
               <View style={{ marginVertical: spacing.x8 }}>
                 <Button
                   text="View Account"
@@ -350,11 +350,11 @@ function OptionsModal({
                     await Share.share({
                       title: `${currentPopupItem?.title}`,
                       url:
-                        Platform.OS == 'ios' && currentPopupItem?.postlink
+                        Platform.OS === 'ios' && currentPopupItem?.postlink
                           ? currentPopupItem?.postlink
                           : '',
                       message:
-                        Platform.OS == 'android' && currentPopupItem?.postlink
+                        Platform.OS === 'android' && currentPopupItem?.postlink
                           ? currentPopupItem?.postlink
                           : '',
                     });

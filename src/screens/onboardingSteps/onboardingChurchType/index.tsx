@@ -81,7 +81,6 @@ function OnboardingChurchType({ navigation }: Props) {
       }}
       onboardingType={AccountType.individual}
       activeStep={1}
-      showCustomHeaderOnAndroid
       reasonText={
         <>
           <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>

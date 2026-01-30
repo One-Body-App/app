@@ -61,7 +61,6 @@ function OnboardingLocation({ navigation, route }: Props) {
       activeStep={2}
       disabled={!longitude || !latitude || !locationData || !organizationName}
       dontUseScrollView
-      showCustomHeaderOnAndroid
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1 }}>

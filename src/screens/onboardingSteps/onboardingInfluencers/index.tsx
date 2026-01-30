@@ -175,7 +175,6 @@ function OnboardingInfluencers({ route }: Props) {
       activeStep={route.params.profileType === AccountType.individual ? 4 : 5}
       disabled={isLoading}
       loading={isLoading}
-      showCustomHeaderOnAndroid
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ marginBottom: spacing.x16 }}>

@@ -25,6 +25,7 @@ function OnboardingStack() {
       initialRouteName="OnboardingIntro"
       screenOptions={{
         statusBarStyle: dark ? 'light' : 'dark',
+        headerShown: false,
         headerTransparent: true,
         headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
       }}
@@ -34,7 +35,7 @@ function OnboardingStack() {
         component={OnboardingIntro}
         options={{
           ...headerOptions,
-          headerShown: Platform.OS !== 'android',
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -42,7 +43,7 @@ function OnboardingStack() {
         component={OnboardingDateOfBirth}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
-          ...(Platform.OS === 'android' && { headerShown: false }),
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -50,7 +51,7 @@ function OnboardingStack() {
         component={OnboardingInfluencers}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
-          ...(Platform.OS === 'android' && { headerShown: false }),
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -58,7 +59,7 @@ function OnboardingStack() {
         component={OnboardingInterests}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
-          ...(Platform.OS === 'android' && { headerShown: false }),
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -66,7 +67,7 @@ function OnboardingStack() {
         component={OnboardingLocation}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
-          ...(Platform.OS === 'android' && { headerShown: false }),
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -74,7 +75,7 @@ function OnboardingStack() {
         component={OnboardingOrganizationContact}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
-          ...(Platform.OS === 'android' && { headerShown: false }),
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -82,7 +83,7 @@ function OnboardingStack() {
         component={OnboardingOrganizationInfo}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
-          ...(Platform.OS === 'android' && { headerShown: false }),
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -90,7 +91,7 @@ function OnboardingStack() {
         component={OnboardingOrganizationType}
         options={{
           ...(Platform.OS === 'ios' ? headerOptions : {}),
-          ...(Platform.OS === 'android' && { headerShown: false }),
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

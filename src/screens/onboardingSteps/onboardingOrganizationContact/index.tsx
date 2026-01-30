@@ -56,7 +56,6 @@ function OnboardingLocation({ navigation, route }: Props) {
       onboardingType={AccountType.organization}
       activeStep={3}
       disabled={contactName === '' || contactEmail === ''}
-      showCustomHeaderOnAndroid
     >
       <View style={{ marginVertical: spacing.x20, flex: 1 }}>
         <View style={{ flex: 1, paddingBottom: 40 }}>

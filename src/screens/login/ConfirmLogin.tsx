@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Platform,
-  ScrollView,
-  StatusBar,
-  useColorScheme,
-  View,
-  PermissionsAndroid,
-} from 'react-native';
+import { Platform, ScrollView, View, PermissionsAndroid } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
@@ -38,8 +31,6 @@ function ConfirmLogin({ route, navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const profile = useSelector((state: RootState) => state.auth.getProfileData);
   const { dark, colors } = useTheme();
-  const colorScheme = useColorScheme();
-  const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
   const [isResending, setIsResending] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>(
     'idle'
@@ -116,7 +107,7 @@ function ConfirmLogin({ route, navigation }: Props) {
               buttonPositive: 'Allow',
             });
           } else {
-            await Geolocation.requestAuthorization('whenInUse');
+            await Geolocation.requestAuthorization();
           }
 
           await requestNotificationPermission(getMessaging());
@@ -146,7 +137,7 @@ function ConfirmLogin({ route, navigation }: Props) {
               buttonPositive: 'Allow',
             });
           } else {
-            await Geolocation.requestAuthorization('whenInUse');
+            await Geolocation.requestAuthorization();
           }
 
           await requestNotificationPermission(getMessaging());
@@ -198,162 +189,157 @@ function ConfirmLogin({ route, navigation }: Props) {
   }, [dispatch, navigation]);
 
   return (
-    <>
-      {Platform.OS === 'android' && (
-        <StatusBar backgroundColor={colors.background} barStyle={statusBarStyle} />
-      )}
-      <UserStepsLayout
-        backgroundColor={dark ? colors.background : Colors.neutral[700]}
-        showCustomHeaderOnAndroid
+    <UserStepsLayout
+      backgroundColor={dark ? colors.background : Colors.neutral[700]}
+      showCustomHeaderOnAndroid
+    >
+      <ScrollView
+        style={{ flexGrow: 1, marginTop: spacing.x24 }}
+        contentInsetAdjustmentBehavior="automatic"
       >
-        <ScrollView
-          style={{ flexGrow: 1, marginTop: spacing.x24 }}
-          contentInsetAdjustmentBehavior="automatic"
-        >
-          <View style={{ paddingHorizontal: 16 }}>
-            <StyledText
-              style={{
-                fontFamily: 'Rubik',
-                fontWeight: '600',
-                fontSize: 34,
-                lineHeight: 40,
-                color: palette.textMain,
-                marginBottom: 8,
-              }}
-            >
-              Verify your email
-            </StyledText>
-            <StyledText
-              style={{
-                fontFamily: 'Lato',
-                fontSize: 16,
-                lineHeight: 24,
-                color: palette.textSecondary,
-              }}
-            >
-              We sent a verification link to {profile?.email ?? 'your email'}. Tap the link to
-              continue.
-            </StyledText>
-          </View>
-
-          <View
+        <View style={{ paddingHorizontal: 16 }}>
+          <StyledText
             style={{
-              marginTop: 24,
-              marginHorizontal: 12,
-              backgroundColor: palette.card,
-              borderRadius: 20,
-              borderWidth: 1,
-              borderColor: palette.cardBorder,
-              padding: 16,
+              fontFamily: 'Rubik',
+              fontWeight: '600',
+              fontSize: 34,
+              lineHeight: 40,
+              color: palette.textMain,
+              marginBottom: 8,
             }}
           >
-            {verifyStatus === 'success' ? (
-              <View
-                style={{
-                  backgroundColor: dark ? 'rgba(18, 172, 123, 0.15)' : '#EDFFF9',
-                  borderRadius: 12,
-                  padding: 12,
-                  marginBottom: 16,
-                  borderWidth: 1,
-                  borderColor: 'rgba(18, 172, 123, 0.25)',
-                }}
-              >
-                <StyledText
-                  style={{
-                    fontFamily: 'Rubik',
-                    fontSize: 14,
-                    lineHeight: 22,
-                    color: '#12AC7B',
-                  }}
-                >
-                  Email verified. You can return to the app.
-                </StyledText>
-              </View>
-            ) : null}
+            Verify your email
+          </StyledText>
+          <StyledText
+            style={{
+              fontFamily: 'Lato',
+              fontSize: 16,
+              lineHeight: 24,
+              color: palette.textSecondary,
+            }}
+          >
+            We sent a verification link to {profile?.email ?? 'your email'}. Tap the link to
+            continue.
+          </StyledText>
+        </View>
 
-            {verifyStatus === 'failed' ? (
-              <View style={{ marginBottom: 16 }}>
-                <StyledText style={{ color: '#DC2C10', fontSize: 12, fontFamily: 'Lato' }}>
-                  {verifyError}
-                </StyledText>
-              </View>
-            ) : null}
-
-            {route?.params?.showConfirmationEmailMessage ? (
-              <View
-                style={{
-                  backgroundColor: dark ? 'rgba(18, 172, 123, 0.15)' : '#EDFFF9',
-                  borderRadius: 12,
-                  padding: 12,
-                  marginBottom: 16,
-                  borderWidth: 1,
-                  borderColor: 'rgba(18, 172, 123, 0.25)',
-                }}
-              >
-                <StyledText
-                  style={{
-                    fontFamily: 'Rubik',
-                    fontSize: 14,
-                    lineHeight: 22,
-                    color: '#12AC7B',
-                  }}
-                >
-                  Account created. Check your email to verify your account.
-                </StyledText>
-              </View>
-            ) : null}
-
-            <Button
-              text={isResending ? 'Sending…' : 'Resend verification email'}
-              btnStyle={{
-                backgroundColor: palette.primary,
-                height: 56,
-                width: '100%',
-                borderRadius: 999,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-              btnTextStyle={{ fontFamily: 'Lato', fontWeight: '600', fontSize: 18, color: '#FFF' }}
-              onPress={resendVerificationEmail}
-              disabled={isResending}
-            />
-
-            <View style={{ height: 12 }} />
-
-            <Button
-              text="I already verified"
-              btnStyle={{
-                backgroundColor: 'transparent',
-                height: 56,
-                width: '100%',
-                borderRadius: 999,
-                justifyContent: 'center',
-                alignItems: 'center',
+        <View
+          style={{
+            marginTop: 24,
+            marginHorizontal: 12,
+            backgroundColor: palette.card,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: palette.cardBorder,
+            padding: 16,
+          }}
+        >
+          {verifyStatus === 'success' ? (
+            <View
+              style={{
+                backgroundColor: dark ? 'rgba(18, 172, 123, 0.15)' : '#EDFFF9',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
                 borderWidth: 1,
-                borderColor: palette.divider,
+                borderColor: 'rgba(18, 172, 123, 0.25)',
               }}
-              btnTextStyle={{
-                fontFamily: 'Lato',
-                fontWeight: '600',
-                fontSize: 18,
-                color: palette.primary,
+            >
+              <StyledText
+                style={{
+                  fontFamily: 'Rubik',
+                  fontSize: 14,
+                  lineHeight: 22,
+                  color: '#12AC7B',
+                }}
+              >
+                Email verified. You can return to the app.
+              </StyledText>
+            </View>
+          ) : null}
+
+          {verifyStatus === 'failed' ? (
+            <View style={{ marginBottom: 16 }}>
+              <StyledText style={{ color: '#DC2C10', fontSize: 12, fontFamily: 'Lato' }}>
+                {verifyError}
+              </StyledText>
+            </View>
+          ) : null}
+
+          {route?.params?.showConfirmationEmailMessage ? (
+            <View
+              style={{
+                backgroundColor: dark ? 'rgba(18, 172, 123, 0.15)' : '#EDFFF9',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(18, 172, 123, 0.25)',
               }}
-              onPress={refreshProfile}
-            />
+            >
+              <StyledText
+                style={{
+                  fontFamily: 'Rubik',
+                  fontSize: 14,
+                  lineHeight: 22,
+                  color: '#12AC7B',
+                }}
+              >
+                Account created. Check your email to verify your account.
+              </StyledText>
+            </View>
+          ) : null}
 
-            <View style={{ height: 8 }} />
+          <Button
+            text={isResending ? 'Sending…' : 'Resend verification email'}
+            btnStyle={{
+              backgroundColor: palette.primary,
+              height: 56,
+              width: '100%',
+              borderRadius: 999,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            btnTextStyle={{ fontFamily: 'Lato', fontWeight: '600', fontSize: 18, color: '#FFF' }}
+            onPress={resendVerificationEmail}
+            disabled={isResending}
+          />
 
-            <Button
-              text="Back to sign in"
-              btnStyle={{ backgroundColor: 'transparent' }}
-              btnTextStyle={{ fontFamily: 'Lato', fontSize: 16, color: palette.primary }}
-              onPress={signOut}
-            />
-          </View>
-          <View style={{ height: spacing.x24 }} />
-        </ScrollView>
-      </UserStepsLayout>
-    </>
+          <View style={{ height: 12 }} />
+
+          <Button
+            text="I already verified"
+            btnStyle={{
+              backgroundColor: 'transparent',
+              height: 56,
+              width: '100%',
+              borderRadius: 999,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: palette.divider,
+            }}
+            btnTextStyle={{
+              fontFamily: 'Lato',
+              fontWeight: '600',
+              fontSize: 18,
+              color: palette.primary,
+            }}
+            onPress={refreshProfile}
+          />
+
+          <View style={{ height: 8 }} />
+
+          <Button
+            text="Back to sign in"
+            btnStyle={{ backgroundColor: 'transparent' }}
+            btnTextStyle={{ fontFamily: 'Lato', fontSize: 16, color: palette.primary }}
+            onPress={signOut}
+          />
+        </View>
+        <View style={{ height: spacing.x24 }} />
+      </ScrollView>
+    </UserStepsLayout>
   );
 }
 

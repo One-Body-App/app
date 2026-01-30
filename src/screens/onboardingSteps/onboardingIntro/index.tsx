@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   SafeAreaView,
@@ -6,15 +6,13 @@ import {
   ScrollView,
   Animated,
   Easing,
-  StatusBar,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import FastImage from 'react-native-fast-image';
-import { useFocusEffect, useTheme, CommonActions } from '@react-navigation/native';
+import { useTheme, CommonActions } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { LoginManager } from 'react-native-fbsdk-next';
@@ -40,8 +38,6 @@ function OnboardingIntro({ navigation }: Props) {
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const { dark, colors } = useTheme();
-  const colorScheme = useColorScheme();
-  const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
   const isIos = Platform.OS === 'ios';
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -84,14 +80,6 @@ function OnboardingIntro({ navigation }: Props) {
       spinLoop.stop();
     };
   }, [pulseAnim, spinAnim]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS === 'android') {
-        StatusBar.setBarStyle(statusBarStyle);
-      }
-    }, [statusBarStyle])
-  );
 
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
@@ -140,163 +128,158 @@ function OnboardingIntro({ navigation }: Props) {
     typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
 
   return (
-    <>
-      {Platform.OS === 'android' && (
-        <StatusBar backgroundColor={colors.background} barStyle={statusBarStyle} />
-      )}
-      <SafeAreaView
-        style={{
-          flex: 1,
-          marginHorizontal: spacing.x24,
-          marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
-        }}
-      >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        marginHorizontal: spacing.x24,
+        marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
+      }}
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View
+          style={{
+            flex: 4,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <View
             style={{
-              flex: 4,
+              width: '100%',
+              aspectRatio: 1,
               alignItems: 'center',
               justifyContent: 'center',
+              marginBottom: spacing.x32,
             }}
           >
-            <View
+            {/* Subtle rotating background layer */}
+            <Animated.View
               style={{
+                position: 'absolute',
                 width: '100%',
-                aspectRatio: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: spacing.x32,
+                height: '100%',
+                transform: [{ rotate: spin }],
               }}
             >
-              {/* Subtle rotating background layer */}
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  transform: [{ rotate: spin }],
-                }}
-              >
-                <AnimatedFastImage
-                  resizeMode="contain"
-                  style={{ width: '100%', height: '100%', opacity: bgLayerOpacity }}
-                  source={introImage}
-                />
-              </Animated.View>
-
-              {/* Main icon with gentle breathing pulse */}
               <AnimatedFastImage
                 resizeMode="contain"
-                style={{
-                  width: '70%',
-                  height: '70%',
-                  transform: [{ scale: pulseAnim }],
-                }}
+                style={{ width: '100%', height: '100%', opacity: bgLayerOpacity }}
                 source={introImage}
               />
-            </View>
+            </Animated.View>
 
-            <StyledText
-              style={[
-                Typography.header.h1,
-                {
-                  color: headerColor,
-                  marginVertical: spacing.x8,
-                },
-              ]}
-            >
-              Let&#39;s Get to Know You
-            </StyledText>
-
-            <StyledText
+            {/* Main icon with gentle breathing pulse */}
+            <AnimatedFastImage
+              resizeMode="contain"
               style={{
-                marginHorizontal: spacing.x16,
-                textAlign: 'center',
-                color: textColor,
+                width: '70%',
+                height: '70%',
+                transform: [{ scale: pulseAnim }],
               }}
-            >
-              This should only take about a minute to complete.
-            </StyledText>
+              source={introImage}
+            />
           </View>
 
-          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-            {isIos ? (
-              <BlurView
-                blurType={dark ? 'dark' : 'light'}
-                blurAmount={18}
-                reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
-                style={{
-                  width: '100%',
-                  borderRadius: glassRadius,
-                  overflow: 'hidden',
-                  borderWidth: 1,
-                  borderColor: glassBorderColor,
-                  backgroundColor: glassButtonBackground,
-                }}
-              >
-                <Button
-                  text="Get Started"
-                  btnStyle={[button.primary, { flex: 1, backgroundColor: 'transparent' }]}
-                  onPress={handleNext}
-                  btnTextStyle={{ color: '#FFF' }}
-                />
-              </BlurView>
-            ) : (
-              <Button
-                text="Get Started"
-                btnStyle={[
-                  button.primary,
-                  {
-                    flex: 1,
-                    backgroundColor: glassButtonBackground,
-                    borderWidth: 1,
-                    borderColor: glassBorderColor,
-                  },
-                ]}
-                onPress={handleNext}
-                btnTextStyle={{ color: '#FFF' }}
-              />
-            )}
-          </View>
-        </ScrollView>
-        <TouchableOpacity
-          onPress={handleBack}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          style={[
-            styles.backButton,
-            isIos ? styles.backButtonIos : styles.backButtonAndroid,
-            isIos
-              ? {
-                  top: 80,
-                  borderWidth: 1,
-                  borderColor: glassBorderColor,
-                  backgroundColor: glassBackground,
-                }
-              : { top: spacing.x32 },
-          ]}
-        >
-          {isIos && (
+          <StyledText
+            style={[
+              Typography.header.h1,
+              {
+                color: headerColor,
+                marginVertical: spacing.x8,
+              },
+            ]}
+          >
+            Let&#39;s Get to Know You
+          </StyledText>
+
+          <StyledText
+            style={{
+              marginHorizontal: spacing.x16,
+              textAlign: 'center',
+              color: textColor,
+            }}
+          >
+            This should only take about a minute to complete.
+          </StyledText>
+        </View>
+
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          {isIos ? (
             <BlurView
               blurType={dark ? 'dark' : 'light'}
               blurAmount={18}
-              reducedTransparencyFallbackColor={
-                dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-              }
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
+              reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
+              style={{
+                width: '100%',
+                borderRadius: glassRadius,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: glassBorderColor,
+                backgroundColor: glassButtonBackground,
+              }}
+            >
+              <Button
+                text="Get Started"
+                btnStyle={[button.primary, { flex: 1, backgroundColor: 'transparent' }]}
+                onPress={handleNext}
+                btnTextStyle={{ color: '#FFF' }}
+              />
+            </BlurView>
+          ) : (
+            <Button
+              text="Get Started"
+              btnStyle={[
+                button.primary,
+                {
+                  flex: 1,
+                  backgroundColor: glassButtonBackground,
+                  borderWidth: 1,
+                  borderColor: glassBorderColor,
+                },
+              ]}
+              onPress={handleNext}
+              btnTextStyle={{ color: '#FFF' }}
             />
           )}
-          <Ionicons
-            name="chevron-back"
-            size={24}
-            color={(() => {
-              if (!isIos) return headerColor;
-              return dark ? '#FFF' : Colors.primary.brand;
-            })()}
+        </View>
+      </ScrollView>
+      <TouchableOpacity
+        onPress={handleBack}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        style={[
+          styles.backButton,
+          isIos ? styles.backButtonIos : styles.backButtonAndroid,
+          isIos
+            ? {
+                top: 80,
+                borderWidth: 1,
+                borderColor: glassBorderColor,
+                backgroundColor: glassBackground,
+              }
+            : { top: spacing.x32 },
+        ]}
+      >
+        {isIos && (
+          <BlurView
+            blurType={dark ? 'dark' : 'light'}
+            blurAmount={18}
+            reducedTransparencyFallbackColor={
+              dark ? Colors.primarySapphire[900] : Colors.neutral[900]
+            }
+            style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
           />
-        </TouchableOpacity>
-      </SafeAreaView>
-    </>
+        )}
+        <Ionicons
+          name="chevron-back"
+          size={24}
+          color={(() => {
+            if (!isIos) return headerColor;
+            return dark ? '#FFF' : Colors.primary.brand;
+          })()}
+        />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 

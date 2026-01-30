@@ -33,7 +33,6 @@ function OnboardingLocation({ navigation, route }: Props) {
       onboardingType={AccountType.individual}
       activeStep={2}
       dontUseScrollView
-      showCustomHeaderOnAndroid
       reasonText={
         <>
           <StyledText style={{ color: dark ? colors.text : Colors.primary.brand }}>

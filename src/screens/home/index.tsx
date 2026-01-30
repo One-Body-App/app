@@ -386,14 +386,11 @@ function Home({ navigation, route }: Props) {
     }),
     [dark]
   );
-  const androidTabContainerStyle = useMemo(
-    () => ({
-      backgroundColor: androidHeaderBackground,
-      borderBottomWidth: 0,
-      borderBottomColor: 'transparent',
-    }),
-    [androidHeaderBackground]
-  );
+  const androidTabContainerStyle = {
+    backgroundColor: androidHeaderBackground,
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
+  };
 
   const [feedOptions, setFeedOptions] = useState<FeedOptions>({
     type: route.params?.selectedTab ?? FeedTypes.Connected,

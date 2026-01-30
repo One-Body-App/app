@@ -28,6 +28,8 @@ function HomeStack() {
         return {
           // drawerType,
           statusBarStyle: dark ? 'light' : 'dark',
+          statusBarColor: 'transparent',
+          statusBarTranslucent: true,
           headerTintColor: dark ? colors.text : Colors.primary.brand,
           headerTransparent: true,
           headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',

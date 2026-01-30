@@ -69,7 +69,7 @@ function ArticleItem({
   }, [item]);
   let myReaction: SocialPostReaction | undefined;
   item.reactions?.forEach((reaction) => {
-    if (reaction.userId == user?._id) {
+    if (reaction.userId === user?._id) {
       myReaction = reaction;
     }
   });
@@ -92,7 +92,7 @@ function ArticleItem({
       userData={item.userData}
       isApprovedInfluencer={itemData.userData.isApprovedInfluencer}
       onPress={() => {
-        if (item.userData._id != user?._id) {
+        if (item.userData._id !== user?._id) {
           navigation.navigate('Main', {
             screen: 'HomeTab',
             params: {

@@ -185,7 +185,6 @@ function OnboardingOrganizationType({ navigation }: Props) {
       activeStep={1}
       disabled={!selectedOrganizationType}
       dontUseScrollView
-      showCustomHeaderOnAndroid
       reasonText={
         <StyledText style={{ color: Colors.primary.brand }}>
           We ask for your Organization Type to better foster connection. This allows us to recommend

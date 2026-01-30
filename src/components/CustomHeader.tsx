@@ -22,10 +22,11 @@ export default function CustomHeader({
   contentHeight,
 }: CustomHeaderProps) {
   const navigation = useNavigation();
+  const canGoBack = navigation.canGoBack?.() ?? false;
   const { dark } = useTheme();
   const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
   const resolvedContentHeight = contentHeight ?? (Platform.OS === 'android' ? 44 : 44);
-  const iconSize = 44;
+  const iconSize = 45;
   const sideSlotStyle = {
     width: 50,
     height: resolvedContentHeight,
@@ -38,7 +39,7 @@ export default function CustomHeader({
   const androidBorderColor = dark ? Colors.neutral[800] : '#e0e0e0';
   const leftElement =
     leftSlot ??
-    (showBackButton ? (
+    (showBackButton && canGoBack ? (
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}

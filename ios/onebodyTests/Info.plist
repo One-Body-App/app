@@ -33,5 +33,7 @@
 	<array/>
 	<key>NSPrivacyTracking</key>
 	<false/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<yes/>
 </dict>
 </plist>

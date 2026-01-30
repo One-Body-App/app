@@ -12,8 +12,6 @@ import {
   Platform,
   StyleSheet,
   RefreshControl,
-  StatusBar,
-  useColorScheme,
   Image,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -212,8 +210,6 @@ function SignupForm({ navigation, route }: Props) {
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const hasSentVerificationEmailRef = useRef(false);
   const { dark, colors } = useTheme();
-  const colorScheme = useColorScheme();
-  const statusBarStyle = colorScheme === 'dark' ? 'light-content' : 'dark-content';
 
   const palette: SignupPalette = {
     background: Colors.neutral[700],
@@ -571,15 +567,12 @@ function SignupForm({ navigation, route }: Props) {
 
   useFocusEffect(
     React.useCallback(() => {
-      if (Platform.OS === 'android') {
-        StatusBar.setBarStyle(statusBarStyle);
-      }
       setState(initialFormState);
       setHidePass(true);
       setShowPasswordHint(false);
       setHasPasswordInteracted(false);
       setIsloading(false);
-    }, [statusBarStyle])
+    }, [])
   );
 
   const orbitStyle = {
@@ -628,69 +621,76 @@ function SignupForm({ navigation, route }: Props) {
   };
 
   return (
-    <>
-      {Platform.OS === 'android' && (
-        <StatusBar backgroundColor={colors.background} barStyle={statusBarStyle} />
-      )}
-      <UserStepsLayout
-        backgroundColor={Colors.neutral[700]}
-        showCustomHeaderOnAndroid
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Colors.primary.brand}
-          />
-        }
+    <UserStepsLayout
+      backgroundColor={Colors.neutral[700]}
+      showCustomHeaderOnAndroid
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={Colors.primary.brand}
+        />
+      }
+    >
+      <Animated.View
+        style={[
+          { marginTop: spacing.x20, marginBottom: spacing.x10, marginHorizontal: spacing.x20 },
+          textPopStyle,
+        ]}
       >
-        <Animated.View
-          style={[
-            { marginTop: spacing.x20, marginBottom: spacing.x10, marginHorizontal: spacing.x20 },
-            textPopStyle,
-          ]}
-        >
-          <StyledText style={[styles.headerTitle, { color: palette.textMain }]}>
-            Create your account
-          </StyledText>
-          {accountType ? (
-            <StyledText
-              style={[styles.headerAccountType, { color: palette.textMain, marginTop: spacing.x5 }]}
-            >
-              {accountType === 'individual'
-                ? 'Personal Account (Individual)'
-                : 'Ministry Account (Organization)'}
-            </StyledText>
-          ) : null}
+        <StyledText style={[styles.headerTitle, { color: palette.textMain }]}>
+          Create your account
+        </StyledText>
+        {accountType ? (
           <StyledText
-            style={[styles.headerSubtitle, { color: palette.textSecondary, marginTop: spacing.x8 }]}
+            style={[styles.headerAccountType, { color: palette.textMain, marginTop: spacing.x5 }]}
           >
-            Create your profile to start connecting with the Body.
+            {accountType === 'individual'
+              ? 'Personal Account (Individual)'
+              : 'Ministry Account (Organization)'}
           </StyledText>
-        </Animated.View>
-
-        <Animated.View
-          style={[
-            styles.cardContainer,
-            {
-              backgroundColor: palette.card,
-              borderColor: palette.cardBorder,
-            },
-            fieldsPopStyle,
-          ]}
+        ) : null}
+        <StyledText
+          style={[styles.headerSubtitle, { color: palette.textSecondary, marginTop: spacing.x8 }]}
         >
-          <TouchableOpacity style={styles.signInRow} onPress={() => navigation.replace('Login')}>
-            <StyledText style={{ color: palette.textSecondary }}>Already a member? </StyledText>
-            <StyledText style={{ color: palette.primary }}>Sign in here</StyledText>
-          </TouchableOpacity>
+          Create your profile to start connecting with the Body.
+        </StyledText>
+      </Animated.View>
 
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
-            <StyledText style={[styles.orText, { color: palette.textSecondary }]}>or</StyledText>
-            <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
-          </View>
+      <Animated.View
+        style={[
+          styles.cardContainer,
+          {
+            backgroundColor: palette.card,
+            borderColor: palette.cardBorder,
+          },
+          fieldsPopStyle,
+        ]}
+      >
+        <TouchableOpacity style={styles.signInRow} onPress={() => navigation.replace('Login')}>
+          <StyledText style={{ color: palette.textSecondary }}>Already a member? </StyledText>
+          <StyledText style={{ color: palette.primary }}>Sign in here</StyledText>
+        </TouchableOpacity>
 
-          <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
-            <View style={styles.socialIconsRow}>
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
+          <StyledText style={[styles.orText, { color: palette.textSecondary }]}>or</StyledText>
+          <View style={[styles.dividerLine, { backgroundColor: palette.divider }]} />
+        </View>
+
+        <Animated.View style={[{ marginTop: spacing.x5, alignItems: 'center' }, orbitStyle]}>
+          <View style={styles.socialIconsRow}>
+            <TouchableOpacity
+              style={[
+                styles.socialBtn,
+                { borderColor: palette.inputBorder, backgroundColor: palette.card },
+              ]}
+              onPress={showSocialUnavailable}
+            >
+              <Image source={googleIcon} style={styles.socialIcon} />
+            </TouchableOpacity>
+
+            {Platform.OS === 'ios' ? (
               <TouchableOpacity
                 style={[
                   styles.socialBtn,
@@ -698,281 +698,250 @@ function SignupForm({ navigation, route }: Props) {
                 ]}
                 onPress={showSocialUnavailable}
               >
-                <Image source={googleIcon} style={styles.socialIcon} />
+                <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFF7' : '#212121'} />
               </TouchableOpacity>
-
-              {Platform.OS === 'ios' ? (
-                <TouchableOpacity
-                  style={[
-                    styles.socialBtn,
-                    { borderColor: palette.inputBorder, backgroundColor: palette.card },
-                  ]}
-                  onPress={showSocialUnavailable}
-                >
-                  <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFF7' : '#212121'} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          </Animated.View>
-          {formSuccess ? (
-            <View
-              style={[
-                GeneralStyle.MessageView,
-                { backgroundColor: Colors.successFeedback.background, marginBottom: spacing.x16 },
-              ]}
-            >
-              <StyledText style={GeneralStyle.successtext}>{formSuccess}</StyledText>
-            </View>
-          ) : null}
-          {formError ? (
-            <View style={{ marginBottom: spacing.x16 }}>
-              <StyledText style={[styles.errorText, { marginBottom: spacing.x8 }]}>
-                {formError}
-              </StyledText>
-              {typeof formError === 'string' &&
-              formError.toLowerCase().includes('already in use') ? (
-                <Button
-                  text="Sign in to your existing account"
-                  onPress={() => navigation.navigate('Login')}
-                  btnTextStyle={[Typography.subheader.R, { color: Colors.primary.brand }]}
-                  btnStyle={{ backgroundColor: 'transparent' }}
-                />
-              ) : null}
-            </View>
-          ) : null}
-
-          <InputField
-            ref={inputRefs.username}
-            label="Create a Username"
-            palette={palette}
-            placeholder={state.username ? '' : 'e.g. brother_john'}
-            value={state.username}
-            error={state.usernameError}
-            autoCapitalize="none"
-            autoCorrect={false}
-            rightIcon={
-              isCheckingUsername ? (
-                <View style={{ justifyContent: 'center', paddingRight: spacing.x8 }}>
-                  <ActivityIndicator size="small" color={Colors.primary.brand} />
-                </View>
-              ) : undefined
-            }
-            onChangeText={(username: string) =>
-              changeHandler('username', normalizeUsername(username))
-            }
-            onBlur={() => checkUsernameAvailability(state.username)}
-            onSubmitEditing={() => inputRefs.name.current?.focus()}
-          />
-          {usernameSuggestions.length > 0 ? (
-            <View style={{ marginTop: spacing.x8, marginBottom: spacing.x8 }}>
-              <StyledText style={[Typography.subheader.R, { color: Colors.neutral[300] }]}>
-                Suggested usernames:
-              </StyledText>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  marginTop: spacing.x8,
-                }}
-              >
-                {usernameSuggestions.map((suggestion) => (
-                  <TouchableOpacity
-                    key={suggestion}
-                    onPress={() => {
-                      changeHandler('username', suggestion);
-                      checkUsernameAvailability(suggestion);
-                    }}
-                    style={{
-                      paddingHorizontal: spacing.x13,
-                      paddingVertical: spacing.x8,
-                      borderRadius: borderRadius.small,
-                      backgroundColor: Colors.neutral[700],
-                      borderWidth: 1,
-                      borderColor: Colors.neutral[800],
-                      marginRight: spacing.x8,
-                      marginBottom: spacing.x8,
-                    }}
-                  >
-                    <StyledText style={[Typography.subheader.R, { color: Colors.neutral[200] }]}>
-                      {suggestion}
-                    </StyledText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  navigation.replace('Login');
-                }}
-                style={{ marginTop: spacing.x13 }}
-              >
-                <StyledText style={[Typography.subheader.R, { color: Colors.primary.brand }]}>
-                  Belong to you? Sign in to access your profile.
-                </StyledText>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-
-          <InputField
-            ref={inputRefs.name}
-            label={accountType === 'individual' ? 'Display Name' : 'Organization / Ministry Name'}
-            palette={palette}
-            placeholder={state.name ? '' : 'How should we address you?'}
-            value={state.name}
-            error={state.nameError}
-            autoCapitalize="words"
-            onChangeText={(name: string) => changeHandler('name', name)}
-            onSubmitEditing={() => inputRefs.email.current?.focus()}
-          />
-
-          <InputField
-            ref={inputRefs.email}
-            label="Email Address"
-            palette={palette}
-            placeholder={state.email ? '' : 'email@example.com'}
-            value={state.email}
-            error={state.emailError}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            onChangeText={(email: string) => changeHandler('email', email.trim())}
-            onSubmitEditing={() => inputRefs.password.current?.focus()}
-          />
-
-          <InputField
-            ref={inputRefs.password}
-            label="Create a Password"
-            palette={palette}
-            placeholder={state.password ? '' : 'Enter a secure password'}
-            secureTextEntry={hidePass}
-            value={state.password}
-            error={state.passwordError}
-            autoCapitalize="none"
-            onFocus={() => {
-              setShowPasswordHint(true);
-              setHasPasswordInteracted(true);
-            }}
-            onChangeText={(password: string) => changeHandler('password', password)}
-            onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
-            rightIcon={
-              <MaterialCommunityIcons
-                name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-                size={22}
-                color="#41dbe1"
-                onPress={() => setHidePass(!hidePass)}
-                style={{ alignSelf: 'center' }}
-              />
-            }
-          />
-          {showPasswordHint ? (
-            <View style={{ marginBottom: spacing.x16 }}>
-              <StyledText style={{ color: dark ? brandWhite : Colors.primary.brand, fontSize: 12 }}>
-                Security Requirements:
-              </StyledText>
-              {[
-                { key: 'sixCharsOrMore', label: 'Minimum 6 characters' },
-                { key: 'number', label: 'Includes a number' },
-                { key: 'specialChar', label: 'Includes a special character' },
-                { key: 'uppercase', label: 'Includes an uppercase letter' },
-              ].map((rule) => {
-                const satisfied = passwordRules[rule.key as keyof typeof passwordRules];
-                const color = satisfied ? '#1DB954' : '#E35640';
-                const iconName = satisfied ? 'check-circle' : 'close-circle';
-                return (
-                  <View
-                    key={rule.key}
-                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.x5 }}
-                  >
-                    <MaterialCommunityIcons name={iconName} size={16} color={color} />
-                    <StyledText style={{ color, fontSize: 12, marginLeft: spacing.x8 }}>
-                      {rule.label}
-                    </StyledText>
-                  </View>
-                );
-              })}
-            </View>
-          ) : null}
-
-          <InputField
-            ref={inputRefs.cPassword}
-            label="Confirm Password"
-            palette={palette}
-            placeholder={state.cPassword ? '' : 'Re-enter password for security'}
-            secureTextEntry={hidePass}
-            value={state.cPassword}
-            error={confirmPasswordError}
-            autoCapitalize="none"
-            onChangeText={(cPassword: string) => changeHandler('cPassword', cPassword)}
-            onSubmitEditing={signUpUser}
-            rightIcon={
-              <MaterialCommunityIcons
-                name={hidePass ? 'eye-outline' : 'eye-off-outline'}
-                size={22}
-                color="#41dbe1"
-                onPress={() => setHidePass(!hidePass)}
-                style={{ alignSelf: 'center' }}
-              />
-            }
-          />
-
-          <Recaptcha
-            ref={recaptcha}
-            siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
-            baseUrl="http://www.onebodyapp.com"
-            onVerify={onVerify}
-            size="invisible"
-          />
-
-          {isIos ? (
-            <View
-              style={[
-                dropShadow,
-                {
-                  marginTop: spacing.x20,
-                  width: '100%',
-                  alignSelf: 'stretch',
-                  borderRadius: createAccountRadius,
-                  overflow: 'hidden',
-                  opacity: isSubmitDisabled ? 0.4 : 1,
-                },
-              ]}
-            >
-              <BlurView
-                pointerEvents="none"
-                blurType={dark ? 'dark' : 'light'}
-                blurAmount={18}
-                reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
-                style={StyleSheet.absoluteFillObject}
-              />
-              <View
-                pointerEvents="none"
-                style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
-              />
+            ) : null}
+          </View>
+        </Animated.View>
+        {formSuccess ? (
+          <View
+            style={[
+              GeneralStyle.MessageView,
+              { backgroundColor: Colors.successFeedback.background, marginBottom: spacing.x16 },
+            ]}
+          >
+            <StyledText style={GeneralStyle.successtext}>{formSuccess}</StyledText>
+          </View>
+        ) : null}
+        {formError ? (
+          <View style={{ marginBottom: spacing.x16 }}>
+            <StyledText style={[styles.errorText, { marginBottom: spacing.x8 }]}>
+              {formError}
+            </StyledText>
+            {typeof formError === 'string' && formError.toLowerCase().includes('already in use') ? (
               <Button
-                text="Join the Body"
-                btnStyle={[
-                  button.primary,
-                  {
-                    width: '100%',
-                    alignSelf: 'stretch',
-                    backgroundColor: 'transparent',
-                  },
-                ]}
-                btnTextStyle={{ color: '#FFF' }}
-                wrapperViewBtnStyle={{ width: '100%' }}
-                onPress={signUpUser}
-                disabled={isSubmitDisabled || !!confirmPasswordError}
+                text="Sign in to your existing account"
+                onPress={() => navigation.navigate('Login')}
+                btnTextStyle={[Typography.subheader.R, { color: Colors.primary.brand }]}
+                btnStyle={{ backgroundColor: 'transparent' }}
               />
+            ) : null}
+          </View>
+        ) : null}
+
+        <InputField
+          ref={inputRefs.username}
+          label="Create a Username"
+          palette={palette}
+          placeholder={state.username ? '' : 'e.g. brother_john'}
+          value={state.username}
+          error={state.usernameError}
+          autoCapitalize="none"
+          autoCorrect={false}
+          rightIcon={
+            isCheckingUsername ? (
+              <View style={{ justifyContent: 'center', paddingRight: spacing.x8 }}>
+                <ActivityIndicator size="small" color={Colors.primary.brand} />
+              </View>
+            ) : undefined
+          }
+          onChangeText={(username: string) =>
+            changeHandler('username', normalizeUsername(username))
+          }
+          onBlur={() => checkUsernameAvailability(state.username)}
+          onSubmitEditing={() => inputRefs.name.current?.focus()}
+        />
+        {usernameSuggestions.length > 0 ? (
+          <View style={{ marginTop: spacing.x8, marginBottom: spacing.x8 }}>
+            <StyledText style={[Typography.subheader.R, { color: Colors.neutral[300] }]}>
+              Suggested usernames:
+            </StyledText>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                marginTop: spacing.x8,
+              }}
+            >
+              {usernameSuggestions.map((suggestion) => (
+                <TouchableOpacity
+                  key={suggestion}
+                  onPress={() => {
+                    changeHandler('username', suggestion);
+                    checkUsernameAvailability(suggestion);
+                  }}
+                  style={{
+                    paddingHorizontal: spacing.x13,
+                    paddingVertical: spacing.x8,
+                    borderRadius: borderRadius.small,
+                    backgroundColor: Colors.neutral[700],
+                    borderWidth: 1,
+                    borderColor: Colors.neutral[800],
+                    marginRight: spacing.x8,
+                    marginBottom: spacing.x8,
+                  }}
+                >
+                  <StyledText style={[Typography.subheader.R, { color: Colors.neutral[200] }]}>
+                    {suggestion}
+                  </StyledText>
+                </TouchableOpacity>
+              ))}
             </View>
-          ) : (
+            <TouchableOpacity
+              onPress={() => {
+                navigation.replace('Login');
+              }}
+              style={{ marginTop: spacing.x13 }}
+            >
+              <StyledText style={[Typography.subheader.R, { color: Colors.primary.brand }]}>
+                Belong to you? Sign in to access your profile.
+              </StyledText>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        <InputField
+          ref={inputRefs.name}
+          label={accountType === 'individual' ? 'Display Name' : 'Organization / Ministry Name'}
+          palette={palette}
+          placeholder={state.name ? '' : 'How should we address you?'}
+          value={state.name}
+          error={state.nameError}
+          autoCapitalize="words"
+          onChangeText={(name: string) => changeHandler('name', name)}
+          onSubmitEditing={() => inputRefs.email.current?.focus()}
+        />
+
+        <InputField
+          ref={inputRefs.email}
+          label="Email Address"
+          palette={palette}
+          placeholder={state.email ? '' : 'email@example.com'}
+          value={state.email}
+          error={state.emailError}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          onChangeText={(email: string) => changeHandler('email', email.trim())}
+          onSubmitEditing={() => inputRefs.password.current?.focus()}
+        />
+
+        <InputField
+          ref={inputRefs.password}
+          label="Create a Password"
+          palette={palette}
+          placeholder={state.password ? '' : 'Enter a secure password'}
+          secureTextEntry={hidePass}
+          value={state.password}
+          error={state.passwordError}
+          autoCapitalize="none"
+          onFocus={() => {
+            setShowPasswordHint(true);
+            setHasPasswordInteracted(true);
+          }}
+          onChangeText={(password: string) => changeHandler('password', password)}
+          onSubmitEditing={() => inputRefs.cPassword.current?.focus()}
+          rightIcon={
+            <MaterialCommunityIcons
+              name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+              size={22}
+              color="#41dbe1"
+              onPress={() => setHidePass(!hidePass)}
+              style={{ alignSelf: 'center' }}
+            />
+          }
+        />
+        {showPasswordHint ? (
+          <View style={{ marginBottom: spacing.x16 }}>
+            <StyledText style={{ color: dark ? brandWhite : Colors.primary.brand, fontSize: 12 }}>
+              Security Requirements:
+            </StyledText>
+            {[
+              { key: 'sixCharsOrMore', label: 'Minimum 6 characters' },
+              { key: 'number', label: 'Includes a number' },
+              { key: 'specialChar', label: 'Includes a special character' },
+              { key: 'uppercase', label: 'Includes an uppercase letter' },
+            ].map((rule) => {
+              const satisfied = passwordRules[rule.key as keyof typeof passwordRules];
+              const color = satisfied ? '#1DB954' : '#E35640';
+              const iconName = satisfied ? 'check-circle' : 'close-circle';
+              return (
+                <View
+                  key={rule.key}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.x5 }}
+                >
+                  <MaterialCommunityIcons name={iconName} size={16} color={color} />
+                  <StyledText style={{ color, fontSize: 12, marginLeft: spacing.x8 }}>
+                    {rule.label}
+                  </StyledText>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
+
+        <InputField
+          ref={inputRefs.cPassword}
+          label="Confirm Password"
+          palette={palette}
+          placeholder={state.cPassword ? '' : 'Re-enter password for security'}
+          secureTextEntry={hidePass}
+          value={state.cPassword}
+          error={confirmPasswordError}
+          autoCapitalize="none"
+          onChangeText={(cPassword: string) => changeHandler('cPassword', cPassword)}
+          onSubmitEditing={signUpUser}
+          rightIcon={
+            <MaterialCommunityIcons
+              name={hidePass ? 'eye-outline' : 'eye-off-outline'}
+              size={22}
+              color="#41dbe1"
+              onPress={() => setHidePass(!hidePass)}
+              style={{ alignSelf: 'center' }}
+            />
+          }
+        />
+
+        <Recaptcha
+          ref={recaptcha}
+          siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
+          baseUrl="http://www.onebodyapp.com"
+          onVerify={onVerify}
+          size="invisible"
+        />
+
+        {isIos ? (
+          <View
+            style={[
+              dropShadow,
+              {
+                marginTop: spacing.x20,
+                width: '100%',
+                alignSelf: 'stretch',
+                borderRadius: createAccountRadius,
+                overflow: 'hidden',
+                opacity: isSubmitDisabled ? 0.4 : 1,
+              },
+            ]}
+          >
+            <BlurView
+              pointerEvents="none"
+              blurType={dark ? 'dark' : 'light'}
+              blurAmount={18}
+              reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
+            />
             <Button
               text="Join the Body"
               btnStyle={[
                 button.primary,
-                dropShadow,
                 {
-                  marginTop: spacing.x20,
                   width: '100%',
                   alignSelf: 'stretch',
-                  opacity: isSubmitDisabled ? 0.4 : 1,
+                  backgroundColor: 'transparent',
                 },
               ]}
               btnTextStyle={{ color: '#FFF' }}
@@ -980,35 +949,53 @@ function SignupForm({ navigation, route }: Props) {
               onPress={signUpUser}
               disabled={isSubmitDisabled || !!confirmPasswordError}
             />
-          )}
-
-          <View style={{ marginTop: spacing.x16 }}>
-            <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
-              By joining, you agree to our{' '}
-              <StyledText
-                style={{
-                  color: dark ? appColor.SecoundryColor : Colors.primary.brand,
-                  textDecorationLine: 'underline',
-                }}
-                onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
-              >
-                Community Standards
-              </StyledText>{' '}
-              &{' '}
-              <StyledText
-                style={{
-                  color: dark ? appColor.SecoundryColor : Colors.primary.brand,
-                  textDecorationLine: 'underline',
-                }}
-                onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}
-              >
-                Privacy Policy
-              </StyledText>
-            </StyledText>
           </View>
-        </Animated.View>
-      </UserStepsLayout>
-    </>
+        ) : (
+          <Button
+            text="Join the Body"
+            btnStyle={[
+              button.primary,
+              dropShadow,
+              {
+                marginTop: spacing.x20,
+                width: '100%',
+                alignSelf: 'stretch',
+                opacity: isSubmitDisabled ? 0.4 : 1,
+              },
+            ]}
+            btnTextStyle={{ color: '#FFF' }}
+            wrapperViewBtnStyle={{ width: '100%' }}
+            onPress={signUpUser}
+            disabled={isSubmitDisabled || !!confirmPasswordError}
+          />
+        )}
+
+        <View style={{ marginTop: spacing.x16 }}>
+          <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
+            By joining, you agree to our{' '}
+            <StyledText
+              style={{
+                color: dark ? appColor.SecoundryColor : Colors.primary.brand,
+                textDecorationLine: 'underline',
+              }}
+              onPress={() => OpenURLButton(TERMS_CONDITIONS_URL)}
+            >
+              Community Standards
+            </StyledText>{' '}
+            &{' '}
+            <StyledText
+              style={{
+                color: dark ? appColor.SecoundryColor : Colors.primary.brand,
+                textDecorationLine: 'underline',
+              }}
+              onPress={() => OpenURLButton(PRIVACY_POLICY_URL)}
+            >
+              Privacy Policy
+            </StyledText>
+          </StyledText>
+        </View>
+      </Animated.View>
+    </UserStepsLayout>
   );
 }
 

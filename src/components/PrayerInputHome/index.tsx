@@ -6,7 +6,7 @@ import Toast from 'react-native-simple-toast';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
 import { setLoader, setPrayers } from '@/src/redux/actions/GeneralActions';
-import { styles } from './styles';
+import styles from './styles';
 import { ApiCall } from '@/src/services/api';
 import { getAllPrayer, getMyPrayer, getTestimonies } from '@/src/redux/actions/PrayerAction';
 import Send from '@/assets/svg/Send.svg';

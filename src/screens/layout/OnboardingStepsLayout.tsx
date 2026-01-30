@@ -22,7 +22,6 @@ import { spacing } from '@/src/styles/spacing';
 import { header } from '@/src/styles/typography';
 import { AccountType } from '@/utils/types';
 import CustomModal from '@/src/components/CustomModal';
-import CustomHeader from '@/src/components/CustomHeader';
 
 type Props = {
   children: ReactElement;
@@ -34,7 +33,6 @@ type Props = {
   disabled?: boolean;
   loading?: boolean;
   dontUseScrollView?: boolean;
-  showCustomHeaderOnAndroid?: boolean;
   buttonStyle?: ViewStyle;
   buttonTextStyle?: TextStyle;
 };
@@ -83,7 +81,6 @@ function OnboardingStepsLayout({
   reasonText,
   dontUseScrollView,
   loading,
-  showCustomHeaderOnAndroid = false,
   buttonStyle,
   buttonTextStyle,
 }: Props) {
@@ -94,9 +91,6 @@ function OnboardingStepsLayout({
   const reasonContent = reasonText && dark ? applyReasonTextColor(reasonText, '#FFF') : reasonText;
   return (
     <>
-      {showCustomHeaderOnAndroid && Platform.OS === 'android' ? (
-        <CustomHeader showBackButton />
-      ) : null}
       <SafeAreaView
         style={{
           flex: 1,
@@ -104,7 +98,7 @@ function OnboardingStepsLayout({
           marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
         }}
       >
-        <View style={{ marginTop: spacing.x10 }}>
+        <View style={{ marginTop: spacing.x20 }}>
           {onboardingType === AccountType.individual ? (
             <View style={{ flexDirection: 'row' }}>
               <View

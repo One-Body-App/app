@@ -1,30 +1,13 @@
 import React, { useState } from 'react';
-import {
-  Text,
-  View,
-  Touchable,
-  StatusBar,
-  ScrollView,
-  Image,
-  FlatList,
-  TouchableOpacity,
-} from 'react-native';
+import { Text, View, Touchable, ScrollView, Image, FlatList, TouchableOpacity } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import GeneralStatusBar from '@/components/GeneralStatusBar';
 import Header from '@/components/Header';
 import { styles } from './styles';
 
 function PrivacyPolicy({ navigation }) {
   return (
     <View style={styles.container}>
-      <GeneralStatusBar
-        backgroundColor="white"
-        barStyle="dark-content"
-        hidden={false}
-        translucent
-      />
-
       <Header
         title="Privacy Policy"
         leftView={
