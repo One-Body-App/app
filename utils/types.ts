@@ -142,7 +142,7 @@ type InfluencerProfile = {
   rssUrl: string;
   category: string[];
   comments: string;
-  influencerStatus: 'approved' | 'pending';
+  influencerStatus: 'approved' | 'pending' | 'rejected' | 'coaching';
   createdAt: string;
   updatedAt: string;
 };
