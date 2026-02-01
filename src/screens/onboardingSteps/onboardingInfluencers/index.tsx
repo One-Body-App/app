@@ -155,18 +155,21 @@ function OnboardingInfluencers({ route }: Props) {
             })
           );
         } else {
-          const data = {
+          const data: Record<string, any> = {
             typeOfOrganization: route.params.selectedOrganizationType,
             contactEmail: route.params.organizationContactEmail,
             companyName: route.params.organizationName,
             contactName: route.params.organizationContactName,
             contactPhoneNumber: route.params.organizationContactPhoneNumber,
-            location: {
+          };
+
+          if (route.params.longitude && route.params.latitude && route.params.address) {
+            data.location = {
               longitude: route.params.longitude,
               latitude: route.params.latitude,
               address: route.params.address,
-            },
-          };
+            };
+          }
 
           dispatch(orgprofileUpdate({ data, token }));
         }

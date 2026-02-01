@@ -21,6 +21,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
@@ -37,9 +38,12 @@ import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import { HeaderBackButton } from '@react-navigation/elements';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import { serialize } from 'object-to-formdata';
 import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relative to AppContent.tsx
 import { setLoginData, getProfile, logout } from '../redux/actions/AuthActions'; // Adjust path
 import { clearAuthTokens, getValidAccessToken } from '../services/authTokens';
+import { ApiCall } from '../services/api';
+import { getDeviceLocation } from '../services/deviceLocation';
 
 import ForgotPassword from '../screens/forgotPassword'; // Adjust path
 import Login from '../screens/login'; // Adjust path
@@ -104,6 +108,7 @@ function AppContent() {
   const token = authState.userToken;
   const hasFetchedProfileRef = useRef(false);
   const hasPromptedTwoFactorRef = useRef(false);
+  const locationAutofillUserRef = useRef<string | null>(null);
   const handleConfirmBackPress = useCallback(async () => {
     await clearAuthTokens();
     dispatch(logout());
@@ -211,6 +216,7 @@ function AppContent() {
   useEffect(() => {
     if (!token) {
       hasFetchedProfileRef.current = false;
+      locationAutofillUserRef.current = null;
       return;
     }
 
@@ -221,6 +227,69 @@ function AppContent() {
     hasFetchedProfileRef.current = true;
     dispatch(getProfile.Request({ token }));
   }, [dispatch, token]);
+
+  useEffect(() => {
+    if (!token || !authState.getProfileData) return;
+
+    const userId = authState.getProfileData?._id || authState.getProfileData?.id;
+    if (!userId || locationAutofillUserRef.current === userId) return;
+
+    const profileLocation = authState.getProfileData?.profile?.location;
+    const hasLocation =
+      !!profileLocation?.address ||
+      Number.isFinite(profileLocation?.coordinates?.lat) ||
+      Number.isFinite(profileLocation?.coordinates?.lon);
+
+    if (hasLocation) {
+      locationAutofillUserRef.current = userId;
+      return;
+    }
+
+    let isActive = true;
+    const attemptAutofill = async () => {
+      try {
+        const attemptKey = `location_autofill_attempted_${userId}`;
+        const attempted = await AsyncStorage.getItem(attemptKey);
+        if (attempted === '1' || !isActive) {
+          locationAutofillUserRef.current = userId;
+          return;
+        }
+        await AsyncStorage.setItem(attemptKey, '1');
+        const deviceLocation = await getDeviceLocation();
+        if (!deviceLocation || !isActive) {
+          locationAutofillUserRef.current = userId;
+          return;
+        }
+
+        const locationPayload: Record<string, any> = {
+          longitude: deviceLocation.longitude,
+          latitude: deviceLocation.latitude,
+        };
+        if (deviceLocation.address) {
+          locationPayload.address = deviceLocation.address;
+        }
+
+        const result = await ApiCall({
+          route: 'user/update-profile',
+          token,
+          verb: 'patch',
+          params: serialize({ location: locationPayload }),
+          isFormUrlEncode: true,
+        });
+
+        if (result?.status === 200 && isActive) {
+          dispatch(getProfile.Request({ token }));
+        }
+      } finally {
+        locationAutofillUserRef.current = userId;
+      }
+    };
+
+    attemptAutofill();
+    return () => {
+      isActive = false;
+    };
+  }, [authState.getProfileData, dispatch, token]);
 
   useEffect(() => {
     if (!token) {
