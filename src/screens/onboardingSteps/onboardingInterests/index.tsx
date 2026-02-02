@@ -42,12 +42,10 @@ function OnboardingInterests({ navigation, route }: Props) {
         setInterest(res?.response as Interest[]);
         setSearchInterest(res?.response as Interest[]);
       } else if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('error', res?.response);
       }
     } catch (e: any) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('saga error -- ', e.toString());
       }
     }
@@ -72,7 +70,6 @@ function OnboardingInterests({ navigation, route }: Props) {
       } else {
         dispatch(setLoader(false));
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('error', res);
         }
       }
@@ -81,7 +78,6 @@ function OnboardingInterests({ navigation, route }: Props) {
         type: 'danger',
       });
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('saga error -- ', e.toString());
       }
     }

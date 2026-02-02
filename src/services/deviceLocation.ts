@@ -27,8 +27,12 @@ const requestLocationPermission = async () => {
       );
       return result === PermissionsAndroid.RESULTS.GRANTED;
     }
-    const status = await Geolocation.requestAuthorization('whenInUse');
-    return status === 'granted';
+    return await new Promise<boolean>((resolve) => {
+      Geolocation.requestAuthorization(
+        () => resolve(true),
+        () => resolve(false)
+      );
+    });
   } catch (error) {
     return false;
   }
@@ -73,9 +77,11 @@ const reverseGeocode = async (longitude: number, latitude: number): Promise<stri
   }
 };
 
-export const getDeviceLocation = async (): Promise<DeviceLocation | null> => {
+const getDeviceLocation = async (): Promise<DeviceLocation | null> => {
   const coords = await getCurrentCoordinates();
   if (!coords) return null;
   const address = await reverseGeocode(coords.longitude, coords.latitude);
   return address ? { ...coords, address } : coords;
 };
+
+export default getDeviceLocation;

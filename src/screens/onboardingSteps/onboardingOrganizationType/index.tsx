@@ -70,16 +70,14 @@ function OnboardingOrganizationType({ navigation }: Props) {
           lastTriggeredIndex.current = defaultIndex;
         }
       } else if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('error', res?.response);
       }
     } catch (e: any) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('saga error -- ', e.toString());
       }
     }
-  }, [token]);
+  }, [selectedOrganizationType, token]);
 
   useEffect(() => {
     preloadSoundEffect('pickerClick', pickerClickSound, 0.2).catch(() => {

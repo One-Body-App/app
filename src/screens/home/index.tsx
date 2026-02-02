@@ -703,6 +703,12 @@ function Home({ navigation, route }: Props) {
             getFeedData(feedOptions.type, 1);
           }}
           fromSavedPosts={false}
+          onCommentsPress={() => {
+            const postId = socialItem.postId ?? socialItem.id ?? socialItem._id;
+            if (postId) {
+              navigation.navigate('SinglePost', { postId } as any);
+            }
+          }}
         />
       );
     }
@@ -721,8 +727,10 @@ function Home({ navigation, route }: Props) {
           item={rssItem}
           imageSizeType="cover"
           showModal={() => undefined}
-          onPress={() => {
-            navigateToDetail(normalizedWithImage);
+          onCommentsPress={() => {
+            if (rssItem.id) {
+              navigation.navigate('SingleRss', { postId: rssItem.id } as any);
+            }
           }}
         />
       );

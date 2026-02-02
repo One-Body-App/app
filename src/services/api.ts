@@ -193,12 +193,12 @@ export const ApiCall = async <T = any>({
     const resolvedStatus =
       axiosError?.response?.status ?? (axiosError?.code === 'ECONNABORTED' ? 408 : 400);
     const responseData: any = axiosError?.response?.data;
-    const apiMessage =
-      typeof responseData?.message === 'string'
-        ? responseData.message
-        : Array.isArray(responseData?.message)
-          ? responseData.message.join(', ')
-          : null;
+    let apiMessage: string | null = null;
+    if (typeof responseData?.message === 'string') {
+      apiMessage = responseData.message;
+    } else if (Array.isArray(responseData?.message)) {
+      apiMessage = responseData.message.join(', ');
+    }
     const friendlyMessage =
       apiMessage ?? `That was a glitch on our part. Try again! (${resolvedStatus})`;
     return { status: resolvedStatus, response: { message: friendlyMessage } as any };

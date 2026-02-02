@@ -343,7 +343,6 @@ export function* SetUserBadgesSaga() {
 function* getProfileSaga(params: { pullSavedData: any; token: string; type: string }) {
   try {
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[getProfileSaga] Starting profile fetch', {
         hasToken: !!params.token,
         pullSavedData: params.pullSavedData,
@@ -356,7 +355,6 @@ function* getProfileSaga(params: { pullSavedData: any; token: string; type: stri
     });
 
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[getProfileSaga] Profile fetch response', {
         status: res?.status,
         hasResponse: !!res?.response,
@@ -372,7 +370,6 @@ function* getProfileSaga(params: { pullSavedData: any; token: string; type: stri
     yield put(setLoader(false));
   } catch (e) {
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[getProfileSaga] Profile fetch error:', e);
     }
     yield put(getProfile.Failed(e));

@@ -308,7 +308,6 @@ function SignupForm({ navigation, route }: Props) {
 
   const onRefresh = () => {
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[Signup] onRefresh triggered - clearing all fields');
     }
     setRefreshing(true);
@@ -320,7 +319,6 @@ function SignupForm({ navigation, route }: Props) {
     setTimeout(() => {
       setRefreshing(false);
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Signup] onRefresh complete');
       }
     }, 400);
@@ -341,7 +339,6 @@ function SignupForm({ navigation, route }: Props) {
       if (password === cPassword) {
         const data = { email };
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[SignUp] Validating user email with data:', JSON.stringify(data, null, 2));
         }
         const userValidation = await ApiCall({
@@ -350,7 +347,6 @@ function SignupForm({ navigation, route }: Props) {
           verb: 'post',
         });
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log(
             '[SignUp] Validation response:',
             userValidation.status,

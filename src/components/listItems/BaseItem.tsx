@@ -10,7 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { Reaction } from 'react-native-reactions';
 import { getHeight, timeSince } from '@/utils/ResponsiveFun';
-import { styles } from './style';
+import styles from './style';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';

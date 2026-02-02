@@ -15,8 +15,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { setLoginData } from '@/src/redux/actions/AuthActions';
@@ -213,7 +211,7 @@ function LoginComponent({ currentUserEmail }: any) {
                 inputWrapperStyle={styles.inputWrapper}
                 onChangeText={(v) => setForm({ ...form, password: v })}
                 rightIcon={
-                  <MaterialCommunityIcons
+                  <Ionicons
                     name={hidePass ? 'eye-outline' : 'eye-off-outline'}
                     size={22}
                     color="#41dbe1"

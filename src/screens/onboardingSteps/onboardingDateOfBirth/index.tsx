@@ -82,7 +82,6 @@ function OnboardingDateOfBirth({ navigation }: Props) {
         setYear(selectedYear);
 
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log(`📍 Year changed to: ${selectedYear} (index: ${index})`);
         }
 

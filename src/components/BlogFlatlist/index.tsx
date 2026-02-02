@@ -9,7 +9,7 @@ import { ApiCall } from '@/services/api';
 import { ArticleType, PostType } from '@/utils/types';
 import ArticleItem from '../listItems/ArticleItem';
 import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
-import { styles as globalStyle } from '@/components/listItems/style';
+import globalStyle from '@/components/listItems/style';
 import { spacing } from '@/src/styles/spacing';
 
 function BlogFlatlist({

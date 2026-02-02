@@ -22,7 +22,7 @@ import Toast from 'react-native-simple-toast';
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { User, PostType } from '@/utils/types';
-import { styles } from './style';
+import styles from './style';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '../styled/Text';
 import { Colors } from '@/src/styles';

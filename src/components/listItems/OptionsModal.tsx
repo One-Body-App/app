@@ -11,7 +11,7 @@ import { Bookmark, EditPencil, ShareAndroid, ShareIos, Xmark } from 'iconoir-rea
 import Toast from 'react-native-toast-notifications';
 import Button from '../Button';
 
-import { styles } from './style';
+import styles from './style';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';

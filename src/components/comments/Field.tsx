@@ -1,13 +1,12 @@
-import { TouchableOpacity, View, ScrollView, EmitterSubscription } from 'react-native';
+import { TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
 import { CloseCircle, Send, TickCircle } from 'iconsax-react-native';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { useState } from 'react';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
-import StyledTextInput from '../styled/TextInput';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import Button from '../Button';
+import StyledText from '../styled/Text';
 
 interface Props {
   mediaGif: GiphyMedia | null;
@@ -29,6 +28,12 @@ function CommentField({
   isFromBottomField,
 }: Props) {
   const [content, setContent] = useState(text ?? '');
+  const InputComponent = isFromBottomField ? BottomSheetTextInput : TextInput;
+  const gifAspectRatioRaw = mediaGif?.aspectRatio;
+  const gifAspectRatio = Number(gifAspectRatioRaw);
+  const safeGifAspectRatio =
+    Number.isFinite(gifAspectRatio) && gifAspectRatio > 0 ? gifAspectRatio : 1;
+  const hasGif = Boolean(mediaGif?.id || mediaGif?.url);
 
   // const onKeyboardWillShow = (e: KeyboardEvent) => {
   //   setKeyboardHeight(e.endCoordinates.height);
@@ -59,9 +64,9 @@ function CommentField({
   //   }
   // }, []);
 
-  const submitComment = (content?: string) => {
-    if (content || mediaGif) {
-      publishComment(content ?? '');
+  const submitComment = (value?: string) => {
+    if (value || mediaGif) {
+      publishComment(value ?? '');
       setContent('');
       setGif(null);
     }
@@ -90,105 +95,97 @@ function CommentField({
     <>
       <View
         style={{
-          backgroundColor: Colors.neutral[700],
-          paddingHorizontal: spacing.x24,
-          paddingVertical: spacing.x16,
+          backgroundColor: Colors.neutral[800],
+          paddingHorizontal: spacing.x16,
+          paddingVertical: spacing.x13,
         }}
       >
-        <StyledTextInput
-          placeholder={isEditingComment ? 'Edit Comment' : 'Drop your comment here'}
-          multiline
-          maxLength={600}
-          enforceMaxLength
-          value={content}
-          placeholderTextColor={Colors.neutral[300]}
-          onChangeText={(content: any) => {
-            setContent(content);
-          }}
-          onSubmitEditing={() => {
-            submitComment(content);
-          }}
-          // backgroundColor="transparent"
-          inputWrapperStyle={{
-            borderWidth: 0,
-
-            paddingHorizontal: 0,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-          inputStyle={{
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingVertical: spacing.x5,
-            maxHeight: 80,
-            paddingHorizontal: spacing.x10,
-            marginHorizontal: spacing.x5,
-
-            borderColor: Colors.neutral[600],
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            backgroundColor: Colors.neutral[700],
+            borderRadius: borderRadius.large,
+            paddingHorizontal: spacing.x13,
+            paddingVertical: spacing.x10,
             borderWidth: 1,
+            borderColor: Colors.neutral[600],
           }}
-          customComponent={isFromBottomField ? BottomSheetTextInput : undefined}
-          leftIcon={
-            <Button
-              text="GIF"
-              btnStyle={{
-                backgroundColor: Colors.neutral[600],
-                justifyContent: 'center',
-                alignItems: 'center',
-
-                paddingHorizontal: spacing.x16,
-                margin: spacing.x5,
-                borderRadius: borderRadius.base,
-              }}
-              onPress={() => {
-                // LoginManager.logOut();
-                // dispatch(logout());
-                // await auth().signOut();
-                try {
-                  GiphyDialog.show();
-                } catch (e) {
-                  console.log(e);
-                }
-              }}
-            />
-          }
-          rightIcon={
-            <View style={{ justifyContent: 'center' }}>
-              {isEditingComment ? (
-                <View style={{ flexDirection: 'row' }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      submitComment(content);
-                    }}
-                  >
-                    <TickCircle color={Colors.primarySapphire.brand} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (setEditingComment) setEditingComment(false);
-                    }}
-                  >
-                    <CloseCircle color={Colors.primarySapphire.brand} />
-                  </TouchableOpacity>
-                </View>
-              ) : (
+        >
+          <TouchableOpacity
+            onPress={() => {
+              try {
+                GiphyDialog.show();
+              } catch (e) {
+                console.log(e);
+              }
+            }}
+            style={{
+              paddingHorizontal: spacing.x10,
+              paddingVertical: spacing.x5,
+              borderRadius: borderRadius.base,
+              backgroundColor: Colors.neutral[600],
+              marginRight: spacing.x10,
+            }}
+          >
+            <StyledText style={{ color: Colors.neutral.brand, fontWeight: '600' }}>GIF</StyledText>
+          </TouchableOpacity>
+          <InputComponent
+            placeholder={isEditingComment ? 'Edit comment...' : 'Write a comment...'}
+            multiline
+            value={content}
+            onChangeText={(value: string) => {
+              setContent(value);
+            }}
+            placeholderTextColor={Colors.neutral[400]}
+            onSubmitEditing={() => {
+              submitComment(content);
+            }}
+            style={{
+              flex: 1,
+              minHeight: 36,
+              maxHeight: 120,
+              color: Colors.neutral.brand,
+              paddingVertical: spacing.x8,
+              paddingHorizontal: spacing.x5,
+              textAlignVertical: 'top',
+            }}
+          />
+          <View style={{ justifyContent: 'flex-end' }}>
+            {isEditingComment ? (
+              <View style={{ flexDirection: 'row', gap: spacing.x8 }}>
                 <TouchableOpacity
                   onPress={() => {
                     submitComment(content);
                   }}
                 >
-                  <Send variant="Bold" size={30} color={Colors.primarySapphire.brand} />
+                  <TickCircle color={Colors.primarySapphire.brand} size={22} />
                 </TouchableOpacity>
-              )}
-            </View>
-          }
-        />
+                <TouchableOpacity
+                  onPress={() => {
+                    if (setEditingComment) setEditingComment(false);
+                  }}
+                >
+                  <CloseCircle color={Colors.primarySapphire.brand} size={22} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  submitComment(content);
+                }}
+              >
+                <Send variant="Bold" size={24} color={Colors.primarySapphire.brand} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </View>
-      {mediaGif && (
+      {mediaGif && hasGif ? (
         <ScrollView
           style={{
             height: 100,
-            backgroundColor: isEditingComment ? undefined : Colors.neutral[700],
+            backgroundColor: isEditingComment ? undefined : Colors.neutral[800],
           }}
         >
           <View
@@ -219,7 +216,7 @@ function CommentField({
               media={mediaGif}
               resizeMode="cover"
               style={{
-                aspectRatio: mediaGif.aspectRatio,
+                aspectRatio: safeGifAspectRatio,
                 borderRadius: borderRadius.base,
 
                 overflow: 'hidden',
@@ -227,7 +224,7 @@ function CommentField({
             />
           </View>
         </ScrollView>
-      )}
+      ) : null}
     </>
   );
 }

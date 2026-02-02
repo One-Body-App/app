@@ -9,7 +9,7 @@ import {
   CommonActions,
   useTheme,
 } from '@react-navigation/native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
@@ -20,6 +20,7 @@ import {
   Easing,
   Dimensions,
   Platform,
+  Pressable,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -36,14 +37,13 @@ import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
-import { HeaderBackButton } from '@react-navigation/elements';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { serialize } from 'object-to-formdata';
 import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relative to AppContent.tsx
 import { setLoginData, getProfile, logout } from '../redux/actions/AuthActions'; // Adjust path
 import { clearAuthTokens, getValidAccessToken } from '../services/authTokens';
 import { ApiCall } from '../services/api';
-import { getDeviceLocation } from '../services/deviceLocation';
+import getDeviceLocation from '../services/deviceLocation';
 
 import ForgotPassword from '../screens/forgotPassword'; // Adjust path
 import Login from '../screens/login'; // Adjust path
@@ -80,10 +80,6 @@ GiphySDK.configure({ apiKey: 'dZgwmqczMQ90a2MtLZ87SchEGITNJlPw' });
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 const PUBLIC_ROUTES = new Set(['Intro', 'Login', 'SignUp', 'ForgotPassword', 'ConfirmLogin']);
 
-function ConfirmBackImage() {
-  return <MaterialCommunityIcons name="chevron-left" size={24} color={Colors.primary.brand} />;
-}
-
 // This component now contains all the logic that was in your original Main.tsx
 function AppContent() {
   // Renamed from 'Main' to 'AppContent'
@@ -109,20 +105,45 @@ function AppContent() {
   const hasFetchedProfileRef = useRef(false);
   const hasPromptedTwoFactorRef = useRef(false);
   const locationAutofillUserRef = useRef<string | null>(null);
+  const scheme = useColorScheme();
   const handleConfirmBackPress = useCallback(async () => {
     await clearAuthTokens();
     dispatch(logout());
     navigationRef.navigate('Intro');
   }, [dispatch, navigationRef]);
+  const confirmBackStyle = useMemo(
+    () => ({
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: scheme === 'dark' ? '#1B1B1B' : '#FFFFFF',
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+    }),
+    [scheme]
+  );
   const renderConfirmBackButton = useCallback(
     () => (
-      <HeaderBackButton
-        labelVisible={false}
-        backImage={ConfirmBackImage}
+      <Pressable
         onPress={handleConfirmBackPress}
-      />
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        hitSlop={8}
+        style={confirmBackStyle}
+      >
+        <MaterialCommunityIcons
+          name="chevron-left"
+          size={30}
+          color={Colors.primary.brand}
+          style={{ marginLeft: 2 }}
+        />
+      </Pressable>
     ),
-    [handleConfirmBackPress]
+    [confirmBackStyle, handleConfirmBackPress]
   );
 
   const logScreenViewEvent = useCallback(
@@ -189,7 +210,6 @@ function AppContent() {
       }
     } catch (error) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[AppContent Token Refresh] Failed to refresh token on resume', error);
       }
     }
@@ -352,7 +372,6 @@ function AppContent() {
   useEffect(() => {
     if (!navigationReady) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[AppContent Navigation] Skipping - navigation not ready');
       }
       return;
@@ -367,7 +386,6 @@ function AppContent() {
     const isEmailVerified = !!authState.getProfileData?.emailVerified;
 
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[AppContent Navigation] Effect triggered:', {
         currentRoute: currentRouteName,
         hasValidToken,
@@ -383,7 +401,6 @@ function AppContent() {
     if (!hasValidToken) {
       if (currentRouteName && !PUBLIC_ROUTES.has(currentRouteName)) {
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log(
             '[AppContent Navigation] Invalid token, resetting to Login',
             currentRouteName
@@ -405,7 +422,6 @@ function AppContent() {
     // Once verified, allow AppContent to move to MainRoot.
     if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin' && !isEmailVerified) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log(
           '[AppContent Navigation] iOS - on ConfirmLogin (unverified), letting LoginComponent handle navigation'
         );
@@ -417,8 +433,15 @@ function AppContent() {
     // This ensures we have complete profile data before making navigation decisions
     if (hasValidToken && isProfileLoading) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[AppContent Navigation] Waiting - profile is loading');
+      }
+      return;
+    }
+
+    // Avoid navigating to email verification until we have profile data (or a known error).
+    if (hasValidToken && !authState.getProfileData && !hasProfileError) {
+      if (__DEV__) {
+        console.log('[AppContent Navigation] Waiting - profile not loaded yet');
       }
       return;
     }
@@ -429,7 +452,6 @@ function AppContent() {
       hasValidToken && (authState.getProfileData !== undefined || hasProfileError);
 
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[AppContent Navigation] shouldNavigate:', shouldNavigate);
     }
 
@@ -443,7 +465,6 @@ function AppContent() {
         recentNavigation?.route === 'MainRoot' && now - recentNavigation.timestamp < 2000;
       if (currentRouteName === 'ConfirmLogin') {
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log(
             '[AppContent Navigation] Email verified on ConfirmLogin, resetting to MainRoot'
           );
@@ -462,19 +483,16 @@ function AppContent() {
       if (rootRouteName !== 'MainRoot') {
         if (wasRecentlyNavigatedToMainRoot) {
           if (__DEV__) {
-            // eslint-disable-next-line no-console
             console.log('[AppContent Navigation] Skipping - recently navigated to MainRoot');
           }
           return;
         }
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[AppContent Navigation] Navigating to MainRoot (email verified)');
         }
         lastNavigationRef.current = { route: 'MainRoot', timestamp: now };
         navigationRef.dispatch(CommonActions.navigate('MainRoot'));
       } else if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[AppContent Navigation] Already on MainRoot');
       }
     } else if (hasValidToken && !isEmailVerified) {
@@ -487,13 +505,11 @@ function AppContent() {
 
       if (currentRouteName !== 'ConfirmLogin' && !wasRecentlyNavigated) {
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[AppContent Navigation] Navigating to ConfirmLogin (email not verified)');
         }
         lastNavigationRef.current = { route: 'ConfirmLogin', timestamp: now };
         navigationRef.dispatch(CommonActions.navigate('ConfirmLogin'));
       } else if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log(
           wasRecentlyNavigated
             ? '[AppContent Navigation] Skipping - recently navigated to ConfirmLogin'
@@ -501,7 +517,6 @@ function AppContent() {
         );
       }
     } else if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[AppContent Navigation] No navigation action taken');
     }
   }, [
@@ -573,7 +588,6 @@ function AppContent() {
       return rawUrl ?? null;
     }
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.log('[Deep Link normalizeLink] RAW URL:', rawUrl);
     }
     try {
@@ -585,7 +599,6 @@ function AppContent() {
       if (nestedLink) {
         const decoded = decodeURIComponent(nestedLink);
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link normalizeLink] Extracted Firebase Dynamic Link:', decoded);
         }
         return decoded;
@@ -596,20 +609,17 @@ function AppContent() {
       if (iosFallbackLink) {
         const decoded = decodeURIComponent(iosFallbackLink);
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link normalizeLink] Extracted iOS fallback link:', decoded);
         }
         return decoded;
       }
 
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Deep Link normalizeLink] No nested link found, returning raw URL');
       }
       return rawUrl;
     } catch (error) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Deep Link normalizeLink] URL parse failed:', error, 'returning raw');
       }
       return rawUrl;
@@ -629,7 +639,6 @@ function AppContent() {
     // Check if this is the same URL within the deduplication window
     if (last && last.url === url && now - last.timestamp < DEDUP_WINDOW_MS) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Deep Link] SKIPPING duplicate URL within', DEDUP_WINDOW_MS, 'ms:', url);
       }
       return false;
@@ -656,7 +665,6 @@ function AppContent() {
     config: linkingConfig,
     getStateFromPath(path, options) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Deep Link getStateFromPath] Input path:', path);
       }
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -667,7 +675,6 @@ function AppContent() {
       if (normalizedPath.startsWith('/__/auth/action')) {
         adjustedPath = normalizedPath.replace('/__/auth/action', '/auth/action');
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link getStateFromPath] Adjusted __/auth/action to:', adjustedPath);
         }
       }
@@ -675,7 +682,6 @@ function AppContent() {
       else if (normalizedPath.startsWith('/verify-email')) {
         adjustedPath = normalizedPath.replace('/verify-email', '/auth/action');
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link getStateFromPath] Adjusted /verify-email to:', adjustedPath);
         }
       }
@@ -683,7 +689,6 @@ function AppContent() {
       else if (normalizedPath.startsWith('/verify/')) {
         adjustedPath = normalizedPath.replace('/verify/', '/auth/');
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link getStateFromPath] Adjusted /verify/* to:', adjustedPath);
         }
       }
@@ -692,14 +697,12 @@ function AppContent() {
       else if (normalizedPath.startsWith('/auth/verify')) {
         adjustedPath = normalizedPath.replace('/auth/verify', '/auth/action');
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link getStateFromPath] Adjusted /auth/verify to:', adjustedPath);
         }
       }
 
       const state = getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log(
           '[Deep Link getStateFromPath] Match result:',
           state?.routes?.[0]?.name,
@@ -711,19 +714,16 @@ function AppContent() {
     async getInitialURL() {
       const rawUrl = await Linking.getInitialURL();
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Deep Link] getInitialURL RAW (before normalize):', rawUrl);
       }
       const url = normalizeLink(rawUrl);
       if (shouldIgnoreAuthLink(url)) {
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link] getInitialURL: Ignoring auth link after verification');
         }
         return null;
       }
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Deep Link] getInitialURL NORMALIZED:', sanitizeUrl(url));
       }
       if (url && shouldProcessUrl(url)) {
@@ -732,7 +732,6 @@ function AppContent() {
       if (url) {
         // URL was filtered out as duplicate
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link] getInitialURL: URL filtered as duplicate');
         }
         return null;
@@ -741,13 +740,11 @@ function AppContent() {
       const notificationUrl = normalizeLink(message?.data?.url as string);
       if (shouldIgnoreAuthLink(notificationUrl)) {
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link] Notification URL ignored after verification');
         }
         return null;
       }
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('[Deep Link] Notification URL:', sanitizeUrl(notificationUrl));
       }
       if (notificationUrl && shouldProcessUrl(notificationUrl)) {
@@ -758,26 +755,22 @@ function AppContent() {
     subscribe(listener) {
       const onReceiveURL = ({ url }: { url: string }) => {
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link] subscribe onReceiveURL RAW:', url);
         }
         const normalized = normalizeLink(url);
         if (shouldIgnoreAuthLink(normalized)) {
           if (__DEV__) {
-            // eslint-disable-next-line no-console
             console.log('[Deep Link] subscribe: Ignoring auth link after verification');
           }
           return;
         }
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link] subscribe onReceiveURL NORMALIZED:', sanitizeUrl(normalized));
         }
         if (normalized && shouldProcessUrl(normalized)) {
           listener(normalized);
         } else if (normalized) {
           if (__DEV__) {
-            // eslint-disable-next-line no-console
             console.log('[Deep Link] subscribe: URL filtered as duplicate');
           }
         }
@@ -787,20 +780,17 @@ function AppContent() {
         const url = normalizeLink(message.data?.url as string);
         if (shouldIgnoreAuthLink(url)) {
           if (__DEV__) {
-            // eslint-disable-next-line no-console
             console.log('[Deep Link] Notification ignored after verification');
           }
           return;
         }
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('[Deep Link] Notification opened with URL:', sanitizeUrl(url));
         }
         if (url && shouldProcessUrl(url)) {
           listener(url);
         } else if (url) {
           if (__DEV__) {
-            // eslint-disable-next-line no-console
             console.log('[Deep Link] Notification: URL filtered as duplicate');
           }
         }
@@ -835,8 +825,6 @@ function AppContent() {
       border: '#1B1B1B',
     },
   };
-
-  const scheme = useColorScheme();
 
   // Early return after all hooks have been called
   if (!authChecked && initializing) {

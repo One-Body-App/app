@@ -8,12 +8,12 @@ type PrayerReducer = {
   ALLPrayerTotalPage: number;
   TestimoniesPrayerCurrentPage: number;
   TestimoniesPrayerTotalPage: number;
-  userPrayers: [];
-  prayers: [];
-  Testimonies: [];
+  userPrayers: any[];
+  prayers: any[];
+  Testimonies: any[];
   ALLPrayerLiveCurrentPage: number;
   ALLPrayerLiveTotalPage: number;
-  prayersLive: [];
+  prayersLive: any[];
 };
 
 const initialState: PrayerReducer = {

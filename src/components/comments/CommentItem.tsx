@@ -1,13 +1,4 @@
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleProp,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-design-icons';
@@ -21,7 +12,7 @@ import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
 import StyledText from '../styled/Text';
-import { fontSize } from '@/src/styles/typography';
+import { fontSize, fontWeight } from '@/src/styles/typography';
 import { timeSince } from '@/utils/ResponsiveFun';
 import OptionsModal from '../listItems/OptionsModal';
 import CommentField from './Field';
@@ -33,7 +24,6 @@ interface BaseItemProps {
   updated?: Date;
   edited?: boolean;
   source?: string;
-  fromSavedPosts?: boolean;
   postData: {
     id?: string;
     content?: string;
@@ -55,10 +45,6 @@ interface BaseItemProps {
 
   isApprovedInfluencer?: boolean;
 
-  onShowDismissCard?: (e?: boolean) => void;
-  isScrollEnable?: boolean;
-  index?: number;
-  parentRefreshContent?: Function;
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
   editCommentAction?: (postId: string, content: string) => void;
@@ -75,8 +61,6 @@ function CommentItem({
   userData,
   isApprovedInfluencer,
   postData,
-  parentRefreshContent,
-  onShowDismissCard,
   removePost,
   editPost,
   editCommentAction,
@@ -87,6 +71,26 @@ function CommentItem({
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(postData.gif ?? null);
+  const safeUserData = userData ?? ({} as PostUserData);
+  const profileImageUri =
+    safeUserData.profileImage && safeUserData.profileImage !== ''
+      ? safeUserData.profileImage
+      : NO_PROFILE_IMAGE;
+  const gifAspectRatioRaw = postData.gif?.aspectRatio;
+  const gifAspectRatio = Number(gifAspectRatioRaw);
+  const safeGifAspectRatio =
+    Number.isFinite(gifAspectRatio) && gifAspectRatio > 0 ? gifAspectRatio : 1;
+  const hasGif = Boolean(postData.gif?.id || postData.gif?.url);
+  let handleValue: string | undefined;
+  if (source === 'twitter' && safeUserData?.twitterHandler) {
+    handleValue = safeUserData.twitterHandler;
+  } else if (source === 'instagram' && safeUserData?.instagramHandler) {
+    handleValue = safeUserData.instagramHandler;
+  } else if (safeUserData?.username) {
+    handleValue = safeUserData.username;
+  }
+  const handleText = handleValue ? `@${handleValue}` : '';
+  const hasHandle = Boolean(handleValue);
 
   const editComment = (status: boolean) => {
     setIsEditingComment(status);
@@ -104,7 +108,12 @@ function CommentItem({
       style={[
         {
           flexGrow: 1,
-          padding: spacing.x16,
+          padding: spacing.x13,
+          marginBottom: spacing.x13,
+          backgroundColor: colors.card,
+          borderRadius: borderRadius.base,
+          borderWidth: borderWidth.hairline,
+          borderColor: Colors.neutral[700],
         },
         style,
       ]}
@@ -113,7 +122,7 @@ function CommentItem({
         style={{
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: spacing.x10,
+          gap: spacing.x13,
         }}
       >
         <View
@@ -123,28 +132,28 @@ function CommentItem({
             alignItems: 'center',
           }}
         >
-          {userData.profileIcon && !userData.profileImage ? (
+          {safeUserData.profileIcon && !safeUserData.profileImage ? (
             <View
               style={{
                 borderRadius: borderRadius.max,
-                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderColor: safeUserData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
                 padding: spacing.x5,
               }}
             >
-              {userData.profileIcon}
+              {safeUserData.profileIcon}
             </View>
           ) : (
             <FastImage
               source={{
-                uri: userData.profileImage != '' ? userData.profileImage : NO_PROFILE_IMAGE,
+                uri: profileImageUri,
               }}
               style={{
                 width: 40,
                 height: 40,
                 borderRadius: borderRadius.max,
                 // marginBottom: 5,
-                borderColor: userData.profileImage != NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
+                borderColor: safeUserData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
                 borderWidth: borderWidth.thin,
               }}
               resizeMode="contain"
@@ -154,12 +163,9 @@ function CommentItem({
         <View
           style={{
             flexGrow: 1,
-            backgroundColor: Colors.neutral[800],
-            padding: spacing.x10,
-            borderRadius: borderRadius.small,
           }}
         >
-          {userData ? (
+          {safeUserData ? (
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <TouchableOpacity
                 onPress={() => {
@@ -177,16 +183,17 @@ function CommentItem({
                 }}
               >
                 <View style={{ flexDirection: 'column' }}>
-                  <View style={{ flexDirection: 'row' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <StyledText
                       style={{
                         color: Colors.neutral.brand,
                         alignItems: 'center',
-                        ...fontSize.x1,
+                        ...fontSize.x2,
+                        ...fontWeight.semibold,
                       }}
                       numberOfLines={2}
                     >
-                      {userData?.name}
+                      {safeUserData?.name ?? 'Unknown'}
                     </StyledText>
                     {isApprovedInfluencer ? (
                       <Icon
@@ -200,34 +207,20 @@ function CommentItem({
                   <StyledText
                     numberOfLines={2}
                     style={{
-                      color: Colors.neutral[300],
+                      color: Colors.neutral[400],
                       alignItems: 'center',
                       ...fontSize.x1,
                     }}
                   >
-                    {(source == 'twitter' && userData?.twitterHandler) ||
-                    (source == 'instagram' && userData?.instagramHandler) ||
-                    userData?.username
-                      ? `@${
-                          source == 'twitter'
-                            ? userData?.twitterHandler
-                            : source == 'instagram'
-                              ? userData?.instagramHandler
-                              : userData?.username
-                        }`
-                      : ''}
+                    {handleText}
 
                     {created ? (
                       <>
-                        {(source == 'twitter' && userData?.twitterHandler) ||
-                        (source == 'instagram' && userData?.instagramHandler) ||
-                        userData?.username
-                          ? ` • `
-                          : ''}
+                        {hasHandle ? ` • ` : ''}
                         <StyledText
                           style={[
                             fontSize.x1,
-                            { color: Colors.neutral[300], alignItems: 'center' },
+                            { color: Colors.neutral[400], alignItems: 'center' },
                           ]}
                         >
                           {timeSince(created)} ago
@@ -241,7 +234,7 @@ function CommentItem({
                         <StyledText
                           style={[
                             fontSize.x1,
-                            { color: Colors.neutral[300], alignItems: 'center' },
+                            { color: Colors.neutral[400], alignItems: 'center' },
                           ]}
                         >
                           {timeSince(updated)} ago
@@ -265,7 +258,7 @@ function CommentItem({
           {isEditingComment ? (
             <View
               style={{
-                height: 200,
+                minHeight: 140,
               }}
             >
               {isLoading ? (
@@ -294,11 +287,19 @@ function CommentItem({
             // eslint-disable-next-line react/jsx-no-useless-fragment
             <>
               {postData.content ? (
-                <StyledText style={{ marginVertical: spacing.x10 }}>{postData.content}</StyledText>
+                <StyledText
+                  style={{
+                    marginTop: spacing.x8,
+                    color: colors.text,
+                    ...fontSize.x2,
+                  }}
+                >
+                  {postData.content}
+                </StyledText>
               ) : null}
             </>
           )}
-          {!isEditingComment && postData.gif && (
+          {!isEditingComment && postData.gif && hasGif ? (
             <View
               style={{
                 padding: 10,
@@ -311,21 +312,21 @@ function CommentItem({
                 media={postData.gif}
                 resizeMode="cover"
                 style={{
-                  aspectRatio: postData.gif.aspectRatio,
+                  aspectRatio: safeGifAspectRatio,
                   borderRadius: borderRadius.small,
 
                   overflow: 'hidden',
                 }}
               />
             </View>
-          )}
+          ) : null}
         </View>
       </View>
 
       <OptionsModal
         show={showOptions ?? false}
         setShow={setShowOptions}
-        currentPopupItem={{ ...postData, type: PostType.comment, userData, created }}
+        currentPopupItem={{ ...postData, type: PostType.comment, userData: safeUserData, created }}
         onProfilePress={onPress}
         removePost={removePost}
         hideShare

@@ -370,6 +370,7 @@ export interface PostUserData {
 }
 
 export interface CommentPost {
+  _id: string | undefined;
   commentId?: string;
   dateSeconds: number;
   date: string;

@@ -1,40 +1,55 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import Toast from 'react-native-simple-toast';
-import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import PropTypes from 'prop-types';
+import { getWidth } from '@/utils/ResponsiveFun';
 import Button from '../Button';
-import { setLoader, setPrayers, setUserPrayers } from '@/src/redux/actions/GeneralActions';
-import { styles } from './styles';
+import { setLoader, setUserPrayers } from '@/src/redux/actions/GeneralActions';
+import styles from './styles';
 import { ApiCall } from '@/src/services/api';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
-function PrayerInputTypeEdit({ color, id, pray, praytype, setCurrentIndex, setIsediting }) {
+interface PrayerInputTypeEditProps {
+  color?: string;
+  id?: string;
+  pray?: string;
+  praytype?: string;
+  setCurrentIndex: (value: number | null) => void;
+  setIsediting: (value: boolean) => void;
+}
+
+function PrayerInputTypeEdit({
+  color,
+  id,
+  pray,
+  praytype,
+  setCurrentIndex,
+  setIsediting,
+}: PrayerInputTypeEditProps) {
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.getProfileData);
-  const userPrayers = useSelector((state) => state.general.userPrayers);
-  const prayers = useSelector((state) => state.general.prayers);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+  const userPrayers = useSelector((state: RootState) => state.prayer.userPrayers);
   const [prayerTypeShow, setPrayerTypeShow] = useState(true);
   const [payerType, setPrayerType] = useState(praytype);
   const [prayer, setPrayer] = useState(pray);
-  const [error, seterror] = React.useState();
+  const [error, setError] = React.useState<string | null>(null);
 
   const ValidatePrayer = () => {
     if (prayer != null && payerType != null) {
       if (prayer.length <= 150) {
-        seterror(null);
+        setError(null);
         updatePrayer();
       } else {
-        seterror('prayer text must be within 1 to 150.');
+        setError('prayer text must be within 1 to 150.');
       }
     } else {
       if (prayer == null) {
-        seterror('prayer required!');
+        setError('prayer required!');
       }
       if (payerType == null) {
         setPrayerTypeShow(true);
-        seterror('prayer type is required!');
+        setError('prayer type is required!');
       }
     }
   };
@@ -48,7 +63,7 @@ function PrayerInputTypeEdit({ color, id, pray, praytype, setCurrentIndex, setIs
         verb: 'patch',
       });
 
-      if (res?.status == '200') {
+      if (res?.status === 200) {
         console.log('res ', res?.response);
         dispatch(setLoader(false));
         setCurrentIndex(null);
@@ -69,20 +84,22 @@ function PrayerInputTypeEdit({ color, id, pray, praytype, setCurrentIndex, setIs
       {prayerTypeShow ? (
         <View style={styles.prayerTypeView}>
           <Button
-            btnStyle={payerType == 'anonymous' ? styles.btnSelected : styles.btn}
-            btnTextStyle={payerType == 'anonymous' ? { color: 'white' } : { color: '#5B7279' }}
+            btnStyle={payerType === 'anonymous' ? styles.btnSelected : styles.btn}
+            btnTextStyle={payerType === 'anonymous' ? { color: 'white' } : { color: '#5B7279' }}
             text="Anonymous"
             onPress={() => setPrayerType('anonymous')}
           />
           <Button
-            btnStyle={payerType == 'prayer-request' ? styles.btnSelected : styles.btn}
-            btnTextStyle={payerType == 'prayer-request' ? { color: 'white' } : { color: '#5B7279' }}
+            btnStyle={payerType === 'prayer-request' ? styles.btnSelected : styles.btn}
+            btnTextStyle={
+              payerType === 'prayer-request' ? { color: 'white' } : { color: '#5B7279' }
+            }
             text="Prayer Request"
             onPress={() => setPrayerType('prayer-request')}
           />
           <Button
-            btnStyle={payerType == 'exhortation' ? styles.btnSelected : styles.btn}
-            btnTextStyle={payerType == 'exhortation' ? { color: 'white' } : { color: '#5B7279' }}
+            btnStyle={payerType === 'exhortation' ? styles.btnSelected : styles.btn}
+            btnTextStyle={payerType === 'exhortation' ? { color: 'white' } : { color: '#5B7279' }}
             text="Exhortation"
             onPress={() => setPrayerType('exhortation')}
           />
@@ -96,8 +113,10 @@ function PrayerInputTypeEdit({ color, id, pray, praytype, setCurrentIndex, setIs
           // onPressIn={() => setPrayerTypeShow(true)}
           onFocus={() => setPrayerTypeShow(true)}
           onChangeText={(e) => {
-            prayer.length <= 150 ? setPrayer(e) : null;
-            seterror(null);
+            if (e.length <= 150) {
+              setPrayer(e);
+            }
+            setError(null);
           }}
           multiline
           style={{ ...styles.TextInput, color }}
@@ -125,3 +144,12 @@ function PrayerInputTypeEdit({ color, id, pray, praytype, setCurrentIndex, setIs
   );
 }
 export default PrayerInputTypeEdit;
+
+PrayerInputTypeEdit.propTypes = {
+  color: PropTypes.string,
+  id: PropTypes.string,
+  pray: PropTypes.string,
+  praytype: PropTypes.string,
+  setCurrentIndex: PropTypes.func.isRequired,
+  setIsediting: PropTypes.func.isRequired,
+};

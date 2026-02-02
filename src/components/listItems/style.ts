@@ -14,7 +14,7 @@ const shadowPosts = {
   shadowRadius: 5,
   elevation: 1,
 };
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   continer: {
     flex: 1,
   },
@@ -395,3 +395,5 @@ export const styles = StyleSheet.create({
   //   padding: 8,
   // },
 });
+
+export default styles;

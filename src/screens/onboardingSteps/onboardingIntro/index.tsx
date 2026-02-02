@@ -8,6 +8,7 @@ import {
   Easing,
   TouchableOpacity,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -23,7 +24,6 @@ import { OnboardingStackParamList } from '@/src/navigator/types';
 import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { Colors, Typography } from '@/src/styles';
-import { button } from '@/src/styles/buttons';
 import { spacing } from '@/src/styles/spacing';
 import { HapticService } from '@/src/services/haptic';
 import { logout } from '@/src/redux/actions/AuthActions';
@@ -31,60 +31,61 @@ import { logout } from '@/src/redux/actions/AuthActions';
 const introImage = require('@/assets/images/onboarding_intro.png');
 
 const AnimatedFastImage = Animated.createAnimatedComponent(FastImage);
+const { width } = Dimensions.get('window');
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingIntro'>;
 
 function OnboardingIntro({ navigation }: Props) {
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const { dark, colors } = useTheme();
+  const { dark } = useTheme();
   const isIos = Platform.OS === 'ios';
 
+  // Animation Refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const spinAnim = useRef(new Animated.Value(0)).current;
+  const introFade = useRef(new Animated.Value(0)).current;
+  const introSlide = useRef(new Animated.Value(20)).current;
+
+  // Define One Body Brand Colors
+  const BRAND_PRIMARY = '#41899f';
+  const BRAND_ACCENT = '#12d2d9';
+  const BRAND_GRAY_BASE = '#3c4b64';
+  const BRAND_BLACK = '#032f3c';
 
   useEffect(() => {
-    // Gentle breathing pulse – longer & subtler in 2026 style
-    const pulseLoop = Animated.loop(
+    // 1. Entrance Animation (Fade + Slide up)
+    Animated.parallel([
+      Animated.timing(introFade, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(introSlide, {
+        toValue: 0,
+        duration: 800,
+        easing: Easing.out(Easing.back(1.5)),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // 2. Continuous "Breathing" Pulse for the logo
+    Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.04, // very gentle amplitude
-          duration: 3200,
-          easing: Easing.bezier(0.4, 0, 0.2, 1), // smooth natural in/out
+          toValue: 1.08,
+          duration: 2500,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 3200,
+          duration: 2500,
           easing: Easing.bezier(0.4, 0, 0.2, 1),
           useNativeDriver: true,
         }),
       ])
-    );
-
-    // Very slow elegant rotation of background layer
-    const spinLoop = Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 18000, // slower = more premium/calm
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
-
-    pulseLoop.start();
-    spinLoop.start();
-
-    return () => {
-      pulseLoop.stop();
-      spinLoop.stop();
-    };
-  }, [pulseAnim, spinAnim]);
-
-  const spin = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+    ).start();
+  }, [introFade, introSlide, pulseAnim]);
 
   const handleNext = () => {
     HapticService.trigger('impactMedium');
@@ -101,7 +102,7 @@ function OnboardingIntro({ navigation }: Props) {
       LoginManager.logOut();
       await clearAuthTokens();
     } catch {
-      // Ignore logout failures to avoid blocking navigation.
+      /* ignore */
     }
     dispatch(logout());
     const parentNavigation = navigation.getParent();
@@ -109,198 +110,137 @@ function OnboardingIntro({ navigation }: Props) {
       index: 0,
       routes: [{ name: 'Intro' }],
     });
-
-    if (parentNavigation) {
-      parentNavigation.dispatch(resetAction);
-    } else {
-      navigation.dispatch(resetAction);
-    }
+    if (parentNavigation) parentNavigation.dispatch(resetAction);
+    else navigation.dispatch(resetAction);
   };
 
-  // Theme-aware colors (adjusted to match your original intent)
-  const bgLayerOpacity = 0.15; // even more subtle
-  const textColor = dark ? Colors.main.black : Colors.primary.brand;
-  const headerColor = dark ? Colors.primarySapphire[400] : Colors.primary.brand;
-  const glassBorderColor = dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.35)';
-  const glassBackground = dark ? 'rgba(10, 18, 24, 0.35)' : 'rgba(255, 255, 255, 0.22)';
-  const glassButtonBackground = dark ? 'rgba(18, 107, 135, 0.7)' : 'rgba(18, 107, 135, 0.65)';
-  const glassRadius =
-    typeof button.primary.borderRadius === 'number' ? button.primary.borderRadius : 60;
+  // Visibility & Theme Logic
+  const textColor = dark ? '#e6eaec' : BRAND_GRAY_BASE;
+  const headerColor = dark ? BRAND_ACCENT : BRAND_PRIMARY;
+  const stageBg = dark ? 'rgba(60, 75, 100, 0.2)' : 'rgba(230, 234, 236, 0.5)';
+  const glowColor = dark ? BRAND_PRIMARY : BRAND_ACCENT;
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        marginHorizontal: spacing.x24,
-        marginBottom: Platform.OS === 'android' ? spacing.x24 : 0,
-      }}
-    >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View
-          style={{
-            flex: 4,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <View
-            style={{
-              width: '100%',
-              aspectRatio: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: spacing.x32,
-            }}
-          >
-            {/* Subtle rotating background layer */}
-            <Animated.View
-              style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                transform: [{ rotate: spin }],
-              }}
-            >
-              <AnimatedFastImage
-                resizeMode="contain"
-                style={{ width: '100%', height: '100%', opacity: bgLayerOpacity }}
-                source={introImage}
-              />
-            </Animated.View>
-
-            {/* Main icon with gentle breathing pulse */}
-            <AnimatedFastImage
-              resizeMode="contain"
-              style={{
-                width: '70%',
-                height: '70%',
-                transform: [{ scale: pulseAnim }],
-              }}
-              source={introImage}
-            />
-          </View>
-
-          <StyledText
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          {/* LOGO STAGE: This ensures the light asset is visible in both modes */}
+          <Animated.View
             style={[
-              Typography.header.h1,
+              styles.logoStage,
               {
-                color: headerColor,
-                marginVertical: spacing.x8,
+                backgroundColor: stageBg,
+                shadowColor: glowColor,
+                opacity: introFade,
+                transform: [{ scale: pulseAnim }],
               },
             ]}
           >
-            Let&#39;s Get to Know You
-          </StyledText>
+            <AnimatedFastImage resizeMode="contain" style={styles.logoImage} source={introImage} />
+          </Animated.View>
 
-          <StyledText
+          <Animated.View
             style={{
-              marginHorizontal: spacing.x16,
-              textAlign: 'center',
-              color: textColor,
+              opacity: introFade,
+              transform: [{ translateY: introSlide }],
+              alignItems: 'center',
             }}
           >
-            This should only take about a minute to complete.
-          </StyledText>
+            <StyledText
+              style={[Typography.header.h1, { color: headerColor, marginBottom: spacing.x13 }]}
+            >
+              Let&#39;s Get to Know You
+            </StyledText>
+
+            <StyledText style={[styles.description, { color: textColor }]}>
+              This should only take about a minute to complete.
+            </StyledText>
+          </Animated.View>
         </View>
 
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        <Animated.View style={[styles.footer, { opacity: introFade }]}>
           {isIos ? (
-            <BlurView
-              blurType={dark ? 'dark' : 'light'}
-              blurAmount={18}
-              reducedTransparencyFallbackColor={Colors.primarySapphire.brand}
-              style={{
-                width: '100%',
-                borderRadius: glassRadius,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: glassBorderColor,
-                backgroundColor: glassButtonBackground,
-              }}
-            >
+            <BlurView blurType={dark ? 'dark' : 'light'} blurAmount={20} style={styles.blurWrapper}>
               <Button
                 text="Get Started"
-                btnStyle={[button.primary, { flex: 1, backgroundColor: 'transparent' }]}
+                btnStyle={[styles.mainBtn, { backgroundColor: 'transparent' }]}
                 onPress={handleNext}
-                btnTextStyle={{ color: '#FFF' }}
+                btnTextStyle={{ color: '#FFF', fontWeight: '700' }}
               />
             </BlurView>
           ) : (
             <Button
               text="Get Started"
-              btnStyle={[
-                button.primary,
-                {
-                  flex: 1,
-                  backgroundColor: glassButtonBackground,
-                  borderWidth: 1,
-                  borderColor: glassBorderColor,
-                },
-              ]}
+              btnStyle={[styles.mainBtn, { backgroundColor: BRAND_PRIMARY }]}
               onPress={handleNext}
-              btnTextStyle={{ color: '#FFF' }}
+              btnTextStyle={{ color: '#FFF', fontWeight: '700' }}
             />
           )}
-        </View>
+        </Animated.View>
       </ScrollView>
-      <TouchableOpacity
-        onPress={handleBack}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        style={[
-          styles.backButton,
-          isIos ? styles.backButtonIos : styles.backButtonAndroid,
-          isIos
-            ? {
-                top: 80,
-                borderWidth: 1,
-                borderColor: glassBorderColor,
-                backgroundColor: glassBackground,
-              }
-            : { top: spacing.x32 },
-        ]}
-      >
-        {isIos && (
-          <BlurView
-            blurType={dark ? 'dark' : 'light'}
-            blurAmount={18}
-            reducedTransparencyFallbackColor={
-              dark ? Colors.primarySapphire[900] : Colors.neutral[900]
-            }
-            style={StyleSheet.absoluteFillObject}
-            pointerEvents="none"
-          />
-        )}
-        <Ionicons
-          name="chevron-back"
-          size={24}
-          color={(() => {
-            if (!isIos) return headerColor;
-            return dark ? '#FFF' : Colors.primary.brand;
-          })()}
-        />
+
+      {/* Back Button */}
+      <TouchableOpacity onPress={handleBack} style={[styles.backButton, { top: isIos ? 60 : 20 }]}>
+        <Ionicons name="chevron-back" size={28} color={headerColor} />
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
-export default OnboardingIntro;
-
 const styles = StyleSheet.create({
-  backButton: {
-    position: 'absolute',
-    left: 0,
-    zIndex: 20,
-    elevation: 20,
+  container: {
+    flex: 1,
+    paddingHorizontal: spacing.x24,
   },
-  backButtonIos: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 40,
+  },
+  logoStage: {
+    width: width * 0.65,
+    aspectRatio: 1,
+    borderRadius: (width * 0.65) / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.x48,
+    // Glow effect
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  logoImage: {
+    width: '60%',
+    height: '60%',
+  },
+  description: {
+    marginHorizontal: spacing.x32,
+    textAlign: 'center',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  footer: {
+    paddingBottom: spacing.x24,
+  },
+  blurWrapper: {
+    borderRadius: 30,
     overflow: 'hidden',
+    backgroundColor: 'rgba(18, 107, 135, 0.8)',
+  },
+  mainBtn: {
+    height: 56,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backButtonAndroid: {
-    padding: 6,
+  backButton: {
+    position: 'absolute',
+    left: spacing.x16,
+    zIndex: 10,
+    padding: 8,
   },
 });
+
+export default OnboardingIntro;

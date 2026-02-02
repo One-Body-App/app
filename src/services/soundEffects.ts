@@ -22,7 +22,6 @@ const soundVolumeCache: Record<string, number> = {};
 Sound.setCategory('Ambient', true);
 
 if (__DEV__) {
-  // eslint-disable-next-line no-console
   console.log('🔊 Sound module loaded (static import)');
 }
 
@@ -50,7 +49,6 @@ export const preloadSoundEffect = async (key: string, asset: any, volume = 1) =>
       soundVolumeCache[key] = clampedVolume;
       soundCache[key] = instance;
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log(`Sound "${key}" added to cache. Cache now contains:`, Object.keys(soundCache));
       }
       resolve();

@@ -36,12 +36,10 @@ function OnboardingChurchType({ navigation }: Props) {
       if (res?.status === 200) {
         setChurchTypes(res?.response as ChurchType[]);
       } else if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('error', res?.response);
       }
     } catch (e: any) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('saga error -- ', e.toString());
       }
     }

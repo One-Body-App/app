@@ -30,7 +30,6 @@ const CustomClipboard = forwardRef<CustomClipboardHandle>((_, ref) => {
         onMessage={(event) => {
           if (__DEV__) {
             if (event.nativeEvent.data === 'success') {
-              // eslint-disable-next-line no-console
               console.log('Copied to clipboard');
             } else {
               console.warn('Clipboard copy failed');

@@ -24,23 +24,23 @@ function AddIntrestsModel(props: any) {
 
   useEffect(() => {
     dispatch(getInterests.Request({ token }));
-  }, []);
+  }, [dispatch, token]);
 
   useEffect(() => {
-    if (userState?.getInterestsSuccess == false) {
+    if (userState?.getInterestsSuccess === false) {
       Toast.show('Unable to fetch interests!', Toast.LONG);
     }
   }, [userState?.getInterestsSuccess]);
 
   useEffect(() => {
-    if (userState?.addUserInterestSuccess == true) {
+    if (userState?.addUserInterestSuccess === true) {
       setShow(false);
       setSelectedIntrest([]);
       dispatch(getuserAll({ token }));
-    } else if (userState?.addUserInterestSuccess == false) {
+    } else if (userState?.addUserInterestSuccess === false) {
       Toast.show('Unable to add interests!', Toast.LONG);
     }
-  }, [userState?.addUserInterestSuccess]);
+  }, [dispatch, setShow, token, userState?.addUserInterestSuccess]);
 
   return (
     <CustomModal modalVisible={show} onclose={() => setShow(false)} style={styles.bottomView}>
@@ -60,13 +60,11 @@ function AddIntrestsModel(props: any) {
                 authState?.getProfileData?.interests?.map((item: any) => (
                   <TouchableOpacity
                     onPress={() => {
-                      selectedIntrest.includes(item?._id)
-                        ? setSelectedIntrest(
-                            selectedIntrest.filter(function (item2) {
-                              return item2 !== item?._id;
-                            })
-                          )
-                        : setSelectedIntrest([...selectedIntrest, item?._id]);
+                      if (selectedIntrest.includes(item?._id)) {
+                        setSelectedIntrest(selectedIntrest.filter((item2) => item2 !== item?._id));
+                      } else {
+                        setSelectedIntrest([...selectedIntrest, item?._id]);
+                      }
                     }}
                     style={
                       selectedIntrest.includes(item?._id)

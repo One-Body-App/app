@@ -59,6 +59,7 @@ type PrayerItemProps = {
   item: PrayerPost;
   style?: StyleProp<ViewStyle>;
   selectedEmoji?: EmojiItemProp;
+  onCommentsPress?: () => void;
 
   onShowDismissCard?: (e?: boolean) => void;
   isScrollEnable?: boolean;
@@ -78,6 +79,7 @@ function PrayerItem({
   onShowDismissCard,
   parentRefreshContent,
   fromSavedPosts,
+  onCommentsPress,
 }: PrayerItemProps) {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -204,6 +206,17 @@ function PrayerItem({
     }
   };
 
+  const postId = item.postId ?? item.id;
+  const handleCommentsPress =
+    onCommentsPress ||
+    (postId
+      ? () => {
+          navigation.navigate('Single', {
+            postId,
+          } as any);
+        }
+      : undefined);
+
   return (
     <BaseItem
       removePost={removePost}
@@ -243,6 +256,7 @@ function PrayerItem({
       isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
       onShowDismissCard={onShowDismissCard}
       index={index}
+      onCommentsPress={handleCommentsPress}
       onPress={() => {
         if (!item.private && item?.userData._id && item.userData._id !== user?._id) {
           navigation.navigate('UserProfile', {

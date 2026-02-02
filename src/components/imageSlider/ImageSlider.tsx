@@ -9,16 +9,8 @@ import {
 } from 'react-native';
 
 import ImageSlide from './ImageSlide';
+import { ImageForSlider } from './types';
 
-export type ImageType = 'image' | 'gif';
-export type ImageForSlider = {
-  url: string;
-  height: number;
-  width: number;
-  type: ImageType;
-  gifAspectRatio?: number;
-  id?: string;
-};
 function ImageSlider({
   images,
   setImageModalIndexVisible,
@@ -28,17 +20,23 @@ function ImageSlider({
   width: number;
   setImageModalIndexVisible: (item: number) => void;
 }) {
+  const [active, setActive] = useState(0);
+  const safeWidth = Number.isFinite(width) && width > 0 ? width : 0;
+  if (!safeWidth || images.length === 0) {
+    return null;
+  }
+
   let aspectRatio = 0;
 
   for (let i = 0; i < images.length; i++) {
-    const newAspectRatio = images[i].width < images[i].height ? 16 / 9 : 9 / 16;
+    const imgWidth = Number.isFinite(images[i].width) ? images[i].width : 1;
+    const imgHeight = Number.isFinite(images[i].height) ? images[i].height : 1;
+    const newAspectRatio = imgWidth < imgHeight ? 16 / 9 : 9 / 16;
     if (aspectRatio < newAspectRatio) {
       aspectRatio = newAspectRatio;
     }
   }
-  const height = width * aspectRatio;
-
-  const [active, setActive] = useState(0);
+  const height = safeWidth * aspectRatio;
 
   const onScrollChange = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
     const slide = Math.ceil(nativeEvent.contentOffset.x / nativeEvent.layoutMeasurement.width);
@@ -50,12 +48,12 @@ function ImageSlider({
   const maxHeight = 400;
   const heightToUse = maxHeight < height ? maxHeight : height;
 
-  if (images.length == 1) {
+  if (images.length === 1) {
     return (
       <ImageSlide
         image={images[0]}
         setImageModalIndexVisible={setImageModalIndexVisible}
-        width={width}
+        width={safeWidth}
         height={heightToUse}
         maxHeight={maxHeight}
         index={0}
@@ -70,14 +68,15 @@ function ImageSlider({
         horizontal
         onScroll={onScrollChange}
         showsHorizontalScrollIndicator={false}
-        style={{ width, height: heightToUse }}
+        style={{ width: safeWidth, height: heightToUse }}
       >
         {images.map((image, index) => {
           return (
             <ImageSlide
+              key={image.id ?? image.url ?? String(index)}
               image={image}
               setImageModalIndexVisible={setImageModalIndexVisible}
-              width={width}
+              width={safeWidth}
               height={heightToUse}
               maxHeight={maxHeight}
               index={index}
@@ -86,8 +85,11 @@ function ImageSlider({
         })}
       </ScrollView>
       <View style={styles.pagination}>
-        {images.map((i, k) => (
-          <Text key={k} style={k == active ? styles.activeDot : styles.dot}>
+        {images.map((image, index) => (
+          <Text
+            key={image.id ?? image.url ?? `dot-${index}`}
+            style={index === active ? styles.activeDot : styles.dot}
+          >
             •
           </Text>
         ))}

@@ -2,32 +2,50 @@ import React, {
   ComponentType,
   ReactElement,
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useState,
 } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  RefreshControl,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { NavigationProp, useNavigation, useTheme } from '@react-navigation/native';
-import { isObject } from 'lodash';
-import { Tabs } from 'react-native-collapsible-tab-view';
-import { styles } from './styles';
+import { FlatList, RefreshControl, TouchableOpacity, View } from 'react-native';
+import { useSelector } from 'react-redux';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 
 import { ApiCall } from '@/src/services/api';
-import { SetSocial } from '@/src/redux/actions/SocialActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import SocialItem from '../listItems/SocialItem';
 import { RefreshListRef, SocialPost } from '@/utils/types';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
+
+type SocialListFooterProps = {
+  isEndOfList: boolean;
+};
+
+function SocialListFooter({ isEndOfList }: SocialListFooterProps) {
+  return (
+    <View>
+      {isEndOfList ? (
+        <StyledText style={{ textAlign: 'center' }}>Not more social posts at this time</StyledText>
+      ) : null}
+    </View>
+  );
+}
+
+type SocialListEmptyProps = {
+  isLoading: boolean;
+};
+
+function SocialListEmpty({ isLoading }: SocialListEmptyProps) {
+  if (isLoading) {
+    return null;
+  }
+
+  return (
+    <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>Nothing here</StyledText>
+  );
+}
 
 const SocialFlatlist = forwardRef<
   RefreshListRef,
@@ -46,16 +64,14 @@ const SocialFlatlist = forwardRef<
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showRefreshIndicator, setShowRefreshIndicator] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [show, setShow] = useState<boolean>(false);
-  const [currentPopupItemId, setCurrentPopupItemId] = useState<string>();
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
 
-  const refreshContent = (showRefreshIndicator = false) => {
+  const refreshContent = (shouldShowRefreshIndicator = false) => {
     setIsEndOfList(false);
     setPage(1);
     setIsRefreshing(true);
 
-    if (showRefreshIndicator) {
+    if (shouldShowRefreshIndicator) {
       setShowRefreshIndicator(true);
     }
   };
@@ -66,61 +82,59 @@ const SocialFlatlist = forwardRef<
     },
   }));
 
-  const getSocialPosts = async (pageNumber: number) => {
-    setIsLoading(true);
+  const getSocialPosts = useCallback(
+    async (pageNumber: number) => {
+      setIsLoading(true);
 
-    try {
-      const res = await ApiCall({
-        route: userIdToPullData
-          ? `user/get-social/all/${userIdToPullData}/${pageNumber}?itemsPerPage=5`
-          : `user/get-following-social/${pageNumber}`,
-        token,
-        verb: 'get',
-      });
-      let posts = [];
-
-      if (res?.status == 200) {
-        if (pageNumber == 1) {
-          posts = res?.response?.content ?? [];
-          setIsEndOfList(false);
-        } else {
-          posts = [...socialPosts, ...(res?.response?.content ?? [])];
-          if (res?.response?.content?.length < 1) {
+      try {
+        const res = await ApiCall({
+          route: userIdToPullData
+            ? `user/get-social/all/${userIdToPullData}/${pageNumber}?itemsPerPage=5`
+            : `user/get-following-social/${pageNumber}`,
+          token,
+          verb: 'get',
+        });
+        if (res?.status === 200) {
+          const nextPosts = res?.response?.content ?? [];
+          if (pageNumber === 1) {
+            setIsEndOfList(false);
+            setSocialPosts(nextPosts);
+          } else if (nextPosts.length < 1) {
             setIsEndOfList(true);
+          } else {
+            setSocialPosts((prev) => [...prev, ...nextPosts]);
           }
+        } else {
+          console.log('error', res?.response);
         }
-        setSocialPosts(posts);
-      } else {
-        console.log('error', res?.response);
+        setIsLoading(false);
+        setIsRefreshing(false);
+        setShowRefreshIndicator(false);
+      } catch (e: any) {
+        console.log(e.toString());
       }
       setIsLoading(false);
       setIsRefreshing(false);
       setShowRefreshIndicator(false);
-    } catch (e: any) {
-      console.log(e.toString());
-    }
-    setIsLoading(false);
-    setIsRefreshing(false);
-    setShowRefreshIndicator(false);
 
-    setPage(pageNumber);
-  };
-
-  const getData = async () => {
-    await getSocialPosts(page);
-  };
+      setPage(pageNumber);
+    },
+    [token, userIdToPullData]
+  );
 
   useEffect(() => {
-    getData();
-  }, [page]);
+    getSocialPosts(page);
+  }, [getSocialPosts, page]);
 
   // useEffect(() => {
   //   SetSocial([]);
   // }, []);
 
   useEffect(() => {
-    if (isRefreshing) getData();
-  }, [isRefreshing]);
+    if (isRefreshing) {
+      getSocialPosts(1);
+    }
+  }, [getSocialPosts, isRefreshing]);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
 
   const removePost = async (type: string, id: string) => {
@@ -131,8 +145,8 @@ const SocialFlatlist = forwardRef<
         token,
       });
 
-      if (res?.status == 200) {
-        getData();
+      if (res?.status === 200) {
+        getSocialPosts(1);
       }
     } catch (e: any) {
       console.log('saga error -- ', e.toString());
@@ -190,15 +204,7 @@ const SocialFlatlist = forwardRef<
         if (!isLoading && !isRefreshing && !isEndOfList && socialPosts.length > 0)
           setPage(page + 1);
       }}
-      ListFooterComponent={() => (
-        <View>
-          {isEndOfList ? (
-            <StyledText style={{ textAlign: 'center' }}>
-              Not more social posts at this time
-            </StyledText>
-          ) : null}
-        </View>
-      )}
+      ListFooterComponent={<SocialListFooter isEndOfList={isEndOfList} />}
       refreshControl={
         <RefreshControl
           enabled
@@ -208,17 +214,7 @@ const SocialFlatlist = forwardRef<
           }}
         />
       }
-      ListEmptyComponent={() => {
-        if (isLoading) {
-          return null;
-        }
-
-        return (
-          <StyledText style={{ textAlign: 'center', marginTop: spacing.x10 }}>
-            Nothing here
-          </StyledText>
-        );
-      }}
+      ListEmptyComponent={<SocialListEmpty isLoading={isLoading} />}
     />
     // <>
     //   {socialPost?.map((item, i) => (

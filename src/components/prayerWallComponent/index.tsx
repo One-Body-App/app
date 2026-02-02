@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity, Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { platform } from 'os';
 import { ApiCall } from '@/src/services/api';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -15,10 +14,27 @@ import StyledText from '../styled/Text';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
+function PrayerWallEmpty() {
+  return (
+    <StyledText
+      style={[
+        Typography.body.x2M,
+        {
+          padding: spacing.x16,
+          textAlign: 'center',
+          transform:
+            Platform.OS === 'ios' ? [{ rotate: '180deg' }, { scaleX: -1 }] : [{ rotate: '180deg' }],
+        },
+      ]}
+    >
+      No new prayers to see
+    </StyledText>
+  );
+}
+
 function PrayerWallComponent() {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
@@ -27,41 +43,41 @@ function PrayerWallComponent() {
 
   const [isEndOfList, setIsEndOfList] = useState(false);
 
-  const getPrayerPosts = async (pageNumber: number) => {
-    setIsLoading(true);
+  const getPrayerPosts = useCallback(
+    async (pageNumber: number) => {
+      setIsLoading(true);
 
-    try {
-      const res = await ApiCall({
-        route: `prayer?page=${pageNumber}`,
-        token,
-        verb: 'get',
-      });
-      let posts = [];
-      // console.log(res.response.meta.body.error);
-      if (res?.status === 200) {
-        if (pageNumber === 1) {
-          posts = res?.response ?? [];
-          setIsEndOfList(false);
-        } else {
-          posts = [...(prayers ?? []), ...(res?.response ?? [])];
-          if (res?.response?.content?.length < 1) {
+      try {
+        const res = await ApiCall({
+          route: `prayer?page=${pageNumber}`,
+          token,
+          verb: 'get',
+        });
+        // console.log(res.response.meta.body.error);
+        if (res?.status === 200) {
+          const nextPosts = res?.response ?? [];
+          if (pageNumber === 1) {
+            setIsEndOfList(false);
+            setPrayers(nextPosts);
+          } else if (res?.response?.content?.length < 1) {
             setIsEndOfList(true);
+          } else {
+            setPrayers((prev) => [...(prev ?? []), ...nextPosts]);
           }
+        } else {
+          console.log('error', res?.response);
         }
-
-        setPrayers(posts);
-      } else {
-        console.log('error', res?.response);
+        setIsLoading(false);
+        setRefreshing(false);
+        // setShowRefreshIndicator(false);
+      } catch (e: any) {
+        console.log(e.toString());
       }
       setIsLoading(false);
       setRefreshing(false);
-      // setShowRefreshIndicator(false);
-    } catch (e: any) {
-      console.log(e.toString());
-    }
-    setIsLoading(false);
-    setRefreshing(false);
-  };
+    },
+    [token]
+  );
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -70,7 +86,7 @@ function PrayerWallComponent() {
     });
 
     return unsubscribe;
-  }, [navigation]);
+  }, [getPrayerPosts, navigation]);
 
   useEffect(() => {
     // getPrayers(currentPage);
@@ -83,11 +99,7 @@ function PrayerWallComponent() {
     //     setIsLoading: setIsLoading,
     //   })
     // );
-  }, [page]);
-
-  const getData = async () => {
-    await getPrayerPosts(page);
-  };
+  }, [getPrayerPosts, page]);
 
   const removePost = async (type: string, id: string) => {
     try {
@@ -97,7 +109,7 @@ function PrayerWallComponent() {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         setPage(1);
       }
     } catch (e: any) {
@@ -132,23 +144,7 @@ function PrayerWallComponent() {
             }}
           />
         }
-        ListEmptyComponent={() => (
-          <StyledText
-            style={[
-              Typography.body.x2M,
-              {
-                padding: spacing.x16,
-                textAlign: 'center',
-                transform:
-                  Platform.OS == 'ios'
-                    ? [{ rotate: '180deg' }, { scaleX: -1 }]
-                    : [{ rotate: '180deg' }],
-              },
-            ]}
-          >
-            No new prayers to see
-          </StyledText>
-        )}
+        ListEmptyComponent={PrayerWallEmpty}
         onEndReachedThreshold={0.8}
         scrollEnabled={isScrollEnable}
         renderItem={({ item, index }) => (

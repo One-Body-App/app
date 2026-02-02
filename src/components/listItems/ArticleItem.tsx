@@ -10,7 +10,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import { styles } from './style';
+import styles from './style';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '../styled/Text';
 import { Colors } from '@/src/styles';
@@ -45,6 +45,7 @@ function ArticleItem({
   hideProfileName,
   pillText,
   onPress,
+  onCommentsPress,
   parentRefreshContent,
 }: {
   item: ArticleType;
@@ -57,6 +58,7 @@ function ArticleItem({
   hideProfileName?: boolean;
   pillText?: string;
   onPress?: (item: ArticleType) => void;
+  onCommentsPress?: () => void;
   parentRefreshContent?: Function;
 }) {
   const { colors } = useTheme();
@@ -73,6 +75,17 @@ function ArticleItem({
       myReaction = reaction;
     }
   });
+
+  const articleId = itemData?.id ?? '';
+  const handleCommentsPress =
+    onCommentsPress ||
+    (articleId
+      ? () => {
+          const rootNavigation = navigation.getParent?.()?.getParent?.()?.getParent?.() as any;
+          const navigator = rootNavigation ?? (navigation as any);
+          navigator?.navigate?.('SingleRss', { postId: articleId });
+        }
+      : undefined);
 
   return (
     <BaseItem
@@ -106,6 +119,7 @@ function ArticleItem({
       }}
       style={blogPostStyle}
       parentRefreshContent={parentRefreshContent}
+      onCommentsPress={handleCommentsPress}
     >
       <TouchableOpacity
         onPress={() => {

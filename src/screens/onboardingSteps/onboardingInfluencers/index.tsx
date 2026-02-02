@@ -47,6 +47,19 @@ function OnboardingInfluencers({ route }: Props) {
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const getInfluencerId = useCallback((item?: User) => {
+    const raw = item?.id ?? item?._id ?? item?.userId;
+    return raw ? String(raw) : '';
+  }, []);
+
+  const getInfluencerKey = useCallback(
+    (item: User, index: number) => {
+      const stable = getInfluencerId(item) || item?.username || item?.email;
+      return `${stable || 'influencer'}-${index}`;
+    },
+    [getInfluencerId]
+  );
+
   const getInfluencers = useCallback(
     async (pageNumber: number) => {
       try {
@@ -57,34 +70,30 @@ function OnboardingInfluencers({ route }: Props) {
         });
 
         if (res?.status === 200) {
-          let userData = [];
+          const responseData: User[] = Array.isArray(res?.response?.data) ? res.response.data : [];
 
           if (pageNumber === 1) {
-            userData = res?.response.data ?? [];
+            setInfluencers(responseData);
             setIsEndOfList(false);
           } else {
-            userData = [...influencers, ...(res?.response.data ?? [])];
-            if (res?.response.data.length < 1) {
+            if (responseData.length < 1) {
               setIsEndOfList(true);
             }
+            setInfluencers((prev) => [...prev, ...responseData]);
           }
-
-          setInfluencers(userData);
         } else if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('error', res?.response);
         }
         setLoadingMore(false);
         setIsRefreshing(false);
       } catch (e: any) {
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('saga error -- ', e.toString());
         }
         setLoadingMore(false);
       }
     },
-    [influencers, searchText, token]
+    [searchText, token]
   );
 
   const addFollowing = async () => {
@@ -104,7 +113,6 @@ function OnboardingInfluencers({ route }: Props) {
         // } else {
         dispatch(setLoader(false));
         if (__DEV__) {
-          // eslint-disable-next-line no-console
           console.log('error', res);
         }
       }
@@ -113,7 +121,6 @@ function OnboardingInfluencers({ route }: Props) {
         type: 'danger',
       });
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.log('saga error -- ', e.toString());
       }
     }
@@ -233,8 +240,8 @@ function OnboardingInfluencers({ route }: Props) {
                   }}
                 />
               }
-              keyExtractor={(item) => {
-                return item.id || item._id;
+              keyExtractor={(item, index) => {
+                return getInfluencerKey(item, index);
               }}
               onEndReached={() => {
                 if (!loadingMore && !isRefreshing && !isEndOfList) setPage(page + 1);
@@ -247,78 +254,78 @@ function OnboardingInfluencers({ route }: Props) {
                 // flexWrap: influencers.length < 1 ? 'nowrap' : 'wrap',
               }}
               numColumns={3}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    if (item.id) {
-                      if (selectedInfluencers.includes(item.id)) {
+              renderItem={({ item }) => {
+                const influencerId = getInfluencerId(item);
+                const isSelected = influencerId
+                  ? selectedInfluencers.includes(influencerId)
+                  : false;
+
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.6}
+                    onPress={() => {
+                      if (!influencerId) return;
+                      if (selectedInfluencers.includes(influencerId)) {
                         setselectedInfluencers(
                           selectedInfluencers.filter((organizationId) => {
-                            return organizationId !== item.id;
+                            return organizationId !== influencerId;
                           })
                         );
                       } else {
-                        setselectedInfluencers([...selectedInfluencers, item.id]);
+                        setselectedInfluencers([...selectedInfluencers, influencerId]);
                       }
-                    }
-                  }}
-                  style={{
-                    width: '33%',
-
-                    alignItems: 'center',
-                  }}
-                >
-                  <Image
-                    style={
-                      item.id && selectedInfluencers.includes(item.id)
-                        ? {
-                            ...profileImageList,
-                            borderWidth: 2.5,
-                            borderColor: Colors.infoFeedback[200],
-                          }
-                        : profileImageList
-                    }
-                    resizeMode="contain"
-                    source={{
-                      uri:
-                        item?.profileImage && item?.profileImage !== ''
-                          ? item?.profileImage
-                          : 'https://cdn.onebodyapp.com/user/no-image.png',
                     }}
-                  />
+                    style={{
+                      width: '33%',
 
-                  <View style={{ marginBottom: spacing.x24 }}>
-                    <StyledText
-                      style={{
-                        textAlign: 'center',
-                        color:
-                          item.id && selectedInfluencers.includes(item.id)
-                            ? Colors.infoFeedback[200]
-                            : Colors.neutral.brand,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Image
+                      style={
+                        isSelected
+                          ? {
+                              ...profileImageList,
+                              borderWidth: 2.5,
+                              borderColor: Colors.infoFeedback[200],
+                            }
+                          : profileImageList
+                      }
+                      resizeMode="contain"
+                      source={{
+                        uri:
+                          item?.profileImage && item?.profileImage !== ''
+                            ? item?.profileImage
+                            : 'https://cdn.onebodyapp.com/user/no-image.png',
                       }}
-                      numberOfLines={2}
-                    >
-                      {item?.name}
-                    </StyledText>
-                    <StyledText
-                      numberOfLines={1}
-                      style={{
-                        color:
-                          item.id && selectedInfluencers.includes(item.id)
-                            ? Colors.infoFeedback[400]
-                            : Colors.neutral[300],
-                        alignSelf: 'center',
-                        ...fontSize.x1,
-                      }}
-                    >
-                      {item?.profile?.whatIDo?.name ??
-                        item?.profile?.typeOfOrganization?.organizationType ??
-                        item?.profile?.typeOfOrganization?.name}
-                    </StyledText>
-                  </View>
-                </TouchableOpacity>
-              )}
+                    />
+
+                    <View style={{ marginBottom: spacing.x24 }}>
+                      <StyledText
+                        style={{
+                          textAlign: 'center',
+                          color: isSelected ? Colors.infoFeedback[200] : Colors.neutral.brand,
+                        }}
+                        numberOfLines={2}
+                      >
+                        {item?.name}
+                      </StyledText>
+                      <StyledText
+                        numberOfLines={1}
+                        style={{
+                          color: isSelected ? Colors.infoFeedback[400] : Colors.neutral[300],
+                          alignSelf: 'center',
+                          ...fontSize.x1,
+                        }}
+                      >
+                        {item?.profile?.whatIDo?.name ??
+                          item?.profile?.typeOfOrganization?.organizationType ??
+                          item?.profile?.typeOfOrganization?.name}
+                      </StyledText>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
               ListEmptyComponent={EmptyInfluencersList}
             />
           </View>

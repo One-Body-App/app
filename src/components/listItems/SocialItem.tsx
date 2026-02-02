@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
@@ -6,7 +6,6 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 
 import ImageView from 'react-native-image-viewing';
 
@@ -24,7 +23,8 @@ import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import BaseItem from './BaseItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import ImageSlider, { ImageForSlider } from '../imageSlider/ImageSlider';
+import ImageSlider from '../imageSlider/ImageSlider';
+import { ImageForSlider } from '../imageSlider/types';
 import CustomVideo from '../CustomVideo';
 
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
@@ -43,15 +43,25 @@ type LinkData = {
   title?: string;
   url?: string;
 };
+
+const toSafeNumber = (value: unknown, fallback = 1) => {
+  let parsed: number;
+  if (typeof value === 'string') {
+    parsed = parseFloat(value);
+  } else if (typeof value === 'number') {
+    parsed = value;
+  } else {
+    parsed = Number(value);
+  }
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
 type SocialItemProps = {
-  currentPopupItemId?: string;
   visible?: boolean;
   itemData: SocialPost;
   socialPostviewStyle?: StyleProp<ViewStyle>;
-  selectedEmoji?: EmojiItemProp;
+  onCommentsPress?: () => void;
 
   onShowDismissCard?: (e?: boolean) => void;
-  isScrollEnable?: boolean;
   index?: number;
   parentRefreshContent?: Function;
   removePost: (type: string, postId: string) => void;
@@ -68,6 +78,7 @@ function SocialItem({
   removePost,
   editPost,
   fromSavedPosts,
+  onCommentsPress,
 }: SocialItemProps) {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -87,15 +98,15 @@ function SocialItem({
   const [width, setWidth] = useState<number>();
 
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  let url = '';
-  if (itemData?.source == 'twitter') {
-    url = `https://twitter.com/${itemData?.handler}/status/${itemData?.id}`;
+  let profileUrl = '';
+  if (itemData?.source === 'twitter') {
+    profileUrl = `https://twitter.com/${itemData?.handler}/status/${itemData?.id}`;
   } else {
-    url = itemData?.permalink || '';
+    profileUrl = itemData?.permalink || '';
   }
 
-  const getDomainName = (url: string) => {
-    const domainText = url.replace('https://', '').replace('http://', '').replace('www.', '');
+  const getDomainName = (linkUrl: string) => {
+    const domainText = linkUrl.replace('https://', '').replace('http://', '').replace('www.', '');
 
     const domainParts = domainText.split('/');
 
@@ -109,14 +120,51 @@ function SocialItem({
   useEffect(() => {
     setIsPlaying(visible ?? false);
     if (!visible && !isMuted) setIsMuted(true);
-  }, [visible]);
+  }, [isMuted, visible]);
+
+  const getMediaInfo = useCallback(async (mediaItems: Media[]) => {
+    const photoMedia = mediaItems.filter((item) => item.type === 'photo');
+
+    if (photoMedia.length > 0) {
+      const imagePromises = photoMedia.map((img) => {
+        return new Promise<{ url: string; width: number; height: number } | null>((resolve) => {
+          Image.getSize(
+            img.url,
+            (imgWidth, imgHeight) => {
+              // successfully got image dimensions
+              resolve({ url: img.url, width: imgWidth, height: imgHeight });
+            },
+            () => {
+              // error case
+              console.warn(`Error with ${img}`);
+              resolve(null);
+            }
+          );
+        });
+      });
+
+      Promise.all(imagePromises)
+        .then((resolvedImages) => resolvedImages.filter(Boolean))
+        .then((resolvedImages) => {
+          setImageInfo(
+            resolvedImages
+              .map((image) => ({
+                url: typeof image?.url === 'string' ? image.url : '',
+                width: toSafeNumber(image?.width),
+                height: toSafeNumber(image?.height),
+              }))
+              .filter((image) => image.url.length > 0)
+          );
+        });
+    }
+  }, []);
 
   useEffect(() => {
     setImageInfo([]);
-    let media: Media[] = [];
+    let mediaItems: Media[] = [];
 
     if (itemData?.mediaUrl) {
-      media = [
+      mediaItems = [
         {
           type: itemData.mediaType ?? '',
           url: itemData.mediaUrl,
@@ -124,8 +172,8 @@ function SocialItem({
       ];
     } else if (itemData?.attachments && itemData?.attachments.length > 0) {
       itemData.attachments.forEach((attachment) => {
-        if (attachment.type == 'photo' || attachment.type == 'video') {
-          media?.push({
+        if (attachment.type === 'photo' || attachment.type === 'video') {
+          mediaItems.push({
             type: attachment.type,
             url: attachment.url,
           });
@@ -133,81 +181,41 @@ function SocialItem({
       });
     } else if (isArray(itemData.images) && itemData.images && itemData.images.length > 0) {
       itemData.images?.forEach((attachment) => {
-        media.push({
+        mediaItems.push({
           type: 'photo',
           url: attachment,
         });
       });
     }
 
-    if (media) {
-      setMedia(media);
-      getMediaInfo(media);
+    if (mediaItems.length > 0) {
+      setMedia(mediaItems);
+      getMediaInfo(mediaItems);
+    } else {
+      setMedia([]);
     }
-  }, [itemData]);
+  }, [getMediaInfo, itemData]);
 
-  let linkData: LinkData;
-  let hasLink = false;
-
-  if (itemData?.attachments && itemData?.attachments.length > 0) {
-    itemData.attachments.forEach((attachment) => {
-      if (attachment.type == 'link') {
-        hasLink = true;
-        linkData = {
-          description: attachment.description,
-          image: attachment.image,
-          siteName: attachment.siteName,
-          title: attachment.title,
-          url: attachment.url,
-        };
+  const linkAttachment = itemData?.attachments?.find((attachment) => attachment.type === 'link');
+  const linkData: LinkData | undefined = linkAttachment
+    ? {
+        description: linkAttachment.description,
+        image: linkAttachment.image,
+        siteName: linkAttachment.siteName,
+        title: linkAttachment.title,
+        url: linkAttachment.url,
       }
-    });
-  }
+    : undefined;
+
+  const hasLink = Boolean(linkData);
 
   let myReaction: SocialPostReaction | undefined;
 
   itemData?.reactions?.forEach((reaction) => {
-    if (reaction.userId == user?._id) {
+    if (reaction.userId === user?._id) {
       myReaction = reaction;
     }
   });
-
-  const getMediaInfo = async (media: Media[]) => {
-    const images = media.filter((item) => item.type == 'photo');
-
-    if (images.length > 0) {
-      const imagePromises = images.map((img) => {
-        return new Promise<{ url: string; width: number; height: number } | null>(
-          (resolve, reject) => {
-            Image.getSize(
-              img.url,
-              (width, height) => {
-                // successfully got image dimensions
-                resolve({ url: img.url, width, height });
-              },
-              () => {
-                // error case
-                console.warn(`Error with ${img}`);
-                resolve(null);
-              }
-            );
-          }
-        );
-      });
-
-      Promise.all(imagePromises)
-        .then((images) => images.filter(Boolean))
-        .then((images) => {
-          setImageInfo(
-            images.map((image) => ({
-              url: image?.url ?? '',
-              width: image?.width ?? 0,
-              height: image?.height ?? 0,
-            }))
-          );
-        });
-    }
-  };
 
   const images: ImageForSlider[] = [];
   if (imageInfo && imageInfo.length > 0) {
@@ -222,13 +230,24 @@ function SocialItem({
   if (itemData.gif) {
     images.push({
       url: itemData.gif.url,
-      width: itemData.gif.data.images.original.width,
-      height: itemData.gif.data.images.original.height,
+      width: toSafeNumber(itemData.gif.data.images.original.width),
+      height: toSafeNumber(itemData.gif.data.images.original.height),
       id: itemData.gif.id,
-      gifAspectRatio: itemData.gif.aspectRatio,
+      gifAspectRatio: toSafeNumber(itemData.gif.aspectRatio),
       type: 'gif',
     });
   }
+
+  const postId = itemData.postId ?? itemData.id ?? itemData._id;
+  const handleCommentsPress =
+    onCommentsPress ||
+    (postId
+      ? () => {
+          const rootNavigation = navigation.getParent?.()?.getParent?.()?.getParent?.() as any;
+          const navigator = rootNavigation ?? (navigation as any);
+          navigator?.navigate?.('SinglePost', { postId });
+        }
+      : undefined);
 
   return (
     <BaseItem
@@ -244,7 +263,7 @@ function SocialItem({
         postlink: itemData.link,
         image:
           itemData.images && itemData.images.length > 0 ? { url: itemData.images[0] } : undefined,
-        externalLink: url,
+        externalLink: profileUrl,
         reactions: itemData.reactions ?? [],
         myReaction,
         location: itemData.location,
@@ -260,8 +279,9 @@ function SocialItem({
       isApprovedInfluencer={itemData.userData?.isApprovedInfluencer ?? false}
       onShowDismissCard={onShowDismissCard}
       index={index}
+      onCommentsPress={handleCommentsPress}
       onPress={() => {
-        if (itemData.userData._id != user?._id) {
+        if (itemData.userData._id !== user?._id) {
           navigation.navigate('Main', {
             screen: 'HomeTab',
             params: {
@@ -295,10 +315,10 @@ function SocialItem({
           </View>
         )}
 
-        {hasLink ? (
+        {hasLink && linkData ? (
           <TouchableOpacity
             onPress={() => {
-              if (linkData!.url) OpenURLButton(linkData!.url);
+              if (linkData.url) OpenURLButton(linkData.url);
             }}
             style={[
               {
@@ -316,28 +336,28 @@ function SocialItem({
                 borderTopLeftRadius: 8,
                 borderTopRightRadius: 8,
               }}
-              source={{ uri: linkData!.image?.url ?? NO_POST_IMAGE_URL }}
+              source={{ uri: linkData.image?.url ?? NO_POST_IMAGE_URL }}
             />
             <View style={{ padding: 10 }}>
-              {linkData!.siteName ? (
+              {linkData.siteName ? (
                 <StyledText numberOfLines={1} style={{ color: '#979797' }}>
-                  {getDomainName(linkData!.url || '')}
+                  {getDomainName(linkData.url || '')}
                 </StyledText>
               ) : null}
               <StyledText numberOfLines={1} style={{ fontWeight: 'bold' }}>
-                {linkData!.title}
+                {linkData.title}
               </StyledText>
-              <StyledText numberOfLines={2}>{linkData!.description}</StyledText>
+              <StyledText numberOfLines={2}>{linkData.description}</StyledText>
             </View>
           </TouchableOpacity>
         ) : null}
 
         {media.length > 0 &&
-          media.map((mediaItem, index) => {
+          media.map((mediaItem, mediaIndex) => {
             if (mediaItem.type === 'VIDEO') {
               return (
                 <CustomVideo
-                  key={`${mediaItem.type}-${index}`}
+                  key={`${mediaItem.type}-${mediaItem.url ?? `video-${mediaIndex}`}`}
                   source={{
                     uri: mediaItem.url,
                   }}

@@ -1,48 +1,52 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState } from 'react';
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import PropTypes from 'prop-types';
 import Toast from 'react-native-simple-toast';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import Button from '../Button';
-import { setLoader, setPrayers } from '@/src/redux/actions/GeneralActions';
-import { styles } from './styles';
-import { ApiCall } from '@/src/services/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { getAllPrayer, getMyPrayer, getTestimonies } from '@/src/redux/actions/PrayerAction';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { ApiCall } from '@/src/services/api';
+import Button from '../Button';
 import StyledText from '../styled/Text';
+import styles from './styles';
 
-function PrayerInputType({ color }) {
+interface PrayerInputTypeProps {
+  color?: string;
+}
+
+function PrayerInputType({ color }: PrayerInputTypeProps) {
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.userToken);
-  const user = useSelector((state) => state.auth.getProfileData);
-  const prayers = useSelector((state) => state.general.prayers);
+  const token = useSelector((state: RootState) => state.auth.userToken);
   const [prayerTypeShow, setPrayerTypeShow] = useState(false);
-  const [payerType, setPrayerType] = useState(null);
+  const [payerType, setPrayerType] = useState<string | null>(null);
   const [prayer, setPrayer] = useState('');
-  const [error, seterror] = React.useState();
+  const [error, setError] = React.useState<string | null>(null);
 
   const ValidatePrayer = () => {
-    if (prayer != null && payerType != null) {
-      if (prayer.length <= 150 && prayer != '') {
-        seterror(null);
+    if (prayer !== '' && payerType !== null) {
+      if (prayer.length <= 150) {
+        setError(null);
         createPrayer();
       } else {
-        seterror('prayer text must be within 1 to 150.');
+        setError('prayer text must be within 1 to 150.');
       }
     } else {
-      if (prayer == null && prayer == '') {
-        seterror('prayer required!');
+      if (prayer === '') {
+        setError('prayer required!');
       }
-      if (payerType == null) {
+      if (payerType === null) {
         setPrayerTypeShow(true);
-        seterror('prayer type is required!');
+        setError('prayer type is required!');
       }
     }
   };
 
   const createPrayer = async () => {
     dispatch(setLoader(true));
-    if (payerType == 'answer') {
+    if (payerType === 'answer') {
       dispatch(setLoader(true));
       try {
         const res = await ApiCall({
@@ -52,7 +56,7 @@ function PrayerInputType({ color }) {
           verb: 'patch',
         });
 
-        if (res?.status == '200') {
+        if (res?.status === 200) {
           dispatch(setLoader(false));
           setPrayerTypeShow(false);
           setPrayerType(null);
@@ -78,11 +82,10 @@ function PrayerInputType({ color }) {
           );
           //  Toast.show('Answer submit Sucessfuly')
         } else {
-          console.log('error', res?.response);
           dispatch(setLoader(false));
         }
       } catch (e) {
-        console.log('saga change pasword err --- ', e);
+        // no-op: handle silently
       }
     } else {
       try {
@@ -93,7 +96,7 @@ function PrayerInputType({ color }) {
           verb: 'post',
         });
 
-        if (res?.status == '200') {
+        if (res?.status === 200) {
           dispatch(setLoader(false));
           setPrayerTypeShow(false);
           setPrayerType(null);
@@ -112,11 +115,9 @@ function PrayerInputType({ color }) {
               token,
             })
           );
-        } else {
-          console.log('error', res?.response);
         }
       } catch (e) {
-        console.log('saga change pasword err --- ', e);
+        // no-op: handle silently
       }
     }
   };
@@ -127,28 +128,28 @@ function PrayerInputType({ color }) {
         <ScrollView showsHorizontalScrollIndicator={false} horizontal>
           <View style={styles.prayerTypeView}>
             <Button
-              btnStyle={payerType == 'anonymous' ? styles.btnSelected : styles.btn}
-              btnTextStyle={payerType == 'anonymous' ? { color: 'white' } : { color: '#5B7279' }}
+              btnStyle={payerType === 'anonymous' ? styles.btnSelected : styles.btn}
+              btnTextStyle={payerType === 'anonymous' ? { color: 'white' } : { color: '#5B7279' }}
               text="Anonymous"
               onPress={() => setPrayerType('anonymous')}
             />
             <Button
-              btnStyle={payerType == 'prayer-request' ? styles.btnSelected : styles.btn}
+              btnStyle={payerType === 'prayer-request' ? styles.btnSelected : styles.btn}
               btnTextStyle={
-                payerType == 'prayer-request' ? { color: 'white' } : { color: '#5B7279' }
+                payerType === 'prayer-request' ? { color: 'white' } : { color: '#5B7279' }
               }
               text="Prayer Request"
               onPress={() => setPrayerType('prayer-request')}
             />
             <Button
-              btnStyle={payerType == 'exhortation' ? styles.btnSelected : styles.btn}
-              btnTextStyle={payerType == 'exhortation' ? { color: 'white' } : { color: '#5B7279' }}
+              btnStyle={payerType === 'exhortation' ? styles.btnSelected : styles.btn}
+              btnTextStyle={payerType === 'exhortation' ? { color: 'white' } : { color: '#5B7279' }}
               text="Exhortation"
               onPress={() => setPrayerType('exhortation')}
             />
             <Button
-              btnStyle={payerType == 'answer' ? styles.btnSelected : styles.btn}
-              btnTextStyle={payerType == 'answer' ? { color: 'white' } : { color: '#5B7279' }}
+              btnStyle={payerType === 'answer' ? styles.btnSelected : styles.btn}
+              btnTextStyle={payerType === 'answer' ? { color: 'white' } : { color: '#5B7279' }}
               text="Testimonies"
               onPress={() => setPrayerType('answer')}
             />
@@ -163,8 +164,10 @@ function PrayerInputType({ color }) {
           // onPressIn={() => setPrayerTypeShow(true)}
           onFocus={() => setPrayerTypeShow(true)}
           onChangeText={(e) => {
-            prayer.length < 150 ? setPrayer(e) : null;
-            seterror(null);
+            if (e.length < 150) {
+              setPrayer(e);
+            }
+            setError(null);
           }}
           multiline
           style={{
@@ -184,7 +187,7 @@ function PrayerInputType({ color }) {
           <Ionicons name="send" size={20} color="#032F3C" />
         </TouchableOpacity>
       </View>
-      {prayer != '' && error == null ? (
+      {prayer !== '' && error === null ? (
         <StyledText
           style={{
             color,
@@ -192,7 +195,7 @@ function PrayerInputType({ color }) {
             marginBottom: getHeight(1),
           }}
         >
-          {prayer != '' ? prayer.length : null}/150 Characters left
+          {prayer !== '' ? prayer.length : null}/150 Characters left
         </StyledText>
       ) : (
         <View
@@ -202,7 +205,7 @@ function PrayerInputType({ color }) {
           }}
         />
       )}
-      {error != null ? (
+      {error !== null ? (
         <View style={styles.nulview}>
           <Text style={styles.errortect}>{error}</Text>
         </View>
@@ -211,3 +214,7 @@ function PrayerInputType({ color }) {
   );
 }
 export default PrayerInputType;
+
+PrayerInputType.propTypes = {
+  color: PropTypes.string,
+};
