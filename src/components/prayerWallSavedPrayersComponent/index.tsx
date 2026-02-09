@@ -12,7 +12,17 @@ import { spacing } from '@/src/styles/spacing';
 import PrayerItem from '../listItems/PrayerItem';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 
-function PrayerWallSavedPrayersComponent() {
+type PrayerWallSavedPrayersProps = {
+  onOpenPost?: (postId: string) => void;
+  onEditPost?: (postId: string) => void;
+  onScrollOffsetChange?: (offsetY: number) => void;
+};
+
+function PrayerWallSavedPrayersComponent({
+  onOpenPost,
+  onEditPost,
+  onScrollOffsetChange,
+}: PrayerWallSavedPrayersProps) {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [isLoading, setIsLoading] = useState(false);
@@ -113,6 +123,10 @@ function PrayerWallSavedPrayersComponent() {
   };
 
   const editPost = async (id: string) => {
+    if (onEditPost) {
+      onEditPost(id);
+      return;
+    }
     navigation.navigate('Prayer', { postId: id });
   };
 
@@ -127,7 +141,10 @@ function PrayerWallSavedPrayersComponent() {
         style={{
           flexGrow: 1,
         }}
-        keyExtractor={(item, index) => item.postId ?? index.toString()}
+        keyExtractor={(item, index) => {
+          const postKey = item.postId ?? item.id ?? `row-${index}`;
+          return `${postKey}-${index}`;
+        }}
         refreshing={refreshing}
         refreshControl={
           <RefreshControl
@@ -145,25 +162,37 @@ function PrayerWallSavedPrayersComponent() {
         )}
         // onEndReachedThreshold={0.8}
         scrollEnabled={isScrollEnable}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            onPress={() => {
-              if (item.id) {
-                navigation.navigate('Single', {
-                  postId: item.id,
-                });
-              }
-            }}
-          >
-            <PrayerItem
-              editPost={editPost}
-              removePost={removePost}
-              item={item}
-              index={index}
-              onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-            />
-          </TouchableOpacity>
-        )}
+        onScroll={(event) => {
+          onScrollOffsetChange?.(event.nativeEvent.contentOffset.y);
+        }}
+        scrollEventThrottle={16}
+        renderItem={({ item, index }) => {
+          const postId = item.postId ?? item.id;
+          const openPost = () => {
+            if (!postId) return;
+            if (onOpenPost) {
+              onOpenPost(postId);
+              return;
+            }
+            navigation.navigate('Single', {
+              postId,
+            });
+          };
+
+          return (
+            <TouchableOpacity onPress={openPost}>
+              <PrayerItem
+                editPost={editPost}
+                removePost={removePost}
+                item={item}
+                index={index}
+                onCommentsPress={openPost}
+                onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                limitContentLines
+              />
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );

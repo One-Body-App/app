@@ -1,12 +1,14 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import { StackScreenProps } from '@react-navigation/stack';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import StyledText from '@/components/styled/Text';
+import Header from '@/components/Header';
+import GoBackIcon from '@/components/GoBackIcon';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
@@ -22,15 +24,27 @@ function SinglePrayer({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
+  const postId = route.params?.postId;
 
   const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
 
-  const getPostPrayer = async () => {
+    navigation.navigate('index');
+  };
+
+  const getPostPrayer = useCallback(async () => {
+    if (!postId) {
+      return;
+    }
     setIsLoading(true);
     try {
       const result = await ApiCall({
-        route: `prayer/${route.params?.postId}`,
+        route: `prayer/${postId}`,
         token,
 
         verb: 'get',
@@ -38,13 +52,13 @@ function SinglePrayer({ navigation, route }: Props) {
 
       setIsLoading(false);
 
-      if (result.status == 200) {
+      if (result.status === 200) {
         setPrayer(result.response);
       }
     } catch (e) {
       setIsLoading(false);
     }
-  };
+  }, [postId, token]);
 
   const removePost = async (type: string, id: string) => {
     try {
@@ -54,7 +68,7 @@ function SinglePrayer({ navigation, route }: Props) {
         token,
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         await getPostPrayer();
       }
     } catch (e: any) {
@@ -68,19 +82,37 @@ function SinglePrayer({ navigation, route }: Props) {
   };
 
   useEffect(() => {
-    if (route.params?.postId) {
-      getPostPrayer();
-    }
-  }, [route.params?.postId]);
+    getPostPrayer();
+  }, [getPostPrayer]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      {Platform.OS === 'android' ? (
+        <>
+          <StatusBar
+            barStyle={dark ? 'light-content' : 'dark-content'}
+            backgroundColor={colors.background}
+          />
+          <Header
+            title="Comment"
+            hideBorder
+            leftView={
+              <GoBackIcon
+                color={dark ? colors.text : Colors.primary.brand}
+                goBack={handleBackPress}
+              />
+            }
+            RightView={<View style={{ width: 20 }} />}
+          />
+        </>
+      ) : null}
       <View style={{ flex: 1 }}>
         {prayer ? (
           <>
             <CommentThread
               type={PostType.prayer}
-              postId={route.params?.postId ?? ''}
+              postId={postId ?? ''}
+              isPrivate={Boolean(prayer.private)}
               hideComposer={prayer.answered}
               header={
                 <PrayerItem
@@ -110,7 +142,7 @@ function SinglePrayer({ navigation, route }: Props) {
                 ) : null
               }
               onUserPress={() => {
-                if (!prayer.private && prayer?.userData._id && prayer.userData._id != user?._id) {
+                if (!prayer.private && prayer?.userData._id && prayer.userData._id !== user?._id) {
                   navigation.navigate('UserProfile', {
                     id: prayer?.userData._id,
                   });

@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
@@ -19,6 +18,12 @@ import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { setLoginData } from '@/src/redux/actions/AuthActions';
 import { loginWithEmailAndPassword, verifyEmailTwoFactorCode } from '@/services/login';
+import {
+  ensureGoogleSigninConfigured,
+  exchangeSocialToken,
+  getAppleIdToken,
+  getGoogleIdToken,
+} from '@/services/socialAuth';
 
 import Button from '../Button';
 import StyledText from '../styled/Text';
@@ -29,7 +34,12 @@ type Nav = NativeStackNavigationProp<MainStackParamList, 'Login'>;
 
 const googleIcon = require('@/assets/icons/google.png');
 
-function LoginComponent({ currentUserEmail }: any) {
+type LoginComponentProps = {
+  currentUserEmail?: string;
+  clearOnMountKey?: string;
+};
+
+function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentProps) {
   const dispatch = useDispatch();
   const navigation = useNavigation<Nav>();
   const { dark } = useTheme();
@@ -45,6 +55,7 @@ function LoginComponent({ currentUserEmail }: any) {
   const [hidePass, setHidePass] = useState(true);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [needsEmailTwoFactor, setNeedsEmailTwoFactor] = useState(false);
   const [locationPrompted, setLocationPrompted] = useState(false);
@@ -53,6 +64,25 @@ function LoginComponent({ currentUserEmail }: any) {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
       setLocationPrompted(val === '1');
     });
+  }, []);
+
+  useEffect(() => {
+    if (!clearOnMountKey) return;
+    setForm({
+      email: '',
+      emailError: '',
+      password: '',
+      passwordError: '',
+      emailTwoFactorCode: '',
+    });
+    setError('');
+    setNeedsEmailTwoFactor(false);
+    setHidePass(true);
+    setSocialLoading(false);
+  }, [clearOnMountKey]);
+
+  useEffect(() => {
+    ensureGoogleSigninConfigured();
   }, []);
 
   const ensureLocationPermission = useCallback(async () => {
@@ -70,8 +100,8 @@ function LoginComponent({ currentUserEmail }: any) {
         );
         granted = result === PermissionsAndroid.RESULTS.GRANTED;
       } else {
-        const status = await Geolocation.requestAuthorization('whenInUse');
-        granted = status === 'granted';
+        Geolocation.requestAuthorization();
+        granted = true;
       }
 
       if (granted) {
@@ -140,6 +170,51 @@ function LoginComponent({ currentUserEmail }: any) {
       dispatch(setLoader(false));
     }
   }, [form, needsEmailTwoFactor, dispatch, navigation, ensureLocationPermission]);
+
+  const handleSocialLogin = useCallback(
+    async (provider: 'google' | 'apple') => {
+      if (socialLoading) return;
+      const providerLabel = provider === 'google' ? 'Google' : 'Apple';
+      setError('');
+      dispatch(setLoader(true));
+      setSocialLoading(true);
+      try {
+        await ensureLocationPermission();
+        const tokenResult =
+          provider === 'google' ? await getGoogleIdToken() : await getAppleIdToken();
+
+        if (tokenResult.cancelled) {
+          return;
+        }
+
+        if (!tokenResult.idToken) {
+          setError(`Unable to sign in with ${providerLabel}. Please try again.`);
+          return;
+        }
+
+        const res = await exchangeSocialToken({
+          provider,
+          idToken: tokenResult.idToken,
+          nonce: tokenResult.nonce,
+          details: tokenResult.details,
+        });
+
+        if (res.status === 200 && res.response?.tokens?.accessToken) {
+          dispatch(setLoginData({ token: res.response.tokens.accessToken }));
+          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+        } else {
+          const apiMessage = (res.response as any)?.message;
+          setError(typeof apiMessage === 'string' ? apiMessage : 'Unable to sign in.');
+        }
+      } catch (e: any) {
+        setError(e?.message ?? 'Sign in failed.');
+      } finally {
+        dispatch(setLoader(false));
+        setSocialLoading(false);
+      }
+    },
+    [dispatch, ensureLocationPermission, navigation, socialLoading]
+  );
 
   return (
     <View style={styles.screenContainer}>
@@ -256,7 +331,8 @@ function LoginComponent({ currentUserEmail }: any) {
               <View style={styles.socialIconsRow}>
                 <TouchableOpacity
                   style={styles.socialBtn}
-                  onPress={() => Alert.alert('Coming soon', 'Google sign-in is coming soon.')}
+                  disabled={socialLoading}
+                  onPress={() => handleSocialLogin('google')}
                 >
                   <Image source={googleIcon} style={styles.socialIcon} />
                 </TouchableOpacity>
@@ -264,7 +340,8 @@ function LoginComponent({ currentUserEmail }: any) {
                 {Platform.OS === 'ios' ? (
                   <TouchableOpacity
                     style={styles.socialBtn}
-                    onPress={() => Alert.alert('Coming soon', 'Apple sign-in is coming soon.')}
+                    disabled={socialLoading}
+                    onPress={() => handleSocialLogin('apple')}
                   >
                     <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFFF' : '#212121'} />
                   </TouchableOpacity>

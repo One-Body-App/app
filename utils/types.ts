@@ -367,6 +367,11 @@ export interface PostUserData {
   accountType?: AccountType;
   profileImage?: string;
   profileIcon?: ReactElement;
+  isLocationPublic?: boolean;
+  profile?: {
+    isLocationPublic?: boolean;
+    location?: Location;
+  };
 }
 
 export interface CommentPost {

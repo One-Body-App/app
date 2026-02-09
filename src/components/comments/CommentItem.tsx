@@ -1,7 +1,15 @@
-import { ActivityIndicator, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleProp,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-design-icons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -26,6 +34,8 @@ interface BaseItemProps {
   source?: string;
   postData: {
     id?: string;
+    objectId?: string;
+    objectType?: string;
     content?: string;
     image?: {
       url: string;
@@ -49,6 +59,7 @@ interface BaseItemProps {
   editPost?: (postId: string) => void;
   editCommentAction?: (postId: string, content: string) => void;
   setEditingComment: (isEditingComment: boolean) => void;
+  isPrivate?: boolean;
 }
 
 function CommentItem({
@@ -65,9 +76,10 @@ function CommentItem({
   editPost,
   editCommentAction,
   setEditingComment,
+  isPrivate,
 }: BaseItemProps) {
   const [showOptions, setShowOptions] = useState(false);
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(postData.gif ?? null);
@@ -76,11 +88,18 @@ function CommentItem({
     safeUserData.profileImage && safeUserData.profileImage !== ''
       ? safeUserData.profileImage
       : NO_PROFILE_IMAGE;
+  const safeProfileImageUri = profileImageUri || 'https://via.placeholder.com/72';
   const gifAspectRatioRaw = postData.gif?.aspectRatio;
   const gifAspectRatio = Number(gifAspectRatioRaw);
   const safeGifAspectRatio =
     Number.isFinite(gifAspectRatio) && gifAspectRatio > 0 ? gifAspectRatio : 1;
   const hasGif = Boolean(postData.gif?.id || postData.gif?.url);
+  const canUseGiphy = Platform.OS !== 'android';
+  const reactionCount = postData.reactions?.length ?? 0;
+  const textMain = dark ? '#ffffff' : '#0e181b';
+  const textSecondary = '#4f8596';
+  const bubbleColor = dark ? '#1a2c32' : '#f2f4f5';
+  const actionColor = textSecondary;
   let handleValue: string | undefined;
   if (source === 'twitter' && safeUserData?.twitterHandler) {
     handleValue = safeUserData.twitterHandler;
@@ -104,25 +123,14 @@ function CommentItem({
   }, [postData]);
 
   return (
-    <View
-      style={[
-        {
-          flexGrow: 1,
-          padding: spacing.x13,
-          marginBottom: spacing.x13,
-          backgroundColor: colors.card,
-          borderRadius: borderRadius.base,
-          borderWidth: borderWidth.hairline,
-          borderColor: Colors.neutral[700],
-        },
-        style,
-      ]}
-    >
+    <View style={[{ flexGrow: 1, paddingHorizontal: spacing.x16 }, style]}>
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'flex-start',
           gap: spacing.x13,
+          paddingTop: spacing.x8,
+          paddingBottom: spacing.x20,
         }}
       >
         <View
@@ -146,15 +154,12 @@ function CommentItem({
           ) : (
             <FastImage
               source={{
-                uri: profileImageUri,
+                uri: safeProfileImageUri,
               }}
               style={{
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 borderRadius: borderRadius.max,
-                // marginBottom: 5,
-                borderColor: safeUserData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                borderWidth: borderWidth.thin,
               }}
               resizeMode="contain"
             />
@@ -166,99 +171,111 @@ function CommentItem({
           }}
         >
           {safeUserData ? (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <TouchableOpacity
-                onPress={() => {
-                  // navigation.navigate('UserProfile', {
-                  //   id: userData?._id,
-                  // });
-                  onPress();
-                }}
+            <TouchableOpacity
+              onPress={() => {
+                onPress();
+              }}
+              style={{ flexGrow: 1 }}
+            >
+              <View
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'flex-start',
-                  alignItems: 'center',
-                  flexGrow: 1,
-                  flex: 1,
+                  backgroundColor: bubbleColor,
+                  paddingHorizontal: spacing.x13,
+                  paddingVertical: spacing.x10,
+                  borderRadius: borderRadius.large,
+                  borderTopLeftRadius: spacing.x5,
                 }}
               >
-                <View style={{ flexDirection: 'column' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <StyledText
-                      style={{
-                        color: Colors.neutral.brand,
-                        alignItems: 'center',
-                        ...fontSize.x2,
-                        ...fontWeight.semibold,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {safeUserData?.name ?? 'Unknown'}
-                    </StyledText>
-                    {isApprovedInfluencer ? (
-                      <Icon
-                        name="check-decagram"
-                        size={20}
-                        style={{ marginLeft: spacing.x8 }}
-                        color={Colors.primarySapphire.brand}
-                      />
-                    ) : null}
-                  </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <StyledText
-                    numberOfLines={2}
                     style={{
-                      color: Colors.neutral[400],
-                      alignItems: 'center',
+                      color: textMain,
+                      ...fontSize.x2,
+                      ...fontWeight.semibold,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {safeUserData?.name ?? 'Unknown'}
+                  </StyledText>
+                  {isApprovedInfluencer ? (
+                    <Icon
+                      name="check-decagram"
+                      size={18}
+                      style={{ marginLeft: spacing.x5 }}
+                      color={Colors.primarySapphire.brand}
+                    />
+                  ) : null}
+                  <View style={{ flex: 1 }} />
+                  <StyledText
+                    style={{
+                      color: textSecondary,
+                      fontSize: 10,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {created ? `${timeSince(created)} ago` : ''}
+                  </StyledText>
+                  {!isEditingComment ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowOptions(true);
+                      }}
+                      style={{ marginLeft: spacing.x8 }}
+                    >
+                      <FontAwesomeIcon icon={faEllipsisVertical} color={textSecondary} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+                {!isEditingComment && postData.content ? (
+                  <StyledText
+                    style={{
+                      marginTop: spacing.x5,
+                      color: textMain,
+                      ...fontSize.x2,
+                      lineHeight: 18,
+                    }}
+                  >
+                    {postData.content}
+                  </StyledText>
+                ) : null}
+                {hasHandle && !isEditingComment ? (
+                  <StyledText
+                    numberOfLines={1}
+                    style={{
+                      marginTop: spacing.x5,
+                      color: textSecondary,
                       ...fontSize.x1,
                     }}
                   >
                     {handleText}
-
-                    {created ? (
-                      <>
-                        {hasHandle ? ` • ` : ''}
-                        <StyledText
-                          style={[
-                            fontSize.x1,
-                            { color: Colors.neutral[400], alignItems: 'center' },
-                          ]}
-                        >
-                          {timeSince(created)} ago
-                        </StyledText>
-                      </>
-                    ) : null}
-                    {edited && updated ? (
-                      <>
-                        {' '}
-                        • {' Edited '}
-                        <StyledText
-                          style={[
-                            fontSize.x1,
-                            { color: Colors.neutral[400], alignItems: 'center' },
-                          ]}
-                        >
-                          {timeSince(updated)} ago
-                        </StyledText>
-                      </>
-                    ) : null}
                   </StyledText>
-                </View>
-              </TouchableOpacity>
-              {!isEditingComment ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowOptions(true);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faEllipsisVertical} color={colors.text} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
+                ) : null}
+                {!isEditingComment && postData.gif && hasGif && canUseGiphy ? (
+                  <View
+                    style={{
+                      marginTop: spacing.x8,
+                      borderRadius: borderRadius.small,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <GiphyMediaView
+                      media={postData.gif}
+                      resizeMode="cover"
+                      style={{
+                        aspectRatio: safeGifAspectRatio,
+                        borderRadius: borderRadius.small,
+                      }}
+                    />
+                  </View>
+                ) : null}
+              </View>
+            </TouchableOpacity>
           ) : null}
           {isEditingComment ? (
             <View
               style={{
                 minHeight: 140,
+                marginTop: spacing.x10,
               }}
             >
               {isLoading ? (
@@ -286,40 +303,42 @@ function CommentItem({
           ) : (
             // eslint-disable-next-line react/jsx-no-useless-fragment
             <>
-              {postData.content ? (
-                <StyledText
-                  style={{
-                    marginTop: spacing.x8,
-                    color: colors.text,
-                    ...fontSize.x2,
-                  }}
-                >
-                  {postData.content}
-                </StyledText>
-              ) : null}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginTop: spacing.x8,
+                  marginLeft: spacing.x5,
+                  gap: spacing.x16,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons name="favorite" size={14} color="#e04b4b" />
+                  <StyledText
+                    style={{
+                      marginLeft: spacing.x5,
+                      color: actionColor,
+                      fontSize: 11,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {reactionCount}
+                  </StyledText>
+                </View>
+                <TouchableOpacity>
+                  <StyledText
+                    style={{
+                      color: actionColor,
+                      fontSize: 11,
+                      fontWeight: '700',
+                    }}
+                  >
+                    Reply
+                  </StyledText>
+                </TouchableOpacity>
+              </View>
             </>
           )}
-          {!isEditingComment && postData.gif && hasGif ? (
-            <View
-              style={{
-                padding: 10,
-                // height: 100,
-                // width: 100,
-                borderRadius: borderRadius.small,
-              }}
-            >
-              <GiphyMediaView
-                media={postData.gif}
-                resizeMode="cover"
-                style={{
-                  aspectRatio: safeGifAspectRatio,
-                  borderRadius: borderRadius.small,
-
-                  overflow: 'hidden',
-                }}
-              />
-            </View>
-          ) : null}
         </View>
       </View>
 
@@ -327,9 +346,8 @@ function CommentItem({
         show={showOptions ?? false}
         setShow={setShowOptions}
         currentPopupItem={{ ...postData, type: PostType.comment, userData: safeUserData, created }}
-        onProfilePress={onPress}
         removePost={removePost}
-        hideShare
+        isPrivate={isPrivate}
         hideSavePost
         editPost={
           editPost ||

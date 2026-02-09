@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { serialize } from 'object-to-formdata';
 import { useTheme } from '@react-navigation/native';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, User } from '@/utils/types';
@@ -138,6 +139,10 @@ function OnboardingInfluencers({ route }: Props) {
       buttonText={selectedInfluencers.length > 0 ? 'Next' : 'Skip'}
       dontUseScrollView
       onPress={async () => {
+        ReactNativeHapticFeedback.trigger('impactMedium', {
+          enableVibrateFallback: true,
+          ignoreAndroidSystemSettings: false,
+        });
         if (selectedInfluencers.length > 0) {
           await addFollowing();
         }
@@ -145,6 +150,7 @@ function OnboardingInfluencers({ route }: Props) {
         if (route.params.profileType === AccountType.individual) {
           const data: Record<string, any> = {
             dateOfBirth: route.params.dateOfBirth,
+            markProfileCompleted: true,
           };
 
           if (route.params.longitude && route.params.latitude && route.params.address) {
@@ -168,6 +174,7 @@ function OnboardingInfluencers({ route }: Props) {
             companyName: route.params.organizationName,
             contactName: route.params.organizationContactName,
             contactPhoneNumber: route.params.organizationContactPhoneNumber,
+            markProfileCompleted: true,
           };
 
           if (route.params.longitude && route.params.latitude && route.params.address) {

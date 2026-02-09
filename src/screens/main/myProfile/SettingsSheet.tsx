@@ -196,7 +196,9 @@ function SettingsSheet({ setShowModal, showModal, userData }: Props) {
               />
             }
             onPress={() => {
-              OpenURLButton('https://usersuccess.onebodyapp.com/portal/en/kb/one-body-inc');
+              OpenURLButton(
+                'https://app.termly.io/policy-viewer/policy.html?policyUUID=84dd2dd3-ee3f-48f4-a92c-24b637820776'
+              );
             }}
             btnStyle={{ marginBottom: spacing.x32 }}
           />

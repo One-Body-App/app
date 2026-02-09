@@ -1,17 +1,19 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import { useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Image,
   Platform,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { CloseCircle, Gallery, Location as LocationIcon, VideoPlay } from 'iconsax-react-native';
-import { useTheme } from '@react-navigation/native';
+import { CloseCircle, Location as LocationIcon } from 'iconsax-react-native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import ImagePicker from 'react-native-image-crop-picker';
 import { Asset, CameraOptions, MediaType, launchCamera } from 'react-native-image-picker';
@@ -26,9 +28,8 @@ import {
   GiphySDK,
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
-import { isArray, isEmpty } from 'lodash';
+import { isArray } from 'lodash';
 import { useToast } from 'react-native-toast-notifications';
-import { Text } from 'react-native-gesture-handler';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
@@ -40,41 +41,171 @@ import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { fontSize } from '@/src/styles/typography';
+import { fontSize, lineHeight } from '@/src/styles/typography';
 
 import ImagePickerModal from '@/components/ImagePickerModal';
 import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/services/constants';
 import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 import ErrorBoundary from '@/src/components/ErrorBoundry';
+import type {
+  EditorAsset as FilerobotEditorAsset,
+  SavedMedia as FilerobotSavedMedia,
+} from '@/components/post/FilerobotImageEditorModal';
 
-GiphySDK.configure({
-  apiKey: Platform.OS === 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID,
-});
+const LazyFilerobotImageEditorModal = React.lazy(
+  () => import('@/components/post/FilerobotImageEditorModal')
+);
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
+type AttachmentMode = 'link' | 'document' | null;
+type LinkAttachment = {
+  id: string;
+  url: string;
+  type: 'link' | 'document';
+};
+type ProfileSummary = {
+  _id?: string;
+  id?: string;
+  userId?: string;
+  profileImage?: string;
+  profile_image?: string;
+  name?: string;
+};
+
+const LARGE_EMOJIS = ['🙏', '🙌', '🔥', '❤️', '🕊️', '✨', '😊', '👏'];
 
 function NewPost({ navigation, route }: Props) {
-  console.log('NewPost', route);
   const MAX_CONTENT_LENGHT = 300;
+  const FEED_IMAGE_WIDTH = 1080;
+  const FEED_IMAGE_HEIGHT = 1350;
+  const IMAGE_QUALITY = 0.6;
+  const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const userProfile = useSelector((state: RootState) => state.auth.getProfileData) as
+    | ProfileSummary
+    | undefined;
 
   const [location, setLocation] = useState<MapSuggestion | null>(null);
-  const [locationName, setLocationName] = useState<string | null>(null);
   const [locationSelector, setLocationSelector] = useState<boolean>(false);
   const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
   const [imagesToUpload, setImagesToUpload] = useState<Asset[]>([]);
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const [imagesObject, setImagesObject] = useState<string[]>([]);
+  const [linkAttachments, setLinkAttachments] = useState<LinkAttachment[]>([]);
+  const [attachmentMode, setAttachmentMode] = useState<AttachmentMode>(null);
+  const [attachmentInput, setAttachmentInput] = useState('');
+  const [showLargeEmojiTray, setShowLargeEmojiTray] = useState(false);
   const toast = useToast();
   const [uploadImagesObject, setUploadImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
+  const [editorAssetQueue, setEditorAssetQueue] = useState<FilerobotEditorAsset[]>([]);
+  const [activeEditorAsset, setActiveEditorAsset] = useState<FilerobotEditorAsset | null>(null);
+  const [isGiphyInitialized, setIsGiphyInitialized] = useState(false);
 
-  // useEffect(() => {
-  //   GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
-  // }, []);
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') {
+        return undefined;
+      }
+      StatusBar.setBarStyle(dark ? 'light-content' : 'dark-content');
+      StatusBar.setBackgroundColor(colors.background);
+      StatusBar.setTranslucent(false);
+      return undefined;
+    }, [colors.background, dark])
+  );
+
+  const ensureGiphyInitialized = useCallback(() => {
+    if (isGiphyInitialized) {
+      return true;
+    }
+    const giphyApiKey = Platform.OS === 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID;
+    if (!giphyApiKey) {
+      toast.show('GIF feature is not configured on this build.', {
+        type: 'normal',
+        placement: 'bottom',
+      });
+      return false;
+    }
+    try {
+      GiphySDK.configure({
+        apiKey: giphyApiKey,
+      });
+      GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
+      setIsGiphyInitialized(true);
+      return true;
+    } catch (error) {
+      console.warn('Giphy initialization failed', error);
+      toast.show('GIF feature is temporarily unavailable.', {
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return false;
+    }
+  }, [isGiphyInitialized, toast]);
+
+  useEffect(() => {
+    if (!isGiphyInitialized) {
+      return undefined;
+    }
+    const handler: GiphyDialogMediaSelectEventHandler = (e) => {
+      setGif(e.media);
+      GiphyDialog.hide();
+    };
+    let listener: { remove: () => void } | null = null;
+    try {
+      listener = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
+    } catch (error) {
+      console.warn('GiphyDialog listener setup failed', error);
+    }
+    return () => {
+      listener?.remove();
+    };
+  }, [isGiphyInitialized]);
+
+  useEffect(() => {
+    if (activeEditorAsset || editorAssetQueue.length === 0) {
+      return;
+    }
+    setActiveEditorAsset(editorAssetQueue[0]);
+    setEditorAssetQueue((previous) => previous.slice(1));
+  }, [activeEditorAsset, editorAssetQueue]);
+
+  const enqueueAssetsForEditor = useCallback(
+    (incomingAssets: FilerobotEditorAsset[]) => {
+      const validAssets = incomingAssets.filter((asset) => asset.uri);
+      if (validAssets.length === 0) {
+        return;
+      }
+      const oversizedAsset = validAssets.find(
+        (asset) => typeof asset.fileSize === 'number' && asset.fileSize > MAX_UPLOAD_BYTES
+      );
+      if (oversizedAsset) {
+        toast.show('Image is larger than 50MB. Please choose a smaller image.', {
+          type: 'danger',
+          placement: 'bottom',
+        });
+        return;
+      }
+
+      if (!activeEditorAsset) {
+        setActiveEditorAsset(validAssets[0]);
+        if (validAssets.length > 1) {
+          setEditorAssetQueue((previous) => [...previous, ...validAssets.slice(1)]);
+        }
+        return;
+      }
+
+      setEditorAssetQueue((previous) => [...previous, ...validAssets]);
+    },
+    [activeEditorAsset, toast, MAX_UPLOAD_BYTES]
+  );
+
+  const advanceEditorQueue = useCallback(() => {
+    setActiveEditorAsset(null);
+  }, []);
 
   // useEffect(() => {
   //   if (route.params?.postId) {
@@ -84,13 +215,16 @@ function NewPost({ navigation, route }: Props) {
 
   const editSocial = async () => {
     setIsLoading(true);
+    const mergedContent = [content.trim(), ...linkAttachments.map((item) => item.url)]
+      .filter((value) => value.length > 0)
+      .join('\n\n');
     try {
       const result = await ApiCall({
         route: `social/post/${route.params?.postId}`,
         token,
         params: serialize(
           {
-            content,
+            content: mergedContent,
             images: imagesObject,
             gif: mediaGif,
             location: location
@@ -129,34 +263,18 @@ function NewPost({ navigation, route }: Props) {
 
   const postSocial = async () => {
     setIsLoading(true);
-    console.log(
-      serialize(
-        {
-          content,
-          images: uploadImagesObject,
-          gif: mediaGif,
-          location: location
-            ? {
-                coordinates: location?.geometry.coordinates,
-                name: location?.place_name,
-              }
-            : undefined,
-        },
-        {
-          noAttributesWithArrayNotation: true,
-          noFilesWithArrayNotation: true,
-        }
-      ),
-      'uploadImagesObject'
-    );
+    const mergedContent = [content.trim(), ...linkAttachments.map((item) => item.url)]
+      .filter((value) => value.length > 0)
+      .join('\n\n');
+
     try {
       const result = await ApiCall({
         route: 'social/post',
         token,
         params: serialize(
           {
-            content,
-            images: uploadImagesObject,
+            content: mergedContent,
+            images: uploadImagesObject?.length ? uploadImagesObject : imagesObject,
             gif: mediaGif,
             location: location
               ? {
@@ -186,6 +304,11 @@ function NewPost({ navigation, route }: Props) {
             screen: 'MyProfileTab',
           },
         });
+      } else if (result.status === 413) {
+        toast.show('Image too large. Please choose a smaller image.', {
+          type: 'danger',
+          placement: 'bottom',
+        });
       } else {
         console.warn('postSocial non-200', result.status, result.response);
         if (result?.response?.moderationPassed === false) {
@@ -208,6 +331,8 @@ function NewPost({ navigation, route }: Props) {
           message =
             'This post was screened because it violates our Terms of Use. Please be courteous and thoughtful about what you post. Abuse or profane content is prohibited in the One Body community.';
         }
+      } else if (e?.response?.status === 413 || e?.status === 413) {
+        message = 'Image too large. Please choose a smaller image.';
       } else if (e.message === 'Network Error') {
         message = 'Network Error. Please try again later.';
       }
@@ -254,57 +379,43 @@ function NewPost({ navigation, route }: Props) {
   // };
 
   const chooseImageGallery = async () => {
-    const results = await ImagePicker.openPicker({
+    const pickerSelection = await ImagePicker.openPicker({
       multiple: true,
-      compressImageQuality: 0.5,
-    })
-      .then(async (images) => {
-        const result = [];
+      mediaType: 'photo',
+      compressImageQuality: IMAGE_QUALITY,
+      compressImageMaxWidth: FEED_IMAGE_WIDTH,
+      compressImageMaxHeight: FEED_IMAGE_HEIGHT,
+      forceJpg: true,
+    }).catch(() => {
+      return [];
+    });
 
-        // eslint-disable-next-line no-restricted-syntax
-        for await (const image of images) {
-          const img = await ImagePicker.openCropper({
-            mediaType: 'photo',
-            path: image.path,
-
-            forceJpg: true,
-            maxFiles: 1,
-            compressImageQuality: 0.8,
-
-            freeStyleCropEnabled: true,
-            width: 1920,
-            height: 1080,
-            smartAlbums: ['UserLibrary', 'PhotoStream'],
-          });
-          result.push(img);
-        }
-
-        return result;
-      })
-      .catch(() => {
-        return [];
-      });
-
-    if (results.length > 0) {
-      const images = results.map((imagesObj, index) => {
+    const pickerResults = Array.isArray(pickerSelection) ? pickerSelection : [pickerSelection];
+    const editorAssets: FilerobotEditorAsset[] = pickerResults
+      .filter((item) => !!item?.path)
+      .map((item, index) => {
+        const imageName = item.filename ?? `image_${Date.now()}_${index}.jpg`;
+        const normalizedName = imageName.toLowerCase().endsWith('.jpg')
+          ? imageName
+          : `${imageName.split('.').slice(0, -1).join('.') || imageName}.jpg`;
         return {
-          uri: `file://${imagesObj.path ?? ''}`,
-          type: imagesObj.mime ?? '',
-          name: imagesObj.filename ?? `image_${index}`,
+          uri: `file://${item.path}`,
+          fileName: normalizedName,
+          fileSize: typeof item.size === 'number' ? item.size : undefined,
+          type: 'image/jpeg',
         };
       });
 
-      setImagesToUpload(images);
-      setPickerModalVisibile(false);
-
-      setUploadImagesObject(images);
-    }
+    enqueueAssetsForEditor(editorAssets);
+    setPickerModalVisibile(false);
   };
 
   const captureImage = async (contentType: MediaType) => {
     const options: CameraOptions = {
       mediaType: contentType,
-      quality: 0.8,
+      quality: IMAGE_QUALITY,
+      maxWidth: FEED_IMAGE_WIDTH,
+      maxHeight: FEED_IMAGE_HEIGHT,
       // noData: true,
     };
     // let isCameraPermitted = await requestCameraPermission();
@@ -341,17 +452,22 @@ function NewPost({ navigation, route }: Props) {
 
       // cropimage(uri);
 
-      if (response?.assets && response?.assets.length > 0) {
-        setImagesToUpload(response?.assets);
-        setUploadImagesObject(
-          response?.assets.map((imagesObj) => {
+      if (response?.assets && response.assets.length > 0) {
+        const editorAssets: FilerobotEditorAsset[] = response.assets
+          .filter((asset) => !!asset.uri)
+          .map((asset, index) => {
+            const fileNameRaw = asset.fileName ?? `image_${Date.now()}_${index}.jpg`;
+            const fileName = fileNameRaw.toLowerCase().endsWith('.jpg')
+              ? fileNameRaw
+              : `${fileNameRaw.split('.').slice(0, -1).join('.') || fileNameRaw}.jpg`;
             return {
-              uri: imagesObj.uri ?? '',
-              type: imagesObj.type ?? '',
-              name: imagesObj?.fileName ?? '',
+              uri: asset.uri ?? '',
+              fileName,
+              type: asset.type ?? 'image/jpeg',
+              fileSize: asset.fileSize,
             };
-          })
-        );
+          });
+        enqueueAssetsForEditor(editorAssets);
       }
       setPickerModalVisibile(false);
     } else {
@@ -359,39 +475,184 @@ function NewPost({ navigation, route }: Props) {
     }
   };
 
-  //
+  const appendLargeEmoji = (emoji: string) => {
+    setContent((previous) => `${previous}${previous ? ' ' : ''}${emoji}`);
+  };
 
-  // // Handling GIFs selection in GiphyDialog
-  // useEffect(() => {
-  //   const handler: GiphyDialogMediaSelectEventHandler = (e) => {
-  //     setGif(e.media);
-  //     GiphyDialog.hide();
-  //   };
-  //   const listener = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
-  //   return () => {
-  //     listener.remove();
-  //   };
-  // }, []);
+  const normalizeUrl = (rawValue: string) => {
+    const trimmed = rawValue.trim();
+    if (!trimmed) {
+      return '';
+    }
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    return `https://${trimmed}`;
+  };
+
+  const addAttachment = () => {
+    const normalizedUrl = normalizeUrl(attachmentInput);
+    if (!normalizedUrl) {
+      return;
+    }
+
+    if (attachmentMode === 'document' && !/\.(pdf|txt)(\?.*)?$/i.test(normalizedUrl)) {
+      toast.show('Document link must end with .pdf or .txt', {
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return;
+    }
+
+    if (attachmentMode === 'link' && !/^https?:\/\//i.test(normalizedUrl)) {
+      toast.show('Please provide a valid URL.', {
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return;
+    }
+
+    setLinkAttachments((previous) => {
+      if (previous.some((item) => item.url.toLowerCase() === normalizedUrl.toLowerCase())) {
+        return previous;
+      }
+      return [
+        ...previous,
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          url: normalizedUrl,
+          type: attachmentMode === 'document' ? 'document' : 'link',
+        },
+      ];
+    });
+    setAttachmentInput('');
+    setAttachmentMode(null);
+  };
+
+  const removeAttachment = (id: string) => {
+    setLinkAttachments((previous) => previous.filter((item) => item.id !== id));
+  };
+
+  const handleEditorCancel = useCallback(() => {
+    advanceEditorQueue();
+  }, [advanceEditorQueue]);
+
+  const handleEditorSave = useCallback(
+    (savedMedia: FilerobotSavedMedia) => {
+      setImagesObject((previous) => [...previous, savedMedia.url]);
+      setImagesToUpload([]);
+      setUploadImagesObject(undefined);
+      advanceEditorQueue();
+    },
+    [advanceEditorQueue]
+  );
+
+  const hasUploadData =
+    !!location ||
+    !!content ||
+    linkAttachments.length > 0 ||
+    !!uploadImagesObject?.length ||
+    imagesObject.length > 0 ||
+    !!mediaGif;
 
   return (
     <ErrorBoundary>
       <SafeAreaView
         style={{
           flex: 1,
-          marginHorizontal: spacing.x24,
+          marginHorizontal: spacing.x20,
         }}
       >
+        {Platform.OS === 'android' ? (
+          <StatusBar
+            barStyle={dark ? 'light-content' : 'dark-content'}
+            backgroundColor={colors.background}
+          />
+        ) : null}
         <KeyboardAvoidingView
           style={{
             paddingTop: spacing.x24,
-            paddingBottom: spacing.x48,
+            paddingBottom: spacing.x24,
             flex: 1,
-            justifyContent: 'space-between',
           }}
-          // style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ScrollView style={{ flex: 1 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: spacing.x20,
+            }}
+          >
+            <TouchableOpacity
+              style={{ padding: spacing.x5 }}
+              onPress={() => {
+                navigation.goBack();
+              }}
+            >
+              <MaterialCommunityIcons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <StyledText
+              style={{
+                ...fontSize.x6,
+                ...lineHeight.x6,
+                fontWeight: '700',
+                color: colors.text,
+              }}
+            >
+              Create Post
+            </StyledText>
+            <View style={{ width: 36 }} />
+          </View>
+
+          <ScrollView
+            style={{ flex: 1 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: spacing.x13,
+                columnGap: spacing.x10,
+              }}
+            >
+              <Image
+                source={{
+                  uri:
+                    userProfile?.profileImage ||
+                    userProfile?.profile_image ||
+                    'https://cdn.onebodyapp.com/user/no-image.png',
+                }}
+                style={{
+                  height: 40,
+                  width: 40,
+                  borderRadius: borderRadius.max,
+                  backgroundColor: Colors.neutral[700],
+                }}
+              />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: Colors.neutral[700],
+                  borderRadius: borderRadius.max,
+                  paddingHorizontal: spacing.x13,
+                  paddingVertical: spacing.x5,
+                }}
+              >
+                <StyledText style={{ color: colors.text, ...fontSize.x3 }}>Public</StyledText>
+                <MaterialCommunityIcons
+                  name="chevron-down"
+                  color={colors.text}
+                  size={20}
+                  style={{ marginLeft: spacing.x5 }}
+                />
+              </View>
+            </View>
+
             <View>
               {location ? (
                 <View
@@ -417,7 +678,7 @@ function NewPost({ navigation, route }: Props) {
                     }}
                   >
                     <Button
-                      text={location?.place_name ?? locationName}
+                      text={location?.place_name}
                       onPress={() => setLocationSelector(true)}
                       wrapperViewBtnStyle={{ flex: 1 }}
                     />
@@ -438,13 +699,15 @@ function NewPost({ navigation, route }: Props) {
               <StyledTextInput
                 inputStyle={{
                   textAlignVertical: 'top',
-
-                  height: 200,
+                  height: 220,
                   flexGrow: 1,
                   color: colors.text,
+                  ...fontSize.x6,
                 }}
                 inputWrapperStyle={{
-                  paddingVertical: spacing.x10,
+                  paddingVertical: spacing.x5,
+                  backgroundColor: 'transparent',
+                  borderWidth: 0,
                   borderRadius: borderRadius.base,
                 }}
                 value={content}
@@ -463,7 +726,91 @@ function NewPost({ navigation, route }: Props) {
                   setContent(value);
                 }}
               />
-              {imagesToUpload.length > 0 || imagesObject.length > 0 || mediaGif ? (
+              {showLargeEmojiTray ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    rowGap: spacing.x8,
+                    columnGap: spacing.x8,
+                    marginTop: spacing.x8,
+                  }}
+                >
+                  {LARGE_EMOJIS.map((emoji) => (
+                    <TouchableOpacity
+                      key={emoji}
+                      onPress={() => appendLargeEmoji(emoji)}
+                      style={{
+                        height: 44,
+                        minWidth: 44,
+                        borderRadius: borderRadius.base,
+                        backgroundColor: Colors.neutral[700],
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingHorizontal: spacing.x8,
+                      }}
+                    >
+                      <StyledText style={{ fontSize: 26 }}>{emoji}</StyledText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
+
+              {attachmentMode ? (
+                <View
+                  style={{
+                    marginTop: spacing.x13,
+                    padding: spacing.x10,
+                    backgroundColor: Colors.neutral[700],
+                    borderRadius: borderRadius.base,
+                    rowGap: spacing.x8,
+                  }}
+                >
+                  <StyledText style={{ color: colors.text, fontWeight: '600' }}>
+                    {attachmentMode === 'document'
+                      ? 'Add document link (.pdf or .txt)'
+                      : 'Add link'}
+                  </StyledText>
+                  <StyledTextInput
+                    value={attachmentInput}
+                    label=""
+                    placeholder={
+                      attachmentMode === 'document'
+                        ? 'https://example.com/file.pdf'
+                        : 'https://example.com'
+                    }
+                    autoCapitalize="none"
+                    keyboardType="url"
+                    inputWrapperStyle={{
+                      backgroundColor: Colors.neutral[600],
+                      borderRadius: borderRadius.base,
+                    }}
+                    onChangeText={setAttachmentInput}
+                  />
+                  <View style={{ flexDirection: 'row', columnGap: spacing.x8 }}>
+                    <Button
+                      text="Cancel"
+                      wrapperViewBtnStyle={{ flex: 1 }}
+                      btnStyle={{ backgroundColor: Colors.neutral[500] }}
+                      onPress={() => {
+                        setAttachmentMode(null);
+                        setAttachmentInput('');
+                      }}
+                    />
+                    <Button
+                      text="Add"
+                      wrapperViewBtnStyle={{ flex: 1 }}
+                      btnStyle={{ backgroundColor: Colors.primarySapphire.brand }}
+                      onPress={addAttachment}
+                    />
+                  </View>
+                </View>
+              ) : null}
+
+              {imagesToUpload.length > 0 ||
+              imagesObject.length > 0 ||
+              mediaGif ||
+              linkAttachments.length > 0 ? (
                 <ScrollView
                   style={{ flexDirection: 'row', gap: spacing.x10, marginTop: spacing.x16 }}
                   horizontal
@@ -475,8 +822,9 @@ function NewPost({ navigation, route }: Props) {
                 >
                   {imagesToUpload &&
                     imagesToUpload.map((image, index) => {
+                      const imageKey = `${image.uri}-${image.fileName ?? ''}-${image.fileSize ?? ''}`;
                       return (
-                        <View key={`${image.fileName}-${index}`} style={{ padding: 10 }}>
+                        <View key={imageKey} style={{ padding: 10 }}>
                           <TouchableOpacity
                             style={{
                               backgroundColor: Colors.primarySapphire.brand,
@@ -491,6 +839,11 @@ function NewPost({ navigation, route }: Props) {
                             onPress={() => {
                               setImagesToUpload(
                                 imagesToUpload.filter((item, filterIndex) => {
+                                  return filterIndex !== index;
+                                })
+                              );
+                              setUploadImagesObject(
+                                (uploadImagesObject ?? []).filter((item, filterIndex) => {
                                   return filterIndex !== index;
                                 })
                               );
@@ -517,7 +870,7 @@ function NewPost({ navigation, route }: Props) {
                     imagesObject?.length > 0 &&
                     imagesObject?.map((image, index) => {
                       return (
-                        <View key={`${image}-${index}`} style={{ padding: 10 }}>
+                        <View key={image} style={{ padding: 10 }}>
                           <TouchableOpacity
                             style={{
                               backgroundColor: Colors.primarySapphire.brand,
@@ -592,6 +945,49 @@ function NewPost({ navigation, route }: Props) {
                       />
                     </View>
                   )}
+
+                  {linkAttachments.map((attachment) => (
+                    <View
+                      key={attachment.id}
+                      style={{
+                        padding: 10,
+                        width: 150,
+                        minHeight: 100,
+                        borderRadius: borderRadius.base,
+                        backgroundColor: Colors.neutral[700],
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <TouchableOpacity
+                        style={{
+                          backgroundColor: Colors.primarySapphire.brand,
+                          borderRadius: borderRadius.max,
+                          position: 'absolute',
+                          width: 30,
+                          height: 30,
+                          top: 0,
+                          right: 0,
+                          zIndex: 10,
+                        }}
+                        onPress={() => removeAttachment(attachment.id)}
+                      >
+                        <CloseCircle size="30" color="#fff" />
+                      </TouchableOpacity>
+                      <MaterialCommunityIcons
+                        name={
+                          attachment.type === 'document' ? 'file-document-outline' : 'link-variant'
+                        }
+                        size={24}
+                        color={Colors.primary.brand}
+                      />
+                      <StyledText
+                        numberOfLines={3}
+                        style={{ marginTop: spacing.x8, color: colors.text, ...fontSize.x2 }}
+                      >
+                        {attachment.url}
+                      </StyledText>
+                    </View>
+                  ))}
                 </ScrollView>
               ) : null}
 
@@ -622,158 +1018,163 @@ function NewPost({ navigation, route }: Props) {
 
               <View
                 style={{
-                  columnGap: spacing.x10,
+                  columnGap: spacing.x16,
                   flexDirection: 'row',
-
-                  paddingVertical: spacing.x16,
+                  paddingVertical: spacing.x13,
+                  borderTopWidth: 1,
+                  borderTopColor: Colors.neutral[700],
+                  marginTop: spacing.x16,
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                 }}
               >
-                <Button
-                  text="Photo"
-                  btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
-                  btnStyle={{
-                    backgroundColor: Colors.neutral[700],
-                    padding: spacing.x16,
-                    borderRadius: borderRadius.base,
-                    flex: 1,
-                  }}
-                  wrapperViewBtnStyle={{ flex: 1 }}
-                  wrapperBtnStyle={{
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                  leftIcon={<Gallery color={Colors.primary.brand} size={32} />}
-                  onPress={async () => {
-                    setPickerModalVisibile(true);
-                  }}
-                />
-                {/* <Button
-            text="Video"
-            wrapperViewBtnStyle={{ flex: 1 }}
-            btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
-            btnStyle={{
-              backgroundColor: Colors.neutral[700],
-              flex: 1,
-              padding: spacing.x16,
-              borderRadius: borderRadius.base,
-            }}
-            wrapperBtnStyle={{ flexDirection: 'column' }}
-            leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
-            onPress={async () => {
-              // LoginManager.logOut();
-              // dispatch(logout());
-              // await auth().signOut();
-            }}
-          /> */}
-
-                <Button
-                  text="Location"
-                  wrapperViewBtnStyle={{ flex: 1 }}
-                  btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
-                  btnStyle={{
-                    backgroundColor: Colors.neutral[700],
-                    flex: 1,
-                    padding: spacing.x16,
-                    borderRadius: borderRadius.base,
-                  }}
-                  wrapperBtnStyle={{ flexDirection: 'column' }}
-                  leftIcon={<LocationIcon color={Colors.primary.brand} size={32} />}
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', columnGap: spacing.x16 }}
+                >
+                  <TouchableOpacity
+                    onPress={async () => {
+                      setPickerModalVisibile(true);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="image-outline"
+                      size={26}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (!ensureGiphyInitialized()) {
+                        return;
+                      }
+                      try {
+                        GiphyDialog.show();
+                      } catch (e) {
+                        console.log(e);
+                      }
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="file-gif-box"
+                      size={26}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={async () => {
+                      navigation.navigate('VideoPost');
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="video-outline"
+                      size={26}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowLargeEmojiTray((previous) => !previous);
+                      setAttachmentMode(null);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="emoticon-happy-outline"
+                      size={26}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setAttachmentMode((previous) =>
+                        previous === 'document' ? null : 'document'
+                      );
+                      setShowLargeEmojiTray(false);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="file-document-outline"
+                      size={26}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setAttachmentMode((previous) => (previous === 'link' ? null : 'link'));
+                      setShowLargeEmojiTray(false);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="link-variant"
+                      size={26}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
                   onPress={() => {
-                    // navigation.navigate('Settings');
                     setLocationSelector(true);
                   }}
-                />
-                <Button
-                  text="GIF"
-                  wrapperViewBtnStyle={{ flex: 1 }}
-                  btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
-                  btnStyle={{
-                    backgroundColor: Colors.neutral[700],
-                    flex: 1,
-                    padding: spacing.x16,
-                    borderRadius: borderRadius.base,
-                  }}
-                  wrapperBtnStyle={{ flexDirection: 'column' }}
-                  leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
-                  onPress={() => {
-                    // LoginManager.logOut();
-                    // dispatch(logout());
-                    // await auth().signOut();
-                    try {
-                      GiphyDialog.show();
-                    } catch (e) {
-                      console.log(e);
-                    }
-                  }}
-                />
+                >
+                  <MaterialCommunityIcons
+                    name="map-marker-outline"
+                    size={24}
+                    color={location ? Colors.primary.brand : Colors.neutral[300]}
+                  />
+                </TouchableOpacity>
               </View>
-            </View>
-
-            <View
-              style={{
-                columnGap: spacing.x10,
-                flexDirection: 'row',
-                paddingVertical: spacing.x16,
-              }}
-            >
               <Button
-                text="Video"
-                wrapperViewBtnStyle={{ flex: 1 / 3.2 }}
-                btnTextStyle={[fontSize.x3, { marginTop: spacing.x10 }]}
-                btnStyle={{
-                  backgroundColor: Colors.neutral[700],
-                  flex: 1,
-                  padding: spacing.x16,
-                  borderRadius: borderRadius.base,
+                disabled={
+                  isLoading || !hasUploadData || (!!content && content.length > MAX_CONTENT_LENGHT)
+                }
+                onPress={() => {
+                  if (route.params?.postId) {
+                    editSocial();
+                  } else {
+                    postSocial();
+                  }
                 }}
-                wrapperBtnStyle={{ flexDirection: 'column' }}
-                leftIcon={<VideoPlay color={Colors.primary.brand} size={32} />}
-                onPress={async () => {
-                  navigation.navigate('VideoPost');
+                btnStyle={[
+                  button.primary,
+                  {
+                    borderRadius: borderRadius.max,
+                    minHeight: 52,
+                    width: '100%',
+                  },
+                ]}
+                disabledBtnStyle={[button.primary, { opacity: 0.5, minHeight: 52, width: '100%' }]}
+                wrapperViewBtnStyle={{
+                  width: '100%',
+                  marginTop: spacing.x32,
+                  marginBottom: spacing.x48,
                 }}
+                disabledBtnTextStyle={{}}
+                content={
+                  // eslint-disable-next-line react/jsx-no-useless-fragment
+                  <>
+                    {isLoading ? (
+                      <ActivityIndicator />
+                    ) : (
+                      <StyledText style={{ color: 'white' }}>
+                        {route.params?.postId ? 'Update Post' : 'Post'}
+                      </StyledText>
+                    )}
+                  </>
+                }
               />
             </View>
           </ScrollView>
-
-          <Button
-            disabled={
-              isLoading ||
-              (!location &&
-                !content &&
-                !uploadImagesObject &&
-                imagesObject.length === 0 &&
-                !mediaGif) ||
-              (!!content && content.length > MAX_CONTENT_LENGHT)
-            }
-            onPress={() => {
-              if (route.params?.postId) {
-                editSocial();
-              } else {
-                postSocial();
-              }
-            }}
-            btnStyle={[
-              button.primary,
-              {
-                flex: 1,
-              },
-            ]}
-            disabledBtnStyle={[button.primary, { flex: 1, opacity: 0.5 }]}
-            disabledBtnTextStyle={{}}
-            content={
-              // eslint-disable-next-line react/jsx-no-useless-fragment
-              <>
-                {isLoading ? (
-                  <ActivityIndicator />
-                ) : (
-                  <StyledText style={{ color: 'white' }}>
-                    {route.params?.postId ? 'Update Post' : 'Post'}
-                  </StyledText>
-                )}
-              </>
-            }
-          />
+          {activeEditorAsset ? (
+            <Suspense fallback={null}>
+              <LazyFilerobotImageEditorModal
+                visible
+                asset={activeEditorAsset}
+                token={token}
+                userId={userProfile?._id ?? userProfile?.id ?? userProfile?.userId}
+                onCancel={handleEditorCancel}
+                onSaved={handleEditorSave}
+              />
+            </Suspense>
+          ) : null}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ErrorBoundary>

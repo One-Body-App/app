@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   AppState,
   Alert,
+  BackHandler,
   Linking,
   useColorScheme,
   Animated,
@@ -61,7 +62,10 @@ import DrawerNav from './DrawerStack';
 import NewPost from '../screens/post/NewPost'; // Adjust path
 import SinglePost from '../screens/post/Single'; // Adjust path
 import RssPost from '../screens/post/RssPost'; // Adjust path
+import ReportPost from '../screens/post/ReportPost'; // Adjust path
+import ReportStatus from '../screens/post/ReportStatus'; // Adjust path
 import { headerOptions } from './global'; // Adjust path
+import { PostType } from '@/utils/types';
 
 const closeIcon = require('../assets/images/close.png'); // Adjust path
 
@@ -234,6 +238,23 @@ function AppContent() {
   }, [authState.getProfileData?.emailVerified]);
 
   useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return () => undefined;
+    }
+    const onBackPress = () => {
+      if (!navigationRef.isReady()) {
+        return true;
+      }
+      if (navigationRef.canGoBack()) {
+        navigationRef.goBack();
+      }
+      return true;
+    };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [navigationRef]);
+
+  useEffect(() => {
     if (!token) {
       hasFetchedProfileRef.current = false;
       locationAutofillUserRef.current = null;
@@ -380,10 +401,13 @@ function AppContent() {
     const rootState = navigationRef.getRootState();
     const rootRouteName = rootState?.routes?.[rootState.index ?? 0]?.name;
     const hasValidToken = token !== '';
-    const isProfileCompleted = authState.getProfileData?.isProfileCompleted;
+    const profileData = authState.getProfileData;
+    const hasProfileData = profileData != null;
+    const isProfileCompleted = profileData?.isProfileCompleted === true;
     const isProfileLoading = authState.isLoading;
     const hasProfileError = authState.getProfileError;
-    const isEmailVerified = !!authState.getProfileData?.emailVerified;
+    const isEmailVerified = !!profileData?.emailVerified;
+    const hasVerifiedEmail = isEmailVerified || isProfileCompleted;
 
     if (__DEV__) {
       console.log('[AppContent Navigation] Effect triggered:', {
@@ -391,7 +415,7 @@ function AppContent() {
         hasValidToken,
         emailVerified: isEmailVerified,
         isProfileLoading,
-        hasProfileData: !!authState.getProfileData,
+        hasProfileData,
         isProfileCompleted,
         hasProfileError: !!hasProfileError,
         platform: Platform.OS,
@@ -420,7 +444,7 @@ function AppContent() {
 
     // On iOS, avoid navigation races while email is still unverified on ConfirmLogin.
     // Once verified, allow AppContent to move to MainRoot.
-    if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin' && !isEmailVerified) {
+    if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin' && !hasVerifiedEmail) {
       if (__DEV__) {
         console.log(
           '[AppContent Navigation] iOS - on ConfirmLogin (unverified), letting LoginComponent handle navigation'
@@ -439,7 +463,7 @@ function AppContent() {
     }
 
     // Avoid navigating to email verification until we have profile data (or a known error).
-    if (hasValidToken && !authState.getProfileData && !hasProfileError) {
+    if (hasValidToken && !hasProfileData && !hasProfileError) {
       if (__DEV__) {
         console.log('[AppContent Navigation] Waiting - profile not loaded yet');
       }
@@ -448,8 +472,7 @@ function AppContent() {
 
     // If profile fetch failed but user is authenticated, still allow navigation
     // DrawerNav will show onboarding since getProfileData will be null/undefined
-    const shouldNavigate =
-      hasValidToken && (authState.getProfileData !== undefined || hasProfileError);
+    const shouldNavigate = hasValidToken && (hasProfileData || hasProfileError);
 
     if (__DEV__) {
       console.log('[AppContent Navigation] shouldNavigate:', shouldNavigate);
@@ -457,7 +480,7 @@ function AppContent() {
 
     // Navigate to MainRoot if user has verified email
     // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
-    if (hasValidToken && isEmailVerified && (shouldNavigate || !isProfileLoading)) {
+    if (hasValidToken && hasVerifiedEmail && (shouldNavigate || !isProfileLoading)) {
       ignoreAuthLinksRef.current = true;
       const now = Date.now();
       const recentNavigation = lastNavigationRef.current;
@@ -495,7 +518,7 @@ function AppContent() {
       } else if (__DEV__) {
         console.log('[AppContent Navigation] Already on MainRoot');
       }
-    } else if (hasValidToken && !isEmailVerified) {
+    } else if (hasValidToken && !hasVerifiedEmail) {
       // Check if we recently navigated to ConfirmLogin (within last 2 seconds)
       // This prevents duplicate navigation when SignUp screen and AppContent both try to navigate
       const now = Date.now();
@@ -544,6 +567,16 @@ function AppContent() {
       },
       SignUp: { path: '/signup/:action' },
       Login: { path: '/login/:action' },
+      SinglePost: {
+        path: '/post/social/:postId',
+      },
+      SingleRss: {
+        path: '/post/:type/:postId',
+        parse: {
+          type: (type: string) => type,
+          postId: (postId: string) => postId,
+        },
+      },
       MainRoot: {
         screens: {
           Main: {
@@ -655,6 +688,48 @@ function AppContent() {
     return url.includes('/auth/action') || url.includes('/__/auth/action');
   };
 
+  const resolvePostLinkState = (path: string) => {
+    const pathWithoutQuery = path.split('?')[0];
+    const match = pathWithoutQuery.match(/^\/post\/([^/]+)\/([^/?#]+)$/i);
+
+    if (!match) {
+      return null;
+    }
+
+    const rawType = decodeURIComponent(match[1] ?? '').toLowerCase();
+    const postId = decodeURIComponent(match[2] ?? '');
+    if (!postId) {
+      return null;
+    }
+
+    if (rawType === PostType.social) {
+      return {
+        routes: [
+          {
+            name: 'SinglePost',
+            params: { postId },
+          },
+        ],
+      };
+    }
+
+    if (rawType === PostType.rss || rawType === PostType.watch) {
+      return {
+        routes: [
+          {
+            name: 'SingleRss',
+            params: {
+              postId,
+              postType: rawType === PostType.watch ? PostType.watch : PostType.rss,
+            },
+          },
+        ],
+      };
+    }
+
+    return null;
+  };
+
   const linking: LinkingOptions<MainStackParamList> = {
     prefixes: [
       'https://app.onebodyapp.com',
@@ -699,6 +774,14 @@ function AppContent() {
         if (__DEV__) {
           console.log('[Deep Link getStateFromPath] Adjusted /auth/verify to:', adjustedPath);
         }
+      }
+
+      const postState = resolvePostLinkState(adjustedPath);
+      if (postState) {
+        if (__DEV__) {
+          console.log('[Deep Link getStateFromPath] Resolved post link:', adjustedPath, postState);
+        }
+        return postState as any;
       }
 
       const state = getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);
@@ -825,6 +908,8 @@ function AppContent() {
       border: '#1B1B1B',
     },
   };
+  const commentHeaderBackground =
+    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background;
 
   // Early return after all hooks have been called
   if (!authChecked && initializing) {
@@ -855,7 +940,13 @@ function AppContent() {
     >
       <ReactionProvider>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <MainStack.Navigator initialRouteName="Intro">
+          <MainStack.Navigator
+            initialRouteName="Intro"
+            screenOptions={{
+              gestureEnabled: false,
+              fullScreenGestureEnabled: false,
+            }}
+          >
             <MainStack.Screen
               name="MainRoot"
               component={DrawerNav}
@@ -864,20 +955,66 @@ function AppContent() {
             <MainStack.Screen
               name="SinglePost"
               component={SinglePost}
-              options={{ headerBackTitleVisible: false, title: 'Comment' }}
+              options={{
+                headerBackTitleVisible: false,
+                title: 'Comment',
+                animation: 'slide_from_right',
+                ...(Platform.OS === 'android'
+                  ? {
+                      headerStyle: { backgroundColor: commentHeaderBackground },
+                      headerShadowVisible: false,
+                      statusBarColor: commentHeaderBackground,
+                    }
+                  : {}),
+              }}
             />
             <MainStack.Screen
               name="SingleRss"
               component={RssPost}
-              options={{ headerBackTitleVisible: false, title: 'Comment' }}
+              options={{
+                headerBackTitleVisible: false,
+                title: 'Comment',
+                animation: 'slide_from_right',
+                ...(Platform.OS === 'android'
+                  ? {
+                      headerStyle: { backgroundColor: commentHeaderBackground },
+                      headerShadowVisible: false,
+                      statusBarColor: commentHeaderBackground,
+                    }
+                  : {}),
+              }}
             />
             <MainStack.Screen
               name="Post"
               component={NewPost}
               options={({ route }) => ({
+                headerShown: false,
                 title: route.params?.postId ? 'Edit Post' : 'Create Post',
                 headerBackTitleVisible: false,
+                ...(Platform.OS === 'android'
+                  ? {
+                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                      statusBarColor:
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                    }
+                  : {}),
               })}
+            />
+            <MainStack.Screen
+              name="ReportPost"
+              component={ReportPost}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_left',
+              }}
+            />
+            <MainStack.Screen
+              name="ReportStatus"
+              component={ReportStatus}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
             />
 
             <MainStack.Screen

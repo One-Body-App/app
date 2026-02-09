@@ -59,6 +59,10 @@ function OnboardingDateOfBirth({ navigation }: Props) {
     const selectedYear = year ?? years[0];
 
     if (selectedYear) {
+      ReactNativeHapticFeedback.trigger('impactMedium', {
+        enableVibrateFallback: true,
+        ignoreAndroidSystemSettings: false,
+      });
       navigation.navigate('OnboardingLocation', {
         dateOfBirth: selectedYear,
       });

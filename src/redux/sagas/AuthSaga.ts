@@ -340,6 +340,31 @@ export function* SetUserBadgesSaga() {
   yield takeEvery(SetUserBadges.REQUEST, setUserBadgesSaga);
 }
 
+const resolveProfileCompleted = (profile: any) => {
+  const rawValue = profile?.isProfileCompleted;
+  if (rawValue === false || (typeof rawValue === 'string' && rawValue.toLowerCase() === 'false')) {
+    return false;
+  }
+
+  const profileData = profile?.profile;
+  if (!profileData) return false;
+
+  if (profile?.accountType === 'organization') {
+    const hasCompany = !!profileData?.companyName;
+    const hasContactEmail = !!profileData?.contactEmail;
+    const hasContactName = !!profileData?.contactName;
+    const hasOrgType = !!profileData?.typeOfOrganization;
+    return hasCompany && hasContactEmail && hasContactName && hasOrgType;
+  }
+
+  const hasDob = !!profileData?.dateOfBirth;
+  const hasLocation = !!profileData?.location?.address;
+  const hasInterests =
+    Array.isArray(profile?.interests) && profile.interests.filter(Boolean).length > 0;
+
+  return hasDob && hasLocation && hasInterests;
+};
+
 function* getProfileSaga(params: { pullSavedData: any; token: string; type: string }) {
   try {
     if (__DEV__) {
@@ -363,7 +388,14 @@ function* getProfileSaga(params: { pullSavedData: any; token: string; type: stri
     }
 
     if (res?.status === 200) {
-      yield put(getProfile.Success({ token: params.token, ...res?.response }));
+      const responseData = res?.response ?? {};
+      yield put(
+        getProfile.Success({
+          token: params.token,
+          ...responseData,
+          isProfileCompleted: resolveProfileCompleted(responseData),
+        })
+      );
     } else {
       yield put(getProfile.Failed(res?.response));
     }

@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '@react-navigation/native';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, Interest } from '@/utils/types';
@@ -93,6 +94,10 @@ function OnboardingInterests({ navigation, route }: Props) {
     <OnboardingStepsLayout
       buttonText="Next"
       onPress={() => {
+        ReactNativeHapticFeedback.trigger('impactMedium', {
+          enableVibrateFallback: true,
+          ignoreAndroidSystemSettings: false,
+        });
         if (selectedInterest.length >= 3) {
           addInterests();
         } else {

@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
     justifyContent: 'center',
@@ -54,7 +54,9 @@ export const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
 
-    padding: 12,
-    paddingBottom: 5,
+    padding: 8,
+    paddingBottom: 2,
   },
 });
+
+export default styles;

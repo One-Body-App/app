@@ -281,6 +281,15 @@ export type MainStackParamList = {
   Post?: {
     postId?: string;
   };
+  ReportPost: {
+    targetId: string;
+    targetType: 'social' | 'prayer' | 'comment';
+    title?: string;
+    reportedUserId?: string;
+  };
+  ReportStatus: {
+    reportedUserId?: string;
+  };
   SinglePost: {
     postId: string;
   };
@@ -303,6 +312,8 @@ export type MainStackParamList = {
     oauth_token?: string;
     oauth_verifier?: string;
     showConfirmationEmailMessage?: boolean;
+    action?: string;
+    resetPassword?: boolean;
   };
   SignUp: {
     oauth_token?: string;

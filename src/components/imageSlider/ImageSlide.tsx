@@ -1,8 +1,10 @@
-import { Image, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { GiphyMediaView } from '@giphy/react-native-sdk';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { ImageForSlider } from './types';
+import type { ScrollIntentLock } from '@/src/hooks/useScrollIntentLock';
 
 function ImageSlide({
   image,
@@ -11,6 +13,8 @@ function ImageSlide({
   width,
   maxHeight,
   index,
+  scrollIntent,
+  interactionKey,
 }: {
   image: ImageForSlider;
   setImageModalIndexVisible: (item: number) => void;
@@ -18,27 +22,27 @@ function ImageSlide({
   height: number;
   maxHeight: number;
   index: number;
+  scrollIntent?: ScrollIntentLock;
+  interactionKey?: string;
 }) {
   const safeWidth = Number.isFinite(width) && width > 0 ? width : maxHeight;
   const safeHeight = Number.isFinite(height) && height > 0 ? height : maxHeight;
-  const imageWidth = Number.isFinite(image.width) && image.width > 0 ? image.width : 1;
-  const imageHeight = Number.isFinite(image.height) && image.height > 0 ? image.height : 1;
-  const isLandscape = imageWidth > imageHeight;
-  const safeGifAspectRatio =
-    Number.isFinite(image.gifAspectRatio) && (image.gifAspectRatio ?? 0) > 0
-      ? image.gifAspectRatio
-      : 1;
+  const mediaKey = interactionKey ?? `media-${index}`;
+  const playHandlers = scrollIntent?.bindCardGestureHandlers(mediaKey, {
+    onPress: () => {
+      setImageModalIndexVisible(index);
+    },
+  }) ?? {
+    onPress: () => {
+      setImageModalIndexVisible(index);
+    },
+  };
 
   return (
-    <TouchableOpacity
+    <View
       key={index}
       style={{
         flexGrow: 1,
-      }}
-      onPress={() => {
-        if (image.type == 'image') {
-          setImageModalIndexVisible(index);
-        }
       }}
     >
       <View
@@ -54,8 +58,8 @@ function ImageSlide({
             media={{ ...image, id: image.id ?? '' }}
             resizeMode="cover"
             style={{
-              flexGrow: 1,
-              aspectRatio: safeGifAspectRatio,
+              width: safeWidth,
+              height: safeHeight,
               borderRadius: borderRadius.small,
 
               overflow: 'hidden',
@@ -65,15 +69,31 @@ function ImageSlide({
           <Image
             style={{
               borderRadius: borderRadius.small,
-              aspectRatio: isLandscape ? 16 / 9 : 9 / 16,
-              width: isLandscape ? safeWidth : undefined,
-              height: isLandscape ? undefined : maxHeight,
+              width: safeWidth,
+              height: safeHeight,
             }}
+            resizeMode="cover"
             source={{ uri: image?.url ?? '' }}
           />
         )}
+        <Pressable
+          {...playHandlers}
+          android_disableSound
+          hitSlop={10}
+          style={{
+            position: 'absolute',
+            width: 46,
+            height: 46,
+            borderRadius: 23,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.35)',
+          }}
+        >
+          <MaterialIcons name="play-arrow" size={28} color={Colors.neutral[900]} />
+        </Pressable>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 

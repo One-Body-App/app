@@ -13,7 +13,6 @@ import { useSelector } from 'react-redux';
 import styles from './style';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '../styled/Text';
-import { Colors } from '@/src/styles';
 import BaseItem from './BaseItem';
 import {
   ExploreStackParamsList,
@@ -77,6 +76,13 @@ function ArticleItem({
   });
 
   const articleId = itemData?.id ?? '';
+  const rssImageShadowStyle = {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  };
   const handleCommentsPress =
     onCommentsPress ||
     (articleId
@@ -145,7 +151,24 @@ function ArticleItem({
 
         <FastImage
           style={
-            blogPostImageStyle ? [styles.blogpostimage, blogPostImageStyle] : [styles.blogpostimage]
+            blogPostImageStyle
+              ? [
+                  styles.blogpostimage,
+                  rssImageShadowStyle,
+                  {
+                    borderBottomRightRadius: borderRadius.small,
+                    borderBottomLeftRadius: borderRadius.small,
+                  },
+                  blogPostImageStyle,
+                ]
+              : [
+                  styles.blogpostimage,
+                  rssImageShadowStyle,
+                  {
+                    borderBottomRightRadius: borderRadius.small,
+                    borderBottomLeftRadius: borderRadius.small,
+                  },
+                ]
           }
           resizeMode={imageSizeType}
           source={{ uri: itemData?.image?.url ?? NO_POST_IMAGE_URL }}
@@ -163,10 +186,9 @@ function ArticleItem({
         <View
           style={{
             paddingHorizontal: spacing.x10,
-            paddingVertical: spacing.x10,
-            backgroundColor: Colors.neutral[900],
-            borderBottomEndRadius: borderRadius.base,
-            borderBottomStartRadius: borderRadius.base,
+            paddingVertical: spacing.x5,
+            borderBottomEndRadius: borderRadius.small,
+            borderBottomStartRadius: borderRadius.small,
           }}
         >
           <View
@@ -183,17 +205,11 @@ function ArticleItem({
             >
               <StyledText
                 numberOfLines={2}
-                style={[{ color: colors.text, fontWeight: '600' }, blogPostTitleStyle]}
+                style={[{ color: '#032F3C', fontWeight: '700' }, blogPostTitleStyle]}
               >
                 {isObject(itemData?.title)
                   ? decode(itemData?.title?.a.$text)
                   : decode(itemData?.title)}
-              </StyledText>
-              <StyledText
-                numberOfLines={1}
-                style={[{ color: Colors.neutral[500] }, blogPostTitleStyle]}
-              >
-                {itemData?.link}
               </StyledText>
             </View>
             {/* <View style={{ flex: 0, justifyContent: 'center' }}>

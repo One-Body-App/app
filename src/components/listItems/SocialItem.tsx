@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Image, StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, StyleProp, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -10,6 +10,7 @@ import { useSelector } from 'react-redux';
 import ImageView from 'react-native-image-viewing';
 
 import { isArray } from 'lodash';
+import { decode } from 'html-entities';
 import { NO_POST_IMAGE_URL, OpenURLButton } from '@/services/constants';
 
 import { PostType, SocialPost, SocialPostReaction } from '@/utils/types';
@@ -19,6 +20,7 @@ import {
   MainBottomStackParamsList,
 } from '@/src/navigator/types';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { Colors } from '@/src/styles';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import BaseItem from './BaseItem';
@@ -26,6 +28,7 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import ImageSlider from '../imageSlider/ImageSlider';
 import { ImageForSlider } from '../imageSlider/types';
 import CustomVideo from '../CustomVideo';
+import type { ScrollIntentLock } from '@/src/hooks/useScrollIntentLock';
 
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
@@ -42,6 +45,124 @@ type LinkData = {
   siteName?: string;
   title?: string;
   url?: string;
+};
+
+type LinkPreview = {
+  url: string;
+  title?: string;
+  description?: string;
+  siteName?: string;
+  imageUrl?: string;
+};
+
+const URL_REGEX = /((https?:\/\/)?(www\.)?[\w.-]+\.[a-z]{2,}(?:\/[^\s]*)?)/i;
+const COMMON_TLDS = ['.com', '.net', '.info', '.org', '.io'];
+
+const stripTrailingPunctuation = (url: string) => url.replace(/[^A-Za-z0-9/?#&=._~:-]+$/g, '');
+
+const normalizeUrl = (url: string) => {
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.toLowerCase().startsWith('www.')) return `https://${url}`;
+  return url;
+};
+
+const findTokenWithTld = (text: string) => {
+  const tokens = text.split(/\s+/).filter(Boolean);
+  const matched = tokens.find((token) => {
+    const cleaned = stripTrailingPunctuation(token);
+    const lower = cleaned.toLowerCase();
+    return COMMON_TLDS.some((tld) => lower.includes(tld));
+  });
+  return matched ? stripTrailingPunctuation(matched) : null;
+};
+
+const extractFirstUrl = (text?: string) => {
+  if (!text) return null;
+  const match = text.match(URL_REGEX);
+  const rawCandidate = match?.[0] ?? findTokenWithTld(text);
+  if (!rawCandidate) return null;
+  const raw = stripTrailingPunctuation(rawCandidate);
+  return { raw, normalized: normalizeUrl(raw) };
+};
+
+const isPrivateIp = (host: string) => {
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return false;
+  const parts = host.split('.').map((part) => Number(part));
+  if (parts.some((part) => Number.isNaN(part) || part < 0 || part > 255)) return true;
+  if (parts[0] === 10) return true;
+  if (parts[0] === 127) return true;
+  if (parts[0] === 0) return true;
+  if (parts[0] === 169 && parts[1] === 254) return true;
+  if (parts[0] === 192 && parts[1] === 168) return true;
+  if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+  return false;
+};
+
+const parseUrlParts = (url: string) => {
+  const normalized = normalizeUrl(url);
+  const match = normalized.match(/^(https?):\/\/([^/?#]+)(?:[/?#]|$)/i);
+  if (!match) return null;
+  const protocol = match[1]?.toLowerCase() ?? '';
+  const hostWithPort = match[2]?.toLowerCase() ?? '';
+  const host = hostWithPort.split(':')[0];
+  return { protocol, host, normalized };
+};
+
+const isSafeHttpUrl = (url: string) => {
+  const parts = parseUrlParts(url);
+  if (!parts) return false;
+  if (parts.protocol !== 'http' && parts.protocol !== 'https') return false;
+  if (!parts.host || parts.host === 'localhost' || parts.host.endsWith('.local')) return false;
+  if (isPrivateIp(parts.host)) return false;
+  return true;
+};
+
+const getMetaTagContent = (html: string, key: string, attr: 'property' | 'name' = 'property') => {
+  const regex = new RegExp(
+    `<meta[^>]+${attr}=["']${key}["'][^>]*content=["']([^"']+)["'][^>]*>`,
+    'i'
+  );
+  const match = html.match(regex);
+  return match?.[1];
+};
+
+const getTitleTag = (html: string) => {
+  const match = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+  return match?.[1];
+};
+
+const resolveUrl = (baseUrl: string, relative?: string) => {
+  if (!relative) return undefined;
+  if (/^https?:\/\//i.test(relative)) return relative;
+  if (relative.startsWith('//')) {
+    return `https:${relative}`;
+  }
+  const parts = parseUrlParts(baseUrl);
+  if (!parts) return relative;
+  return `${parts.protocol}://${parts.host}${relative.startsWith('/') ? '' : '/'}${relative}`;
+};
+
+const buildLinkPreview = (url: string, html: string): LinkPreview => {
+  const title =
+    getMetaTagContent(html, 'og:title') ||
+    getMetaTagContent(html, 'twitter:title', 'name') ||
+    getTitleTag(html) ||
+    url;
+  const description =
+    getMetaTagContent(html, 'og:description') || getMetaTagContent(html, 'description', 'name');
+  const siteName = getMetaTagContent(html, 'og:site_name');
+  const image =
+    getMetaTagContent(html, 'og:image') || getMetaTagContent(html, 'twitter:image', 'name');
+
+  const absoluteImage = resolveUrl(url, image);
+
+  return {
+    url,
+    title: title ? decode(title) : url,
+    description: description ? decode(description) : undefined,
+    siteName: siteName ? decode(siteName) : undefined,
+    imageUrl: absoluteImage,
+  };
 };
 
 const toSafeNumber = (value: unknown, fallback = 1) => {
@@ -67,6 +188,7 @@ type SocialItemProps = {
   removePost: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
   fromSavedPosts?: boolean;
+  scrollIntent?: ScrollIntentLock;
 };
 function SocialItem({
   itemData,
@@ -79,6 +201,7 @@ function SocialItem({
   editPost,
   fromSavedPosts,
   onCommentsPress,
+  scrollIntent,
 }: SocialItemProps) {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -96,6 +219,7 @@ function SocialItem({
   const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
   const navigation = useNavigation<ScreenNavigationProp>();
   const [width, setWidth] = useState<number>();
+  const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
 
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   let profileUrl = '';
@@ -196,18 +320,124 @@ function SocialItem({
     }
   }, [getMediaInfo, itemData]);
 
-  const linkAttachment = itemData?.attachments?.find((attachment) => attachment.type === 'link');
-  const linkData: LinkData | undefined = linkAttachment
-    ? {
-        description: linkAttachment.description,
-        image: linkAttachment.image,
-        siteName: linkAttachment.siteName,
-        title: linkAttachment.title,
-        url: linkAttachment.url,
-      }
-    : undefined;
+  const linkAttachment = useMemo(
+    () => itemData?.attachments?.find((attachment) => attachment.type === 'link'),
+    [itemData?.attachments]
+  );
+  const attachmentLinkData: LinkData | undefined = useMemo(() => {
+    if (!linkAttachment) return undefined;
+    return {
+      description: linkAttachment.description,
+      image: linkAttachment.image,
+      siteName: linkAttachment.siteName,
+      title: linkAttachment.title,
+      url: linkAttachment.url,
+    };
+  }, [linkAttachment]);
 
-  const hasLink = Boolean(linkData);
+  const { contentText, contentUrl, rawContent } = useMemo(() => {
+    const resolvedContent =
+      itemData?.content ||
+      (itemData as { body?: string }).body ||
+      (typeof itemData?.title === 'string'
+        ? itemData.title
+        : (itemData?.title as { a?: { $text?: string } } | undefined)?.a?.$text) ||
+      '';
+    const extractedUrl = extractFirstUrl(resolvedContent);
+    if (!extractedUrl) {
+      return {
+        contentText: resolvedContent,
+        contentUrl: null,
+        rawContent: resolvedContent,
+        rawUrl: null,
+      };
+    }
+    const cleanedText = resolvedContent.replace(extractedUrl.raw, '').replace(/\s+/g, ' ').trim();
+    return {
+      contentText: cleanedText,
+      contentUrl: extractedUrl.normalized,
+      rawContent: resolvedContent,
+      rawUrl: extractedUrl.raw,
+    };
+  }, [itemData]);
+
+  const safeContentUrl = useMemo(() => {
+    if (!contentUrl || !isSafeHttpUrl(contentUrl)) return null;
+    return contentUrl;
+  }, [contentUrl]);
+
+  useEffect(
+    function handleLinkPreview() {
+      let isActive = true;
+      const controller = new AbortController();
+
+      if (attachmentLinkData?.url || !safeContentUrl) {
+        setLinkPreview(null);
+      } else {
+        setLinkPreview({
+          url: safeContentUrl,
+          title: safeContentUrl,
+          siteName: undefined,
+          description: undefined,
+          imageUrl: undefined,
+        });
+
+        const loadPreview = async () => {
+          try {
+            const response = await fetch(safeContentUrl, {
+              method: 'GET',
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; OneBodyApp/1.0)',
+              },
+              signal: controller.signal,
+            });
+            const html = await response.text();
+            if (!isActive) return;
+            const preview = buildLinkPreview(safeContentUrl, html);
+            setLinkPreview(preview);
+          } catch (e) {
+            if (!isActive) return;
+            setLinkPreview({
+              url: safeContentUrl,
+              title: safeContentUrl,
+              siteName: undefined,
+              description: undefined,
+              imageUrl: undefined,
+            });
+          }
+        };
+
+        loadPreview();
+      }
+
+      return () => {
+        isActive = false;
+        controller.abort();
+      };
+    },
+    [attachmentLinkData?.url, safeContentUrl]
+  );
+
+  const linkCardData: LinkData | null = useMemo(() => {
+    if (attachmentLinkData?.url && isSafeHttpUrl(attachmentLinkData.url)) {
+      return attachmentLinkData;
+    }
+    if (linkPreview?.url && isSafeHttpUrl(linkPreview.url)) {
+      return {
+        url: linkPreview.url,
+        title: linkPreview.title,
+        description: linkPreview.description,
+        siteName: linkPreview.siteName,
+        image: linkPreview.imageUrl
+          ? { url: linkPreview.imageUrl, height: '0', width: '0', type: 'image' }
+          : undefined,
+      };
+    }
+    return null;
+  }, [attachmentLinkData, linkPreview]);
+
+  const linkUrl = linkCardData?.url ?? '';
+  const hasLink = Boolean(linkUrl);
 
   let myReaction: SocialPostReaction | undefined;
 
@@ -239,6 +469,7 @@ function SocialItem({
   }
 
   const postId = itemData.postId ?? itemData.id ?? itemData._id;
+  const interactionKey = postId ? String(postId) : `social-${index ?? 0}`;
   const handleCommentsPress =
     onCommentsPress ||
     (postId
@@ -301,7 +532,7 @@ function SocialItem({
           setWidth(nativeEvent.layout.width);
         }}
       >
-        {itemData?.content && (
+        {((safeContentUrl ? contentText : rawContent) ?? '').length > 0 ? (
           <View style={{ flexGrow: 1 }}>
             <StyledText
               style={{
@@ -310,47 +541,87 @@ function SocialItem({
                 flexGrow: 1,
               }}
             >
-              {itemData?.content}
+              {safeContentUrl ? contentText : rawContent}
             </StyledText>
           </View>
-        )}
-
-        {hasLink && linkData ? (
-          <TouchableOpacity
-            onPress={() => {
-              if (linkData.url) OpenURLButton(linkData.url);
-            }}
-            style={[
-              {
-                borderRadius: borderRadius.small,
-                marginVertical: 10,
-                borderColor: '#808080',
-                borderWidth: borderWidth.thin,
-              },
-            ]}
-          >
-            <FastImage
-              style={{
-                height: 200,
-                // borderRadiusTop: 2,
-                borderTopLeftRadius: 8,
-                borderTopRightRadius: 8,
-              }}
-              source={{ uri: linkData.image?.url ?? NO_POST_IMAGE_URL }}
-            />
-            <View style={{ padding: 10 }}>
-              {linkData.siteName ? (
-                <StyledText numberOfLines={1} style={{ color: '#979797' }}>
-                  {getDomainName(linkData.url || '')}
-                </StyledText>
-              ) : null}
-              <StyledText numberOfLines={1} style={{ fontWeight: 'bold' }}>
-                {linkData.title}
-              </StyledText>
-              <StyledText numberOfLines={2}>{linkData.description}</StyledText>
-            </View>
-          </TouchableOpacity>
         ) : null}
+
+        {hasLink && linkCardData
+          ? (() => {
+              const gestureHandlers = scrollIntent?.bindCardGestureHandlers(
+                `${interactionKey}-link`,
+                {
+                  onPress: () => {
+                    if (linkUrl) OpenURLButton(linkUrl);
+                  },
+                }
+              );
+              const hasGestureHandlers = Boolean(gestureHandlers?.onTouchStart);
+              const onPressHandler =
+                gestureHandlers?.onPress ?? (linkUrl ? () => OpenURLButton(linkUrl) : undefined);
+
+              return (
+                <Pressable
+                  onTouchStart={hasGestureHandlers ? gestureHandlers?.onTouchStart : undefined}
+                  onTouchMove={hasGestureHandlers ? gestureHandlers?.onTouchMove : undefined}
+                  onTouchEnd={hasGestureHandlers ? gestureHandlers?.onTouchEnd : undefined}
+                  onTouchCancel={hasGestureHandlers ? gestureHandlers?.onTouchCancel : undefined}
+                  onPressIn={hasGestureHandlers ? gestureHandlers?.onPressIn : undefined}
+                  onPressOut={hasGestureHandlers ? gestureHandlers?.onPressOut : undefined}
+                  onPress={onPressHandler}
+                  style={{
+                    borderRadius: borderRadius.base,
+                    marginVertical: spacing.x10,
+                    borderColor: colors.border,
+                    borderWidth: borderWidth.thin,
+                    backgroundColor: colors.card,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {linkCardData.image?.url || NO_POST_IMAGE_URL ? (
+                    <FastImage
+                      style={{
+                        width: '100%',
+                        aspectRatio: 16 / 9,
+                      }}
+                      resizeMode="cover"
+                      source={{ uri: linkCardData.image?.url ?? NO_POST_IMAGE_URL }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: '100%',
+                        aspectRatio: 16 / 9,
+                        backgroundColor: Colors.neutral[800],
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: spacing.x13,
+                      }}
+                    >
+                      <StyledText numberOfLines={1} style={{ color: Colors.neutral[200] }}>
+                        {linkUrl ? getDomainName(linkUrl) : ''}
+                      </StyledText>
+                    </View>
+                  )}
+                  <View style={{ padding: 10 }}>
+                    {linkUrl ? (
+                      <StyledText numberOfLines={1} style={{ color: Colors.neutral[400] }}>
+                        {getDomainName(linkUrl)}
+                      </StyledText>
+                    ) : null}
+                    {linkCardData.title ? (
+                      <StyledText numberOfLines={2} style={{ fontWeight: '700' }}>
+                        {linkCardData.title}
+                      </StyledText>
+                    ) : null}
+                    {linkCardData.description ? (
+                      <StyledText numberOfLines={2}>{linkCardData.description}</StyledText>
+                    ) : null}
+                  </View>
+                </Pressable>
+              );
+            })()
+          : null}
 
         {media.length > 0 &&
           media.map((mediaItem, mediaIndex) => {
@@ -361,7 +632,12 @@ function SocialItem({
                   source={{
                     uri: mediaItem.url,
                   }}
-                  style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
+                  style={{
+                    width: '100%',
+                    aspectRatio: 16 / 9,
+                    borderRadius: borderRadius.small,
+                    marginVertical: 10,
+                  }}
                   controls={false}
                   resizeMode="cover"
                   paused={!isPlaying}
@@ -401,6 +677,8 @@ function SocialItem({
               setImageModalIndexVisible={(item) => {
                 setImageModalIndexVisible(item);
               }}
+              scrollIntent={scrollIntent}
+              mediaKeyPrefix={interactionKey}
             />
           </>
         ) : null}

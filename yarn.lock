@@ -11110,11 +11110,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lottie-react-native@npm:^7.2.3":
-  version: 7.2.3
-  resolution: "lottie-react-native@npm:7.2.3"
+"lottie-react-native@npm:^7.3.5":
+  version: 7.3.5
+  resolution: "lottie-react-native@npm:7.3.5"
   peerDependencies:
-    "@lottiefiles/dotlottie-react": ^0.6.5
+    "@lottiefiles/dotlottie-react": ^0.13.5
     react: "*"
     react-native: ">=0.46"
     react-native-windows: ">=0.63.x"
@@ -11123,7 +11123,7 @@ __metadata:
       optional: true
     react-native-windows:
       optional: true
-  checksum: 10/2ccb8a3d6849a1a122abdde0a76aff68122a92a4d9d48696108b4a3ef81abe5d46cefb3dff887fc13086b1ca1276011442735bc8a99fc2e2f625c7c446dab16f
+  checksum: 10/3bea1979d9354172b989c96b9f10589333cf47becf3aa9231641b3531613b3286edc5c90f229a1f3cae0dfb67ad33faa2f6c78b536025aa5c2003ccc6ab29301
   languageName: node
   linkType: hard
 
@@ -12339,7 +12339,7 @@ __metadata:
     lint-staged: "npm:^15.2.2"
     lodash: "npm:^4.17.21"
     lottie-ios: "npm:^4.3.4"
-    lottie-react-native: "npm:^7.2.3"
+    lottie-react-native: "npm:^7.3.5"
     node-git-hooks: "npm:^1.0.7"
     object-to-formdata: "npm:^4.5.1"
     patch-package: "npm:^8.0.0"

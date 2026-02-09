@@ -24,6 +24,8 @@ function OnboardingStack() {
     <Stack.Navigator
       initialRouteName="OnboardingIntro"
       screenOptions={{
+        gestureEnabled: false,
+        fullScreenGestureEnabled: false,
         statusBarStyle: dark ? 'light' : 'dark',
         headerShown: false,
         headerTransparent: true,

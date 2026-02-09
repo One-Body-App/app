@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
@@ -22,6 +23,10 @@ function OnboardingLocation({ navigation, route }: Props) {
     <OnboardingStepsLayout
       buttonText={locationData ? 'Next' : 'Skip'}
       onPress={() => {
+        ReactNativeHapticFeedback.trigger('impactMedium', {
+          enableVibrateFallback: true,
+          ignoreAndroidSystemSettings: false,
+        });
         navigation.navigate('OnboardingInterests', {
           ...route.params,
           longitude,

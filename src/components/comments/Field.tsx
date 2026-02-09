@@ -1,11 +1,17 @@
-import { TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
-import { CloseCircle, Send, TickCircle } from 'iconsax-react-native';
+import { TextInput, TouchableOpacity, View, ScrollView, Platform } from 'react-native';
+import { CloseCircle, TickCircle } from 'iconsax-react-native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
+import FastImage from 'react-native-fast-image';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
 import { useState } from 'react';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { useTheme } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
+import { RootState } from '@/src/redux/reducers/rootReducer';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
 import StyledText from '../styled/Text';
 
 interface Props {
@@ -27,6 +33,8 @@ function CommentField({
   setEditingComment,
   isFromBottomField,
 }: Props) {
+  const { dark } = useTheme();
+  const user = useSelector((state: RootState) => state.auth.getProfileData);
   const [content, setContent] = useState(text ?? '');
   const InputComponent = isFromBottomField ? BottomSheetTextInput : TextInput;
   const gifAspectRatioRaw = mediaGif?.aspectRatio;
@@ -34,6 +42,15 @@ function CommentField({
   const safeGifAspectRatio =
     Number.isFinite(gifAspectRatio) && gifAspectRatio > 0 ? gifAspectRatio : 1;
   const hasGif = Boolean(mediaGif?.id || mediaGif?.url);
+  const canUseGiphy = Platform.OS !== 'android';
+  const composerBackground = dark ? '#1a2c32' : '#ffffff';
+  const inputBackground = dark ? '#111d21' : '#f1f3f4';
+  const dividerColor = dark ? '#22343a' : '#e7eaed';
+  const textSecondary = '#4f8596';
+  const primary = '#116a88';
+  const profileImageUri =
+    user?.profileImage && user.profileImage !== '' ? user.profileImage : NO_PROFILE_IMAGE;
+  const safeProfileImageUri = profileImageUri || 'https://via.placeholder.com/72';
 
   // const onKeyboardWillShow = (e: KeyboardEvent) => {
   //   setKeyboardHeight(e.endCoordinates.height);
@@ -64,11 +81,13 @@ function CommentField({
   //   }
   // }, []);
 
-  const submitComment = (value?: string) => {
+  const submitComment = async (value?: string) => {
     if (value || mediaGif) {
-      publishComment(value ?? '');
-      setContent('');
-      setGif(null);
+      const publishResult = await publishComment(value ?? '');
+      if (publishResult) {
+        setContent('');
+        setGif(null);
+      }
     }
   };
 
@@ -95,93 +114,96 @@ function CommentField({
     <>
       <View
         style={{
-          backgroundColor: Colors.neutral[800],
+          backgroundColor: composerBackground,
+          borderTopWidth: 1,
+          borderTopColor: dividerColor,
           paddingHorizontal: spacing.x16,
-          paddingVertical: spacing.x13,
+          paddingTop: spacing.x16,
+          paddingBottom: spacing.x20,
         }}
       >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            backgroundColor: Colors.neutral[700],
-            borderRadius: borderRadius.large,
-            paddingHorizontal: spacing.x13,
-            paddingVertical: spacing.x10,
-            borderWidth: 1,
-            borderColor: Colors.neutral[600],
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => {
-              try {
-                GiphyDialog.show();
-              } catch (e) {
-                console.log(e);
-              }
-            }}
-            style={{
-              paddingHorizontal: spacing.x10,
-              paddingVertical: spacing.x5,
-              borderRadius: borderRadius.base,
-              backgroundColor: Colors.neutral[600],
-              marginRight: spacing.x10,
-            }}
-          >
-            <StyledText style={{ color: Colors.neutral.brand, fontWeight: '600' }}>GIF</StyledText>
-          </TouchableOpacity>
-          <InputComponent
-            placeholder={isEditingComment ? 'Edit comment...' : 'Write a comment...'}
-            multiline
-            value={content}
-            onChangeText={(value: string) => {
-              setContent(value);
-            }}
-            placeholderTextColor={Colors.neutral[400]}
-            onSubmitEditing={() => {
-              submitComment(content);
-            }}
-            style={{
-              flex: 1,
-              minHeight: 36,
-              maxHeight: 120,
-              color: Colors.neutral.brand,
-              paddingVertical: spacing.x8,
-              paddingHorizontal: spacing.x5,
-              textAlignVertical: 'top',
-            }}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.x10 }}>
+          <FastImage
+            source={{ uri: safeProfileImageUri }}
+            style={{ width: 36, height: 36, borderRadius: borderRadius.max }}
           />
-          <View style={{ justifyContent: 'flex-end' }}>
-            {isEditingComment ? (
-              <View style={{ flexDirection: 'row', gap: spacing.x8 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    submitComment(content);
-                  }}
-                >
-                  <TickCircle color={Colors.primarySapphire.brand} size={22} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (setEditingComment) setEditingComment(false);
-                  }}
-                >
-                  <CloseCircle color={Colors.primarySapphire.brand} size={22} />
-                </TouchableOpacity>
-              </View>
-            ) : (
+          <View style={{ flex: 1, position: 'relative' }}>
+            <InputComponent
+              placeholder={isEditingComment ? 'Edit comment...' : 'Add a comment...'}
+              multiline
+              value={content}
+              onChangeText={(value: string) => {
+                setContent(value);
+              }}
+              placeholderTextColor={textSecondary}
+              selectionColor={primary}
+              cursorColor={primary}
+              onSubmitEditing={() => {
+                submitComment(content).catch(() => undefined);
+              }}
+              style={{
+                width: '100%',
+                minHeight: 50,
+                maxHeight: 120,
+                color: dark ? '#ffffff' : '#0e181b',
+                backgroundColor: inputBackground,
+                borderRadius: borderRadius.max,
+                paddingVertical: spacing.x16,
+                paddingHorizontal: spacing.x16,
+                paddingRight: spacing.x32,
+                textAlignVertical: 'center',
+                fontSize: 13,
+              }}
+            />
+            <TouchableOpacity
+              onPress={() => {
+                if (!canUseGiphy) return;
+                try {
+                  GiphyDialog.show();
+                } catch (e) {
+                  console.log(e);
+                }
+              }}
+              style={{
+                position: 'absolute',
+                right: spacing.x10,
+                top: 16,
+              }}
+            >
+              <MaterialIcons name="sentiment-satisfied" size={20} color={textSecondary} />
+            </TouchableOpacity>
+          </View>
+          {isEditingComment ? (
+            <View style={{ flexDirection: 'row', gap: spacing.x8 }}>
               <TouchableOpacity
                 onPress={() => {
-                  submitComment(content);
+                  submitComment(content).catch(() => undefined);
                 }}
               >
-                <Send variant="Bold" size={24} color={Colors.primarySapphire.brand} />
+                <TickCircle color={primary} size={22} />
               </TouchableOpacity>
-            )}
-          </View>
+              <TouchableOpacity
+                onPress={() => {
+                  if (setEditingComment) setEditingComment(false);
+                }}
+              >
+                <CloseCircle color={primary} size={22} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={() => {
+                submitComment(content).catch(() => undefined);
+              }}
+            >
+              <StyledText style={{ color: primary, fontWeight: '700', fontSize: 14 }}>
+                Post
+              </StyledText>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
-      {mediaGif && hasGif ? (
+      {mediaGif && hasGif && canUseGiphy ? (
         <ScrollView
           style={{
             height: 100,

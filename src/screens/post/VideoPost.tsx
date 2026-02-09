@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 // . import Video from 'react-native-video';
 import { useTheme } from '@react-navigation/native';
 import {
@@ -37,10 +37,56 @@ function VideoPost({ navigation }: Props) {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [playedTimes, setPlayedTimes] = useState<number>(1);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
 
   const toast = useToast();
 
+  const allowedRatios = [
+    { label: 'vertical', value: 9 / 16 },
+    { label: 'portrait', value: 4 / 5 },
+    { label: 'landscape', value: 16 / 9 },
+  ];
+  const ratioTolerance = 0.08;
+
+  const isAllowedRatio = (ratio: number | null) => {
+    if (!ratio || !Number.isFinite(ratio)) return false;
+    return allowedRatios.some((allowed) => Math.abs(ratio - allowed.value) <= ratioTolerance);
+  };
+
+  const resetVideoRatio = () => {
+    setVideoAspectRatio(null);
+  };
+
+  const handleVideoLoad = (data: any) => {
+    const natural = data?.naturalSize;
+    const width = typeof natural?.width === 'number' ? natural.width : 0;
+    const height = typeof natural?.height === 'number' ? natural.height : 0;
+    if (width > 0 && height > 0) {
+      setVideoAspectRatio(width / height);
+    }
+  };
+
+  useEffect(() => {
+    resetVideoRatio();
+  }, [VideoPath]);
+
   const uploadToMux = async () => {
+    if (!VideoPath) {
+      toast.show('Please select a video first.', {
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return;
+    }
+
+    if (!isAllowedRatio(videoAspectRatio)) {
+      toast.show('Video aspect ratio not supported. Use 9:16, 4:5, or 16:9.', {
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Fetch the authenticated link from the server
@@ -51,7 +97,7 @@ function VideoPost({ navigation }: Props) {
       });
       // 2. Get Video to Blob
 
-      if (Platform.OS == 'ios') {
+      if (Platform.OS === 'ios') {
         const iosResponse = await fetch(VideoPath!, {
           method: 'GET',
         });
@@ -63,7 +109,8 @@ function VideoPost({ navigation }: Props) {
           headers: { 'content-type': blob.type },
         });
       } else {
-        const data = RNFetchBlob.wrap(VideoPath!);
+        const sanitizedPath = VideoPath?.replace('file://', '');
+        const data = RNFetchBlob.wrap(sanitizedPath || '');
         await RNFetchBlob.fetch('PUT', muxLink.response?.url, undefined, data);
       }
 
@@ -76,7 +123,7 @@ function VideoPost({ navigation }: Props) {
         },
         token,
       });
-      if (res.status == 200) {
+      if (res.status === 200) {
         toast.show('Your post is being processed. It will be public shortly!', {
           id: 'successMessage',
           type: 'success',
@@ -125,9 +172,7 @@ function VideoPost({ navigation }: Props) {
                 >
                   <CustomVideo
                     source={{
-                      uri:
-                        'file:///data/user/0/com.onebody/cache/mrousavy6691347555245248709.mov' ||
-                        '',
+                      uri: VideoPath || '',
                     }}
                     resizeMode="contain"
                     paused={playedTimes >= 3}
@@ -136,6 +181,7 @@ function VideoPost({ navigation }: Props) {
                     onEnd={() => {
                       setPlayedTimes(playedTimes + 1);
                     }}
+                    onLoad={handleVideoLoad}
                   />
                 </View>
               </View>

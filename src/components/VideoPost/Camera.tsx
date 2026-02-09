@@ -2,11 +2,9 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  NativeModules,
-  NativeEventEmitter,
   Image,
   ActivityIndicator,
-  Platform,
+  type EventSubscription,
 } from 'react-native';
 import React, {
   Dispatch,
@@ -26,7 +24,7 @@ import {
 } from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
-import { isValidFile, showEditor } from 'react-native-video-trim';
+import VideoTrim, { isValidFile, showEditor } from 'react-native-video-trim';
 import videoPostStyles from './styles';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
@@ -48,6 +46,7 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
   const devices = useCameraDevice(isFrontCamera ? 'front' : 'back');
   const [cameraPermission, setCameraPermission] =
     useState<CameraPermissionStatus>('not-determined');
+  const listenerSubscription = useRef<Record<string, EventSubscription>>({});
 
   const handleSelectionFromGallery = async () => {
     const options: ImageLibraryOptions = {
@@ -115,7 +114,7 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     setLatestGalleryImg(image_url?.uri);
   }, []);
 
-  const getPermissions = async () => {
+  const getPermissions = useCallback(async () => {
     const cameraPermission = await Camera.requestCameraPermission();
     const microphonePermission = await Camera.requestMicrophonePermission();
 
@@ -124,7 +123,7 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
       await permission.requestPermission();
     }
     setCameraPermission(cameraPermission);
-  };
+  }, [permission]);
 
   // useEffect(() => {
   //   getPermissions();
@@ -159,54 +158,22 @@ function CameraComponent({ setVideoPath, children }: PropsWithChildren<Props>) {
     getPermissions();
     fetchPhotos();
 
-    const nativeModule = NativeModules.VideoTrim;
-
-    // Check if module exists and has listener methods
-    const isValidEmitter =
-      nativeModule &&
-      typeof nativeModule.addListener === 'function' &&
-      typeof nativeModule.removeListeners === 'function';
-
-    if (!isValidEmitter) {
-      console.warn(
-        '[VideoTrim] Native module is missing listener methods. Skipping NativeEventEmitter setup.'
-      );
-      return;
-    }
-
-    const eventEmitter = new NativeEventEmitter(nativeModule);
-
-    const subscription = eventEmitter.addListener('VideoTrim', async (event) => {
-      console.log('[VideoTrim] Event received:', event);
-
-      switch (event.name) {
-        case 'onFinishTrimming':
-          try {
-            if (Platform.OS === 'ios') {
-              setVideoPath(event?.outputPath);
-            } else {
-              const asset = await CameraRoll.saveAsset(event?.outputPath || '');
-              setVideoPath(asset.node.image.uri);
-            }
-          } catch (err) {
-            console.error('[VideoTrim] Failed to handle trimmed video output:', err);
-          }
-          break;
-
-        case 'onError':
-          console.error('[VideoTrim] Error event:', event);
-          break;
-
-        default:
-          console.warn('[VideoTrim] Unknown event:', event);
-          break;
+    listenerSubscription.current.onFinishTrimming = VideoTrim.onFinishTrimming(({ outputPath }) => {
+      if (outputPath) {
+        setVideoPath(outputPath);
       }
     });
 
+    listenerSubscription.current.onError = VideoTrim.onError(({ message, errorCode }) => {
+      console.error('[VideoTrim] Error event:', { message, errorCode });
+    });
+
     return () => {
-      subscription.remove();
+      listenerSubscription.current.onFinishTrimming?.remove();
+      listenerSubscription.current.onError?.remove();
+      listenerSubscription.current = {};
     };
-  }, []);
+  }, [fetchPhotos, getPermissions, setVideoPath]);
 
   if (devices == null) {
     return (

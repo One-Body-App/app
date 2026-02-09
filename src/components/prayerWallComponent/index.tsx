@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, View, RefreshControl, TouchableOpacity, Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 
@@ -32,34 +32,63 @@ function PrayerWallEmpty() {
   );
 }
 
-function PrayerWallComponent() {
+type PrayerWallComponentProps = {
+  onOpenPost?: (postId: string) => void;
+  onEditPost?: (postId: string) => void;
+  onScrollOffsetChange?: (offsetY: number) => void;
+  refreshSignal?: number;
+};
+
+function PrayerWallComponent({
+  onOpenPost,
+  onEditPost,
+  onScrollOffsetChange,
+  refreshSignal,
+}: PrayerWallComponentProps) {
   const navigation = useNavigation<NavigationProp<PrayerWallStackParamsList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
-  const [prayers, setPrayers] = useState<PrayerPost[]>();
+  const [prayers, setPrayers] = useState<PrayerPost[]>([]);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
 
   const [isEndOfList, setIsEndOfList] = useState(false);
+  const requestSequenceRef = useRef(0);
+  const hasSeenRefreshSignalRef = useRef(false);
+
+  const extractPrayerEntries = (payload: unknown): PrayerPost[] => {
+    if (Array.isArray(payload)) return payload as PrayerPost[];
+    if (Array.isArray((payload as { content?: unknown })?.content)) {
+      return (payload as { content: PrayerPost[] }).content;
+    }
+    if (Array.isArray((payload as { data?: unknown })?.data)) {
+      return (payload as { data: PrayerPost[] }).data;
+    }
+    return [];
+  };
 
   const getPrayerPosts = useCallback(
     async (pageNumber: number) => {
+      const requestSequence = ++requestSequenceRef.current;
       setIsLoading(true);
-
       try {
         const res = await ApiCall({
           route: `prayer?page=${pageNumber}`,
           token,
           verb: 'get',
         });
-        // console.log(res.response.meta.body.error);
+
+        if (requestSequence !== requestSequenceRef.current) {
+          return;
+        }
+
         if (res?.status === 200) {
-          const nextPosts = res?.response ?? [];
+          const nextPosts = extractPrayerEntries(res?.response);
           if (pageNumber === 1) {
             setIsEndOfList(false);
             setPrayers(nextPosts);
-          } else if (res?.response?.content?.length < 1) {
+          } else if (nextPosts.length < 1) {
             setIsEndOfList(true);
           } else {
             setPrayers((prev) => [...(prev ?? []), ...nextPosts]);
@@ -67,39 +96,47 @@ function PrayerWallComponent() {
         } else {
           console.log('error', res?.response);
         }
-        setIsLoading(false);
-        setRefreshing(false);
-        // setShowRefreshIndicator(false);
       } catch (e: any) {
         console.log(e.toString());
+      } finally {
+        if (requestSequence === requestSequenceRef.current) {
+          setIsLoading(false);
+          setRefreshing(false);
+        }
       }
-      setIsLoading(false);
-      setRefreshing(false);
     },
     [token]
   );
 
+  const refreshPrayerPosts = useCallback(() => {
+    setRefreshing(true);
+    setIsEndOfList(false);
+    if (page === 1) {
+      getPrayerPosts(1);
+      return;
+    }
+    setPage(1);
+  }, [getPrayerPosts, page]);
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      setRefreshing(true);
-      getPrayerPosts(1);
+      refreshPrayerPosts();
     });
 
     return unsubscribe;
-  }, [getPrayerPosts, navigation]);
+  }, [navigation, refreshPrayerPosts]);
 
   useEffect(() => {
-    // getPrayers(currentPage);
     getPrayerPosts(page);
-    // dispatch(
-    //   getAllPrayer({
-    //     page,
-    //     token: token,
-    //     Prayers: prayers,
-    //     setIsLoading: setIsLoading,
-    //   })
-    // );
   }, [getPrayerPosts, page]);
+
+  useEffect(() => {
+    if (!hasSeenRefreshSignalRef.current) {
+      hasSeenRefreshSignalRef.current = true;
+      return;
+    }
+    refreshPrayerPosts();
+  }, [refreshPrayerPosts, refreshSignal]);
 
   const removePost = async (type: string, id: string) => {
     try {
@@ -118,6 +155,10 @@ function PrayerWallComponent() {
   };
 
   const editPost = async (id: string) => {
+    if (onEditPost) {
+      onEditPost(id);
+      return;
+    }
     navigation.navigate('Prayer', { postId: id });
   };
 
@@ -128,44 +169,60 @@ function PrayerWallComponent() {
         data={prayers}
         showsHorizontalScrollIndicator={false}
         onEndReached={() => {
-          if (!isLoading && !refreshing && !isEndOfList) setPage(page + 1);
+          if (!isLoading && !refreshing && !isEndOfList) {
+            setPage((prev) => prev + 1);
+          }
         }}
         style={{
           flexGrow: 1,
         }}
-        keyExtractor={(item, index) => item.postId ?? item.id ?? index}
+        keyExtractor={(item, index) => {
+          const postKey = item.postId ?? item.id ?? `row-${index}`;
+          return `${postKey}-${index}`;
+        }}
         refreshing={refreshing}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => {
-              setRefreshing(true);
-              getPrayerPosts(1);
+              refreshPrayerPosts();
             }}
           />
         }
         ListEmptyComponent={PrayerWallEmpty}
         onEndReachedThreshold={0.8}
         scrollEnabled={isScrollEnable}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            onPress={() => {
-              if (item.postId) {
-                navigation.navigate('Single', {
-                  postId: item.postId,
-                });
-              }
-            }}
-          >
-            <PrayerItem
-              editPost={editPost}
-              removePost={removePost}
-              item={item}
-              index={index}
-              onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-            />
-          </TouchableOpacity>
-        )}
+        onScroll={(event) => {
+          onScrollOffsetChange?.(event.nativeEvent.contentOffset.y);
+        }}
+        scrollEventThrottle={16}
+        renderItem={({ item, index }) => {
+          const postId = item.postId ?? item.id;
+          const openPost = () => {
+            if (!postId) return;
+            if (onOpenPost) {
+              onOpenPost(postId);
+              return;
+            }
+            navigation.navigate('Single', {
+              postId,
+            });
+          };
+
+          return (
+            <TouchableOpacity onPress={openPost}>
+              <PrayerItem
+                editPost={editPost}
+                removePost={removePost}
+                item={item}
+                index={index}
+                onCommentsPress={openPost}
+                onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                limitContentLines
+              />
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );

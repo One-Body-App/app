@@ -9,8 +9,7 @@ import Button from '../Button';
 import { setLoader, setPrayers } from '@/src/redux/actions/GeneralActions';
 import Love from '@/assets/svg/Love.svg';
 import Loved from '@/assets/svg/Loved.svg';
-import Pray from '@/assets/svg/Pray.svg';
-import Praying from '@/assets/svg/Praying.svg';
+import Prayers from '@/assets/svg/prayers.svg';
 import Rejoice from '@/assets/svg/Rejoice.svg';
 import Rejoiced from '@/assets/svg/Rejoiced.svg';
 import { styles } from './styles';
@@ -107,7 +106,7 @@ function PrayerSocials({ item, color }: PrayerSocialsProps) {
             handelLike(item?.post?._id, 'praying');
           }}
         >
-          {checkLike(item, 'praying') ? <Praying color="#126B87" /> : <Pray color="#126B87" />}
+          <Prayers color="#126B87" />
           <Text style={checkLike(item, 'praying') ? { color } : { color: '#4F6D77' }}>
             {checkLike(item, 'praying') ? 'Praying' : 'Pray'}
           </Text>

@@ -16,7 +16,7 @@ class MainActivity : ReactActivity() {
     override fun getMainComponentName(): String = "onebody"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        super.onCreate(null)
         SplashScreen.show(this, R.id.lottie)
         SplashScreen.setAnimationFinished(true)
     }

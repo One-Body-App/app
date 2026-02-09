@@ -1,6 +1,4 @@
 import { StyleSheet } from 'react-native';
-import { getFontSize } from '@/utils/ResponsiveFun';
-import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
 // BRAND COLORS
@@ -9,8 +7,11 @@ const BRAND = {
   gray200: '#cdd5d8',
   gray400: '#9aacb1',
   gray800: '#355963',
-  primary: '#126b87',
+  primary: '#41899f',
+  primaryDark: '#126b87',
   primaryBase: '#41899f',
+  accentBase: '#41dbe1',
+  accentDark: '#12d2d9',
   black: '#032f3c',
   white: '#FFFFFF',
 };
@@ -28,8 +29,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.x5,
     paddingBottom: spacing.x8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[800],
-    backgroundColor: Colors.neutral[900],
+    borderBottomColor: BRAND.gray100,
+    backgroundColor: BRAND.white,
   },
   tabItem: {
     flex: 1,
@@ -39,16 +40,16 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabItemSelected: {
-    borderBottomColor: Colors.primarySapphire.brand,
+    borderBottomColor: BRAND.primaryDark,
   },
   tabText: {
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.1,
-    color: Colors.neutral[300],
+    color: BRAND.gray400,
   },
   tabTextSelected: {
-    color: Colors.primarySapphire.brand,
+    color: BRAND.primaryDark,
     fontWeight: '700',
   },
 
@@ -95,6 +96,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.x16,
     marginBottom: spacing.x13,
   },
+  discoveryScrollContent: {
+    paddingHorizontal: spacing.x16,
+  },
   discoveryCard: {
     width: 150,
     padding: spacing.x13,
@@ -103,6 +107,51 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  discoveryProfileTouch: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  discoveryAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: BRAND.gray200,
+  },
+  discoveryMeta: {
+    fontSize: 11,
+    color: BRAND.gray400,
+    marginBottom: 8,
+  },
+  discoveryConnectButton: {
+    backgroundColor: BRAND.accentBase,
+    paddingVertical: 6,
+    width: '100%',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  discoveryConnectButtonText: {
+    color: BRAND.primaryDark,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  discoverySeeAllCard: {
+    width: 55,
+    marginRight: spacing.x13,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.x16,
+    paddingHorizontal: spacing.x10,
+    backgroundColor: 'rgba(18, 210, 217, 0.08)',
+  },
+  discoverySeeAllText: {
+    color: BRAND.primaryDark,
+    fontSize: 14,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
   },
 
   // --- Modern Feed Card ---
@@ -142,7 +191,7 @@ const styles = StyleSheet.create({
   },
   mediaContainer: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    aspectRatio: 4 / 5,
     backgroundColor: '#000',
     marginTop: spacing.x5,
   },
@@ -179,6 +228,20 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  endOfFeedContainer: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.x16,
+    paddingTop: spacing.x8,
+    paddingBottom: spacing.x24,
+  },
+  endOfFeedText: {
+    color: BRAND.black,
+    fontSize: 14,
+    fontWeight: '100',
+    textShadowColor: 'rgba(18, 210, 217, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
 

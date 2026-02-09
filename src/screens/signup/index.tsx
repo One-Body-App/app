@@ -1,6 +1,5 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import {
-  Alert,
   View,
   TouchableOpacity,
   Animated,
@@ -32,8 +31,9 @@ import { button } from '@/src/styles/buttons';
 import {
   sendVerificationEmail as sendVerificationEmailAction,
   signUp,
+  setLoginData,
 } from '@/src/redux/actions/AuthActions';
-import { setAccountType } from '@/src/redux/actions/GeneralActions';
+import { setAccountType, setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 import validator from '@/utils/validation/validator';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -43,6 +43,12 @@ import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import StyledTextInput from '@/components/styled/TextInput';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
+import {
+  ensureGoogleSigninConfigured,
+  exchangeSocialToken,
+  getAppleIdToken,
+  getGoogleIdToken,
+} from '@/services/socialAuth';
 import { appColor } from '@/src/constants';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 
@@ -203,6 +209,7 @@ function SignupForm({ navigation, route }: Props) {
 
   const [hidePass, setHidePass] = useState(true);
   const [loading, setIsloading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
   const [showPasswordHint, setShowPasswordHint] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasPasswordInteracted, setHasPasswordInteracted] = useState(false);
@@ -224,13 +231,6 @@ function SignupForm({ navigation, route }: Props) {
     placeholder: dark ? '#999DA1' : '#838584',
     errorBorder: Colors.errorFeedback[200],
   };
-
-  const showSocialUnavailable = useCallback(() => {
-    Alert.alert(
-      'Coming soon',
-      'Social sign-in is temporarily unavailable while we migrate authentication. Please use email/password.'
-    );
-  }, []);
 
   const normalizeUsername = useCallback((value: string) => {
     return value?.toLowerCase().trim().replace(/\s+/g, '') ?? '';
@@ -263,7 +263,9 @@ function SignupForm({ navigation, route }: Props) {
     }
   }, [accountType, dispatch]);
 
-  // Social signup is temporarily disabled during JWT migration.
+  useEffect(() => {
+    ensureGoogleSigninConfigured();
+  }, []);
 
   const orbitAnim = useRef(new Animated.Value(0)).current;
   const textAnim = useRef(new Animated.Value(0)).current;
@@ -358,17 +360,8 @@ function SignupForm({ navigation, route }: Props) {
           recaptcha.current?.open();
         } else {
           setIsloading(false);
-          if (userValidation.status === 409) {
-            setState((prev) => ({
-              ...prev,
-              emailError:
-                'Email already in use. If you already have an account, use "Forgot password" to set or reset your password and sign in.',
-            }));
-            return;
-          }
           setFormError(
-            userValidation.response?.message ??
-              'Unable to validate account. Please check your connection.'
+            'Unable to create account. Please try a different email or reset your password.'
           );
         }
       } else {
@@ -469,6 +462,53 @@ function SignupForm({ navigation, route }: Props) {
     );
   };
 
+  const handleSocialSignup = useCallback(
+    async (provider: 'google' | 'apple') => {
+      if (socialLoading) return;
+      const providerLabel = provider === 'google' ? 'Google' : 'Apple';
+      setFormError('');
+      setFormSuccess('');
+      dispatch(setLoader(true));
+      setSocialLoading(true);
+      try {
+        const tokenResult =
+          provider === 'google' ? await getGoogleIdToken() : await getAppleIdToken();
+
+        if (tokenResult.cancelled) {
+          return;
+        }
+
+        if (!tokenResult.idToken) {
+          setFormError(`Unable to sign in with ${providerLabel}. Please try again.`);
+          return;
+        }
+
+        const res = await exchangeSocialToken({
+          provider,
+          idToken: tokenResult.idToken,
+          nonce: tokenResult.nonce,
+          accountType,
+          details: tokenResult.details,
+        });
+
+        if (res.status === 200 && res.response?.tokens?.accessToken) {
+          dispatch(setLoginData({ token: res.response.tokens.accessToken }));
+          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+          return;
+        }
+
+        const apiMessage = (res.response as any)?.message;
+        setFormError(typeof apiMessage === 'string' ? apiMessage : 'Unable to sign in.');
+      } catch (e: any) {
+        setFormError(e?.message ?? 'Sign in failed.');
+      } finally {
+        dispatch(setLoader(false));
+        setSocialLoading(false);
+      }
+    },
+    [accountType, dispatch, navigation, socialLoading]
+  );
+
   useEffect(() => {
     if (authState.signUpSuccess) {
       const handleSignUpSuccess = async () => {
@@ -503,8 +543,16 @@ function SignupForm({ navigation, route }: Props) {
         ? authState.error.join(', ')
         : (authState.error ?? 'Something went wrong. Please try again.');
       setFormSuccess('');
-      setFormError(displayError);
       const lower = displayError.toLowerCase();
+      const isEmailTaken =
+        lower.includes('email already') ||
+        lower.includes('email is already') ||
+        (lower.includes('email') && lower.includes('exists'));
+      setFormError(
+        isEmailTaken
+          ? 'Unable to create account. Please try a different email or reset your password.'
+          : displayError
+      );
       const isUsernameTaken =
         lower.includes('username already') ||
         lower.includes('username is already') ||
@@ -681,7 +729,8 @@ function SignupForm({ navigation, route }: Props) {
                 styles.socialBtn,
                 { borderColor: palette.inputBorder, backgroundColor: palette.card },
               ]}
-              onPress={showSocialUnavailable}
+              disabled={socialLoading}
+              onPress={() => handleSocialSignup('google')}
             >
               <Image source={googleIcon} style={styles.socialIcon} />
             </TouchableOpacity>
@@ -692,7 +741,8 @@ function SignupForm({ navigation, route }: Props) {
                   styles.socialBtn,
                   { borderColor: palette.inputBorder, backgroundColor: palette.card },
                 ]}
-                onPress={showSocialUnavailable}
+                disabled={socialLoading}
+                onPress={() => handleSocialSignup('apple')}
               >
                 <Ionicons name="logo-apple" size={30} color={dark ? '#FFFFF7' : '#212121'} />
               </TouchableOpacity>

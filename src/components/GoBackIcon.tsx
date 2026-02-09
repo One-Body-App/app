@@ -13,11 +13,21 @@ function GoBackIcon({
   style?: ViewStyle;
 }) {
   const navigation = useNavigation();
-  if (!navigation.canGoBack) {
+  if (!goBack && !navigation.canGoBack()) {
     return null;
   }
   return (
-    <TouchableOpacity onPress={() => goBack ?? navigation.goBack()} style={style}>
+    <TouchableOpacity
+      onPress={() => {
+        if (goBack) {
+          goBack();
+          return;
+        }
+
+        navigation.goBack();
+      }}
+      style={style}
+    >
       <Icon name="chevron-back" size={20} color={color} />
     </TouchableOpacity>
   );

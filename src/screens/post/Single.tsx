@@ -1,6 +1,6 @@
 import { StackScreenProps } from '@react-navigation/stack';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, View } from 'react-native';
+import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -22,7 +22,7 @@ function SinglePost({ navigation, route }: Props) {
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
 
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
 
   const getPost = useCallback(async () => {
     setIsLoading(true);
@@ -87,6 +87,12 @@ function SinglePost({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      {Platform.OS === 'android' ? (
+        <StatusBar
+          barStyle={dark ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
+        />
+      ) : null}
       {post ? (
         <CommentThread
           type={PostType.social}

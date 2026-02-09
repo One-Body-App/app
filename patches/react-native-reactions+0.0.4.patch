@@ -1,0 +1,26 @@
+diff --git a/node_modules/react-native-reactions/lib/components/EmojiItem/hooks/useEmojiItem.js b/node_modules/react-native-reactions/lib/components/EmojiItem/hooks/useEmojiItem.js
+index 217c1b1b..48863c7e 100644
+--- a/node_modules/react-native-reactions/lib/components/EmojiItem/hooks/useEmojiItem.js
++++ b/node_modules/react-native-reactions/lib/components/EmojiItem/hooks/useEmojiItem.js
+@@ -23,13 +23,13 @@ const useEmojiItem = (props) => {
+         }, 200);
+         setTitlePosition(e.nativeEvent.layout.x - 4);
+     };
+-    const reverseEnim = scaleEmoji.value === 2 ? [2, 1, 0] : [0, 1, 2];
+     useEffect(() => {
+         scaleEmoji.value = withTiming(scaled ? 2 : 1, {
+             duration: scaleDuration,
+         });
+     }, [emojiDuration, scaleDuration, scaleEmoji, scaled]);
+     const emojiAnimatedScaled = useAnimatedStyle(() => {
++        const reverseEnim = scaleEmoji.value === 2 ? [2, 1, 0] : [0, 1, 2];
+         return {
+             transform: [
+                 {
+@@ -68,4 +68,4 @@ const useEmojiItem = (props) => {
+     };
+ };
+ export default useEmojiItem;
+-//# sourceMappingURL=useEmojiItem.js.map
+\ No newline at end of file
++//# sourceMappingURL=useEmojiItem.js.map

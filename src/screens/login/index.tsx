@@ -12,7 +12,8 @@ import { Colors } from '@/src/styles';
 type Props = StackScreenProps<MainStackParamList, 'Login'>;
 
 function Login({ route }: Props) {
-  const loginProviders = ['password'];
+  const clearOnMountKey =
+    route?.params?.action ?? (route?.params?.resetPassword ? 'reset' : undefined);
   useTheme();
 
   return (
@@ -24,14 +25,7 @@ function Login({ route }: Props) {
         bounces={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <LoginComponent
-          showConfirmationEmailMessage={route?.params?.showConfirmationEmailMessage ?? false}
-          enabledLoginProviders={loginProviders}
-          state={route?.params?.state}
-          code={route?.params?.code}
-          oauth_token={route?.params?.oauth_token}
-          oauth_verifier={route?.params?.oauth_verifier}
-        />
+        <LoginComponent clearOnMountKey={clearOnMountKey} />
       </ScrollView>
     </UserStepsLayout>
   );

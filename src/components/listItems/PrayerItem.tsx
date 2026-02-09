@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
-  ScrollView,
+  Animated,
+  Easing,
+  Platform,
   StyleProp,
+  TextLayoutEventData,
   TouchableOpacity,
   View,
   ViewStyle,
@@ -15,10 +17,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import { EmojiItemProp } from 'react-native-reactions/lib/components/ReactionView/types';
 
-import ImageView from 'react-native-image-viewing';
-import { GiphyMediaView } from '@giphy/react-native-sdk';
-
-import { isArray } from 'lodash';
 import Toast, { useToast } from 'react-native-toast-notifications';
 
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -36,6 +34,7 @@ import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
 import BaseItem from './BaseItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
+import getPrayerWallWebClassName from './prayerWallWebClassName';
 
 import { ApiCall } from '@/services/api';
 import Anonymous from '@/assets/svg/anonymous.svg';
@@ -43,7 +42,6 @@ import Button from '../Button';
 import { button } from '@/src/styles/buttons';
 import StyledTextInput from '../styled/TextInput';
 import CustomModal from '../CustomModal';
-import CustomVideo from '../CustomVideo';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<PrayerWallStackParamsList, 'index'>,
@@ -52,7 +50,6 @@ type ScreenNavigationProp = CompositeNavigationProp<
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
   >
 >;
-type Media = { type: string; url: string };
 type PrayerItemProps = {
   currentPopupItemId?: string;
   visible?: boolean;
@@ -68,40 +65,38 @@ type PrayerItemProps = {
   fromSavedPosts?: boolean;
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
+  limitContentLines?: boolean;
 };
 function PrayerItem({
   removePost,
   editPost,
   item,
   style,
-  visible,
   index,
   onShowDismissCard,
   parentRefreshContent,
   fromSavedPosts,
   onCommentsPress,
+  limitContentLines = false,
 }: PrayerItemProps) {
-  const { colors } = useTheme();
-  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const { colors, dark } = useTheme();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [media, setMedia] = useState<Media[]>([]);
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
+  const [showSeeMore, setShowSeeMore] = useState(false);
+  const [collapsedPreview, setCollapsedPreview] = useState('');
   const toastRef = useRef<Toast>(null);
-  const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
-  const [imageInfo, setImageInfo] = useState<
-    {
-      url: string;
-      height: number;
-      width: number;
-    }[]
-  >([]);
-
-  const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const [testinomyContent, setTestinomyContent] = useState<string>('');
   const navigation = useNavigation<ScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
+  const entryProgress = useRef(new Animated.Value(0)).current;
+  const isAnsweredPrayer =
+    Boolean(item.answered) || item.category === PrayerWallCategory.AnsweredPrayer;
+  const isExhortation = item.category === PrayerWallCategory.Exhortation && !isAnsweredPrayer;
+  const isTestimony = item.category === PrayerWallCategory.Testimony && !isAnsweredPrayer;
+  const webPrayerCardClassName = getPrayerWallWebClassName(item.category, item.answered);
 
   const answeredPrayer = async () => {
     try {
@@ -137,30 +132,6 @@ function PrayerItem({
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    setIsPlaying(visible ?? false);
-    if (!visible && !isMuted) setIsMuted(true);
-  }, [isMuted, visible]);
-
-  useEffect(() => {
-    setImageInfo([]);
-    const media: Media[] = [];
-
-    if (isArray(item.images) && item.images && item.images.length > 0) {
-      item.images?.forEach((attachment) => {
-        media.push({
-          type: 'photo',
-          url: attachment,
-        });
-      });
-    }
-
-    if (media) {
-      setMedia(media);
-      getMediaInfo(media);
-    }
-  }, [item]);
-
   let myReaction: SocialPostReaction | undefined;
 
   item.reactions?.forEach((reaction) => {
@@ -169,404 +140,426 @@ function PrayerItem({
     }
   });
 
-  const getMediaInfo = async (media: Media[]) => {
-    const images = media.filter((item) => item.type === 'photo');
+  const postId = item.postId ?? item.id;
+  const navigateToSinglePrayer = () => {
+    if (!postId) return;
 
-    if (images.length > 0) {
-      const imagePromises = images.map((img) => {
-        return new Promise<{ url: string; width: number; height: number } | null>(
-          (resolve, reject) => {
-            Image.getSize(
-              img.url,
-              (width, height) => {
-                // successfully got image dimensions
-                resolve({ url: img.url, width, height });
-              },
-              () => {
-                // error case
-                console.warn(`Error with ${img}`);
-                resolve(null);
-              }
-            );
-          }
-        );
-      });
+    const state = navigation.getState() as { routeNames?: string[] } | undefined;
+    const hasSingleInCurrentNavigator = state?.routeNames?.includes('Single');
 
-      Promise.all(imagePromises)
-        .then((images) => images.filter(Boolean))
-        .then((images) => {
-          setImageInfo(
-            images.map((image) => ({
-              url: image?.url ?? '',
-              width: image?.width ?? 0,
-              height: image?.height ?? 0,
-            }))
-          );
-        });
+    if (hasSingleInCurrentNavigator) {
+      navigation.navigate('Single', { postId } as any);
+      return;
     }
+
+    navigation.navigate(
+      'PrayerWall' as never,
+      {
+        screen: 'Single',
+        params: { postId },
+      } as never
+    );
   };
 
-  const postId = item.postId ?? item.id;
   const handleCommentsPress =
     onCommentsPress ||
     (postId
       ? () => {
-          navigation.navigate('Single', {
-            postId,
-          } as any);
+          navigateToSinglePrayer();
         }
       : undefined);
 
+  useEffect(() => {
+    setIsContentExpanded(false);
+    setShowSeeMore(false);
+    setCollapsedPreview('');
+  }, [item.content, item.postId, item.id, limitContentLines]);
+
+  useEffect(() => {
+    entryProgress.setValue(0);
+
+    const easing = isExhortation
+      ? Easing.bezier(0.175, 0.885, 0.32, 1.275)
+      : Easing.out(Easing.cubic);
+    const animation = Animated.timing(entryProgress, {
+      toValue: 1,
+      duration: 620,
+      easing,
+      useNativeDriver: true,
+    });
+
+    animation.start();
+  }, [entryProgress, isExhortation, item.answered, item.category, item.id, item.postId]);
+
+  const prayerVariantStyle = (() => {
+    if (Platform.OS === 'web') {
+      return undefined;
+    }
+
+    if (isAnsweredPrayer) {
+      return {
+        borderWidth: 2,
+        borderColor: '#12d2d9',
+        borderStyle: Platform.OS === 'android' ? ('dashed' as const) : ('solid' as const),
+      };
+    }
+
+    if (isExhortation) {
+      return {
+        borderWidth: dark ? 0 : 1,
+        borderColor: dark ? 'transparent' : '#e6eaec',
+        borderLeftWidth: 5,
+        borderLeftColor: '#126b87',
+      };
+    }
+
+    if (isTestimony) {
+      return {
+        borderWidth: 2,
+        borderColor: '#12d2d9',
+      };
+    }
+
+    return {
+      borderWidth: dark ? 0 : 1,
+      borderColor: dark ? 'transparent' : '#e6eaec',
+    };
+  })();
+
+  const entryAnimationStyle = (() => {
+    if (isAnsweredPrayer) {
+      return {
+        opacity: entryProgress,
+        transform: [
+          {
+            translateY: entryProgress.interpolate({
+              inputRange: [0, 0.76, 1],
+              outputRange: [-20, 2, 0],
+            }),
+          },
+          {
+            rotate: entryProgress.interpolate({
+              inputRange: [0, 0.76, 1],
+              outputRange: ['0deg', '2deg', '0deg'],
+            }),
+          },
+        ],
+      };
+    }
+
+    if (isExhortation) {
+      return {
+        opacity: entryProgress.interpolate({
+          inputRange: [0, 0.2, 1],
+          outputRange: [0, 1, 1],
+        }),
+        transform: [
+          {
+            translateX: entryProgress.interpolate({
+              inputRange: [0, 0.72, 1],
+              outputRange: [32, -4, 0],
+            }),
+          },
+        ],
+      };
+    }
+
+    if (isTestimony) {
+      return {
+        opacity: entryProgress,
+        transform: [
+          {
+            scale: entryProgress.interpolate({
+              inputRange: [0, 0.65, 1],
+              outputRange: [0.8, 1.03, 1],
+            }),
+          },
+        ],
+      };
+    }
+
+    return {
+      opacity: entryProgress,
+    };
+  })();
+
+  const showMarkAnsweredAction =
+    item?.userData?._id === user?._id &&
+    !item.answered &&
+    item.category === PrayerWallCategory.Request;
+
+  const onContentMeasure = (event: { nativeEvent: TextLayoutEventData }) => {
+    if (!limitContentLines) {
+      return;
+    }
+
+    const measuredLines = event.nativeEvent.lines;
+    if (measuredLines.length > 3) {
+      setShowSeeMore(true);
+      const firstThreeLines = measuredLines
+        .slice(0, 3)
+        .map((line) => line.text)
+        .join('');
+      const reserveCharsForLink = 12;
+      const trimmedPreview =
+        firstThreeLines.length > reserveCharsForLink
+          ? firstThreeLines.slice(0, -reserveCharsForLink).trimEnd()
+          : firstThreeLines.trimEnd();
+      setCollapsedPreview(trimmedPreview);
+    } else {
+      setShowSeeMore(false);
+      setCollapsedPreview('');
+    }
+  };
+
   return (
-    <BaseItem
-      removePost={removePost}
-      editPost={editPost}
-      edited={item.edited}
-      updated={item.updated}
-      fromSavedPosts={fromSavedPosts}
-      postData={{
-        id: item.postId ?? item.id,
-        type: PostType.prayer,
-        image: item.images && item.images.length > 0 ? { url: item.images[0] } : undefined,
-        reactions: item.reactions ?? [],
-        myReaction,
-        location: item.location,
-        locationName: item.locationName,
-        edited: item.edited,
-        isPrivate: item.private,
-        comments: item.comments,
-        commentNumber: item.commentNumber,
-      }}
-      parentRefreshContent={parentRefreshContent}
-      created={item?.created}
-      userData={
-        item.private
-          ? {
-              name: 'Anonymous',
-              profileIcon: <Anonymous color={Colors.main.black} />,
-            }
-          : {
-              ...item.userData,
-              profileImage:
-                item?.userData?.profileImage && item?.userData?.profileImage !== ''
-                  ? item?.userData?.profileImage
-                  : NO_PROFILE_IMAGE,
-            }
-      }
-      isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
-      onShowDismissCard={onShowDismissCard}
-      index={index}
-      onCommentsPress={handleCommentsPress}
-      onPress={() => {
-        if (!item.private && item?.userData._id && item.userData._id !== user?._id) {
-          navigation.navigate('UserProfile', {
-            id: item?.userData._id,
-          });
+    <Animated.View style={entryAnimationStyle}>
+      <BaseItem
+        webClassName={webPrayerCardClassName}
+        removePost={removePost}
+        editPost={editPost}
+        edited={item.edited}
+        updated={item.updated}
+        fromSavedPosts={fromSavedPosts}
+        postData={{
+          id: item.postId ?? item.id,
+          type: PostType.prayer,
+          image: undefined,
+          reactions: item.reactions ?? [],
+          myReaction,
+          prayerCategory: item.category,
+          answered: item.answered,
+          location: item.location,
+          locationName: item.locationName,
+          edited: item.edited,
+          isPrivate: item.private,
+          comments: item.comments,
+          commentNumber: item.commentNumber,
+        }}
+        parentRefreshContent={parentRefreshContent}
+        created={item?.created}
+        userData={
+          item.private
+            ? {
+                name: 'Anonymous',
+                profileIcon: <Anonymous color={Colors.main.black} />,
+              }
+            : {
+                ...item.userData,
+                profileImage:
+                  item?.userData?.profileImage && item?.userData?.profileImage !== ''
+                    ? item?.userData?.profileImage
+                    : NO_PROFILE_IMAGE,
+              }
         }
-      }}
-      style={style}
-    >
-      <View style={{ flexGrow: 1 }}>
-        {item?.content && (
-          <View style={{ flexGrow: 1 }}>
-            <StyledText
-              style={{
-                color: colors.text,
-                marginBottom: spacing.x8,
-                flexGrow: 1,
+        isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
+        onShowDismissCard={onShowDismissCard}
+        index={index}
+        onCommentsPress={handleCommentsPress}
+        onPress={() => {
+          if (!item.private && item?.userData._id && item.userData._id !== user?._id) {
+            navigation.navigate('UserProfile', {
+              id: item?.userData._id,
+            });
+          }
+        }}
+        actionBarRightAccessory={
+          showMarkAnsweredAction ? (
+            <Button
+              text="Mark as answered"
+              onPress={() => {
+                setShowModal(true);
               }}
-            >
-              {item?.content}
-            </StyledText>
-          </View>
-        )}
-
-        {media.length > 0 &&
-          media.map((mediaItem) => {
-            if (mediaItem.type === 'VIDEO') {
-              return (
-                <CustomVideo
-                  source={{
-                    uri: mediaItem.url,
-                  }}
-                  style={{ height: 300, borderRadius: borderRadius.small, marginVertical: 10 }}
-                  controls={false}
-                  resizeMode="cover"
-                  paused={!isPlaying}
-                  muted={isMuted}
-                  repeat
-                  onEnd={() => {
-                    if (!isPlaying) {
-                      setIsPlaying(true);
-                    }
-                    setIsMuted(!isMuted);
-                  }}
-                  // hideShutterView={true}
-                />
-              );
-              return null;
-            }
-
-            return null;
-          })}
-
-        {imageInfo.length > 0 ? (
-          <>
-            <ImageView
-              images={imageInfo.map((item) => ({
-                uri: item.url,
-              }))}
-              presentationStyle="overFullScreen"
-              imageIndex={imageModalIndexVisible}
-              visible={imageModalIndexVisible > -1}
-              onRequestClose={() => {
-                setImageModalIndexVisible(-1);
+              btnStyle={{
+                ...button.primary,
+                paddingHorizontal: spacing.x10,
+                paddingVertical: spacing.x5,
+              }}
+              btnTextStyle={{
+                color: 'white',
+                fontSize: 10,
               }}
             />
-            {imageInfo.length > 1 ? (
-              <ScrollView contentContainerStyle={{ flexGrow: 1 }} horizontal>
-                {imageInfo.map((image, index) => {
-                  return (
-                    <TouchableOpacity
-                      key={`${index}`}
-                      style={{
-                        flexGrow: 1,
-
-                        padding: spacing.x10,
-                      }}
-                      onPress={() => {
-                        setImageModalIndexVisible(index);
-                      }}
-                    >
-                      <Image
-                        key={index}
-                        resizeMode={image.width > image.height ? 'contain' : 'stretch'}
-                        style={{
-                          borderRadius: borderRadius.small,
-                          flexGrow: 1,
-                          aspectRatio: image.width / image.height,
-                          width: 250,
-                          // height: 300,
-                          // borderRadius: 2,
-                          // marginVertical: 10,
-                        }}
-                        source={{ uri: image?.url }}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            ) : (
-              <TouchableOpacity
-                key={`${index}`}
+          ) : null
+        }
+        style={[prayerVariantStyle, style]}
+      >
+        <View style={{ flexGrow: 1 }}>
+          {item?.content && (
+            <View style={{ flexGrow: 1, position: 'relative' }}>
+              {limitContentLines ? (
+                <StyledText
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    opacity: 0,
+                    zIndex: -1,
+                  }}
+                  onTextLayout={onContentMeasure}
+                >
+                  {item?.content}
+                </StyledText>
+              ) : null}
+              <StyledText
                 style={{
+                  color: colors.text,
+                  marginBottom: spacing.x8,
                   flexGrow: 1,
-
-                  padding: spacing.x10,
-                }}
-                onPress={() => {
-                  setImageModalIndexVisible(0);
                 }}
               >
-                <Image
-                  key={index}
-                  resizeMode={imageInfo[0].width > imageInfo[0].height ? 'contain' : 'stretch'}
-                  style={{
-                    borderRadius: borderRadius.small,
-                    // flexGrow: 1,
-                    aspectRatio: imageInfo[0].width / imageInfo[0].height,
-                    width: '100%',
-                    // height: 300,
-                    // borderRadius: 2,
-                    // marginVertical: 10,
-                  }}
-                  source={{ uri: imageInfo[0]?.url }}
-                />
-              </TouchableOpacity>
-            )}
-          </>
-        ) : null}
-        {item.gif && (
+                {limitContentLines && showSeeMore && !isContentExpanded
+                  ? `${collapsedPreview}... `
+                  : item?.content}
+                {limitContentLines && showSeeMore && !isContentExpanded ? (
+                  <StyledText
+                    style={{ color: '#12d2d9' }}
+                    onPress={(event: any) => {
+                      event?.stopPropagation?.();
+                      setIsContentExpanded(true);
+                    }}
+                  >
+                    See More
+                  </StyledText>
+                ) : null}
+              </StyledText>
+            </View>
+          )}
+        </View>
+
+        {item.answered && item.testimony ? (
           <View
             style={{
-              padding: 10,
-              // height: 100,
-              // width: 100,
+              backgroundColor: Colors.neutral[700],
+              padding: spacing.x16,
+              marginVertical: spacing.x10,
               borderRadius: borderRadius.small,
             }}
           >
-            <GiphyMediaView
-              media={item.gif}
-              resizeMode="cover"
-              style={{
-                aspectRatio: item.gif.aspectRatio,
-                borderRadius: borderRadius.small,
-
-                overflow: 'hidden',
-              }}
-            />
+            <StyledText style={header.h4}>Prayer Answered</StyledText>
+            <StyledText style={{ marginTop: spacing.x5, color: Colors.neutral[200] }}>
+              {item.testimony.content}
+            </StyledText>
           </View>
-        )}
-      </View>
+        ) : null}
 
-      {item?.userData?._id === user?._id &&
-      !item.answered &&
-      item.category === PrayerWallCategory.Request ? (
-        <View
-          style={{
-            // paddingHorizontal: spacing.x10,
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            marginTop: spacing.x10,
-          }}
-        >
-          <Button
-            text="Mark prayer as answered"
-            onPress={() => {
-              setShowModal(true);
+        <CustomModal modalVisible={showModal} onclose={() => setShowModal(false)}>
+          <View
+            style={{
+              backgroundColor: colors.background,
+              padding: spacing.x20,
+              borderRadius: borderRadius.base,
             }}
-            btnStyle={{
-              ...button.primary,
-              paddingHorizontal: spacing.x16,
-              paddingVertical: spacing.x8,
-            }}
-            btnTextStyle={{ color: 'white' }}
-          />
-        </View>
-      ) : null}
-
-      {item.answered && item.testimony ? (
-        <View
-          style={{
-            backgroundColor: Colors.neutral[700],
-            padding: spacing.x16,
-            marginVertical: spacing.x10,
-            borderRadius: borderRadius.small,
-          }}
-        >
-          <StyledText style={header.h4}>Prayer Answered</StyledText>
-          <StyledText style={{ marginTop: spacing.x5, color: Colors.neutral[200] }}>
-            {item.testimony.content}
-          </StyledText>
-        </View>
-      ) : null}
-
-      <CustomModal modalVisible={showModal} onclose={() => setShowModal(false)}>
-        <View
-          style={{
-            backgroundColor: colors.background,
-            padding: spacing.x20,
-            borderRadius: borderRadius.base,
-          }}
-        >
-          <View style={{ alignItems: 'center' }}>
-            <View
-              style={{
-                flexGrow: 1,
-                flexDirection: 'row',
-              }}
-            >
-              <View style={{ flexGrow: 1 }} />
-              <StyledText style={[header.h3, { flexGrow: 1 }]}>Answered Prayer</StyledText>
-              <TouchableOpacity
-                onPress={() => {
-                  // setModalVisible(false);
-                  setShowModal(false);
-                }}
+          >
+            <View style={{ alignItems: 'center' }}>
+              <View
                 style={{
-                  alignSelf: 'center',
-
-                  // justifyContent: 'flex-end',
-                  // alignItems: 'flex-end',
+                  flexGrow: 1,
+                  flexDirection: 'row',
                 }}
               >
-                <MaterialCommunityIcons
-                  name="window-close"
-                  size={18}
-                  color={Colors.primary.brand}
-                />
-              </TouchableOpacity>
-            </View>
-            <StyledText style={[fontSize.x3, { marginTop: spacing.x16 }]}>
-              Share what the Lord has done!
-            </StyledText>
-            <StyledText
-              style={{ textAlign: 'center', marginTop: spacing.x10, color: Colors.neutral[300] }}
-            >
-              This will be public on Testimonies and your prayer will automatically be marked as
-              answered.
-            </StyledText>
-          </View>
+                <View style={{ flexGrow: 1 }} />
+                <StyledText style={[header.h3, { flexGrow: 1 }]}>Answered Prayer</StyledText>
+                <TouchableOpacity
+                  onPress={() => {
+                    // setModalVisible(false);
+                    setShowModal(false);
+                  }}
+                  style={{
+                    alignSelf: 'center',
 
-          <StyledTextInput
-            label="Testify"
-            multiline
-            showCharCounter
-            maxLength={150}
-            enforceMaxLength
-            value={testinomyContent}
-            placeholder="Write something"
-            inputStyle={{
-              flexGrow: 1,
-              height: 100,
-              marginVertical: 10,
-              color: colors.text,
-              textAlignVertical: 'top',
-            }}
-            wrapperStyle={{ marginVertical: spacing.x10 }}
-            onChangeText={(content) => {
-              setTestinomyContent(content);
-            }}
-            counterContainerStyle={{
-              position: 'absolute',
-              bottom: 10,
-              right: 10,
-            }}
-            counterTextStyleStyle={{
-              color: Colors.neutral[300],
-            }}
-            placeholderTextColor={Colors.neutral[300]}
-          />
-          <Button
-            text={isLoading ? '' : 'Share Testimony'}
-            content={
-              isLoading ? (
-                <View style={{ justifyContent: 'center' }}>
-                  <ActivityIndicator
-                    animating={isLoading}
-                    size="small"
-                    color={Colors.main.white}
-                    style={{ marginRight: spacing.x10 }}
+                    // justifyContent: 'flex-end',
+                    // alignItems: 'flex-end',
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="window-close"
+                    size={18}
+                    color={Colors.primary.brand}
                   />
-                </View>
-              ) : undefined
-            }
-            onPress={() => {
-              if (item?.userData?._id === user?._id) {
-                answeredPrayer();
-              }
-            }}
-            disabled={!testinomyContent}
-            disabledBtnStyle={[
-              button.primary,
+                </TouchableOpacity>
+              </View>
+              <StyledText style={[fontSize.x3, { marginTop: spacing.x16 }]}>
+                Share what the Lord has done!
+              </StyledText>
+              <StyledText
+                style={{ textAlign: 'center', marginTop: spacing.x10, color: Colors.neutral[300] }}
+              >
+                This will be public on Testimonies and your prayer will automatically be marked as
+                answered.
+              </StyledText>
+            </View>
 
-              {
+            <StyledTextInput
+              label="Testify"
+              multiline
+              showCharCounter
+              maxLength={150}
+              enforceMaxLength
+              value={testinomyContent}
+              placeholder="Write something"
+              inputStyle={{
                 flexGrow: 1,
-                marginVertical: spacing.x10,
-                paddingVertical: spacing.x16,
-                opacity: 0.5,
-              },
-            ]}
-            btnTextStyle={{ color: colors.text }}
-            btnStyle={[
-              button.primary,
-              { flexGrow: 1, marginVertical: spacing.x10, paddingVertical: spacing.x16 },
-            ]}
-          />
-        </View>
-        <Toast ref={toastRef} />
-      </CustomModal>
-    </BaseItem>
+                height: 100,
+                marginVertical: 10,
+                color: colors.text,
+                textAlignVertical: 'top',
+              }}
+              wrapperStyle={{ marginVertical: spacing.x10 }}
+              onChangeText={(content) => {
+                setTestinomyContent(content);
+              }}
+              counterContainerStyle={{
+                position: 'absolute',
+                bottom: 10,
+                right: 10,
+              }}
+              counterTextStyleStyle={{
+                color: Colors.neutral[300],
+              }}
+              placeholderTextColor={Colors.neutral[300]}
+            />
+            <Button
+              text={isLoading ? '' : 'Share Testimony'}
+              content={
+                isLoading ? (
+                  <View style={{ justifyContent: 'center' }}>
+                    <ActivityIndicator
+                      animating={isLoading}
+                      size="small"
+                      color={Colors.main.white}
+                      style={{ marginRight: spacing.x10 }}
+                    />
+                  </View>
+                ) : undefined
+              }
+              onPress={() => {
+                if (item?.userData?._id === user?._id) {
+                  answeredPrayer();
+                }
+              }}
+              disabled={!testinomyContent}
+              disabledBtnStyle={[
+                button.primary,
+
+                {
+                  flexGrow: 1,
+                  marginVertical: spacing.x10,
+                  paddingVertical: spacing.x16,
+                  opacity: 0.5,
+                },
+              ]}
+              btnTextStyle={{ color: colors.text }}
+              btnStyle={[
+                button.primary,
+                { flexGrow: 1, marginVertical: spacing.x10, paddingVertical: spacing.x16 },
+              ]}
+            />
+          </View>
+          <Toast ref={toastRef} />
+        </CustomModal>
+      </BaseItem>
+    </Animated.View>
   );
 }
 

@@ -57,31 +57,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let dynamic = Dynamic() // Assuming Dynamic class is defined elsewhere and handles Lottie setup
 
         // Attempt to create and show the Lottie animation view
-        if let animationUIView = dynamic.createAnimationView(rootView: rootView, lottieName: "logoAnimation") as? UIView {
-          
-          // Show the Lottie splash screen using the react-native-lottie-splash-screen library
-          // This will overlay the Lottie animation on top of your React Native root view.
-          react_native_lottie_splash_screen.RNSplashScreen.showLottieSplash(animationUIView, inRootView: rootView)
+        let animationView = dynamic.createAnimationView(rootView: rootView, lottieName: "logoAnimation")
 
-          // If the created view is indeed a LottieAnimationView, play the animation.
-          if let animationView = animationUIView as? LottieAnimationView {
-            // Play the animation. The completion block here is for native logging/logic,
-            // but DOES NOT hide the splash screen. Hiding is handled by JS.
-            dynamic.play(animationView: animationView) { (finished) in
-              if finished {
-                print("Lottie animation finished playing on the native side.")
-                // The splash screen will only disappear when SplashScreen.hide() is called from JS.
-              }
-            }
-          } else {
-            // Fallback if animationUIView is not a LottieAnimationView (shouldn't happen if createAnimationView is correct)
-            print("Warning: Lottie animation view could not be cast to LottieAnimationView.")
-            react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+        // Show the Lottie splash screen using the react-native-lottie-splash-screen library.
+        react_native_lottie_splash_screen.RNSplashScreen.showLottieSplash(animationView, inRootView: rootView)
+
+        // Play the animation. Hiding is handled by JS via SplashScreen.hide().
+        dynamic.play(animationView: animationView) { (finished) in
+          if finished {
+            print("Lottie animation finished playing on the native side.")
           }
-        } else {
-          // Fallback if the animation view could not be created at all
-          print("Error: Could not create Lottie animation view.")
-          react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
         }
       }
 

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   StyleProp,
   View,
@@ -9,6 +11,7 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   GiphyDialog,
   GiphyDialogEvent,
@@ -28,6 +31,7 @@ import { CommentPost, PostType, SocialPostReaction } from '@/utils/types';
 interface CommentThreadProps {
   postId: string;
   type: PostType;
+  isPrivate?: boolean;
   header?: React.ReactNode;
   footer?: React.ReactNode;
   enablePagination?: boolean;
@@ -51,6 +55,7 @@ function CommentThreadEmptyState({ isLoading }: { isLoading: boolean }) {
 function CommentThread({
   postId,
   type,
+  isPrivate,
   header,
   footer,
   enablePagination,
@@ -63,7 +68,8 @@ function CommentThread({
 }: CommentThreadProps) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const { colors } = useTheme();
+  const { dark } = useTheme();
+  const insets = useSafeAreaInsets();
   const toast = useToast();
   const listRef = useRef<FlatList<CommentPost>>(null);
   const activeRequest = useRef(0);
@@ -78,10 +84,27 @@ function CommentThread({
   const [editingCommentId, setEditingCommentId] = useState<string>('');
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
 
+  const backgroundColor = dark ? '#111d21' : '#f6f7f8';
+  const surfaceColor = dark ? '#1a2c32' : '#ffffff';
+  const dividerColor = dark ? '#22343a' : '#e7eaed';
+  const keyboardOffset = insets.top + 44;
   const listHeader = useMemo(() => {
     if (!header) return null;
-    return <View style={{ marginBottom: spacing.x10 }}>{header}</View>;
-  }, [header]);
+    return (
+      <View
+        style={{
+          paddingHorizontal: spacing.x16,
+          paddingTop: spacing.x16,
+          paddingBottom: spacing.x12,
+          backgroundColor,
+          borderBottomWidth: 1,
+          borderBottomColor: dividerColor,
+        }}
+      >
+        {header}
+      </View>
+    );
+  }, [backgroundColor, dividerColor, header]);
 
   const listFooter = useMemo(() => {
     if (!footer) return null;
@@ -158,6 +181,9 @@ function CommentThread({
   }, [enablePagination, fetchComments, page]);
 
   useEffect(() => {
+    if (Platform.OS === 'android') {
+      return undefined;
+    }
     const handler: GiphyDialogMediaSelectEventHandler = (e) => {
       setGif(e.media);
       GiphyDialog.hide();
@@ -175,7 +201,7 @@ function CommentThread({
   }, [isEditingComment]);
 
   const publishComment = async (content?: string) => {
-    if (!postId) return;
+    if (!postId) return false;
     setIsLoading(true);
     try {
       const result = await ApiCall({
@@ -188,8 +214,6 @@ function CommentThread({
         },
       });
 
-      setIsLoading(false);
-
       if (result.status === 200) {
         setGif(null);
         refreshContent();
@@ -199,8 +223,23 @@ function CommentThread({
             listRef.current?.scrollToEnd({ animated: true });
           });
         }
+        return true;
       }
+
+      toast.show(result?.response?.message ?? 'Unable to post comment. Please try again.', {
+        id: 'commentPublishError',
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return false;
     } catch (e) {
+      toast.show('Unable to post comment. Please try again.', {
+        id: 'commentPublishError',
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return false;
+    } finally {
       setIsLoading(false);
     }
   };
@@ -250,14 +289,28 @@ function CommentThread({
     }
   };
 
+  const Container = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+
   return (
-    <View style={{ flex: 1 }}>
+    <Container
+      style={{ flex: 1, backgroundColor }}
+      {...(Platform.OS === 'ios'
+        ? {
+            behavior: 'padding',
+            keyboardVerticalOffset: keyboardOffset,
+          }
+        : {})}
+    >
       <FlatList
         ref={listRef}
         data={comments}
-        style={listStyle}
+        style={[{ backgroundColor }, listStyle]}
         contentContainerStyle={[
-          { paddingBottom: hideComposer ? spacing.x16 : spacing.x72 },
+          {
+            paddingBottom: hideComposer ? spacing.x16 : spacing.x72,
+            paddingTop: header ? 0 : spacing.x16,
+            backgroundColor,
+          },
           contentContainerStyle,
         ]}
         ListHeaderComponent={listHeader}
@@ -303,12 +356,15 @@ function CommentThread({
               }}
               postData={{
                 id: item.commentId,
+                objectId: item.objectId,
+                objectType: item.objectType,
                 content: item.content,
                 reactions: item.reactions,
                 myReaction,
                 edited: item.edited,
                 gif: isEditingComment && editingCommentId === item.commentId ? mediaGif : item.gif,
               }}
+              isPrivate={type === PostType.prayer ? Boolean(isPrivate) : false}
               userData={item.userData}
             />
           );
@@ -319,8 +375,8 @@ function CommentThread({
         <View
           style={{
             borderTopWidth: 1,
-            borderTopColor: Colors.neutral[700],
-            backgroundColor: colors.background,
+            borderTopColor: dividerColor,
+            backgroundColor: surfaceColor,
           }}
         >
           <CommentField
@@ -331,7 +387,7 @@ function CommentThread({
           />
         </View>
       ) : null}
-    </View>
+    </Container>
   );
 }
 

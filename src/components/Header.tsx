@@ -8,16 +8,33 @@ type Props = {
   title: string;
   leftView: ReactNode;
   RightView: ReactNode;
+  hideBorder?: boolean;
 };
 
-function Header({ title, leftView, RightView }: Props) {
+function Header({ title, leftView, RightView, hideBorder = false }: Props) {
   const { colors, dark } = useTheme();
+  const brandColors = {
+    primaryBase: '#41899f',
+    primaryDark: '#126b87',
+    accentBase: '#41dbe1',
+    accentDark: '#12d2d9',
+    scale100: '#e6eaec',
+    black: '#032f3c',
+  };
+  let borderBottomColor = dark ? 'rgba(255,255,255,0.08)' : brandColors.scale100;
+  if (hideBorder) {
+    borderBottomColor = 'transparent';
+  }
 
   return (
     <View
       style={[
         styles.headview,
-        { backgroundColor: colors.background, borderBottomColor: colors.border },
+        {
+          backgroundColor: dark ? '#0D0D0D' : '#f6f6f7',
+          borderBottomColor,
+          borderBottomWidth: hideBorder ? 0 : 1,
+        },
       ]}
     >
       <View
@@ -31,7 +48,12 @@ function Header({ title, leftView, RightView }: Props) {
       >
         {leftView}
 
-        <StyledText style={{ ...styles.titletext, color: dark ? colors.text : '#032F3C' }}>
+        <StyledText
+          style={{
+            ...styles.titletext,
+            color: dark ? brandColors.scale100 : brandColors.black,
+          }}
+        >
           {title}
         </StyledText>
 
@@ -40,17 +62,17 @@ function Header({ title, leftView, RightView }: Props) {
     </View>
   );
 }
-const styles = StyleSheet.create<{ headview: ViewStyle; titletext: TextStyle }>({
+const styles = StyleSheet.create({
   headview: {
-    height: getHeight(5),
+    height: getHeight(4),
 
     flexDirection: 'row',
 
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     alignItems: 'center',
     shadowColor: 'rgba(18, 107, 135, 0.25)',
-    borderBottomColor: 'rgba(18, 107, 135, 0.05)',
+    borderBottomColor: '#e6eaec',
     borderBottomWidth: 1,
     shadowOffset: {
       width: 0,
@@ -63,6 +85,7 @@ const styles = StyleSheet.create<{ headview: ViewStyle; titletext: TextStyle }>(
   },
   titletext: {
     fontSize: getFontSize(2.5),
+    lineHeight: getFontSize(4),
     fontFamily: 'OpenSans-Medium',
   },
 });

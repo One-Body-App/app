@@ -3,8 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
-import { StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native';
-import { Notification } from 'iconsax-react-native';
+import { Platform, StyleSheet, Text } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Home, { FeedTypes } from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
@@ -12,9 +11,6 @@ import { HomeStackParamsList } from './types';
 import Notifications from '../screens/notifications';
 import { Colors } from '../styles';
 
-import Logo from '@/assets/icons/logo.svg';
-import LogoWhite from '@/assets/icons/logo_white.svg';
-import mainPageOptions from './global';
 import Watch from '../screens/home/watch';
 import { fontSize } from '../styles/typography';
 
@@ -27,8 +23,10 @@ function HomeStack() {
       screenOptions={() => {
         return {
           // drawerType,
+          gestureEnabled: false,
+          fullScreenGestureEnabled: false,
           statusBarStyle: dark ? 'light' : 'dark',
-          statusBarColor: 'transparent',
+          statusBarColor: Platform.OS === 'android' && dark ? '#0D0D0D' : 'transparent',
           statusBarTranslucent: true,
           headerTintColor: dark ? colors.text : Colors.primary.brand,
           headerTransparent: true,
@@ -45,49 +43,8 @@ function HomeStack() {
         initialParams={{
           selectedTab: FeedTypes.Connected,
         }}
-        options={({ navigation }) => {
-          if (Platform.OS === 'android') {
-            return {
-              headerShown: false,
-            };
-          }
-
-          return {
-            ...mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Home'),
-            contentStyle: { paddingTop: 100 },
-            title: 'Home',
-            headerTitleAlign: 'center',
-            headerTitle: () => {
-              return (
-                <View style={{ height: 28, width: 28 }}>
-                  {dark ? (
-                    <LogoWhite style={{ height: 28, width: 28 }} />
-                  ) : (
-                    <Logo style={{ height: 28, width: 28 }} />
-                  )}
-                </View>
-              );
-            },
-            headerRight: () => (
-              <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate('MainRoot', {
-                      screen: 'Main',
-                      params: { screen: 'HomeTab', params: { screen: 'Notifications' } },
-                    });
-                  }}
-                >
-                  <Notification
-                    size={24}
-                    style={{ height: 24, width: 24 }}
-                    color={Colors.primary.brand}
-                    strokeWidth={0.2}
-                  />
-                </TouchableOpacity>
-              </View>
-            ),
-          };
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -100,6 +57,7 @@ function HomeStack() {
         component={Watch}
         options={{
           presentation: 'card',
+          animation: 'none',
           headerShown: true,
           headerTintColor: '#fff',
           headerTransparent: true,

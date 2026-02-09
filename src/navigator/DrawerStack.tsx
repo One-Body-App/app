@@ -6,7 +6,6 @@ import { Platform, View, useWindowDimensions } from 'react-native';
 import { Home3, Profile2User } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import Feather from '@react-native-vector-icons/feather';
-import { HandsPraying } from 'phosphor-react-native';
 
 import { getMessaging, requestPermission } from '@react-native-firebase/messaging';
 import { HeaderBackButton } from '@react-navigation/elements';
@@ -15,6 +14,7 @@ import OnboardingStack from './OnboardingStack';
 import { RootState } from '../redux/reducers/rootReducer';
 import { Colors } from '../styles';
 
+import Prayers from '@/assets/svg/prayers.svg';
 import Connections from '@/src/screens/main/connections';
 import SettingsStack from './SettingsStack';
 import MainTabStack from './BottomTabStack';
@@ -31,6 +31,7 @@ function DrawerNav() {
   const firebaseMessaging = getMessaging();
 
   const { dark, colors } = useTheme();
+  const isProfileCompleted = authState.getProfileData?.isProfileCompleted === true;
 
   const requestNotificationPermission = useCallback(async () => {
     await requestPermission(firebaseMessaging);
@@ -40,7 +41,7 @@ function DrawerNav() {
     requestNotificationPermission();
   }, [requestNotificationPermission]);
 
-  if (authState.getProfileData?.isProfileCompleted) {
+  if (isProfileCompleted) {
     let drawerType: 'front' | 'back' | 'slide' | 'permanent' = 'front';
 
     if (dimensions.width >= 768) {
@@ -54,6 +55,7 @@ function DrawerNav() {
         screenOptions={({ navigation }) => {
           return {
             drawerType,
+            swipeEnabled: false,
             headerShown: false,
             headerTintColor: dark ? colors.text : Colors.primary.brand,
 
@@ -138,7 +140,7 @@ function DrawerNav() {
               title: 'Prayer Wall',
               drawerItemStyle: { height: 0 },
               drawerIcon: ({ color, size }) => {
-                return <HandsPraying size={size} color={color} />;
+                return <Prayers width={size} height={size} color={color} />;
               },
             };
           }}

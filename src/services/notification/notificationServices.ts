@@ -6,6 +6,7 @@ import {
   onNotificationOpenedApp,
   requestPermission,
 } from '@react-native-firebase/messaging';
+import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { ApiCall } from '@/src/services/api';
 
 const getMessagingInstance = () => getMessaging();
@@ -39,7 +40,7 @@ const sendFcm = async (token: string, fcmtoken: string) => {
       params: { FCM: fcmtoken },
       verb: 'patch',
     });
-    if (res?.status == 200) {
+    if (res?.status === 200) {
       console.log('fcm res == 200 ... ', res);
     } else {
       console.log('error', res);
@@ -49,14 +50,17 @@ const sendFcm = async (token: string, fcmtoken: string) => {
   }
 };
 
-export const appListner = async (navigation, getAllSms) => {
+export const appListner = async (
+  navigation: NavigationProp<ParamListBase>,
+  getAllSms: (chatRoomId?: string | object) => void | Promise<void>
+) => {
   onNotificationOpenedApp(getMessagingInstance(), (remoteMessage) => {
     console.log(
       'Notification caused app to open from background state:',
       remoteMessage.notification
     );
     console.log('background state', remoteMessage?.data?.receiver);
-    if (remoteMessage?.data?.type == 'message') {
+    if (remoteMessage?.data?.type === 'message') {
       navigation.navigate('conversation', {
         reciver: remoteMessage?.data?.receiver,
         reciverId: remoteMessage?.data?.chatRoom,
@@ -71,7 +75,7 @@ export const appListner = async (navigation, getAllSms) => {
     if (remoteMessage) {
       console.log('Notification caused app to open from quit state:', remoteMessage.notification);
       console.log('forground state', remoteMessage);
-      if (remoteMessage?.data?.type == 'message') {
+      if (remoteMessage?.data?.type === 'message') {
         getAllSms(remoteMessage?.data?.chatRoom);
       } else {
         console.log('else working');

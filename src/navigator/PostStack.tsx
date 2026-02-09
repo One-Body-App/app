@@ -8,7 +8,12 @@ const Stack = createNativeStackNavigator<ExploreStackParamsList>();
 
 function PostStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        gestureEnabled: false,
+        fullScreenGestureEnabled: false,
+      }}
+    >
       <Stack.Screen name="Explore" component={Explore} options={{ headerShown: false }} />
       {/* <Stack.Screen
         name="UserProfile"

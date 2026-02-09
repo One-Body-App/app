@@ -10,15 +10,20 @@ import {
 
 import ImageSlide from './ImageSlide';
 import { ImageForSlider } from './types';
+import type { ScrollIntentLock } from '@/src/hooks/useScrollIntentLock';
 
 function ImageSlider({
   images,
   setImageModalIndexVisible,
   width,
+  scrollIntent,
+  mediaKeyPrefix,
 }: {
   images: ImageForSlider[];
   width: number;
   setImageModalIndexVisible: (item: number) => void;
+  scrollIntent?: ScrollIntentLock;
+  mediaKeyPrefix?: string;
 }) {
   const [active, setActive] = useState(0);
   const safeWidth = Number.isFinite(width) && width > 0 ? width : 0;
@@ -26,17 +31,8 @@ function ImageSlider({
     return null;
   }
 
-  let aspectRatio = 0;
-
-  for (let i = 0; i < images.length; i++) {
-    const imgWidth = Number.isFinite(images[i].width) ? images[i].width : 1;
-    const imgHeight = Number.isFinite(images[i].height) ? images[i].height : 1;
-    const newAspectRatio = imgWidth < imgHeight ? 16 / 9 : 9 / 16;
-    if (aspectRatio < newAspectRatio) {
-      aspectRatio = newAspectRatio;
-    }
-  }
-  const height = safeWidth * aspectRatio;
+  const feedAspectRatio = 4 / 5;
+  const heightToUse = safeWidth / feedAspectRatio;
 
   const onScrollChange = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
     const slide = Math.ceil(nativeEvent.contentOffset.x / nativeEvent.layoutMeasurement.width);
@@ -45,9 +41,6 @@ function ImageSlider({
     }
   };
 
-  const maxHeight = 400;
-  const heightToUse = maxHeight < height ? maxHeight : height;
-
   if (images.length === 1) {
     return (
       <ImageSlide
@@ -55,8 +48,10 @@ function ImageSlider({
         setImageModalIndexVisible={setImageModalIndexVisible}
         width={safeWidth}
         height={heightToUse}
-        maxHeight={maxHeight}
+        maxHeight={heightToUse}
         index={0}
+        scrollIntent={scrollIntent}
+        interactionKey={mediaKeyPrefix ? `${mediaKeyPrefix}-0` : undefined}
       />
     );
   }
@@ -78,8 +73,10 @@ function ImageSlider({
               setImageModalIndexVisible={setImageModalIndexVisible}
               width={safeWidth}
               height={heightToUse}
-              maxHeight={maxHeight}
+              maxHeight={heightToUse}
               index={index}
+              scrollIntent={scrollIntent}
+              interactionKey={mediaKeyPrefix ? `${mediaKeyPrefix}-${index}` : undefined}
             />
           );
         })}

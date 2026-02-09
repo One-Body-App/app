@@ -34,6 +34,8 @@ function SettingsStack() {
     <Stack.Navigator
       initialRouteName="SettingsMain"
       screenOptions={{
+        gestureEnabled: false,
+        fullScreenGestureEnabled: false,
         statusBarStyle: dark ? 'light' : 'dark',
         headerTransparent: true,
         headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',

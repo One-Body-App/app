@@ -16,6 +16,8 @@ function ProfileStack() {
   return (
     <Stack.Navigator
       screenOptions={{
+        gestureEnabled: false,
+        fullScreenGestureEnabled: false,
         statusBarStyle: dark ? 'light' : 'dark',
         headerTransparent: true,
         headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',

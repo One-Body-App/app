@@ -1,8 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   Modal,
   View,
-  Animated,
   StyleSheet,
   Dimensions,
   TouchableWithoutFeedback,
@@ -10,6 +9,13 @@ import {
   Platform,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 const screenHeight = Dimensions.get('window').height;
 
@@ -24,29 +30,39 @@ export default function CustomModal({
   children: React.ReactNode;
   style?: object;
 }) {
-  const translateY = useRef(new Animated.Value(0)).current;
+  const translateY = useSharedValue(0);
+  const handleClose = useCallback(() => {
+    if (onclose) {
+      onclose();
+    }
+  }, [onclose]);
+
+  useEffect(() => {
+    if (modalVisible) {
+      translateY.value = 0;
+    }
+  }, [modalVisible, translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
       if (event.translationY > 0) {
-        translateY.setValue(event.translationY);
+        translateY.value = event.translationY;
       }
     })
     .onEnd((event) => {
       if (event.translationY > 100) {
-        Animated.timing(translateY, {
-          toValue: screenHeight,
-          duration: 200,
-          useNativeDriver: true,
-        }).start(() => {
-          if (onclose) onclose();
-          translateY.setValue(0);
+        translateY.value = withTiming(screenHeight, { duration: 200 }, (finished) => {
+          if (finished) {
+            runOnJS(handleClose)();
+          }
+          translateY.value = 0;
         });
       } else {
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-        }).start();
+        translateY.value = withSpring(0);
       }
     });
 
@@ -62,7 +78,7 @@ export default function CustomModal({
         pointerEvents="box-none"
       >
         <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.modalContainer, style, { transform: [{ translateY }] }]}>
+          <Animated.View style={[styles.modalContainer, style, animatedStyle]}>
             {children}
           </Animated.View>
         </GestureDetector>

@@ -169,7 +169,7 @@ function Watch({ navigation }: any) {
         setViewHeight(height);
       }}
     >
-      {isLoading && page == 1 && !isRefreshing ? (
+      {isLoading && page === 1 && !isRefreshing ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicator size="small" />
         </View>

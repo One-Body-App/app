@@ -128,7 +128,7 @@ function NewPassword({ oobCode, ...props }: Props) {
         verb: 'post',
       });
 
-      navigation.navigate('Login');
+      navigation.navigate('Login', { resetPassword: true });
       toast.show('Password Reset Sucessfuly', {
         type: 'success',
         duration: 3500,
@@ -160,7 +160,7 @@ function NewPassword({ oobCode, ...props }: Props) {
             verb: 'post',
           });
 
-          navigation.navigate('Login');
+          navigation.navigate('Login', { resetPassword: true });
           toast.show('Password Reset Sucessfuly', {
             type: 'success',
             duration: 3500,

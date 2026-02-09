@@ -1,7 +1,10 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {
+  createNativeStackNavigator,
+  NativeStackNavigationProp,
+} from '@react-navigation/native-stack';
 import React from 'react';
 
-import { useTheme } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { Platform } from 'react-native';
 import { PrayerWallStackParamsList } from './types';
@@ -14,6 +17,29 @@ import SinglePrayer from '../screens/main/prayer/Single';
 import mainPageOptions from './global';
 
 const Stack = createNativeStackNavigator<PrayerWallStackParamsList>();
+type PrayerWallNavigationProp = NativeStackNavigationProp<PrayerWallStackParamsList>;
+
+function IndexHeaderBackButton() {
+  const navigation = useNavigation<PrayerWallNavigationProp>();
+
+  return (
+    <HeaderBackButton
+      style={{
+        marginHorizontal: Platform.OS === 'ios' ? 0 : undefined,
+        marginLeft: Platform.OS === 'ios' ? -5 : undefined,
+        width: Platform.OS === 'ios' ? 40 : undefined,
+      }}
+      labelVisible={false}
+      onPress={() => navigation.goBack()}
+    />
+  );
+}
+
+function PrayerHeaderBackButton() {
+  const navigation = useNavigation<PrayerWallNavigationProp>();
+
+  return <HeaderBackButton labelVisible={false} onPress={() => navigation.goBack()} />;
+}
 
 function PrayerWall() {
   const { dark, colors } = useTheme();
@@ -21,9 +47,12 @@ function PrayerWall() {
   return (
     <Stack.Navigator
       screenOptions={{
+        gestureEnabled: false,
+        fullScreenGestureEnabled: false,
         statusBarStyle: dark ? 'light' : 'dark',
-        headerTransparent: true,
+        headerTransparent: Platform.OS === 'ios',
         headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
+        headerStyle: Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined,
       }}
     >
       <Stack.Screen
@@ -33,19 +62,7 @@ function PrayerWall() {
           if (navigation.canGoBack()) {
             return {
               title: 'Pray',
-              headerLeft: (props) => {
-                return (
-                  <HeaderBackButton
-                    style={{
-                      marginHorizontal: Platform.OS == 'ios' ? 0 : undefined,
-                      marginLeft: Platform.OS == 'ios' ? -5 : undefined,
-                      width: Platform.OS == 'ios' ? 40 : undefined,
-                    }}
-                    labelVisible={false}
-                    onPress={() => navigation.goBack()}
-                  />
-                );
-              },
+              headerLeft: IndexHeaderBackButton,
             };
           }
 
@@ -73,9 +90,11 @@ function PrayerWall() {
         component={NewPrayer}
         options={({ route }) => {
           return {
+            headerShown: Platform.OS !== 'android',
             headerBackTitleVisible: false,
             headerBackTitle: 'Back',
             title: route.params?.postId ? 'Edit Post on Prayer Wall' : 'Post on Prayer Wall',
+            headerLeft: Platform.OS === 'ios' ? PrayerHeaderBackButton : undefined,
             // headerLeft: (props) => {
             //   const { dark, colors } = useTheme();
             //   return (
@@ -103,10 +122,11 @@ function PrayerWall() {
         component={SinglePrayer}
         options={() => {
           return {
+            headerShown: Platform.OS !== 'android',
             headerBackTitleVisible: false,
             headerStyle: { backgroundColor: colors.background },
-
-            title: 'Post',
+            title: 'Comment',
+            headerLeft: Platform.OS === 'ios' ? PrayerHeaderBackButton : undefined,
             contentStyle: { backgroundColor: Colors.neutral[700] },
           };
         }}
