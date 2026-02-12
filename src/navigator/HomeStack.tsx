@@ -41,7 +41,7 @@ function HomeStack() {
         name="Home"
         component={Home}
         initialParams={{
-          selectedTab: FeedTypes.Connected,
+          selectedTab: FeedTypes.ForYou,
         }}
         options={{
           headerShown: false,

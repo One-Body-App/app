@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
@@ -12,6 +13,7 @@ import {
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { serialize } from 'object-to-formdata';
 import {
   GiphyDialog,
   GiphyDialogEvent,
@@ -37,11 +39,29 @@ interface CommentThreadProps {
   enablePagination?: boolean;
   hideComposer?: boolean;
   onPostRefresh?: () => void;
+  onCommentPublished?: () => void;
   onUserPress?: (userId: string) => void;
   listStyle?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
   scrollToEndOnPublish?: boolean;
 }
+
+const isLocalImageUri = (value: string) =>
+  value.startsWith('file://') || value.startsWith('content://');
+
+const toUploadImageFile = (uri: string, index: number) => {
+  const normalizedUri =
+    uri.startsWith('file://') || uri.startsWith('content://') ? uri : `file://${uri}`;
+  const nameFromPath = normalizedUri.split('/').pop()?.split('?')[0] ?? `image_${index}.jpg`;
+  const normalizedName = nameFromPath.toLowerCase().endsWith('.jpg')
+    ? nameFromPath
+    : `${nameFromPath.split('.').slice(0, -1).join('.') || nameFromPath}.jpg`;
+  return {
+    uri: normalizedUri,
+    type: 'image/jpeg',
+    name: normalizedName,
+  };
+};
 
 function CommentThreadEmptyState({ isLoading }: { isLoading: boolean }) {
   if (isLoading) return <ActivityIndicator />;
@@ -61,6 +81,7 @@ function CommentThread({
   enablePagination,
   hideComposer,
   onPostRefresh,
+  onCommentPublished,
   onUserPress,
   listStyle,
   contentContainerStyle,
@@ -68,12 +89,13 @@ function CommentThread({
 }: CommentThreadProps) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-  const { dark } = useTheme();
+  const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const listRef = useRef<FlatList<CommentPost>>(null);
   const activeRequest = useRef(0);
   const isMounted = useRef(true);
+  const giphySelectListenerRef = useRef<{ remove: () => void } | null>(null);
 
   const [comments, setComments] = useState<CommentPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,10 +105,23 @@ function CommentThread({
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string>('');
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
+  const [mediaImages, setMediaImages] = useState<string[]>([]);
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+  const allowMedia = type === PostType.social || type === PostType.rss;
 
-  const backgroundColor = dark ? '#111d21' : '#f6f7f8';
-  const surfaceColor = dark ? '#1a2c32' : '#ffffff';
-  const dividerColor = dark ? '#22343a' : '#e7eaed';
+  const useBrandDarkForSocial = dark && type === PostType.social;
+  let backgroundColor = '#f6f7f8';
+  let surfaceColor = '#ffffff';
+  let dividerColor = '#e7eaed';
+  if (dark && useBrandDarkForSocial) {
+    backgroundColor = colors.background;
+    surfaceColor = colors.card;
+    dividerColor = colors.border;
+  } else if (dark) {
+    backgroundColor = '#111d21';
+    surfaceColor = '#1a2c32';
+    dividerColor = '#22343a';
+  }
   const keyboardOffset = insets.top + 44;
   const listHeader = useMemo(() => {
     if (!header) return null;
@@ -181,41 +216,82 @@ function CommentThread({
   }, [enablePagination, fetchComments, page]);
 
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      return undefined;
-    }
-    const handler: GiphyDialogMediaSelectEventHandler = (e) => {
-      setGif(e.media);
-      GiphyDialog.hide();
-    };
-    const listener = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
     return () => {
-      listener.remove();
+      giphySelectListenerRef.current?.remove();
+      giphySelectListenerRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     if (!isEditingComment) {
       setGif(null);
+      setMediaImages([]);
     }
   }, [isEditingComment]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return undefined;
+    }
+    const updateKeyboardHeight = (event: {
+      endCoordinates?: {
+        height?: number;
+      };
+    }) => {
+      const keyboardHeight = event.endCoordinates?.height ?? 0;
+      setAndroidKeyboardHeight(Math.max(0, keyboardHeight - insets.bottom));
+    };
+
+    const onShow = Keyboard.addListener('keyboardDidShow', updateKeyboardHeight);
+    const onFrameChange = Keyboard.addListener('keyboardDidChangeFrame', updateKeyboardHeight);
+    const onHide = Keyboard.addListener('keyboardDidHide', () => {
+      setAndroidKeyboardHeight(0);
+    });
+    return () => {
+      onShow.remove();
+      onFrameChange.remove();
+      onHide.remove();
+    };
+  }, [insets.bottom]);
+
+  useEffect(() => {
+    setAndroidKeyboardHeight(0);
+  }, [postId, type]);
 
   const publishComment = async (content?: string) => {
     if (!postId) return false;
     setIsLoading(true);
     try {
+      const localImageUris = allowMedia ? mediaImages.filter(isLocalImageUri) : [];
+      const localUploadImages = localImageUris.map((uri, index) => toUploadImageFile(uri, index));
+      const shouldUploadImages = localUploadImages.length > 0;
+
       const result = await ApiCall({
         route: `comments/${type}/${postId}`,
         token,
         verb: 'post',
-        params: {
-          content,
-          gif: mediaGif,
-        },
+        params: shouldUploadImages
+          ? serialize(
+              {
+                content,
+                gif: allowMedia ? mediaGif : undefined,
+                images: localUploadImages,
+              },
+              {
+                noAttributesWithArrayNotation: true,
+                noFilesWithArrayNotation: true,
+              }
+            )
+          : {
+              content,
+              gif: allowMedia ? mediaGif : undefined,
+            },
+        isFormUrlEncode: shouldUploadImages,
       });
 
       if (result.status === 200) {
         setGif(null);
+        setMediaImages([]);
         refreshContent();
         if (onPostRefresh) onPostRefresh();
         if (scrollToEndOnPublish) {
@@ -223,6 +299,7 @@ function CommentThread({
             listRef.current?.scrollToEnd({ animated: true });
           });
         }
+        if (onCommentPublished) onCommentPublished();
         return true;
       }
 
@@ -244,17 +321,69 @@ function CommentThread({
     }
   };
 
+  const openGifPicker = useCallback(() => {
+    if (!allowMedia) {
+      return;
+    }
+    giphySelectListenerRef.current?.remove();
+    const handler: GiphyDialogMediaSelectEventHandler = (e) => {
+      setGif(e.media);
+      try {
+        GiphyDialog.hide();
+      } catch (error) {
+        console.warn('GiphyDialog hide failed in comments', error);
+      } finally {
+        giphySelectListenerRef.current?.remove();
+        giphySelectListenerRef.current = null;
+      }
+    };
+
+    try {
+      giphySelectListenerRef.current = GiphyDialog.addListener(
+        GiphyDialogEvent.MediaSelected,
+        handler
+      );
+      GiphyDialog.show();
+    } catch (error) {
+      giphySelectListenerRef.current?.remove();
+      giphySelectListenerRef.current = null;
+      console.warn('GiphyDialog open failed in comments', error);
+    }
+  }, [allowMedia]);
+
   const editComment = async (commentId: string, content: string) => {
     if (!postId) return;
     try {
+      const localImageUris = allowMedia ? mediaImages.filter(isLocalImageUri) : [];
+      const remoteImageUris = allowMedia
+        ? mediaImages.filter((imageUri) => imageUri.startsWith('http'))
+        : [];
+      const uploadImages = localImageUris.map((uri, index) => toUploadImageFile(uri, index));
+      const shouldUploadImages = uploadImages.length > 0;
+
       const result = await ApiCall({
         route: `comments/${type}/${postId}/${commentId}`,
         verb: 'patch',
         token,
-        params: {
-          content,
-          gif: mediaGif,
-        },
+        params: shouldUploadImages
+          ? serialize(
+              {
+                content,
+                gif: allowMedia ? mediaGif : undefined,
+                images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
+                uploadImages,
+              },
+              {
+                noAttributesWithArrayNotation: true,
+                noFilesWithArrayNotation: true,
+              }
+            )
+          : {
+              content,
+              gif: allowMedia ? mediaGif : undefined,
+              images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
+            },
+        isFormUrlEncode: shouldUploadImages,
       });
 
       if (result?.status === 200) {
@@ -290,24 +419,31 @@ function CommentThread({
   };
 
   const Container = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+  const isAndroid = Platform.OS === 'android';
+  let listBottomPadding = spacing.x16;
+  if (!hideComposer && isAndroid) {
+    listBottomPadding = spacing.x120;
+  }
+  let keyboardAvoidingProps: {
+    behavior?: 'height' | 'padding' | 'position';
+    keyboardVerticalOffset?: number;
+  } = {};
+  if (Platform.OS === 'ios') {
+    keyboardAvoidingProps = {
+      behavior: 'padding',
+      keyboardVerticalOffset: keyboardOffset,
+    };
+  }
 
   return (
-    <Container
-      style={{ flex: 1, backgroundColor }}
-      {...(Platform.OS === 'ios'
-        ? {
-            behavior: 'padding',
-            keyboardVerticalOffset: keyboardOffset,
-          }
-        : {})}
-    >
+    <Container style={{ flex: 1, backgroundColor }} {...keyboardAvoidingProps}>
       <FlatList
         ref={listRef}
         data={comments}
         style={[{ backgroundColor }, listStyle]}
         contentContainerStyle={[
           {
-            paddingBottom: hideComposer ? spacing.x16 : spacing.x72,
+            paddingBottom: listBottomPadding,
             paddingTop: header ? 0 : spacing.x16,
             backgroundColor,
           },
@@ -350,7 +486,10 @@ function CommentThread({
                 }
               }}
               setEditingComment={(isEditing: boolean) => {
-                if (isEditing) setGif(item.gif ?? null);
+                if (isEditing) {
+                  setGif(item.gif ?? null);
+                  setMediaImages(item.images ?? []);
+                }
                 setIsEditingComment(isEditing);
                 if (item.commentId) setEditingCommentId(item.commentId);
               }}
@@ -363,9 +502,18 @@ function CommentThread({
                 myReaction,
                 edited: item.edited,
                 gif: isEditingComment && editingCommentId === item.commentId ? mediaGif : item.gif,
+                images:
+                  isEditingComment && editingCommentId === item.commentId
+                    ? mediaImages
+                    : (item.images ?? []),
               }}
+              useBrandDarkTheme={useBrandDarkForSocial}
               isPrivate={type === PostType.prayer ? Boolean(isPrivate) : false}
               userData={item.userData}
+              allowMedia={allowMedia}
+              allowImageAttachments={allowMedia}
+              setThreadImages={setMediaImages}
+              onOpenGifPicker={openGifPicker}
             />
           );
         }}
@@ -374,6 +522,10 @@ function CommentThread({
       {!hideComposer && !isEditingComment ? (
         <View
           style={{
+            position: isAndroid ? 'absolute' : 'relative',
+            left: isAndroid ? 0 : undefined,
+            right: isAndroid ? 0 : undefined,
+            bottom: isAndroid ? androidKeyboardHeight : undefined,
             borderTopWidth: 1,
             borderTopColor: dividerColor,
             backgroundColor: surfaceColor,
@@ -382,8 +534,14 @@ function CommentThread({
           <CommentField
             mediaGif={mediaGif}
             setGif={setGif}
+            mediaImages={mediaImages}
+            setImages={setMediaImages}
             publishComment={publishComment}
             isEditingComment={false}
+            useBrandDarkTheme={useBrandDarkForSocial}
+            allowMedia={allowMedia}
+            allowImageAttachments={allowMedia}
+            onOpenGifPicker={openGifPicker}
           />
         </View>
       ) : null}

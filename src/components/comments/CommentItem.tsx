@@ -25,6 +25,46 @@ import { timeSince } from '@/utils/ResponsiveFun';
 import OptionsModal from '../listItems/OptionsModal';
 import CommentField from './Field';
 
+const extractGifPreviewUrl = (media?: GiphyMedia | null): string | undefined => {
+  if (!media || typeof media !== 'object') {
+    return undefined;
+  }
+
+  const mediaRecord = media as unknown as Record<string, unknown>;
+  const directUrl = mediaRecord.url;
+  if (typeof directUrl === 'string' && directUrl.startsWith('http')) {
+    return directUrl;
+  }
+
+  const images = mediaRecord.images as Record<string, unknown> | undefined;
+  if (!images || typeof images !== 'object') {
+    return undefined;
+  }
+
+  const renditionKeys = [
+    'original',
+    'fixed_width',
+    'fixed_height',
+    'downsized',
+    'preview_gif',
+    'fixed_width_small',
+  ];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const renditionKey of renditionKeys) {
+    const rendition = images[renditionKey] as Record<string, unknown> | undefined;
+    if (!rendition || typeof rendition !== 'object') {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    const renditionUrl = rendition.url;
+    if (typeof renditionUrl === 'string' && renditionUrl.startsWith('http')) {
+      return renditionUrl;
+    }
+  }
+
+  return undefined;
+};
+
 interface BaseItemProps {
   style?: StyleProp<ViewStyle>;
   onPress: Function;
@@ -50,6 +90,7 @@ interface BaseItemProps {
     locationName?: string;
     edited?: boolean;
     gif?: GiphyMedia | null;
+    images?: string[];
   };
   userData: PostUserData;
 
@@ -60,6 +101,11 @@ interface BaseItemProps {
   editCommentAction?: (postId: string, content: string) => void;
   setEditingComment: (isEditingComment: boolean) => void;
   isPrivate?: boolean;
+  useBrandDarkTheme?: boolean;
+  allowMedia?: boolean;
+  allowImageAttachments?: boolean;
+  setThreadImages?: React.Dispatch<React.SetStateAction<string[]>>;
+  onOpenGifPicker?: () => void;
 }
 
 function CommentItem({
@@ -77,6 +123,11 @@ function CommentItem({
   editCommentAction,
   setEditingComment,
   isPrivate,
+  useBrandDarkTheme,
+  allowMedia,
+  allowImageAttachments,
+  setThreadImages,
+  onOpenGifPicker,
 }: BaseItemProps) {
   const [showOptions, setShowOptions] = useState(false);
   const { colors, dark } = useTheme();
@@ -94,11 +145,17 @@ function CommentItem({
   const safeGifAspectRatio =
     Number.isFinite(gifAspectRatio) && gifAspectRatio > 0 ? gifAspectRatio : 1;
   const hasGif = Boolean(postData.gif?.id || postData.gif?.url);
-  const canUseGiphy = Platform.OS !== 'android';
+  const canUseGiphy = allowMedia ?? Platform.OS !== 'android';
+  const gifPreviewUrl = extractGifPreviewUrl(postData.gif);
   const reactionCount = postData.reactions?.length ?? 0;
   const textMain = dark ? '#ffffff' : '#0e181b';
   const textSecondary = '#4f8596';
-  const bubbleColor = dark ? '#1a2c32' : '#f2f4f5';
+  let bubbleColor = '#f2f4f5';
+  if (dark && useBrandDarkTheme) {
+    bubbleColor = colors.card;
+  } else if (dark) {
+    bubbleColor = '#1a2c32';
+  }
   const actionColor = textSecondary;
   let handleValue: string | undefined;
   if (source === 'twitter' && safeUserData?.twitterHandler) {
@@ -258,14 +315,44 @@ function CommentItem({
                       overflow: 'hidden',
                     }}
                   >
-                    <GiphyMediaView
-                      media={postData.gif}
-                      resizeMode="cover"
-                      style={{
-                        aspectRatio: safeGifAspectRatio,
-                        borderRadius: borderRadius.small,
-                      }}
-                    />
+                    {Platform.OS === 'android' && gifPreviewUrl ? (
+                      <FastImage
+                        source={{ uri: gifPreviewUrl }}
+                        resizeMode="cover"
+                        style={{
+                          width: '100%',
+                          aspectRatio: safeGifAspectRatio,
+                          borderRadius: borderRadius.small,
+                        }}
+                      />
+                    ) : (
+                      <GiphyMediaView
+                        media={postData.gif}
+                        resizeMode="cover"
+                        style={{
+                          aspectRatio: safeGifAspectRatio,
+                          borderRadius: borderRadius.small,
+                        }}
+                      />
+                    )}
+                  </View>
+                ) : null}
+                {!isEditingComment &&
+                allowImageAttachments &&
+                (postData.images?.length ?? 0) > 0 ? (
+                  <View style={{ marginTop: spacing.x8, gap: spacing.x8 }}>
+                    {(postData.images ?? []).map((imageUrl) => (
+                      <FastImage
+                        key={imageUrl}
+                        source={{ uri: imageUrl }}
+                        style={{
+                          width: '100%',
+                          height: 180,
+                          borderRadius: borderRadius.small,
+                        }}
+                        resizeMode="cover"
+                      />
+                    ))}
                   </View>
                 ) : null}
               </View>
@@ -289,6 +376,12 @@ function CommentItem({
                   isEditingComment={isEditingComment}
                   setEditingComment={editComment}
                   text={postData.content}
+                  useBrandDarkTheme={useBrandDarkTheme}
+                  allowMedia={allowMedia}
+                  allowImageAttachments={allowImageAttachments}
+                  mediaImages={postData.images ?? []}
+                  setImages={setThreadImages}
+                  onOpenGifPicker={onOpenGifPicker}
                   publishComment={async (value: string) => {
                     if (editCommentAction && postData.id) {
                       setIsLoading(true);

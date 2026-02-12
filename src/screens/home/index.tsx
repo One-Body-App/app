@@ -837,13 +837,14 @@ function Home({ navigation, route }: Props) {
   );
 
   const [feedOptions, setFeedOptions] = useState<FeedOptions>({
-    type: route.params?.selectedTab ?? FeedTypes.Connected,
+    type: route.params?.selectedTab ?? FeedTypes.ForYou,
     page: 1,
   });
   const [feedData, setFeedData] = useState<FeedEntry[]>([]);
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [prayerWallRefreshSignal, setPrayerWallRefreshSignal] = useState(0);
   const feedRequestSequenceRef = useRef(0);
@@ -870,6 +871,8 @@ function Home({ navigation, route }: Props) {
     [introAnimatedCardKeys]
   );
   const listRef = useRef<FlatList<RenderFeedEntry>>(null);
+  const renderEntryFallbackKeyMapRef = useRef(new WeakMap<object, string>());
+  const renderEntryFallbackKeySequenceRef = useRef(0);
   useScrollToTop(listRef as any);
   const scrollIntent = useScrollIntentLock();
 
@@ -911,6 +914,7 @@ function Home({ navigation, route }: Props) {
       feedRequestSequenceRef.current += 1;
       isPaginatingRef.current = false;
       setIsRefreshing(false);
+      setIsLoadingMore(false);
       setFeedData([]);
       setIsEndOfList(false);
       setFeedOptions({ type: nextType, page: 1 });
@@ -1009,7 +1013,20 @@ function Home({ navigation, route }: Props) {
 
   const getFeedEntryKey = useCallback((item: RenderFeedEntry, index: number) => {
     const identity = getRenderEntryIdentity(item);
-    return identity ?? `row-${index}`;
+    if (identity) {
+      return identity;
+    }
+    if (item && typeof item === 'object') {
+      const existing = renderEntryFallbackKeyMapRef.current.get(item);
+      if (existing) {
+        return existing;
+      }
+      const nextKey = `row-fallback-${renderEntryFallbackKeySequenceRef.current}`;
+      renderEntryFallbackKeySequenceRef.current += 1;
+      renderEntryFallbackKeyMapRef.current.set(item, nextKey);
+      return nextKey;
+    }
+    return `row-${index}`;
   }, []);
 
   useEffect(() => {
@@ -1076,11 +1093,15 @@ function Home({ navigation, route }: Props) {
 
   const getFeedData = useCallback(
     async (type: FeedTypes, pageNumber: number) => {
-      if (pageNumber <= 1) {
+      const isFirstPageLoad = pageNumber <= 1;
+      if (isFirstPageLoad) {
         isPaginatingRef.current = false;
+        setIsLoading(true);
+        setIsLoadingMore(false);
+      } else {
+        setIsLoadingMore(true);
       }
       const requestSequence = ++feedRequestSequenceRef.current;
-      setIsLoading(true);
       try {
         const isPrayerFeed = type === FeedTypes.Pray;
         const refreshQuery = !isPrayerFeed && pageNumber === 1 ? `?refresh=${Date.now()}` : '';
@@ -1105,7 +1126,7 @@ function Home({ navigation, route }: Props) {
           const sanitizedResponse =
             type === FeedTypes.Connected ? filterOutRssEntries(response as FeedEntry[]) : response;
           if (pageNumber === 1) {
-            setIsEndOfList(false);
+            setIsEndOfList(sanitizedResponse.length < 1);
             setFeedData(mergeUniqueFeedEntries([], sanitizedResponse));
           } else if (sanitizedResponse.length < 1) {
             setIsEndOfList(true);
@@ -1116,18 +1137,26 @@ function Home({ navigation, route }: Props) {
           if (requestSequence !== feedRequestSequenceRef.current) {
             return;
           }
-          setFeedData([]);
+          if (pageNumber === 1) {
+            setFeedData([]);
+          }
           setIsEndOfList(true);
         }
       } catch (e: any) {
         if (requestSequence !== feedRequestSequenceRef.current) {
           return;
         }
-        setFeedData([]);
+        if (pageNumber === 1) {
+          setFeedData([]);
+        }
       }
       if (requestSequence === feedRequestSequenceRef.current) {
         isPaginatingRef.current = false;
-        setIsLoading(false);
+        if (isFirstPageLoad) {
+          setIsLoading(false);
+        } else {
+          setIsLoadingMore(false);
+        }
         setIsRefreshing(false);
       }
     },
@@ -1138,6 +1167,7 @@ function Home({ navigation, route }: Props) {
     if (feedOptions.type === FeedTypes.Pray) {
       setIsLoading(false);
       setIsRefreshing(false);
+      setIsLoadingMore(false);
       return;
     }
     getFeedData(feedOptions.type, feedOptions.page);
@@ -1693,7 +1723,17 @@ function Home({ navigation, route }: Props) {
   const endOfFeedFooter = useMemo(() => {
     const isPrimaryFeedType =
       feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou;
-    if (!isPrimaryFeedType || isLoading || !isEndOfList || feedDataWithSuggestions.length < 1) {
+    if (!isPrimaryFeedType) {
+      return null;
+    }
+    if (isLoadingMore) {
+      return (
+        <View style={styles.endOfFeedContainer}>
+          <ActivityIndicator size="small" color={BRAND.primaryDark} />
+        </View>
+      );
+    }
+    if (isLoading || !isEndOfList || feedDataWithSuggestions.length < 1) {
       return null;
     }
     return (
@@ -1701,7 +1741,7 @@ function Home({ navigation, route }: Props) {
         <StyledText style={styles.endOfFeedText}>You are all caught up.</StyledText>
       </View>
     );
-  }, [feedDataWithSuggestions.length, feedOptions.type, isEndOfList, isLoading]);
+  }, [feedDataWithSuggestions.length, feedOptions.type, isEndOfList, isLoading, isLoadingMore]);
 
   const tabBarAnimation = useTabBarAnimation();
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -2003,6 +2043,7 @@ function Home({ navigation, route }: Props) {
         ref={listRef}
         data={feedDataWithSuggestions}
         keyExtractor={getFeedEntryKey}
+        removeClippedSubviews={false}
         contentContainerStyle={{
           paddingTop: headerInset,
           paddingBottom: footerHeight + spacing.x16,
@@ -2040,12 +2081,14 @@ function Home({ navigation, route }: Props) {
           if (
             feedOptions.type !== FeedTypes.Pray &&
             !isLoading &&
+            !isLoadingMore &&
             !isRefreshing &&
             !isEndOfList &&
             feedData.length > 0 &&
             !isPaginatingRef.current
           ) {
             isPaginatingRef.current = true;
+            setIsLoadingMore(true);
             setFeedOptions((prev) => ({ ...prev, page: prev.page + 1 }));
           }
         }}

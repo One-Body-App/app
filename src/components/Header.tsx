@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, TextStyle, Platform } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
 import StyledText from './styled/Text';
@@ -22,6 +22,10 @@ function Header({ title, leftView, RightView, hideBorder = false }: Props) {
     black: '#032f3c',
   };
   let borderBottomColor = dark ? 'rgba(255,255,255,0.08)' : brandColors.scale100;
+  let headerBackgroundColor = dark ? '#0D0D0D' : '#f6f6f7';
+  if (Platform.OS === 'android' && !dark) {
+    headerBackgroundColor = 'white';
+  }
   if (hideBorder) {
     borderBottomColor = 'transparent';
   }
@@ -31,7 +35,7 @@ function Header({ title, leftView, RightView, hideBorder = false }: Props) {
       style={[
         styles.headview,
         {
-          backgroundColor: dark ? '#0D0D0D' : '#f6f6f7',
+          backgroundColor: headerBackgroundColor,
           borderBottomColor,
           borderBottomWidth: hideBorder ? 0 : 1,
         },
@@ -64,7 +68,7 @@ function Header({ title, leftView, RightView, hideBorder = false }: Props) {
 }
 const styles = StyleSheet.create({
   headview: {
-    height: getHeight(4),
+    height: getHeight(7),
 
     flexDirection: 'row',
 

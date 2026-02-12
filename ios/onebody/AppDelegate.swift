@@ -3,6 +3,7 @@ import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
 import React_RCTLinking
+import Expo
 
 import AVFoundation
 
@@ -11,7 +12,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   var window: UIWindow?
 
   var reactNativeDelegate: ReactNativeDelegate?
-  var reactNativeFactory: RCTReactNativeFactory?
+  var reactNativeFactory: ExpoReactNativeFactory?
 
   func application(
     _ application: UIApplication,
@@ -29,7 +30,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     let delegate = ReactNativeDelegate()
-    let factory = RCTReactNativeFactory(delegate: delegate)
+    let factory = ExpoReactNativeFactory(delegate: delegate)
+    AppDelegatesLoaderDelegate.registerAppDelegateSubscribers(self)
     delegate.dependencyProvider = RCTAppDependencyProvider()
 
     reactNativeDelegate = delegate
@@ -99,7 +101,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   }
 }
  
-class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
+class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
   override func sourceURL(for bridge: RCTBridge) -> URL? {
     self.bundleURL()
   }

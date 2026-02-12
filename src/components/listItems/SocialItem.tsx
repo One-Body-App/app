@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, StyleProp, View, ViewStyle } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleProp, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -246,43 +246,6 @@ function SocialItem({
     if (!visible && !isMuted) setIsMuted(true);
   }, [isMuted, visible]);
 
-  const getMediaInfo = useCallback(async (mediaItems: Media[]) => {
-    const photoMedia = mediaItems.filter((item) => item.type === 'photo');
-
-    if (photoMedia.length > 0) {
-      const imagePromises = photoMedia.map((img) => {
-        return new Promise<{ url: string; width: number; height: number } | null>((resolve) => {
-          Image.getSize(
-            img.url,
-            (imgWidth, imgHeight) => {
-              // successfully got image dimensions
-              resolve({ url: img.url, width: imgWidth, height: imgHeight });
-            },
-            () => {
-              // error case
-              console.warn(`Error with ${img}`);
-              resolve(null);
-            }
-          );
-        });
-      });
-
-      Promise.all(imagePromises)
-        .then((resolvedImages) => resolvedImages.filter(Boolean))
-        .then((resolvedImages) => {
-          setImageInfo(
-            resolvedImages
-              .map((image) => ({
-                url: typeof image?.url === 'string' ? image.url : '',
-                width: toSafeNumber(image?.width),
-                height: toSafeNumber(image?.height),
-              }))
-              .filter((image) => image.url.length > 0)
-          );
-        });
-    }
-  }, []);
-
   useEffect(() => {
     setImageInfo([]);
     let mediaItems: Media[] = [];
@@ -314,11 +277,21 @@ function SocialItem({
 
     if (mediaItems.length > 0) {
       setMedia(mediaItems);
-      getMediaInfo(mediaItems);
+      const photoMedia = mediaItems.filter((item) => item.type === 'photo' && item.url);
+      if (photoMedia.length > 0) {
+        // Keep feed row height stable while images load to prevent jumpy pagination scroll.
+        setImageInfo(
+          photoMedia.map((item) => ({
+            url: item.url,
+            width: 4,
+            height: 5,
+          }))
+        );
+      }
     } else {
       setMedia([]);
     }
-  }, [getMediaInfo, itemData]);
+  }, [itemData]);
 
   const linkAttachment = useMemo(
     () => itemData?.attachments?.find((attachment) => attachment.type === 'link'),

@@ -1,7 +1,9 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  ActionSheetIOS,
+  Alert,
   KeyboardAvoidingView,
   Image,
   Platform,
@@ -28,6 +30,7 @@ import {
   GiphySDK,
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
+import EmojiPicker, { EmojiType } from 'rn-emoji-keyboard';
 import { isArray } from 'lodash';
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -43,18 +46,13 @@ import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { fontSize, lineHeight } from '@/src/styles/typography';
 
-import ImagePickerModal from '@/components/ImagePickerModal';
 import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/services/constants';
 import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 import ErrorBoundary from '@/src/components/ErrorBoundry';
-import type {
-  EditorAsset as FilerobotEditorAsset,
-  SavedMedia as FilerobotSavedMedia,
-} from '@/components/post/FilerobotImageEditorModal';
-
-const LazyFilerobotImageEditorModal = React.lazy(
-  () => import('@/components/post/FilerobotImageEditorModal')
-);
+import {
+  createUploadImageRequestId,
+  waitForUploadImageResult,
+} from '@/src/screens/post/uploadImageBridge';
 
 type Props = StackScreenProps<MainStackParamList, 'Post'>;
 type AttachmentMode = 'link' | 'document' | null;
@@ -72,8 +70,6 @@ type ProfileSummary = {
   name?: string;
 };
 
-const LARGE_EMOJIS = ['🙏', '🙌', '🔥', '❤️', '🕊️', '✨', '😊', '👏'];
-
 function NewPost({ navigation, route }: Props) {
   const MAX_CONTENT_LENGHT = 300;
   const FEED_IMAGE_WIDTH = 1080;
@@ -90,19 +86,16 @@ function NewPost({ navigation, route }: Props) {
 
   const [location, setLocation] = useState<MapSuggestion | null>(null);
   const [locationSelector, setLocationSelector] = useState<boolean>(false);
-  const [pickerModalVisibile, setPickerModalVisibile] = useState(false);
   const [imagesToUpload, setImagesToUpload] = useState<Asset[]>([]);
   const { colors, dark } = useTheme();
   const [imagesObject, setImagesObject] = useState<string[]>([]);
   const [linkAttachments, setLinkAttachments] = useState<LinkAttachment[]>([]);
   const [attachmentMode, setAttachmentMode] = useState<AttachmentMode>(null);
   const [attachmentInput, setAttachmentInput] = useState('');
-  const [showLargeEmojiTray, setShowLargeEmojiTray] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const toast = useToast();
   const [uploadImagesObject, setUploadImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
-  const [editorAssetQueue, setEditorAssetQueue] = useState<FilerobotEditorAsset[]>([]);
-  const [activeEditorAsset, setActiveEditorAsset] = useState<FilerobotEditorAsset | null>(null);
   const [isGiphyInitialized, setIsGiphyInitialized] = useState(false);
 
   useFocusEffect(
@@ -165,24 +158,13 @@ function NewPost({ navigation, route }: Props) {
     };
   }, [isGiphyInitialized]);
 
-  useEffect(() => {
-    if (activeEditorAsset || editorAssetQueue.length === 0) {
-      return;
-    }
-    setActiveEditorAsset(editorAssetQueue[0]);
-    setEditorAssetQueue((previous) => previous.slice(1));
-  }, [activeEditorAsset, editorAssetQueue]);
-
-  const enqueueAssetsForEditor = useCallback(
-    (incomingAssets: FilerobotEditorAsset[]) => {
-      const validAssets = incomingAssets.filter((asset) => asset.uri);
-      if (validAssets.length === 0) {
+  const openUploadImageEditor = useCallback(
+    async (asset: { uri: string; fileName?: string; fileSize?: number; type?: string }) => {
+      if (!asset.uri) {
         return;
       }
-      const oversizedAsset = validAssets.find(
-        (asset) => typeof asset.fileSize === 'number' && asset.fileSize > MAX_UPLOAD_BYTES
-      );
-      if (oversizedAsset) {
+
+      if (typeof asset.fileSize === 'number' && asset.fileSize > MAX_UPLOAD_BYTES) {
         toast.show('Image is larger than 50MB. Please choose a smaller image.', {
           type: 'danger',
           placement: 'bottom',
@@ -190,22 +172,49 @@ function NewPost({ navigation, route }: Props) {
         return;
       }
 
-      if (!activeEditorAsset) {
-        setActiveEditorAsset(validAssets[0]);
-        if (validAssets.length > 1) {
-          setEditorAssetQueue((previous) => [...previous, ...validAssets.slice(1)]);
-        }
+      const normalizedUri =
+        asset.uri.startsWith('file://') ||
+        asset.uri.startsWith('content://') ||
+        asset.uri.startsWith('ph://')
+          ? asset.uri
+          : `file://${asset.uri}`;
+      const requestId = createUploadImageRequestId();
+      const resultPromise = waitForUploadImageResult(requestId);
+
+      navigation.navigate('UploadImage', {
+        requestId,
+        imageUri: normalizedUri,
+        fileName: asset.fileName,
+        fileSize: asset.fileSize,
+        type: asset.type ?? 'image/jpeg',
+        usageContext: 'feed',
+      });
+
+      const result = await resultPromise;
+      if (result.status !== 'saved' || !result.uri) {
         return;
       }
 
-      setEditorAssetQueue((previous) => [...previous, ...validAssets]);
+      setImagesToUpload((previous) => [
+        ...previous,
+        {
+          uri: result.uri,
+          fileName: result.fileName,
+          type: result.type ?? 'image/jpeg',
+          fileSize: result.fileSize,
+        },
+      ]);
+      setUploadImagesObject((previous) => [
+        ...(previous ?? []),
+        {
+          uri: result.uri,
+          type: result.type ?? 'image/jpeg',
+          name: result.fileName,
+        },
+      ]);
     },
-    [activeEditorAsset, toast, MAX_UPLOAD_BYTES]
+    [MAX_UPLOAD_BYTES, navigation, toast]
   );
-
-  const advanceEditorQueue = useCallback(() => {
-    setActiveEditorAsset(null);
-  }, []);
 
   // useEffect(() => {
   //   if (route.params?.postId) {
@@ -225,7 +234,7 @@ function NewPost({ navigation, route }: Props) {
         params: serialize(
           {
             content: mergedContent,
-            images: imagesObject,
+            images: uploadImagesObject?.length ? uploadImagesObject : imagesObject,
             gif: mediaGif,
             location: location
               ? {
@@ -391,7 +400,7 @@ function NewPost({ navigation, route }: Props) {
     });
 
     const pickerResults = Array.isArray(pickerSelection) ? pickerSelection : [pickerSelection];
-    const editorAssets: FilerobotEditorAsset[] = pickerResults
+    const editorAssets = pickerResults
       .filter((item) => !!item?.path)
       .map((item, index) => {
         const imageName = item.filename ?? `image_${Date.now()}_${index}.jpg`;
@@ -406,8 +415,11 @@ function NewPost({ navigation, route }: Props) {
         };
       });
 
-    enqueueAssetsForEditor(editorAssets);
-    setPickerModalVisibile(false);
+    // eslint-disable-next-line no-restricted-syntax
+    for (const editorAsset of editorAssets) {
+      // eslint-disable-next-line no-await-in-loop
+      await openUploadImageEditor(editorAsset);
+    }
   };
 
   const captureImage = async (contentType: MediaType) => {
@@ -453,7 +465,7 @@ function NewPost({ navigation, route }: Props) {
       // cropimage(uri);
 
       if (response?.assets && response.assets.length > 0) {
-        const editorAssets: FilerobotEditorAsset[] = response.assets
+        const editorAssets = response.assets
           .filter((asset) => !!asset.uri)
           .map((asset, index) => {
             const fileNameRaw = asset.fileName ?? `image_${Date.now()}_${index}.jpg`;
@@ -467,16 +479,20 @@ function NewPost({ navigation, route }: Props) {
               fileSize: asset.fileSize,
             };
           });
-        enqueueAssetsForEditor(editorAssets);
+        // eslint-disable-next-line no-restricted-syntax
+        for (const editorAsset of editorAssets) {
+          // eslint-disable-next-line no-await-in-loop
+          await openUploadImageEditor(editorAsset);
+        }
       }
-      setPickerModalVisibile(false);
     } else {
       // console.log('no ', isCameraPermitted);
     }
   };
 
-  const appendLargeEmoji = (emoji: string) => {
-    setContent((previous) => `${previous}${previous ? ' ' : ''}${emoji}`);
+  const appendEmoji = (emoji: EmojiType) => {
+    setContent((previous) => `${previous}${emoji.emoji}`);
+    setIsEmojiPickerOpen(false);
   };
 
   const normalizeUrl = (rawValue: string) => {
@@ -532,20 +548,6 @@ function NewPost({ navigation, route }: Props) {
   const removeAttachment = (id: string) => {
     setLinkAttachments((previous) => previous.filter((item) => item.id !== id));
   };
-
-  const handleEditorCancel = useCallback(() => {
-    advanceEditorQueue();
-  }, [advanceEditorQueue]);
-
-  const handleEditorSave = useCallback(
-    (savedMedia: FilerobotSavedMedia) => {
-      setImagesObject((previous) => [...previous, savedMedia.url]);
-      setImagesToUpload([]);
-      setUploadImagesObject(undefined);
-      advanceEditorQueue();
-    },
-    [advanceEditorQueue]
-  );
 
   const hasUploadData =
     !!location ||
@@ -726,36 +728,6 @@ function NewPost({ navigation, route }: Props) {
                   setContent(value);
                 }}
               />
-              {showLargeEmojiTray ? (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    rowGap: spacing.x8,
-                    columnGap: spacing.x8,
-                    marginTop: spacing.x8,
-                  }}
-                >
-                  {LARGE_EMOJIS.map((emoji) => (
-                    <TouchableOpacity
-                      key={emoji}
-                      onPress={() => appendLargeEmoji(emoji)}
-                      style={{
-                        height: 44,
-                        minWidth: 44,
-                        borderRadius: borderRadius.base,
-                        backgroundColor: Colors.neutral[700],
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingHorizontal: spacing.x8,
-                      }}
-                    >
-                      <StyledText style={{ fontSize: 26 }}>{emoji}</StyledText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              ) : null}
-
               {attachmentMode ? (
                 <View
                   style={{
@@ -1009,13 +981,6 @@ function NewPost({ navigation, route }: Props) {
                 }
               />
 
-              <ImagePickerModal
-                visible={pickerModalVisibile}
-                hideVisible={() => setPickerModalVisibile(false)}
-                galleryImage={() => chooseImageGallery()}
-                cameraImage={() => captureImage('photo')}
-              />
-
               <View
                 style={{
                   columnGap: spacing.x16,
@@ -1032,8 +997,39 @@ function NewPost({ navigation, route }: Props) {
                   style={{ flexDirection: 'row', alignItems: 'center', columnGap: spacing.x16 }}
                 >
                   <TouchableOpacity
-                    onPress={async () => {
-                      setPickerModalVisibile(true);
+                    onPress={() => {
+                      if (Platform.OS === 'ios') {
+                        ActionSheetIOS.showActionSheetWithOptions(
+                          {
+                            options: ['Cancel', 'Choose From Gallery', 'Open Camera'],
+                            cancelButtonIndex: 0,
+                          },
+                          (buttonIndex) => {
+                            if (buttonIndex === 1) {
+                              chooseImageGallery().catch(() => undefined);
+                            }
+                            if (buttonIndex === 2) {
+                              captureImage('photo').catch(() => undefined);
+                            }
+                          }
+                        );
+                        return;
+                      }
+                      Alert.alert('Add photo', 'Select image source', [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Choose From Gallery',
+                          onPress: () => {
+                            chooseImageGallery().catch(() => undefined);
+                          },
+                        },
+                        {
+                          text: 'Open Camera',
+                          onPress: () => {
+                            captureImage('photo').catch(() => undefined);
+                          },
+                        },
+                      ]);
                     }}
                   >
                     <MaterialCommunityIcons
@@ -1073,7 +1069,7 @@ function NewPost({ navigation, route }: Props) {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
-                      setShowLargeEmojiTray((previous) => !previous);
+                      setIsEmojiPickerOpen(true);
                       setAttachmentMode(null);
                     }}
                   >
@@ -1088,7 +1084,7 @@ function NewPost({ navigation, route }: Props) {
                       setAttachmentMode((previous) =>
                         previous === 'document' ? null : 'document'
                       );
-                      setShowLargeEmojiTray(false);
+                      setIsEmojiPickerOpen(false);
                     }}
                   >
                     <MaterialCommunityIcons
@@ -1100,7 +1096,7 @@ function NewPost({ navigation, route }: Props) {
                   <TouchableOpacity
                     onPress={() => {
                       setAttachmentMode((previous) => (previous === 'link' ? null : 'link'));
-                      setShowLargeEmojiTray(false);
+                      setIsEmojiPickerOpen(false);
                     }}
                   >
                     <MaterialCommunityIcons
@@ -1163,18 +1159,42 @@ function NewPost({ navigation, route }: Props) {
               />
             </View>
           </ScrollView>
-          {activeEditorAsset ? (
-            <Suspense fallback={null}>
-              <LazyFilerobotImageEditorModal
-                visible
-                asset={activeEditorAsset}
-                token={token}
-                userId={userProfile?._id ?? userProfile?.id ?? userProfile?.userId}
-                onCancel={handleEditorCancel}
-                onSaved={handleEditorSave}
-              />
-            </Suspense>
-          ) : null}
+          <EmojiPicker
+            open={isEmojiPickerOpen}
+            onClose={() => setIsEmojiPickerOpen(false)}
+            onEmojiSelected={appendEmoji}
+            enableRecentlyUsed
+            enableSearchBar
+            categoryPosition="bottom"
+            theme={{
+              backdrop: dark ? 'rgba(5,10,14,0.58)' : 'rgba(0,0,0,0.3)',
+              container: colors.card,
+              header: colors.text,
+              knob: Colors.neutral[400],
+              category: {
+                icon: Colors.neutral[400],
+                iconActive: Colors.primarySapphire.brand,
+                container: colors.card,
+                containerActive: Colors.neutral[700],
+              },
+              search: {
+                background: Colors.neutral[700],
+                text: colors.text,
+                placeholder: Colors.neutral[400],
+                icon: Colors.neutral[400],
+              },
+              customButton: {
+                background: Colors.neutral[700],
+                backgroundPressed: Colors.neutral[600],
+                icon: Colors.primarySapphire.brand,
+                iconPressed: Colors.primarySapphire.brand,
+              },
+              emoji: {
+                selected: Colors.neutral[700],
+              },
+              skinTonesContainer: colors.card,
+            }}
+          />
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ErrorBoundary>

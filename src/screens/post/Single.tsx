@@ -6,6 +6,8 @@ import { useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import StyledText from '@/components/styled/Text';
+import Header from '@/components/Header';
+import GoBackIcon from '@/components/GoBackIcon';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderWidth } from '@/src/styles/outlines';
@@ -23,6 +25,14 @@ function SinglePost({ navigation, route }: Props) {
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors, dark } = useTheme();
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.navigate('MainRoot');
+  };
 
   const getPost = useCallback(async () => {
     setIsLoading(true);
@@ -88,10 +98,23 @@ function SinglePost({ navigation, route }: Props) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       {Platform.OS === 'android' ? (
-        <StatusBar
-          barStyle={dark ? 'light-content' : 'dark-content'}
-          backgroundColor={colors.background}
-        />
+        <>
+          <StatusBar
+            barStyle={dark ? 'light-content' : 'dark-content'}
+            backgroundColor={colors.background}
+          />
+          <Header
+            title="Comment"
+            hideBorder
+            leftView={
+              <GoBackIcon
+                color={dark ? colors.text : Colors.primary.brand}
+                goBack={handleBackPress}
+              />
+            }
+            RightView={<View style={{ width: 20 }} />}
+          />
+        </>
       ) : null}
       {post ? (
         <CommentThread

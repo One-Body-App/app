@@ -22,6 +22,7 @@ import {
   Dimensions,
   Platform,
   Pressable,
+  type ViewStyle,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -60,6 +61,7 @@ import ConfirmLogin from '../screens/login/ConfirmLogin'; // Adjust path
 
 import DrawerNav from './DrawerStack';
 import NewPost from '../screens/post/NewPost'; // Adjust path
+import UploadImage from '../screens/post/UploadImage'; // Adjust path
 import SinglePost from '../screens/post/Single'; // Adjust path
 import RssPost from '../screens/post/RssPost'; // Adjust path
 import ReportPost from '../screens/post/ReportPost'; // Adjust path
@@ -115,7 +117,7 @@ function AppContent() {
     dispatch(logout());
     navigationRef.navigate('Intro');
   }, [dispatch, navigationRef]);
-  const confirmBackStyle = useMemo(
+  const confirmBackStyle = useMemo<ViewStyle>(
     () => ({
       width: 46,
       height: 46,
@@ -149,7 +151,6 @@ function AppContent() {
     ),
     [confirmBackStyle, handleConfirmBackPress]
   );
-
   const logScreenViewEvent = useCallback(
     (screenName: string) => {
       logEvent(firebaseAnalytics, 'screen_view', {
@@ -270,10 +271,10 @@ function AppContent() {
   }, [dispatch, token]);
 
   useEffect(() => {
-    if (!token || !authState.getProfileData) return;
+    if (!token || !authState.getProfileData) return undefined;
 
     const userId = authState.getProfileData?._id || authState.getProfileData?.id;
-    if (!userId || locationAutofillUserRef.current === userId) return;
+    if (!userId || locationAutofillUserRef.current === userId) return undefined;
 
     const profileLocation = authState.getProfileData?.profile?.location;
     const hasLocation =
@@ -283,7 +284,7 @@ function AppContent() {
 
     if (hasLocation) {
       locationAutofillUserRef.current = userId;
-      return;
+      return undefined;
     }
 
     let isActive = true;
@@ -908,9 +909,6 @@ function AppContent() {
       border: '#1B1B1B',
     },
   };
-  const commentHeaderBackground =
-    scheme === 'dark' ? darkTheme.colors.background : theme.colors.background;
-
   // Early return after all hooks have been called
   if (!authChecked && initializing) {
     return null;
@@ -956,32 +954,20 @@ function AppContent() {
               name="SinglePost"
               component={SinglePost}
               options={{
+                headerShown: Platform.OS !== 'android',
                 headerBackTitleVisible: false,
                 title: 'Comment',
                 animation: 'slide_from_right',
-                ...(Platform.OS === 'android'
-                  ? {
-                      headerStyle: { backgroundColor: commentHeaderBackground },
-                      headerShadowVisible: false,
-                      statusBarColor: commentHeaderBackground,
-                    }
-                  : {}),
               }}
             />
             <MainStack.Screen
               name="SingleRss"
               component={RssPost}
               options={{
+                headerShown: Platform.OS !== 'android',
                 headerBackTitleVisible: false,
                 title: 'Comment',
                 animation: 'slide_from_right',
-                ...(Platform.OS === 'android'
-                  ? {
-                      headerStyle: { backgroundColor: commentHeaderBackground },
-                      headerShadowVisible: false,
-                      statusBarColor: commentHeaderBackground,
-                    }
-                  : {}),
               }}
             />
             <MainStack.Screen
@@ -999,6 +985,14 @@ function AppContent() {
                     }
                   : {}),
               })}
+            />
+            <MainStack.Screen
+              name="UploadImage"
+              component={UploadImage}
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
             />
             <MainStack.Screen
               name="ReportPost"

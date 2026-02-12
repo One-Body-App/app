@@ -281,6 +281,14 @@ export type MainStackParamList = {
   Post?: {
     postId?: string;
   };
+  UploadImage?: {
+    requestId: string;
+    imageUri: string;
+    fileName?: string;
+    fileSize?: number;
+    type?: string;
+    usageContext?: 'feed' | 'comment';
+  };
   ReportPost: {
     targetId: string;
     targetType: 'social' | 'prayer' | 'comment';

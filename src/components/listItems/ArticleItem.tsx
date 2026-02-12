@@ -19,6 +19,7 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
+import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { ArticleType, PostType, SocialPostReaction } from '@/utils/types';
 
@@ -60,7 +61,7 @@ function ArticleItem({
   onCommentsPress?: () => void;
   parentRefreshContent?: Function;
 }) {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const navigation = useNavigation<ScreenNavigationProp>();
   const [itemData, setItemData] = useState(item);
@@ -76,12 +77,12 @@ function ArticleItem({
   });
 
   const articleId = itemData?.id ?? '';
-  const rssImageShadowStyle = {
+  const rssNoShadowStyle = {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
   const handleCommentsPress =
     onCommentsPress ||
@@ -123,7 +124,7 @@ function ArticleItem({
           });
         }
       }}
-      style={blogPostStyle}
+      style={[blogPostStyle, rssNoShadowStyle]}
       parentRefreshContent={parentRefreshContent}
       onCommentsPress={handleCommentsPress}
     >
@@ -154,7 +155,6 @@ function ArticleItem({
             blogPostImageStyle
               ? [
                   styles.blogpostimage,
-                  rssImageShadowStyle,
                   {
                     borderBottomRightRadius: borderRadius.small,
                     borderBottomLeftRadius: borderRadius.small,
@@ -163,7 +163,6 @@ function ArticleItem({
                 ]
               : [
                   styles.blogpostimage,
-                  rssImageShadowStyle,
                   {
                     borderBottomRightRadius: borderRadius.small,
                     borderBottomLeftRadius: borderRadius.small,
@@ -205,7 +204,10 @@ function ArticleItem({
             >
               <StyledText
                 numberOfLines={2}
-                style={[{ color: '#032F3C', fontWeight: '700' }, blogPostTitleStyle]}
+                style={[
+                  { color: dark ? Colors.neutral.brand : '#032F3C', fontWeight: '700' },
+                  blogPostTitleStyle,
+                ]}
               >
                 {isObject(itemData?.title)
                   ? decode(itemData?.title?.a.$text)

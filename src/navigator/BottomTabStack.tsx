@@ -240,7 +240,7 @@ function BottomStack() {
           initialParams={{
             screen: 'Home',
             params: {
-              selectedTab: FeedTypes.Connected,
+              selectedTab: FeedTypes.ForYou,
             },
           }}
           options={{
