@@ -359,7 +359,11 @@ function IntroScreen({ navigation }: Props) {
                   <StyledText
                     style={[
                       header.h2,
-                      { color: dark ? '#f6f6f6' : Colors.primary.brand, fontWeight: 'bold' },
+                      {
+                        color: dark ? '#f6f6f6' : Colors.primary.brand,
+                        fontWeight: 'bold',
+                        fontFamily: 'Rubik-Bold',
+                      },
                     ]}
                   >
                     Welcome to{' '}
@@ -370,6 +374,7 @@ function IntroScreen({ navigation }: Props) {
                       {
                         color: dark ? '#12d2d9' : Colors.primarySapphire.brand,
                         fontWeight: 'bold',
+                        fontFamily: 'Rubik-Bold',
                       },
                     ]}
                   >

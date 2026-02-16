@@ -14,7 +14,7 @@ const validator = async (field: string, value: string, extraFieldData?: Record<s
   }
 
   const constraint: Record<string, any> = {};
-  constraint[field] = validation(lang)[field];
+  constraint[field] = validation()[field];
 
   // Validate against the constraint and hold the error messages
   let result = validate({}, constraint); //

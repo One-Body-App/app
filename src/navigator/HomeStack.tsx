@@ -50,7 +50,10 @@ function HomeStack() {
       <Stack.Screen
         name="Notifications"
         component={Notifications}
-        options={{ presentation: 'modal', headerShown: true, headerTitle: 'Notifications' }}
+        options={{
+          presentation: Platform.OS === 'ios' ? 'fullScreenModal' : 'modal',
+          headerShown: false,
+        }}
       />
       <Stack.Screen
         name="WatchPortal"

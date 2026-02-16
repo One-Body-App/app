@@ -200,9 +200,11 @@ function CommentField({
       return;
     }
 
-    const fileUriRaw = selectedItem.path.startsWith('file://')
-      ? selectedItem.path
-      : `file://${selectedItem.path}`;
+    const filePathRaw = selectedItem.path ?? '';
+    const fileUriRaw =
+      filePathRaw.startsWith('file://') || filePathRaw.startsWith('content://')
+        ? filePathRaw
+        : `file://${filePathRaw}`;
     const fileNameRaw = selectedItem.filename ?? `image_${Date.now()}.jpg`;
     const fileName = fileNameRaw.toLowerCase().endsWith('.jpg')
       ? fileNameRaw

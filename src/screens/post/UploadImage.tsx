@@ -3,14 +3,18 @@ import { useTheme } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
+  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   Canvas,
   ColorMatrix,
@@ -19,6 +23,8 @@ import {
   ImageFormat,
   Rect,
   Skia,
+  Text as SkiaText,
+  matchFont,
   useCanvasRef,
   useImage,
 } from '@shopify/react-native-skia';
@@ -34,11 +40,27 @@ type Props = StackScreenProps<MainStackParamList, 'UploadImage'>;
 
 type ToolId = 'crop' | 'filters' | 'adjust' | 'text' | 'stickers';
 type FilterId = 'original' | 'warm' | 'cool' | 'bw' | 'dramatic';
+type AdjustPresetId = 'none' | 'lift' | 'depth' | 'vivid';
 type RatioId = 'free' | '9:16' | '3:4' | '1:1';
 type TransformState = {
   scale: number;
   translateX: number;
   translateY: number;
+};
+type TextOverlay = {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+};
+type StickerOverlay = {
+  id: string;
+  glyph: string;
+  x: number;
+  y: number;
+  size: number;
 };
 
 const PRIMARY = '#116d86';
@@ -54,6 +76,8 @@ const OTHER_FONT = 'OpenSans-Regular';
 
 const FALLBACK_PREVIEW_IMAGE =
   'https://images.unsplash.com/photo-1583997052301-0042b33fc598?auto=format&fit=crop&w=1440&q=80';
+const textColorOptions = ['#ffffff', '#fef3c7', '#93c5fd', '#86efac', '#fda4af', '#111827'];
+const stickerOptions = ['🙏', '✨', '💙', '🔥', '🙌', '🕊️'];
 const ratioOptions: { id: RatioId; label: string; ratio: number | null }[] = [
   { id: 'free', label: 'Free', ratio: null },
   { id: '9:16', label: '9:16', ratio: 9 / 16 },
@@ -61,7 +85,75 @@ const ratioOptions: { id: RatioId; label: string; ratio: number | null }[] = [
   { id: '1:1', label: '1:1', ratio: 1 },
 ];
 
+const defaultRatioForContext = (usageContext?: 'feed' | 'comment'): RatioId => {
+  if (usageContext === 'comment') {
+    return '1:1';
+  }
+  return '3:4';
+};
+
+const normalizeImageUri = (uri: string) => {
+  if (
+    uri.startsWith('file://') ||
+    uri.startsWith('content://') ||
+    uri.startsWith('http://') ||
+    uri.startsWith('https://') ||
+    uri.startsWith('data:') ||
+    uri.startsWith('ph://')
+  ) {
+    return uri;
+  }
+  if (uri.startsWith('/')) {
+    return `file://${uri}`;
+  }
+  return uri;
+};
+
+const stripFileScheme = (uri: string) => {
+  if (uri.startsWith('file://')) {
+    return uri.slice(7);
+  }
+  return uri;
+};
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const MIN_EDITOR_SCALE = 1;
+const MAX_EDITOR_SCALE = 6;
+
+const resolveContainedSize = (
+  imageWidth: number,
+  imageHeight: number,
+  targetWidth: number,
+  targetHeight: number
+) => {
+  if (!imageWidth || !imageHeight || !targetWidth || !targetHeight) {
+    return { width: targetWidth, height: targetHeight };
+  }
+  const imageAspect = imageWidth / imageHeight;
+  const targetAspect = targetWidth / targetHeight;
+  if (imageAspect > targetAspect) {
+    const width = targetWidth;
+    return { width, height: width / imageAspect };
+  }
+  const height = targetHeight;
+  return { width: height * imageAspect, height };
+};
+
+const readImageDimensions = (image: { width: () => number; height: () => number } | null) => {
+  if (!image) {
+    return null;
+  }
+  try {
+    const width = image.width();
+    const height = image.height();
+    if (!width || !height) {
+      return null;
+    }
+    return { width, height };
+  } catch (error) {
+    return null;
+  }
+};
 
 const identityMatrix = () => [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0];
 
@@ -145,6 +237,19 @@ const filterMatrixById = (filter: FilterId) => {
   return identityMatrix();
 };
 
+const adjustMatrixById = (adjust: AdjustPresetId) => {
+  if (adjust === 'lift') {
+    return multiply4x5(makeBrightnessMatrix(0.06), makeContrastMatrix(1.02));
+  }
+  if (adjust === 'depth') {
+    return multiply4x5(makeContrastMatrix(1.14), makeSaturationMatrix(0.95));
+  }
+  if (adjust === 'vivid') {
+    return multiply4x5(makeSaturationMatrix(1.2), makeContrastMatrix(1.06));
+  }
+  return identityMatrix();
+};
+
 const filterLabel = (id: FilterId) => {
   if (id === 'warm') return 'Warm';
   if (id === 'cool') return 'Cool';
@@ -173,20 +278,202 @@ function UploadImage({ navigation, route }: Props) {
   const { dark } = useTheme();
   const { width } = useWindowDimensions();
   const canvasRef = useCanvasRef();
-  const [activeTool, setActiveTool] = useState<ToolId>('crop');
+  const [activeTool, setActiveTool] = useState<ToolId>('filters');
   const [filter, setFilter] = useState<FilterId>('original');
-  const [ratio, setRatio] = useState<RatioId>('free');
+  const [adjust, setAdjust] = useState<AdjustPresetId>('none');
+  const [ratio, setRatio] = useState<RatioId>(defaultRatioForContext(route.params?.usageContext));
   const [transform, setTransform] = useState<TransformState>({
     scale: 1,
     translateX: 0,
     translateY: 0,
   });
+  const [isGestureActive, setIsGestureActive] = useState(false);
+  const [newTextValue, setNewTextValue] = useState('Faith');
+  const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
+  const [stickerOverlays, setStickerOverlays] = useState<StickerOverlay[]>([]);
+  const [isPreparingImage, setIsPreparingImage] = useState(false);
+  const [imageSourceCandidates, setImageSourceCandidates] = useState<string[]>(() => [
+    normalizeImageUri(route.params?.imageUri ?? FALLBACK_PREVIEW_IMAGE),
+  ]);
+  const [decodedImage, setDecodedImage] = useState<ReturnType<
+    typeof Skia.Image.MakeImageFromEncoded
+  > | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const resolvedRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const pinchStartRef = useRef(1);
+  const fontCacheRef = useRef<Map<number, ReturnType<typeof matchFont>>>(new Map());
 
-  const sourceUri = route.params?.imageUri ?? FALLBACK_PREVIEW_IMAGE;
+  const sourceUri = normalizeImageUri(route.params?.imageUri ?? FALLBACK_PREVIEW_IMAGE);
   const requestId = route.params?.requestId;
-  const image = useImage(sourceUri);
+  const loadedImage = useImage(sourceUri);
+  const image =
+    Platform.OS === 'android' ? (decodedImage ?? loadedImage) : (loadedImage ?? decodedImage);
+
+  useEffect(() => {
+    const nextCandidates: string[] = [];
+    const pushCandidate = (value?: string) => {
+      if (!value || nextCandidates.includes(value)) {
+        return;
+      }
+      nextCandidates.push(value);
+    };
+    pushCandidate(sourceUri);
+    if (sourceUri.startsWith('file://')) {
+      pushCandidate(stripFileScheme(sourceUri));
+    }
+    setImageSourceCandidates(nextCandidates.length ? nextCandidates : [sourceUri]);
+    setDecodedImage(null);
+  }, [sourceUri]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> =>
+      new Promise<T>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('timeout'));
+        }, timeoutMs);
+        promise
+          .then((value) => {
+            clearTimeout(timeout);
+            resolve(value);
+          })
+          .catch((error) => {
+            clearTimeout(timeout);
+            reject(error);
+          });
+      });
+
+    const decodeImageFromBase64 = (value: string) => {
+      const encoded = Skia.Data.fromBase64(value);
+      return Skia.Image.MakeImageFromEncoded(encoded);
+    };
+
+    const decodeImageFromFetch = async (uri: string) => {
+      const response = await withTimeout(fetch(uri), 7000);
+      if (!response.ok) {
+        throw new Error(`Unable to fetch image source: ${response.status}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      const encoded = Skia.Data.fromBytes(bytes);
+      return Skia.Image.MakeImageFromEncoded(encoded);
+    };
+
+    const tryDecodeFromFile = async (candidateUri: string) => {
+      if (
+        !candidateUri ||
+        candidateUri.startsWith('http://') ||
+        candidateUri.startsWith('https://') ||
+        candidateUri.startsWith('ph://')
+      ) {
+        return null;
+      }
+      if (candidateUri.startsWith('data:')) {
+        const base64Start = candidateUri.indexOf(',');
+        const payload = base64Start >= 0 ? candidateUri.slice(base64Start + 1) : candidateUri;
+        return decodeImageFromBase64(payload);
+      }
+
+      const pathsToTry: string[] = [];
+      const pushPath = (value?: string) => {
+        if (!value || pathsToTry.includes(value)) {
+          return;
+        }
+        pathsToTry.push(value);
+      };
+
+      if (candidateUri.startsWith('file://')) {
+        pushPath(stripFileScheme(candidateUri));
+      } else if (candidateUri.startsWith('/')) {
+        pushPath(candidateUri);
+      }
+
+      if (candidateUri.startsWith('content://')) {
+        const stat = await withTimeout(RNFS.stat(candidateUri), 3500).catch(() => null);
+        const originalPath =
+          (stat as (RNFS.StatResult & { originalFilepath?: string }) | null)?.originalFilepath ??
+          '';
+        if (originalPath) {
+          pushPath(originalPath);
+        }
+        const targetPath = `${RNFS.CachesDirectoryPath}/onebody_editor_decode_${Date.now()}_${Math.round(
+          Math.random() * 1000
+        )}.jpg`;
+        await withTimeout(RNFS.copyFile(candidateUri, targetPath), 5000)
+          .then(() => {
+            pushPath(targetPath);
+          })
+          .catch(() => undefined);
+      }
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const path of pathsToTry) {
+        // eslint-disable-next-line no-await-in-loop
+        const base64 = await withTimeout(RNFS.readFile(path, 'base64'), 5000).catch(() => null);
+        if (!base64) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        const decoded = decodeImageFromBase64(base64);
+        if (decoded) {
+          return decoded;
+        }
+      }
+
+      return decodeImageFromFetch(candidateUri).catch(() => null);
+    };
+
+    const tryDecodeFallback = async () => {
+      if (Platform.OS !== 'android') {
+        setIsPreparingImage(false);
+        return;
+      }
+      setIsPreparingImage(true);
+
+      const candidates = [...imageSourceCandidates];
+      // eslint-disable-next-line no-restricted-syntax
+      for (const candidateUri of candidates) {
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          const encodedByUri = await withTimeout(Skia.Data.fromURI(candidateUri), 3500).catch(
+            () => null
+          );
+          if (encodedByUri) {
+            const uriDecoded = Skia.Image.MakeImageFromEncoded(encodedByUri);
+            if (uriDecoded) {
+              if (!cancelled) {
+                setDecodedImage(uriDecoded);
+                setIsPreparingImage(false);
+              }
+              return;
+            }
+          }
+          // eslint-disable-next-line no-await-in-loop
+          const decoded = await tryDecodeFromFile(candidateUri);
+          if (decoded) {
+            if (!cancelled) {
+              setDecodedImage(decoded);
+              setIsPreparingImage(false);
+            }
+            return;
+          }
+        } catch (error) {
+          // Keep trying remaining candidates.
+        }
+      }
+
+      if (!cancelled) {
+        setIsPreparingImage(false);
+      }
+    };
+
+    tryDecodeFallback();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imageSourceCandidates]);
 
   const textColor = dark ? DARK_TEXT : LIGHT_TEXT;
   const backgroundColor = dark ? DARK_BACKGROUND : LIGHT_BACKGROUND;
@@ -227,28 +514,20 @@ function UploadImage({ navigation, route }: Props) {
 
   const clampTransform = useCallback(
     (nextTransform: TransformState): TransformState => {
-      if (!image) {
+      const dimensions = readImageDimensions(image);
+      if (!dimensions) {
         return { scale: 1, translateX: 0, translateY: 0 };
       }
-      const imageWidth = image.width();
-      const imageHeight = image.height();
-      if (!imageWidth || !imageHeight || !cropRect.width || !cropRect.height) {
+      const imageWidth = dimensions.width;
+      const imageHeight = dimensions.height;
+      if (!cropRect.width || !cropRect.height) {
         return nextTransform;
       }
 
-      const safeScale = clamp(nextTransform.scale, 1, 4);
-      const imageAspect = imageWidth / imageHeight;
-      const cropAspect = cropRect.width / cropRect.height;
-
-      let baseWidth = cropRect.width;
-      let baseHeight = cropRect.height;
-      if (imageAspect > cropAspect) {
-        baseHeight = cropRect.height;
-        baseWidth = baseHeight * imageAspect;
-      } else {
-        baseWidth = cropRect.width;
-        baseHeight = baseWidth / imageAspect;
-      }
+      const safeScale = clamp(nextTransform.scale, MIN_EDITOR_SCALE, MAX_EDITOR_SCALE);
+      const base = resolveContainedSize(imageWidth, imageHeight, cropRect.width, cropRect.height);
+      const baseWidth = base.width;
+      const baseHeight = base.height;
 
       const scaledWidth = baseWidth * safeScale;
       const scaledHeight = baseHeight * safeScale;
@@ -265,23 +544,15 @@ function UploadImage({ navigation, route }: Props) {
   );
 
   const imageFrame = useMemo(() => {
-    if (!image) {
+    const dimensions = readImageDimensions(image);
+    if (!dimensions) {
       return { x: 0, y: 0, width: canvasWidth, height: canvasHeight };
     }
-    const imageWidth = image.width();
-    const imageHeight = image.height();
-    const imageAspect = imageWidth / imageHeight;
-    const cropAspect = cropRect.width / cropRect.height;
-
-    let baseWidth = cropRect.width;
-    let baseHeight = cropRect.height;
-    if (imageAspect > cropAspect) {
-      baseHeight = cropRect.height;
-      baseWidth = baseHeight * imageAspect;
-    } else {
-      baseWidth = cropRect.width;
-      baseHeight = baseWidth / imageAspect;
-    }
+    const imageWidth = dimensions.width;
+    const imageHeight = dimensions.height;
+    const base = resolveContainedSize(imageWidth, imageHeight, cropRect.width, cropRect.height);
+    const baseWidth = base.width;
+    const baseHeight = base.height;
     const drawWidth = baseWidth * transform.scale;
     const drawHeight = baseHeight * transform.scale;
     return {
@@ -301,11 +572,94 @@ function UploadImage({ navigation, route }: Props) {
     transform,
   ]);
 
+  useEffect(() => {
+    setTransform((previous) => clampTransform(previous));
+  }, [clampTransform]);
+
   const filters = useMemo<FilterId[]>(() => ['original', 'warm', 'cool', 'bw', 'dramatic'], []);
+  const adjustOptions = useMemo<[AdjustPresetId, string][]>(
+    () => [
+      ['none', 'Reset'],
+      ['lift', 'Lift'],
+      ['depth', 'Depth'],
+      ['vivid', 'Vivid'],
+    ],
+    []
+  );
+  const combinedColorMatrix = useMemo(
+    () => multiply4x5(adjustMatrixById(adjust), filterMatrixById(filter)),
+    [adjust, filter]
+  );
+
+  const getOverlayFont = useCallback((size: number) => {
+    const roundedSize = Math.max(12, Math.round(size));
+    if (fontCacheRef.current.has(roundedSize)) {
+      return fontCacheRef.current.get(roundedSize)!;
+    }
+    const font = matchFont({
+      fontFamily: BODY_FONT,
+      fontSize: roundedSize,
+      fontWeight: '700',
+    });
+    fontCacheRef.current.set(roundedSize, font);
+    return font;
+  }, []);
 
   useEffect(() => {
     setTransform({ scale: 1, translateX: 0, translateY: 0 });
-  }, [ratio, sourceUri]);
+    setTextOverlays([]);
+    setStickerOverlays([]);
+    setAdjust('none');
+    setFilter('original');
+    setNewTextValue('Faith');
+    setRatio(defaultRatioForContext(route.params?.usageContext));
+  }, [route.params?.usageContext, sourceUri]);
+
+  const cropGesture = useMemo(() => {
+    const pan = Gesture.Pan()
+      .enabled(activeTool === 'crop')
+      .onBegin(() => {
+        setIsGestureActive(true);
+        panStartRef.current = {
+          x: transform.translateX,
+          y: transform.translateY,
+        };
+      })
+      .onUpdate((event) => {
+        setTransform((previous) =>
+          clampTransform({
+            ...previous,
+            translateX: panStartRef.current.x + event.translationX,
+            translateY: panStartRef.current.y + event.translationY,
+          })
+        );
+      })
+      .onEnd(() => {
+        setIsGestureActive(false);
+      })
+      .runOnJS(true);
+
+    const pinch = Gesture.Pinch()
+      .enabled(activeTool === 'crop')
+      .onBegin(() => {
+        setIsGestureActive(true);
+        pinchStartRef.current = transform.scale;
+      })
+      .onUpdate((event) => {
+        setTransform((previous) =>
+          clampTransform({
+            ...previous,
+            scale: pinchStartRef.current * event.scale,
+          })
+        );
+      })
+      .onEnd(() => {
+        setIsGestureActive(false);
+      })
+      .runOnJS(true);
+
+    return Gesture.Simultaneous(pan, pinch);
+  }, [activeTool, clampTransform, transform.scale, transform.translateX, transform.translateY]);
 
   const resolveAndClose = useCallback(
     (
@@ -337,34 +691,47 @@ function UploadImage({ navigation, route }: Props) {
     resolveAndClose({ status: 'cancelled' });
   }, [resolveAndClose]);
 
-  const nudgeCrop = useCallback(
-    (dx: number, dy: number) => {
-      setTransform((previous) =>
-        clampTransform({
-          ...previous,
-          translateX: previous.translateX + dx,
-          translateY: previous.translateY + dy,
-        })
-      );
-    },
-    [clampTransform]
-  );
-
-  const zoomCrop = useCallback(
-    (delta: number) => {
-      setTransform((previous) =>
-        clampTransform({
-          ...previous,
-          scale: previous.scale + delta,
-        })
-      );
-    },
-    [clampTransform]
-  );
-
   const setCropRatio = useCallback((nextRatio: RatioId) => {
     setRatio(nextRatio);
+    setTransform({ scale: MIN_EDITOR_SCALE, translateX: 0, translateY: 0 });
   }, []);
+
+  const addTextOverlay = useCallback(() => {
+    const trimmed = newTextValue.trim();
+    if (!trimmed || !cropRect.width || !cropRect.height) {
+      return;
+    }
+    setTextOverlays((previous) => [
+      ...previous,
+      {
+        id: `text-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+        text: trimmed,
+        x: cropRect.x + cropRect.width * 0.2,
+        y: cropRect.y + cropRect.height * 0.52,
+        size: 32,
+        color: textColorOptions[0],
+      },
+    ]);
+  }, [cropRect.height, cropRect.width, cropRect.x, cropRect.y, newTextValue]);
+
+  const addStickerOverlay = useCallback(
+    (glyph: string) => {
+      if (!cropRect.width || !cropRect.height) {
+        return;
+      }
+      setStickerOverlays((previous) => [
+        ...previous,
+        {
+          id: `sticker-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+          glyph,
+          x: cropRect.x + cropRect.width * 0.45,
+          y: cropRect.y + cropRect.height * 0.55,
+          size: 36,
+        },
+      ]);
+    },
+    [cropRect.height, cropRect.width, cropRect.x, cropRect.y]
+  );
 
   const handleDone = useCallback(async () => {
     if (isSaving) {
@@ -431,151 +798,197 @@ function UploadImage({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor }]}>
+      {Platform.OS === 'android' ? (
+        <StatusBar
+          barStyle={dark ? 'light-content' : 'dark-content'}
+          backgroundColor={backgroundColor}
+          translucent={false}
+        />
+      ) : null}
       <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            cancelEditing();
-          }}
-          style={styles.headerButton}
-          disabled={isSaving}
-        >
-          <MaterialCommunityIcons name="close" size={31} color={textColor} />
-        </Pressable>
-        <StyledText style={[styles.headerTitle, { color: textColor }]}>Edit Photo</StyledText>
-        {isSaving ? (
-          <View style={styles.headerButton}>
-            <ActivityIndicator color={PRIMARY} />
-          </View>
-        ) : (
-          <Pressable onPress={handleDone} style={styles.headerButton}>
-            <StyledText style={styles.doneText}>Done</StyledText>
+        <View style={styles.headerSide}>
+          <Pressable
+            onPress={() => {
+              cancelEditing();
+            }}
+            style={styles.headerIconButton}
+            disabled={isSaving}
+          >
+            <MaterialCommunityIcons name="close" size={30} color={textColor} />
           </Pressable>
-        )}
+        </View>
+        <View style={styles.headerCenter}>
+          <StyledText style={[styles.headerTitle, { color: textColor }]}>Edit Photo</StyledText>
+        </View>
+        <View style={styles.headerSideRight}>
+          {isSaving ? (
+            <View style={styles.doneButton}>
+              <ActivityIndicator color={PRIMARY} />
+            </View>
+          ) : (
+            <Pressable onPress={handleDone} style={styles.doneButton}>
+              <StyledText style={styles.doneText}>Done</StyledText>
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <View style={styles.body}>
-        <View
-          style={[
-            styles.canvasShell,
-            { width: canvasWidth, height: canvasHeight, backgroundColor: surfaceColor },
-          ]}
-        >
-          <Canvas ref={canvasRef} style={styles.canvas}>
-            <Rect x={0} y={0} width={canvasWidth} height={canvasHeight} color={surfaceColor} />
-            {image ? (
-              <Group clip={Skia.XYWHRect(cropRect.x, cropRect.y, cropRect.width, cropRect.height)}>
-                <SkiaImage
-                  image={image}
-                  x={imageFrame.x}
-                  y={imageFrame.y}
-                  width={imageFrame.width}
-                  height={imageFrame.height}
-                  fit="fill"
+        <GestureDetector gesture={cropGesture}>
+          <View
+            style={[
+              styles.canvasShell,
+              { width: canvasWidth, height: canvasHeight, backgroundColor: surfaceColor },
+            ]}
+          >
+            <Canvas ref={canvasRef} style={styles.canvas}>
+              <Rect x={0} y={0} width={canvasWidth} height={canvasHeight} color={surfaceColor} />
+              {image ? (
+                <Group
+                  clip={Skia.XYWHRect(cropRect.x, cropRect.y, cropRect.width, cropRect.height)}
                 >
-                  <ColorMatrix matrix={filterMatrixById(filter)} />
-                </SkiaImage>
-              </Group>
+                  <SkiaImage
+                    image={image}
+                    x={imageFrame.x}
+                    y={imageFrame.y}
+                    width={imageFrame.width}
+                    height={imageFrame.height}
+                    fit="fill"
+                  >
+                    <ColorMatrix matrix={combinedColorMatrix} />
+                  </SkiaImage>
+                  {textOverlays.map((item) => (
+                    <SkiaText
+                      key={item.id}
+                      x={item.x}
+                      y={item.y}
+                      text={item.text}
+                      color={item.color}
+                      font={getOverlayFont(item.size)}
+                    />
+                  ))}
+                  {stickerOverlays.map((item) => (
+                    <SkiaText
+                      key={item.id}
+                      x={item.x}
+                      y={item.y}
+                      text={item.glyph}
+                      color="#ffffff"
+                      font={getOverlayFont(item.size)}
+                    />
+                  ))}
+                </Group>
+              ) : null}
+            </Canvas>
+            {isPreparingImage ? (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="small" color={PRIMARY} />
+              </View>
             ) : null}
-          </Canvas>
 
-          <View pointerEvents="none" style={styles.cropOverlay}>
-            <View
-              style={[
-                styles.cropShade,
-                {
-                  left: 0,
-                  top: 0,
-                  width: canvasWidth,
-                  height: cropRect.y,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cropShade,
-                {
-                  left: 0,
-                  top: cropRect.y + cropRect.height,
-                  width: canvasWidth,
-                  height: Math.max(0, canvasHeight - (cropRect.y + cropRect.height)),
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cropShade,
-                {
-                  left: 0,
-                  top: cropRect.y,
-                  width: cropRect.x,
-                  height: cropRect.height,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cropShade,
-                {
-                  left: cropRect.x + cropRect.width,
-                  top: cropRect.y,
-                  width: Math.max(0, canvasWidth - (cropRect.x + cropRect.width)),
-                  height: cropRect.height,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cropBorder,
-                {
-                  left: cropRect.x,
-                  top: cropRect.y,
-                  width: cropRect.width,
-                  height: cropRect.height,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cropGridVertical,
-                {
-                  left: cropRect.x + cropRect.width / 3,
-                  top: cropRect.y,
-                  height: cropRect.height,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cropGridVertical,
-                {
-                  left: cropRect.x + (cropRect.width * 2) / 3,
-                  top: cropRect.y,
-                  height: cropRect.height,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cropGridHorizontal,
-                {
-                  left: cropRect.x,
-                  top: cropRect.y + cropRect.height / 3,
-                  width: cropRect.width,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cropGridHorizontal,
-                {
-                  left: cropRect.x,
-                  top: cropRect.y + (cropRect.height * 2) / 3,
-                  width: cropRect.width,
-                },
-              ]}
-            />
+            <View pointerEvents="none" style={styles.cropOverlay}>
+              <View
+                style={[
+                  styles.cropShade,
+                  {
+                    left: 0,
+                    top: 0,
+                    width: canvasWidth,
+                    height: cropRect.y,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cropShade,
+                  {
+                    left: 0,
+                    top: cropRect.y + cropRect.height,
+                    width: canvasWidth,
+                    height: Math.max(0, canvasHeight - (cropRect.y + cropRect.height)),
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cropShade,
+                  {
+                    left: 0,
+                    top: cropRect.y,
+                    width: cropRect.x,
+                    height: cropRect.height,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cropShade,
+                  {
+                    left: cropRect.x + cropRect.width,
+                    top: cropRect.y,
+                    width: Math.max(0, canvasWidth - (cropRect.x + cropRect.width)),
+                    height: cropRect.height,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cropBorder,
+                  {
+                    left: cropRect.x,
+                    top: cropRect.y,
+                    width: cropRect.width,
+                    height: cropRect.height,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cropGridVertical,
+                  {
+                    left: cropRect.x + cropRect.width / 3,
+                    top: cropRect.y,
+                    height: cropRect.height,
+                    opacity: isGestureActive ? 1 : 0.75,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cropGridVertical,
+                  {
+                    left: cropRect.x + (cropRect.width * 2) / 3,
+                    top: cropRect.y,
+                    height: cropRect.height,
+                    opacity: isGestureActive ? 1 : 0.75,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cropGridHorizontal,
+                  {
+                    left: cropRect.x,
+                    top: cropRect.y + cropRect.height / 3,
+                    width: cropRect.width,
+                    opacity: isGestureActive ? 1 : 0.75,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.cropGridHorizontal,
+                  {
+                    left: cropRect.x,
+                    top: cropRect.y + (cropRect.height * 2) / 3,
+                    width: cropRect.width,
+                    opacity: isGestureActive ? 1 : 0.75,
+                  },
+                ]}
+              />
+            </View>
           </View>
-        </View>
+        </GestureDetector>
       </View>
 
       <View
@@ -608,28 +1021,12 @@ function UploadImage({ navigation, route }: Props) {
                 </Pressable>
               ))}
             </ScrollView>
-            <View style={styles.cropControls}>
-              <Pressable style={styles.cropActionButton} onPress={() => zoomCrop(-0.12)}>
-                <MaterialCommunityIcons name="minus" size={20} color={textColor} />
-              </Pressable>
-              <Pressable style={styles.cropActionButton} onPress={() => zoomCrop(0.12)}>
-                <MaterialCommunityIcons name="plus" size={20} color={textColor} />
-              </Pressable>
-              <Pressable style={styles.cropActionButton} onPress={() => nudgeCrop(-20, 0)}>
-                <MaterialCommunityIcons name="arrow-left" size={20} color={textColor} />
-              </Pressable>
-              <Pressable style={styles.cropActionButton} onPress={() => nudgeCrop(20, 0)}>
-                <MaterialCommunityIcons name="arrow-right" size={20} color={textColor} />
-              </Pressable>
-              <Pressable style={styles.cropActionButton} onPress={() => nudgeCrop(0, -20)}>
-                <MaterialCommunityIcons name="arrow-up" size={20} color={textColor} />
-              </Pressable>
-              <Pressable style={styles.cropActionButton} onPress={() => nudgeCrop(0, 20)}>
-                <MaterialCommunityIcons name="arrow-down" size={20} color={textColor} />
-              </Pressable>
-            </View>
+            <StyledText style={[styles.helperText, { color: mutedText }]}>
+              Pinch to zoom and drag to reposition.
+            </StyledText>
           </View>
         ) : null}
+
         {activeTool === 'filters' ? (
           <ScrollView
             horizontal
@@ -650,7 +1047,9 @@ function UploadImage({ navigation, route }: Props) {
                   <Canvas style={styles.filterCanvas}>
                     {image ? (
                       <SkiaImage image={image} x={0} y={0} width={64} height={64} fit="cover">
-                        <ColorMatrix matrix={filterMatrixById(id)} />
+                        <ColorMatrix
+                          matrix={multiply4x5(adjustMatrixById(adjust), filterMatrixById(id))}
+                        />
                       </SkiaImage>
                     ) : (
                       <Rect x={0} y={0} width={64} height={64} color={surfaceColor} />
@@ -671,13 +1070,116 @@ function UploadImage({ navigation, route }: Props) {
               </Pressable>
             ))}
           </ScrollView>
-        ) : (
-          <View style={styles.placeholderTray}>
-            <StyledText style={[styles.placeholderText, { color: mutedText }]}>
-              {toolLabel(activeTool)} controls are enabled in Skia core and will surface here.
-            </StyledText>
+        ) : null}
+
+        {activeTool === 'adjust' ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.adjustRow}
+          >
+            {adjustOptions.map(([id, label]) => (
+              <Pressable
+                key={id}
+                onPress={() => setAdjust(id)}
+                style={[styles.adjustPill, adjust === id ? styles.adjustPillActive : null]}
+              >
+                <StyledText
+                  style={[styles.adjustLabel, { color: adjust === id ? '#ffffff' : mutedText }]}
+                >
+                  {label}
+                </StyledText>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : null}
+
+        {activeTool === 'text' ? (
+          <View style={styles.textTray}>
+            <View style={styles.textActionRow}>
+              <TextInput
+                value={newTextValue}
+                onChangeText={setNewTextValue}
+                placeholder="Add text"
+                placeholderTextColor={mutedText}
+                style={[
+                  styles.textInput,
+                  { color: textColor, backgroundColor: dark ? '#2a2f34' : '#e6eaee' },
+                ]}
+              />
+              <Pressable style={styles.primaryAction} onPress={addTextOverlay}>
+                <StyledText style={styles.primaryActionLabel}>Add</StyledText>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.secondaryAction,
+                  textOverlays.length < 1 ? styles.actionDisabled : null,
+                ]}
+                disabled={textOverlays.length < 1}
+                onPress={() => setTextOverlays((previous) => previous.slice(0, -1))}
+              >
+                <StyledText style={[styles.secondaryActionLabel, { color: mutedText }]}>
+                  Remove
+                </StyledText>
+              </Pressable>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.textColorRow}
+            >
+              {textColorOptions.map((color) => (
+                <Pressable
+                  key={color}
+                  style={[styles.colorSwatch, { backgroundColor: color }]}
+                  onPress={() => {
+                    setTextOverlays((previous) => {
+                      if (previous.length < 1) {
+                        return previous;
+                      }
+                      const next = [...previous];
+                      const lastIndex = next.length - 1;
+                      next[lastIndex] = { ...next[lastIndex], color };
+                      return next;
+                    });
+                  }}
+                />
+              ))}
+            </ScrollView>
           </View>
-        )}
+        ) : null}
+
+        {activeTool === 'stickers' ? (
+          <View style={styles.stickersTray}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.stickerRow}
+            >
+              {stickerOptions.map((item) => (
+                <Pressable
+                  key={item}
+                  style={styles.stickerChip}
+                  onPress={() => addStickerOverlay(item)}
+                >
+                  <StyledText style={styles.stickerLabel}>{item}</StyledText>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable
+              style={[
+                styles.secondaryAction,
+                stickerOverlays.length < 1 ? styles.actionDisabled : null,
+              ]}
+              disabled={stickerOverlays.length < 1}
+              onPress={() => setStickerOverlays((previous) => previous.slice(0, -1))}
+            >
+              <StyledText style={[styles.secondaryActionLabel, { color: mutedText }]}>
+                Remove Last
+              </StyledText>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       <View
@@ -701,7 +1203,7 @@ function UploadImage({ navigation, route }: Props) {
                   },
                 ]}
               >
-                {toolLabel(id).toUpperCase()}
+                {toolLabel(id)}
               </StyledText>
             </Pressable>
           );
@@ -717,26 +1219,47 @@ const styles = StyleSheet.create({
   },
   header: {
     height: 56,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  headerButton: {
-    width: 44,
-    height: 44,
+  headerSide: {
+    width: 86,
+    alignItems: 'flex-start',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerSideRight: {
+    width: 86,
+    alignItems: 'flex-end',
+  },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontFamily: HEADER_FONT,
-    fontSize: 40 / 2,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  doneButton: {
+    minWidth: 58,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   doneText: {
     fontFamily: BODY_FONT,
     color: PRIMARY,
-    fontSize: 34 / 2,
+    fontSize: 17,
     fontWeight: '700',
   },
   body: {
@@ -744,7 +1267,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   canvasShell: {
     borderRadius: 24,
@@ -759,6 +1282,11 @@ const styles = StyleSheet.create({
   canvas: {
     flex: 1,
   },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cropOverlay: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -768,7 +1296,7 @@ const styles = StyleSheet.create({
   },
   cropBorder: {
     position: 'absolute',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#ffffff',
   },
   cropGridVertical: {
@@ -782,52 +1310,46 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
   contextTray: {
-    height: 120,
+    minHeight: 134,
     borderTopWidth: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 14,
   },
   cropTrayContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     justifyContent: 'center',
-    rowGap: 10,
+    rowGap: 12,
   },
   cropRatioRow: {
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   cropRatioPill: {
-    paddingHorizontal: 12,
-    height: 32,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(113,128,150,0.2)',
+    backgroundColor: 'rgba(100, 116, 139, 0.18)',
   },
   cropRatioPillActive: {
     backgroundColor: PRIMARY,
   },
   cropRatioPillLabel: {
     fontFamily: BODY_FONT,
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
   },
-  cropControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    columnGap: 8,
-  },
-  cropActionButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(113,128,150,0.2)',
+  helperText: {
+    fontFamily: OTHER_FONT,
+    fontSize: 12,
+    paddingHorizontal: 2,
   },
   filterRow: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 18,
-    gap: 16,
+    gap: 14,
+    paddingBottom: 8,
   },
   filterItem: {
     alignItems: 'center',
@@ -847,17 +1369,112 @@ const styles = StyleSheet.create({
   filterLabel: {
     marginTop: 8,
     fontFamily: BODY_FONT,
-    fontSize: 22 / 2,
+    fontSize: 11,
   },
-  placeholderTray: {
+  adjustRow: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  adjustPill: {
+    height: 34,
+    paddingHorizontal: 16,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: 'rgba(100, 116, 139, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
   },
-  placeholderText: {
-    fontFamily: OTHER_FONT,
-    fontSize: 24 / 2,
-    textAlign: 'center',
+  adjustPillActive: {
+    backgroundColor: PRIMARY,
+    borderColor: PRIMARY,
+  },
+  adjustLabel: {
+    fontFamily: BODY_FONT,
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+  textTray: {
+    rowGap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  textActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 8,
+  },
+  textInput: {
+    flex: 1,
+    height: 36,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    fontFamily: BODY_FONT,
+    fontSize: 13,
+  },
+  primaryAction: {
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: PRIMARY,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  primaryActionLabel: {
+    color: '#ffffff',
+    fontFamily: BODY_FONT,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  secondaryAction: {
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: 'rgba(100, 116, 139, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  secondaryActionLabel: {
+    fontFamily: BODY_FONT,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  textColorRow: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  colorSwatch: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  actionDisabled: {
+    opacity: 0.45,
+  },
+  stickersTray: {
+    rowGap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  stickerRow: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  stickerChip: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(100, 116, 139, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(100, 116, 139, 0.12)',
+  },
+  stickerLabel: {
+    fontSize: 22,
   },
   toolNav: {
     height: 72,
@@ -875,8 +1492,9 @@ const styles = StyleSheet.create({
   },
   toolLabel: {
     fontFamily: OTHER_FONT,
-    fontSize: 20 / 2,
+    fontSize: 10,
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { View, FlatList, SafeAreaView, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import { CompositeScreenProps } from '@react-navigation/native';
@@ -285,27 +285,19 @@ function Saved({ navigation }: Props) {
 
             if (postData) {
               return (
-                <TouchableOpacity
-                  onPress={() => {
-                    if (postData.postId) {
-                      navigation.navigate('SinglePost', {
-                        postId: postData.postId,
-                      });
-
-                      // navigation.navigate( 'Single', {
-                      //   postId: postData.id,
-                      // });
+                <SocialItem
+                  itemData={postData}
+                  index={index}
+                  onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+                  removePost={removePost}
+                  fromSavedPosts
+                  onCommentsPress={() => {
+                    const postId = postData.postId ?? postData.id ?? postData._id;
+                    if (postId) {
+                      navigation.navigate('SinglePost', { postId });
                     }
                   }}
-                >
-                  <SocialItem
-                    itemData={postData}
-                    index={index}
-                    onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-                    removePost={removePost}
-                    fromSavedPosts
-                  />
-                </TouchableOpacity>
+                />
               );
             }
           } else if (user && item.created && item.image) {

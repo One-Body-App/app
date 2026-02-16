@@ -17,7 +17,9 @@ type CustomVideoProps = {
   onLoad?: (data: OnLoadData) => void;
 };
 
-const CustomVideo = forwardRef<Video, CustomVideoProps>((props, ref) => {
+type VideoRef = React.ElementRef<typeof Video>;
+
+const CustomVideo = forwardRef<VideoRef, CustomVideoProps>((props, ref) => {
   const {
     source,
     paused = false,
@@ -31,9 +33,9 @@ const CustomVideo = forwardRef<Video, CustomVideoProps>((props, ref) => {
     onLoad,
   } = props;
 
-  const videoRef = useRef<Video>(null);
+  const videoRef = useRef<VideoRef>(null);
 
-  useImperativeHandle(ref, () => videoRef.current as Video);
+  useImperativeHandle(ref, () => videoRef.current as VideoRef);
 
   return (
     <View style={[styles.container, style]}>

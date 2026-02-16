@@ -276,6 +276,16 @@ export type OnboardingStackParamList = {
   };
 };
 
+type LoginMfaChallenge = {
+  mfaRequired: true;
+  enrollmentRequired: boolean;
+  mfaToken: string;
+  preferredMethod: 'passkey' | 'totp' | 'email' | 'backup';
+  availableMethods: Array<'passkey' | 'totp' | 'email' | 'backup'>;
+  emailMasked: string;
+  reason: 'mandatory_mfa' | 'step_up';
+};
+
 export type MainStackParamList = {
   MainRoot?: NavigatorScreenParams<MainDrawerParamsList>;
   Post?: {
@@ -322,6 +332,8 @@ export type MainStackParamList = {
     showConfirmationEmailMessage?: boolean;
     action?: string;
     resetPassword?: boolean;
+    initialMfaChallenge?: LoginMfaChallenge;
+    prefillEmail?: string;
   };
   SignUp: {
     oauth_token?: string;
@@ -350,6 +362,7 @@ type ConfirmLoginScreen = {
   token?: string;
   apiKey?: string;
   lang?: string;
+  prefillEmail?: string;
 };
 
 export type HeaderProps = Omit<TextProps, 'style'> & {

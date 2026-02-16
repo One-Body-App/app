@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Text, View, Touchable, ScrollView, Image, FlatList, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/components/Header';
 import { styles } from './styles';
 
-function PrivacyPolicy({ navigation }) {
+function PrivacyPolicy({ navigation }: { navigation: any }) {
   return (
     <View style={styles.container}>
       <Header

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
@@ -7,17 +8,34 @@ import {
   Image,
   Platform,
   PermissionsAndroid,
+  StatusBar,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LottieView from 'lottie-react-native';
 import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { setLoginData } from '@/src/redux/actions/AuthActions';
-import { loginWithEmailAndPassword, verifyEmailTwoFactorCode } from '@/services/login';
+import {
+  beginPasskeyLogin,
+  beginPasskeyRegistration,
+  beginTotpSetup,
+  loginWithEmailAndPassword,
+  MfaChallengeResponse,
+  MfaMethod,
+  sendEmailMfaCode,
+  verifyBackupCode,
+  verifyEmailMfaCode,
+  verifyTotpCode,
+  verifyTotpSetup,
+  finishPasskeyLogin,
+  finishPasskeyRegistration,
+} from '@/services/login';
 import {
   ensureGoogleSigninConfigured,
   exchangeSocialToken,
@@ -34,31 +52,193 @@ type Nav = NativeStackNavigationProp<MainStackParamList, 'Login'>;
 
 const googleIcon = require('@/assets/icons/google.png');
 
+const passkeyHeroAnimation = require('../../assets/animations/Password Authentication');
+const passkeyHeroAnimationAndroid = require('../../assets/animations/onboarding-intro');
+const passkeyHeroFallbackAnimation = require('../../assets/animations/choose-your-colors');
+
+const oneBodyLottieColorFilters = [
+  { keypath: 'Correct', color: '#12D2D9' },
+  { keypath: 'Cloud e', color: '#12D2D9' },
+  { keypath: 'Finger Scan', color: '#126B87' },
+  { keypath: 'Pin 1', color: '#126B87' },
+  { keypath: 'Pin 2', color: '#126B87' },
+  { keypath: 'Pin 3', color: '#126B87' },
+  { keypath: 'Pin 4', color: '#126B87' },
+  { keypath: 'Pin 5', color: '#126B87' },
+  { keypath: 'Pin 6', color: '#126B87' },
+  { keypath: 'Pin Tab', color: '#032F3C' },
+  { keypath: 'Object', color: '#032F3C' },
+  { keypath: 'Cloud 1', color: '#12D2D9' },
+];
+
 type LoginComponentProps = {
   currentUserEmail?: string;
   clearOnMountKey?: string;
+  initialMfaChallenge?: MfaChallengeResponse;
+  onMfaLaunchScreenChange?: (isVisible: boolean) => void;
 };
 
-function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentProps) {
+const passkeyClient: any = (() => {
+  try {
+    // eslint-disable-next-line global-require
+    return require('react-native-passkey');
+  } catch (error) {
+    return null;
+  }
+})();
+
+const resolvePasskeyApi = () => {
+  const passkeyApi =
+    passkeyClient?.Passkey ??
+    passkeyClient?.default?.Passkey ??
+    passkeyClient?.default ??
+    passkeyClient;
+
+  return {
+    register: passkeyApi?.register,
+    authenticate: passkeyApi?.authenticate,
+    isSupported:
+      typeof passkeyApi?.isSupported === 'function'
+        ? passkeyApi.isSupported.bind(passkeyApi)
+        : undefined,
+  };
+};
+
+const sanitizeAnalyticsReason = (value: unknown) => {
+  if (typeof value !== 'string' || !value.trim()) {
+    return 'unknown';
+  }
+
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  return normalized.slice(0, 72) || 'unknown';
+};
+
+const toBase64FromBase64Url = (value?: string) => {
+  if (!value || typeof value !== 'string') {
+    return value ?? '';
+  }
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const paddingNeeded = normalized.length % 4;
+  if (paddingNeeded === 0) {
+    return normalized;
+  }
+  return `${normalized}${'='.repeat(4 - paddingNeeded)}`;
+};
+
+const toBase64UrlFromBase64 = (value?: string) => {
+  if (!value || typeof value !== 'string') {
+    return value ?? '';
+  }
+  return value.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+};
+
+const normalizePasskeyRegistrationRequestForNative = (request: any) => ({
+  ...request,
+  challenge: toBase64FromBase64Url(request?.challenge),
+  user: {
+    ...(request?.user ?? {}),
+    id: toBase64FromBase64Url(request?.user?.id),
+  },
+  excludeCredentials: Array.isArray(request?.excludeCredentials)
+    ? request.excludeCredentials.map((credential: any) => ({
+        ...credential,
+        id: toBase64FromBase64Url(credential?.id),
+      }))
+    : request?.excludeCredentials,
+});
+
+const normalizePasskeyAuthenticationRequestForNative = (request: any) => ({
+  ...request,
+  challenge: toBase64FromBase64Url(request?.challenge),
+  allowCredentials: Array.isArray(request?.allowCredentials)
+    ? request.allowCredentials.map((credential: any) => ({
+        ...credential,
+        id: toBase64FromBase64Url(credential?.id),
+      }))
+    : request?.allowCredentials,
+});
+
+const normalizePasskeyRegistrationResponseForServer = (response: any) => ({
+  ...response,
+  type: response?.type ?? 'public-key',
+  id: toBase64UrlFromBase64(response?.id),
+  rawId: toBase64UrlFromBase64(response?.rawId),
+  response: {
+    ...(response?.response ?? {}),
+    clientDataJSON: toBase64UrlFromBase64(response?.response?.clientDataJSON),
+    attestationObject: toBase64UrlFromBase64(response?.response?.attestationObject),
+  },
+});
+
+const normalizePasskeyAuthenticationResponseForServer = (response: any) => ({
+  ...response,
+  type: response?.type ?? 'public-key',
+  id: toBase64UrlFromBase64(response?.id),
+  rawId: toBase64UrlFromBase64(response?.rawId),
+  response: {
+    ...(response?.response ?? {}),
+    authenticatorData: toBase64UrlFromBase64(response?.response?.authenticatorData),
+    clientDataJSON: toBase64UrlFromBase64(response?.response?.clientDataJSON),
+    signature: toBase64UrlFromBase64(response?.response?.signature),
+    userHandle: response?.response?.userHandle
+      ? toBase64UrlFromBase64(response.response.userHandle)
+      : response?.response?.userHandle,
+  },
+});
+
+function LoginComponent({
+  currentUserEmail,
+  clearOnMountKey,
+  initialMfaChallenge,
+  onMfaLaunchScreenChange,
+}: LoginComponentProps) {
   const dispatch = useDispatch();
   const navigation = useNavigation<Nav>();
   const { dark } = useTheme();
   const styles = useMemo(() => createLoginStyles(dark), [dark]);
+  const firebaseAnalytics = useMemo(() => {
+    try {
+      return getAnalytics();
+    } catch (_error) {
+      return null;
+    }
+  }, []);
+
+  const trackMfaEvent = useCallback(
+    (eventName: string, params: Record<string, any>) => {
+      if (!firebaseAnalytics) {
+        return;
+      }
+
+      logEvent(firebaseAnalytics, eventName as any, params).catch(() => undefined);
+    },
+    [firebaseAnalytics]
+  );
 
   const [form, setForm] = useState({
     email: currentUserEmail ?? '',
-    emailError: '',
     password: '',
-    passwordError: '',
-    emailTwoFactorCode: '',
+    code: '',
   });
   const [hidePass, setHidePass] = useState(true);
-
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  const [needsEmailTwoFactor, setNeedsEmailTwoFactor] = useState(false);
+  const [successText, setSuccessText] = useState<string>('');
   const [locationPrompted, setLocationPrompted] = useState(false);
+  const [mfaChallenge, setMfaChallenge] = useState<MfaChallengeResponse | null>(null);
+  const [selectedMfaMethod, setSelectedMfaMethod] = useState<MfaMethod>('passkey');
+  const [totpOtpauth, setTotpOtpauth] = useState<string>('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [pendingAccessToken, setPendingAccessToken] = useState<string>('');
+  const [hasAutoPromptedPasskey, setHasAutoPromptedPasskey] = useState(false);
+  const [showOtherMfaOptions, setShowOtherMfaOptions] = useState(false);
+  const [hasPasskeyHeroLoaded, setHasPasskeyHeroLoaded] = useState(false);
+  const [useAndroidFallbackHero, setUseAndroidFallbackHero] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
@@ -70,20 +250,122 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
     if (!clearOnMountKey) return;
     setForm({
       email: '',
-      emailError: '',
       password: '',
-      passwordError: '',
-      emailTwoFactorCode: '',
+      code: '',
     });
     setError('');
-    setNeedsEmailTwoFactor(false);
+    setSuccessText('');
+    setMfaChallenge(null);
+    setBackupCodes([]);
+    setPendingAccessToken('');
+    setSelectedMfaMethod('passkey');
+    setTotpOtpauth('');
     setHidePass(true);
     setSocialLoading(false);
+    setHasAutoPromptedPasskey(false);
+    setShowOtherMfaOptions(false);
+    setHasPasskeyHeroLoaded(false);
+    setUseAndroidFallbackHero(false);
   }, [clearOnMountKey]);
 
   useEffect(() => {
     ensureGoogleSigninConfigured();
   }, []);
+
+  useEffect(() => {
+    if (!initialMfaChallenge) return;
+
+    const preferredMethod: MfaMethod = initialMfaChallenge.availableMethods?.includes('passkey')
+      ? 'passkey'
+      : initialMfaChallenge.preferredMethod;
+
+    setMfaChallenge(initialMfaChallenge);
+    setSelectedMfaMethod(preferredMethod);
+    setForm((prev) => ({
+      ...prev,
+      email: currentUserEmail ?? prev.email,
+      code: '',
+    }));
+    setError('');
+    setSuccessText('');
+    setTotpOtpauth('');
+    setBackupCodes([]);
+    setPendingAccessToken('');
+    setHasAutoPromptedPasskey(false);
+    setShowOtherMfaOptions(false);
+    setHasPasskeyHeroLoaded(false);
+    setUseAndroidFallbackHero(false);
+    trackMfaEvent('mfa_method_selected', {
+      method: preferredMethod,
+      source: 'challenge_prefill',
+      enrollment_required: initialMfaChallenge.enrollmentRequired,
+      reason: initialMfaChallenge.reason,
+      fallback: preferredMethod !== initialMfaChallenge.preferredMethod,
+    });
+
+    if (preferredMethod === 'email' && !initialMfaChallenge.enrollmentRequired) {
+      sendEmailMfaCode({ mfaToken: initialMfaChallenge.mfaToken })
+        .then((res) => {
+          if (res.status === 200) {
+            setSuccessText(`A verification code was sent to ${initialMfaChallenge.emailMasked}.`);
+          }
+        })
+        .catch(() => undefined);
+    }
+  }, [currentUserEmail, initialMfaChallenge, trackMfaEvent]);
+
+  const completeLogin = useCallback(
+    (accessToken: string) => {
+      dispatch(setLoginData({ token: accessToken }));
+      navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+    },
+    [dispatch, navigation]
+  );
+
+  const handleAuthResult = useCallback(
+    async (response: any) => {
+      if (response?.mfaRequired) {
+        const challenge = response as MfaChallengeResponse;
+        const preferredMethod: MfaMethod = challenge.availableMethods?.includes('passkey')
+          ? 'passkey'
+          : challenge.preferredMethod;
+        setMfaChallenge(challenge);
+        setSelectedMfaMethod(preferredMethod);
+        setForm((prev) => ({ ...prev, code: '' }));
+        setSuccessText('');
+        setTotpOtpauth('');
+        setShowOtherMfaOptions(false);
+        trackMfaEvent('mfa_method_selected', {
+          method: preferredMethod,
+          source: 'challenge_response',
+          enrollment_required: challenge.enrollmentRequired,
+          reason: challenge.reason,
+          fallback: preferredMethod !== challenge.preferredMethod,
+        });
+        if (preferredMethod === 'email' && !challenge.enrollmentRequired) {
+          await sendEmailMfaCode({ mfaToken: challenge.mfaToken });
+          setSuccessText(`A verification code was sent to ${challenge.emailMasked}.`);
+        }
+        return;
+      }
+
+      const token = response?.tokens?.accessToken;
+      if (!token) {
+        throw new Error('Invalid authentication response');
+      }
+
+      const codes = Array.isArray(response?.backupCodes) ? response.backupCodes : [];
+      if (codes.length > 0) {
+        setBackupCodes(codes);
+        setPendingAccessToken(token);
+        setSuccessText('Save these backup codes in a safe place. They are shown only once.');
+        return;
+      }
+
+      completeLogin(token);
+    },
+    [completeLogin, trackMfaEvent]
+  );
 
   const ensureLocationPermission = useCallback(async () => {
     if (locationPrompted) return;
@@ -119,29 +401,377 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
     }
   }, [locationPrompted]);
 
+  const runPasskey = useCallback(async () => {
+    if (!mfaChallenge) return;
+    const { register, authenticate, isSupported } = resolvePasskeyApi();
+    const flow = mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge';
+    trackMfaEvent('mfa_method_begin', {
+      method: 'passkey',
+      flow,
+      reason: mfaChallenge.reason,
+    });
+
+    if (typeof isSupported === 'function' && !isSupported()) {
+      setError(
+        `Passkeys are not supported on this ${Platform.OS === 'android' ? 'Android' : 'iOS'} device.`
+      );
+      trackMfaEvent('mfa_method_failure', {
+        method: 'passkey',
+        flow,
+        reason: 'unsupported_device',
+      });
+      return;
+    }
+
+    if (!register || !authenticate) {
+      setError('Passkey API is unavailable in this build.');
+      trackMfaEvent('mfa_method_failure', {
+        method: 'passkey',
+        flow,
+        reason: 'passkey_api_unavailable',
+      });
+      return;
+    }
+
+    try {
+      if (mfaChallenge.enrollmentRequired) {
+        let begin = await beginPasskeyRegistration({
+          mfaToken: mfaChallenge.mfaToken,
+          deviceName: Platform.OS === 'ios' ? 'iPhone' : 'Android Device',
+        });
+
+        if (begin.status >= 500 && Platform.OS === 'android') {
+          begin = await beginPasskeyRegistration({
+            mfaToken: mfaChallenge.mfaToken,
+          });
+        }
+
+        if (begin.status !== 200) {
+          throw new Error(
+            (begin.response as any)?.message ?? 'Unable to begin passkey registration.'
+          );
+        }
+        const nativeRegistrationRequest = normalizePasskeyRegistrationRequestForNative(
+          begin.response
+        );
+        const credential = await register(nativeRegistrationRequest);
+        const finish = await finishPasskeyRegistration({
+          mfaToken: mfaChallenge.mfaToken,
+          response: normalizePasskeyRegistrationResponseForServer(credential),
+        });
+        if (finish.status !== 200) {
+          throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
+        }
+        trackMfaEvent('mfa_method_success', {
+          method: 'passkey',
+          flow,
+        });
+        await handleAuthResult(finish.response);
+        return;
+      }
+
+      const begin = await beginPasskeyLogin({ mfaToken: mfaChallenge.mfaToken });
+      if (begin.status !== 200) {
+        throw new Error((begin.response as any)?.message ?? 'Unable to begin passkey login.');
+      }
+      const nativeAuthenticationRequest = normalizePasskeyAuthenticationRequestForNative(
+        begin.response
+      );
+      const assertion = await authenticate(nativeAuthenticationRequest);
+      const finish = await finishPasskeyLogin({
+        mfaToken: mfaChallenge.mfaToken,
+        response: normalizePasskeyAuthenticationResponseForServer(assertion),
+      });
+      if (finish.status !== 200) {
+        throw new Error((finish.response as any)?.message ?? 'Unable to verify passkey.');
+      }
+      trackMfaEvent('mfa_method_success', {
+        method: 'passkey',
+        flow,
+      });
+      await handleAuthResult(finish.response);
+    } catch (mfaError: any) {
+      trackMfaEvent('mfa_method_failure', {
+        method: 'passkey',
+        flow,
+        reason: sanitizeAnalyticsReason(mfaError?.message),
+      });
+      throw mfaError;
+    }
+  }, [handleAuthResult, mfaChallenge, trackMfaEvent]);
+
+  useEffect(() => {
+    setHasAutoPromptedPasskey(false);
+  }, [mfaChallenge?.mfaToken]);
+
+  useEffect(() => {
+    if (!mfaChallenge) return;
+    if (mfaChallenge.enrollmentRequired) return;
+    if (selectedMfaMethod !== 'passkey') return;
+    if (hasAutoPromptedPasskey) return;
+
+    setHasAutoPromptedPasskey(true);
+    runPasskey().catch((e: any) => {
+      setError(e?.message ?? 'Passkey verification failed.');
+    });
+  }, [hasAutoPromptedPasskey, mfaChallenge, runPasskey, selectedMfaMethod]);
+
+  const submitMfa = useCallback(async () => {
+    if (!mfaChallenge) return;
+    if (!mfaChallenge.mfaToken) {
+      throw new Error('Missing MFA session');
+    }
+
+    if (selectedMfaMethod === 'passkey') {
+      await runPasskey();
+      return;
+    }
+
+    const flow = mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge';
+    trackMfaEvent('mfa_method_begin', {
+      method: selectedMfaMethod,
+      flow,
+      reason: mfaChallenge.reason,
+    });
+
+    try {
+      if (selectedMfaMethod === 'totp' && mfaChallenge.enrollmentRequired && !totpOtpauth) {
+        const begin = await beginTotpSetup({ mfaToken: mfaChallenge.mfaToken });
+        if (begin.status !== 200) {
+          throw new Error(
+            (begin.response as any)?.message ?? 'Unable to begin authenticator setup.'
+          );
+        }
+        setTotpOtpauth((begin.response as any)?.otpauth ?? '');
+        setShowOtherMfaOptions(true);
+        setSuccessText('Enter the verification code from your authenticator app.');
+        return;
+      }
+
+      if (!form.code.trim()) {
+        setError('Enter your verification code.');
+        return;
+      }
+
+      if (selectedMfaMethod === 'totp') {
+        if (mfaChallenge.enrollmentRequired) {
+          if (!totpOtpauth) {
+            const begin = await beginTotpSetup({ mfaToken: mfaChallenge.mfaToken });
+            if (begin.status !== 200) {
+              throw new Error(
+                (begin.response as any)?.message ?? 'Unable to begin authenticator setup.'
+              );
+            }
+            setTotpOtpauth((begin.response as any)?.otpauth ?? '');
+          }
+          const verify = await verifyTotpSetup({
+            mfaToken: mfaChallenge.mfaToken,
+            code: form.code.trim(),
+          });
+          if (verify.status !== 200) {
+            throw new Error((verify.response as any)?.message ?? 'Invalid authenticator code.');
+          }
+          trackMfaEvent('mfa_method_success', { method: selectedMfaMethod, flow });
+          await handleAuthResult(verify.response);
+          return;
+        }
+
+        const verify = await verifyTotpCode({
+          mfaToken: mfaChallenge.mfaToken,
+          code: form.code.trim(),
+        });
+        if (verify.status !== 200) {
+          throw new Error((verify.response as any)?.message ?? 'Invalid authenticator code.');
+        }
+        trackMfaEvent('mfa_method_success', { method: selectedMfaMethod, flow });
+        await handleAuthResult(verify.response);
+        return;
+      }
+
+      if (selectedMfaMethod === 'backup') {
+        const verify = await verifyBackupCode({
+          mfaToken: mfaChallenge.mfaToken,
+          code: form.code.trim(),
+        });
+        if (verify.status !== 200) {
+          throw new Error((verify.response as any)?.message ?? 'Invalid backup code.');
+        }
+        trackMfaEvent('mfa_method_success', { method: selectedMfaMethod, flow });
+        await handleAuthResult(verify.response);
+        return;
+      }
+
+      const verify = await verifyEmailMfaCode({
+        mfaToken: mfaChallenge.mfaToken,
+        code: form.code.trim(),
+      });
+      if (verify.status !== 200) {
+        throw new Error((verify.response as any)?.message ?? 'Invalid email code.');
+      }
+      trackMfaEvent('mfa_method_success', { method: selectedMfaMethod, flow });
+      await handleAuthResult(verify.response);
+    } catch (mfaError: any) {
+      trackMfaEvent('mfa_method_failure', {
+        method: selectedMfaMethod,
+        flow,
+        reason: sanitizeAnalyticsReason(mfaError?.message),
+      });
+      throw mfaError;
+    }
+  }, [
+    form.code,
+    handleAuthResult,
+    mfaChallenge,
+    runPasskey,
+    selectedMfaMethod,
+    totpOtpauth,
+    trackMfaEvent,
+  ]);
+
+  const selectMethod = useCallback(
+    async (method: MfaMethod) => {
+      if (!mfaChallenge) return;
+      const fallback = method !== mfaChallenge.preferredMethod;
+      setSelectedMfaMethod(method);
+      setError('');
+      setSuccessText('');
+      setForm((prev) => ({ ...prev, code: '' }));
+      trackMfaEvent('mfa_method_selected', {
+        method,
+        source: 'user',
+        enrollment_required: mfaChallenge.enrollmentRequired,
+        reason: mfaChallenge.reason,
+        fallback,
+        preferred_method: mfaChallenge.preferredMethod,
+      });
+      if (fallback) {
+        trackMfaEvent('mfa_fallback_selected', {
+          from_method: mfaChallenge.preferredMethod,
+          to_method: method,
+          enrollment_required: mfaChallenge.enrollmentRequired,
+          reason: mfaChallenge.reason,
+        });
+      }
+      if (mfaChallenge.enrollmentRequired) {
+        setShowOtherMfaOptions(method !== 'passkey');
+      } else {
+        setShowOtherMfaOptions(true);
+      }
+
+      if (method === 'email' && !mfaChallenge.enrollmentRequired) {
+        trackMfaEvent('mfa_method_begin', {
+          method: 'email',
+          flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
+          reason: mfaChallenge.reason,
+        });
+        const res = await sendEmailMfaCode({ mfaToken: mfaChallenge.mfaToken });
+        if (res.status !== 200) {
+          trackMfaEvent('mfa_method_failure', {
+            method: 'email',
+            flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
+            reason: sanitizeAnalyticsReason((res.response as any)?.message),
+          });
+          throw new Error((res.response as any)?.message ?? 'Unable to send email code.');
+        }
+        trackMfaEvent('mfa_method_success', {
+          method: 'email',
+          flow: mfaChallenge.enrollmentRequired ? 'enroll' : 'challenge',
+          stage: 'send_code',
+        });
+        setSuccessText(`A verification code was sent to ${mfaChallenge.emailMasked}.`);
+      }
+    },
+    [mfaChallenge, trackMfaEvent]
+  );
+
+  const handleEmailAsMfaEnrollment = async () => {
+    if (!mfaChallenge || !mfaChallenge.enrollmentRequired) {
+      return;
+    }
+
+    setError('');
+    setSuccessText('');
+    dispatch(setLoader(true));
+    try {
+      const fallback = mfaChallenge.preferredMethod !== 'email';
+      trackMfaEvent('mfa_method_selected', {
+        method: 'email',
+        source: 'user',
+        enrollment_required: true,
+        reason: mfaChallenge.reason,
+        fallback,
+        preferred_method: mfaChallenge.preferredMethod,
+      });
+      if (fallback) {
+        trackMfaEvent('mfa_fallback_selected', {
+          from_method: selectedMfaMethod,
+          to_method: 'email',
+          enrollment_required: true,
+          reason: mfaChallenge.reason,
+        });
+      }
+
+      trackMfaEvent('mfa_method_begin', {
+        method: 'email',
+        flow: 'enroll',
+        reason: mfaChallenge.reason,
+      });
+
+      const verify = await verifyEmailMfaCode({
+        mfaToken: mfaChallenge.mfaToken,
+        code: '',
+      });
+
+      if (verify.status !== 200) {
+        throw new Error((verify.response as any)?.message ?? 'Unable to continue with email MFA.');
+      }
+
+      const accessToken = (verify.response as any)?.tokens?.accessToken;
+      if (!accessToken) {
+        throw new Error('Unable to continue with email MFA.');
+      }
+
+      trackMfaEvent('mfa_method_success', {
+        method: 'email',
+        flow: 'enroll',
+      });
+
+      completeLogin(accessToken);
+      setTimeout(() => {
+        Alert.alert(
+          'Security Notice',
+          'Email alone is not a secure method of 2 factor authentication. Please consider utilizing a Passkey or Authenticator to secure your account.'
+        );
+      }, 300);
+    } catch (mfaError: any) {
+      trackMfaEvent('mfa_method_failure', {
+        method: 'email',
+        flow: 'enroll',
+        reason: sanitizeAnalyticsReason(mfaError?.message),
+      });
+      setError(mfaError?.message ?? 'Unable to continue with email MFA.');
+    } finally {
+      dispatch(setLoader(false));
+    }
+  };
+
   const signInUser = useCallback(async () => {
     try {
       setError('');
+      setSuccessText('');
       dispatch(setLoader(true));
-      await ensureLocationPermission();
 
-      if (needsEmailTwoFactor) {
-        if (!form.email || !form.emailTwoFactorCode) {
-          setError('Enter the code we sent to your email.');
-          return;
-        }
-        const res = await verifyEmailTwoFactorCode({
-          email: form.email,
-          code: form.emailTwoFactorCode,
-        });
-        if (res.status === 200) {
-          dispatch(setLoginData({ token: (res.response as any).tokens.accessToken }));
-          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
-        } else {
-          setError('Invalid code. Please try again.');
-        }
+      if (backupCodes.length > 0 && pendingAccessToken) {
+        completeLogin(pendingAccessToken);
         return;
       }
+
+      if (mfaChallenge) {
+        await submitMfa();
+        return;
+      }
+
+      await ensureLocationPermission();
 
       if (!form.email || !form.password) {
         setError('Enter your email and password.');
@@ -150,32 +780,55 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
       const res = await loginWithEmailAndPassword({ email: form.email, password: form.password });
 
       if (res.status === 200) {
-        if ((res.response as any)?.twoFactorRequired) {
-          setNeedsEmailTwoFactor(true);
-        } else {
-          dispatch(setLoginData({ token: (res.response as any).tokens.accessToken }));
-          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
-        }
+        await handleAuthResult(res.response);
       } else {
         const apiMessage = (res.response as any)?.message;
-        setError(
+        const loginErrorMessage =
           typeof apiMessage === 'string'
             ? apiMessage
-            : 'Unable to sign in. Please check your credentials.'
-        );
+            : 'Unable to sign in. Please check your credentials.';
+        if (loginErrorMessage.toLowerCase().includes('verify your email')) {
+          navigation.navigate('ConfirmLogin', {
+            showConfirmationEmailMessage: true,
+            prefillEmail: form.email,
+          } as any);
+          return;
+        }
+        setError(loginErrorMessage);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Sign in failed.');
+      const fallbackMessage = e?.message ?? 'Sign in failed.';
+      if (fallbackMessage.toLowerCase().includes('verify your email')) {
+        navigation.navigate('ConfirmLogin', {
+          showConfirmationEmailMessage: true,
+          prefillEmail: form.email,
+        } as any);
+        return;
+      }
+      setError(fallbackMessage);
     } finally {
       dispatch(setLoader(false));
     }
-  }, [form, needsEmailTwoFactor, dispatch, navigation, ensureLocationPermission]);
+  }, [
+    backupCodes.length,
+    completeLogin,
+    dispatch,
+    ensureLocationPermission,
+    form.email,
+    form.password,
+    handleAuthResult,
+    mfaChallenge,
+    navigation,
+    pendingAccessToken,
+    submitMfa,
+  ]);
 
   const handleSocialLogin = useCallback(
     async (provider: 'google' | 'apple') => {
-      if (socialLoading) return;
+      if (socialLoading || mfaChallenge) return;
       const providerLabel = provider === 'google' ? 'Google' : 'Apple';
       setError('');
+      setSuccessText('');
       dispatch(setLoader(true));
       setSocialLoading(true);
       try {
@@ -199,9 +852,8 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
           details: tokenResult.details,
         });
 
-        if (res.status === 200 && res.response?.tokens?.accessToken) {
-          dispatch(setLoginData({ token: res.response.tokens.accessToken }));
-          navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
+        if (res.status === 200) {
+          await handleAuthResult(res.response as any);
         } else {
           const apiMessage = (res.response as any)?.message;
           setError(typeof apiMessage === 'string' ? apiMessage : 'Unable to sign in.');
@@ -213,8 +865,498 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
         setSocialLoading(false);
       }
     },
-    [dispatch, ensureLocationPermission, navigation, socialLoading]
+    [dispatch, ensureLocationPermission, handleAuthResult, mfaChallenge, socialLoading]
   );
+
+  const methodButton = (method: MfaMethod, label: string) => {
+    const isSelected = selectedMfaMethod === method;
+    let labelColor = '#222';
+    if (dark) {
+      labelColor = '#ddd';
+    }
+    if (isSelected) {
+      labelColor = '#fff';
+    }
+
+    return (
+      <TouchableOpacity
+        key={method}
+        onPress={() => selectMethod(method)}
+        style={{
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: isSelected ? '#41899f' : '#8b929a',
+          backgroundColor: isSelected ? '#41899f' : 'transparent',
+        }}
+      >
+        <StyledText style={{ color: labelColor }}>{label}</StyledText>
+      </TouchableOpacity>
+    );
+  };
+
+  const showCodeInput = mfaChallenge && selectedMfaMethod !== 'passkey';
+  const subHeaderText = (() => {
+    if (!mfaChallenge) {
+      return 'Sign in to your account';
+    }
+
+    if (mfaChallenge.enrollmentRequired) {
+      return 'Set up multi-factor authentication to continue';
+    }
+
+    return 'Choose a verification method to continue';
+  })();
+  const primaryButtonText = (() => {
+    if (backupCodes.length > 0 && pendingAccessToken) {
+      return 'I Saved My Backup Codes';
+    }
+
+    if (!mfaChallenge) {
+      return 'Sign In';
+    }
+
+    if (selectedMfaMethod !== 'passkey') {
+      return 'Verify';
+    }
+
+    if (mfaChallenge.enrollmentRequired) {
+      return 'Set Up Passkey';
+    }
+
+    return 'Verify with Passkey';
+  })();
+  const showMfaLaunchScreen = !!mfaChallenge && mfaChallenge.enrollmentRequired;
+  const isPasskeyEnrollmentScreen =
+    showMfaLaunchScreen && selectedMfaMethod === 'passkey' && !showOtherMfaOptions;
+  const isTotpEnrollmentScreen = showMfaLaunchScreen && selectedMfaMethod === 'totp';
+  const launchPrimaryButtonText = (() => {
+    if (backupCodes.length > 0 && pendingAccessToken) {
+      return 'I Saved My Backup Codes';
+    }
+    if (selectedMfaMethod === 'totp') {
+      return totpOtpauth ? 'Verify Authenticator Code' : 'Set up Authenticator App';
+    }
+    return 'Set up your Passkey';
+  })();
+  const launchHeaderTitle = isTotpEnrollmentScreen ? 'Authenticator' : 'Passkeys';
+  const launchTitleText = (() => {
+    if (isPasskeyEnrollmentScreen) {
+      return 'Create a Passkey';
+    }
+    return 'Set up your authenticator app';
+  })();
+  const launchDescriptionText = (() => {
+    if (isPasskeyEnrollmentScreen) {
+      return 'Passkeys uses the same method as unlocking your phone, making your account nearly impossible to hack.';
+    }
+    return 'Use your authenticator app to generate verification codes each time you sign in.';
+  })();
+  let heroAnimationSource = passkeyHeroAnimation;
+  if (Platform.OS === 'android') {
+    heroAnimationSource = passkeyHeroAnimationAndroid;
+  }
+  if (useAndroidFallbackHero) {
+    heroAnimationSource = passkeyHeroFallbackAnimation;
+  }
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    if (
+      Platform.OS === 'android' &&
+      showMfaLaunchScreen &&
+      !hasPasskeyHeroLoaded &&
+      !useAndroidFallbackHero
+    ) {
+      timeout = setTimeout(() => {
+        if (!hasPasskeyHeroLoaded) {
+          setUseAndroidFallbackHero(true);
+        }
+      }, 1800);
+    }
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [hasPasskeyHeroLoaded, showMfaLaunchScreen, useAndroidFallbackHero]);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      navigation.setOptions({ headerShown: !showMfaLaunchScreen });
+    }
+
+    return () => {
+      if (Platform.OS === 'ios') {
+        navigation.setOptions({ headerShown: true });
+      }
+    };
+  }, [navigation, showMfaLaunchScreen]);
+
+  useEffect(() => {
+    onMfaLaunchScreenChange?.(showMfaLaunchScreen);
+    return () => {
+      onMfaLaunchScreenChange?.(false);
+    };
+  }, [onMfaLaunchScreenChange, showMfaLaunchScreen]);
+
+  if (showMfaLaunchScreen) {
+    return (
+      <View style={styles.screenContainer}>
+        {Platform.OS === 'android' ? (
+          <StatusBar
+            barStyle={dark ? 'light-content' : 'dark-content'}
+            backgroundColor={dark ? '#202328' : '#F7F7F7'}
+            translucent={false}
+          />
+        ) : null}
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 36, flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          alwaysBounceVertical
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => {
+                setIsRefreshing(true);
+                setTimeout(() => setIsRefreshing(false), 250);
+              }}
+            />
+          }
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: 4,
+              marginBottom: 8,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                if (!showMfaLaunchScreen || selectedMfaMethod === 'passkey') {
+                  return;
+                }
+                selectMethod('passkey').catch((e: any) => {
+                  setError(e?.message ?? 'Unable to switch to passkey.');
+                });
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Ionicons name="arrow-back" size={26} color="#126B87" />
+            </TouchableOpacity>
+            <StyledText
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                marginRight: 40,
+                fontFamily: 'Rubik',
+                fontWeight: '700',
+                fontSize: 18,
+                color: dark ? '#FFFFFF' : '#0e181b',
+              }}
+            >
+              {launchHeaderTitle}
+            </StyledText>
+          </View>
+
+          <LottieView
+            key={useAndroidFallbackHero ? 'mfa-hero-fallback' : 'mfa-hero-primary'}
+            source={heroAnimationSource}
+            autoPlay
+            loop
+            colorFilters={Platform.OS === 'ios' ? oneBodyLottieColorFilters : undefined}
+            renderMode={Platform.OS === 'android' ? 'SOFTWARE' : 'AUTOMATIC'}
+            hardwareAccelerationAndroid={false}
+            enableSafeModeAndroid
+            cacheComposition={false}
+            onAnimationLoaded={() => {
+              setHasPasskeyHeroLoaded(true);
+            }}
+            onAnimationFailure={(errorMessage) => {
+              if (Platform.OS === 'android') {
+                setUseAndroidFallbackHero(true);
+              }
+              console.warn('MFA hero animation failed to load', errorMessage);
+            }}
+            style={{
+              width: '100%',
+              height: 320,
+              marginBottom: 24,
+              alignSelf: 'center',
+            }}
+            resizeMode="contain"
+          />
+
+          <StyledText
+            style={{
+              fontFamily: 'Rubik',
+              fontWeight: '700',
+              fontSize: 26,
+              lineHeight: 34,
+              color: dark ? '#FFFFFF' : '#0e181b',
+              marginBottom: 12,
+            }}
+          >
+            {launchTitleText}
+          </StyledText>
+
+          <StyledText
+            style={{
+              fontFamily: 'Lato',
+              fontWeight: '500',
+              fontSize: 16,
+              lineHeight: 26,
+              color: dark ? '#A7B7BC' : '#4e6a71',
+              marginBottom: 30,
+            }}
+          >
+            {launchDescriptionText}
+          </StyledText>
+
+          {isPasskeyEnrollmentScreen ? (
+            <View style={{ rowGap: 20, marginBottom: 28 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: 'rgba(17, 106, 136, 0.12)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 14,
+                  }}
+                >
+                  <Ionicons name="finger-print-outline" size={24} color="#126B87" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Rubik',
+                      fontWeight: '700',
+                      fontSize: 16,
+                      lineHeight: 22,
+                      color: dark ? '#FFFFFF' : '#0e181b',
+                    }}
+                  >
+                    Sign in using biometrics
+                  </StyledText>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Lato',
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: dark ? '#A7B7BC' : '#4e6a71',
+                    }}
+                  >
+                    Quick access with FaceID or TouchID
+                  </StyledText>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: 'rgba(17, 106, 136, 0.12)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 14,
+                  }}
+                >
+                  <Ionicons name="sync-outline" size={24} color="#126B87" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Rubik',
+                      fontWeight: '700',
+                      fontSize: 16,
+                      lineHeight: 22,
+                      color: dark ? '#FFFFFF' : '#0e181b',
+                    }}
+                  >
+                    Syncs across your devices
+                  </StyledText>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Lato',
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: dark ? '#A7B7BC' : '#4e6a71',
+                    }}
+                  >
+                    Available on all your logged-in platforms
+                  </StyledText>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: 'rgba(17, 106, 136, 0.12)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 14,
+                  }}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={24} color="#126B87" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Rubik',
+                      fontWeight: '700',
+                      fontSize: 16,
+                      lineHeight: 22,
+                      color: dark ? '#FFFFFF' : '#0e181b',
+                    }}
+                  >
+                    Instant and secure
+                  </StyledText>
+                  <StyledText
+                    style={{
+                      fontFamily: 'Lato',
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: dark ? '#A7B7BC' : '#4e6a71',
+                    }}
+                  >
+                    End-to-end encryption for your safety
+                  </StyledText>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {isTotpEnrollmentScreen && totpOtpauth ? (
+            <View
+              style={{
+                marginBottom: 14,
+                borderRadius: 12,
+                padding: 12,
+                backgroundColor: dark ? '#202328' : '#EFF2F4',
+              }}
+            >
+              <StyledText style={{ color: dark ? '#D4D8DC' : '#334155', fontSize: 12 }}>
+                Authenticator setup key:
+              </StyledText>
+              <StyledText style={{ color: dark ? '#FFFFFF' : '#0f172a', marginTop: 4 }}>
+                {totpOtpauth}
+              </StyledText>
+            </View>
+          ) : null}
+
+          {isTotpEnrollmentScreen && (
+            <View style={styles.inputSpacer}>
+              <StyledText style={styles.inputLabel}>Verification code</StyledText>
+              <StyledTextInput
+                placeholder="Enter code"
+                placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                autoCapitalize="characters"
+                keyboardType="number-pad"
+                value={form.code}
+                backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                inputWrapperStyle={styles.inputWrapper}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, code: v }))}
+              />
+            </View>
+          )}
+
+          {!!successText && <StyledText style={styles.successAlertText}>{successText}</StyledText>}
+          {!!error && <StyledText style={styles.fieldError}>{error}</StyledText>}
+
+          <TouchableOpacity
+            onPress={() => {
+              if (backupCodes.length > 0 && pendingAccessToken) {
+                completeLogin(pendingAccessToken);
+                return;
+              }
+              signInUser();
+            }}
+            style={{
+              backgroundColor: '#126B87',
+              height: 56,
+              borderRadius: 28,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 14,
+              marginTop: 6,
+            }}
+          >
+            <StyledText
+              style={{ color: '#FFFFFF', fontFamily: 'Lato', fontWeight: '700', fontSize: 18 }}
+            >
+              {launchPrimaryButtonText}
+            </StyledText>
+          </TouchableOpacity>
+
+          {isPasskeyEnrollmentScreen && mfaChallenge?.availableMethods.includes('totp') ? (
+            <TouchableOpacity
+              onPress={() => {
+                selectMethod('totp').catch((e: any) => {
+                  setError(e?.message ?? 'Unable to switch to authenticator.');
+                });
+              }}
+            >
+              <StyledText
+                style={{
+                  textAlign: 'center',
+                  color: dark ? '#A7B7BC' : '#4e6a71',
+                  fontFamily: 'Lato',
+                  fontWeight: '700',
+                  fontSize: 16,
+                }}
+              >
+                Use other MFA options
+              </StyledText>
+            </TouchableOpacity>
+          ) : null}
+
+          {isTotpEnrollmentScreen && mfaChallenge?.availableMethods.includes('email') ? (
+            <TouchableOpacity
+              onPress={() => {
+                handleEmailAsMfaEnrollment().catch((e: any) => {
+                  setError(e?.message ?? 'Unable to continue with email MFA.');
+                });
+              }}
+            >
+              <StyledText
+                style={{
+                  textAlign: 'center',
+                  color: dark ? '#A7B7BC' : '#4e6a71',
+                  fontFamily: 'Lato',
+                  fontWeight: '700',
+                  fontSize: 16,
+                }}
+              >
+                Use email as MFA (less secure)
+              </StyledText>
+            </TouchableOpacity>
+          ) : null}
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screenContainer}>
@@ -232,14 +1374,14 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
         }
       >
         <View style={styles.headerFrame}>
-          <StyledText style={styles.welcomeText}>Welcome back</StyledText>
-          {!needsEmailTwoFactor && (
-            <StyledText style={styles.subHeaderText}>Sign in to your account</StyledText>
-          )}
+          <StyledText style={styles.welcomeText}>
+            {mfaChallenge ? 'Secure Sign-In' : 'Welcome back'}
+          </StyledText>
+          <StyledText style={styles.subHeaderText}>{subHeaderText}</StyledText>
         </View>
 
         <View style={styles.cardContainer}>
-          {!needsEmailTwoFactor ? (
+          {!mfaChallenge ? (
             <View style={styles.newAccountRow}>
               <StyledText style={styles.newAccountText}>New to One Body? </StyledText>
               <TouchableOpacity
@@ -252,14 +1394,6 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
             </View>
           ) : null}
 
-          {needsEmailTwoFactor && (
-            <View style={styles.successAlertBox}>
-              <StyledText style={styles.successAlertText}>
-                Success! A verification code has been sent to your email.
-              </StyledText>
-            </View>
-          )}
-
           <View style={styles.inputSpacer}>
             <StyledText style={styles.inputLabel}>Email</StyledText>
             <StyledTextInput
@@ -267,14 +1401,15 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
               placeholderTextColor={dark ? '#999DA1' : '#838584'}
               autoCapitalize="none"
               keyboardType="email-address"
+              editable={!mfaChallenge}
               value={form.email}
               backgroundColor={dark ? '#202328' : '#F2F3F3'}
               inputWrapperStyle={styles.inputWrapper}
-              onChangeText={(v) => setForm({ ...form, email: v.trim() })}
+              onChangeText={(v) => setForm((prev) => ({ ...prev, email: v.trim() }))}
             />
           </View>
 
-          {!needsEmailTwoFactor ? (
+          {!mfaChallenge ? (
             <View style={styles.inputSpacer}>
               <StyledText style={styles.inputLabel}>Password</StyledText>
               <StyledTextInput
@@ -284,7 +1419,7 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
                 value={form.password}
                 backgroundColor={dark ? '#202328' : '#F2F3F3'}
                 inputWrapperStyle={styles.inputWrapper}
-                onChangeText={(v) => setForm({ ...form, password: v })}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, password: v }))}
                 rightIcon={
                   <Ionicons
                     name={hidePass ? 'eye-outline' : 'eye-off-outline'}
@@ -297,30 +1432,114 @@ function LoginComponent({ currentUserEmail, clearOnMountKey }: LoginComponentPro
               />
             </View>
           ) : (
-            <View style={styles.inputSpacer}>
-              <StyledText style={styles.inputLabel}>Verification code</StyledText>
-              <StyledTextInput
-                placeholder="Enter 6-digit code"
-                placeholderTextColor={dark ? '#999DA1' : '#838584'}
-                keyboardType="number-pad"
-                value={form.emailTwoFactorCode}
-                backgroundColor={dark ? '#202328' : '#F2F3F3'}
-                inputWrapperStyle={styles.inputWrapper}
-                onChangeText={(v) => setForm({ ...form, emailTwoFactorCode: v })}
-              />
+            <View style={{ marginTop: 8, rowGap: 10 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {mfaChallenge.enrollmentRequired ? (
+                  <>
+                    {mfaChallenge.availableMethods.includes('passkey')
+                      ? methodButton('passkey', 'Passkey')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('totp')
+                      ? methodButton('totp', 'Authenticator')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('email')
+                      ? methodButton('email', 'Email')
+                      : null}
+                  </>
+                ) : (
+                  <>
+                    {mfaChallenge.availableMethods.includes('passkey')
+                      ? methodButton('passkey', 'Passkey')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('totp')
+                      ? methodButton('totp', 'Authenticator')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('email')
+                      ? methodButton('email', 'Email')
+                      : null}
+                    {mfaChallenge.availableMethods.includes('backup')
+                      ? methodButton('backup', 'Backup Code')
+                      : null}
+                  </>
+                )}
+              </View>
+
+              {selectedMfaMethod === 'passkey' ? (
+                <StyledText style={{ color: dark ? '#cdd0d4' : '#4b5563' }}>
+                  Use Face ID, Touch ID, or device biometrics to verify.
+                </StyledText>
+              ) : null}
+
+              {selectedMfaMethod === 'totp' && mfaChallenge.enrollmentRequired ? (
+                <StyledText style={{ color: dark ? '#cdd0d4' : '#4b5563' }}>
+                  Add this key in your authenticator app: {totpOtpauth || 'Tap Verify to generate'}
+                </StyledText>
+              ) : null}
+
+              {mfaChallenge.enrollmentRequired && mfaChallenge.availableMethods.includes('totp') ? (
+                <TouchableOpacity
+                  onPress={() => selectMethod(selectedMfaMethod === 'totp' ? 'passkey' : 'totp')}
+                >
+                  <StyledText style={{ color: dark ? '#9aa4af' : '#6b7280', fontSize: 12 }}>
+                    {selectedMfaMethod === 'totp'
+                      ? 'Use passkey instead (recommended).'
+                      : 'Prefer an authenticator app? Use TOTP instead.'}
+                  </StyledText>
+                </TouchableOpacity>
+              ) : null}
+
+              {mfaChallenge.enrollmentRequired ? (
+                <StyledText style={{ color: dark ? '#818a94' : '#9ca3af', fontSize: 11 }}>
+                  Email verification remains available, but passkey is more secure.
+                </StyledText>
+              ) : null}
+
+              {showCodeInput ? (
+                <View style={styles.inputSpacer}>
+                  <StyledText style={styles.inputLabel}>
+                    {selectedMfaMethod === 'backup' ? 'Backup code' : 'Verification code'}
+                  </StyledText>
+                  <StyledTextInput
+                    placeholder={
+                      selectedMfaMethod === 'backup' ? 'Enter backup code' : 'Enter code'
+                    }
+                    placeholderTextColor={dark ? '#999DA1' : '#838584'}
+                    autoCapitalize="characters"
+                    keyboardType={selectedMfaMethod === 'backup' ? 'default' : 'number-pad'}
+                    value={form.code}
+                    backgroundColor={dark ? '#202328' : '#F2F3F3'}
+                    inputWrapperStyle={styles.inputWrapper}
+                    onChangeText={(v) => setForm((prev) => ({ ...prev, code: v }))}
+                  />
+                </View>
+              ) : null}
             </View>
           )}
 
+          {!!successText && <StyledText style={styles.successAlertText}>{successText}</StyledText>}
           {!!error && <StyledText style={styles.fieldError}>{error}</StyledText>}
 
+          {backupCodes.length > 0 ? (
+            <View style={{ marginTop: 8, marginBottom: 8, rowGap: 6 }}>
+              {backupCodes.map((code) => (
+                <StyledText
+                  key={code}
+                  style={{ color: dark ? '#fff' : '#111827', fontWeight: '700' }}
+                >
+                  {code}
+                </StyledText>
+              ))}
+            </View>
+          ) : null}
+
           <Button
-            text={needsEmailTwoFactor ? 'Verify Account' : 'Sign In'}
+            text={primaryButtonText}
             btnStyle={styles.primaryBtn}
             btnTextStyle={styles.primaryBtnText}
             onPress={signInUser}
           />
 
-          {!needsEmailTwoFactor ? (
+          {!mfaChallenge ? (
             <View style={styles.socialSection}>
               <View style={styles.dividerRow}>
                 <View style={styles.dividerLine} />

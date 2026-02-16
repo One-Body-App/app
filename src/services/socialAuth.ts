@@ -3,6 +3,7 @@ import { appleAuth } from '@invertase/react-native-apple-authentication';
 import { ApiCall } from './api';
 import { AuthTokens, saveAuthTokens } from './authTokens';
 import { GOOGLE_LOGIN_CLIENT_ID } from './constants';
+import type { MfaChallengeResponse } from './login';
 
 export type SocialProvider = 'google' | 'apple';
 
@@ -25,6 +26,27 @@ export type SocialLoginResponse = {
   user?: any;
   isNewUser?: boolean;
   message?: string;
+  mfaRequired?: boolean;
+  enrollmentRequired?: boolean;
+  mfaToken?: string;
+  preferredMethod?: MfaChallengeResponse['preferredMethod'];
+  availableMethods?: MfaChallengeResponse['availableMethods'];
+  emailMasked?: string;
+  reason?: MfaChallengeResponse['reason'];
+};
+
+const persistTokensSafely = async (tokens?: AuthTokens) => {
+  if (!tokens?.accessToken) {
+    return;
+  }
+
+  try {
+    await saveAuthTokens(tokens);
+  } catch (error: any) {
+    if (__DEV__) {
+      console.warn('Token persistence failed; continuing with in-memory session', error?.message);
+    }
+  }
 };
 
 let googleConfigured = false;
@@ -66,10 +88,10 @@ export const getGoogleIdToken = async (): Promise<SocialTokenResult> => {
     return {
       idToken,
       details: {
-        email: userInfo.user?.email,
-        displayName: userInfo.user?.name,
-        firstName: userInfo.user?.givenName,
-        lastName: userInfo.user?.familyName,
+        email: userInfo.user?.email ?? undefined,
+        displayName: userInfo.user?.name ?? undefined,
+        firstName: userInfo.user?.givenName ?? undefined,
+        lastName: userInfo.user?.familyName ?? undefined,
       },
     };
   } catch (error: any) {
@@ -142,7 +164,7 @@ export const exchangeSocialToken = async (params: {
   });
 
   if (res.status === 200 && res.response?.tokens?.accessToken) {
-    await saveAuthTokens(res.response.tokens);
+    await persistTokensSafely(res.response.tokens);
   }
 
   return res;

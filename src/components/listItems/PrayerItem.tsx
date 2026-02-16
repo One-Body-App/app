@@ -152,13 +152,10 @@ function PrayerItem({
       return;
     }
 
-    navigation.navigate(
-      'PrayerWall' as never,
-      {
-        screen: 'Single',
-        params: { postId },
-      } as never
-    );
+    (navigation as any).navigate('PrayerWall', {
+      screen: 'Single',
+      params: { postId },
+    });
   };
 
   const handleCommentsPress =

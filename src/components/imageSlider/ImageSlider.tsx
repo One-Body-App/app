@@ -10,20 +10,15 @@ import {
 
 import ImageSlide from './ImageSlide';
 import { ImageForSlider } from './types';
-import type { ScrollIntentLock } from '@/src/hooks/useScrollIntentLock';
 
 function ImageSlider({
   images,
   setImageModalIndexVisible,
   width,
-  scrollIntent,
-  mediaKeyPrefix,
 }: {
   images: ImageForSlider[];
   width: number;
   setImageModalIndexVisible: (item: number) => void;
-  scrollIntent?: ScrollIntentLock;
-  mediaKeyPrefix?: string;
 }) {
   const [active, setActive] = useState(0);
   const safeWidth = Number.isFinite(width) && width > 0 ? width : 0;
@@ -50,8 +45,6 @@ function ImageSlider({
         height={heightToUse}
         maxHeight={heightToUse}
         index={0}
-        scrollIntent={scrollIntent}
-        interactionKey={mediaKeyPrefix ? `${mediaKeyPrefix}-0` : undefined}
       />
     );
   }
@@ -75,8 +68,6 @@ function ImageSlider({
               height={heightToUse}
               maxHeight={heightToUse}
               index={index}
-              scrollIntent={scrollIntent}
-              interactionKey={mediaKeyPrefix ? `${mediaKeyPrefix}-${index}` : undefined}
             />
           );
         })}

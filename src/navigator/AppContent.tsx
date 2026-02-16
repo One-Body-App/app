@@ -7,13 +7,11 @@ import {
   getStateFromPath as getStateFromPathDefault,
   useNavigationContainerRef,
   CommonActions,
-  useTheme,
 } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
-  Alert,
   BackHandler,
   Linking,
   useColorScheme,
@@ -45,6 +43,7 @@ import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relati
 import { setLoginData, getProfile, logout } from '../redux/actions/AuthActions'; // Adjust path
 import { clearAuthTokens, getValidAccessToken } from '../services/authTokens';
 import { ApiCall } from '../services/api';
+import { beginAuthenticatedMfaOnboarding } from '../services/login';
 import getDeviceLocation from '../services/deviceLocation';
 
 import ForgotPassword from '../screens/forgotPassword'; // Adjust path
@@ -68,6 +67,14 @@ import ReportPost from '../screens/post/ReportPost'; // Adjust path
 import ReportStatus from '../screens/post/ReportStatus'; // Adjust path
 import { headerOptions } from './global'; // Adjust path
 import { PostType } from '@/utils/types';
+import {
+  clearCachedPushToken,
+  disablePushNotifications,
+  enablePushNotifications,
+  subscribeToForegroundPushMessages,
+  subscribeToPushTokenRefresh,
+} from '@/src/services/notification/pushNotificationService';
+import { queueRemoteNotificationPayload } from '@/src/services/notification/pushNotificationStorage';
 
 const closeIcon = require('../assets/images/close.png'); // Adjust path
 
@@ -108,9 +115,18 @@ function AppContent() {
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const appStateRef = useRef(AppState.currentState);
   const token = authState.userToken;
+  const hasMfaTrustedToken = useMemo(() => {
+    const profileData = authState.getProfileData;
+    if (!profileData?.emailVerified) {
+      return false;
+    }
+
+    return profileData?.mfaConfig?.isMfaActive === true;
+  }, [authState.getProfileData]);
   const hasFetchedProfileRef = useRef(false);
-  const hasPromptedTwoFactorRef = useRef(false);
   const locationAutofillUserRef = useRef<string | null>(null);
+  const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
+  const mfaOnboardingInFlightRef = useRef(false);
   const scheme = useColorScheme();
   const handleConfirmBackPress = useCallback(async () => {
     await clearAuthTokens();
@@ -159,6 +175,58 @@ function AppContent() {
       });
     },
     [firebaseAnalytics]
+  );
+
+  const beginMandatoryMfaGate = useCallback(
+    async (profileData: any) => {
+      if (!token) {
+        return;
+      }
+
+      const userId = profileData?._id || profileData?.id;
+      if (!userId) {
+        return;
+      }
+
+      if (mfaOnboardingInFlightRef.current || mfaOnboardingRequestedUserRef.current === userId) {
+        return;
+      }
+
+      mfaOnboardingInFlightRef.current = true;
+      try {
+        const res = await beginAuthenticatedMfaOnboarding(token);
+        if (res.status === 200 && (res.response as any)?.mfaRequired) {
+          mfaOnboardingRequestedUserRef.current = userId;
+          navigationRef.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Login',
+                  params: {
+                    initialMfaChallenge: res.response as any,
+                    prefillEmail: profileData?.email,
+                    mfaOnboardingFlow: true,
+                  },
+                } as any,
+              ],
+            })
+          );
+          return;
+        }
+
+        if (res.status === 200) {
+          mfaOnboardingRequestedUserRef.current = userId;
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.log('[AppContent MFA Onboarding] Failed to begin onboarding', error);
+        }
+      } finally {
+        mfaOnboardingInFlightRef.current = false;
+      }
+    },
+    [navigationRef, token]
   );
 
   useEffect(() => {
@@ -259,6 +327,8 @@ function AppContent() {
     if (!token) {
       hasFetchedProfileRef.current = false;
       locationAutofillUserRef.current = null;
+      mfaOnboardingRequestedUserRef.current = null;
+      mfaOnboardingInFlightRef.current = false;
       return;
     }
 
@@ -272,6 +342,7 @@ function AppContent() {
 
   useEffect(() => {
     if (!token || !authState.getProfileData) return undefined;
+    if (!hasMfaTrustedToken) return undefined;
 
     const userId = authState.getProfileData?._id || authState.getProfileData?.id;
     if (!userId || locationAutofillUserRef.current === userId) return undefined;
@@ -331,47 +402,7 @@ function AppContent() {
     return () => {
       isActive = false;
     };
-  }, [authState.getProfileData, dispatch, token]);
-
-  useEffect(() => {
-    if (!token) {
-      hasPromptedTwoFactorRef.current = false;
-      return;
-    }
-
-    if (hasPromptedTwoFactorRef.current) {
-      return;
-    }
-
-    const isProfileLoaded = !!authState.getProfileData && !authState.isLoading;
-    if (!isProfileLoaded) {
-      return;
-    }
-
-    // Don't prompt for TOTP until after email is verified, and never during ConfirmLogin flow.
-    const isEmailVerified = !!authState.getProfileData?.emailVerified;
-    if (!isEmailVerified) {
-      return;
-    }
-    if (!navigationRef.isReady()) {
-      return;
-    }
-    const currentRouteName = navigationRef.getCurrentRoute()?.name;
-    if (currentRouteName === 'ConfirmLogin') {
-      return;
-    }
-
-    if (authState.getProfileData?.twoFactorEnabled) {
-      return;
-    }
-
-    hasPromptedTwoFactorRef.current = true;
-    Alert.alert(
-      'Add an Authenticator',
-      'For better security, set up an authenticator app (TOTP). Email verification will be used when needed until you do.',
-      [{ text: 'OK' }]
-    );
-  }, [authState.getProfileData, authState.isLoading, navigationRef, token]);
+  }, [authState.getProfileData, dispatch, hasMfaTrustedToken, token]);
 
   useEffect(() => {
     if (authChecked) {
@@ -398,7 +429,9 @@ function AppContent() {
       }
       return;
     }
-    const currentRouteName = navigationRef.getCurrentRoute()?.name;
+    const currentRoute = navigationRef.getCurrentRoute();
+    const currentRouteName = currentRoute?.name;
+    const currentRouteParams = (currentRoute?.params ?? {}) as any;
     const rootState = navigationRef.getRootState();
     const rootRouteName = rootState?.routes?.[rootState.index ?? 0]?.name;
     const hasValidToken = token !== '';
@@ -409,6 +442,12 @@ function AppContent() {
     const hasProfileError = authState.getProfileError;
     const isEmailVerified = !!profileData?.emailVerified;
     const hasVerifiedEmail = isEmailVerified || isProfileCompleted;
+    const hasActiveMfa = profileData?.mfaConfig?.isMfaActive === true;
+    const isMfaEnrollmentScreenActive =
+      currentRouteName === 'Login' &&
+      !!currentRouteParams?.mfaOnboardingFlow &&
+      !!currentRouteParams?.initialMfaChallenge?.enrollmentRequired &&
+      !hasActiveMfa;
 
     if (__DEV__) {
       console.log('[AppContent Navigation] Effect triggered:', {
@@ -419,6 +458,8 @@ function AppContent() {
         hasProfileData,
         isProfileCompleted,
         hasProfileError: !!hasProfileError,
+        hasActiveMfa,
+        isMfaEnrollmentScreenActive,
         platform: Platform.OS,
       });
     }
@@ -444,7 +485,6 @@ function AppContent() {
     }
 
     // On iOS, avoid navigation races while email is still unverified on ConfirmLogin.
-    // Once verified, allow AppContent to move to MainRoot.
     if (Platform.OS === 'ios' && currentRouteName === 'ConfirmLogin' && !hasVerifiedEmail) {
       if (__DEV__) {
         console.log(
@@ -482,6 +522,14 @@ function AppContent() {
     // Navigate to MainRoot if user has verified email
     // DrawerNav (MainRoot) will handle showing either the main app or the onboarding stack
     if (hasValidToken && hasVerifiedEmail && (shouldNavigate || !isProfileLoading)) {
+      if (isMfaEnrollmentScreenActive) {
+        if (__DEV__) {
+          console.log(
+            '[AppContent Navigation] Holding on Login for MFA onboarding flow before MainRoot'
+          );
+        }
+        return;
+      }
       ignoreAuthLinksRef.current = true;
       const now = Date.now();
       const recentNavigation = lastNavigationRef.current;
@@ -551,6 +599,40 @@ function AppContent() {
     authState.isLoading,
     authState.getProfileError,
     dispatch,
+    beginMandatoryMfaGate,
+  ]);
+
+  useEffect(() => {
+    if (!navigationReady || !token || authState.isLoading) {
+      return;
+    }
+
+    const profileData = authState.getProfileData;
+    if (!profileData?.emailVerified) {
+      return;
+    }
+    if (profileData?.isProfileCompleted !== true) {
+      return;
+    }
+
+    if (profileData?.mfaConfig?.isMfaActive) {
+      return;
+    }
+
+    const currentRouteName = navigationRef.getCurrentRoute()?.name;
+    const feedLandingRoutes = new Set(['Home', 'HomeTab', 'Main', 'MainRoot']);
+    if (!currentRouteName || !feedLandingRoutes.has(currentRouteName)) {
+      return;
+    }
+
+    beginMandatoryMfaGate(profileData).catch(() => undefined);
+  }, [
+    navigationReady,
+    token,
+    authState.isLoading,
+    authState.getProfileData,
+    navigationRef,
+    beginMandatoryMfaGate,
   ]);
 
   const linkingConfig: LinkingOptions<MainStackParamList>['config'] = {
@@ -689,6 +771,66 @@ function AppContent() {
     return url.includes('/auth/action') || url.includes('/__/auth/action');
   };
 
+  const openNotificationsCenter = useCallback(() => {
+    navigationRef.dispatch(
+      CommonActions.navigate({
+        name: 'MainRoot',
+        params: {
+          screen: 'Main',
+          params: {
+            screen: 'HomeTab',
+            params: {
+              screen: 'Notifications',
+            },
+          },
+        },
+      } as any)
+    );
+  }, [navigationRef]);
+
+  useEffect(() => {
+    if (!token) {
+      clearCachedPushToken().catch(() => undefined);
+      return undefined;
+    }
+    if (!hasMfaTrustedToken) {
+      return undefined;
+    }
+
+    const pushEnabled = authState.getProfileData?.pushNotificationsEnabled === true;
+    const shouldKeepSyncing = () => authState.getProfileData?.pushNotificationsEnabled === true;
+    let isMounted = true;
+
+    const bootstrapPush = async () => {
+      if (pushEnabled) {
+        await enablePushNotifications(token);
+      } else {
+        await disablePushNotifications(token);
+      }
+    };
+
+    bootstrapPush().catch(() => undefined);
+
+    const unsubscribeTokenRefresh = subscribeToPushTokenRefresh(() => token, shouldKeepSyncing);
+    const unsubscribeForeground = subscribeToForegroundPushMessages(async (payload) => {
+      if (!isMounted) {
+        return;
+      }
+
+      const toastMessage = payload.body ? `${payload.title}\n${payload.body}` : payload.title;
+      toast.show(toastMessage, {
+        placement: 'top',
+        type: 'normal',
+      });
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribeTokenRefresh();
+      unsubscribeForeground();
+    };
+  }, [authState.getProfileData?.pushNotificationsEnabled, hasMfaTrustedToken, token, toast]);
+
   const resolvePostLinkState = (path: string) => {
     const pathWithoutQuery = path.split('?')[0];
     const match = pathWithoutQuery.match(/^\/post\/([^/]+)\/([^/?#]+)$/i);
@@ -821,6 +963,7 @@ function AppContent() {
         return null;
       }
       const message = await getInitialNotification(firebaseMessaging);
+      queueRemoteNotificationPayload(message).catch(() => undefined);
       const notificationUrl = normalizeLink(message?.data?.url as string);
       if (shouldIgnoreAuthLink(notificationUrl)) {
         if (__DEV__) {
@@ -833,6 +976,9 @@ function AppContent() {
       }
       if (notificationUrl && shouldProcessUrl(notificationUrl)) {
         return notificationUrl;
+      }
+      if (message?.data && !notificationUrl) {
+        openNotificationsCenter();
       }
       return null;
     },
@@ -861,6 +1007,7 @@ function AppContent() {
       };
       const subscription = Linking.addEventListener('url', onReceiveURL);
       const unsubscribeNotification = onNotificationOpenedApp(firebaseMessaging, (message) => {
+        queueRemoteNotificationPayload(message).catch(() => undefined);
         const url = normalizeLink(message.data?.url as string);
         if (shouldIgnoreAuthLink(url)) {
           if (__DEV__) {
@@ -877,6 +1024,8 @@ function AppContent() {
           if (__DEV__) {
             console.log('[Deep Link] Notification: URL filtered as duplicate');
           }
+        } else {
+          openNotificationsCenter();
         }
       });
       return () => {

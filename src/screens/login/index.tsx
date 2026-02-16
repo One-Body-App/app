@@ -1,5 +1,4 @@
-import React from 'react';
-import { ScrollView } from 'react-native';
+import React, { useState } from 'react';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
@@ -12,21 +11,23 @@ import { Colors } from '@/src/styles';
 type Props = StackScreenProps<MainStackParamList, 'Login'>;
 
 function Login({ route }: Props) {
+  const [isMfaLaunchScreenVisible, setIsMfaLaunchScreenVisible] = useState(false);
   const clearOnMountKey =
     route?.params?.action ?? (route?.params?.resetPassword ? 'reset' : undefined);
   useTheme();
 
   return (
-    <UserStepsLayout backgroundColor={Colors.neutral[700]} showCustomHeaderOnAndroid>
-      <ScrollView
-        keyboardShouldPersistTaps="always"
-        removeClippedSubviews={false}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <LoginComponent clearOnMountKey={clearOnMountKey} />
-      </ScrollView>
+    <UserStepsLayout
+      backgroundColor={Colors.neutral[700]}
+      showCustomHeaderOnAndroid={!isMfaLaunchScreenVisible}
+      hideBottomText={isMfaLaunchScreenVisible}
+    >
+      <LoginComponent
+        clearOnMountKey={clearOnMountKey}
+        currentUserEmail={route?.params?.prefillEmail}
+        initialMfaChallenge={route?.params?.initialMfaChallenge}
+        onMfaLaunchScreenChange={setIsMfaLaunchScreenVisible}
+      />
     </UserStepsLayout>
   );
 }

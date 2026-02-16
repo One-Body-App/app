@@ -7,7 +7,7 @@ import React, {
   useImperativeHandle,
   useState,
 } from 'react';
-import { FlatList, RefreshControl, TouchableOpacity, View } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 
@@ -180,24 +180,20 @@ const SocialFlatlist = forwardRef<
       scrollEnabled={isScrollEnable}
       ListHeaderComponent={headerItem}
       renderItem={({ item, index }) => (
-        <TouchableOpacity
-          onPress={() => {
-            if (item.postId) {
-              navigation.navigate('SinglePost', {
-                postId: item.postId,
-              });
+        <SocialItem
+          itemData={item}
+          onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
+          index={index}
+          parentRefreshContent={refreshContent}
+          removePost={removePost}
+          editPost={editPost}
+          onCommentsPress={() => {
+            const postId = item.postId ?? item.id ?? item._id;
+            if (postId) {
+              navigation.navigate('SinglePost', { postId });
             }
           }}
-        >
-          <SocialItem
-            itemData={item}
-            onShowDismissCard={(e?: boolean) => setIsScrollEnable(!e)}
-            index={index}
-            parentRefreshContent={refreshContent}
-            removePost={removePost}
-            editPost={editPost}
-          />
-        </TouchableOpacity>
+        />
       )}
       onEndReachedThreshold={0.5}
       onEndReached={() => {

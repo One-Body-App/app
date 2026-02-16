@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import * as Keychain from 'react-native-keychain';
 import { BASE_URL } from './constants';
 
 const STORAGE_KEYS = {
@@ -8,6 +9,8 @@ const STORAGE_KEYS = {
   accessTokenExpiresAt: 'auth.accessTokenExpiresAt',
   refreshTokenExpiresAt: 'auth.refreshTokenExpiresAt',
 };
+const AUTH_TOKEN_SERVICE = 'com.onebody.auth.tokens';
+const AUTH_TOKEN_USERNAME = 'onebody';
 
 export type AuthTokens = {
   accessToken: string;
@@ -25,7 +28,22 @@ export type StoredAuthTokens = {
 
 let inFlightRefresh: Promise<StoredAuthTokens | null> | null = null;
 
-export async function loadAuthTokens(): Promise<StoredAuthTokens | null> {
+function isValidStoredTokens(value: Partial<StoredAuthTokens> | null): value is StoredAuthTokens {
+  if (!value) {
+    return false;
+  }
+
+  return Boolean(
+    value.accessToken &&
+      value.refreshToken &&
+      Number.isFinite(value.accessTokenExpiresAt) &&
+      Number.isFinite(value.refreshTokenExpiresAt) &&
+      value.accessTokenExpiresAt > 0 &&
+      value.refreshTokenExpiresAt > 0
+  );
+}
+
+async function readLegacyTokens(): Promise<StoredAuthTokens | null> {
   const [accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt] =
     await AsyncStorage.multiGet([
       STORAGE_KEYS.accessToken,
@@ -34,21 +52,67 @@ export async function loadAuthTokens(): Promise<StoredAuthTokens | null> {
       STORAGE_KEYS.refreshTokenExpiresAt,
     ]);
 
-  const access = accessToken?.[1] ?? '';
-  const refresh = refreshToken?.[1] ?? '';
-  const accessExp = Number(accessTokenExpiresAt?.[1] ?? 0);
-  const refreshExp = Number(refreshTokenExpiresAt?.[1] ?? 0);
+  const candidate: Partial<StoredAuthTokens> = {
+    accessToken: accessToken?.[1] ?? '',
+    refreshToken: refreshToken?.[1] ?? '',
+    accessTokenExpiresAt: Number(accessTokenExpiresAt?.[1] ?? 0),
+    refreshTokenExpiresAt: Number(refreshTokenExpiresAt?.[1] ?? 0),
+  };
 
-  if (!access || !refresh || !accessExp || !refreshExp) {
+  return isValidStoredTokens(candidate) ? candidate : null;
+}
+
+async function clearLegacyTokens(): Promise<void> {
+  await AsyncStorage.multiRemove([
+    STORAGE_KEYS.accessToken,
+    STORAGE_KEYS.refreshToken,
+    STORAGE_KEYS.accessTokenExpiresAt,
+    STORAGE_KEYS.refreshTokenExpiresAt,
+  ]);
+}
+
+async function readSecureTokens(): Promise<StoredAuthTokens | null> {
+  try {
+    const credentials = await Keychain.getGenericPassword({
+      service: AUTH_TOKEN_SERVICE,
+    });
+    if (!credentials) {
+      return null;
+    }
+
+    const parsed = JSON.parse(credentials.password ?? '{}') as Partial<StoredAuthTokens>;
+    return isValidStoredTokens(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeSecureTokens(tokens: StoredAuthTokens): Promise<boolean> {
+  try {
+    await Keychain.setGenericPassword(AUTH_TOKEN_USERNAME, JSON.stringify(tokens), {
+      service: AUTH_TOKEN_SERVICE,
+      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function loadAuthTokens(): Promise<StoredAuthTokens | null> {
+  const secure = await readSecureTokens();
+  if (secure) {
+    return secure;
+  }
+
+  const legacy = await readLegacyTokens();
+  if (!legacy) {
     return null;
   }
 
-  return {
-    accessToken: access,
-    refreshToken: refresh,
-    accessTokenExpiresAt: accessExp,
-    refreshTokenExpiresAt: refreshExp,
-  };
+  const wroteSecure = await writeSecureTokens(legacy);
+  await clearLegacyTokens();
+  return wroteSecure ? legacy : null;
 }
 
 export async function saveAuthTokens(tokens: AuthTokens): Promise<StoredAuthTokens> {
@@ -56,28 +120,30 @@ export async function saveAuthTokens(tokens: AuthTokens): Promise<StoredAuthToke
   const accessTokenExpiresAt = now + tokens.expiresIn * 1000;
   const refreshTokenExpiresAt = now + tokens.refreshExpiresIn * 1000;
 
-  await AsyncStorage.multiSet([
-    [STORAGE_KEYS.accessToken, tokens.accessToken],
-    [STORAGE_KEYS.refreshToken, tokens.refreshToken],
-    [STORAGE_KEYS.accessTokenExpiresAt, String(accessTokenExpiresAt)],
-    [STORAGE_KEYS.refreshTokenExpiresAt, String(refreshTokenExpiresAt)],
-  ]);
-
-  return {
+  const storedTokens: StoredAuthTokens = {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     accessTokenExpiresAt,
     refreshTokenExpiresAt,
   };
+
+  const wroteSecure = await writeSecureTokens(storedTokens);
+  if (wroteSecure) {
+    await clearLegacyTokens();
+    return storedTokens;
+  }
+
+  await clearLegacyTokens();
+  throw new Error('Secure token storage unavailable');
 }
 
 export async function clearAuthTokens(): Promise<void> {
-  await AsyncStorage.multiRemove([
-    STORAGE_KEYS.accessToken,
-    STORAGE_KEYS.refreshToken,
-    STORAGE_KEYS.accessTokenExpiresAt,
-    STORAGE_KEYS.refreshTokenExpiresAt,
-  ]);
+  try {
+    await Keychain.resetGenericPassword({ service: AUTH_TOKEN_SERVICE });
+  } catch {
+    // ignore secure storage cleanup failures
+  }
+  await clearLegacyTokens();
 }
 
 function isExpired(expiresAt: number, skewMs = 30_000) {

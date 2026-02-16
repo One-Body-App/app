@@ -160,8 +160,12 @@ function MapBox({
         );
         granted = result === PermissionsAndroid.RESULTS.GRANTED;
       } else {
-        const status = await Geolocation.requestAuthorization('whenInUse');
-        granted = status === 'granted';
+        const status = await (Geolocation as any).requestAuthorization?.('whenInUse');
+        granted =
+          status === 'granted' ||
+          status === 'authorized' ||
+          status === 'whenInUse' ||
+          status === true;
       }
 
       if (granted) {

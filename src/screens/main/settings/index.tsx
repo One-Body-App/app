@@ -37,6 +37,10 @@ import { Colors, Typography } from '@/src/styles';
 import { OpenURLButton, PRIVACY_POLICY_URL, TERMS_CONDITIONS_URL } from '@/services/constants';
 import { ApiCall } from '@/services/api';
 import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
+import {
+  disablePushNotifications,
+  enablePushNotifications,
+} from '@/src/services/notification/pushNotificationService';
 
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
 
@@ -124,6 +128,12 @@ function Settings({ navigation }: Props) {
 
       if (res?.status == 200) {
         dispatch(setUserDataNotifications({ notifications }));
+
+        if (pushNotificationsEnabled) {
+          await enablePushNotifications(token, true);
+        } else {
+          await disablePushNotifications(token);
+        }
 
         toast.show('Notifications Settings Updated Successfully', {
           id: 'successMessage',

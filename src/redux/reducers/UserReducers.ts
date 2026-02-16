@@ -3,10 +3,11 @@ import { User } from '@/utils/types';
 import { ACTIONS, AddUserInterest, GetInterests } from '../action-types';
 
 type UserReducers = {
-  addUserInterestSuccess?: boolean;
+  addUserInterestSuccess?: boolean | null;
   addUserInterestData?: any;
-  getInterestsSuccess?: boolean;
+  getInterestsSuccess?: boolean | null;
   getInterestsData?: any;
+  error?: any;
   userInrest: string[];
   userSubscribes: string[];
   allUser: User[];

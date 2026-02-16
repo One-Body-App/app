@@ -16,7 +16,6 @@ import { logout } from '@/src/redux/actions/AuthActions';
 import { clearAuthTokens } from '@/services/authTokens';
 import GeneralStyle from '../../../constants/GeneralStyle';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { RootStackParamList } from '@/src/_Navigation/types';
 
 import { SettingsStackParamsList } from '@/src/navigator/types';
 

@@ -1,85 +1,30 @@
-import {
-  AuthorizationStatus,
-  getMessaging,
-  getToken,
-  onMessage,
-  onNotificationOpenedApp,
-  requestPermission,
-} from '@react-native-firebase/messaging';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
-import { ApiCall } from '@/src/services/api';
-
-const getMessagingInstance = () => getMessaging();
+import {
+  enablePushNotifications,
+  syncPushTokenWithBackend,
+  subscribeToForegroundPushMessages,
+} from './pushNotificationService';
 
 export const requestUserPermission = async (token: string, notificationStatus: boolean) => {
-  const authStatus = await requestPermission(getMessagingInstance());
-  const enabled =
-    authStatus === AuthorizationStatus.AUTHORIZED || authStatus === AuthorizationStatus.PROVISIONAL;
-
-  if (enabled && notificationStatus) {
-    getFcmToken(token);
+  if (!notificationStatus) {
+    return false;
   }
+
+  return enablePushNotifications(token, true);
 };
+
 export const getFcmToken = async (token: string) => {
-  try {
-    // if (fcmToken == null) {
-    const fcmtoken = await getToken(getMessagingInstance());
-    sendFcm(token, fcmtoken);
-    console.log('fcmToken is genrated', fcmtoken);
-
-    // }
-  } catch (error: any) {
-    console.log('error in fetching fcmToken', error?.message);
-  }
-};
-const sendFcm = async (token: string, fcmtoken: string) => {
-  try {
-    const res = await ApiCall({
-      route: 'user/set-fcm',
-      token,
-      params: { FCM: fcmtoken },
-      verb: 'patch',
-    });
-    if (res?.status === 200) {
-      console.log('fcm res == 200 ... ', res);
-    } else {
-      console.log('error', res);
-    }
-  } catch (e: any) {
-    console.log('saga error -- ', e.toString());
-  }
+  return syncPushTokenWithBackend(token, undefined, true);
 };
 
 export const appListner = async (
-  navigation: NavigationProp<ParamListBase>,
+  _navigation: NavigationProp<ParamListBase>,
   getAllSms: (chatRoomId?: string | object) => void | Promise<void>
 ) => {
-  onNotificationOpenedApp(getMessagingInstance(), (remoteMessage) => {
-    console.log(
-      'Notification caused app to open from background state:',
-      remoteMessage.notification
-    );
-    console.log('background state', remoteMessage?.data?.receiver);
-    if (remoteMessage?.data?.type === 'message') {
-      navigation.navigate('conversation', {
-        reciver: remoteMessage?.data?.receiver,
-        reciverId: remoteMessage?.data?.chatRoom,
-      });
-      getAllSms(remoteMessage?.data?.chatRoom);
-    } else {
-      console.log('else working');
-    }
-  });
-
-  onMessage(getMessagingInstance(), async (remoteMessage) => {
-    if (remoteMessage) {
-      console.log('Notification caused app to open from quit state:', remoteMessage.notification);
-      console.log('forground state', remoteMessage);
-      if (remoteMessage?.data?.type === 'message') {
-        getAllSms(remoteMessage?.data?.chatRoom);
-      } else {
-        console.log('else working');
-      }
+  return subscribeToForegroundPushMessages(async (payload) => {
+    const chatRoom = payload.data?.chatRoom;
+    if (payload.type === 'message' && chatRoom) {
+      await getAllSms(chatRoom);
     }
   });
 };

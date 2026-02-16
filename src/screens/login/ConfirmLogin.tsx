@@ -32,6 +32,7 @@ function ConfirmLogin({ route, navigation }: Props) {
   const profile = useSelector((state: RootState) => state.auth.getProfileData);
   const { dark, colors } = useTheme();
   const [isResending, setIsResending] = useState(false);
+  const [resendTargetEmail, setResendTargetEmail] = useState(route?.params?.prefillEmail ?? '');
   const [verifyStatus, setVerifyStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>(
     'idle'
   );
@@ -91,6 +92,46 @@ function ConfirmLogin({ route, navigation }: Props) {
   }, [dispatch, route?.params?.token, token]);
 
   useEffect(() => {
+    if (profile?.email && profile.email !== resendTargetEmail) {
+      setResendTargetEmail(profile.email);
+    }
+  }, [profile?.email, resendTargetEmail]);
+
+  useEffect(() => {
+    if (token) {
+      dispatch(getProfile.Request({ token }));
+    }
+  }, [dispatch, token]);
+
+  const resendVerificationEmail = useCallback(async () => {
+    if (!token && !resendTargetEmail) {
+      return;
+    }
+    setIsResending(true);
+    if (token) {
+      dispatch(
+        sendVerificationEmailAction.Request({
+          token: true,
+          data: {},
+          allowFalseSuccess: true,
+        })
+      );
+      setTimeout(() => setIsResending(false), 800);
+      return;
+    }
+
+    try {
+      await ApiCall({
+        route: 'auth/sendVerificationEmail/public',
+        verb: 'post',
+        params: { email: resendTargetEmail.trim().toLowerCase() },
+      });
+    } finally {
+      setTimeout(() => setIsResending(false), 800);
+    }
+  }, [dispatch, resendTargetEmail, token]);
+
+  const refreshProfile = useCallback(() => {
     if (token) {
       dispatch(getProfile.Request({ token }));
     }
@@ -127,60 +168,44 @@ function ConfirmLogin({ route, navigation }: Props) {
   }, [navigation, verifyStatus]);
 
   useEffect(() => {
-    if (profile?.emailVerified && !permissionsRequestedRef.current) {
-      const requestPermissions = async () => {
-        try {
-          if (Platform.OS === 'android') {
-            await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION, {
-              title: 'Allow location',
-              message: 'We use your city to help secure your account and content.',
-              buttonPositive: 'Allow',
+    if (profile?.emailVerified) {
+      if (!permissionsRequestedRef.current) {
+        const requestPermissions = async () => {
+          try {
+            if (Platform.OS === 'android') {
+              await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                {
+                  title: 'Allow location',
+                  message: 'We use your city to help secure your account and content.',
+                  buttonPositive: 'Allow',
+                }
+              );
+            } else {
+              await Geolocation.requestAuthorization();
+            }
+
+            await requestNotificationPermission(getMessaging());
+          } catch (e) {
+            // ignore errors
+          } finally {
+            permissionsRequestedRef.current = true;
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainRoot' as any }],
             });
-          } else {
-            await Geolocation.requestAuthorization();
           }
+        };
 
-          await requestNotificationPermission(getMessaging());
-        } catch (e) {
-          // ignore errors
-        } finally {
-          permissionsRequestedRef.current = true;
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'MainRoot' as any }],
-          });
-        }
-      };
-
-      requestPermissions();
-    } else if (profile?.emailVerified) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainRoot' as any }],
-      });
+        requestPermissions();
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainRoot' as any }],
+        });
+      }
     }
   }, [navigation, profile?.emailVerified]);
-
-  const resendVerificationEmail = useCallback(async () => {
-    if (!token) {
-      return;
-    }
-    setIsResending(true);
-    dispatch(
-      sendVerificationEmailAction.Request({
-        token: true,
-        data: {},
-        allowFalseSuccess: true,
-      })
-    );
-    setTimeout(() => setIsResending(false), 800);
-  }, [dispatch, token]);
-
-  const refreshProfile = useCallback(() => {
-    if (token) {
-      dispatch(getProfile.Request({ token }));
-    }
-  }, [dispatch, token]);
 
   const signOut = useCallback(async () => {
     await clearAuthTokens();
@@ -218,7 +243,7 @@ function ConfirmLogin({ route, navigation }: Props) {
               color: palette.textSecondary,
             }}
           >
-            We sent a verification link to {profile?.email ?? 'your email'}. Tap the link to
+            We sent a verification link to {resendTargetEmail || 'your email'}. Tap the link to
             continue.
           </StyledText>
         </View>

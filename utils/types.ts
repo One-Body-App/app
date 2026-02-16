@@ -117,6 +117,10 @@ export type User = {
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
   subscribedToNewsletter: boolean;
+  mfaConfig?: {
+    isMfaActive?: boolean;
+    defaultMethod?: 'passkey' | 'totp' | 'email' | 'backup';
+  };
   influencerProfile?: InfluencerProfile;
   profile: Profile;
   savedPrayers?: string[];

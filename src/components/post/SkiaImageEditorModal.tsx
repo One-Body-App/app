@@ -70,8 +70,29 @@ type Props = {
   onSaved: (media: SavedMedia) => void;
 };
 
+const FILTER_IDS = [
+  'original',
+  'grace',
+  'peace',
+  'spirit',
+  'clarendon',
+  'rise',
+  'sierra',
+  'juno',
+  'gingham',
+  'moon',
+  'inkwell',
+  'lark',
+  'hudson',
+  'valencia',
+  'aden',
+  'willow',
+  'perpetua',
+  'reyes',
+] as const;
+
 type ToolId = 'crop' | 'filters' | 'adjust' | 'text' | 'stickers' | 'draw';
-type FilterId = 'original' | 'grace' | 'peace' | 'spirit';
+type FilterId = (typeof FILTER_IDS)[number];
 type AdjustPresetId = 'none' | 'lift' | 'depth' | 'vivid';
 type RatioId = 'free' | '9:16' | '3:4' | '1:1';
 
@@ -297,20 +318,139 @@ const makeSaturationMatrix = (saturation: number) => {
   ];
 };
 
+const compose4x5 = (...matrices: number[][]) =>
+  matrices.reduce((acc, matrix) => multiply4x5(acc, matrix), identityMatrix());
+
+const grayscaleBase = [
+  0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0, 0, 0,
+  1, 0,
+];
+
+const FILTER_PRESETS: Record<FilterId, { label: string; matrix: number[] }> = {
+  original: {
+    label: 'Original',
+    matrix: identityMatrix(),
+  },
+  grace: {
+    label: 'Grace',
+    matrix: compose4x5(
+      makeContrastMatrix(1.05),
+      [1.12, 0.02, 0, 0, 8, 0, 1.04, 0.02, 0, 3, 0, 0, 0.9, 0, -4, 0, 0, 0, 1, 0]
+    ),
+  },
+  peace: {
+    label: 'Peace',
+    matrix: compose4x5(
+      makeSaturationMatrix(0.98),
+      [0.95, 0, 0.08, 0, -6, 0, 1.02, 0.06, 0, 0, 0.03, 0.04, 1.12, 0, 10, 0, 0, 0, 1, 0]
+    ),
+  },
+  spirit: {
+    label: 'Spirit',
+    matrix: compose4x5(makeContrastMatrix(1.18), grayscaleBase),
+  },
+  clarendon: {
+    label: 'Clarendon',
+    matrix: compose4x5(
+      makeContrastMatrix(1.1),
+      makeSaturationMatrix(1.1),
+      [1.05, 0, 0.03, 0, 3, 0, 1.03, 0.02, 0, 2, 0, 0.02, 1.16, 0, 10, 0, 0, 0, 1, 0]
+    ),
+  },
+  rise: {
+    label: 'Rise',
+    matrix: compose4x5(
+      makeBrightnessMatrix(0.05),
+      [1.16, 0.02, 0, 0, 14, 0, 1.1, 0, 0, 8, 0, 0, 0.98, 0, 2, 0, 0, 0, 1, 0]
+    ),
+  },
+  sierra: {
+    label: 'Sierra',
+    matrix: compose4x5(
+      makeContrastMatrix(0.96),
+      [1.08, 0.02, 0, 0, 10, 0, 1.02, 0.01, 0, 5, 0, 0, 0.92, 0, 2, 0, 0, 0, 1, 0]
+    ),
+  },
+  juno: {
+    label: 'Juno',
+    matrix: compose4x5(
+      makeContrastMatrix(1.08),
+      makeSaturationMatrix(1.18),
+      [1.08, 0.01, 0, 0, 2, 0, 1.02, 0, 0, 0, 0, 0, 0.92, 0, -4, 0, 0, 0, 1, 0]
+    ),
+  },
+  gingham: {
+    label: 'Gingham',
+    matrix: compose4x5(
+      makeContrastMatrix(0.9),
+      makeSaturationMatrix(0.88),
+      [1.03, 0.02, 0, 0, 6, 0, 1.01, 0.01, 0, 3, 0, 0, 0.98, 0, 2, 0, 0, 0, 1, 0]
+    ),
+  },
+  moon: {
+    label: 'Moon',
+    matrix: compose4x5(makeContrastMatrix(1.07), grayscaleBase),
+  },
+  inkwell: {
+    label: 'Inkwell',
+    matrix: compose4x5(makeContrastMatrix(1.28), makeBrightnessMatrix(-0.03), grayscaleBase),
+  },
+  lark: {
+    label: 'Lark',
+    matrix: compose4x5(
+      makeBrightnessMatrix(0.03),
+      makeSaturationMatrix(1.03),
+      [1.04, 0, 0.01, 0, 4, 0, 1.06, 0, 0, 5, 0, 0, 0.98, 0, 1, 0, 0, 0, 1, 0]
+    ),
+  },
+  hudson: {
+    label: 'Hudson',
+    matrix: compose4x5(
+      makeContrastMatrix(1.14),
+      [1.06, 0, 0.04, 0, 3, 0, 1.06, 0.01, 0, 2, 0, 0.02, 1.24, 0, 12, 0, 0, 0, 1, 0]
+    ),
+  },
+  valencia: {
+    label: 'Valencia',
+    matrix: compose4x5(
+      makeContrastMatrix(1.01),
+      [1.1, 0.02, 0, 0, 10, 0, 1.03, 0.01, 0, 3, 0, 0, 0.88, 0, -1, 0, 0, 0, 1, 0]
+    ),
+  },
+  aden: {
+    label: 'Aden',
+    matrix: compose4x5(
+      makeContrastMatrix(0.93),
+      makeSaturationMatrix(0.9),
+      [1.06, 0, 0, 0, 6, 0, 1, 0, 0, 3, 0, 0, 0.96, 0, 3, 0, 0, 0, 1, 0]
+    ),
+  },
+  willow: {
+    label: 'Willow',
+    matrix: compose4x5(
+      makeContrastMatrix(0.92),
+      [0.31, 0.31, 0.31, 0, 8, 0.31, 0.31, 0.31, 0, 5, 0.31, 0.31, 0.31, 0, 10, 0, 0, 0, 1, 0]
+    ),
+  },
+  perpetua: {
+    label: 'Perpetua',
+    matrix: compose4x5(
+      makeContrastMatrix(1.02),
+      [1, 0, 0, 0, 0, 0, 1.08, 0, 0, 6, 0, 0, 1.06, 0, -6, 0, 0, 0, 1, 0]
+    ),
+  },
+  reyes: {
+    label: 'Reyes',
+    matrix: compose4x5(
+      makeContrastMatrix(0.95),
+      makeSaturationMatrix(0.9),
+      [1.08, 0, 0, 0, 10, 0, 1.03, 0, 0, 8, 0, 0, 0.9, 0, 4, 0, 0, 0, 1, 0]
+    ),
+  },
+};
+
 const filterMatrixById = (filter: FilterId) => {
-  if (filter === 'grace') {
-    return multiply4x5(makeSaturationMatrix(0.92), makeBrightnessMatrix(0.04));
-  }
-  if (filter === 'peace') {
-    return [0.95, 0, 0.08, 0, -6, 0, 1.0, 0.05, 0, 0, 0.02, 0.04, 1.05, 0, 8, 0, 0, 0, 1, 0];
-  }
-  if (filter === 'spirit') {
-    return [
-      0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0,
-      0, 0, 1, 0,
-    ];
-  }
-  return identityMatrix();
+  return FILTER_PRESETS[filter].matrix;
 };
 
 const adjustMatrixById = (adjust: AdjustPresetId) => {
@@ -327,10 +467,7 @@ const adjustMatrixById = (adjust: AdjustPresetId) => {
 };
 
 const filterLabel = (id: FilterId) => {
-  if (id === 'grace') return 'Grace';
-  if (id === 'peace') return 'Peace';
-  if (id === 'spirit') return 'Spirit';
-  return 'Original';
+  return FILTER_PRESETS[id].label;
 };
 
 const defaultRatioForContext = (usageContext: UsageContext): RatioId => {
@@ -1261,7 +1398,7 @@ function SkiaImageEditorModal({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.trayContent}
             >
-              {(['original', 'grace', 'peace', 'spirit'] as FilterId[]).map((id) => (
+              {FILTER_IDS.map((id) => (
                 <TouchableOpacity
                   key={id}
                   onPress={() => commitAndSet(() => setFilter(id))}
@@ -1544,7 +1681,7 @@ const styles = StyleSheet.create({
   },
   header: {
     height: HEADER_HEIGHT,
-    paddingHorizontal: spacing.x12,
+    paddingHorizontal: spacing.x13,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1589,7 +1726,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.max,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.x14,
+    paddingHorizontal: spacing.x13,
   },
   doneLabel: {
     color: '#ffffff',
@@ -1600,7 +1737,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     paddingHorizontal: spacing.x16,
-    paddingBottom: spacing.x12,
+    paddingBottom: spacing.x13,
   },
   canvasContainer: {
     flex: 1,
@@ -1631,7 +1768,7 @@ const styles = StyleSheet.create({
   trayContent: {
     alignItems: 'center',
     paddingHorizontal: spacing.x16,
-    columnGap: spacing.x12,
+    columnGap: spacing.x13,
   },
   previewItem: {
     alignItems: 'center',
@@ -1737,7 +1874,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#27c6cf',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.x6,
+    marginTop: spacing.x5,
   },
   errorButtonLabel: {
     color: '#083046',
@@ -1755,7 +1892,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 38,
     borderRadius: borderRadius.max,
-    paddingHorizontal: spacing.x12,
+    paddingHorizontal: spacing.x13,
     fontSize: 14,
     fontFamily: BODY_FONT,
   },
@@ -1765,7 +1902,7 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.x12,
+    paddingHorizontal: spacing.x13,
   },
   actionButtonDisabled: {
     opacity: 0.5,

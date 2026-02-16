@@ -14,7 +14,7 @@ import {
 } from '../actions/UserAction';
 import { getProfile } from '../actions/AuthActions';
 
-function* UserGetRequest(params) {
+function* UserGetRequest(params: any): any {
   try {
     const res = yield ApiCall({
       token: params.data.token,
@@ -40,11 +40,11 @@ function* UserGetRequest(params) {
     console.log('saga get Intrest and Subscribe err --- ', e);
   }
 }
-export function* UserGetSaga() {
+export function* UserGetSaga(): any {
   yield takeLatest(ACTIONS.GET_User_GET, UserGetRequest);
 }
 
-function* GetAllUserRequest(params) {
+function* GetAllUserRequest(params: any): any {
   try {
     const res = yield ApiCall({
       token: params.data.token,
@@ -66,11 +66,11 @@ function* GetAllUserRequest(params) {
     console.log('saga get all user err --- ', e);
   }
 }
-export function* GetAllUserSaga() {
+export function* GetAllUserSaga(): any {
   yield takeLatest(ACTIONS.Get_ALLUSER, GetAllUserRequest);
 }
 
-function* GetChatRequest(params) {
+function* GetChatRequest(params: any): any {
   try {
     const res = yield ApiCall({
       token: params.data.token,
@@ -87,12 +87,12 @@ function* GetChatRequest(params) {
     console.log('saga get all user err --- ', e);
   }
 }
-export function* GetChatSaga() {
+export function* GetChatSaga(): any {
   yield takeLatest(ACTIONS.GET_CHATS, GetChatRequest);
 }
 
 // Interests
-function* addUserInterestSaga({ params }) {
+function* addUserInterestSaga({ params }: any): any {
   try {
     const res = yield ApiCall({
       route: 'user/add-interests',
@@ -108,11 +108,11 @@ function* addUserInterestSaga({ params }) {
   }
 }
 
-export function* AddUserInterestSaga() {
-  yield takeEvery(AddUserInterest.REQUEST, addUserInterestSaga);
+export function* AddUserInterestSaga(): any {
+  yield takeEvery(AddUserInterest.REQUEST as any, addUserInterestSaga);
 }
 
-function* getInterestsSaga({ params }) {
+function* getInterestsSaga({ params }: any): any {
   try {
     const res = yield ApiCall({
       route: 'tags/interest',
@@ -127,6 +127,6 @@ function* getInterestsSaga({ params }) {
   }
 }
 
-export function* GetInterestsSaga() {
-  yield takeEvery(GetInterests.REQUEST, getInterestsSaga);
+export function* GetInterestsSaga(): any {
+  yield takeEvery(GetInterests.REQUEST as any, getInterestsSaga);
 }

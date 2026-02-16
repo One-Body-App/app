@@ -27,12 +27,12 @@ import {
   GiphyDialogMediaSelectEventHandler,
   GiphyDialogEvent,
   GiphyMediaView,
-  GiphySDK,
   GiphyThemePreset,
 } from '@giphy/react-native-sdk';
 import EmojiPicker, { EmojiType } from 'rn-emoji-keyboard';
 import { isArray } from 'lodash';
 import { useToast } from 'react-native-toast-notifications';
+import RNFS from 'react-native-fs';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
@@ -46,7 +46,6 @@ import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { fontSize, lineHeight } from '@/src/styles/typography';
 
-import { GIPHY_KEY_ANDROID, GIPHY_KEY_IOS } from '@/services/constants';
 import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
 import ErrorBoundary from '@/src/components/ErrorBoundry';
 import {
@@ -114,18 +113,7 @@ function NewPost({ navigation, route }: Props) {
     if (isGiphyInitialized) {
       return true;
     }
-    const giphyApiKey = Platform.OS === 'ios' ? GIPHY_KEY_IOS : GIPHY_KEY_ANDROID;
-    if (!giphyApiKey) {
-      toast.show('GIF feature is not configured on this build.', {
-        type: 'normal',
-        placement: 'bottom',
-      });
-      return false;
-    }
     try {
-      GiphySDK.configure({
-        apiKey: giphyApiKey,
-      });
       GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
       setIsGiphyInitialized(true);
       return true;
@@ -178,12 +166,24 @@ function NewPost({ navigation, route }: Props) {
         asset.uri.startsWith('ph://')
           ? asset.uri
           : `file://${asset.uri}`;
+      let editorUri = normalizedUri;
+      if (Platform.OS === 'android' && normalizedUri.startsWith('content://')) {
+        const cachedPath = `${RNFS.CachesDirectoryPath}/onebody_editor_source_${Date.now()}_${Math.round(
+          Math.random() * 1000
+        )}.jpg`;
+        try {
+          await RNFS.copyFile(normalizedUri, cachedPath);
+          editorUri = `file://${cachedPath}`;
+        } catch (error) {
+          editorUri = normalizedUri;
+        }
+      }
       const requestId = createUploadImageRequestId();
       const resultPromise = waitForUploadImageResult(requestId);
 
       navigation.navigate('UploadImage', {
         requestId,
-        imageUri: normalizedUri,
+        imageUri: editorUri,
         fileName: asset.fileName,
         fileSize: asset.fileSize,
         type: asset.type ?? 'image/jpeg',
@@ -407,8 +407,13 @@ function NewPost({ navigation, route }: Props) {
         const normalizedName = imageName.toLowerCase().endsWith('.jpg')
           ? imageName
           : `${imageName.split('.').slice(0, -1).join('.') || imageName}.jpg`;
+        const sourcePath = item.path ?? '';
+        const normalizedUri =
+          sourcePath.startsWith('file://') || sourcePath.startsWith('content://')
+            ? sourcePath
+            : `file://${sourcePath}`;
         return {
-          uri: `file://${item.path}`,
+          uri: normalizedUri,
           fileName: normalizedName,
           fileSize: typeof item.size === 'number' ? item.size : undefined,
           type: 'image/jpeg',

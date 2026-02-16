@@ -56,6 +56,7 @@ import {
   Notification,
 } from 'iconsax-react-native';
 import { Menu } from 'iconoir-react-native';
+import { serialize } from 'object-to-formdata';
 import { useTabBarAnimation } from '@/navigator/TabBarAnimationContext';
 
 import styles from './styles';
@@ -73,6 +74,7 @@ import useScrollIntentLock from '@/src/hooks/useScrollIntentLock';
 import { getHeight } from '@/utils/ResponsiveFun';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
+import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
 import WallComponent from '@/components/prayerWallComponent';
 import PrayersComponent from '@/components/prayerWallMyPrayersComponent';
 import TestimoniesComponent from '@/components/prayerWallTestimoniesComponent';
@@ -155,6 +157,13 @@ export enum FeedTypes {
   Pray = 'pray',
   Watch = 'watch',
 }
+
+const getFeedPostId = (item: FeedPost) => {
+  if (item.postId) return item.postId;
+  if (item.id) return String(item.id);
+  const fallbackId = '_id' in item ? item._id : undefined;
+  return fallbackId ? String(fallbackId) : undefined;
+};
 
 type FeedOptions = {
   type: FeedTypes;
@@ -545,31 +554,59 @@ function StatusInput({
   userAvatar,
   dark,
   textColor,
+  value,
+  onChangeText,
+  onActionPress,
+  hasText,
+  isSubmitting,
 }: {
   userAvatar?: string;
   dark: boolean;
   textColor: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  onActionPress: () => void;
+  hasText: boolean;
+  isSubmitting: boolean;
 }) {
+  const promptContainerColor = dark ? '#232b38' : BRAND.white;
+  const promptActionBackground = dark ? 'rgba(65, 219, 225, 0.16)' : 'rgba(18, 107, 135, 0.1)';
+  const promptActionColor = dark ? '#7ee7f2' : BRAND.primaryDark;
+
+  let promptActionIcon = <Gallery size={20} color={promptActionColor} variant="Bold" />;
+  if (hasText) {
+    promptActionIcon = <ArrowUpIcon width={20} height={20} color={promptActionColor} />;
+  }
+  if (isSubmitting) {
+    promptActionIcon = <ActivityIndicator size="small" color={promptActionColor} />;
+  }
+
   return (
-    <View
-      style={[styles.promptContainer, { backgroundColor: dark ? BRAND.cardDark : BRAND.white }]}
-    >
+    <View style={[styles.promptContainer, { backgroundColor: promptContainerColor }]}>
       <Image
         source={{ uri: userAvatar || 'https://via.placeholder.com/40' }}
         style={styles.avatarSmall}
       />
       <TextInput
+        value={value}
+        onChangeText={onChangeText}
         placeholder="What's on your mind?"
         placeholderTextColor={BRAND.gray400}
         style={[styles.promptInput, { color: textColor }]}
+        returnKeyType={hasText ? 'send' : 'default'}
+        editable={!isSubmitting}
+        onSubmitEditing={() => {
+          if (hasText && !isSubmitting) {
+            onActionPress();
+          }
+        }}
       />
       <TouchableOpacity
-        style={[
-          styles.promptIcon,
-          { backgroundColor: dark ? 'rgba(18, 107, 135, 0.2)' : 'rgba(18, 107, 135, 0.1)' },
-        ]}
+        onPress={onActionPress}
+        disabled={isSubmitting}
+        style={[styles.promptIcon, { backgroundColor: promptActionBackground }]}
       >
-        <Gallery size={20} color={BRAND.primaryDark} variant="Bold" />
+        {promptActionIcon}
       </TouchableOpacity>
     </View>
   );
@@ -866,6 +903,8 @@ function Home({ navigation, route }: Props) {
   const [suggestedForYouUsers, setSuggestedForYouUsers] = useState<User[]>([]);
   const [connectingSuggestionIds, setConnectingSuggestionIds] = useState<string[]>([]);
   const [introAnimatedCardKeys, setIntroAnimatedCardKeys] = useState<string[]>([]);
+  const [quickPostText, setQuickPostText] = useState('');
+  const [isQuickPosting, setIsQuickPosting] = useState(false);
   const introAnimatedCardKeySet = useMemo(
     () => new Set(introAnimatedCardKeys),
     [introAnimatedCardKeys]
@@ -1221,6 +1260,49 @@ function Home({ navigation, route }: Props) {
     }
   }, [feedOptions.type]);
 
+  const handleOpenPostComposer = useCallback(() => {
+    preserveFeedPositionOnNextFocus();
+    navigation.navigate('Post');
+  }, [navigation, preserveFeedPositionOnNextFocus]);
+
+  const handleSubmitQuickPost = useCallback(async () => {
+    const content = quickPostText.trim();
+    if (!content || isQuickPosting) {
+      return;
+    }
+    setIsQuickPosting(true);
+    try {
+      const result = await ApiCall({
+        route: 'social/post',
+        token,
+        params: serialize(
+          { content },
+          {
+            noAttributesWithArrayNotation: true,
+            noFilesWithArrayNotation: true,
+          }
+        ),
+        verb: 'post',
+        isFormUrlEncode: true,
+      });
+      if (result?.status === 200) {
+        setQuickPostText('');
+        reloadFeed(feedTypeRef.current);
+      }
+    } finally {
+      setIsQuickPosting(false);
+    }
+  }, [isQuickPosting, quickPostText, reloadFeed, token]);
+
+  const hasQuickPostText = quickPostText.trim().length > 0;
+  const handleQuickComposerAction = useCallback(() => {
+    if (hasQuickPostText) {
+      handleSubmitQuickPost();
+      return;
+    }
+    handleOpenPostComposer();
+  }, [handleOpenPostComposer, handleSubmitQuickPost, hasQuickPostText]);
+
   useEffect(() => {
     feedTypeRef.current = feedOptions.type;
   }, [feedOptions.type]);
@@ -1506,12 +1588,23 @@ function Home({ navigation, route }: Props) {
   // --- NAVIGATION HANDLERS ---
   const navigateToDetail = (item: FeedPost) => {
     preserveFeedPositionOnNextFocus();
-    // Logic from your old code to determine destination
-    if (item.type === 'social' || item.postId) {
+    const postId = getFeedPostId(item);
+    const isSocialLike = Boolean(
+      postId &&
+        (item.type === 'social' ||
+          ('userData' in item && item.userData) ||
+          item.mediaUrl ||
+          (Array.isArray(item.images) && item.images.length > 0))
+    );
+
+    if (isSocialLike && postId) {
       navigation.navigate('SinglePost', {
-        postId: item.postId || item.id,
+        postId,
       } as any);
-    } else {
+      return;
+    }
+
+    if (item.id) {
       navigation.navigate('SingleRss', {
         postId: item.id,
       } as any);
@@ -1622,7 +1715,6 @@ function Home({ navigation, route }: Props) {
         renderedItem = (
           <SocialItem
             itemData={socialItem}
-            scrollIntent={scrollIntent}
             removePost={() => undefined}
             parentRefreshContent={() => {
               getFeedData(feedOptions.type, 1);
@@ -2058,6 +2150,11 @@ function Home({ navigation, route }: Props) {
               }
               dark={dark}
               textColor={colors.text}
+              value={quickPostText}
+              onChangeText={setQuickPostText}
+              onActionPress={handleQuickComposerAction}
+              hasText={hasQuickPostText}
+              isSubmitting={isQuickPosting}
             />
           ) : null
         }

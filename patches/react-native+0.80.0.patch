@@ -1,19 +1,19 @@
 diff --git a/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake b/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake
-index 1234567..89abcde 100644
+index 8d1d440..9c68d62 100644
 --- a/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake
 +++ b/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake
-@@ -92,6 +92,14 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
- # Include autolinking for 3rd party libraries
- if(EXISTS "${PROJECT_BUILD_DIR}/generated/autolinking/src/main/jni/Android-autolinking.cmake")
+@@ -90,6 +90,14 @@ target_compile_options(common_flags INTERFACE ${folly_FLAGS})
+ # If project is on RN CLI v9, then we can use the following lines to link against the autolinked 3rd party libraries.
+ if(EXISTS ${PROJECT_BUILD_DIR}/generated/autolinking/src/main/jni/Android-autolinking.cmake)
          include(${PROJECT_BUILD_DIR}/generated/autolinking/src/main/jni/Android-autolinking.cmake)
-+        
-+        # Create aliases for targets that have _app suffix to fix codegen target name mismatch
++        # Some generated codegen targets can have `_app` suffix in RN 0.80.
++        # Create aliases so libraries can still link using expected target names.
 +        foreach(autolinked_library ${AUTOLINKED_LIBRARIES})
-+          if(TARGET ${autolinked_library}_app AND NOT TARGET ${autolinked_library})
-+            add_library(${autolinked_library} ALIAS ${autolinked_library}_app)
-+          endif()
++            if(TARGET ${autolinked_library}_app AND NOT TARGET ${autolinked_library})
++                add_library(${autolinked_library} ALIAS ${autolinked_library}_app)
++            endif()
 +        endforeach()
-+        
++
          target_link_libraries(${CMAKE_PROJECT_NAME} ${AUTOLINKED_LIBRARIES})
          foreach(autolinked_library ${AUTOLINKED_LIBRARIES})
              target_link_libraries(${autolinked_library} common_flags)

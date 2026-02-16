@@ -1,35 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  Animated,
-  Image,
-  ImageBackground,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
-  ScrollView,
-  Keyboard,
-  Platform,
-} from 'react-native';
-import { Avatar, Provider } from 'react-native-paper';
-import DropDown from 'react-native-paper-dropdown';
+import React, { useState } from 'react';
+import { Text, View, FlatList, TouchableOpacity } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import AntDesign from '@react-native-vector-icons/ant-design';
-import { Icon } from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
 import { useSelector } from 'react-redux';
 import RenderHtml from 'react-native-render-html';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import { getHeight, getWidth } from '@/utils/ResponsiveFun';
 import Header from '@/components/Header';
-import Button from '@/components/Button';
 import { styles } from './styles';
+import { Colors } from '@/src/styles';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 // import ZendeskChat from 'react-native-zendesk-chat';
 
-function Faqs({ navigation }) {
-  const faqs = useSelector((state) => state.general.faqs);
-  const [selectedIndex, setSelectedIndex] = useState(null);
+function Faqs({ navigation }: { navigation: any }) {
+  const faqs = useSelector((state: RootState) => state.general.faqs) as Array<{
+    name?: string;
+    body?: string;
+  }>;
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
@@ -43,7 +30,7 @@ function Faqs({ navigation }) {
         RightView={<View style={{ width: getWidth(5) }} />}
       />
       <View style={styles.innerContainer}>
-        <FlatList
+        <FlatList<{ name?: string; body?: string }>
           data={faqs}
           style={{ height: getHeight(10), alignSelf: 'center' }}
           keyExtractor={(item, index) => index.toString()}
@@ -95,7 +82,7 @@ function Faqs({ navigation }) {
                     padding: 10,
                   }}
                 >
-                  <RenderHtml source={{ html: item?.body }} />
+                  <RenderHtml source={{ html: item?.body ?? '' }} />
                 </View>
               ) : null}
             </View>

@@ -1,11 +1,28 @@
-import { Client } from 'twilio-chat';
+type TwilioChatClient = {
+  on: (event: string, listener: () => void) => void;
+  updateToken: (token: string) => Promise<void> | void;
+  shutdown: () => void;
+};
 
-export class TwilioService {
-  static serviceInstance;
+type TwilioClientFactory = {
+  create: (token: string) => Promise<TwilioChatClient>;
+};
 
-  static chatClient;
+const resolveTwilioFactory = (): TwilioClientFactory | null => {
+  try {
+    // Twilio chat is optional in this app build.
+    // eslint-disable-next-line global-require
+    return require('twilio-chat')?.Client ?? null;
+  } catch (error) {
+    return null;
+  }
+};
 
-  // create a single service instance
+export default class TwilioService {
+  static serviceInstance: TwilioService | null = null;
+
+  static chatClient: TwilioChatClient | null = null;
+
   static getInstance() {
     if (!TwilioService.serviceInstance) {
       TwilioService.serviceInstance = new TwilioService();
@@ -13,37 +30,39 @@ export class TwilioService {
     return TwilioService.serviceInstance;
   }
 
-  // use chat client if don't have instance, create a new chat client
-  async getChatClient(twilioToken) {
-    if (!TwilioService.chatClient && !twilioToken) {
+  static async getChatClient(twilioToken?: string) {
+    if (TwilioService.chatClient) {
+      return TwilioService.chatClient;
+    }
+
+    if (!twilioToken) {
       throw new Error('Twilio token is null or undefined');
     }
-    if (!TwilioService.chatClient && twilioToken) {
-      return Client.create(twilioToken).then((client) => {
-        TwilioService.chatClient = client;
-        return TwilioService.chatClient;
-      });
+
+    const factory = resolveTwilioFactory();
+    if (!factory) {
+      throw new Error('Twilio chat SDK is not installed');
     }
-    return Promise.resolve().then(() => TwilioService.chatClient);
+
+    TwilioService.chatClient = await factory.create(twilioToken);
+    return TwilioService.chatClient;
   }
 
-  // manage our token expiration
-  addTokenListener(getToken) {
+  static addTokenListener(getToken: () => Promise<string>) {
     if (!TwilioService.chatClient) {
       throw new Error('Twilio client is null or undefined');
     }
     TwilioService.chatClient.on('tokenAboutToExpire', () => {
-      getToken().then(TwilioService.chatClient.updateToken);
+      getToken().then((token) => TwilioService.chatClient?.updateToken(token));
     });
 
     TwilioService.chatClient.on('tokenExpired', () => {
-      getToken().then(TwilioService.chatClient.updateToken);
+      getToken().then((token) => TwilioService.chatClient?.updateToken(token));
     });
     return TwilioService.chatClient;
   }
 
-  // gracefully shutting down library instance.
-  clientShutdown() {
+  static clientShutdown() {
     TwilioService.chatClient?.shutdown();
     TwilioService.chatClient = null;
   }

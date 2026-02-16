@@ -35,7 +35,7 @@ export const styles = StyleSheet.create({
     width: '98%',
     alignItems: 'center',
   },
-  TextInput: {
+  legacyTextInput: {
     borderWidth: 1,
 
     borderRadius: 10,
@@ -60,9 +60,8 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'gray',
   },
-  btn: {
+  legacyBtn: {
     borderWidth: 1,
-    backgroundColor: 'red',
     borderColor: '#5B7279',
     paddingHorizontal: 10,
     justifyContent: 'center',
@@ -86,7 +85,6 @@ export const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     // borderWidth: 1,
     marginTop: 10,
-    padding: 5,
     padding: 14,
     letterSpacing: -0.3,
     backgroundColor: '#EBF3F5',

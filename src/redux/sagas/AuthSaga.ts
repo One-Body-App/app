@@ -243,7 +243,16 @@ function* signUpSaga(params: { data: any; type: string }) {
       const tokens = (res?.response as any)?.tokens;
       const accessToken = tokens?.accessToken;
       if (tokens?.accessToken && tokens?.refreshToken) {
-        yield call(saveAuthTokens, tokens);
+        try {
+          yield call(saveAuthTokens, tokens);
+        } catch (error: any) {
+          if (__DEV__) {
+            console.warn(
+              'Token persistence failed during signup; continuing with in-memory session',
+              error?.message
+            );
+          }
+        }
         yield put(setLoginData({ token: accessToken }));
       }
       yield put(setAccountType(''));

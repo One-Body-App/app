@@ -14345,6 +14345,7 @@ __metadata:
     react-native-inappbrowser-reborn: "npm:^3.7.0"
     react-native-keyboard-aware-scroll-view: "npm:^0.9.5"
     react-native-keyboard-controller: "npm:^1.11.3"
+    react-native-keychain: "npm:^9.2.0"
     react-native-lightbox: "npm:^0.8.1"
     react-native-linear-gradient: "npm:^2.8.3"
     react-native-lottie-splash-screen: "npm:^1.1.2"
@@ -14353,6 +14354,7 @@ __metadata:
     react-native-pager-view: "npm:^6.2.0"
     react-native-paper: "npm:^5.10.0"
     react-native-paper-dropdown: "npm:^1.0.7"
+    react-native-passkey: "npm:^2.0.0"
     react-native-permissions: "npm:^4.0.4"
     react-native-popup-menu: "npm:^0.16.1"
     react-native-qrcode-svg: "npm:^6.2.0"
@@ -15715,6 +15717,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-keychain@npm:^9.2.0":
+  version: 9.2.3
+  resolution: "react-native-keychain@npm:9.2.3"
+  checksum: 10/138f9812b7290440831343476f001c82b5e581bb5b327bf2c713cc8de7e5de7638443dfc19746560098289104132516b02509b2cbe763393adceea400a6874a9
+  languageName: node
+  linkType: hard
+
 "react-native-lightbox-v2@npm:0.9.0":
   version: 0.9.0
   resolution: "react-native-lightbox-v2@npm:0.9.0"
@@ -15821,6 +15830,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10/0ce25087c4a1041441ba680b79bd994de86d77a73cc733ab22b26f21c36be238f510b32eecd79fc099575615fa8fad9f600a495391cdaaf7b84bc6342f04f27b
+  languageName: node
+  linkType: hard
+
+"react-native-passkey@npm:^2.0.0":
+  version: 2.1.1
+  resolution: "react-native-passkey@npm:2.1.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10/884fe010c9cb5cd8db090b0e882734261024d20d6276e6b52a287e0a987b8ca1b42cc0e4bbe1514a031eafb28c5dd62e271801f1a505e6fc1afa52b61fb9fe49
   languageName: node
   linkType: hard
 

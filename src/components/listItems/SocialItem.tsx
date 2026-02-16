@@ -11,7 +11,7 @@ import ImageView from 'react-native-image-viewing';
 
 import { isArray } from 'lodash';
 import { decode } from 'html-entities';
-import { NO_POST_IMAGE_URL, OpenURLButton } from '@/services/constants';
+import { NO_POST_IMAGE_URL } from '@/services/constants';
 
 import { PostType, SocialPost, SocialPostReaction } from '@/utils/types';
 import {
@@ -28,7 +28,6 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import ImageSlider from '../imageSlider/ImageSlider';
 import { ImageForSlider } from '../imageSlider/types';
 import CustomVideo from '../CustomVideo';
-import type { ScrollIntentLock } from '@/src/hooks/useScrollIntentLock';
 
 // type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
@@ -185,10 +184,9 @@ type SocialItemProps = {
   onShowDismissCard?: (e?: boolean) => void;
   index?: number;
   parentRefreshContent?: Function;
-  removePost: (type: string, postId: string) => void;
+  removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
   fromSavedPosts?: boolean;
-  scrollIntent?: ScrollIntentLock;
 };
 function SocialItem({
   itemData,
@@ -201,7 +199,6 @@ function SocialItem({
   editPost,
   fromSavedPosts,
   onCommentsPress,
-  scrollIntent,
 }: SocialItemProps) {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -442,7 +439,6 @@ function SocialItem({
   }
 
   const postId = itemData.postId ?? itemData.id ?? itemData._id;
-  const interactionKey = postId ? String(postId) : `social-${index ?? 0}`;
   const handleCommentsPress =
     onCommentsPress ||
     (postId
@@ -452,6 +448,11 @@ function SocialItem({
           navigator?.navigate?.('SinglePost', { postId });
         }
       : undefined);
+  const handleContentPress = () => {
+    if (handleCommentsPress) {
+      handleCommentsPress();
+    }
+  };
 
   return (
     <BaseItem
@@ -506,7 +507,7 @@ function SocialItem({
         }}
       >
         {((safeContentUrl ? contentText : rawContent) ?? '').length > 0 ? (
-          <View style={{ flexGrow: 1 }}>
+          <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
             <StyledText
               style={{
                 color: colors.text,
@@ -516,32 +517,14 @@ function SocialItem({
             >
               {safeContentUrl ? contentText : rawContent}
             </StyledText>
-          </View>
+          </Pressable>
         ) : null}
 
         {hasLink && linkCardData
           ? (() => {
-              const gestureHandlers = scrollIntent?.bindCardGestureHandlers(
-                `${interactionKey}-link`,
-                {
-                  onPress: () => {
-                    if (linkUrl) OpenURLButton(linkUrl);
-                  },
-                }
-              );
-              const hasGestureHandlers = Boolean(gestureHandlers?.onTouchStart);
-              const onPressHandler =
-                gestureHandlers?.onPress ?? (linkUrl ? () => OpenURLButton(linkUrl) : undefined);
-
               return (
                 <Pressable
-                  onTouchStart={hasGestureHandlers ? gestureHandlers?.onTouchStart : undefined}
-                  onTouchMove={hasGestureHandlers ? gestureHandlers?.onTouchMove : undefined}
-                  onTouchEnd={hasGestureHandlers ? gestureHandlers?.onTouchEnd : undefined}
-                  onTouchCancel={hasGestureHandlers ? gestureHandlers?.onTouchCancel : undefined}
-                  onPressIn={hasGestureHandlers ? gestureHandlers?.onPressIn : undefined}
-                  onPressOut={hasGestureHandlers ? gestureHandlers?.onPressOut : undefined}
-                  onPress={onPressHandler}
+                  onPress={handleContentPress}
                   style={{
                     borderRadius: borderRadius.base,
                     marginVertical: spacing.x10,
@@ -600,30 +583,34 @@ function SocialItem({
           media.map((mediaItem, mediaIndex) => {
             if (mediaItem.type === 'VIDEO') {
               return (
-                <CustomVideo
+                <Pressable
                   key={`${mediaItem.type}-${mediaItem.url ?? `video-${mediaIndex}`}`}
-                  source={{
-                    uri: mediaItem.url,
-                  }}
-                  style={{
-                    width: '100%',
-                    aspectRatio: 16 / 9,
-                    borderRadius: borderRadius.small,
-                    marginVertical: 10,
-                  }}
-                  controls={false}
-                  resizeMode="cover"
-                  paused={!isPlaying}
-                  muted={isMuted}
-                  repeat
-                  onEnd={() => {
-                    if (!isPlaying) {
-                      setIsPlaying(true);
-                    }
-                    setIsMuted(!isMuted);
-                  }}
-                  // hideShutterView={true}
-                />
+                  onPress={handleContentPress}
+                >
+                  <CustomVideo
+                    source={{
+                      uri: mediaItem.url,
+                    }}
+                    style={{
+                      width: '100%',
+                      aspectRatio: 16 / 9,
+                      borderRadius: borderRadius.small,
+                      marginVertical: 10,
+                    }}
+                    controls={false}
+                    resizeMode="cover"
+                    paused={!isPlaying}
+                    muted={isMuted}
+                    repeat
+                    onEnd={() => {
+                      if (!isPlaying) {
+                        setIsPlaying(true);
+                      }
+                      setIsMuted(!isMuted);
+                    }}
+                    // hideShutterView={true}
+                  />
+                </Pressable>
               );
             }
 
@@ -647,11 +634,11 @@ function SocialItem({
             <ImageSlider
               width={width ?? 0}
               images={images}
-              setImageModalIndexVisible={(item) => {
-                setImageModalIndexVisible(item);
+              setImageModalIndexVisible={() => {
+                if (handleCommentsPress) {
+                  handleCommentsPress();
+                }
               }}
-              scrollIntent={scrollIntent}
-              mediaKeyPrefix={interactionKey}
             />
           </>
         ) : null}

@@ -21,17 +21,17 @@ export const loginSocialRequest = (data: {
   data,
 });
 
-export const setLoginData = (data) => ({
+export const setLoginData = (data: any) => ({
   type: ACTIONS.FETCH_LOGIN_DATA,
   data,
 });
 
-export const signUpRequest = (data) => ({
+export const signUpRequest = (data: any) => ({
   type: ACTIONS.SIGN_UP,
   data,
 });
 
-export const setSignUpData = (data) => ({
+export const setSignUpData = (data: any) => ({
   type: ACTIONS.FETCH_SIGN_UP,
   data,
 });
@@ -45,7 +45,7 @@ export const profileUpdate = (data: {
   type: ACTIONS.Profile_Update,
   data,
 });
-export const orgprofileUpdate = (data) => ({
+export const orgprofileUpdate = (data: any) => ({
   type: ACTIONS.ORGProfile_Update,
   data,
 });
@@ -53,26 +53,26 @@ export const orgprofileUpdate = (data) => ({
 //   type: ACTIONS.USER_PROFILE,
 //   data,
 // });
-export const setProfile = (data) => ({
+export const setProfile = (data: any) => ({
   type: ACTIONS.UPDATE_PROFILE,
   data,
 });
 
-export const getUserData = (data) => ({
+export const getUserData = (data: any) => ({
   type: ACTIONS.USER_DATA,
   data,
 });
-export const setUserData = (data) => ({
+export const setUserData = (data: any) => ({
   type: ACTIONS.UPDATE_USER,
   data,
 });
 
-export const otpRequest = (data) => ({
+export const otpRequest = (data: any) => ({
   type: ACTIONS.OTP,
   data,
 });
 
-export const setOtpData = (data) => ({
+export const setOtpData = (data: any) => ({
   type: ACTIONS.FETCH_OTP,
   data,
 });
@@ -80,26 +80,26 @@ export const logout = () => ({
   type: ACTIONS.LOGOUT,
   data: null,
 });
-export const setFcmToken = (data) => ({
+export const setFcmToken = (data: any) => ({
   type: ACTIONS.FcmToken,
   data,
 });
-export const changePasswordRequest = (data) => ({
+export const changePasswordRequest = (data: any) => ({
   type: ACTIONS.CHANGE_PASSWORD,
   data,
 });
 
-export const forgetPasswordRequest = (data) => ({
+export const forgetPasswordRequest = (data: any) => ({
   type: ACTIONS.UPDATE_PASSWORD,
   data,
 });
 
-export const fitstLounch = (data) => ({
+export const fitstLounch = (data: any) => ({
   type: ACTIONS.FIRST_LUNCH,
   data,
 });
 
-export const removeSocialAccountRequest = (data) => ({
+export const removeSocialAccountRequest = (data: any) => ({
   type: ACTIONS.REMOVE_SOCIAL_ACCOUNT,
   data,
 });

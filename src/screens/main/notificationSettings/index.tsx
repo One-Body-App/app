@@ -11,6 +11,10 @@ import { ApiCall } from '@/services/api';
 import { setUserDataNotifications } from '@/src/redux/actions/UserAction';
 import { setProfile } from '@/src/redux/actions/AuthActions';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import {
+  disablePushNotifications,
+  enablePushNotifications,
+} from '@/src/services/notification/pushNotificationService';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'NotificationSettings'>;
 
@@ -98,6 +102,12 @@ function NotificationSettings({ navigation }: Props) {
 
       if (res?.status == 200) {
         dispatch(setUserDataNotifications({ notifications }));
+
+        if (notificationSwitch.pushNotificationsEnabled) {
+          await enablePushNotifications(token, true);
+        } else {
+          await disablePushNotifications(token);
+        }
 
         toast.show('Notifications Settings Updated Successfully', {
           type: 'success',

@@ -19,6 +19,7 @@ import {
   GiphyDialogEvent,
   GiphyDialogMediaSelectEventHandler,
   GiphyMedia,
+  GiphyThemePreset,
 } from '@giphy/react-native-sdk';
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -96,6 +97,7 @@ function CommentThread({
   const activeRequest = useRef(0);
   const isMounted = useRef(true);
   const giphySelectListenerRef = useRef<{ remove: () => void } | null>(null);
+  const isGiphyInitializedRef = useRef(false);
 
   const [comments, setComments] = useState<CommentPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -109,7 +111,7 @@ function CommentThread({
   const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
   const allowMedia = type === PostType.social || type === PostType.rss;
 
-  const useBrandDarkForSocial = dark && type === PostType.social;
+  const useBrandDarkForSocial = dark;
   let backgroundColor = '#f6f7f8';
   let surfaceColor = '#ffffff';
   let dividerColor = '#e7eaed';
@@ -117,10 +119,6 @@ function CommentThread({
     backgroundColor = colors.background;
     surfaceColor = colors.card;
     dividerColor = colors.border;
-  } else if (dark) {
-    backgroundColor = '#111d21';
-    surfaceColor = '#1a2c32';
-    dividerColor = '#22343a';
   }
   const keyboardOffset = insets.top + 44;
   const listHeader = useMemo(() => {
@@ -130,7 +128,7 @@ function CommentThread({
         style={{
           paddingHorizontal: spacing.x16,
           paddingTop: spacing.x16,
-          paddingBottom: spacing.x12,
+          paddingBottom: spacing.x13,
           backgroundColor,
           borderBottomWidth: 1,
           borderBottomColor: dividerColor,
@@ -325,6 +323,19 @@ function CommentThread({
     if (!allowMedia) {
       return;
     }
+    if (!isGiphyInitializedRef.current) {
+      try {
+        GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
+        isGiphyInitializedRef.current = true;
+      } catch (error) {
+        console.warn('Giphy initialization failed in comments', error);
+        toast.show('GIF feature is temporarily unavailable.', {
+          type: 'danger',
+          placement: 'bottom',
+        });
+        return;
+      }
+    }
     giphySelectListenerRef.current?.remove();
     const handler: GiphyDialogMediaSelectEventHandler = (e) => {
       setGif(e.media);
@@ -349,7 +360,7 @@ function CommentThread({
       giphySelectListenerRef.current = null;
       console.warn('GiphyDialog open failed in comments', error);
     }
-  }, [allowMedia]);
+  }, [allowMedia, toast]);
 
   const editComment = async (commentId: string, content: string) => {
     if (!postId) return;
@@ -422,7 +433,7 @@ function CommentThread({
   const isAndroid = Platform.OS === 'android';
   let listBottomPadding = spacing.x16;
   if (!hideComposer && isAndroid) {
-    listBottomPadding = spacing.x120;
+    listBottomPadding = spacing.x104;
   }
   let keyboardAvoidingProps: {
     behavior?: 'height' | 'padding' | 'position';

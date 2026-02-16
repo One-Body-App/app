@@ -3,7 +3,6 @@
 //   await preloadSoundEffect('click', require('path/to/click.wav'));
 //   await playSoundEffect('click');
 
-// @ts-expect-error - module has no bundled types in this project
 import { Image } from 'react-native';
 import Sound from 'react-native-sound';
 

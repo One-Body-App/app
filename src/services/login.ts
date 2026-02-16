@@ -16,11 +16,30 @@ type AuthApiResponse<TUser = any> = {
   tokens: AuthApiTokens;
 };
 
-type EmailTwoFactorChallenge = {
-  twoFactorRequired: true;
-  method: 'email';
+export type MfaMethod = 'passkey' | 'totp' | 'email' | 'backup';
+
+export type MfaChallengeResponse = {
+  mfaRequired: true;
+  enrollmentRequired: boolean;
+  mfaToken: string;
+  preferredMethod: MfaMethod;
+  availableMethods: MfaMethod[];
   emailMasked: string;
-  reason: 'new_location' | 'admin_policy';
+  reason: 'mandatory_mfa' | 'step_up';
+};
+
+const persistTokensSafely = async (tokens?: AuthApiTokens) => {
+  if (!tokens?.accessToken) {
+    return;
+  }
+
+  try {
+    await saveAuthTokens(tokens);
+  } catch (error: any) {
+    if (__DEV__) {
+      console.warn('Token persistence failed; continuing with in-memory session', error?.message);
+    }
+  }
 };
 
 export const registerWithEmailAndPassword = async (params: {
@@ -30,7 +49,7 @@ export const registerWithEmailAndPassword = async (params: {
   password: string;
   accountType?: string | null;
 }) => {
-  const res = await ApiCall<AuthApiResponse>({
+  const res = await ApiCall<AuthApiResponse | MfaChallengeResponse>({
     route: 'auth/register',
     verb: 'post',
     params: {
@@ -40,7 +59,7 @@ export const registerWithEmailAndPassword = async (params: {
   });
 
   if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
-    await saveAuthTokens((res.response as any).tokens);
+    await persistTokensSafely((res.response as any).tokens);
   }
 
   return res;
@@ -51,16 +70,143 @@ export const loginWithEmailAndPassword = async (params: {
   password: string;
   twoFactorCode?: string;
 }) => {
-  const res = await ApiCall<AuthApiResponse | EmailTwoFactorChallenge>({
+  const res = await ApiCall<AuthApiResponse | MfaChallengeResponse>({
     route: 'auth/login',
     verb: 'post',
     params,
   });
 
   if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
-    await saveAuthTokens((res.response as any).tokens);
+    await persistTokensSafely((res.response as any).tokens);
   }
 
+  return res;
+};
+
+const persistTokensIfProvided = async (response: any) => {
+  if (response?.tokens?.accessToken) {
+    await persistTokensSafely(response.tokens);
+  }
+};
+
+export const beginPasskeyRegistration = async (params: {
+  mfaToken: string;
+  deviceName?: string;
+}) => {
+  return ApiCall({
+    route: 'auth/mfa/passkey/register/begin',
+    verb: 'post',
+    params,
+  });
+};
+
+export const finishPasskeyRegistration = async (params: {
+  mfaToken: string;
+  response: Record<string, any>;
+}) => {
+  const res = await ApiCall<AuthApiResponse & { backupCodes?: string[] }>({
+    route: 'auth/mfa/passkey/register/finish',
+    verb: 'post',
+    params,
+  });
+  if (res.status === 200) {
+    await persistTokensIfProvided(res.response);
+  }
+  return res;
+};
+
+export const beginAuthenticatedMfaOnboarding = async (token: string) => {
+  return ApiCall<MfaChallengeResponse | { mfaRequired: false }>({
+    route: 'auth/mfa/onboarding/begin',
+    verb: 'post',
+    token,
+  });
+};
+
+export const beginPasskeyLogin = async (params: { mfaToken: string }) => {
+  return ApiCall({
+    route: 'auth/mfa/passkey/login/begin',
+    verb: 'post',
+    params,
+  });
+};
+
+export const finishPasskeyLogin = async (params: {
+  mfaToken: string;
+  response: Record<string, any>;
+}) => {
+  const res = await ApiCall<AuthApiResponse>({
+    route: 'auth/mfa/passkey/login/finish',
+    verb: 'post',
+    params,
+  });
+  if (res.status === 200) {
+    await persistTokensIfProvided(res.response);
+  }
+  return res;
+};
+
+export const beginTotpSetup = async (params: { mfaToken: string }) => {
+  return ApiCall<{ otpauth: string }>({
+    route: 'auth/mfa/totp/setup/begin',
+    verb: 'post',
+    params,
+  });
+};
+
+export const verifyTotpSetup = async (params: { mfaToken: string; code: string }) => {
+  const res = await ApiCall<AuthApiResponse & { backupCodes?: string[] }>({
+    route: 'auth/mfa/totp/setup/verify',
+    verb: 'post',
+    params,
+  });
+  if (res.status === 200) {
+    await persistTokensIfProvided(res.response);
+  }
+  return res;
+};
+
+export const verifyTotpCode = async (params: { mfaToken: string; code: string }) => {
+  const res = await ApiCall<AuthApiResponse>({
+    route: 'auth/mfa/totp/verify',
+    verb: 'post',
+    params,
+  });
+  if (res.status === 200) {
+    await persistTokensIfProvided(res.response);
+  }
+  return res;
+};
+
+export const sendEmailMfaCode = async (params: { mfaToken: string }) => {
+  return ApiCall<{ sent: boolean }>({
+    route: 'auth/mfa/email/send',
+    verb: 'post',
+    params,
+  });
+};
+
+export const verifyEmailMfaCode = async (params: { mfaToken: string; code: string }) => {
+  const res = await ApiCall<AuthApiResponse & { backupCodes?: string[] }>({
+    route: 'auth/mfa/email/verify',
+    verb: 'post',
+    params,
+  });
+  if (res.status === 200) {
+    await persistTokensIfProvided(res.response);
+  }
+  return res;
+};
+
+export const verifyBackupCode = async (params: { mfaToken: string; code: string }) => {
+  const res = await ApiCall<AuthApiResponse>({
+    route: 'auth/mfa/backup/verify',
+    verb: 'post',
+    params,
+  });
+  if (res.status === 200) {
+    await persistTokensIfProvided(res.response);
+  }
   return res;
 };
 
@@ -72,7 +218,7 @@ export const verifyEmailTwoFactorCode = async (params: { email: string; code: st
   });
 
   if (res.status === 200 && (res.response as any)?.tokens?.accessToken) {
-    await saveAuthTokens((res.response as any).tokens);
+    await persistTokensSafely((res.response as any).tokens);
   }
 
   return res;

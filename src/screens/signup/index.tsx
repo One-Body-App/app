@@ -24,7 +24,6 @@ import Recaptcha, { RecaptchaRef } from 'react-native-recaptcha-that-works';
 // Styles & Constraints
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import { borderRadius } from '@/src/styles/outlines';
 import { button } from '@/src/styles/buttons';
 
 // Logic & Types
@@ -49,6 +48,7 @@ import {
   getAppleIdToken,
   getGoogleIdToken,
 } from '@/services/socialAuth';
+import type { MfaChallengeResponse } from '@/services/login';
 import { appColor } from '@/src/constants';
 import GeneralStyle from '@/src/constants/GeneralStyle';
 
@@ -216,7 +216,7 @@ function SignupForm({ navigation, route }: Props) {
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const hasSentVerificationEmailRef = useRef(false);
-  const { dark, colors } = useTheme();
+  const { dark } = useTheme();
 
   const palette: SignupPalette = {
     background: Colors.neutral[700],
@@ -491,6 +491,14 @@ function SignupForm({ navigation, route }: Props) {
           details: tokenResult.details,
         });
 
+        if (res.status === 200 && res.response?.mfaRequired) {
+          navigation.replace('Login', {
+            initialMfaChallenge: res.response as MfaChallengeResponse,
+            prefillEmail: tokenResult.details?.email ?? state.email,
+          });
+          return;
+        }
+
         if (res.status === 200 && res.response?.tokens?.accessToken) {
           dispatch(setLoginData({ token: res.response.tokens.accessToken }));
           navigation.reset({ index: 0, routes: [{ name: 'MainRoot' as any }] });
@@ -506,36 +514,57 @@ function SignupForm({ navigation, route }: Props) {
         setSocialLoading(false);
       }
     },
-    [accountType, dispatch, navigation, socialLoading]
+    [accountType, dispatch, navigation, socialLoading, state.email]
+  );
+
+  useEffect(
+    () => () => {
+      dispatch(signUp.Reset());
+    },
+    [dispatch]
   );
 
   useEffect(() => {
-    if (authState.signUpSuccess) {
-      const handleSignUpSuccess = async () => {
-        if (!hasSentVerificationEmailRef.current) {
-          hasSentVerificationEmailRef.current = true;
-          dispatch(
-            sendVerificationEmailAction.Request({
-              token: true,
-              data: {},
-              allowFalseSuccess: true,
-            })
-          );
-        }
-
-        setFormError('');
-        setFormSuccess('Welcome to the family! Check your inbox to verify your account.');
-        setIsloading(false);
-
-        navigation.replace('ConfirmLogin', { showConfirmationEmailMessage: true } as any);
-      };
-
-      handleSignUpSuccess();
+    if (!authState.signUpSuccess) {
+      return;
     }
-    return () => {
-      dispatch(signUp.Reset());
+
+    const handleSignUpSuccess = async () => {
+      const signUpPayload = authState.signUpData as any;
+      if (signUpPayload?.mfaRequired) {
+        setFormError('');
+        setFormSuccess('');
+        setIsloading(false);
+        navigation.replace('Login', {
+          initialMfaChallenge: signUpPayload as MfaChallengeResponse,
+          prefillEmail: state.email,
+        });
+        return;
+      }
+
+      if (!hasSentVerificationEmailRef.current) {
+        hasSentVerificationEmailRef.current = true;
+        dispatch(
+          sendVerificationEmailAction.Request({
+            token: true,
+            data: {},
+            allowFalseSuccess: true,
+          })
+        );
+      }
+
+      setFormError('');
+      setFormSuccess('Welcome to the family! Check your inbox to verify your account.');
+      setIsloading(false);
+
+      navigation.replace('ConfirmLogin', {
+        showConfirmationEmailMessage: true,
+        prefillEmail: state.email,
+      } as any);
     };
-  }, [authState.signUpSuccess, dispatch, navigation]);
+
+    handleSignUpSuccess();
+  }, [authState.signUpData, authState.signUpSuccess, dispatch, navigation, state.email]);
 
   useEffect(() => {
     if (authState.signUpSuccess === false && authState.error) {
@@ -799,14 +828,23 @@ function SignupForm({ navigation, route }: Props) {
         />
         {usernameSuggestions.length > 0 ? (
           <View style={{ marginTop: spacing.x8, marginBottom: spacing.x8 }}>
-            <StyledText style={[Typography.subheader.R, { color: Colors.neutral[300] }]}>
+            <StyledText
+              allowFontScaling={false}
+              style={[
+                Typography.fontSize.x1,
+                Typography.fontWeight.regular,
+                { lineHeight: 14 },
+                { letterSpacing: 0.1 },
+                { color: Colors.neutral[300] },
+              ]}
+            >
               Suggested usernames:
             </StyledText>
             <View
               style={{
                 flexDirection: 'row',
                 flexWrap: 'wrap',
-                marginTop: spacing.x8,
+                marginTop: spacing.x5,
               }}
             >
               {usernameSuggestions.map((suggestion) => (
@@ -817,17 +855,31 @@ function SignupForm({ navigation, route }: Props) {
                     checkUsernameAvailability(suggestion);
                   }}
                   style={{
-                    paddingHorizontal: spacing.x13,
-                    paddingVertical: spacing.x8,
-                    borderRadius: borderRadius.small,
-                    backgroundColor: Colors.neutral[700],
+                    minHeight: 28,
+                    paddingHorizontal: spacing.x10,
+                    paddingVertical: 4,
+                    borderRadius: 999,
+                    backgroundColor: 'rgba(18, 210, 217, 0.16)',
                     borderWidth: 1,
-                    borderColor: Colors.neutral[800],
-                    marginRight: spacing.x8,
-                    marginBottom: spacing.x8,
+                    borderColor: 'rgba(18, 210, 217, 0.36)',
+                    marginRight: spacing.x5,
+                    marginBottom: spacing.x5,
+                    justifyContent: 'center',
+                    alignItems: 'center',
                   }}
                 >
-                  <StyledText style={[Typography.subheader.R, { color: Colors.neutral[200] }]}>
+                  <StyledText
+                    allowFontScaling={false}
+                    numberOfLines={1}
+                    style={[
+                      Typography.fontSize.x1,
+                      Typography.fontWeight.medium,
+                      { lineHeight: 13 },
+                      { letterSpacing: 0.1 },
+                      { textAlign: 'center' },
+                      { color: Colors.primary.brand },
+                    ]}
+                  >
                     {suggestion}
                   </StyledText>
                 </TouchableOpacity>
@@ -981,7 +1033,7 @@ function SignupForm({ navigation, route }: Props) {
               style={[StyleSheet.absoluteFillObject, { backgroundColor: createAccountGlassFill }]}
             />
             <Button
-              text="Join the Body"
+              text="Join"
               btnStyle={[
                 button.primary,
                 {
@@ -998,7 +1050,7 @@ function SignupForm({ navigation, route }: Props) {
           </View>
         ) : (
           <Button
-            text="Join the Body"
+            text="Join"
             btnStyle={[
               button.primary,
               dropShadow,

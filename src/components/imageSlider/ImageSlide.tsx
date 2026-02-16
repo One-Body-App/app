@@ -4,7 +4,6 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { ImageForSlider } from './types';
-import type { ScrollIntentLock } from '@/src/hooks/useScrollIntentLock';
 
 function ImageSlide({
   image,
@@ -13,8 +12,6 @@ function ImageSlide({
   width,
   maxHeight,
   index,
-  scrollIntent,
-  interactionKey,
 }: {
   image: ImageForSlider;
   setImageModalIndexVisible: (item: number) => void;
@@ -22,20 +19,11 @@ function ImageSlide({
   height: number;
   maxHeight: number;
   index: number;
-  scrollIntent?: ScrollIntentLock;
-  interactionKey?: string;
 }) {
   const safeWidth = Number.isFinite(width) && width > 0 ? width : maxHeight;
   const safeHeight = Number.isFinite(height) && height > 0 ? height : maxHeight;
-  const mediaKey = interactionKey ?? `media-${index}`;
-  const playHandlers = scrollIntent?.bindCardGestureHandlers(mediaKey, {
-    onPress: () => {
-      setImageModalIndexVisible(index);
-    },
-  }) ?? {
-    onPress: () => {
-      setImageModalIndexVisible(index);
-    },
+  const openImage = () => {
+    setImageModalIndexVisible(index);
   };
 
   return (
@@ -53,7 +41,7 @@ function ImageSlide({
           alignItems: 'center',
         }}
       >
-        {image.type == 'gif' ? (
+        {image.type === 'gif' ? (
           <GiphyMediaView
             media={{ ...image, id: image.id ?? '' }}
             resizeMode="cover"
@@ -77,20 +65,33 @@ function ImageSlide({
           />
         )}
         <Pressable
-          {...playHandlers}
+          onPress={openImage}
           android_disableSound
           hitSlop={10}
           style={{
             position: 'absolute',
-            width: 46,
-            height: 46,
-            borderRadius: 23,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.35)',
           }}
         >
-          <MaterialIcons name="play-arrow" size={28} color={Colors.neutral[900]} />
+          {image.type !== 'gif' ? (
+            <View
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 23,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0,0,0,0.35)',
+              }}
+            >
+              <MaterialIcons name="play-arrow" size={28} color={Colors.neutral[900]} />
+            </View>
+          ) : null}
         </Pressable>
       </View>
     </View>
