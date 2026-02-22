@@ -10,7 +10,6 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-import styles from './style';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '../styled/Text';
 import BaseItem from './BaseItem';
@@ -89,6 +88,8 @@ function ArticleItem({
   });
 
   const articleId = itemData?.id ?? '';
+  const rssImageFrameBackgroundColor =
+    imageSizeType === 'contain' ? Colors.rssContainFrame : 'transparent';
   const rssNoShadowStyle = {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
@@ -175,41 +176,36 @@ function ArticleItem({
           </View>
         ) : null}
 
-        <FastImage
-          style={
-            blogPostImageStyle
-              ? [
-                  styles.blogpostimage,
-                  {
-                    borderTopRightRadius: MEDIA_RADIUS,
-                    borderTopLeftRadius: MEDIA_RADIUS,
-                    borderBottomRightRadius: MEDIA_RADIUS,
-                    borderBottomLeftRadius: MEDIA_RADIUS,
-                  },
-                  blogPostImageStyle,
-                ]
-              : [
-                  styles.blogpostimage,
-                  {
-                    borderTopRightRadius: MEDIA_RADIUS,
-                    borderTopLeftRadius: MEDIA_RADIUS,
-                    borderBottomRightRadius: MEDIA_RADIUS,
-                    borderBottomLeftRadius: MEDIA_RADIUS,
-                  },
-                ]
-          }
-          resizeMode={imageSizeType}
-          source={{ uri: itemData?.image?.url ?? NO_POST_IMAGE_URL }}
-          onError={() => {
-            // console.log('error', itemData?.image?.url, error);
-            setItemData({
-              ...itemData,
-              image: {
-                url: NO_POST_IMAGE_URL,
-              },
-            });
+        <View
+          style={{
+            width: '100%',
+            aspectRatio: 16 / 9,
+            borderRadius: MEDIA_RADIUS,
+            overflow: 'hidden',
+            backgroundColor: rssImageFrameBackgroundColor,
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        />
+        >
+          <FastImage
+            style={
+              blogPostImageStyle
+                ? [{ width: '100%', height: '100%' }, blogPostImageStyle]
+                : { width: '100%', height: '100%' }
+            }
+            resizeMode="cover"
+            source={{ uri: itemData?.image?.url ?? NO_POST_IMAGE_URL }}
+            onError={() => {
+              // console.log('error', itemData?.image?.url, error);
+              setItemData({
+                ...itemData,
+                image: {
+                  url: NO_POST_IMAGE_URL,
+                },
+              });
+            }}
+          />
+        </View>
 
         <View
           style={{
@@ -242,6 +238,14 @@ function ArticleItem({
                   ? decode(itemData?.title?.a.$text)
                   : decode(itemData?.title)}
               </StyledText>
+              {itemData?.description ? (
+                <StyledText
+                  numberOfLines={3}
+                  style={{ color: Colors.neutral['500'], marginTop: 2 }}
+                >
+                  {itemData.description}
+                </StyledText>
+              ) : null}
             </View>
             {/* <View style={{ flex: 0, justifyContent: 'center' }}>
               <TouchableOpacity

@@ -18,6 +18,8 @@ function ExploreStack() {
       screenOptions={{
         gestureEnabled: false,
         fullScreenGestureEnabled: false,
+        animation: 'slide_from_right',
+        animationDuration: 750,
         statusBarStyle: dark ? 'light' : 'dark',
         headerTransparent: true,
         headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',

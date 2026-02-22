@@ -260,12 +260,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   newspostimage: {
-    // height: getHeight(22),
-    // width: '100%',
-
-    borderTopLeftRadius: 5,
-    borderTopRightRadius: 5,
-    paddingHorizontal: 10,
+    borderRadius: 12,
   },
   blogposttext: {
     fontSize: 20,
@@ -288,10 +283,7 @@ const styles = StyleSheet.create({
     // height: getHeight(23),
   },
   blogpostimage: {
-    borderTopEndRadius: borderRadius.small,
-    borderTopStartRadius: borderRadius.small,
-    // marginVertical: 5,
-    // elevation: 0,
+    borderRadius: 12,
     width: '100%',
     aspectRatio: 16 / 9,
   },

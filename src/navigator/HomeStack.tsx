@@ -26,6 +26,8 @@ function HomeStack() {
           // drawerType,
           gestureEnabled: false,
           fullScreenGestureEnabled: false,
+          animation: 'slide_from_right',
+          animationDuration: 750,
           statusBarStyle: dark ? 'light' : 'dark',
           statusBarColor: Platform.OS === 'android' && dark ? '#0D0D0D' : 'transparent',
           statusBarTranslucent: true,

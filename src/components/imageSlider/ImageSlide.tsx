@@ -1,8 +1,11 @@
-import { Image, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { GiphyMediaView } from '@giphy/react-native-sdk';
+import FastImage from 'react-native-fast-image';
+import { Colors } from '@/src/styles';
 import { ImageForSlider } from './types';
 
 const MEDIA_RADIUS = 12;
+type SliderResizeMode = 'contain' | 'cover';
 
 function ImageSlide({
   image,
@@ -10,12 +13,16 @@ function ImageSlide({
   height,
   width,
   index,
+  resizeMode = 'contain',
+  frameBackgroundColor = Colors.containFrame,
 }: {
   image: ImageForSlider;
   setImageModalIndexVisible: (item: number) => void;
   width: number;
   height: number;
   index: number;
+  resizeMode?: SliderResizeMode;
+  frameBackgroundColor?: string;
 }) {
   const safeWidth = Number.isFinite(width) && width > 0 ? width : 0;
   const safeHeight = Number.isFinite(height) && height > 0 ? height : safeWidth;
@@ -36,6 +43,10 @@ function ImageSlide({
           height: safeHeight,
           justifyContent: 'center',
           alignItems: 'center',
+          backgroundColor:
+            frameBackgroundColor && frameBackgroundColor !== 'transparent'
+              ? frameBackgroundColor
+              : 'transparent',
           borderRadius: MEDIA_RADIUS,
           overflow: 'hidden',
         }}
@@ -43,7 +54,7 @@ function ImageSlide({
         {image.type === 'gif' ? (
           <GiphyMediaView
             media={{ ...image, id: image.id ?? '' }}
-            resizeMode="contain"
+            resizeMode={resizeMode}
             style={{
               width: safeWidth,
               height: safeHeight,
@@ -53,13 +64,13 @@ function ImageSlide({
             }}
           />
         ) : (
-          <Image
+          <FastImage
             style={{
               borderRadius: MEDIA_RADIUS,
               width: safeWidth,
               height: safeHeight,
             }}
-            resizeMode="contain"
+            resizeMode={resizeMode}
             source={{ uri: image?.url ?? '' }}
           />
         )}

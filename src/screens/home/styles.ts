@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { spacing } from '@/src/styles/spacing';
+import { containFrame } from '@/src/styles/colors';
 
 // BRAND COLORS
 const BRAND = {
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
   mediaContainer: {
     width: '100%',
     aspectRatio: 4 / 5,
-    backgroundColor: '#000',
+    backgroundColor: containFrame,
     marginTop: spacing.x5,
     borderRadius: 12,
     overflow: 'hidden',

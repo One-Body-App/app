@@ -1,10 +1,10 @@
-/* eslint-disable react/jsx-no-useless-fragment */
 /* eslint-disable react/no-unstable-nested-components */
 import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
-import { Animated, Platform, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Easing, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
+import React, { useCallback, useRef } from 'react';
 
 import {
   BottomTabBar,
@@ -12,7 +12,7 @@ import {
   createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { getFocusedRouteNameFromRoute, useTheme } from '@react-navigation/native';
+import { getFocusedRouteNameFromRoute, useFocusEffect, useTheme } from '@react-navigation/native';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
@@ -26,8 +26,59 @@ import { TabBarAnimationProvider, useTabBarAnimation } from './TabBarAnimationCo
 import ZoeChat from '../screens/main/zoeChat';
 import ZoeIcon from '@/assets/svg/zoeicon.svg';
 import ZoeIconSelected from '@/assets/svg/zoeicon_selected.svg';
+import ConnectIcon from '@/assets/icons/connect.svg';
+import Home2Icon from '@/assets/icons/home2.svg';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+function SlideInOnFocus({ children }: { children: React.ReactNode }) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const hasFocusedOnce = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnce.current) {
+        hasFocusedOnce.current = true;
+        return;
+      }
+      translateX.setValue(SCREEN_WIDTH);
+      Animated.timing(translateX, {
+        toValue: 0,
+        duration: 350,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }, [translateX])
+  );
+
+  return <Animated.View style={{ flex: 1, transform: [{ translateX }] }}>{children}</Animated.View>;
+}
+
+function HomeTabWrapper() {
+  return (
+    <SlideInOnFocus>
+      <HomeStack />
+    </SlideInOnFocus>
+  );
+}
+
+function SearchTabWrapper() {
+  return (
+    <SlideInOnFocus>
+      <ExploreStack />
+    </SlideInOnFocus>
+  );
+}
+
+function ConnectTabWrapper() {
+  return (
+    <SlideInOnFocus>
+      <ConnectStack />
+    </SlideInOnFocus>
+  );
+}
 
 function AnimatedTabBar(props: BottomTabBarProps) {
   const tabBarAnimation = useTabBarAnimation();
@@ -94,7 +145,11 @@ TabBarWrapper.propTypes = {
 };
 
 function HomeTabIcon({ color }: { color: string }) {
-  return <MaterialIcons name="home" size={24} color={color} />;
+  return (
+    <View style={{ width: 28, height: 28 }}>
+      <Home2Icon width={28} height={28} color={color} />
+    </View>
+  );
 }
 
 HomeTabIcon.propTypes = {
@@ -104,7 +159,7 @@ HomeTabIcon.propTypes = {
 };
 
 function SearchTabIcon({ color }: { color: string }) {
-  return <MaterialIcons name="search" size={24} color={color} />;
+  return <MaterialIcons name="search" size={30} color={color} />;
 }
 
 SearchTabIcon.propTypes = {
@@ -114,7 +169,7 @@ SearchTabIcon.propTypes = {
 };
 
 function ExploreTabIcon({ color }: { color: string }) {
-  return <MaterialIcons name="public" size={24} color={color} />;
+  return <MaterialIcons name="public" size={28} color={color} />;
 }
 
 ExploreTabIcon.propTypes = {
@@ -123,8 +178,32 @@ ExploreTabIcon.propTypes = {
   size: PropTypes.number,
 };
 
+function ConnectTabIcon({ color }: { color: string }) {
+  return (
+    <View style={{ width: 28, height: 28 }}>
+      <ConnectIcon width={28} height={28} color={color} />
+    </View>
+  );
+}
+
+ConnectTabIcon.propTypes = {
+  color: PropTypes.string.isRequired,
+  focused: PropTypes.bool,
+  size: PropTypes.number,
+};
+
 function ZoeTabIcon({ focused }: { focused: boolean }) {
-  return focused ? <ZoeIconSelected width={24} height={24} /> : <ZoeIcon width={24} height={24} />;
+  const size = focused ? 32 : 30;
+  const color = focused ? '#126b87' : '#032f3c';
+  return (
+    <View style={{ width: size, height: size }}>
+      {focused ? (
+        <ZoeIconSelected width={size} height={size} color={color} />
+      ) : (
+        <ZoeIcon width={size} height={size} color={color} />
+      )}
+    </View>
+  );
 }
 
 ZoeTabIcon.propTypes = {
@@ -228,7 +307,7 @@ function BottomStack() {
       >
         <Tab.Screen
           name="HomeTab"
-          component={HomeStack}
+          component={HomeTabWrapper}
           initialParams={{
             screen: 'Home',
             params: {
@@ -250,10 +329,10 @@ function BottomStack() {
         />
         <Tab.Screen
           name="SearchTab"
-          component={ExploreStack}
+          component={SearchTabWrapper}
           options={{
             tabBarLabel: 'Search',
-            tabBarIcon: SearchTabIcon,
+            tabBarIcon: ExploreTabIcon,
           }}
         />
         <Tab.Screen
@@ -285,14 +364,14 @@ function BottomStack() {
         />
         <Tab.Screen
           name="ExploreTab"
-          component={ConnectStack}
+          component={ConnectTabWrapper}
           options={({ route }) => {
             const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectPortal';
             const shouldShowTabBar = focusedRouteName === 'ConnectPortal';
 
             return {
               tabBarLabel: 'Connect',
-              tabBarIcon: ExploreTabIcon,
+              tabBarIcon: ConnectTabIcon,
               tabBarStyle: shouldShowTabBar
                 ? connectVisibleTabBarStyle
                 : { ...connectVisibleTabBarStyle, display: 'none', height: 0, opacity: 0 },

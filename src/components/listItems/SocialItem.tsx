@@ -66,6 +66,7 @@ const COMMON_TLDS = ['.com', '.net', '.info', '.org', '.io'];
 const SUPPORTED_FEED_VIDEO_RATIOS = [16 / 9, 4 / 3, 1, 9 / 16];
 const FEED_PORTRAIT_VIDEO_RATIO = 9 / 16;
 const FEED_MEDIA_RADIUS = 12;
+const CONTAIN_FRAME_BACKGROUND = Colors.containFrame;
 
 const stripTrailingPunctuation = (url: string) => url.replace(/[^A-Za-z0-9/?#&=._~:-]+$/g, '');
 
@@ -292,6 +293,7 @@ function SocialItem({
   const repostMeta = itemData?.repost;
   const isQuoteRepost = repostMeta?.repostType === 'quote';
   const isPlainRepost = repostMeta?.repostType === 'repost';
+  const isPrimaryHomeFeed = originFeedType === 'connected' || originFeedType === 'forYou';
 
   let profileUrl = '';
   if (itemData?.source === 'twitter') {
@@ -1000,7 +1002,11 @@ function SocialItem({
                       >
                         {sourceLinkCardImage ? (
                           <FastImage
-                            style={{ width: '100%', aspectRatio: 16 / 9 }}
+                            style={{
+                              width: '100%',
+                              aspectRatio: 16 / 9,
+                              borderRadius: FEED_MEDIA_RADIUS,
+                            }}
                             resizeMode="cover"
                             source={{ uri: sourceLinkCardImage }}
                           />
@@ -1063,14 +1069,25 @@ function SocialItem({
                   }}
                 >
                   {resolvedLinkCardData.image?.url || NO_POST_IMAGE_URL ? (
-                    <FastImage
+                    <View
                       style={{
                         width: '100%',
                         aspectRatio: 16 / 9,
+                        backgroundColor: CONTAIN_FRAME_BACKGROUND,
+                        borderTopLeftRadius: FEED_MEDIA_RADIUS,
+                        borderTopRightRadius: FEED_MEDIA_RADIUS,
+                        overflow: 'hidden',
                       }}
-                      resizeMode="contain"
-                      source={{ uri: resolvedLinkCardData.image?.url ?? NO_POST_IMAGE_URL }}
-                    />
+                    >
+                      <FastImage
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                        }}
+                        resizeMode="cover"
+                        source={{ uri: resolvedLinkCardData.image?.url ?? NO_POST_IMAGE_URL }}
+                      />
+                    </View>
                   ) : (
                     <View
                       style={{
@@ -1215,6 +1232,11 @@ function SocialItem({
             <ImageSlider
               width={width ?? 0}
               images={images}
+              minAspectRatio={isPrimaryHomeFeed ? 9 / 16 : undefined}
+              maxAspectRatio={isPrimaryHomeFeed ? 1 : undefined}
+              multiImageHeightMode={isPrimaryHomeFeed ? 'animated' : 'fixed'}
+              imageResizeMode={isPrimaryHomeFeed ? 'cover' : 'contain'}
+              frameBackgroundColor={isPrimaryHomeFeed ? 'transparent' : Colors.containFrame}
               setImageModalIndexVisible={(selectedIndex) => {
                 if (selectedIndex > -1) {
                   onTelemetryEvent?.('media_open', {
