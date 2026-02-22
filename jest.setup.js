@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler/jestSetup';
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
-import React from 'react';
-import { View } from 'react-native';
+import mockReact from 'react';
+import { View as mockView } from 'react-native';
 
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
@@ -91,7 +91,7 @@ jest.mock('@invertase/react-native-apple-authentication', () => ({
 }));
 
 jest.mock('react-native-recaptcha-that-works', () => {
-  const Recaptcha = React.forwardRef(() => null);
+  const Recaptcha = mockReact.forwardRef(() => null);
 
   return {
     __esModule: true,
@@ -144,14 +144,13 @@ jest.mock('@sentry/react-native', () => ({
 
 jest.mock('react-native-keyboard-controller', () => {
   return {
-    // eslint-disable-next-line react/prop-types
-    KeyboardProvider: ({ children }) => React.createElement(React.Fragment, null, children),
+    KeyboardProvider: ({ children }) => mockReact.createElement(mockReact.Fragment, null, children),
   };
 });
 
 jest.mock('react-native-webview', () => {
-  const MockWebView = React.forwardRef((props, ref) =>
-    React.createElement(View, {
+  const MockWebView = mockReact.forwardRef((props, ref) =>
+    mockReact.createElement(mockView, {
       ...props,
       ref,
     })
@@ -165,9 +164,8 @@ jest.mock('react-native-webview', () => {
 });
 
 jest.mock('@shopify/react-native-skia', () => {
-  // eslint-disable-next-line react/prop-types
   function MockComponent({ children, ...props }) {
-    return React.createElement(View, props, children);
+    return mockReact.createElement(mockView, props, children);
   }
 
   return {

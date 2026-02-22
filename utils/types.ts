@@ -284,10 +284,18 @@ export interface SocialPost {
     sourceAuthorProfileImage?: string;
     sourceCreatedAt?: string;
     sourceTitle?: string;
+    sourceDescription?: string;
+    sourceContent?: string;
     sourceContentSnippet?: string;
     sourceLink?: string;
     sourceImage?: string;
+    sourceImages?: string[];
+    sourceVideos?: string[];
+    sourceGif?: GiphyMedia;
     sourceCategory?: string;
+    sourceMediaUrl?: string;
+    sourceMediaType?: string;
+    sourceTags?: string[];
     repostType: 'repost' | 'quote';
     createdFromIndexId?: string;
   };

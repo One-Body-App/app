@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, StyleProp, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
@@ -6,14 +6,18 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
-
 import ImageView from 'react-native-image-viewing';
-
 import { isArray } from 'lodash';
 import { decode } from 'html-entities';
+
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
-
+import {
+  buildRepostSourceSnapshot,
+  isRepostSourceSnapshotMissing,
+  resolveRepostSourceSnapshot,
+} from '@/services/repostSourceResolver';
+import type { ResolvedRepostSourceSnapshot } from '@/services/repostSourceResolver';
 import { PostType, SocialPost, SocialPostReaction } from '@/utils/types';
 import {
   ExploreStackParamsList,
@@ -30,7 +34,6 @@ import ImageSlider from '../imageSlider/ImageSlider';
 import { ImageForSlider } from '../imageSlider/types';
 import CustomVideo from '../CustomVideo';
 
-// type ScreenNavigationProp = NavigationProp<RootStackParamList, 'Home'>;
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
   CompositeNavigationProp<
@@ -38,7 +41,9 @@ type ScreenNavigationProp = CompositeNavigationProp<
     BottomTabNavigationProp<MainBottomStackParamsList, 'ExploreTab'>
   >
 >;
+
 type Media = { type: string; url: string };
+
 type LinkData = {
   description?: string;
   image?: { height: string; type: string; url: string; width: string };
@@ -57,6 +62,10 @@ type LinkPreview = {
 
 const URL_REGEX = /((https?:\/\/)?(www\.)?[\w.-]+\.[a-z]{2,}(?:\/[^\s]*)?)/i;
 const COMMON_TLDS = ['.com', '.net', '.info', '.org', '.io'];
+
+const SUPPORTED_FEED_VIDEO_RATIOS = [16 / 9, 4 / 3, 1, 9 / 16];
+const FEED_PORTRAIT_VIDEO_RATIO = 9 / 16;
+const FEED_MEDIA_RADIUS = 12;
 
 const stripTrailingPunctuation = (url: string) => url.replace(/[^A-Za-z0-9/?#&=._~:-]+$/g, '');
 
@@ -177,12 +186,6 @@ const toSafeNumber = (value: unknown, fallback = 1) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-const normalizeComparableText = (value?: string) =>
-  (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
-
-const SUPPORTED_FEED_VIDEO_RATIOS = [16 / 9, 4 / 3, 1, 9 / 16];
-const FEED_PORTRAIT_VIDEO_RATIO = 9 / 16;
-const FEED_MEDIA_RADIUS = 12;
 const getNearestSupportedVideoRatio = (ratio?: number) => {
   if (!ratio || !Number.isFinite(ratio) || ratio <= 0) {
     return 16 / 9;
@@ -192,6 +195,30 @@ const getNearestSupportedVideoRatio = (ratio?: number) => {
     const currentDelta = Math.abs(current - ratio);
     return currentDelta < closestDelta ? current : closest;
   });
+};
+
+const getDomainName = (linkUrl: string) => {
+  const domainText = linkUrl.replace('https://', '').replace('http://', '').replace('www.', '');
+
+  const domainParts = domainText.split('/');
+
+  if (domainParts.length > 0) {
+    return domainParts[0];
+  }
+
+  return domainText;
+};
+
+const normalizeSourceIdForNavigation = (
+  sourceType: ResolvedRepostSourceSnapshot['sourceType'],
+  sourceId: string
+) => {
+  if (sourceType === 'rss') {
+    return sourceId.trim();
+  }
+
+  const normalized = sourceId.replace(/^onebody_/, '').trim();
+  return normalized || sourceId.trim();
 };
 
 type SocialItemProps = {
@@ -206,7 +233,6 @@ type SocialItemProps = {
     mediaUrl?: string;
   }) => void;
   onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
-
   onShowDismissCard?: (e?: boolean) => void;
   index?: number;
   parentRefreshContent?: Function;
@@ -244,7 +270,6 @@ function SocialItem({
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [media, setMedia] = useState<Media[]>([]);
-
   const [imageInfo, setImageInfo] = useState<
     {
       url: string;
@@ -252,34 +277,28 @@ function SocialItem({
       width: number;
     }[]
   >([]);
-
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
   const [videoAspectByUrl, setVideoAspectByUrl] = useState<Record<string, number>>({});
   const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
-  const navigation = useNavigation<ScreenNavigationProp>();
   const [width, setWidth] = useState<number>();
   const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
+  const [resolvedSourceSnapshot, setResolvedSourceSnapshot] =
+    useState<ResolvedRepostSourceSnapshot | null>(null);
 
+  const navigation = useNavigation<ScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const token = useSelector((state: RootState) => state.auth.userToken);
+
   const repostMeta = itemData?.repost;
+  const isQuoteRepost = repostMeta?.repostType === 'quote';
+  const isPlainRepost = repostMeta?.repostType === 'repost';
+
   let profileUrl = '';
   if (itemData?.source === 'twitter') {
     profileUrl = `https://twitter.com/${itemData?.handler}/status/${itemData?.id}`;
   } else {
     profileUrl = itemData?.permalink || '';
   }
-
-  const getDomainName = (linkUrl: string) => {
-    const domainText = linkUrl.replace('https://', '').replace('http://', '').replace('www.', '');
-
-    const domainParts = domainText.split('/');
-
-    if (domainParts.length > 0) {
-      return domainParts[0];
-    }
-
-    return domainText;
-  };
 
   useEffect(() => {
     setIsPlaying(visible ?? false);
@@ -308,7 +327,7 @@ function SocialItem({
         }
       });
     } else if (isArray(itemData.images) && itemData.images && itemData.images.length > 0) {
-      itemData.images?.forEach((attachment) => {
+      itemData.images.forEach((attachment) => {
         mediaItems.push({
           type: 'photo',
           url: attachment,
@@ -320,7 +339,6 @@ function SocialItem({
       setMedia(mediaItems);
       const photoMedia = mediaItems.filter((item) => item.type === 'photo' && item.url);
       if (photoMedia.length > 0) {
-        // Preserve already-resolved dimensions to avoid flickering between fallback and actual ratio.
         setImageInfo((previous) =>
           photoMedia.map((item) => {
             const existing = previous.find((previousItem) => previousItem.url === item.url);
@@ -334,6 +352,7 @@ function SocialItem({
             };
           })
         );
+
         photoMedia.forEach((photoItem) => {
           Image.getSize(
             photoItem.url,
@@ -364,6 +383,7 @@ function SocialItem({
       setMedia([]);
       setImageInfo([]);
     }
+
     return () => {
       isMounted = false;
     };
@@ -373,6 +393,7 @@ function SocialItem({
     () => itemData?.attachments?.find((attachment) => attachment.type === 'link'),
     [itemData?.attachments]
   );
+
   const attachmentLinkData: LinkData | undefined = useMemo(() => {
     if (!linkAttachment) return undefined;
     return {
@@ -392,21 +413,22 @@ function SocialItem({
         ? itemData.title
         : (itemData?.title as { a?: { $text?: string } } | undefined)?.a?.$text) ||
       '';
+
     const extractedUrl = extractFirstUrl(resolvedContent);
     if (!extractedUrl) {
       return {
         contentText: resolvedContent,
         contentUrl: null,
         rawContent: resolvedContent,
-        rawUrl: null,
       };
     }
+
     const cleanedText = resolvedContent.replace(extractedUrl.raw, '').replace(/\s+/g, ' ').trim();
+
     return {
       contentText: cleanedText,
       contentUrl: extractedUrl.normalized,
       rawContent: resolvedContent,
-      rawUrl: extractedUrl.raw,
     };
   }, [itemData]);
 
@@ -415,57 +437,54 @@ function SocialItem({
     return contentUrl;
   }, [contentUrl]);
 
-  useEffect(
-    function handleLinkPreview() {
-      let isActive = true;
-      const controller = new AbortController();
+  useEffect(() => {
+    let isActive = true;
+    const controller = new AbortController();
 
-      if (attachmentLinkData?.url || !safeContentUrl) {
-        setLinkPreview(null);
-      } else {
-        setLinkPreview({
-          url: safeContentUrl,
-          title: safeContentUrl,
-          siteName: undefined,
-          description: undefined,
-          imageUrl: undefined,
-        });
+    if (attachmentLinkData?.url || !safeContentUrl) {
+      setLinkPreview(null);
+    } else {
+      setLinkPreview({
+        url: safeContentUrl,
+        title: safeContentUrl,
+        siteName: undefined,
+        description: undefined,
+        imageUrl: undefined,
+      });
 
-        const loadPreview = async () => {
-          try {
-            const response = await fetch(safeContentUrl, {
-              method: 'GET',
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; OneBodyApp/1.0)',
-              },
-              signal: controller.signal,
-            });
-            const html = await response.text();
-            if (!isActive) return;
-            const preview = buildLinkPreview(safeContentUrl, html);
-            setLinkPreview(preview);
-          } catch (e) {
-            if (!isActive) return;
-            setLinkPreview({
-              url: safeContentUrl,
-              title: safeContentUrl,
-              siteName: undefined,
-              description: undefined,
-              imageUrl: undefined,
-            });
-          }
-        };
+      const loadPreview = async () => {
+        try {
+          const response = await fetch(safeContentUrl, {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; OneBodyApp/1.0)',
+            },
+            signal: controller.signal,
+          });
 
-        loadPreview();
-      }
-
-      return () => {
-        isActive = false;
-        controller.abort();
+          const html = await response.text();
+          if (!isActive) return;
+          setLinkPreview(buildLinkPreview(safeContentUrl, html));
+        } catch {
+          if (!isActive) return;
+          setLinkPreview({
+            url: safeContentUrl,
+            title: safeContentUrl,
+            siteName: undefined,
+            description: undefined,
+            imageUrl: undefined,
+          });
+        }
       };
-    },
-    [attachmentLinkData?.url, safeContentUrl]
-  );
+
+      loadPreview();
+    }
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [attachmentLinkData?.url, safeContentUrl]);
 
   const linkCardData: LinkData | null = useMemo(() => {
     if (attachmentLinkData?.url && isSafeHttpUrl(attachmentLinkData.url)) {
@@ -487,52 +506,201 @@ function SocialItem({
 
   const linkUrl = linkCardData?.url ?? '';
   const hasLink = Boolean(linkUrl);
-  const isDirectRepost = repostMeta?.repostType === 'repost';
   const primaryTextToRender = safeContentUrl ? contentText : rawContent;
-  const sourceCardTitle = repostMeta?.sourceTitle?.trim() ?? '';
-  const sourceCardSnippet = repostMeta?.sourceContentSnippet?.trim() ?? '';
-  const sourceCardLink = repostMeta?.sourceLink?.trim() ?? '';
-  const sourceAuthorName = repostMeta?.sourceAuthorName?.trim() ?? '';
-  const sourceAuthorUsername = repostMeta?.sourceAuthorUsername?.trim() ?? '';
-  const sourceAuthorAvatar = repostMeta?.sourceAuthorProfileImage?.trim() ?? '';
-  const sourceCreatedAt = repostMeta?.sourceCreatedAt?.trim() ?? '';
+  const shouldRenderPrimaryText =
+    (primaryTextToRender ?? '').length > 0 && (!repostMeta || isQuoteRepost);
+  const shouldRenderLinkPreview = hasLink && linkCardData && !isPlainRepost;
+
+  const sourceSnapshotSeed = useMemo(() => buildRepostSourceSnapshot(repostMeta), [repostMeta]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!repostMeta) {
+      setResolvedSourceSnapshot(null);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setResolvedSourceSnapshot(sourceSnapshotSeed);
+
+    if (!isRepostSourceSnapshotMissing(repostMeta)) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const hydrateSourceSnapshot = async () => {
+      const resolvedSnapshot = await resolveRepostSourceSnapshot(repostMeta, token ?? true);
+      if (isActive && resolvedSnapshot) {
+        setResolvedSourceSnapshot(resolvedSnapshot);
+      }
+    };
+
+    hydrateSourceSnapshot();
+
+    return () => {
+      isActive = false;
+    };
+  }, [repostMeta, sourceSnapshotSeed, token]);
+
+  const sourceSnapshot = resolvedSourceSnapshot ?? sourceSnapshotSeed;
+
   const sourceTimestampLabel = useMemo(() => {
-    if (!sourceCreatedAt) {
+    if (!sourceSnapshot?.sourceCreatedAt) {
       return '';
     }
-    const sourceCreatedDate = new Date(sourceCreatedAt);
+
+    const sourceCreatedDate = new Date(sourceSnapshot.sourceCreatedAt);
     if (Number.isNaN(sourceCreatedDate.getTime())) {
       return '';
     }
+
     return `${timeSince(sourceCreatedDate)} ago`;
-  }, [sourceCreatedAt]);
-  const sourceMetaLine = [
-    sourceAuthorUsername ? `@${sourceAuthorUsername.replace(/^@/, '')}` : '',
-    sourceTimestampLabel,
-  ]
-    .filter((value) => value.length > 0)
-    .join(' • ');
-  const showSourceAuthorHeader = Boolean(sourceAuthorName || sourceMetaLine || sourceAuthorAvatar);
-  const sourceCardDomain = sourceCardLink ? getDomainName(sourceCardLink) : '';
-  const hasSourceCardData = Boolean(
-    sourceCardTitle || sourceCardSnippet || sourceCardLink || repostMeta?.sourceImage
+  }, [sourceSnapshot?.sourceCreatedAt]);
+
+  const sourceMetaLine = useMemo(() => {
+    if (!sourceSnapshot) {
+      return '';
+    }
+
+    const sourceUsername = sourceSnapshot.sourceAuthorUsername
+      ? `@${sourceSnapshot.sourceAuthorUsername.replace(/^@/, '')}`
+      : '';
+
+    return [sourceUsername, sourceTimestampLabel].filter((value) => value.length > 0).join(' • ');
+  }, [sourceSnapshot, sourceTimestampLabel]);
+
+  const sourceLink = sourceSnapshot?.sourceLink?.trim() ?? '';
+  const sourceDomain = sourceLink ? getDomainName(sourceLink) : '';
+  const sourceTitle = sourceSnapshot?.sourceTitle?.trim() ?? '';
+  const sourceDescription = sourceSnapshot?.sourceDescription?.trim() ?? '';
+  const sourceContent =
+    sourceSnapshot?.sourceContent?.trim() ?? sourceSnapshot?.sourceContentSnippet?.trim() ?? '';
+  const sourceMediaType = sourceSnapshot?.sourceMediaType?.toLowerCase() ?? '';
+  const sourceMediaUrl = sourceSnapshot?.sourceMediaUrl?.trim() ?? '';
+
+  const sourceImageUrls = useMemo(() => {
+    if (!sourceSnapshot) {
+      return [] as string[];
+    }
+
+    const urls = [...sourceSnapshot.sourceImages];
+
+    if (sourceSnapshot.sourceImage && !urls.includes(sourceSnapshot.sourceImage)) {
+      urls.unshift(sourceSnapshot.sourceImage);
+    }
+
+    if (sourceMediaUrl && !sourceMediaType.startsWith('video') && !urls.includes(sourceMediaUrl)) {
+      urls.push(sourceMediaUrl);
+    }
+
+    return Array.from(
+      new Set(urls.map((value) => value.trim()).filter((value) => value.length > 0))
+    );
+  }, [sourceMediaType, sourceMediaUrl, sourceSnapshot]);
+
+  const sourceVideoUrls = useMemo(() => {
+    if (!sourceSnapshot) {
+      return [] as string[];
+    }
+
+    const urls = [...sourceSnapshot.sourceVideos];
+
+    if (sourceMediaUrl && sourceMediaType.startsWith('video') && !urls.includes(sourceMediaUrl)) {
+      urls.push(sourceMediaUrl);
+    }
+
+    return Array.from(
+      new Set(urls.map((value) => value.trim()).filter((value) => value.length > 0))
+    );
+  }, [sourceMediaType, sourceMediaUrl, sourceSnapshot]);
+
+  const sourceGifUrl = sourceSnapshot?.sourceGif?.url?.trim() ?? '';
+  const shouldShowSourceHeader = Boolean(
+    sourceSnapshot?.sourceAuthorName || sourceMetaLine || sourceSnapshot?.sourceAuthorProfileImage
   );
-  const suppressMainContentForRepost = isDirectRepost && hasSourceCardData;
-  const shouldRenderPrimaryText =
-    (primaryTextToRender ?? '').length > 0 && !suppressMainContentForRepost;
-  const showSourceCardSnippet =
-    Boolean(sourceCardSnippet) &&
-    normalizeComparableText(sourceCardSnippet) !== normalizeComparableText(sourceCardTitle);
-  const shouldRenderLinkPreview =
-    hasLink && linkCardData && !(isDirectRepost && Boolean(sourceCardLink));
-  const repostCardBackground = colors.card;
-  const repostCardBorderColor = colors.border;
-  const repostCardTitleColor = colors.text;
-  const repostCardSnippetColor = Colors.neutral[400];
-  const repostCardDomainColor = Colors.neutral[400];
+  const sourceIsRss = sourceSnapshot?.sourceType === 'rss';
+  const hasSourceCardData = Boolean(
+    sourceSnapshot &&
+      (sourceContent ||
+        sourceTitle ||
+        sourceDescription ||
+        sourceLink ||
+        sourceImageUrls.length > 0 ||
+        sourceVideoUrls.length > 0 ||
+        sourceGifUrl)
+  );
+
+  const sourceLinkCardImage =
+    sourceImageUrls[0] || sourceSnapshot?.sourceImage || sourceMediaUrl || '';
+
+  const postId = itemData.postId ?? itemData.id ?? itemData._id;
+
+  const handleCommentsPress =
+    onCommentsPress ||
+    (postId
+      ? () => {
+          const rootNavigation = navigation.getParent?.()?.getParent?.()?.getParent?.() as any;
+          const navigator = rootNavigation ?? (navigation as any);
+          navigator?.navigate?.('SinglePost', { postId });
+        }
+      : undefined);
+
+  const handleContentPress = () => {
+    if (handleCommentsPress) {
+      onTelemetryEvent?.('open_post', {
+        postType: 'social',
+      });
+      handleCommentsPress();
+    }
+  };
+
+  const handleRepostSourcePress = useCallback(() => {
+    if (!sourceSnapshot?.sourceId) {
+      return;
+    }
+
+    const rootNavigation = navigation.getParent?.()?.getParent?.()?.getParent?.() as any;
+    const navigator = rootNavigation ?? (navigation as any);
+    const targetPostId = normalizeSourceIdForNavigation(
+      sourceSnapshot.sourceType,
+      sourceSnapshot.sourceId
+    );
+
+    if (!targetPostId) {
+      return;
+    }
+
+    if (sourceSnapshot.sourceType === 'prayer') {
+      navigator?.navigate?.('PrayerWall', {
+        screen: 'Single',
+        params: { postId: targetPostId },
+      });
+      return;
+    }
+
+    if (sourceSnapshot.sourceType === 'rss') {
+      navigator?.navigate?.('SingleRss', { postId: targetPostId });
+      return;
+    }
+
+    navigator?.navigate?.('SinglePost', { postId: targetPostId });
+  }, [navigation, sourceSnapshot?.sourceId, sourceSnapshot?.sourceType]);
+
+  const handleRepostSourceOpen = () => {
+    if (!sourceSnapshot?.sourceId) {
+      return;
+    }
+
+    onTelemetryEvent?.('open_post', {
+      postType: sourceSnapshot.sourceType,
+    });
+    handleRepostSourcePress();
+  };
 
   let myReaction: SocialPostReaction | undefined;
-
   itemData?.reactions?.forEach((reaction) => {
     if (reaction.userId === user?._id) {
       myReaction = reaction;
@@ -559,25 +727,6 @@ function SocialItem({
       type: 'gif',
     });
   }
-
-  const postId = itemData.postId ?? itemData.id ?? itemData._id;
-  const handleCommentsPress =
-    onCommentsPress ||
-    (postId
-      ? () => {
-          const rootNavigation = navigation.getParent?.()?.getParent?.()?.getParent?.() as any;
-          const navigator = rootNavigation ?? (navigation as any);
-          navigator?.navigate?.('SinglePost', { postId });
-        }
-      : undefined);
-  const handleContentPress = () => {
-    if (handleCommentsPress) {
-      onTelemetryEvent?.('open_post', {
-        postType: 'social',
-      });
-      handleCommentsPress();
-    }
-  };
 
   return (
     <BaseItem
@@ -642,119 +791,6 @@ function SocialItem({
           setWidth(nativeEvent.layout.width);
         }}
       >
-        {repostMeta && hasSourceCardData ? (
-          <View
-            style={{
-              marginBottom: spacing.x10,
-            }}
-          >
-            <Pressable
-              onPress={handleContentPress}
-              style={{
-                borderRadius: FEED_MEDIA_RADIUS,
-                borderColor: repostCardBorderColor,
-                borderWidth: borderWidth.thin,
-                backgroundColor: repostCardBackground,
-                overflow: 'hidden',
-              }}
-            >
-              {repostMeta?.sourceImage && media.length < 1 && !shouldRenderLinkPreview ? (
-                <FastImage
-                  style={{
-                    width: '100%',
-                    aspectRatio: 16 / 9,
-                  }}
-                  resizeMode="cover"
-                  source={{ uri: repostMeta.sourceImage }}
-                />
-              ) : null}
-              <View style={{ padding: spacing.x10 }}>
-                {showSourceAuthorHeader ? (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginBottom:
-                        sourceCardDomain || sourceCardTitle || showSourceCardSnippet
-                          ? spacing.x8
-                          : 0,
-                    }}
-                  >
-                    <Image
-                      source={{ uri: sourceAuthorAvatar || NO_PROFILE_IMAGE }}
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 17,
-                        marginRight: spacing.x8,
-                        backgroundColor: Colors.neutral[700],
-                      }}
-                    />
-                    <View style={{ flex: 1 }}>
-                      {sourceAuthorName ? (
-                        <StyledText
-                          numberOfLines={1}
-                          style={{ color: repostCardTitleColor, fontWeight: '700' }}
-                        >
-                          {sourceAuthorName}
-                        </StyledText>
-                      ) : null}
-                      {sourceMetaLine ? (
-                        <StyledText
-                          numberOfLines={1}
-                          style={{
-                            color: repostCardSnippetColor,
-                            marginTop: 1,
-                          }}
-                        >
-                          {sourceMetaLine}
-                        </StyledText>
-                      ) : null}
-                    </View>
-                  </View>
-                ) : null}
-                {sourceCardDomain ? (
-                  <StyledText
-                    numberOfLines={1}
-                    style={{
-                      color: repostCardDomainColor,
-                      fontSize: 11,
-                      letterSpacing: 0.6,
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      marginBottom: 2,
-                    }}
-                  >
-                    {sourceCardDomain}
-                  </StyledText>
-                ) : null}
-                {sourceCardTitle ? (
-                  <StyledText
-                    numberOfLines={2}
-                    style={{
-                      color: repostCardTitleColor,
-                      fontWeight: '700',
-                      marginBottom: showSourceCardSnippet ? 2 : 0,
-                    }}
-                  >
-                    {sourceCardTitle}
-                  </StyledText>
-                ) : null}
-                {showSourceCardSnippet ? (
-                  <StyledText
-                    numberOfLines={2}
-                    style={{
-                      color: repostCardSnippetColor,
-                    }}
-                  >
-                    {sourceCardSnippet}
-                  </StyledText>
-                ) : null}
-              </View>
-            </Pressable>
-          </View>
-        ) : null}
-
         {shouldRenderPrimaryText ? (
           <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
             <StyledText
@@ -767,6 +803,248 @@ function SocialItem({
               {primaryTextToRender}
             </StyledText>
           </Pressable>
+        ) : null}
+
+        {repostMeta && hasSourceCardData ? (
+          <View style={{ marginBottom: spacing.x10 }}>
+            <Pressable
+              onPress={handleRepostSourceOpen}
+              style={{
+                borderRadius: FEED_MEDIA_RADIUS,
+                borderColor: colors.border,
+                borderWidth: borderWidth.thin,
+                backgroundColor: colors.card,
+                overflow: 'hidden',
+              }}
+            >
+              <View style={{ padding: spacing.x10 }}>
+                {shouldShowSourceHeader ? (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom:
+                        sourceContent ||
+                        sourceTitle ||
+                        sourceDescription ||
+                        sourceImageUrls.length > 0 ||
+                        sourceVideoUrls.length > 0 ||
+                        sourceGifUrl
+                          ? spacing.x8
+                          : 0,
+                    }}
+                  >
+                    <Image
+                      source={{
+                        uri: sourceSnapshot?.sourceAuthorProfileImage || NO_PROFILE_IMAGE,
+                      }}
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 17,
+                        marginRight: spacing.x8,
+                        backgroundColor: Colors.neutral[700],
+                      }}
+                    />
+
+                    <View style={{ flex: 1 }}>
+                      {sourceSnapshot?.sourceAuthorName ? (
+                        <StyledText
+                          numberOfLines={1}
+                          style={{ color: colors.text, fontWeight: '700' }}
+                        >
+                          {sourceSnapshot.sourceAuthorName}
+                        </StyledText>
+                      ) : null}
+
+                      {sourceMetaLine ? (
+                        <StyledText
+                          numberOfLines={1}
+                          style={{
+                            color: Colors.neutral[400],
+                            marginTop: 1,
+                          }}
+                        >
+                          {sourceMetaLine}
+                        </StyledText>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : null}
+
+                {sourceIsRss ? (
+                  <>
+                    {sourceLinkCardImage ? (
+                      <FastImage
+                        style={{
+                          width: '100%',
+                          aspectRatio: 16 / 9,
+                          borderRadius: FEED_MEDIA_RADIUS,
+                          marginBottom: spacing.x8,
+                        }}
+                        resizeMode="cover"
+                        source={{ uri: sourceLinkCardImage }}
+                      />
+                    ) : null}
+
+                    {sourceDomain ? (
+                      <StyledText
+                        numberOfLines={1}
+                        style={{
+                          color: Colors.neutral[400],
+                          fontSize: 11,
+                          letterSpacing: 0.6,
+                          fontWeight: '700',
+                          textTransform: 'uppercase',
+                          marginBottom: 2,
+                        }}
+                      >
+                        {sourceDomain}
+                      </StyledText>
+                    ) : null}
+
+                    {sourceTitle ? (
+                      <StyledText
+                        numberOfLines={3}
+                        style={{ color: colors.text, fontWeight: '700' }}
+                      >
+                        {decode(sourceTitle)}
+                      </StyledText>
+                    ) : null}
+
+                    {sourceDescription ? (
+                      <StyledText numberOfLines={3} style={{ color: Colors.neutral[400] }}>
+                        {decode(sourceDescription)}
+                      </StyledText>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    {sourceContent ? (
+                      <StyledText
+                        style={{
+                          color: colors.text,
+                          marginBottom:
+                            sourceImageUrls.length > 0 ||
+                            sourceVideoUrls.length > 0 ||
+                            sourceGifUrl ||
+                            sourceLink
+                              ? spacing.x8
+                              : 0,
+                        }}
+                      >
+                        {sourceContent}
+                      </StyledText>
+                    ) : null}
+
+                    {sourceImageUrls.map((url) => (
+                      <FastImage
+                        key={url}
+                        style={{
+                          width: '100%',
+                          aspectRatio: 16 / 9,
+                          borderRadius: FEED_MEDIA_RADIUS,
+                          marginBottom: spacing.x8,
+                        }}
+                        resizeMode="cover"
+                        source={{ uri: url }}
+                      />
+                    ))}
+
+                    {sourceVideoUrls.map((videoUrl) => (
+                      <View
+                        key={videoUrl}
+                        style={{
+                          marginBottom: spacing.x8,
+                          borderRadius: FEED_MEDIA_RADIUS,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <CustomVideo
+                          source={{ uri: videoUrl }}
+                          style={{
+                            width: '100%',
+                            aspectRatio: 16 / 9,
+                          }}
+                          controls={false}
+                          resizeMode="contain"
+                          paused
+                          muted
+                          repeat
+                        />
+                      </View>
+                    ))}
+
+                    {sourceGifUrl ? (
+                      <FastImage
+                        style={{
+                          width: '100%',
+                          aspectRatio: 16 / 9,
+                          borderRadius: FEED_MEDIA_RADIUS,
+                          marginBottom: spacing.x8,
+                        }}
+                        resizeMode="cover"
+                        source={{ uri: sourceGifUrl }}
+                      />
+                    ) : null}
+
+                    {sourceLink ? (
+                      <View
+                        style={{
+                          borderRadius: FEED_MEDIA_RADIUS,
+                          borderWidth: borderWidth.thin,
+                          borderColor: colors.border,
+                          backgroundColor: colors.card,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {sourceLinkCardImage ? (
+                          <FastImage
+                            style={{ width: '100%', aspectRatio: 16 / 9 }}
+                            resizeMode="cover"
+                            source={{ uri: sourceLinkCardImage }}
+                          />
+                        ) : null}
+
+                        <View style={{ padding: spacing.x8 }}>
+                          {sourceDomain ? (
+                            <StyledText
+                              numberOfLines={1}
+                              style={{
+                                color: Colors.neutral[400],
+                                fontSize: 11,
+                                letterSpacing: 0.6,
+                                fontWeight: '700',
+                                textTransform: 'uppercase',
+                                marginBottom: 2,
+                              }}
+                            >
+                              {sourceDomain}
+                            </StyledText>
+                          ) : null}
+
+                          {sourceTitle ? (
+                            <StyledText
+                              numberOfLines={2}
+                              style={{ color: colors.text, fontWeight: '700' }}
+                            >
+                              {decode(sourceTitle)}
+                            </StyledText>
+                          ) : null}
+
+                          {sourceDescription ? (
+                            <StyledText numberOfLines={2} style={{ color: Colors.neutral[400] }}>
+                              {decode(sourceDescription)}
+                            </StyledText>
+                          ) : null}
+                        </View>
+                      </View>
+                    ) : null}
+                  </>
+                )}
+              </View>
+            </Pressable>
+          </View>
         ) : null}
 
         {shouldRenderLinkPreview
@@ -809,6 +1087,7 @@ function SocialItem({
                       </StyledText>
                     </View>
                   )}
+
                   <View style={{ padding: 10 }}>
                     {linkUrl ? (
                       <StyledText numberOfLines={1} style={{ color: Colors.neutral[400] }}>
@@ -869,9 +1148,7 @@ function SocialItem({
                     }}
                   >
                     <CustomVideo
-                      source={{
-                        uri: mediaItem.url,
-                      }}
+                      source={{ uri: mediaItem.url }}
                       style={{
                         width: '100%',
                         aspectRatio: resolvedVideoAspect,
@@ -912,7 +1189,6 @@ function SocialItem({
                         }
                         setIsMuted(!isMuted);
                       }}
-                      // hideShutterView={true}
                     />
                   </View>
                 </Pressable>
@@ -926,9 +1202,7 @@ function SocialItem({
           <>
             {imageModalIndexVisible > -1 ? (
               <ImageView
-                images={images.map((item) => ({
-                  uri: item.url,
-                }))}
+                images={images.map((item) => ({ uri: item.url }))}
                 presentationStyle="overFullScreen"
                 imageIndex={imageModalIndexVisible}
                 visible
