@@ -49,7 +49,7 @@ function OnboardingInfluencers({ route }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const getInfluencerId = useCallback((item?: User) => {
-    const raw = item?.id ?? item?._id ?? item?.userId;
+    const raw = item?._id ?? item?.id ?? item?.userId;
     return raw ? String(raw) : '';
   }, []);
 
@@ -294,7 +294,7 @@ function OnboardingInfluencers({ route }: Props) {
                           ? {
                               ...profileImageList,
                               borderWidth: 2.5,
-                              borderColor: Colors.infoFeedback[200],
+                              borderColor: '#12d2d9',
                             }
                           : profileImageList
                       }
@@ -311,7 +311,7 @@ function OnboardingInfluencers({ route }: Props) {
                       <StyledText
                         style={{
                           textAlign: 'center',
-                          color: isSelected ? Colors.infoFeedback[200] : Colors.neutral.brand,
+                          color: isSelected ? '#12d2d9' : Colors.neutral.brand,
                         }}
                         numberOfLines={2}
                       >
@@ -320,7 +320,7 @@ function OnboardingInfluencers({ route }: Props) {
                       <StyledText
                         numberOfLines={1}
                         style={{
-                          color: isSelected ? Colors.infoFeedback[400] : Colors.neutral[300],
+                          color: isSelected ? '#12d2d9' : Colors.neutral[300],
                           alignSelf: 'center',
                           ...fontSize.x1,
                         }}

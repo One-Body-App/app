@@ -11,7 +11,6 @@ import { CloseCircle, TickCircle } from 'iconsax-react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import FastImage from 'react-native-fast-image';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import EmojiPicker, { EmojiType } from 'rn-emoji-keyboard';
 import { useRef, useState } from 'react';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useNavigation, useTheme } from '@react-navigation/native';
@@ -73,12 +72,14 @@ const extractGifPreviewUrl = (media?: GiphyMedia | null): string | undefined => 
 const FEED_IMAGE_WIDTH = 1080;
 const FEED_IMAGE_HEIGHT = 1350;
 const IMAGE_QUALITY = 0.6;
+const MEDIA_RADIUS = 12;
 
 interface Props {
   mediaGif: GiphyMedia | null;
   setGif: React.Dispatch<React.SetStateAction<GiphyMedia | null>>;
   publishComment: Function;
   text?: string;
+  placeholderText?: string;
   isEditingComment?: boolean;
   setEditingComment?: (status: boolean) => void;
   isFromBottomField?: boolean;
@@ -88,6 +89,8 @@ interface Props {
   mediaImages?: string[];
   setImages?: React.Dispatch<React.SetStateAction<string[]>>;
   onOpenGifPicker?: () => void;
+  replyingToLabel?: string;
+  onCancelReply?: () => void;
 }
 
 function CommentField({
@@ -95,6 +98,7 @@ function CommentField({
   setGif,
   publishComment,
   text,
+  placeholderText,
   isEditingComment,
   setEditingComment,
   isFromBottomField,
@@ -104,6 +108,8 @@ function CommentField({
   mediaImages,
   setImages,
   onOpenGifPicker,
+  replyingToLabel,
+  onCancelReply,
 }: Props) {
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { dark, colors } = useTheme();
@@ -112,7 +118,6 @@ function CommentField({
   const [content, setContent] = useState(text ?? '');
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const isSubmittingRef = useRef(false);
   const InputComponent = isFromBottomField ? BottomSheetTextInput : TextInput;
   const gifAspectRatioRaw = mediaGif?.aspectRatio;
@@ -306,11 +311,6 @@ function CommentField({
     ]);
   };
 
-  const addEmojiToContent = (emoji: EmojiType) => {
-    setContent((previous) => `${previous}${emoji.emoji}`);
-    setIsEmojiPickerOpen(false);
-  };
-
   // const { shouldHandleKeyboardEvents } = useBottomSheetInternal();
 
   // useEffect(() => {
@@ -342,6 +342,25 @@ function CommentField({
           paddingBottom: spacing.x20,
         }}
       >
+        {replyingToLabel && !isEditingComment ? (
+          <View
+            style={{
+              marginBottom: spacing.x10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <StyledText style={{ color: textSecondary, fontSize: 12, fontWeight: '700' }}>
+              {replyingToLabel}
+            </StyledText>
+            {onCancelReply ? (
+              <TouchableOpacity onPress={onCancelReply}>
+                <CloseCircle color={primary} size={18} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.x10 }}>
           <FastImage
             source={{ uri: safeProfileImageUri }}
@@ -349,7 +368,9 @@ function CommentField({
           />
           <View style={{ flex: 1, position: 'relative' }}>
             <InputComponent
-              placeholder={isEditingComment ? 'Edit comment...' : 'Add a comment...'}
+              placeholder={
+                isEditingComment ? 'Edit comment...' : (placeholderText ?? 'Add a comment...')
+              }
               multiline
               value={content}
               onChangeText={(value: string) => {
@@ -394,22 +415,6 @@ function CommentField({
                   <MaterialCommunityIcons name="image-outline" size={20} color={textSecondary} />
                 </TouchableOpacity>
               ) : null}
-              <TouchableOpacity
-                onPress={() => {
-                  if (isActionBlocked) {
-                    return;
-                  }
-                  setIsEmojiPickerOpen(true);
-                }}
-                disabled={isActionBlocked}
-                style={{ opacity: isActionBlocked ? 0.5 : 1 }}
-              >
-                <MaterialCommunityIcons
-                  name="emoticon-happy-outline"
-                  size={20}
-                  color={textSecondary}
-                />
-              </TouchableOpacity>
               {canUseGiphy ? (
                 <TouchableOpacity
                   onPress={() => {
@@ -480,7 +485,7 @@ function CommentField({
               style={{
                 padding: 10,
                 width: 120,
-                borderRadius: borderRadius.base,
+                borderRadius: MEDIA_RADIUS,
               }}
             >
               <TouchableOpacity
@@ -502,15 +507,24 @@ function CommentField({
               >
                 <CloseCircle size={28} color="#fff" />
               </TouchableOpacity>
-              <FastImage
-                source={{ uri: imageUrl }}
-                resizeMode="cover"
+              <View
                 style={{
                   width: 100,
                   height: 80,
-                  borderRadius: borderRadius.base,
+                  borderRadius: MEDIA_RADIUS,
+                  overflow: 'hidden',
                 }}
-              />
+              >
+                <FastImage
+                  source={{ uri: imageUrl }}
+                  resizeMode="contain"
+                  style={{
+                    width: 100,
+                    height: 80,
+                    borderRadius: MEDIA_RADIUS,
+                  }}
+                />
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -526,7 +540,8 @@ function CommentField({
             style={{
               padding: 10,
               width: 100,
-              borderRadius: borderRadius.base,
+              borderRadius: MEDIA_RADIUS,
+              overflow: 'hidden',
             }}
           >
             <TouchableOpacity
@@ -549,20 +564,20 @@ function CommentField({
             {Platform.OS === 'android' && gifPreviewUrl ? (
               <FastImage
                 source={{ uri: gifPreviewUrl }}
-                resizeMode="cover"
+                resizeMode="contain"
                 style={{
                   width: 100,
                   aspectRatio: safeGifAspectRatio,
-                  borderRadius: borderRadius.base,
+                  borderRadius: MEDIA_RADIUS,
                 }}
               />
             ) : (
               <GiphyMediaView
                 media={mediaGif}
-                resizeMode="cover"
+                resizeMode="contain"
                 style={{
                   aspectRatio: safeGifAspectRatio,
-                  borderRadius: borderRadius.base,
+                  borderRadius: MEDIA_RADIUS,
 
                   overflow: 'hidden',
                 }}
@@ -571,42 +586,6 @@ function CommentField({
           </View>
         </ScrollView>
       ) : null}
-      <EmojiPicker
-        open={isEmojiPickerOpen}
-        onClose={() => setIsEmojiPickerOpen(false)}
-        onEmojiSelected={addEmojiToContent}
-        enableRecentlyUsed
-        enableSearchBar
-        categoryPosition="bottom"
-        theme={{
-          backdrop: dark ? 'rgba(5,10,14,0.58)' : 'rgba(0,0,0,0.3)',
-          container: composerBackground,
-          header: dark ? '#ffffff' : '#0e181b',
-          knob: Colors.neutral[400],
-          category: {
-            icon: Colors.neutral[400],
-            iconActive: Colors.primarySapphire.brand,
-            container: composerBackground,
-            containerActive: inputBackground,
-          },
-          search: {
-            background: inputBackground,
-            text: dark ? '#ffffff' : '#0e181b',
-            placeholder: textSecondary,
-            icon: textSecondary,
-          },
-          customButton: {
-            background: inputBackground,
-            backgroundPressed: dividerColor,
-            icon: Colors.primarySapphire.brand,
-            iconPressed: Colors.primarySapphire.brand,
-          },
-          emoji: {
-            selected: inputBackground,
-          },
-          skinTonesContainer: composerBackground,
-        }}
-      />
     </>
   );
 }

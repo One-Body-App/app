@@ -884,7 +884,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
       </View>
       <View style={styles.foter}>
         <ImageBackground
-          resizeMode="stretch"
+          resizeMode="contain"
           style={styles.wavebgimage}
           // eslint-disable-next-line global-require
           source={require('@/assets/images/waveBG.png')}

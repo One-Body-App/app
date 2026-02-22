@@ -1,9 +1,8 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 /* eslint-disable react/no-unstable-nested-components */
-import FastImage from 'react-native-fast-image';
 import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
-import { Animated, Platform, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
 
@@ -13,20 +12,20 @@ import {
   createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
+import { getFocusedRouteNameFromRoute, useTheme } from '@react-navigation/native';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
 import { MainBottomStackParamsList } from './types';
 import SearchStack from './SearchStack';
-import { RootState } from '../redux/reducers/rootReducer';
-import { borderWidth } from '../styles/outlines';
+import ConnectStack from './ConnectStack';
 import PostStack from './PostStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
-import NewPost from '../screens/post/NewPost';
 import { TabBarAnimationProvider, useTabBarAnimation } from './TabBarAnimationContext';
+import ZoeChat from '../screens/main/zoeChat';
+import ZoeIcon from '@/assets/svg/zoeicon.svg';
+import ZoeIconSelected from '@/assets/svg/zoeicon_selected.svg';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -124,10 +123,43 @@ ExploreTabIcon.propTypes = {
   size: PropTypes.number,
 };
 
+function ZoeTabIcon({ focused }: { focused: boolean }) {
+  return focused ? <ZoeIconSelected width={24} height={24} /> : <ZoeIcon width={24} height={24} />;
+}
+
+ZoeTabIcon.propTypes = {
+  color: PropTypes.string.isRequired,
+  focused: PropTypes.bool,
+  size: PropTypes.number,
+};
+
 function BottomStack() {
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const tabBarTotalHeight = getHeight(5) + insets.bottom;
+  const defaultTabBarStyle = {
+    height: tabBarTotalHeight,
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    backgroundColor: 'transparent',
+    elevation: 0,
+    overflow: 'visible' as const,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingBottom: insets.bottom,
+  };
+  const connectVisibleTabBarStyle = {
+    height: getHeight(7) + insets.bottom,
+    paddingBottom: insets.bottom,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: Platform.OS === 'android' ? colors.background : 'transparent',
+    zIndex: 20,
+    elevation: 20,
+    overflow: 'visible' as const,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  };
   const brandColors = {
     primaryBase: '#41899f',
     primaryDark: '#126b87',
@@ -137,39 +169,9 @@ function BottomStack() {
     black: '#032f3c',
   };
 
-  const authState = useSelector((state: RootState) => state.auth);
-  const profileImageUrl = authState.getProfileData?.profileImage;
   const tabBarGradientColors = dark
     ? ['rgba(13,13,13,0.98)', 'rgba(13,13,13,0.92)']
     : ['rgba(246,246,247,0.98)', 'rgba(230,234,236,0.95)'];
-
-  function ProfileTabIcon({ color, focused }: { color: string; focused: boolean }) {
-    if (profileImageUrl) {
-      return (
-        <FastImage
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 25,
-            borderColor: color,
-            borderWidth: focused ? borderWidth.base : 0,
-          }}
-          source={{
-            uri: profileImageUrl,
-          }}
-          resizeMode={FastImage.resizeMode.stretch}
-        />
-      );
-    }
-
-    return <MaterialIcons name="person" size={24} color={color} />;
-  }
-
-  ProfileTabIcon.propTypes = {
-    color: PropTypes.string.isRequired,
-    focused: PropTypes.bool,
-    size: PropTypes.number,
-  };
 
   return (
     <TabBarAnimationProvider>
@@ -185,17 +187,7 @@ function BottomStack() {
           tabBarInactiveTintColor: dark ? 'rgba(230,234,236,0.65)' : brandColors.black,
           tabBarShowLabel: false,
           tabBarLabelStyle: { paddingTop: 4 },
-          tabBarStyle: {
-            height: tabBarTotalHeight,
-            borderTopWidth: 0,
-            borderTopColor: 'transparent',
-            backgroundColor: 'transparent',
-            elevation: 0,
-            overflow: 'visible',
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            paddingBottom: insets.bottom,
-          },
+          tabBarStyle: defaultTabBarStyle,
           tabBarBackground: () => (
             <View style={StyleSheet.absoluteFill}>
               {Platform.OS === 'ios' ? (
@@ -243,14 +235,22 @@ function BottomStack() {
               selectedTab: FeedTypes.ForYou,
             },
           }}
-          options={{
-            tabBarLabel: 'Home',
-            tabBarIcon: HomeTabIcon,
+          options={({ route }) => {
+            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'Home';
+            const shouldHideTabBar = focusedRouteName === 'Notifications';
+
+            return {
+              tabBarLabel: 'Home',
+              tabBarIcon: HomeTabIcon,
+              tabBarStyle: shouldHideTabBar
+                ? { ...defaultTabBarStyle, display: 'none', height: 0, opacity: 0 }
+                : defaultTabBarStyle,
+            };
           }}
         />
         <Tab.Screen
           name="SearchTab"
-          component={SearchStack}
+          component={ExploreStack}
           options={{
             tabBarLabel: 'Search',
             tabBarIcon: SearchTabIcon,
@@ -285,18 +285,38 @@ function BottomStack() {
         />
         <Tab.Screen
           name="ExploreTab"
-          component={ExploreStack}
-          options={{
-            tabBarLabel: 'Explore',
-            tabBarIcon: ExploreTabIcon,
+          component={ConnectStack}
+          options={({ route }) => {
+            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectPortal';
+            const shouldShowTabBar = focusedRouteName === 'ConnectPortal';
+
+            return {
+              tabBarLabel: 'Connect',
+              tabBarIcon: ExploreTabIcon,
+              tabBarStyle: shouldShowTabBar
+                ? connectVisibleTabBarStyle
+                : { ...connectVisibleTabBarStyle, display: 'none', height: 0, opacity: 0 },
+            };
           }}
         />
         <Tab.Screen
           name="MyProfileTab"
           component={ProfileStack}
           options={{
-            tabBarLabel: 'Profile',
-            tabBarIcon: ProfileTabIcon,
+            tabBarButton: () => null,
+            tabBarStyle: { display: 'none' },
+          }}
+        />
+        <Tab.Screen
+          name="ZoeTab"
+          component={ZoeChat}
+          options={{
+            tabBarLabel: 'Zoe',
+            tabBarIcon: ZoeTabIcon,
+            tabBarStyle: connectVisibleTabBarStyle,
+            lazy: false,
+            unmountOnBlur: false,
+            freezeOnBlur: false,
           }}
         />
       </Tab.Navigator>

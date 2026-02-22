@@ -35,11 +35,15 @@ const styles = StyleSheet.create({
   tabItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  tabItemSelected: {},
+  tabLabelUnderline: {
     paddingBottom: spacing.x8,
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
   },
-  tabItemSelected: {
+  tabLabelUnderlineSelected: {
     borderBottomColor: BRAND.primaryDark,
   },
   tabText: {
@@ -194,10 +198,13 @@ const styles = StyleSheet.create({
     aspectRatio: 4 / 5,
     backgroundColor: '#000',
     marginTop: spacing.x5,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   mediaImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 12,
   },
   actionsBar: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleProp, View, ViewStyle } from 'react-native';
+import { Image, Pressable, StyleProp, View, ViewStyle } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -11,7 +11,8 @@ import ImageView from 'react-native-image-viewing';
 
 import { isArray } from 'lodash';
 import { decode } from 'html-entities';
-import { NO_POST_IMAGE_URL } from '@/services/constants';
+import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE } from '@/services/constants';
+import { timeSince } from '@/utils/ResponsiveFun';
 
 import { PostType, SocialPost, SocialPostReaction } from '@/utils/types';
 import {
@@ -19,7 +20,7 @@ import {
   MainDrawerParamsList,
   MainBottomStackParamsList,
 } from '@/src/navigator/types';
-import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { borderWidth } from '@/src/styles/outlines';
 import { Colors } from '@/src/styles';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
@@ -175,11 +176,36 @@ const toSafeNumber = (value: unknown, fallback = 1) => {
   }
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
+
+const normalizeComparableText = (value?: string) =>
+  (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+const SUPPORTED_FEED_VIDEO_RATIOS = [16 / 9, 4 / 3, 1, 9 / 16];
+const FEED_PORTRAIT_VIDEO_RATIO = 9 / 16;
+const FEED_MEDIA_RADIUS = 12;
+const getNearestSupportedVideoRatio = (ratio?: number) => {
+  if (!ratio || !Number.isFinite(ratio) || ratio <= 0) {
+    return 16 / 9;
+  }
+  return SUPPORTED_FEED_VIDEO_RATIOS.reduce((closest, current) => {
+    const closestDelta = Math.abs(closest - ratio);
+    const currentDelta = Math.abs(current - ratio);
+    return currentDelta < closestDelta ? current : closest;
+  });
+};
+
 type SocialItemProps = {
   visible?: boolean;
   itemData: SocialPost;
   socialPostviewStyle?: StyleProp<ViewStyle>;
   onCommentsPress?: () => void;
+  onOpenVideoPress?: (params: {
+    postId?: string;
+    playBackId?: string;
+    itemData: SocialPost;
+    mediaUrl?: string;
+  }) => void;
+  onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
 
   onShowDismissCard?: (e?: boolean) => void;
   index?: number;
@@ -187,7 +213,19 @@ type SocialItemProps = {
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
   fromSavedPosts?: boolean;
+  originFeedType?: string;
 };
+
+const areSocialItemPropsEqual = (prev: SocialItemProps, next: SocialItemProps) => {
+  return (
+    prev.itemData === next.itemData &&
+    prev.visible === next.visible &&
+    prev.index === next.index &&
+    prev.fromSavedPosts === next.fromSavedPosts &&
+    prev.socialPostviewStyle === next.socialPostviewStyle
+  );
+};
+
 function SocialItem({
   itemData,
   socialPostviewStyle,
@@ -198,7 +236,10 @@ function SocialItem({
   removePost,
   editPost,
   fromSavedPosts,
+  originFeedType,
   onCommentsPress,
+  onOpenVideoPress,
+  onTelemetryEvent,
 }: SocialItemProps) {
   const { colors } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -213,12 +254,14 @@ function SocialItem({
   >([]);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(visible ?? false);
+  const [videoAspectByUrl, setVideoAspectByUrl] = useState<Record<string, number>>({});
   const [imageModalIndexVisible, setImageModalIndexVisible] = useState(-1);
   const navigation = useNavigation<ScreenNavigationProp>();
   const [width, setWidth] = useState<number>();
   const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
 
   const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const repostMeta = itemData?.repost;
   let profileUrl = '';
   if (itemData?.source === 'twitter') {
     profileUrl = `https://twitter.com/${itemData?.handler}/status/${itemData?.id}`;
@@ -244,7 +287,8 @@ function SocialItem({
   }, [isMuted, visible]);
 
   useEffect(() => {
-    setImageInfo([]);
+    let isMounted = true;
+    setVideoAspectByUrl({});
     let mediaItems: Media[] = [];
 
     if (itemData?.mediaUrl) {
@@ -276,18 +320,53 @@ function SocialItem({
       setMedia(mediaItems);
       const photoMedia = mediaItems.filter((item) => item.type === 'photo' && item.url);
       if (photoMedia.length > 0) {
-        // Keep feed row height stable while images load to prevent jumpy pagination scroll.
-        setImageInfo(
-          photoMedia.map((item) => ({
-            url: item.url,
-            width: 4,
-            height: 5,
-          }))
+        // Preserve already-resolved dimensions to avoid flickering between fallback and actual ratio.
+        setImageInfo((previous) =>
+          photoMedia.map((item) => {
+            const existing = previous.find((previousItem) => previousItem.url === item.url);
+            if (existing && existing.width > 0 && existing.height > 0) {
+              return existing;
+            }
+            return {
+              url: item.url,
+              width: 4,
+              height: 5,
+            };
+          })
         );
+        photoMedia.forEach((photoItem) => {
+          Image.getSize(
+            photoItem.url,
+            (resolvedWidth, resolvedHeight) => {
+              if (!isMounted || resolvedWidth <= 0 || resolvedHeight <= 0) {
+                return;
+              }
+              setImageInfo((previous) => {
+                return previous.map((imageItem) => {
+                  if (imageItem.url !== photoItem.url) {
+                    return imageItem;
+                  }
+                  return {
+                    ...imageItem,
+                    width: resolvedWidth,
+                    height: resolvedHeight,
+                  };
+                });
+              });
+            },
+            () => undefined
+          );
+        });
+      } else {
+        setImageInfo([]);
       }
     } else {
       setMedia([]);
+      setImageInfo([]);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [itemData]);
 
   const linkAttachment = useMemo(
@@ -408,6 +487,49 @@ function SocialItem({
 
   const linkUrl = linkCardData?.url ?? '';
   const hasLink = Boolean(linkUrl);
+  const isDirectRepost = repostMeta?.repostType === 'repost';
+  const primaryTextToRender = safeContentUrl ? contentText : rawContent;
+  const sourceCardTitle = repostMeta?.sourceTitle?.trim() ?? '';
+  const sourceCardSnippet = repostMeta?.sourceContentSnippet?.trim() ?? '';
+  const sourceCardLink = repostMeta?.sourceLink?.trim() ?? '';
+  const sourceAuthorName = repostMeta?.sourceAuthorName?.trim() ?? '';
+  const sourceAuthorUsername = repostMeta?.sourceAuthorUsername?.trim() ?? '';
+  const sourceAuthorAvatar = repostMeta?.sourceAuthorProfileImage?.trim() ?? '';
+  const sourceCreatedAt = repostMeta?.sourceCreatedAt?.trim() ?? '';
+  const sourceTimestampLabel = useMemo(() => {
+    if (!sourceCreatedAt) {
+      return '';
+    }
+    const sourceCreatedDate = new Date(sourceCreatedAt);
+    if (Number.isNaN(sourceCreatedDate.getTime())) {
+      return '';
+    }
+    return `${timeSince(sourceCreatedDate)} ago`;
+  }, [sourceCreatedAt]);
+  const sourceMetaLine = [
+    sourceAuthorUsername ? `@${sourceAuthorUsername.replace(/^@/, '')}` : '',
+    sourceTimestampLabel,
+  ]
+    .filter((value) => value.length > 0)
+    .join(' • ');
+  const showSourceAuthorHeader = Boolean(sourceAuthorName || sourceMetaLine || sourceAuthorAvatar);
+  const sourceCardDomain = sourceCardLink ? getDomainName(sourceCardLink) : '';
+  const hasSourceCardData = Boolean(
+    sourceCardTitle || sourceCardSnippet || sourceCardLink || repostMeta?.sourceImage
+  );
+  const suppressMainContentForRepost = isDirectRepost && hasSourceCardData;
+  const shouldRenderPrimaryText =
+    (primaryTextToRender ?? '').length > 0 && !suppressMainContentForRepost;
+  const showSourceCardSnippet =
+    Boolean(sourceCardSnippet) &&
+    normalizeComparableText(sourceCardSnippet) !== normalizeComparableText(sourceCardTitle);
+  const shouldRenderLinkPreview =
+    hasLink && linkCardData && !(isDirectRepost && Boolean(sourceCardLink));
+  const repostCardBackground = colors.card;
+  const repostCardBorderColor = colors.border;
+  const repostCardTitleColor = colors.text;
+  const repostCardSnippetColor = Colors.neutral[400];
+  const repostCardDomainColor = Colors.neutral[400];
 
   let myReaction: SocialPostReaction | undefined;
 
@@ -450,6 +572,9 @@ function SocialItem({
       : undefined);
   const handleContentPress = () => {
     if (handleCommentsPress) {
+      onTelemetryEvent?.('open_post', {
+        postType: 'social',
+      });
       handleCommentsPress();
     }
   };
@@ -477,6 +602,16 @@ function SocialItem({
         comments: itemData.comments,
         commentNumber: itemData.commentNumber,
       }}
+      repostPayload={{
+        sourceType: 'social',
+        sourceId: String(itemData.postId ?? itemData.id ?? itemData._id ?? ''),
+        sourcePreview: {
+          title: itemData.title,
+          content: itemData.content,
+          link: itemData.link || itemData.permalink,
+        },
+        originFeedType,
+      }}
       parentRefreshContent={parentRefreshContent}
       created={itemData?.created}
       source={itemData.source}
@@ -485,6 +620,7 @@ function SocialItem({
       onShowDismissCard={onShowDismissCard}
       index={index}
       onCommentsPress={handleCommentsPress}
+      onTelemetryEvent={onTelemetryEvent}
       onPress={() => {
         if (itemData.userData._id !== user?._id) {
           navigation.navigate('Main', {
@@ -506,7 +642,120 @@ function SocialItem({
           setWidth(nativeEvent.layout.width);
         }}
       >
-        {((safeContentUrl ? contentText : rawContent) ?? '').length > 0 ? (
+        {repostMeta && hasSourceCardData ? (
+          <View
+            style={{
+              marginBottom: spacing.x10,
+            }}
+          >
+            <Pressable
+              onPress={handleContentPress}
+              style={{
+                borderRadius: FEED_MEDIA_RADIUS,
+                borderColor: repostCardBorderColor,
+                borderWidth: borderWidth.thin,
+                backgroundColor: repostCardBackground,
+                overflow: 'hidden',
+              }}
+            >
+              {repostMeta?.sourceImage && media.length < 1 && !shouldRenderLinkPreview ? (
+                <FastImage
+                  style={{
+                    width: '100%',
+                    aspectRatio: 16 / 9,
+                  }}
+                  resizeMode="cover"
+                  source={{ uri: repostMeta.sourceImage }}
+                />
+              ) : null}
+              <View style={{ padding: spacing.x10 }}>
+                {showSourceAuthorHeader ? (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom:
+                        sourceCardDomain || sourceCardTitle || showSourceCardSnippet
+                          ? spacing.x8
+                          : 0,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: sourceAuthorAvatar || NO_PROFILE_IMAGE }}
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 17,
+                        marginRight: spacing.x8,
+                        backgroundColor: Colors.neutral[700],
+                      }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      {sourceAuthorName ? (
+                        <StyledText
+                          numberOfLines={1}
+                          style={{ color: repostCardTitleColor, fontWeight: '700' }}
+                        >
+                          {sourceAuthorName}
+                        </StyledText>
+                      ) : null}
+                      {sourceMetaLine ? (
+                        <StyledText
+                          numberOfLines={1}
+                          style={{
+                            color: repostCardSnippetColor,
+                            marginTop: 1,
+                          }}
+                        >
+                          {sourceMetaLine}
+                        </StyledText>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : null}
+                {sourceCardDomain ? (
+                  <StyledText
+                    numberOfLines={1}
+                    style={{
+                      color: repostCardDomainColor,
+                      fontSize: 11,
+                      letterSpacing: 0.6,
+                      fontWeight: '700',
+                      textTransform: 'uppercase',
+                      marginBottom: 2,
+                    }}
+                  >
+                    {sourceCardDomain}
+                  </StyledText>
+                ) : null}
+                {sourceCardTitle ? (
+                  <StyledText
+                    numberOfLines={2}
+                    style={{
+                      color: repostCardTitleColor,
+                      fontWeight: '700',
+                      marginBottom: showSourceCardSnippet ? 2 : 0,
+                    }}
+                  >
+                    {sourceCardTitle}
+                  </StyledText>
+                ) : null}
+                {showSourceCardSnippet ? (
+                  <StyledText
+                    numberOfLines={2}
+                    style={{
+                      color: repostCardSnippetColor,
+                    }}
+                  >
+                    {sourceCardSnippet}
+                  </StyledText>
+                ) : null}
+              </View>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {shouldRenderPrimaryText ? (
           <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
             <StyledText
               style={{
@@ -515,18 +764,19 @@ function SocialItem({
                 flexGrow: 1,
               }}
             >
-              {safeContentUrl ? contentText : rawContent}
+              {primaryTextToRender}
             </StyledText>
           </Pressable>
         ) : null}
 
-        {hasLink && linkCardData
+        {shouldRenderLinkPreview
           ? (() => {
+              const resolvedLinkCardData = linkCardData as LinkData;
               return (
                 <Pressable
                   onPress={handleContentPress}
                   style={{
-                    borderRadius: borderRadius.base,
+                    borderRadius: FEED_MEDIA_RADIUS,
                     marginVertical: spacing.x10,
                     borderColor: colors.border,
                     borderWidth: borderWidth.thin,
@@ -534,14 +784,14 @@ function SocialItem({
                     overflow: 'hidden',
                   }}
                 >
-                  {linkCardData.image?.url || NO_POST_IMAGE_URL ? (
+                  {resolvedLinkCardData.image?.url || NO_POST_IMAGE_URL ? (
                     <FastImage
                       style={{
                         width: '100%',
                         aspectRatio: 16 / 9,
                       }}
-                      resizeMode="cover"
-                      source={{ uri: linkCardData.image?.url ?? NO_POST_IMAGE_URL }}
+                      resizeMode="contain"
+                      source={{ uri: resolvedLinkCardData.image?.url ?? NO_POST_IMAGE_URL }}
                     />
                   ) : (
                     <View
@@ -565,13 +815,13 @@ function SocialItem({
                         {getDomainName(linkUrl)}
                       </StyledText>
                     ) : null}
-                    {linkCardData.title ? (
+                    {resolvedLinkCardData.title ? (
                       <StyledText numberOfLines={2} style={{ fontWeight: '700' }}>
-                        {linkCardData.title}
+                        {resolvedLinkCardData.title}
                       </StyledText>
                     ) : null}
-                    {linkCardData.description ? (
-                      <StyledText numberOfLines={2}>{linkCardData.description}</StyledText>
+                    {resolvedLinkCardData.description ? (
+                      <StyledText numberOfLines={2}>{resolvedLinkCardData.description}</StyledText>
                     ) : null}
                   </View>
                 </Pressable>
@@ -581,35 +831,90 @@ function SocialItem({
 
         {media.length > 0 &&
           media.map((mediaItem, mediaIndex) => {
-            if (mediaItem.type === 'VIDEO') {
+            const mediaType = (mediaItem.type ?? '').toLowerCase();
+            const isVideoMedia = mediaType === 'video' || mediaType.startsWith('video/');
+            if (isVideoMedia) {
+              const { playBackId } = itemData as SocialPost & { playBackId?: string };
+              const resolvedVideoAspect = getNearestSupportedVideoRatio(
+                videoAspectByUrl[mediaItem.url]
+              );
+              const isPortraitVideo =
+                Math.abs(resolvedVideoAspect - FEED_PORTRAIT_VIDEO_RATIO) < 0.001;
+              const videoRadius = isPortraitVideo ? FEED_MEDIA_RADIUS : 0;
               return (
                 <Pressable
                   key={`${mediaItem.type}-${mediaItem.url ?? `video-${mediaIndex}`}`}
-                  onPress={handleContentPress}
+                  onPress={() => {
+                    if (onOpenVideoPress && playBackId) {
+                      onTelemetryEvent?.('open_watch', {
+                        postType: PostType.social,
+                        playBackId,
+                      });
+                      onOpenVideoPress({
+                        postId: postId ? String(postId) : undefined,
+                        playBackId,
+                        itemData,
+                        mediaUrl: mediaItem.url,
+                      });
+                      return;
+                    }
+                    handleContentPress();
+                  }}
                 >
-                  <CustomVideo
-                    source={{
-                      uri: mediaItem.url,
-                    }}
+                  <View
                     style={{
-                      width: '100%',
-                      aspectRatio: 16 / 9,
-                      borderRadius: borderRadius.small,
                       marginVertical: 10,
+                      borderRadius: videoRadius,
+                      overflow: videoRadius > 0 ? 'hidden' : 'visible',
                     }}
-                    controls={false}
-                    resizeMode="cover"
-                    paused={!isPlaying}
-                    muted={isMuted}
-                    repeat
-                    onEnd={() => {
-                      if (!isPlaying) {
-                        setIsPlaying(true);
-                      }
-                      setIsMuted(!isMuted);
-                    }}
-                    // hideShutterView={true}
-                  />
+                  >
+                    <CustomVideo
+                      source={{
+                        uri: mediaItem.url,
+                      }}
+                      style={{
+                        width: '100%',
+                        aspectRatio: resolvedVideoAspect,
+                        borderRadius: videoRadius,
+                      }}
+                      controls={false}
+                      resizeMode="contain"
+                      paused={!isPlaying}
+                      muted={isMuted}
+                      repeat
+                      onLoad={(loadData: any) => {
+                        const naturalWidth = Number(loadData?.naturalSize?.width);
+                        const naturalHeight = Number(loadData?.naturalSize?.height);
+                        if (
+                          !naturalWidth ||
+                          !naturalHeight ||
+                          naturalWidth <= 0 ||
+                          naturalHeight <= 0
+                        ) {
+                          return;
+                        }
+                        const nextRatio = getNearestSupportedVideoRatio(
+                          naturalWidth / naturalHeight
+                        );
+                        setVideoAspectByUrl((previous) => {
+                          if (previous[mediaItem.url] === nextRatio) {
+                            return previous;
+                          }
+                          return {
+                            ...previous,
+                            [mediaItem.url]: nextRatio,
+                          };
+                        });
+                      }}
+                      onEnd={() => {
+                        if (!isPlaying) {
+                          setIsPlaying(true);
+                        }
+                        setIsMuted(!isMuted);
+                      }}
+                      // hideShutterView={true}
+                    />
+                  </View>
                 </Pressable>
               );
             }
@@ -619,25 +924,34 @@ function SocialItem({
 
         {images.length > 0 ? (
           <>
-            <ImageView
-              images={images.map((item) => ({
-                uri: item.url,
-              }))}
-              presentationStyle="overFullScreen"
-              imageIndex={imageModalIndexVisible}
-              visible={imageModalIndexVisible > -1}
-              onRequestClose={() => {
-                setImageModalIndexVisible(-1);
-              }}
-            />
+            {imageModalIndexVisible > -1 ? (
+              <ImageView
+                images={images.map((item) => ({
+                  uri: item.url,
+                }))}
+                presentationStyle="overFullScreen"
+                imageIndex={imageModalIndexVisible}
+                visible
+                onRequestClose={() => {
+                  setImageModalIndexVisible(-1);
+                }}
+              />
+            ) : null}
 
             <ImageSlider
               width={width ?? 0}
               images={images}
-              setImageModalIndexVisible={() => {
+              setImageModalIndexVisible={(selectedIndex) => {
+                if (selectedIndex > -1) {
+                  onTelemetryEvent?.('media_open', {
+                    mediaType: 'image',
+                  });
+                }
                 if (handleCommentsPress) {
                   handleCommentsPress();
+                  return;
                 }
+                setImageModalIndexVisible(selectedIndex);
               }}
             />
           </>
@@ -647,4 +961,4 @@ function SocialItem({
   );
 }
 
-export default SocialItem;
+export default React.memo(SocialItem, areSocialItemPropsEqual);

@@ -26,6 +26,23 @@ function ImageSlider({
     return null;
   }
 
+  const getImageAspectRatio = (image: ImageForSlider) => {
+    const gifAspectRatio = Number(image.gifAspectRatio);
+    if (image.type === 'gif' && Number.isFinite(gifAspectRatio) && gifAspectRatio > 0) {
+      return gifAspectRatio;
+    }
+    const imageWidth = Number(image.width);
+    const imageHeight = Number(image.height);
+    if (
+      Number.isFinite(imageWidth) &&
+      Number.isFinite(imageHeight) &&
+      imageWidth > 0 &&
+      imageHeight > 0
+    ) {
+      return imageWidth / imageHeight;
+    }
+    return 4 / 5;
+  };
   const feedAspectRatio = 4 / 5;
   const heightToUse = safeWidth / feedAspectRatio;
 
@@ -37,13 +54,14 @@ function ImageSlider({
   };
 
   if (images.length === 1) {
+    const singleImageAspectRatio = getImageAspectRatio(images[0]);
+    const singleImageHeight = safeWidth / singleImageAspectRatio;
     return (
       <ImageSlide
         image={images[0]}
         setImageModalIndexVisible={setImageModalIndexVisible}
         width={safeWidth}
-        height={heightToUse}
-        maxHeight={heightToUse}
+        height={singleImageHeight}
         index={0}
       />
     );
@@ -66,7 +84,6 @@ function ImageSlider({
               setImageModalIndexVisible={setImageModalIndexVisible}
               width={safeWidth}
               height={heightToUse}
-              maxHeight={heightToUse}
               index={index}
             />
           );

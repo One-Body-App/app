@@ -32,6 +32,8 @@ end
 
 target 'onebody' do
   use_expo_modules!
+  # Mapbox iOS downloads can use RNMAPBOX_MAPS_DOWNLOAD_TOKEN from your shell env.
+  # Example: export RNMAPBOX_MAPS_DOWNLOAD_TOKEN=sk.***
 
   setup_permissions([
     # 'AppTrackingTransparency',
@@ -106,6 +108,7 @@ target 'onebody' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    $RNMapboxMaps.post_install(installer) if defined?($RNMapboxMaps) && $RNMapboxMaps
 
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
@@ -157,6 +160,7 @@ target 'onebody' do
 ]
 
   pre_install do |installer|
+    $RNMapboxMaps.pre_install(installer) if defined?($RNMapboxMaps) && $RNMapboxMaps
     installer.pod_targets.each do |pod|
       if static_frameworks.include?(pod.name)
         puts "Configuring #{pod.name} as static framework"

@@ -6,7 +6,6 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faBookmark } from '@fortawesome/free-solid-svg-icons';
-import { isObject } from 'lodash';
 
 import { styles } from './styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -20,8 +19,7 @@ import { spacing } from '@/src/styles/spacing';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 import SocialItem from '@/components/listItems/SocialItem';
 import ArticleItem from '@/components/listItems/ArticleItem';
-import { ArticleType, PostType, SavedPost } from '@/utils/types';
-import { PopupItem } from '@/components/listItems/OptionsModal';
+import { SavedPost } from '@/utils/types';
 import Button from '@/components/Button';
 import {
   MainDrawerParamsList,
@@ -49,8 +47,6 @@ function Saved({ navigation }: Props) {
   const authState = useSelector((state: RootState) => state.auth);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const dispatch = useDispatch();
-  const [currentPopupItem, setCurrentPopupItem] = useState<PopupItem>();
-  const [show, setShow] = useState<boolean>();
   const [isScrollEnable, setIsScrollEnable] = useState(true);
   const [filter, setFilter] = useState<ContentType>(ContentType.All);
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>(user?.savedPost ?? []);
@@ -144,31 +140,6 @@ function Saved({ navigation }: Props) {
       console.log('saga error -- ', e.toString());
     }
   };
-  const showModal = (item: ArticleType) => {
-    if (user) {
-      setCurrentPopupItem({
-        id: item.id,
-        postlink: item.link,
-        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
-        created: item.created,
-        image: item.image,
-        externalLink: item.link,
-        type: PostType.rss,
-
-        userData: {
-          twitterHandler: user?.influencerProfile?.twitterHandler,
-          instagramHandler: user?.influencerProfile?.instagramHandler,
-          name: user?.name,
-          username: user?.username,
-          _id: user?._id,
-          accountType: user?.accountType,
-          profileImage: user?.profileImage,
-        },
-      });
-    }
-    setShow(true);
-  };
-
   return (
     <SafeAreaView>
       {savedPosts.length > 0 ? (
@@ -310,12 +281,11 @@ function Saved({ navigation }: Props) {
                   userData: user,
                   reactions: [],
                 }}
-                imageSizeType="cover"
+                imageSizeType="contain"
                 blogPostTitleStyle={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                 }}
-                showModal={showModal}
               />
             );
           }

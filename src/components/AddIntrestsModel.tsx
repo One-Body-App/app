@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   mapImage: {
     width: '100%',
     alignSelf: 'center',
-    resizeMode: 'stretch',
+    resizeMode: 'contain',
     height: 300,
     // margin: 10,
     marginVertical: 10,

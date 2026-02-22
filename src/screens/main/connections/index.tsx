@@ -387,7 +387,7 @@ function Connected({ navigation }: Props) {
                 <TouchableOpacity
                   onPress={() => {
                     navigation.navigate('Main', {
-                      screen: 'ExploreTab',
+                      screen: 'SearchTab',
                       params: {
                         screen: 'UserProfile',
                         params: {

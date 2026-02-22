@@ -30,6 +30,16 @@ import {
   ViewStyle,
 } from 'react-native';
 import { TabView, SceneRendererProps, NavigationState } from 'react-native-tab-view';
+import { Canvas, Rect, Shader, Skia } from '@shopify/react-native-skia';
+import Toast from 'react-native-simple-toast';
+import Reanimated, {
+  SensorType,
+  useAnimatedSensor,
+  useDerivedValue,
+  useFrameCallback,
+  useSharedValue,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 
 import { useSelector } from 'react-redux';
 import {
@@ -55,7 +65,6 @@ import {
   ArrowDown2,
   Notification,
 } from 'iconsax-react-native';
-import { Menu } from 'iconoir-react-native';
 import { serialize } from 'object-to-formdata';
 import { useTabBarAnimation } from '@/navigator/TabBarAnimationContext';
 
@@ -75,11 +84,18 @@ import { getHeight } from '@/utils/ResponsiveFun';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
 import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
+import ProfileFill from '@/assets/svg/ProfileFill.svg';
 import WallComponent from '@/components/prayerWallComponent';
 import PrayersComponent from '@/components/prayerWallMyPrayersComponent';
 import TestimoniesComponent from '@/components/prayerWallTestimoniesComponent';
 import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
 import prayerTabStyles from '@/src/screens/main/prayer/styles';
+import {
+  flushFeedTelemetry,
+  setFeedTelemetryAuthToken,
+  trackFeedTelemetry,
+} from '@/services/feedTelemetry';
+import { HapticService } from '@/src/services/haptic';
 
 import {
   HomeStackParamsList,
@@ -103,6 +119,45 @@ const BRAND = {
   accentDark: '#12d2d9',
   primaryBase: '#41899f',
 };
+const PRAYER_LIQUID_HEIGHT = 36;
+const PRAYER_GLASS_PILL_HORIZONTAL_INSET = 0;
+const PRAYER_GLASS_PILL_HEIGHT = 36;
+const PRAYER_WATER_SHADER_SOURCE = `
+uniform float u_time;
+uniform float u_gravityX;
+uniform float u_gravityY;
+uniform float u_width;
+uniform float u_height;
+
+half4 main(vec2 p) {
+  float width = max(u_width, 1.0);
+  float height = max(u_height, 1.0);
+  vec2 uv = vec2(p.x / width, p.y / height);
+
+  float gx = clamp(u_gravityX, -1.4, 1.4) * 0.11;
+  float gy = clamp(u_gravityY, -1.4, 1.4) * 0.11;
+  vec2 sloshUv = uv + vec2(gx * (uv.y - 0.5), gy * (uv.x - 0.5));
+
+  float waveA = sin((sloshUv.x * 13.0) + (sloshUv.y * 5.0) + u_time * 2.1) * 0.028;
+  float waveB = cos((sloshUv.y * 16.0) - (sloshUv.x * 7.0) - u_time * 1.7) * 0.023;
+  float waveC = sin(((sloshUv.x + sloshUv.y) * 18.0) + u_time * 1.35) * 0.017;
+  float wave = waveA + waveB + waveC;
+
+  float depth = clamp((sloshUv.y - 0.5) * 0.65 + wave * 1.4 + 0.52, 0.0, 1.0);
+  vec3 shallow = vec3(0.29, 0.78, 0.82);
+  vec3 deep = vec3(0.08, 0.58, 0.65);
+  vec3 water = mix(shallow, deep, depth);
+
+  float highlightBand = smoothstep(0.16, 0.0, abs((sloshUv.y + wave * 0.9) - 0.31));
+  float caustic = smoothstep(0.35, 0.0, abs(sin((sloshUv.x * 22.0) - u_time * 2.7) * 0.08));
+  water += vec3(0.06, 0.08, 0.08) * highlightBand;
+  water += vec3(0.02, 0.03, 0.03) * caustic * 0.25;
+
+  float alpha = clamp(0.32 + wave * 0.3 + (1.0 - depth) * 0.1, 0.24, 0.52);
+  return half4(water, alpha);
+}
+`;
+const PRAYER_WATER_SHADER_EFFECT = Skia.RuntimeEffect.Make(PRAYER_WATER_SHADER_SOURCE);
 
 // --- TYPES ---
 type FeedPost = (ArticleType | SocialPost) & {
@@ -158,12 +213,92 @@ export enum FeedTypes {
   Watch = 'watch',
 }
 
+type TelemetryTrackedFeedType =
+  | FeedTypes.Connected
+  | FeedTypes.ForYou
+  | FeedTypes.Read
+  | FeedTypes.Watch;
+
+const isTelemetryTrackedFeedType = (feedType: FeedTypes): feedType is TelemetryTrackedFeedType =>
+  feedType === FeedTypes.Connected ||
+  feedType === FeedTypes.ForYou ||
+  feedType === FeedTypes.Read ||
+  feedType === FeedTypes.Watch;
+
+const normalizeTelemetryTags = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return [] as string[];
+  }
+
+  return value
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item;
+      }
+      if (item && typeof item === 'object') {
+        const candidate = item as { name?: string; _id?: string | number; id?: string | number };
+        return (
+          candidate.name ??
+          (candidate._id !== undefined ? String(candidate._id) : undefined) ??
+          (candidate.id !== undefined ? String(candidate.id) : undefined)
+        );
+      }
+      return undefined;
+    })
+    .filter((item): item is string => Boolean(item))
+    .slice(0, 32);
+};
+
+const getObjectField = (value: unknown, key: string): unknown => {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+  return (value as Record<string, unknown>)[key];
+};
+
 const getFeedPostId = (item: FeedPost) => {
   if (item.postId) return item.postId;
   if (item.id) return String(item.id);
   const fallbackId = '_id' in item ? item._id : undefined;
   return fallbackId ? String(fallbackId) : undefined;
 };
+
+const unwrapFeedItem = (entry: FeedEntry): FeedPost | PrayerPost | null => {
+  if ('type' in entry && entry.type === 'tasteBreaker') {
+    return entry.items?.[0] ?? null;
+  }
+  if ('type' in entry && entry.type === 'relatedContent') {
+    return entry.item ?? null;
+  }
+  return entry;
+};
+
+const normalizeFeedImage = (entry: FeedPost): FeedPost => {
+  if (typeof entry.image === 'string') {
+    return { ...entry, image: { url: entry.image } };
+  }
+  return entry;
+};
+
+const isPrayerPost = (entry: FeedPost | PrayerPost): entry is PrayerPost =>
+  'category' in entry && 'commentNumber' in entry;
+
+const isSocialPost = (entry: FeedPost): entry is SocialPost & { type?: 'social' } =>
+  entry.type === 'social';
+
+const isLikelySocialPost = (entry: FeedPost) => {
+  const entryId = entry.postId || ('_id' in entry ? entry._id : undefined);
+  return Boolean(
+    (entry.content ||
+      entry.body ||
+      (typeof entry.title === 'string' ? entry.title : entry.title?.a?.$text)) &&
+      entryId &&
+      entry.userData
+  );
+};
+
+const isRssPost = (entry: FeedPost): entry is ArticleType & { type?: 'posts' } =>
+  entry.type === 'posts';
 
 type FeedOptions = {
   type: FeedTypes;
@@ -189,20 +324,6 @@ const MAX_SUGGESTIONS_VISIBLE = 7;
 
 const isSuggestionsModuleItem = (entry: RenderFeedEntry): entry is SuggestionsModuleItem =>
   'type' in entry && entry.type === 'suggestionsModule';
-
-const isRssEntry = (entry: FeedEntry) => {
-  if (!entry) return false;
-  if ('type' in entry && entry.type === 'posts') return true;
-  if ('type' in entry && entry.type === 'relatedContent') {
-    return entry.item?.type === 'posts';
-  }
-  if ('type' in entry && entry.type === 'tasteBreaker') {
-    return entry.items?.[0]?.type === 'posts';
-  }
-  return false;
-};
-
-const filterOutRssEntries = (entries: FeedEntry[]) => entries.filter((entry) => !isRssEntry(entry));
 
 const extractPrayerEntries = (payload: unknown): PrayerPost[] => {
   if (Array.isArray(payload)) return payload as PrayerPost[];
@@ -266,16 +387,23 @@ const getRenderEntryIdentity = (entry: RenderFeedEntry): string | null => {
 };
 
 const mergeUniqueFeedEntries = (previous: FeedEntry[], incoming: FeedEntry[]) => {
-  const seen = new Set<string>();
-  const merged: FeedEntry[] = [];
+  const merged = [...previous];
+  const positions = new Map<string, number>();
 
-  [...previous, ...incoming].forEach((entry, index) => {
-    const identity = getFeedEntryIdentity(entry) ?? `fallback:${index}`;
-    if (seen.has(identity)) {
+  merged.forEach((entry, index) => {
+    positions.set(getFeedEntryIdentity(entry) ?? `fallback:prev:${index}`, index);
+  });
+
+  incoming.forEach((entry, index) => {
+    const identity = getFeedEntryIdentity(entry) ?? `fallback:next:${index}`;
+    const existingIndex = positions.get(identity);
+    if (existingIndex === undefined) {
+      positions.set(identity, merged.length);
+      merged.push(entry);
       return;
     }
-    seen.add(identity);
-    merged.push(entry);
+    // Prefer fresh incoming payload over stale existing copy.
+    merged[existingIndex] = entry;
   });
 
   return merged;
@@ -295,6 +423,114 @@ type PrayerWallRoute = {
   title: string;
 };
 
+type PrayerLiquidIndicatorProps = {
+  tabWidth: number;
+};
+
+function PrayerLiquidIndicator({ tabWidth }: PrayerLiquidIndicatorProps) {
+  const pillWidth = Math.max(56, tabWidth - PRAYER_GLASS_PILL_HORIZONTAL_INSET * 2);
+  const pillRadius = PRAYER_GLASS_PILL_HEIGHT / 2;
+  const gravitySensor = useAnimatedSensor(SensorType.GRAVITY, {
+    interval: 'auto',
+  });
+  const waterTime = useSharedValue(0);
+  const waterGravityX = useSharedValue(0);
+  const waterGravityY = useSharedValue(0);
+  const waterWidth = useSharedValue(pillWidth);
+  const waterHeight = useSharedValue(PRAYER_GLASS_PILL_HEIGHT);
+
+  useEffect(() => {
+    waterWidth.value = pillWidth;
+    waterHeight.value = PRAYER_GLASS_PILL_HEIGHT;
+  }, [pillWidth, waterHeight, waterWidth]);
+
+  useFrameCallback((frameInfo) => {
+    'worklet';
+
+    const elapsedMs = frameInfo.timeSinceFirstFrame ?? frameInfo.timestamp;
+    waterTime.value = elapsedMs / 1000;
+
+    const rawX = Math.max(-1.6, Math.min(1.6, gravitySensor.sensor.value.x || 0));
+    const rawY = Math.max(-1.6, Math.min(1.6, gravitySensor.sensor.value.y || 0));
+
+    // Low-pass keeps liquid inertia realistic and avoids jitter.
+    waterGravityX.value += (rawX - waterGravityX.value) * 0.06;
+    waterGravityY.value += (rawY - waterGravityY.value) * 0.06;
+  });
+
+  const waterUniforms = useDerivedValue(() => ({
+    u_time: waterTime.value,
+    u_gravityX: waterGravityX.value,
+    u_gravityY: waterGravityY.value,
+    u_width: waterWidth.value,
+    u_height: waterHeight.value,
+  }));
+
+  const sheenAnimatedStyle = useAnimatedStyle(() => {
+    const width = Math.max(waterWidth.value, 1);
+    const driftRange = width * 0.055;
+    const gravityShift = -waterGravityX.value * width * 0.05;
+    const idleDrift = Math.sin(waterTime.value * 1.35) * driftRange;
+    const sheenOpacity = 0.2 + Math.cos(waterTime.value * 0.95) * 0.05;
+    const skewX = -waterGravityY.value * 1.8 + Math.cos(waterTime.value * 1.15) * 0.45;
+
+    return {
+      opacity: Math.max(0.1, Math.min(0.28, sheenOpacity)),
+      transform: [{ translateX: gravityShift + idleDrift }, { skewX: `${skewX}deg` }],
+    };
+  });
+
+  return (
+    <>
+      {/* Shadow layer — separate from the clipped content so iOS shadow isn't cropped */}
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          borderRadius: pillRadius,
+          shadowColor: '#ffffff',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.12,
+          shadowRadius: 4,
+        }}
+      />
+      {/* Glass pill */}
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          borderRadius: pillRadius,
+          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          overflow: 'hidden',
+          elevation: 4,
+        }}
+      >
+        {/* Animated sheen keeps highlight physically tied to liquid movement */}
+        <Reanimated.View
+          style={{
+            position: 'absolute',
+            top: 4,
+            left: '20%',
+            width: '56%',
+            height: 8,
+            borderRadius: 999,
+            backgroundColor: 'rgba(255, 255, 255, 0.24)',
+          }}
+        >
+          <Reanimated.View
+            style={[
+              {
+                ...StyleSheet.absoluteFillObject,
+                borderRadius: 999,
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              },
+              sheenAnimatedStyle,
+            ]}
+          />
+        </Reanimated.View>
+      </View>
+    </>
+  );
+}
+
 function PrayerWallTabs({
   topInset,
   bottomInset,
@@ -312,6 +548,7 @@ function PrayerWallTabs({
     { key: 'Saved', title: 'Saved' },
     { key: 'MyPrayers', title: 'My Prayers' },
   ]);
+  const [tabBarWidth, setTabBarWidth] = useState(0);
   const { colors, dark } = useTheme();
   const [areSubtabsVisible, setAreSubtabsVisible] = useState(true);
   const [localWallRefreshSignal, setLocalWallRefreshSignal] = useState(0);
@@ -321,6 +558,11 @@ function PrayerWallTabs({
   const prayerScrollAccumulator = useRef(0);
   const areSubtabsVisibleRef = useRef(true);
   const prayerSubtabsVisibility = useRef(new Animated.Value(1)).current;
+  const pillLeftAnim = useRef(new Animated.Value(0)).current;
+  const pillWidthAnim = useRef(new Animated.Value(0)).current;
+  const pillScaleYAnim = useRef(new Animated.Value(1)).current;
+  const previousTabIndexRef = useRef(0);
+  const hasInitializedLiquidRef = useRef(false);
   const setSubtabsVisibility = useCallback(
     (visible: boolean) => {
       if (areSubtabsVisibleRef.current === visible) {
@@ -408,10 +650,174 @@ function PrayerWallTabs({
       refreshWallFeed();
     }
   }, [index, refreshWallFeed, wallRefreshSignal]);
+  const tabWidth = tabBarWidth > 0 ? tabBarWidth / routes.length : 0;
+
+  useEffect(() => {
+    if (tabWidth <= 0) {
+      return;
+    }
+    const toX = index * tabWidth;
+
+    if (!hasInitializedLiquidRef.current) {
+      pillLeftAnim.setValue(toX);
+      pillWidthAnim.setValue(tabWidth);
+      pillScaleYAnim.setValue(1);
+      hasInitializedLiquidRef.current = true;
+      previousTabIndexRef.current = index;
+      return;
+    }
+
+    const fromX = previousTabIndexRef.current * tabWidth;
+    previousTabIndexRef.current = index;
+    if (toX === fromX) {
+      return;
+    }
+
+    const movingRight = toX > fromX;
+    const naturalSpan = Math.abs(toX - fromX) + tabWidth;
+
+    let surgePhase: Animated.CompositeAnimation;
+
+    if (Platform.OS === 'ios') {
+      if (movingRight) {
+        // iOS right: clamp surge so right edge never exceeds tabBarWidth
+        const surgeWidth = Math.min(tabBarWidth - fromX, naturalSpan * 1.2);
+        surgePhase = Animated.parallel([
+          Animated.timing(pillWidthAnim, {
+            toValue: surgeWidth,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillScaleYAnim, {
+            toValue: 0.72,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+        ]);
+      } else {
+        // iOS left: keep right edge fixed at fromX + tabWidth (no right-side overflow)
+        const fixedWidth = fromX + tabWidth - toX;
+        surgePhase = Animated.parallel([
+          Animated.timing(pillLeftAnim, {
+            toValue: toX,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillWidthAnim, {
+            toValue: fixedWidth,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillScaleYAnim, {
+            toValue: 0.72,
+            duration: 200,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+        ]);
+      }
+    } else {
+      // Android: keep original 20% overshoot behavior (works correctly)
+      const spanWidth = naturalSpan * 1.2;
+      surgePhase = movingRight
+        ? // Right edge surges: expand width rightward, squish height
+          Animated.parallel([
+            Animated.timing(pillWidthAnim, {
+              toValue: spanWidth,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pillScaleYAnim, {
+              toValue: 0.72,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+          ])
+        : // Left edge surges: move left + expand width leftward, squish height
+          Animated.parallel([
+            Animated.timing(pillLeftAnim, {
+              toValue: toX,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pillWidthAnim, {
+              toValue: spanWidth,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pillScaleYAnim, {
+              toValue: 0.72,
+              duration: 200,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: false,
+            }),
+          ]);
+    }
+
+    // Snap phase: return to final position — water settling
+    // iOS: timing only (no spring) for left/width so right edge never clips overflow:hidden
+    // Android: spring bounce for full water-settle effect
+    const snapPhase =
+      Platform.OS === 'ios'
+        ? Animated.parallel([
+            Animated.timing(pillLeftAnim, {
+              toValue: toX,
+              duration: 200,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pillWidthAnim, {
+              toValue: tabWidth,
+              duration: 200,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.spring(pillScaleYAnim, {
+              toValue: 1,
+              tension: 95,
+              friction: 6,
+              useNativeDriver: false,
+            }),
+          ])
+        : Animated.parallel([
+            Animated.spring(pillLeftAnim, {
+              toValue: toX,
+              tension: 95,
+              friction: 6,
+              useNativeDriver: false,
+            }),
+            Animated.spring(pillWidthAnim, {
+              toValue: tabWidth,
+              tension: 95,
+              friction: 6,
+              useNativeDriver: false,
+            }),
+            Animated.spring(pillScaleYAnim, {
+              toValue: 1,
+              tension: 95,
+              friction: 6,
+              useNativeDriver: false,
+            }),
+          ]);
+
+    Animated.sequence([surgePhase, snapPhase]).start(({ finished }) => {
+      if (finished) {
+        HapticService.trigger('impactLight');
+      }
+    });
+  }, [index, pillLeftAnim, pillScaleYAnim, pillWidthAnim, tabBarWidth, tabWidth]);
 
   const prayerSubtabContainerHeight = prayerSubtabsVisibility.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 56],
+    outputRange: [0, 44],
     extrapolate: 'clamp',
   });
   const prayerSubtabTranslateY = prayerSubtabsVisibility.interpolate({
@@ -500,7 +906,34 @@ function PrayerWallTabs({
                 overflow: 'hidden',
               }}
             >
-              <View style={prayerTabStyles.tabBar}>
+              <View
+                style={[
+                  prayerTabStyles.tabBar,
+                  { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' },
+                ]}
+                onLayout={(event) => {
+                  const nextWidth = event.nativeEvent.layout.width;
+                  if (Math.abs(nextWidth - tabBarWidth) > 1) {
+                    setTabBarWidth(nextWidth);
+                  }
+                }}
+              >
+                {tabWidth > 0 ? (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      prayerTabStyles.liquidCanvasLayer,
+                      {
+                        left: pillLeftAnim,
+                        width: pillWidthAnim,
+                        height: PRAYER_LIQUID_HEIGHT,
+                        transform: [{ scaleY: pillScaleYAnim }],
+                      },
+                    ]}
+                  >
+                    <PrayerLiquidIndicator tabWidth={tabWidth} />
+                  </Animated.View>
+                ) : null}
                 {props.navigationState.routes.map((route, i) => {
                   const isActive = props.navigationState.index === i;
                   return (
@@ -526,7 +959,6 @@ function PrayerWallTabs({
                       >
                         {route.title}
                       </StyledText>
-                      {isActive ? <View style={prayerTabStyles.viewun} /> : null}
                     </TouchableOpacity>
                   );
                 })}
@@ -551,7 +983,6 @@ function PrayerWallTabs({
 
 // --- COMPONENT 1: Status Input ---
 function StatusInput({
-  userAvatar,
   dark,
   textColor,
   value,
@@ -560,7 +991,6 @@ function StatusInput({
   hasText,
   isSubmitting,
 }: {
-  userAvatar?: string;
   dark: boolean;
   textColor: string;
   value: string;
@@ -583,14 +1013,10 @@ function StatusInput({
 
   return (
     <View style={[styles.promptContainer, { backgroundColor: promptContainerColor }]}>
-      <Image
-        source={{ uri: userAvatar || 'https://via.placeholder.com/40' }}
-        style={styles.avatarSmall}
-      />
       <TextInput
         value={value}
         onChangeText={onChangeText}
-        placeholder="What's on your mind?"
+        placeholder="What's on your heart?"
         placeholderTextColor={BRAND.gray400}
         style={[styles.promptInput, { color: textColor }]}
         returnKeyType={hasText ? 'send' : 'default'}
@@ -612,13 +1038,14 @@ function StatusInput({
   );
 }
 
-const getSuggestionUserId = (user: User) => user.id || user._id || user.userId || '';
+const getSuggestionUserId = (user: User) => user._id || user.id || user.userId || '';
 
 type SuggestionsRailProps = {
   title: string;
   users: User[];
   dark: boolean;
   connectingUserIds: string[];
+  selectedUserIds: string[];
   onConnect: (userId: string) => void;
   onOpenProfile: (userId: string) => void;
   onSeeAll: () => void;
@@ -629,6 +1056,7 @@ function SuggestionsRail({
   users,
   dark,
   connectingUserIds,
+  selectedUserIds,
   onConnect,
   onOpenProfile,
   onSeeAll,
@@ -647,12 +1075,20 @@ function SuggestionsRail({
 
       <ScrollView
         horizontal
+        keyboardShouldPersistTaps="handled"
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.discoveryScrollContent}
       >
         {visibleUsers.map((user, index) => {
           const suggestionId = getSuggestionUserId(user);
           const isConnecting = connectingUserIds.includes(suggestionId);
+          const isSelected = selectedUserIds.includes(suggestionId);
+          let connectLabel = 'Connect';
+          if (isConnecting) {
+            connectLabel = 'Connecting...';
+          } else if (isSelected) {
+            connectLabel = 'Connected';
+          }
           return (
             <View
               key={`${title}-${suggestionId || user.username || index}`}
@@ -690,13 +1126,15 @@ function SuggestionsRail({
                 </StyledText>
               </TouchableOpacity>
               <TouchableOpacity
-                disabled={!suggestionId || isConnecting}
+                disabled={!suggestionId || isConnecting || isSelected}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 onPress={() => onConnect(suggestionId)}
-                style={[styles.discoveryConnectButton, isConnecting && { opacity: 0.6 }]}
+                style={[
+                  styles.discoveryConnectButton,
+                  (isConnecting || isSelected) && { opacity: 0.6 },
+                ]}
               >
-                <StyledText style={styles.discoveryConnectButtonText}>
-                  {isConnecting ? 'Connecting...' : 'Connect'}
-                </StyledText>
+                <StyledText style={styles.discoveryConnectButtonText}>{connectLabel}</StyledText>
               </TouchableOpacity>
             </View>
           );
@@ -793,7 +1231,7 @@ const ModernFeedCard = memo(({ item, onPress, onPressProfile, dark }: ModernCard
         {/* Media */}
         {mediaUrl && (
           <View style={styles.mediaContainer}>
-            <Image source={{ uri: mediaUrl }} resizeMode="cover" style={styles.mediaImage} />
+            <Image source={{ uri: mediaUrl }} resizeMode="contain" style={styles.mediaImage} />
           </View>
         )}
       </TouchableOpacity>
@@ -846,6 +1284,9 @@ function Home({ navigation, route }: Props) {
   const userProfile = useSelector(
     (state: RootState) => state.auth.getProfileData
   ) as UserProfile | null;
+  const userAvatar =
+    userProfile?.avatar ?? userProfile?.profile_image ?? userProfile?.profileImage ?? '';
+  const hasUserAvatar = Boolean(userAvatar);
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const headerHeightRef = useRef(0);
@@ -889,6 +1330,8 @@ function Home({ navigation, route }: Props) {
   const preserveFeedPositionOnNextFocusRef = useRef(false);
   const hasHandledInitialFocusRef = useRef(false);
   const feedTypeRef = useRef<FeedTypes>(feedOptions.type);
+  const handledRouteSelectedTabRef = useRef<FeedTypes | undefined>(route.params?.selectedTab);
+  const handledRouteRefreshTokenRef = useRef<number | undefined>(route.params?.refreshToken);
   const feedIntroHeaderOpacity = useRef(new Animated.Value(0)).current;
   const feedIntroHeaderTranslateY = useRef(new Animated.Value(-22)).current;
   const feedIntroHasStarted = useRef(false);
@@ -902,6 +1345,7 @@ function Home({ navigation, route }: Props) {
   const [peopleYouMayKnowUsers, setPeopleYouMayKnowUsers] = useState<User[]>([]);
   const [suggestedForYouUsers, setSuggestedForYouUsers] = useState<User[]>([]);
   const [connectingSuggestionIds, setConnectingSuggestionIds] = useState<string[]>([]);
+  const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([]);
   const [introAnimatedCardKeys, setIntroAnimatedCardKeys] = useState<string[]>([]);
   const [quickPostText, setQuickPostText] = useState('');
   const [isQuickPosting, setIsQuickPosting] = useState(false);
@@ -912,8 +1356,24 @@ function Home({ navigation, route }: Props) {
   const listRef = useRef<FlatList<RenderFeedEntry>>(null);
   const renderEntryFallbackKeyMapRef = useRef(new WeakMap<object, string>());
   const renderEntryFallbackKeySequenceRef = useRef(0);
+  const feedVisibleStartByKeyRef = useRef<Map<string, number>>(new Map());
+  const feedImpressionsByKeyRef = useRef<Set<string>>(new Set());
   useScrollToTop(listRef as any);
   const scrollIntent = useScrollIntentLock();
+
+  useEffect(() => {
+    setFeedTelemetryAuthToken(token || undefined);
+  }, [token]);
+
+  useEffect(() => {
+    const followingIds = (userProfile?.following ?? [])
+      .map((id) => String(id))
+      .filter((id) => id.length > 0);
+    if (followingIds.length < 1) {
+      return;
+    }
+    setSelectedSuggestionIds((previous) => Array.from(new Set([...previous, ...followingIds])));
+  }, [userProfile?.following]);
 
   const handleNewPrayerPress = useCallback(() => {
     navigation.navigate('PrayerWall', { screen: 'Prayer' } as any);
@@ -970,7 +1430,7 @@ function Home({ navigation, route }: Props) {
   const handleOpenExplore = useCallback(() => {
     navigation.navigate('MainRoot', {
       screen: 'Main',
-      params: { screen: 'ExploreTab', params: { screen: 'Explore' } },
+      params: { screen: 'SearchTab', params: { screen: 'Explore' } },
     });
   }, [navigation]);
 
@@ -982,7 +1442,7 @@ function Home({ navigation, route }: Props) {
       navigation.navigate('MainRoot', {
         screen: 'Main',
         params: {
-          screen: 'ExploreTab',
+          screen: 'SearchTab',
           params: {
             screen: 'UserProfile',
             params: { id },
@@ -1021,33 +1481,55 @@ function Home({ navigation, route }: Props) {
 
   const handleConnectSuggestion = useCallback(
     async (id: string) => {
-      if (!id || connectingSuggestionIds.includes(id)) {
+      if (!id) {
         return;
       }
-      setConnectingSuggestionIds((previous) => [...previous, id]);
+
+      let didStartRequest = false;
+      setConnectingSuggestionIds((previous) => {
+        if (previous.includes(id) || selectedSuggestionIds.includes(id)) {
+          return previous;
+        }
+        didStartRequest = true;
+        return [...previous, id];
+      });
+
+      if (!didStartRequest) {
+        return;
+      }
+
+      setSelectedSuggestionIds((previous) =>
+        previous.includes(id) ? previous : [...previous, id]
+      );
       try {
         const res = await ApiCall({
           route: `user/subscribe/${id}`,
           token,
           verb: 'patch',
         });
-        if (res?.status === 200) {
-          setPeopleYouMayKnowUsers((previous) =>
-            previous.filter((candidate) => getSuggestionUserId(candidate) !== id)
+
+        if (res?.status !== 200) {
+          setSelectedSuggestionIds((previous) =>
+            previous.filter((candidateId) => candidateId !== id)
           );
-          setSuggestedForYouUsers((previous) =>
-            previous.filter((candidate) => getSuggestionUserId(candidate) !== id)
-          );
+          const message =
+            typeof (res?.response as { message?: unknown })?.message === 'string'
+              ? ((res?.response as { message: string }).message ?? '').trim()
+              : '';
+          Toast.show(message || 'Error following, please try again later.', Toast.LONG);
         }
       } catch (error) {
-        // no-op: UI state already protects against duplicate taps
+        setSelectedSuggestionIds((previous) =>
+          previous.filter((candidateId) => candidateId !== id)
+        );
+        Toast.show('Error following, please try again later.', Toast.LONG);
       } finally {
         setConnectingSuggestionIds((previous) =>
           previous.filter((candidateId) => candidateId !== id)
         );
       }
     },
-    [connectingSuggestionIds, token]
+    [selectedSuggestionIds, token]
   );
 
   const getFeedEntryKey = useCallback((item: RenderFeedEntry, index: number) => {
@@ -1162,8 +1644,7 @@ function Home({ navigation, route }: Props) {
           if (requestSequence !== feedRequestSequenceRef.current) {
             return;
           }
-          const sanitizedResponse =
-            type === FeedTypes.Connected ? filterOutRssEntries(response as FeedEntry[]) : response;
+          const sanitizedResponse = response;
           if (pageNumber === 1) {
             setIsEndOfList(sanitizedResponse.length < 1);
             setFeedData(mergeUniqueFeedEntries([], sanitizedResponse));
@@ -1307,6 +1788,47 @@ function Home({ navigation, route }: Props) {
     feedTypeRef.current = feedOptions.type;
   }, [feedOptions.type]);
 
+  useEffect(() => {
+    const routeSelectedTab = route.params?.selectedTab;
+    const routeRefreshToken = route.params?.refreshToken;
+
+    const shouldHandleSelectedTab =
+      routeSelectedTab !== undefined && routeSelectedTab !== handledRouteSelectedTabRef.current;
+    const shouldHandleRefresh =
+      typeof routeRefreshToken === 'number' &&
+      routeRefreshToken !== handledRouteRefreshTokenRef.current;
+
+    if (!shouldHandleSelectedTab && !shouldHandleRefresh) {
+      return;
+    }
+
+    if (shouldHandleSelectedTab) {
+      handledRouteSelectedTabRef.current = routeSelectedTab;
+    }
+
+    if (shouldHandleRefresh) {
+      handledRouteRefreshTokenRef.current = routeRefreshToken;
+    }
+
+    const targetFeedType = routeSelectedTab ?? feedTypeRef.current;
+    if (shouldHandleSelectedTab && targetFeedType !== feedTypeRef.current) {
+      reloadFeed(targetFeedType);
+      return;
+    }
+
+    if (shouldHandleRefresh) {
+      setFeedOptions((previous) =>
+        previous.type === targetFeedType && previous.page === 1
+          ? previous
+          : { type: targetFeedType, page: 1 }
+      );
+      setFeedRefreshToken((previous) => previous + 1);
+      if (targetFeedType !== FeedTypes.Pray) {
+        scrollFeedToTop();
+      }
+    }
+  }, [reloadFeed, route.params?.refreshToken, route.params?.selectedTab, scrollFeedToTop]);
+
   const renderTabs = useCallback(
     (containerStyle?: StyleProp<ViewStyle>) => (
       <View style={[styles.tabContainer, containerStyle]}>
@@ -1332,18 +1854,22 @@ function Home({ navigation, route }: Props) {
                   else handleTabChange(value);
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
-                    {feedLabel}
-                  </StyledText>
-                  {isActive && (
-                    <ArrowDown2
-                      size={14}
-                      color={BRAND.primaryDark}
-                      style={{ marginLeft: 4 }}
-                      variant="Bold"
-                    />
-                  )}
+                <View
+                  style={[styles.tabLabelUnderline, isActive && styles.tabLabelUnderlineSelected]}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
+                      {feedLabel}
+                    </StyledText>
+                    {isActive && (
+                      <ArrowDown2
+                        size={14}
+                        color={BRAND.primaryDark}
+                        style={{ marginLeft: 4 }}
+                        variant="Bold"
+                      />
+                    )}
+                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -1355,9 +1881,13 @@ function Home({ navigation, route }: Props) {
               style={[styles.tabItem, isActive && styles.tabItemSelected]}
               onPress={() => handleTabChange(value)}
             >
-              <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
-                {label}
-              </StyledText>
+              <View
+                style={[styles.tabLabelUnderline, isActive && styles.tabLabelUnderlineSelected]}
+              >
+                <StyledText style={[styles.tabText, isActive && styles.tabTextSelected]}>
+                  {label}
+                </StyledText>
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -1401,7 +1931,30 @@ function Home({ navigation, route }: Props) {
               onPress={handleOpenDrawer}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Menu color={dark ? BRAND.gray100 : BRAND.primaryDark} height={24} width={24} />
+              {hasUserAvatar ? (
+                <Image
+                  source={{ uri: userAvatar }}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    backgroundColor: BRAND.gray200,
+                  }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    backgroundColor: '#126b87',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ProfileFill width={22} height={22} />
+                </View>
+              )}
             </TouchableOpacity>
           </View>
           <View
@@ -1465,11 +2018,13 @@ function Home({ navigation, route }: Props) {
       handleHeaderLogoPress,
       handleNotifications,
       handleOpenDrawer,
+      hasUserAvatar,
       headerRowHeight,
       headerSideWidth,
       insets.top,
       renderTabs,
       tabContainerGlassStyle,
+      userAvatar,
     ]
   );
 
@@ -1509,7 +2064,30 @@ function Home({ navigation, route }: Props) {
               onPress={handleOpenDrawer}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Menu color={dark ? BRAND.gray100 : BRAND.primaryDark} height={24} width={24} />
+              {hasUserAvatar ? (
+                <Image
+                  source={{ uri: userAvatar }}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    backgroundColor: BRAND.gray200,
+                  }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    backgroundColor: '#126b87',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ProfileFill width={22} height={22} />
+                </View>
+              )}
             </TouchableOpacity>
           </View>
           <View
@@ -1574,11 +2152,13 @@ function Home({ navigation, route }: Props) {
     handleHeaderLogoPress,
     handleNotifications,
     handleOpenDrawer,
+    hasUserAvatar,
     headerRowHeight,
     headerSideWidth,
     insets.top,
     renderHeader,
     renderTabs,
+    userAvatar,
   ]);
 
   useLayoutEffect(() => {
@@ -1586,215 +2166,394 @@ function Home({ navigation, route }: Props) {
   }, [stackNavigation]);
 
   // --- NAVIGATION HANDLERS ---
-  const navigateToDetail = (item: FeedPost) => {
-    preserveFeedPositionOnNextFocus();
-    const postId = getFeedPostId(item);
-    const isSocialLike = Boolean(
-      postId &&
-        (item.type === 'social' ||
-          ('userData' in item && item.userData) ||
-          item.mediaUrl ||
-          (Array.isArray(item.images) && item.images.length > 0))
-    );
+  const navigateToDetail = useCallback(
+    (item: FeedPost) => {
+      preserveFeedPositionOnNextFocus();
+      const postId = getFeedPostId(item);
+      const isSocialLike = Boolean(
+        postId &&
+          (item.type === 'social' ||
+            ('userData' in item && item.userData) ||
+            item.mediaUrl ||
+            (Array.isArray(item.images) && item.images.length > 0))
+      );
 
-    if (isSocialLike && postId) {
-      navigation.navigate('SinglePost', {
-        postId,
-      } as any);
-      return;
+      if (isSocialLike && postId) {
+        navigation.navigate('SinglePost', {
+          postId,
+        } as any);
+        return;
+      }
+
+      if (item.id) {
+        navigation.navigate('SingleRss', {
+          postId: item.id,
+        } as any);
+      }
+    },
+    [navigation, preserveFeedPositionOnNextFocus]
+  );
+
+  const navigateToProfile = useCallback(() => {}, []);
+
+  const getTelemetryFromRenderEntry = useCallback((entry: RenderFeedEntry) => {
+    if (isSuggestionsModuleItem(entry)) {
+      return null;
     }
 
-    if (item.id) {
-      navigation.navigate('SingleRss', {
-        postId: item.id,
-      } as any);
-    }
-  };
-
-  const navigateToProfile = () => {};
-
-  const unwrapFeedItem = (entry: FeedEntry): FeedPost | PrayerPost | null => {
+    let unwrapped: FeedPost | PrayerPost | null;
     if ('type' in entry && entry.type === 'tasteBreaker') {
-      return entry.items?.[0] ?? null;
+      unwrapped = entry.items?.[0] ?? null;
+    } else if ('type' in entry && entry.type === 'relatedContent') {
+      unwrapped = entry.item ?? null;
+    } else {
+      unwrapped = entry;
     }
-    if ('type' in entry && entry.type === 'relatedContent') {
-      return entry.item ?? null;
+
+    if (!unwrapped || ('category' in unwrapped && 'commentNumber' in unwrapped)) {
+      return null;
     }
-    return entry;
-  };
 
-  const normalizeFeedImage = (entry: FeedPost): FeedPost => {
-    if (typeof entry.image === 'string') {
-      return { ...entry, image: { url: entry.image } };
+    const normalized =
+      typeof unwrapped.image === 'string'
+        ? { ...unwrapped, image: { url: unwrapped.image } }
+        : unwrapped;
+    const postId = getFeedPostId(normalized);
+    if (!postId) {
+      return null;
     }
-    return entry;
-  };
 
-  const isPrayerPost = (entry: FeedPost | PrayerPost): entry is PrayerPost =>
-    'category' in entry && 'commentNumber' in entry;
-
-  const isSocialPost = (entry: FeedPost): entry is SocialPost & { type?: 'social' } =>
-    entry.type === 'social';
-
-  const isLikelySocialPost = (entry: FeedPost) => {
-    const entryId = entry.postId || ('_id' in entry ? entry._id : undefined);
-    return Boolean(
-      (entry.content ||
-        entry.body ||
-        (typeof entry.title === 'string' ? entry.title : entry.title?.a?.$text)) &&
-        entryId &&
-        entry.userData
+    const normalizedContentTypeField = getObjectField(normalized, 'contentType');
+    const normalizedId = normalized.postId || ('_id' in normalized ? normalized._id : undefined);
+    const looksSocial = Boolean(
+      (normalized.content ||
+        normalized.body ||
+        (typeof normalized.title === 'string' ? normalized.title : normalized.title?.a?.$text)) &&
+        normalizedId &&
+        (normalized.mediaUrl ||
+          (Array.isArray(normalized.images) && normalized.images.length > 0) ||
+          ('userData' in normalized && normalized.userData))
     );
-  };
 
-  const isRssPost = (entry: FeedPost): entry is ArticleType & { type?: 'posts' } =>
-    entry.type === 'posts';
+    const postType =
+      normalized.type ??
+      (looksSocial ? 'social' : undefined) ??
+      (typeof normalizedContentTypeField === 'string' ? normalizedContentTypeField : undefined) ??
+      'post';
+
+    let contentType: string | undefined;
+    if (typeof normalized.type === 'string') {
+      contentType = normalized.type;
+    } else if (typeof normalizedContentTypeField === 'string') {
+      contentType = normalizedContentTypeField;
+    }
+
+    return {
+      postId,
+      postType,
+      contentType,
+      tags: normalizeTelemetryTags(getObjectField(normalized, 'tags')),
+    };
+  }, []);
 
   // --- RENDER ITEM LOGIC (Fixes "Data not generating") ---
-  const renderFeedItem: ListRenderItem<RenderFeedEntry> = ({ item, index }) => {
-    if (isSuggestionsModuleItem(item)) {
-      const isPeopleModule = item.moduleType === 'peopleYouMayKnow';
-      return (
-        <SuggestionsRail
-          title={isPeopleModule ? 'People You May Know' : 'Suggested For You'}
-          users={isPeopleModule ? peopleYouMayKnowUsers : suggestedForYouUsers}
-          dark={dark}
-          connectingUserIds={connectingSuggestionIds}
-          onConnect={handleConnectSuggestion}
-          onOpenProfile={handleOpenSuggestedProfile}
-          onSeeAll={handleOpenExplore}
-        />
-      );
-    }
-
-    const unwrapped = unwrapFeedItem(item);
-    if (!unwrapped) return null;
-    let renderedItem: JSX.Element | null = null;
-
-    if (isPrayerPost(unwrapped)) {
-      if (feedOptions.type !== FeedTypes.Pray) {
-        return null;
+  const renderFeedItem = useCallback<ListRenderItem<RenderFeedEntry>>(
+    ({ item, index }) => {
+      if (isSuggestionsModuleItem(item)) {
+        const isPeopleModule = item.moduleType === 'peopleYouMayKnow';
+        return (
+          <SuggestionsRail
+            title={isPeopleModule ? 'People You May Know' : 'Suggested For You'}
+            users={isPeopleModule ? peopleYouMayKnowUsers : suggestedForYouUsers}
+            dark={dark}
+            connectingUserIds={connectingSuggestionIds}
+            selectedUserIds={selectedSuggestionIds}
+            onConnect={handleConnectSuggestion}
+            onOpenProfile={handleOpenSuggestedProfile}
+            onSeeAll={handleOpenExplore}
+          />
+        );
       }
-      renderedItem = (
-        <PrayerItem
-          item={unwrapped}
-          removePost={() => undefined}
-          onCommentsPress={() => {
-            const postId = unwrapped.postId ?? unwrapped.id;
-            if (!postId) {
-              return;
-            }
-            navigation.navigate('PrayerWall', {
-              screen: 'Single',
-              params: { postId },
-            } as any);
-          }}
-          parentRefreshContent={() => {
-            getFeedData(feedOptions.type, 1);
-          }}
-          fromSavedPosts={false}
-        />
-      );
-    } else {
-      const normalizedWithImage = normalizeFeedImage(unwrapped);
 
-      if (isSocialPost(normalizedWithImage) || isLikelySocialPost(normalizedWithImage)) {
-        const socialBody = 'body' in normalizedWithImage ? normalizedWithImage.body : undefined;
-        const socialItem = {
-          ...normalizedWithImage,
-          type: 'social',
-          content:
-            normalizedWithImage.content ||
-            socialBody ||
-            (typeof normalizedWithImage.title === 'string'
-              ? normalizedWithImage.title
-              : normalizedWithImage.title?.a?.$text) ||
-            '',
-          reactions: normalizedWithImage.reactions ?? [],
-        } as SocialPost & { type?: 'social' };
+      const unwrapped = unwrapFeedItem(item);
+      if (!unwrapped) return null;
+      let renderedItem: JSX.Element | null = null;
+
+      if (isPrayerPost(unwrapped)) {
+        if (feedOptions.type !== FeedTypes.Pray) {
+          return null;
+        }
         renderedItem = (
-          <SocialItem
-            itemData={socialItem}
+          <PrayerItem
+            item={unwrapped}
+            originFeedType={feedOptions.type}
             removePost={() => undefined}
+            onCommentsPress={() => {
+              const postId = unwrapped.postId ?? unwrapped.id;
+              if (!postId) {
+                return;
+              }
+              navigation.navigate('PrayerWall', {
+                screen: 'Single',
+                params: { postId },
+              } as any);
+            }}
             parentRefreshContent={() => {
               getFeedData(feedOptions.type, 1);
             }}
             fromSavedPosts={false}
-            onCommentsPress={() => {
-              preserveFeedPositionOnNextFocus();
-              const postId = socialItem.postId ?? socialItem.id ?? socialItem._id;
-              if (postId) {
-                navigation.navigate('SinglePost', { postId } as any);
-              }
-            }}
-          />
-        );
-      } else if (isRssPost(normalizedWithImage)) {
-        const rssItem: ArticleType = {
-          ...normalizedWithImage,
-          image:
-            typeof normalizedWithImage.image === 'string'
-              ? { url: normalizedWithImage.image }
-              : normalizedWithImage.image,
-          reactions: normalizedWithImage.reactions ?? [],
-        };
-        renderedItem = (
-          <ArticleItem
-            item={rssItem}
-            imageSizeType="cover"
-            showModal={() => undefined}
-            onCommentsPress={() => {
-              preserveFeedPositionOnNextFocus();
-              if (rssItem.id) {
-                navigation.navigate('SingleRss', { postId: rssItem.id } as any);
-              }
-            }}
           />
         );
       } else {
-        renderedItem = (
-          <ModernFeedCard
-            item={normalizedWithImage}
-            onPress={() => navigateToDetail(normalizedWithImage)}
-            onPressProfile={navigateToProfile}
-            dark={dark}
-          />
-        );
+        const normalizedWithImage = normalizeFeedImage(unwrapped);
+
+        if (isSocialPost(normalizedWithImage) || isLikelySocialPost(normalizedWithImage)) {
+          const socialBody = 'body' in normalizedWithImage ? normalizedWithImage.body : undefined;
+          const socialItem = {
+            ...normalizedWithImage,
+            type: 'social',
+            content:
+              normalizedWithImage.content ||
+              socialBody ||
+              (typeof normalizedWithImage.title === 'string'
+                ? normalizedWithImage.title
+                : normalizedWithImage.title?.a?.$text) ||
+              '',
+            reactions: normalizedWithImage.reactions ?? [],
+          } as SocialPost & { type?: 'social' };
+          renderedItem = (
+            <SocialItem
+              itemData={socialItem}
+              originFeedType={feedOptions.type}
+              removePost={() => undefined}
+              parentRefreshContent={() => {
+                getFeedData(feedOptions.type, 1);
+              }}
+              fromSavedPosts={false}
+              onTelemetryEvent={(eventType, metadata) => {
+                const postId = socialItem.postId ?? socialItem.id ?? socialItem._id;
+                if (!postId || !isTelemetryTrackedFeedType(feedOptions.type)) {
+                  return;
+                }
+                trackFeedTelemetry({
+                  eventType,
+                  feedType: feedOptions.type,
+                  postId: String(postId),
+                  postType: 'social',
+                  contentType: socialItem.type ?? 'social',
+                  tags: normalizeTelemetryTags(getObjectField(socialItem, 'tags')),
+                  position: index,
+                  source: 'home_feed',
+                  metadata,
+                });
+              }}
+              onCommentsPress={() => {
+                preserveFeedPositionOnNextFocus();
+                const postId = socialItem.postId ?? socialItem.id ?? socialItem._id;
+                if (postId) {
+                  if (isTelemetryTrackedFeedType(feedOptions.type)) {
+                    trackFeedTelemetry({
+                      eventType: 'open_post',
+                      feedType: feedOptions.type,
+                      postId: String(postId),
+                      postType: 'social',
+                      contentType: socialItem.type ?? 'social',
+                      position: index,
+                      source: 'home_feed',
+                    });
+                  }
+                  navigation.navigate('SinglePost', { postId } as any);
+                }
+              }}
+              onOpenVideoPress={({ postId, playBackId, itemData }) => {
+                if (!playBackId) {
+                  return;
+                }
+                preserveFeedPositionOnNextFocus();
+                if (postId && isTelemetryTrackedFeedType(feedOptions.type)) {
+                  trackFeedTelemetry({
+                    eventType: 'open_watch',
+                    feedType: feedOptions.type,
+                    postId: String(postId),
+                    postType: 'social',
+                    contentType: socialItem.type ?? 'social',
+                    position: index,
+                    source: 'home_feed',
+                  });
+                }
+                navigation.navigate('MainRoot', {
+                  screen: 'Main',
+                  params: {
+                    screen: 'HomeTab',
+                    params: {
+                      screen: 'WatchPortal',
+                      params: {
+                        initialPostId: postId ? String(postId) : undefined,
+                        initialPlaybackId: playBackId,
+                        initialWatchPost: {
+                          ...itemData,
+                          playBackId,
+                          postId: postId ? String(postId) : itemData.postId,
+                        },
+                      },
+                    },
+                  },
+                } as any);
+              }}
+            />
+          );
+        } else if (isRssPost(normalizedWithImage)) {
+          const rssItem: ArticleType = {
+            ...normalizedWithImage,
+            image:
+              typeof normalizedWithImage.image === 'string'
+                ? { url: normalizedWithImage.image }
+                : normalizedWithImage.image,
+            reactions: normalizedWithImage.reactions ?? [],
+          };
+          let rssContentType = 'posts';
+          const rssTypeField = getObjectField(rssItem, 'type');
+          const rssContentTypeField = getObjectField(rssItem, 'contentType');
+          if (typeof rssTypeField === 'string') {
+            rssContentType = rssTypeField;
+          } else if (typeof rssContentTypeField === 'string') {
+            rssContentType = rssContentTypeField;
+          }
+          renderedItem = (
+            <ArticleItem
+              item={rssItem}
+              originFeedType={feedOptions.type}
+              imageSizeType="contain"
+              onTelemetryEvent={(eventType, metadata) => {
+                if (!rssItem.id || !isTelemetryTrackedFeedType(feedOptions.type)) {
+                  return;
+                }
+                trackFeedTelemetry({
+                  eventType,
+                  feedType: feedOptions.type,
+                  postId: String(rssItem.id),
+                  postType: 'rss',
+                  contentType: rssContentType,
+                  tags: normalizeTelemetryTags(getObjectField(rssItem, 'tags')),
+                  position: index,
+                  source: 'home_feed',
+                  metadata,
+                });
+              }}
+              onPress={() => {
+                if (!rssItem.id || !isTelemetryTrackedFeedType(feedOptions.type)) {
+                  return;
+                }
+                trackFeedTelemetry({
+                  eventType: 'open_article',
+                  feedType: feedOptions.type,
+                  postId: String(rssItem.id),
+                  postType: 'rss',
+                  contentType: rssContentType,
+                  position: index,
+                  source: 'home_feed',
+                });
+              }}
+              onCommentsPress={() => {
+                preserveFeedPositionOnNextFocus();
+                if (rssItem.id) {
+                  if (isTelemetryTrackedFeedType(feedOptions.type)) {
+                    trackFeedTelemetry({
+                      eventType: 'open_comments',
+                      feedType: feedOptions.type,
+                      postId: String(rssItem.id),
+                      postType: 'rss',
+                      contentType: rssContentType,
+                      position: index,
+                      source: 'home_feed',
+                    });
+                  }
+                  navigation.navigate('SingleRss', { postId: rssItem.id } as any);
+                }
+              }}
+            />
+          );
+        } else {
+          renderedItem = (
+            <ModernFeedCard
+              item={normalizedWithImage}
+              onPress={() => {
+                const postId = getFeedPostId(normalizedWithImage);
+                if (postId && isTelemetryTrackedFeedType(feedOptions.type)) {
+                  trackFeedTelemetry({
+                    eventType: 'open_post',
+                    feedType: feedOptions.type,
+                    postId,
+                    postType: normalizedWithImage.type ?? 'post',
+                    contentType:
+                      typeof getObjectField(normalizedWithImage, 'contentType') === 'string'
+                        ? (getObjectField(normalizedWithImage, 'contentType') as string)
+                        : normalizedWithImage.type,
+                    tags: normalizeTelemetryTags(getObjectField(normalizedWithImage, 'tags')),
+                    position: index,
+                    source: 'home_feed',
+                  });
+                }
+                navigateToDetail(normalizedWithImage);
+              }}
+              onPressProfile={navigateToProfile}
+              dark={dark}
+            />
+          );
+        }
       }
-    }
 
-    if (!renderedItem) {
-      return null;
-    }
+      if (!renderedItem) {
+        return null;
+      }
 
-    const itemKey = getFeedEntryKey(item, index);
-    if (!introAnimatedCardKeySet.has(itemKey)) {
-      return renderedItem;
-    }
+      const itemKey = getFeedEntryKey(item, index);
+      if (!introAnimatedCardKeySet.has(itemKey)) {
+        return renderedItem;
+      }
 
-    const animatedValue = feedIntroCardValues.current[itemKey];
-    if (!animatedValue) {
-      return renderedItem;
-    }
+      const animatedValue = feedIntroCardValues.current[itemKey];
+      if (!animatedValue) {
+        return renderedItem;
+      }
 
-    return (
-      <Animated.View
-        style={{
-          opacity: animatedValue,
-          transform: [
-            {
-              translateY: animatedValue.interpolate({
-                inputRange: [0, 1],
-                outputRange: [18, 0],
-              }),
-            },
-          ],
-        }}
-      >
-        {renderedItem}
-      </Animated.View>
-    );
-  };
+      return (
+        <Animated.View
+          style={{
+            opacity: animatedValue,
+            transform: [
+              {
+                translateY: animatedValue.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [18, 0],
+                }),
+              },
+            ],
+          }}
+        >
+          {renderedItem}
+        </Animated.View>
+      );
+    },
+    [
+      connectingSuggestionIds,
+      dark,
+      feedOptions.type,
+      getFeedData,
+      getFeedEntryKey,
+      handleConnectSuggestion,
+      handleOpenExplore,
+      handleOpenSuggestedProfile,
+      introAnimatedCardKeySet,
+      navigation,
+      navigateToDetail,
+      navigateToProfile,
+      peopleYouMayKnowUsers,
+      preserveFeedPositionOnNextFocus,
+      selectedSuggestionIds,
+      suggestedForYouUsers,
+    ]
+  );
 
   const emptyFeedState = useMemo(() => {
     if (isLoading) return null;
@@ -1968,17 +2727,119 @@ function Home({ navigation, route }: Props) {
   );
 
   const handleViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    ({ viewableItems, changed }: { viewableItems: ViewToken[]; changed?: ViewToken[] }) => {
       latestVisibleItems.current = viewableItems;
       maybeStartFeedCardIntro(viewableItems);
+
+      if (!isTelemetryTrackedFeedType(feedOptions.type)) {
+        return;
+      }
+      const telemetryFeedType = feedOptions.type;
+
+      const relevantTokens = changed ?? viewableItems;
+      if (!Array.isArray(relevantTokens) || relevantTokens.length < 1) {
+        return;
+      }
+
+      relevantTokens.forEach((tokenItem) => {
+        const telemetryPayload = getTelemetryFromRenderEntry(tokenItem.item as RenderFeedEntry);
+        if (!telemetryPayload) {
+          return;
+        }
+
+        const telemetryKey = `${telemetryFeedType}:${telemetryPayload.postId}`;
+        if (tokenItem.isViewable) {
+          if (!feedVisibleStartByKeyRef.current.has(telemetryKey)) {
+            feedVisibleStartByKeyRef.current.set(telemetryKey, Date.now());
+          }
+          if (!feedImpressionsByKeyRef.current.has(telemetryKey)) {
+            feedImpressionsByKeyRef.current.add(telemetryKey);
+            trackFeedTelemetry({
+              eventType: 'impression',
+              feedType: telemetryFeedType,
+              postId: telemetryPayload.postId,
+              postType: telemetryPayload.postType,
+              contentType: telemetryPayload.contentType,
+              tags: telemetryPayload.tags,
+              position:
+                typeof tokenItem.index === 'number' && tokenItem.index >= 0
+                  ? tokenItem.index
+                  : undefined,
+              source: 'home_feed',
+            });
+          }
+          return;
+        }
+
+        const startedAt = feedVisibleStartByKeyRef.current.get(telemetryKey);
+        if (!startedAt) {
+          return;
+        }
+        feedVisibleStartByKeyRef.current.delete(telemetryKey);
+        const dwellTimeMs = Date.now() - startedAt;
+        if (dwellTimeMs < 1200) {
+          return;
+        }
+        trackFeedTelemetry({
+          eventType: 'dwell',
+          feedType: telemetryFeedType,
+          postId: telemetryPayload.postId,
+          postType: telemetryPayload.postType,
+          contentType: telemetryPayload.contentType,
+          tags: telemetryPayload.tags,
+          durationMs: dwellTimeMs,
+          position:
+            typeof tokenItem.index === 'number' && tokenItem.index >= 0
+              ? tokenItem.index
+              : undefined,
+          source: 'home_feed',
+        });
+      });
     },
-    [maybeStartFeedCardIntro]
+    [feedOptions.type, getTelemetryFromRenderEntry, maybeStartFeedCardIntro]
   );
 
   const feedViewabilityConfig = useRef({
     minimumViewTime: 40,
     itemVisiblePercentThreshold: 55,
   }).current;
+
+  useEffect(() => {
+    const visibleStartByKey = feedVisibleStartByKeyRef.current;
+    const impressionsByKey = feedImpressionsByKeyRef.current;
+
+    return () => {
+      if (!isTelemetryTrackedFeedType(feedOptions.type)) {
+        return;
+      }
+      const telemetryFeedType = feedOptions.type;
+
+      visibleStartByKey.forEach((startedAt, telemetryKey) => {
+        if (!telemetryKey.startsWith(`${telemetryFeedType}:`)) {
+          return;
+        }
+
+        const postId = telemetryKey.split(':')[1];
+        const dwellTimeMs = Date.now() - startedAt;
+        if (!postId || dwellTimeMs < 1200) {
+          return;
+        }
+
+        trackFeedTelemetry({
+          eventType: 'dwell',
+          feedType: telemetryFeedType,
+          postId,
+          durationMs: dwellTimeMs,
+          source: 'home_feed',
+          metadata: { reason: 'feed_cleanup' },
+        });
+      });
+
+      visibleStartByKey.clear();
+      impressionsByKey.clear();
+      flushFeedTelemetry(token || undefined).catch(() => undefined);
+    };
+  }, [feedOptions.type, token]);
 
   useEffect(() => {
     if (feedOptions.type === FeedTypes.Pray) {
@@ -2109,6 +2970,84 @@ function Home({ navigation, route }: Props) {
     ])
   );
 
+  const handleFeedRefresh = useCallback(() => {
+    if (feedOptions.type === FeedTypes.Pray || isRefreshing) {
+      return;
+    }
+
+    isPaginatingRef.current = false;
+    setIsRefreshing(true);
+    setIsEndOfList(false);
+    setFeedOptions((previous) => (previous.page === 1 ? previous : { ...previous, page: 1 }));
+    setFeedRefreshToken((previous) => previous + 1);
+  }, [feedOptions.type, isRefreshing]);
+
+  const handleFeedEndReached = useCallback(() => {
+    if (
+      feedOptions.type !== FeedTypes.Pray &&
+      !isLoading &&
+      !isLoadingMore &&
+      !isRefreshing &&
+      !isEndOfList &&
+      feedData.length > 0 &&
+      !isPaginatingRef.current
+    ) {
+      isPaginatingRef.current = true;
+      setIsLoadingMore(true);
+      setFeedOptions((prev) => ({ ...prev, page: prev.page + 1 }));
+    }
+  }, [feedData.length, feedOptions.type, isEndOfList, isLoading, isLoadingMore, isRefreshing]);
+
+  const listContentContainerStyle = useMemo(
+    () => ({
+      paddingTop: headerInset,
+      paddingBottom: footerHeight + spacing.x16,
+    }),
+    [footerHeight, headerInset]
+  );
+
+  const feedListHeaderComponent = useMemo(() => {
+    if (feedOptions.type !== FeedTypes.Connected && feedOptions.type !== FeedTypes.ForYou) {
+      return null;
+    }
+
+    return (
+      <StatusInput
+        dark={dark}
+        textColor={colors.text}
+        value={quickPostText}
+        onChangeText={setQuickPostText}
+        onActionPress={handleQuickComposerAction}
+        hasText={hasQuickPostText}
+        isSubmitting={isQuickPosting}
+      />
+    );
+  }, [
+    colors.text,
+    dark,
+    feedOptions.type,
+    handleQuickComposerAction,
+    hasQuickPostText,
+    isQuickPosting,
+    quickPostText,
+  ]);
+
+  const feedRefreshControl = useMemo(() => {
+    if (Platform.OS !== 'android') {
+      return undefined;
+    }
+
+    return (
+      <RefreshControl
+        refreshing={isRefreshing}
+        onRefresh={handleFeedRefresh}
+        progressViewOffset={headerInset}
+        tintColor={BRAND.primaryDark}
+        colors={[BRAND.primaryDark]}
+      />
+    );
+  }, [handleFeedRefresh, headerInset, isRefreshing]);
+
   let mainFeedContent: React.ReactNode;
 
   if (showBlockingLoader) {
@@ -2120,7 +3059,7 @@ function Home({ navigation, route }: Props) {
   } else if (feedOptions.type === FeedTypes.Pray) {
     mainFeedContent = (
       <PrayerWallTabs
-        topInset={headerInset}
+        topInset={resolvedHeaderHeight + spacing.x5}
         bottomInset={footerHeight + spacing.x16}
         wallRefreshSignal={prayerWallRefreshSignal}
         onNewPrayerPress={handleNewPrayerPress}
@@ -2135,60 +3074,24 @@ function Home({ navigation, route }: Props) {
         ref={listRef}
         data={feedDataWithSuggestions}
         keyExtractor={getFeedEntryKey}
-        removeClippedSubviews={false}
-        contentContainerStyle={{
-          paddingTop: headerInset,
-          paddingBottom: footerHeight + spacing.x16,
-        }}
+        removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={16}
+        windowSize={8}
+        contentContainerStyle={listContentContainerStyle}
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
-        ListHeaderComponent={
-          feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou ? (
-            <StatusInput
-              userAvatar={
-                userProfile?.avatar ?? userProfile?.profile_image ?? userProfile?.profileImage
-              }
-              dark={dark}
-              textColor={colors.text}
-              value={quickPostText}
-              onChangeText={setQuickPostText}
-              onActionPress={handleQuickComposerAction}
-              hasText={hasQuickPostText}
-              isSubmitting={isQuickPosting}
-            />
-          ) : null
-        }
+        alwaysBounceVertical={Platform.OS === 'ios'}
+        ListHeaderComponent={feedListHeaderComponent}
         ListEmptyComponent={emptyFeedState}
         ListFooterComponent={endOfFeedFooter}
         renderItem={renderFeedItem}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => {
-              setIsRefreshing(true);
-              getFeedData(feedOptions.type, 1);
-            }}
-            progressViewOffset={headerInset}
-            tintColor={BRAND.primaryDark}
-            colors={[BRAND.primaryDark]}
-          />
-        }
+        refreshing={Platform.OS === 'ios' ? isRefreshing : false}
+        onRefresh={Platform.OS === 'ios' ? handleFeedRefresh : undefined}
+        refreshControl={feedRefreshControl}
         onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (
-            feedOptions.type !== FeedTypes.Pray &&
-            !isLoading &&
-            !isLoadingMore &&
-            !isRefreshing &&
-            !isEndOfList &&
-            feedData.length > 0 &&
-            !isPaginatingRef.current
-          ) {
-            isPaginatingRef.current = true;
-            setIsLoadingMore(true);
-            setFeedOptions((prev) => ({ ...prev, page: prev.page + 1 }));
-          }
-        }}
+        onEndReached={handleFeedEndReached}
         onScroll={handleScroll}
         onScrollBeginDrag={scrollIntent.onScrollBeginDrag}
         onScrollEndDrag={scrollIntent.onScrollEndDrag}

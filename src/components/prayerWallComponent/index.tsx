@@ -56,6 +56,8 @@ function PrayerWallComponent({
   const [isEndOfList, setIsEndOfList] = useState(false);
   const requestSequenceRef = useRef(0);
   const hasSeenRefreshSignalRef = useRef(false);
+  const loadMoreLockRef = useRef(false);
+  const pageRef = useRef(page);
 
   const extractPrayerEntries = (payload: unknown): PrayerPost[] => {
     if (Array.isArray(payload)) return payload as PrayerPost[];
@@ -99,6 +101,7 @@ function PrayerWallComponent({
       } catch (e: any) {
         console.log(e.toString());
       } finally {
+        loadMoreLockRef.current = false;
         if (requestSequence === requestSequenceRef.current) {
           setIsLoading(false);
           setRefreshing(false);
@@ -111,12 +114,13 @@ function PrayerWallComponent({
   const refreshPrayerPosts = useCallback(() => {
     setRefreshing(true);
     setIsEndOfList(false);
-    if (page === 1) {
+    loadMoreLockRef.current = false;
+    if (pageRef.current === 1) {
       getPrayerPosts(1);
       return;
     }
     setPage(1);
-  }, [getPrayerPosts, page]);
+  }, [getPrayerPosts]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -127,6 +131,7 @@ function PrayerWallComponent({
   }, [navigation, refreshPrayerPosts]);
 
   useEffect(() => {
+    pageRef.current = page;
     getPrayerPosts(page);
   }, [getPrayerPosts, page]);
 
@@ -167,9 +172,17 @@ function PrayerWallComponent({
       <FlatList
         inverted
         data={prayers}
+        removeClippedSubviews
+        initialNumToRender={8}
+        maxToRenderPerBatch={5}
+        windowSize={10}
         showsHorizontalScrollIndicator={false}
         onEndReached={() => {
-          if (!isLoading && !refreshing && !isEndOfList) {
+          if (prayers.length < 1) {
+            return;
+          }
+          if (!isLoading && !refreshing && !isEndOfList && !loadMoreLockRef.current) {
+            loadMoreLockRef.current = true;
             setPage((prev) => prev + 1);
           }
         }}
@@ -178,7 +191,7 @@ function PrayerWallComponent({
         }}
         keyExtractor={(item, index) => {
           const postKey = item.postId ?? item.id ?? `row-${index}`;
-          return `${postKey}-${index}`;
+          return `${postKey}`;
         }}
         refreshing={refreshing}
         refreshControl={

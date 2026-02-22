@@ -101,7 +101,7 @@ function InfluencerStepFour({ navigation, route }: Props) {
       </ScrollView>
       <View style={styles.foter}>
         <ImageBackground
-          resizeMode="stretch"
+          resizeMode="contain"
           style={styles.imagebackgroundview}
           source={require('@/assets/images/waveBG.png')}
         >

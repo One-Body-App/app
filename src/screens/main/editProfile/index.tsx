@@ -511,7 +511,7 @@ function EditProfile({ navigation }: Props) {
                 source={{
                   uri: headerImageToUpload,
                 }}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             ) : (
               <View

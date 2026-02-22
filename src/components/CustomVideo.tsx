@@ -1,6 +1,6 @@
 import React, { forwardRef, useRef, useImperativeHandle } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import Video, { OnLoadData } from 'react-native-video';
+import Video, { OnLoadData, OnProgressData } from 'react-native-video';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -15,6 +15,7 @@ type CustomVideoProps = {
   style?: any;
   onEnd?: () => void;
   onLoad?: (data: OnLoadData) => void;
+  onProgress?: (data: OnProgressData) => void;
 };
 
 type VideoRef = React.ElementRef<typeof Video>;
@@ -31,6 +32,7 @@ const CustomVideo = forwardRef<VideoRef, CustomVideoProps>((props, ref) => {
     style,
     onEnd,
     onLoad,
+    onProgress,
   } = props;
 
   const videoRef = useRef<VideoRef>(null);
@@ -49,9 +51,10 @@ const CustomVideo = forwardRef<VideoRef, CustomVideoProps>((props, ref) => {
         muted={muted}
         controls={controls}
         poster={poster}
-        posterResizeMode="cover"
+        posterResizeMode="contain"
         onEnd={onEnd}
         onLoad={onLoad}
+        onProgress={onProgress}
       />
     </View>
   );

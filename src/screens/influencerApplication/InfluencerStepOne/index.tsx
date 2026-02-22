@@ -161,7 +161,7 @@ function InfluencerStepOne({ navigation }: Props) {
               </ScrollView>
               <View style={styles.foter}>
                 <ImageBackground
-                  resizeMode="stretch"
+                  resizeMode="contain"
                   style={styles.backgroundimagestyle}
                   // eslint-disable-next-line global-require
                   source={require('@/assets/images/waveBG.png')}

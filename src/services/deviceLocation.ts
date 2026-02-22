@@ -1,8 +1,10 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MAPBOX_PUBLIC_TOKEN } from './constants';
 
 const MAPBOX_ACCESS_TOKEN =
+  MAPBOX_PUBLIC_TOKEN ??
   'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
 
 type Coordinates = {

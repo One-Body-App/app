@@ -114,14 +114,33 @@ function SinglePrayer({ navigation, route }: Props) {
               postId={postId ?? ''}
               isPrivate={Boolean(prayer.private)}
               hideComposer={prayer.answered}
+              headerContainerStyle={{
+                paddingHorizontal: 0,
+                paddingTop: 0,
+                paddingBottom: 0,
+                borderBottomWidth: 0,
+              }}
               header={
                 <PrayerItem
                   editPost={editPost}
                   removePost={prayer.answered ? undefined : removePost}
                   item={prayer}
                   style={{
+                    marginHorizontal: 0,
+                    marginBottom: 0,
+                    borderRadius: 0,
+                    borderWidth: 0,
+                    borderTopWidth: 0,
+                    borderRightWidth: 0,
+                    borderLeftWidth: 0,
                     borderBottomColor: Colors.neutral[800],
                     borderBottomWidth: borderWidth.thin,
+                    shadowColor: 'transparent',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0,
+                    shadowRadius: 0,
+                    elevation: 0,
+                    backgroundColor: 'transparent',
                   }}
                 />
               }

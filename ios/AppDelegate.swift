@@ -1,16 +1,20 @@
 import UIKit
+import AVFoundation
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
 
 // Third party plugins
-import Lottie
 import react_native_lottie_splash_screen
 import Firebase
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
   var window: UIWindow?
+  private var splashPlayer: AVPlayer?
+  private var splashPlayerLayer: AVPlayerLayer?
+  private var splashDidEndObserver: NSObjectProtocol?
+  private var splashFailedObserver: NSObjectProtocol?
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
@@ -42,36 +46,77 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       window?.makeKeyAndVisible()
 
       if let rootView = window?.rootViewController?.view {
+        let splashBackgroundColor = UIColor(
+          red: 246.0 / 255.0,
+          green: 246.0 / 255.0,
+          blue: 247.0 / 255.0,
+          alpha: 1.0
+        )
+        rootView.backgroundColor = splashBackgroundColor
 
-        // Set the background color based on user interface style
-        switch (UIScreen.main.traitCollection.userInterfaceStyle) {
-        case .dark:
-          rootView.backgroundColor = .black
-        case .light, .unspecified: // Combine light and unspecified for white background
-          rootView.backgroundColor = .white
-        @unknown default: // Handles any future, unknown interface styles
-          rootView.backgroundColor = .white
+        let splashContainer = UIView(frame: rootView.bounds)
+        splashContainer.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        splashContainer.backgroundColor = splashBackgroundColor
+
+        react_native_lottie_splash_screen.RNSplashScreen.showLottieSplash(
+          splashContainer,
+          inRootView: rootView
+        )
+        react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(false)
+
+        guard let splashUrl = Bundle.main.url(forResource: "splash", withExtension: "mp4") else {
+          react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+          return true
         }
 
-        // MARK: - Lottie Splash Screen Setup
-        let dynamic = Dynamic() // Assuming Dynamic class is defined elsewhere and handles Lottie setup
+        let playerItem = AVPlayerItem(url: splashUrl)
+        let player = AVPlayer(playerItem: playerItem)
+        player.isMuted = true
+        player.actionAtItemEnd = .pause
 
-        // Attempt to create and show the Lottie animation view
-        let animationView = dynamic.createAnimationView(rootView: rootView, lottieName: "logoAnimation")
+        let playerLayer = AVPlayerLayer(player: player)
+        playerLayer.videoGravity = .resizeAspectFill
+        playerLayer.frame = splashContainer.bounds
+        splashContainer.layer.addSublayer(playerLayer)
 
-        // Show the Lottie splash screen using the react-native-lottie-splash-screen library.
-        react_native_lottie_splash_screen.RNSplashScreen.showLottieSplash(animationView, inRootView: rootView)
-
-        // Play the animation. Hiding is handled by JS via SplashScreen.hide().
-        dynamic.play(animationView: animationView) { (finished) in
-          if finished {
-            print("Lottie animation finished playing on the native side.")
-          }
+        splashPlayer = player
+        splashPlayerLayer = playerLayer
+        splashDidEndObserver = NotificationCenter.default.addObserver(
+          forName: .AVPlayerItemDidPlayToEndTime,
+          object: playerItem,
+          queue: .main
+        ) { [weak self] _ in
+          react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+          self?.cleanupSplashVideoPlayer()
         }
+        splashFailedObserver = NotificationCenter.default.addObserver(
+          forName: .AVPlayerItemFailedToPlayToEndTime,
+          object: playerItem,
+          queue: .main
+        ) { [weak self] _ in
+          react_native_lottie_splash_screen.RNSplashScreen.setAnimationFinished(true)
+          self?.cleanupSplashVideoPlayer()
+        }
+
+        player.play()
       }
 
       return true
     }
+
+  private func cleanupSplashVideoPlayer() {
+      if let observer = splashDidEndObserver {
+          NotificationCenter.default.removeObserver(observer)
+          splashDidEndObserver = nil
+      }
+      if let observer = splashFailedObserver {
+          NotificationCenter.default.removeObserver(observer)
+          splashFailedObserver = nil
+      }
+      splashPlayerLayer?.removeFromSuperlayer()
+      splashPlayerLayer = nil
+      splashPlayer = nil
+  }
   
 //  func application(
 //    _ application: UIApplication,

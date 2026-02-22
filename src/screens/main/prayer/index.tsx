@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import { View, TouchableOpacity, SafeAreaView, Platform, Animated, Easing } from 'react-native';
 
 import { TabView } from 'react-native-tab-view';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -27,6 +27,10 @@ function Prayer({ navigation }: Props) {
     { key: 'Saved', title: 'Saved' },
     { key: 'MyPrayers', title: 'My Prayers' },
   ]);
+  const [tabBarWidth, setTabBarWidth] = React.useState(0);
+  const liquidTranslate = React.useRef(new Animated.Value(0)).current;
+  const liquidStretch = React.useRef(new Animated.Value(1)).current;
+  const hasInitializedLiquidRef = React.useRef(false);
   const { colors, dark } = useTheme();
   const [areSubtabsVisible, setAreSubtabsVisible] = React.useState(true);
   const lastPrayerScrollY = React.useRef(0);
@@ -129,6 +133,41 @@ function Prayer({ navigation }: Props) {
         return null;
     }
   };
+  const tabWidth = tabBarWidth > 0 ? tabBarWidth / routes.length : 0;
+
+  React.useEffect(() => {
+    if (tabWidth <= 0) {
+      return;
+    }
+    const toValue = index * tabWidth;
+    if (!hasInitializedLiquidRef.current) {
+      liquidTranslate.setValue(toValue);
+      hasInitializedLiquidRef.current = true;
+      return;
+    }
+    Animated.parallel([
+      Animated.timing(liquidTranslate, {
+        toValue,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(liquidStretch, {
+          toValue: 1.2,
+          duration: 120,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(liquidStretch, {
+          toValue: 1,
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [index, liquidStretch, liquidTranslate, tabWidth]);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -143,7 +182,38 @@ function Prayer({ navigation }: Props) {
               return null;
             }
             return (
-              <View style={styles.tabBar}>
+              <View
+                style={styles.tabBar}
+                onLayout={(event) => {
+                  const nextWidth = event.nativeEvent.layout.width;
+                  if (Math.abs(nextWidth - tabBarWidth) > 1) {
+                    setTabBarWidth(nextWidth);
+                  }
+                }}
+              >
+                {tabWidth > 0 ? (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.liquidIndicatorContainer,
+                      {
+                        width: tabWidth,
+                        transform: [{ translateX: liquidTranslate }],
+                      },
+                    ]}
+                  >
+                    <Animated.View
+                      style={[
+                        styles.liquidCore,
+                        {
+                          transform: [{ scaleX: liquidStretch }],
+                        },
+                      ]}
+                    />
+                    <Animated.View style={[styles.liquidBlob, styles.liquidBlobLeft]} />
+                    <Animated.View style={[styles.liquidBlob, styles.liquidBlobRight]} />
+                  </Animated.View>
+                ) : null}
                 {props.navigationState.routes.map((route, i) => {
                   return (
                     <TouchableOpacity
@@ -162,7 +232,6 @@ function Prayer({ navigation }: Props) {
                           {route.title}
                         </StyledText>
                       )}
-                      {props?.navigationState?.index === i ? <View style={styles.viewun} /> : null}
                     </TouchableOpacity>
                   );
                 })}

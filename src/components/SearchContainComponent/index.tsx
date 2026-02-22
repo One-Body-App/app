@@ -78,7 +78,7 @@ function SearchContainComponent() {
                 >
                   <Image
                     style={styles.image}
-                    resizeMode="stretch"
+                    resizeMode="contain"
                     source={require('@/assets/images/pray.jpeg')}
                   />
                   <View style={{ marginLeft: getWidth(2) }}>
@@ -133,7 +133,7 @@ function SearchContainComponent() {
                 >
                   <Image
                     style={styles.image}
-                    resizeMode="stretch"
+                    resizeMode="contain"
                     source={require('@/assets/images/pray.jpeg')}
                   />
                   <View style={{ marginLeft: getWidth(2) }}>

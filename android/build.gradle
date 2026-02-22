@@ -33,6 +33,14 @@ buildscript {
     }
 }
 
+allprojects {
+    repositories {
+        maven { url 'https://api.mapbox.com/downloads/v2/releases/maven' }
+        google()
+        mavenCentral()
+    }
+}
+
 configurations.all {
     resolutionStrategy {
         force 'com.google.firebase:firebase-iid:21.1.0'

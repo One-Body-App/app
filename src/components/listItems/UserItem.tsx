@@ -126,7 +126,7 @@ function UserItem({ item }: { item: User }) {
       <FastImage
         // style={[styles.blogpostimage]}
         style={{ height: 60, width: 60, borderRadius: borderRadius.max }}
-        resizeMode="cover"
+        resizeMode="contain"
         source={{ uri: item?.profileImage ? item?.profileImage : NO_PROFILE_IMAGE }}
       />
 
@@ -230,7 +230,7 @@ export default UserItem;
 //   <View style={styles.blogpostview}>
 //     <Image
 //       style={styles.blogpostimage}
-//       resizeMode="cover"
+//       resizeMode="contain"
 //       source={{ uri: item?.image?.url }}
 //     />
 //     <Text numberOfLines={2} style={styles.blogpostpara}>

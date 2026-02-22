@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Platform, StatusBar } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
@@ -14,21 +15,24 @@ function Login({ route }: Props) {
   const [isMfaLaunchScreenVisible, setIsMfaLaunchScreenVisible] = useState(false);
   const clearOnMountKey =
     route?.params?.action ?? (route?.params?.resetPassword ? 'reset' : undefined);
-  useTheme();
+  const { dark } = useTheme();
 
   return (
-    <UserStepsLayout
-      backgroundColor={Colors.neutral[700]}
-      showCustomHeaderOnAndroid={!isMfaLaunchScreenVisible}
-      hideBottomText={isMfaLaunchScreenVisible}
-    >
-      <LoginComponent
-        clearOnMountKey={clearOnMountKey}
-        currentUserEmail={route?.params?.prefillEmail}
-        initialMfaChallenge={route?.params?.initialMfaChallenge}
-        onMfaLaunchScreenChange={setIsMfaLaunchScreenVisible}
-      />
-    </UserStepsLayout>
+    <>
+      {Platform.OS === 'android' && !dark ? <StatusBar barStyle="dark-content" /> : null}
+      <UserStepsLayout
+        backgroundColor={Colors.neutral[700]}
+        showCustomHeaderOnAndroid={!isMfaLaunchScreenVisible}
+        hideBottomText={isMfaLaunchScreenVisible}
+      >
+        <LoginComponent
+          clearOnMountKey={clearOnMountKey}
+          currentUserEmail={route?.params?.prefillEmail}
+          initialMfaChallenge={route?.params?.initialMfaChallenge}
+          onMfaLaunchScreenChange={setIsMfaLaunchScreenVisible}
+        />
+      </UserStepsLayout>
+    </>
   );
 }
 

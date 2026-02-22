@@ -1,6 +1,7 @@
 import 'react-native-gesture-handler/jestSetup';
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
 import React from 'react';
+import { View } from 'react-native';
 
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
@@ -143,6 +144,41 @@ jest.mock('@sentry/react-native', () => ({
 
 jest.mock('react-native-keyboard-controller', () => {
   return {
+    // eslint-disable-next-line react/prop-types
     KeyboardProvider: ({ children }) => React.createElement(React.Fragment, null, children),
+  };
+});
+
+jest.mock('react-native-webview', () => {
+  const MockWebView = React.forwardRef((props, ref) =>
+    React.createElement(View, {
+      ...props,
+      ref,
+    })
+  );
+
+  return {
+    __esModule: true,
+    default: MockWebView,
+    WebView: MockWebView,
+  };
+});
+
+jest.mock('@shopify/react-native-skia', () => {
+  // eslint-disable-next-line react/prop-types
+  function MockComponent({ children, ...props }) {
+    return React.createElement(View, props, children);
+  }
+
+  return {
+    __esModule: true,
+    Canvas: MockComponent,
+    Rect: MockComponent,
+    Shader: MockComponent,
+    Skia: {
+      RuntimeEffect: {
+        Make: jest.fn(() => ({})),
+      },
+    },
   };
 });

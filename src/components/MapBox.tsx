@@ -20,6 +20,7 @@ import { Colors, Typography } from '../styles';
 import StyledTextInput from './styled/TextInput';
 import SearchIcon from '@/assets/icons/search.svg';
 import CustomModal from './CustomModal';
+import { MAPBOX_PUBLIC_TOKEN } from '@/services/constants';
 
 export enum MapBoxTypes {
   country = 'country',
@@ -62,6 +63,7 @@ export type MapSuggestion = {
 
 let timer: NodeJS.Timeout | null = null;
 const accessToken =
+  MAPBOX_PUBLIC_TOKEN ??
   'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
 function MapBox({
   types,
@@ -160,12 +162,12 @@ function MapBox({
         );
         granted = result === PermissionsAndroid.RESULTS.GRANTED;
       } else {
-        const status = await (Geolocation as any).requestAuthorization?.('whenInUse');
-        granted =
-          status === 'granted' ||
-          status === 'authorized' ||
-          status === 'whenInUse' ||
-          status === true;
+        granted = await new Promise<boolean>((resolve) => {
+          Geolocation.requestAuthorization(
+            () => resolve(true),
+            () => resolve(false)
+          );
+        });
       }
 
       if (granted) {

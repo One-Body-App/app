@@ -275,6 +275,22 @@ export interface SocialPost {
   };
   locationName?: string;
   edited?: boolean;
+  repost?: {
+    sourceType: 'social' | 'prayer' | 'rss';
+    sourceId: string;
+    sourceAuthorId?: string;
+    sourceAuthorName?: string;
+    sourceAuthorUsername?: string;
+    sourceAuthorProfileImage?: string;
+    sourceCreatedAt?: string;
+    sourceTitle?: string;
+    sourceContentSnippet?: string;
+    sourceLink?: string;
+    sourceImage?: string;
+    sourceCategory?: string;
+    repostType: 'repost' | 'quote';
+    createdFromIndexId?: string;
+  };
 }
 
 export interface WatchPost {

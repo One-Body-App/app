@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  BackHandler,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
@@ -18,6 +19,7 @@ import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LottieView from 'lottie-react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { setLoginData } from '@/src/redux/actions/AuthActions';
@@ -44,6 +46,7 @@ import {
 } from '@/services/socialAuth';
 
 import Button from '../Button';
+import CustomClipboard, { CustomClipboardHandle } from '../CustomClipboard';
 import StyledText from '../styled/Text';
 import StyledTextInput from '../styled/TextInput';
 import createLoginStyles from './styles';
@@ -115,6 +118,38 @@ const sanitizeAnalyticsReason = (value: unknown) => {
     .replace(/^_+|_+$/g, '');
 
   return normalized.slice(0, 72) || 'unknown';
+};
+
+const getPasskeyErrorSignature = (error: unknown) => {
+  if (!error) return '';
+  if (typeof error === 'string') return error.toLowerCase();
+
+  const raw = error as any;
+  const parts = [
+    raw?.name,
+    raw?.code,
+    raw?.message,
+    raw?.domain,
+    typeof raw?.cause === 'string' ? raw.cause : raw?.cause?.message,
+    String(error),
+  ]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+
+  return parts.join(' ');
+};
+
+const isPasskeyCancellationError = (error: unknown) => {
+  const signature = getPasskeyErrorSignature(error);
+  if (!signature) return false;
+  return (
+    signature.includes('notallowederror') ||
+    signature.includes('usercancel') ||
+    signature.includes('user_cancel') ||
+    signature.includes('cancelled') ||
+    signature.includes('canceled') ||
+    signature.includes('aborted')
+  );
 };
 
 const toBase64FromBase64Url = (value?: string) => {
@@ -190,6 +225,23 @@ const normalizePasskeyAuthenticationResponseForServer = (response: any) => ({
   },
 });
 
+const extractTotpSetupCode = (otpauthUri: string) => {
+  if (!otpauthUri) {
+    return '';
+  }
+
+  const match = otpauthUri.match(/[?&]secret=([^&]+)/i);
+  if (!match?.[1]) {
+    return otpauthUri;
+  }
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch (_error) {
+    return match[1];
+  }
+};
+
 function LoginComponent({
   currentUserEmail,
   clearOnMountKey,
@@ -239,6 +291,7 @@ function LoginComponent({
   const [showOtherMfaOptions, setShowOtherMfaOptions] = useState(false);
   const [hasPasskeyHeroLoaded, setHasPasskeyHeroLoaded] = useState(false);
   const [useAndroidFallbackHero, setUseAndroidFallbackHero] = useState(false);
+  const clipboardRef = useRef<CustomClipboardHandle>(null);
 
   useEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
@@ -491,6 +544,15 @@ function LoginComponent({
       });
       await handleAuthResult(finish.response);
     } catch (mfaError: any) {
+      if (isPasskeyCancellationError(mfaError)) {
+        trackMfaEvent('mfa_method_cancelled', {
+          method: 'passkey',
+          flow,
+          reason: 'user_cancelled',
+        });
+        setError('');
+        return;
+      }
       trackMfaEvent('mfa_method_failure', {
         method: 'passkey',
         flow,
@@ -931,6 +993,37 @@ function LoginComponent({
   const isPasskeyEnrollmentScreen =
     showMfaLaunchScreen && selectedMfaMethod === 'passkey' && !showOtherMfaOptions;
   const isTotpEnrollmentScreen = showMfaLaunchScreen && selectedMfaMethod === 'totp';
+  const totpSetupCode = useMemo(() => extractTotpSetupCode(totpOtpauth), [totpOtpauth]);
+  const handleCopyManualTotpCode = useCallback(() => {
+    if (!totpSetupCode) {
+      return;
+    }
+    clipboardRef.current?.copy(totpSetupCode);
+    setSuccessText('Setup code copied to clipboard.');
+  }, [totpSetupCode]);
+  const handleBackFromMfaLaunch = useCallback(() => {
+    setMfaChallenge(null);
+    setSelectedMfaMethod('passkey');
+    setShowOtherMfaOptions(false);
+    setTotpOtpauth('');
+    setBackupCodes([]);
+    setPendingAccessToken('');
+    setHasAutoPromptedPasskey(false);
+    setError('');
+    setSuccessText('');
+  }, []);
+  const handleMfaLaunchBack = useCallback(() => {
+    if (selectedMfaMethod === 'totp') {
+      setSelectedMfaMethod('passkey');
+      setShowOtherMfaOptions(false);
+      setError('');
+      setSuccessText('');
+      setForm((prev) => ({ ...prev, code: '' }));
+      return;
+    }
+
+    handleBackFromMfaLaunch();
+  }, [handleBackFromMfaLaunch, selectedMfaMethod]);
   const launchPrimaryButtonText = (() => {
     if (backupCodes.length > 0 && pendingAccessToken) {
       return 'I Saved My Backup Codes';
@@ -998,10 +1091,24 @@ function LoginComponent({
 
   useEffect(() => {
     onMfaLaunchScreenChange?.(showMfaLaunchScreen);
+
+    let subscription:
+      | {
+          remove: () => void;
+        }
+      | undefined;
+    if (Platform.OS === 'android' && showMfaLaunchScreen) {
+      subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        handleMfaLaunchBack();
+        return true;
+      });
+    }
+
     return () => {
+      subscription?.remove();
       onMfaLaunchScreenChange?.(false);
     };
-  }, [onMfaLaunchScreenChange, showMfaLaunchScreen]);
+  }, [handleMfaLaunchBack, onMfaLaunchScreenChange, showMfaLaunchScreen]);
 
   if (showMfaLaunchScreen) {
     return (
@@ -1040,14 +1147,7 @@ function LoginComponent({
             }}
           >
             <TouchableOpacity
-              onPress={() => {
-                if (!showMfaLaunchScreen || selectedMfaMethod === 'passkey') {
-                  return;
-                }
-                selectMethod('passkey').catch((e: any) => {
-                  setError(e?.message ?? 'Unable to switch to passkey.');
-                });
-              }}
+              onPress={handleMfaLaunchBack}
               style={{
                 width: 40,
                 height: 40,
@@ -1252,17 +1352,87 @@ function LoginComponent({
             <View
               style={{
                 marginBottom: 14,
-                borderRadius: 12,
-                padding: 12,
+                borderRadius: 16,
+                paddingHorizontal: 14,
+                paddingTop: 14,
+                paddingBottom: 10,
                 backgroundColor: dark ? '#202328' : '#EFF2F4',
               }}
             >
-              <StyledText style={{ color: dark ? '#D4D8DC' : '#334155', fontSize: 12 }}>
-                Authenticator setup key:
+              <StyledText
+                style={{
+                  color: dark ? '#FFFFFF' : '#0f172a',
+                  fontFamily: 'Rubik',
+                  fontWeight: '700',
+                  fontSize: 18,
+                }}
+              >
+                Step 2: Connect your authenticator app
               </StyledText>
-              <StyledText style={{ color: dark ? '#FFFFFF' : '#0f172a', marginTop: 4 }}>
-                {totpOtpauth}
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: dark ? '#334155' : '#d4dbe1',
+                  marginVertical: 10,
+                }}
+              />
+              <StyledText style={{ color: dark ? '#D4D8DC' : '#334155', fontSize: 15 }}>
+                Use your authenticator app to scan this code.
               </StyledText>
+
+              <View
+                style={{
+                  marginTop: 12,
+                  marginBottom: 12,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    padding: 8,
+                    borderRadius: 10,
+                  }}
+                >
+                  <QRCode value={totpOtpauth} size={126} />
+                </View>
+              </View>
+
+              <StyledText
+                style={{
+                  color: dark ? '#D4D8DC' : '#334155',
+                  fontSize: 12,
+                  marginBottom: 3,
+                }}
+              >
+                Setup code
+              </StyledText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <StyledText
+                  style={{
+                    color: dark ? '#FFFFFF' : '#0f172a',
+                    fontFamily: 'Rubik',
+                    fontWeight: '600',
+                    fontSize: 16,
+                  }}
+                >
+                  {totpSetupCode}
+                </StyledText>
+                <TouchableOpacity
+                  onPress={handleCopyManualTotpCode}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={{
+                    marginLeft: 8,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="copy-outline" size={36} color="#126B87" />
+                </TouchableOpacity>
+              </View>
             </View>
           ) : null}
 
@@ -1284,6 +1454,19 @@ function LoginComponent({
 
           {!!successText && <StyledText style={styles.successAlertText}>{successText}</StyledText>}
           {!!error && <StyledText style={styles.fieldError}>{error}</StyledText>}
+
+          {backupCodes.length > 0 ? (
+            <View style={{ marginTop: 8, marginBottom: 8, rowGap: 6 }}>
+              {backupCodes.map((code) => (
+                <StyledText
+                  key={code}
+                  style={{ color: dark ? '#fff' : '#111827', fontWeight: '700' }}
+                >
+                  {code}
+                </StyledText>
+              ))}
+            </View>
+          ) : null}
 
           <TouchableOpacity
             onPress={() => {
@@ -1353,6 +1536,7 @@ function LoginComponent({
               </StyledText>
             </TouchableOpacity>
           ) : null}
+          <CustomClipboard ref={clipboardRef} />
         </ScrollView>
       </View>
     );

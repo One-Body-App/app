@@ -21,6 +21,7 @@ export const { NO_POST_IMAGE_URL } = Config;
 export const { TWITTER_CLIENT_ID } = Config;
 export const { GIPHY_KEY_IOS } = Config;
 export const { GIPHY_KEY_ANDROID } = Config;
+export const { MAPBOX_PUBLIC_TOKEN } = Config;
 
 export const OpenURLButton = async (
   url: string,

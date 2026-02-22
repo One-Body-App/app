@@ -528,7 +528,7 @@ function Explore({ navigation }: Props) {
                     // })
                     if (item?.id) {
                       navigation.navigate('Main', {
-                        screen: 'ExploreTab',
+                        screen: 'SearchTab',
                         params: {
                           screen: 'UserProfile',
                           params: {
@@ -817,7 +817,7 @@ function Explore({ navigation }: Props) {
                           setShowFollowingModal(false);
                           if (item?.id) {
                             navigation.navigate('Main', {
-                              screen: 'ExploreTab',
+                              screen: 'SearchTab',
                               params: {
                                 screen: 'UserProfile',
                                 params: {

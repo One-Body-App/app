@@ -161,7 +161,7 @@ function ReportStatus({ navigation, route }: Props) {
                 source={successDoneAnimation}
                 autoPlay
                 loop
-                resizeMode="cover"
+                resizeMode="contain"
                 style={{
                   width: 102,
                   height: 102,

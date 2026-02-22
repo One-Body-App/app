@@ -1,27 +1,24 @@
 import { Image, Pressable, View } from 'react-native';
 import { GiphyMediaView } from '@giphy/react-native-sdk';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { Colors } from '@/src/styles';
-import { borderRadius } from '@/src/styles/outlines';
 import { ImageForSlider } from './types';
+
+const MEDIA_RADIUS = 12;
 
 function ImageSlide({
   image,
   setImageModalIndexVisible,
   height,
   width,
-  maxHeight,
   index,
 }: {
   image: ImageForSlider;
   setImageModalIndexVisible: (item: number) => void;
   width: number;
   height: number;
-  maxHeight: number;
   index: number;
 }) {
-  const safeWidth = Number.isFinite(width) && width > 0 ? width : maxHeight;
-  const safeHeight = Number.isFinite(height) && height > 0 ? height : maxHeight;
+  const safeWidth = Number.isFinite(width) && width > 0 ? width : 0;
+  const safeHeight = Number.isFinite(height) && height > 0 ? height : safeWidth;
   const openImage = () => {
     setImageModalIndexVisible(index);
   };
@@ -39,16 +36,18 @@ function ImageSlide({
           height: safeHeight,
           justifyContent: 'center',
           alignItems: 'center',
+          borderRadius: MEDIA_RADIUS,
+          overflow: 'hidden',
         }}
       >
         {image.type === 'gif' ? (
           <GiphyMediaView
             media={{ ...image, id: image.id ?? '' }}
-            resizeMode="cover"
+            resizeMode="contain"
             style={{
               width: safeWidth,
               height: safeHeight,
-              borderRadius: borderRadius.small,
+              borderRadius: MEDIA_RADIUS,
 
               overflow: 'hidden',
             }}
@@ -56,11 +55,11 @@ function ImageSlide({
         ) : (
           <Image
             style={{
-              borderRadius: borderRadius.small,
+              borderRadius: MEDIA_RADIUS,
               width: safeWidth,
               height: safeHeight,
             }}
-            resizeMode="cover"
+            resizeMode="contain"
             source={{ uri: image?.url ?? '' }}
           />
         )}
@@ -74,25 +73,8 @@ function ImageSlide({
             right: 0,
             bottom: 0,
             left: 0,
-            alignItems: 'center',
-            justifyContent: 'center',
           }}
-        >
-          {image.type !== 'gif' ? (
-            <View
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 23,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(0,0,0,0.35)',
-              }}
-            >
-              <MaterialIcons name="play-arrow" size={28} color={Colors.neutral[900]} />
-            </View>
-          ) : null}
-        </Pressable>
+        />
       </View>
     </View>
   );

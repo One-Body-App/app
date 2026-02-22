@@ -1,12 +1,10 @@
 import React, { ComponentType, ReactElement, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
 import { useSelector } from 'react-redux';
-import { isObject } from 'lodash';
 import { useTheme } from '@react-navigation/native';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
-import { ArticleType, PostType } from '@/utils/types';
 import ArticleItem from '../listItems/ArticleItem';
 import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
 import globalStyle from '@/components/listItems/style';
@@ -76,31 +74,6 @@ function BlogFlatlist({
   }, [page, user]);
   const { colors } = useTheme();
 
-  const showModal = (item: ArticleType) => {
-    if (user) {
-      setCurrentPopupItem({
-        id: item.id,
-        postlink: item.link,
-        title: isObject(item?.title) ? item?.title?.a.$text : item?.title,
-        created: item.created,
-        image: item.image,
-        externalLink: item.link,
-        type: PostType.rss,
-
-        userData: {
-          twitterHandler: user?.influencerProfile?.twitterHandler,
-          instagramHandler: user?.influencerProfile?.instagramHandler,
-          name: user?.name,
-          username: user?.username,
-          _id: user?._id,
-          accountType: user?.accountType,
-          profileImage: user?.profileImage,
-        },
-      });
-    }
-    setShow(true);
-  };
-
   return (
     <View>
       {loadingMore ? (
@@ -120,6 +93,12 @@ function BlogFlatlist({
       <FlatList
         nestedScrollEnabled
         data={blogs}
+        keyExtractor={(item, index) => String(item.id ?? item._id ?? index)}
+        removeClippedSubviews
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        scrollEventThrottle={16}
         ListHeaderComponent={headerItem}
         // onScroll={(e) => {
         //   setScrollPosition(e.nativeEvent.contentOffset.y);
@@ -170,7 +149,7 @@ function BlogFlatlist({
           //   <View style={styles.blogpostview}>
           //     <Image
           //       style={styles.blogpostimage}
-          //       resizeMode="cover"
+          //       resizeMode="contain"
           //       source={{ uri: item?.image?.url }}
           //     />
           //     <Text numberOfLines={2} style={styles.blogpostpara}>
@@ -184,7 +163,7 @@ function BlogFlatlist({
           <ArticleItem
             key={`article_${item.id}`}
             item={item}
-            imageSizeType="cover"
+            imageSizeType="contain"
             blogPostStyle={{
               marginBottom: spacing.x24,
               backgroundColor: colors.card,
@@ -195,7 +174,6 @@ function BlogFlatlist({
             //   justifyContent: 'space-between',
             //   // marginTop: getHeight(1),
             // }}
-            showModal={showModal}
           />
         )}
         onEndReachedThreshold={0.5}

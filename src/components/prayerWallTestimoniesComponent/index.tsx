@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, View, RefreshControl, TouchableOpacity } from 'react-native';
+import { FlatList, View, RefreshControl, TouchableOpacity, Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 
@@ -17,6 +17,24 @@ type PrayerWallTestimoniesProps = {
   onEditPost?: (postId: string) => void;
   onScrollOffsetChange?: (offsetY: number) => void;
 };
+
+function PrayerWallTestimoniesEmpty() {
+  return (
+    <StyledText
+      style={[
+        Typography.body.x2M,
+        {
+          padding: spacing.x16,
+          textAlign: 'center',
+          transform:
+            Platform.OS === 'ios' ? [{ rotate: '180deg' }, { scaleX: -1 }] : [{ rotate: '180deg' }],
+        },
+      ]}
+    >
+      Nothing here
+    </StyledText>
+  );
+}
 
 function PrayerWallTestimoniesComponent({
   onOpenPost,
@@ -147,9 +165,13 @@ function PrayerWallTestimoniesComponent({
   return (
     <View style={{ flex: 1 }}>
       <FlatList
+        inverted
         data={testimonies}
         showsHorizontalScrollIndicator={false}
         onEndReached={() => {
+          if (testimonies.length < 1) {
+            return;
+          }
           if (!isLoading && !refreshing && !isEndOfList) {
             setPage((prev) => prev + 1);
           }
@@ -170,11 +192,7 @@ function PrayerWallTestimoniesComponent({
             }}
           />
         }
-        ListEmptyComponent={() => (
-          <StyledText style={[Typography.body.x2M, { padding: spacing.x16, textAlign: 'center' }]}>
-            Nothing here
-          </StyledText>
-        )}
+        ListEmptyComponent={PrayerWallTestimoniesEmpty}
         onEndReachedThreshold={0.8}
         scrollEnabled={isScrollEnable}
         onScroll={(event) => {

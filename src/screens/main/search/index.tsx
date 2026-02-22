@@ -25,7 +25,6 @@ import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import ArticleItem from '@/components/listItems/ArticleItem';
 
-import { ArticleType } from '@/utils/types';
 import {
   HomeStackParamsList,
   MainBottomStackParamsList,
@@ -64,7 +63,6 @@ function Search() {
     { item: string; type: SearchType; itemMeta?: { image?: string; whatIDo?: string } }[]
   >([]);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [show, setShow] = useState<boolean>();
   const [searchType, setSearchType] = useState<'users' | 'posts'>('users');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -185,13 +183,6 @@ function Search() {
   //   );
   // };
   const { colors } = useTheme();
-  const [currentPopupItem, setCurrentPopupItem] = useState<ArticleType>();
-
-  const showModal = async (item: ArticleType) => {
-    setCurrentPopupItem(item);
-    setShow(true);
-  };
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -336,7 +327,7 @@ function Search() {
                     <ArticleItem
                       key={item.id}
                       item={item}
-                      imageSizeType="cover"
+                      imageSizeType="contain"
                       blogPostStyle={{
                         width: 'auto',
                         flexGrow: 1,
@@ -354,7 +345,6 @@ function Search() {
                         flexDirection: 'row',
                         justifyContent: 'space-between',
                       }}
-                      showModal={showModal}
                       // onPress={(item) => {
                       //   storeAsyncData([...recentSearches, input]);
                       // }}

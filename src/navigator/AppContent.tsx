@@ -664,7 +664,7 @@ function AppContent() {
         screens: {
           Main: {
             screens: {
-              ExploreTab: {
+              SearchTab: {
                 screens: {
                   UserProfile: {
                     path: '/profile/:id',
@@ -1196,6 +1196,10 @@ function AppContent() {
                     }
                   : {
                       headerShown: false,
+                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                      statusBarColor:
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      statusBarTranslucent: false,
                     }),
               }}
             />
@@ -1258,14 +1262,7 @@ function AppContent() {
               name="VideoPost"
               component={VideoPost}
               options={{
-                headerShown: true,
-                headerTransparent: true,
-                title: 'Create',
-                headerBackImageSource: closeIcon,
-                headerTitleAlign: 'center',
-                headerBackTitleVisible: false,
-                headerTintColor: 'white',
-                headerTitleStyle: { fontSize: 20 },
+                headerShown: false,
               }}
             />
           </MainStack.Navigator>

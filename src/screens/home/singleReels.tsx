@@ -57,7 +57,7 @@ const SingleReels = forwardRef(({ item }: any, parentRef) => {
   //   >
   //     <MuxVideo
   //       ref={videoRef}
-  //       resizeMode="cover"
+  //       resizeMode="contain"
   //       style={{ flex: 1 }}
   //       // controls
   //       repeat

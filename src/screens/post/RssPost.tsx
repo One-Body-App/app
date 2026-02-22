@@ -12,6 +12,7 @@ import { MainStackParamList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 
 import { spacing } from '@/src/styles/spacing';
+import { borderWidth } from '@/src/styles/outlines';
 import { ArticleType, PostType, SocialPost } from '@/utils/types';
 
 import ArticleItem from '@/src/components/listItems/ArticleItem';
@@ -115,6 +116,12 @@ function RssPost({ navigation, route }: Props) {
           enablePagination
           onPostRefresh={getRssPost}
           scrollToEndOnPublish
+          headerContainerStyle={{
+            paddingHorizontal: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            borderBottomWidth: 0,
+          }}
           header={
             route.params?.postType === 'watch' ? (
               <VideoItem
@@ -130,8 +137,21 @@ function RssPost({ navigation, route }: Props) {
                 item={post}
                 imageSizeType="contain"
                 blogPostStyle={{
-                  marginBottom: spacing.x24,
-                  backgroundColor: colors.card,
+                  marginHorizontal: 0,
+                  marginBottom: 0,
+                  borderRadius: 0,
+                  borderWidth: 0,
+                  borderTopWidth: 0,
+                  borderRightWidth: 0,
+                  borderLeftWidth: 0,
+                  borderBottomColor: Colors.neutral[800],
+                  borderBottomWidth: borderWidth.thin,
+                  shadowColor: 'transparent',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0,
+                  shadowRadius: 0,
+                  elevation: 0,
+                  backgroundColor: 'transparent',
                 }}
                 blogPostImageStyle={globalStyle.newspostimage}
                 showModal={showModal}

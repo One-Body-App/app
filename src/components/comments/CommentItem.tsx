@@ -1,5 +1,7 @@
 import {
   ActivityIndicator,
+  Animated,
+  Image,
   Platform,
   StyleProp,
   TouchableOpacity,
@@ -11,14 +13,15 @@ import { useTheme } from '@react-navigation/native';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import { useEffect, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
+import { HapticService } from '@/src/services/haptic';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { PostType, PostUserData, SocialPostReaction } from '@/utils/types';
+import { PostType, PostUserData, SocialPostReaction, SocialPostReactionType } from '@/utils/types';
 import StyledText from '../styled/Text';
 import { fontSize, fontWeight } from '@/src/styles/typography';
 import { timeSince } from '@/utils/ResponsiveFun';
@@ -65,12 +68,173 @@ const extractGifPreviewUrl = (media?: GiphyMedia | null): string | undefined => 
   return undefined;
 };
 
+const MEDIA_RADIUS = 12;
+const REACTION_BAR_SCALE = 1;
+const REACTION_BAR_OFFSET_X = 0;
+const REACTION_BAR_OFFSET_Y = 44;
+
+type AnimatedReaction = {
+  id: string;
+  iconUrl: string;
+};
+
+type ReactionBarRef = {
+  showReactions: () => void;
+  dismissReactions: () => void;
+};
+
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72';
+const REACTION_ICON_URLS: Record<string, string> = {
+  pray: `${TWEMOJI_BASE}/1f64f.png`,
+  praise: `${TWEMOJI_BASE}/1f64c.png`,
+  like: `${TWEMOJI_BASE}/1f44d.png`,
+  love: `${TWEMOJI_BASE}/2764.png`,
+  haha: `${TWEMOJI_BASE}/1f602.png`,
+  wow: `${TWEMOJI_BASE}/1f632.png`,
+  sad: `${TWEMOJI_BASE}/1f622.png`,
+  angry: `${TWEMOJI_BASE}/1f621.png`,
+};
+
+const REACTION_BAR_ITEMS: AnimatedReaction[] = [
+  { id: 'pray', iconUrl: REACTION_ICON_URLS.pray },
+  { id: 'praise', iconUrl: REACTION_ICON_URLS.praise },
+  { id: 'like', iconUrl: REACTION_ICON_URLS.like },
+  { id: 'love', iconUrl: REACTION_ICON_URLS.love },
+  { id: 'haha', iconUrl: REACTION_ICON_URLS.haha },
+  { id: 'wow', iconUrl: REACTION_ICON_URLS.wow },
+  { id: 'sad', iconUrl: REACTION_ICON_URLS.sad },
+  { id: 'angry', iconUrl: REACTION_ICON_URLS.angry },
+];
+
+const InlineReactionBar = forwardRef<
+  ReactionBarRef,
+  { onDismiss: () => void; onReactionSelect: (reaction: AnimatedReaction) => void }
+>(({ onDismiss, onReactionSelect }, ref) => {
+  const scale = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const [visible, setVisible] = useState(false);
+
+  const showReactions = useCallback(() => {
+    setVisible(true);
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 22,
+        bounciness: 8,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacity, scale]);
+
+  const dismissReactions = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(scale, {
+        toValue: 0,
+        duration: 140,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setVisible(false);
+      onDismiss();
+    });
+  }, [onDismiss, opacity, scale]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      showReactions,
+      dismissReactions,
+    }),
+    [dismissReactions, showReactions]
+  );
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <Animated.View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#ffffff',
+        borderRadius: borderRadius.max,
+        paddingVertical: spacing.x8,
+        paddingHorizontal: spacing.x10,
+        minWidth: 280,
+        transform: [{ scale }],
+        opacity,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+      }}
+    >
+      {REACTION_BAR_ITEMS.map((reaction) => (
+        <TouchableOpacity
+          key={reaction.id}
+          onPress={() => {
+            onReactionSelect(reaction);
+            dismissReactions();
+          }}
+          activeOpacity={0.8}
+          style={{ marginHorizontal: spacing.x5 }}
+        >
+          <Image source={{ uri: reaction.iconUrl }} style={{ width: 22, height: 22 }} />
+        </TouchableOpacity>
+      ))}
+    </Animated.View>
+  );
+});
+
+const mapReactionIdToType = (reactionId: string): SocialPostReactionType => {
+  switch (reactionId) {
+    case 'pray':
+      return SocialPostReactionType.praying;
+    case 'praise':
+      return SocialPostReactionType.happy;
+    case 'haha':
+    case 'wow':
+      return SocialPostReactionType.happy;
+    case 'sad':
+    case 'angry':
+      return SocialPostReactionType.praying;
+    case 'like':
+    case 'love':
+    default:
+      return SocialPostReactionType.love;
+  }
+};
+
+const getFallbackReactionIdFromType = (type?: SocialPostReactionType): string | undefined => {
+  if (!type) {
+    return undefined;
+  }
+  if (type === SocialPostReactionType.praying) {
+    return 'pray';
+  }
+  if (type === SocialPostReactionType.happy) {
+    return 'praise';
+  }
+  return 'love';
+};
+
 interface BaseItemProps {
   style?: StyleProp<ViewStyle>;
   onPress: Function;
   created?: Date;
-  updated?: Date;
-  edited?: boolean;
   source?: string;
   postData: {
     id?: string;
@@ -106,14 +270,15 @@ interface BaseItemProps {
   allowImageAttachments?: boolean;
   setThreadImages?: React.Dispatch<React.SetStateAction<string[]>>;
   onOpenGifPicker?: () => void;
+  onReplyPress?: () => void;
+  onReactPress?: (type?: SocialPostReactionType) => void;
+  isReacting?: boolean;
 }
 
 function CommentItem({
   style,
   onPress,
   created,
-  updated,
-  edited,
   source,
   userData,
   isApprovedInfluencer,
@@ -128,12 +293,19 @@ function CommentItem({
   allowImageAttachments,
   setThreadImages,
   onOpenGifPicker,
+  onReplyPress,
+  onReactPress,
+  isReacting,
 }: BaseItemProps) {
   const [showOptions, setShowOptions] = useState(false);
+  const [isReactionBarVisible, setIsReactionBarVisible] = useState(false);
+  const [selectedReactionId, setSelectedReactionId] = useState<string | undefined>(undefined);
   const { colors, dark } = useTheme();
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(postData.gif ?? null);
+  const reactionBarRef = useRef<ReactionBarRef>(null);
+  const reactionIconScale = useRef(new Animated.Value(1)).current;
   const safeUserData = userData ?? ({} as PostUserData);
   const profileImageUri =
     safeUserData.profileImage && safeUserData.profileImage !== ''
@@ -148,6 +320,7 @@ function CommentItem({
   const canUseGiphy = allowMedia ?? Platform.OS !== 'android';
   const gifPreviewUrl = extractGifPreviewUrl(postData.gif);
   const reactionCount = postData.reactions?.length ?? 0;
+  const { myReaction } = postData;
   const textMain = dark ? '#ffffff' : '#0e181b';
   const textSecondary = '#4f8596';
   let bubbleColor = '#f2f4f5';
@@ -167,11 +340,88 @@ function CommentItem({
   }
   const handleText = handleValue ? `@${handleValue}` : '';
   const hasHandle = Boolean(handleValue);
-
   const editComment = (status: boolean) => {
     setIsEditingComment(status);
     setEditingComment(status);
   };
+
+  const dismissReactionBar = () => {
+    reactionBarRef.current?.dismissReactions();
+  };
+
+  const showReactionBar = () => {
+    HapticService.trigger('impactMedium');
+    setIsReactionBarVisible(true);
+    requestAnimationFrame(() => {
+      reactionBarRef.current?.showReactions();
+    });
+  };
+
+  const triggerReactionSelectionAnimation = () => {
+    reactionIconScale.stopAnimation();
+    reactionIconScale.setValue(0.9);
+    Animated.sequence([
+      Animated.spring(reactionIconScale, {
+        toValue: 1.22,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 9,
+      }),
+      Animated.spring(reactionIconScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 7,
+      }),
+    ]).start();
+  };
+
+  const handleAnimatedReactionSelect = (reaction: AnimatedReaction) => {
+    HapticService.trigger('impactMedium');
+    triggerReactionSelectionAnimation();
+    const selectedType = mapReactionIdToType(reaction.id);
+    if (myReaction?.type === selectedType) {
+      setSelectedReactionId(undefined);
+      onReactPress?.(undefined);
+      return;
+    }
+    setSelectedReactionId(reaction.id);
+    onReactPress?.(selectedType);
+  };
+
+  useEffect(() => {
+    const fallbackReactionId = getFallbackReactionIdFromType(myReaction?.type);
+    setSelectedReactionId((currentReactionId) => {
+      if (!fallbackReactionId) {
+        return undefined;
+      }
+      if (currentReactionId && mapReactionIdToType(currentReactionId) === myReaction?.type) {
+        return currentReactionId;
+      }
+      return fallbackReactionId;
+    });
+  }, [myReaction?.type]);
+
+  const selectedReactionIconUrl =
+    selectedReactionId &&
+    Object.prototype.hasOwnProperty.call(REACTION_ICON_URLS, selectedReactionId)
+      ? REACTION_ICON_URLS[selectedReactionId as keyof typeof REACTION_ICON_URLS]
+      : undefined;
+  const reactionIcon = (() => {
+    if (isReacting) {
+      return <ActivityIndicator size="small" color={actionColor} />;
+    }
+    if (selectedReactionIconUrl) {
+      return <Image source={{ uri: selectedReactionIconUrl }} style={{ width: 16, height: 16 }} />;
+    }
+    return (
+      <MaterialIcons
+        name={myReaction ? 'favorite' : 'favorite-border'}
+        size={16}
+        color={myReaction ? '#e04b4b' : actionColor}
+      />
+    );
+  })();
 
   useEffect(() => {
     if (postData.gif) {
@@ -283,18 +533,6 @@ function CommentItem({
                     </TouchableOpacity>
                   ) : null}
                 </View>
-                {!isEditingComment && postData.content ? (
-                  <StyledText
-                    style={{
-                      marginTop: spacing.x5,
-                      color: textMain,
-                      ...fontSize.x2,
-                      lineHeight: 18,
-                    }}
-                  >
-                    {postData.content}
-                  </StyledText>
-                ) : null}
                 {hasHandle && !isEditingComment ? (
                   <StyledText
                     numberOfLines={1}
@@ -307,31 +545,43 @@ function CommentItem({
                     {handleText}
                   </StyledText>
                 ) : null}
+                {!isEditingComment && postData.content ? (
+                  <StyledText
+                    style={{
+                      marginTop: spacing.x5,
+                      color: textMain,
+                      ...fontSize.x2,
+                      lineHeight: 18,
+                    }}
+                  >
+                    {postData.content}
+                  </StyledText>
+                ) : null}
                 {!isEditingComment && postData.gif && hasGif && canUseGiphy ? (
                   <View
                     style={{
                       marginTop: spacing.x8,
-                      borderRadius: borderRadius.small,
+                      borderRadius: MEDIA_RADIUS,
                       overflow: 'hidden',
                     }}
                   >
                     {Platform.OS === 'android' && gifPreviewUrl ? (
                       <FastImage
                         source={{ uri: gifPreviewUrl }}
-                        resizeMode="cover"
+                        resizeMode="contain"
                         style={{
                           width: '100%',
                           aspectRatio: safeGifAspectRatio,
-                          borderRadius: borderRadius.small,
+                          borderRadius: MEDIA_RADIUS,
                         }}
                       />
                     ) : (
                       <GiphyMediaView
                         media={postData.gif}
-                        resizeMode="cover"
+                        resizeMode="contain"
                         style={{
                           aspectRatio: safeGifAspectRatio,
-                          borderRadius: borderRadius.small,
+                          borderRadius: MEDIA_RADIUS,
                         }}
                       />
                     )}
@@ -342,16 +592,23 @@ function CommentItem({
                 (postData.images?.length ?? 0) > 0 ? (
                   <View style={{ marginTop: spacing.x8, gap: spacing.x8 }}>
                     {(postData.images ?? []).map((imageUrl) => (
-                      <FastImage
+                      <View
                         key={imageUrl}
-                        source={{ uri: imageUrl }}
                         style={{
-                          width: '100%',
-                          height: 180,
-                          borderRadius: borderRadius.small,
+                          borderRadius: MEDIA_RADIUS,
+                          overflow: 'hidden',
                         }}
-                        resizeMode="cover"
-                      />
+                      >
+                        <FastImage
+                          source={{ uri: imageUrl }}
+                          style={{
+                            width: '100%',
+                            height: 180,
+                            borderRadius: MEDIA_RADIUS,
+                          }}
+                          resizeMode="contain"
+                        />
+                      </View>
                     ))}
                   </View>
                 ) : null}
@@ -400,35 +657,101 @@ function CommentItem({
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
+                  position: 'relative',
                   marginTop: spacing.x8,
                   marginLeft: spacing.x5,
                   gap: spacing.x16,
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialIcons name="favorite" size={14} color="#e04b4b" />
+                {onReactPress ? (
+                  <View style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                      onLongPress={showReactionBar}
+                      onPress={() => {
+                        dismissReactionBar();
+                        if (myReaction) {
+                          setSelectedReactionId(undefined);
+                          onReactPress(undefined);
+                          return;
+                        }
+                        setSelectedReactionId('love');
+                        onReactPress(SocialPostReactionType.love);
+                      }}
+                      delayLongPress={180}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Animated.View style={{ transform: [{ scale: reactionIconScale }] }}>
+                          {reactionIcon}
+                        </Animated.View>
+                        <StyledText
+                          style={{
+                            marginLeft: spacing.x5,
+                            color: actionColor,
+                            fontSize: 11,
+                            fontWeight: '700',
+                          }}
+                        >
+                          {reactionCount}
+                        </StyledText>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {selectedReactionIconUrl ? (
+                      <Image
+                        source={{ uri: selectedReactionIconUrl }}
+                        style={{ width: 16, height: 16 }}
+                      />
+                    ) : (
+                      <MaterialIcons name="favorite" size={16} color="#e04b4b" />
+                    )}
+                    <StyledText
+                      style={{
+                        marginLeft: spacing.x5,
+                        color: actionColor,
+                        fontSize: 11,
+                        fontWeight: '700',
+                      }}
+                    >
+                      {reactionCount}
+                    </StyledText>
+                  </View>
+                )}
+                <TouchableOpacity disabled={!onReplyPress} onPress={onReplyPress}>
                   <StyledText
                     style={{
-                      marginLeft: spacing.x5,
                       color: actionColor,
                       fontSize: 11,
                       fontWeight: '700',
-                    }}
-                  >
-                    {reactionCount}
-                  </StyledText>
-                </View>
-                <TouchableOpacity>
-                  <StyledText
-                    style={{
-                      color: actionColor,
-                      fontSize: 11,
-                      fontWeight: '700',
+                      opacity: onReplyPress ? 1 : 0.6,
                     }}
                   >
                     Reply
                   </StyledText>
                 </TouchableOpacity>
+                {onReactPress && isReactionBarVisible ? (
+                  <View
+                    pointerEvents="box-none"
+                    style={{
+                      position: 'absolute',
+                      left: REACTION_BAR_OFFSET_X,
+                      bottom: REACTION_BAR_OFFSET_Y,
+                      zIndex: 20,
+                      elevation: 20,
+                      transform: [{ scale: REACTION_BAR_SCALE }],
+                    }}
+                  >
+                    <InlineReactionBar
+                      ref={reactionBarRef}
+                      onReactionSelect={handleAnimatedReactionSelect}
+                      onDismiss={() => {
+                        setIsReactionBarVisible(false);
+                      }}
+                    />
+                  </View>
+                ) : null}
               </View>
             </>
           )}

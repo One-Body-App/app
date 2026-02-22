@@ -66,6 +66,7 @@ type PrayerItemProps = {
   removePost?: (type: string, postId: string) => void;
   editPost?: (postId: string) => void;
   limitContentLines?: boolean;
+  originFeedType?: string;
 };
 function PrayerItem({
   removePost,
@@ -78,6 +79,7 @@ function PrayerItem({
   fromSavedPosts,
   onCommentsPress,
   limitContentLines = false,
+  originFeedType,
 }: PrayerItemProps) {
   const { colors, dark } = useTheme();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -332,6 +334,16 @@ function PrayerItem({
           isPrivate: item.private,
           comments: item.comments,
           commentNumber: item.commentNumber,
+        }}
+        repostPayload={{
+          sourceType: 'prayer',
+          sourceId: String(item.postId ?? item.id ?? ''),
+          sourcePreview: {
+            content: item.content,
+            category: item.category,
+            isPrivate: item.private,
+          },
+          originFeedType,
         }}
         parentRefreshContent={parentRefreshContent}
         created={item?.created}

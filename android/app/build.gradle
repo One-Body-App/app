@@ -93,12 +93,6 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
-configurations.all {
-    resolutionStrategy {
-        forcedModules = ['com.giphy.sdk:ui:2.3.13']
-    }
-}
-
 apply from: "../../node_modules/@sentry/react-native/sentry.gradle"
 
 def keystoreProperties = new Properties()

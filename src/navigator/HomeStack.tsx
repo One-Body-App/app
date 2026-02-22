@@ -3,8 +3,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { useTheme } from '@react-navigation/native';
-import { Platform, StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import Home, { FeedTypes } from '../screens/home';
 import UserProfile from '../screens/main/userProfile';
 import { HomeStackParamsList } from './types';
@@ -52,18 +53,20 @@ function HomeStack() {
         component={Notifications}
         options={{
           presentation: Platform.OS === 'ios' ? 'fullScreenModal' : 'modal',
+          animation: 'slide_from_bottom',
           headerShown: false,
         }}
       />
       <Stack.Screen
         name="WatchPortal"
         component={Watch}
-        options={{
+        options={({ navigation }) => ({
           presentation: 'card',
           animation: 'none',
           headerShown: true,
           headerTintColor: '#fff',
           headerTransparent: true,
+          headerTitleAlign: 'center',
 
           headerBackTitleVisible: false,
           title: 'Watch',
@@ -85,6 +88,19 @@ function HomeStack() {
               {children}
             </Text>
           ),
+          headerRight: () => (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Create video post"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              onPress={() =>
+                navigation.navigate('VideoPost' as never, { openCameraOnMount: true } as never)
+              }
+              style={{ paddingHorizontal: 4 }}
+            >
+              <MaterialCommunityIcons name="plus" size={28} color="#fff" />
+            </TouchableOpacity>
+          ),
 
           // headerStyle: {
           //   backgroundColor: 'rgba(0,0,0,0.06)',
@@ -96,7 +112,7 @@ function HomeStack() {
               style={[StyleSheet.absoluteFill, { flex: 1 }]}
             />
           ),
-        }}
+        })}
       />
 
       <Stack.Screen

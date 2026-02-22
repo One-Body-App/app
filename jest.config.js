@@ -12,6 +12,6 @@ module.exports = {
     '\\.(png|jpg|jpeg|gif|svg|ttf|otf|wav|mp3|m4a)$': '<rootDir>/jest/fileMock.js',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native.*|react-native-.*|react-redux|redux-persist|@reduxjs|immer)/)',
+    'node_modules/(?!(react-native|@react-native.*|react-native-.*|@react-navigation|@dreamwalk-os/react-native-image-modal|react-redux|redux-persist|@reduxjs|immer)/)',
   ],
 };

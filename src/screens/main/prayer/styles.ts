@@ -48,14 +48,59 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    // flexGrow: 1,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 20,
+    marginHorizontal: 16,
+    marginVertical: 1,
+    paddingVertical: 0,
+    minHeight: 36,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
-
-    padding: 8,
-    paddingBottom: 2,
+    justifyContent: 'center',
+    zIndex: 2,
+    padding: 0,
+    height: 36,
+  },
+  liquidIndicatorContainer: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  liquidCanvasLayer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  liquidCore: {
+    width: '78%',
+    height: '78%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(18, 210, 217, 0.28)',
+    shadowColor: '#12D2D9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  liquidBlob: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(18, 210, 217, 0.22)',
+  },
+  liquidBlobLeft: {
+    left: '20%',
+  },
+  liquidBlobRight: {
+    right: '20%',
   },
 });
 

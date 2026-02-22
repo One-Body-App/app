@@ -27,6 +27,7 @@
 		7283441F28AF46100048A31B /* DONOTDELETE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7283441E28AF46100048A31B /* DONOTDELETE.swift */; };
 		728E61942B1FFB5B0013DA59 /* Dynamic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E61932B1FFB5B0013DA59 /* Dynamic.swift */; };
 		728E61962B1FFDB80013DA59 /* logoAnimation.json in Resources */ = {isa = PBXBuildFile; fileRef = 728E61952B1FFDB80013DA59 /* logoAnimation.json */; };
+		728E61982B1FFDB80013DA59 /* splash.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 728E61972B1FFDB80013DA59 /* splash.mp4 */; };
 		72A09FE12E1CDE2B00D614D5 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */; };
 		72F05C49289CEB68004C3A5F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */; };
 		76D9A2FE6C4D4C769086867B /* OpenSans_Condensed-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ABA070994F3D498A8F8D1519 /* OpenSans_Condensed-Italic.ttf */; };
@@ -102,6 +103,7 @@
 		7283441E28AF46100048A31B /* DONOTDELETE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DONOTDELETE.swift; sourceTree = "<group>"; };
 		728E61932B1FFB5B0013DA59 /* Dynamic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dynamic.swift; sourceTree = "<group>"; };
 		728E61952B1FFDB80013DA59 /* logoAnimation.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = logoAnimation.json; sourceTree = "<group>"; };
+		728E61972B1FFDB80013DA59 /* splash.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = splash.mp4; sourceTree = "<group>"; };
 		72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7A33052A304E4AF1B4A20B1E /* OpenSans_Condensed-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-SemiBold.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -247,6 +249,7 @@
 			isa = PBXGroup;
 			children = (
 				728E61952B1FFDB80013DA59 /* logoAnimation.json */,
+				728E61972B1FFDB80013DA59 /* splash.mp4 */,
 				728E61932B1FFB5B0013DA59 /* Dynamic.swift */,
 				7283441E28AF46100048A31B /* DONOTDELETE.swift */,
 				7278A14A289CB24F003FC089 /* GoogleService-Info.plist */,
@@ -421,6 +424,7 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				7278A14B289CB24F003FC089 /* GoogleService-Info.plist in Resources */,
 				728E61962B1FFDB80013DA59 /* logoAnimation.json in Resources */,
+				728E61982B1FFDB80013DA59 /* splash.mp4 in Resources */,
 				EB911B8296C44DECA602BF32 /* OpenSans-Bold.ttf in Resources */,
 				5C505C2A543243BE9F9DBC43 /* OpenSans-BoldItalic.ttf in Resources */,
 				2090F3BBD18A4F16B334AC91 /* OpenSans-ExtraBold.ttf in Resources */,

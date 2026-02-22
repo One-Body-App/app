@@ -247,7 +247,7 @@ function ProfileHeader({
                 source={{
                   uri: profileData?.profileHeader,
                 }}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             </View>
           ) : (
@@ -384,7 +384,7 @@ function ProfileHeader({
               source={{
                 uri: profileData?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
               }}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </View>
         </View>

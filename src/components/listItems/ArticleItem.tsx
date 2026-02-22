@@ -20,11 +20,37 @@ import {
   MainDrawerParamsList,
 } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
-import { borderRadius } from '@/src/styles/outlines';
 import { ArticleType, PostType, SocialPostReaction } from '@/utils/types';
 
 import { NO_POST_IMAGE_URL, OpenURLButton } from '@/services/constants';
 import { RootState } from '@/src/redux/reducers/rootReducer';
+
+type ArticleItemProps = {
+  item: ArticleType;
+  blogPostStyle?: StyleProp<ViewStyle>;
+  blogPostImageStyle?: ImageStyle;
+  blogPostTitleStyle?: StyleProp<TextStyle>;
+  imageSizeType: ResizeMode;
+  pillText?: string;
+  onPress?: (item: ArticleType) => void;
+  onCommentsPress?: () => void;
+  parentRefreshContent?: Function;
+  onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
+  originFeedType?: string;
+};
+
+const MEDIA_RADIUS = 12;
+
+const areArticleItemPropsEqual = (prev: ArticleItemProps, next: ArticleItemProps) => {
+  return (
+    prev.item === next.item &&
+    prev.blogPostStyle === next.blogPostStyle &&
+    prev.blogPostImageStyle === next.blogPostImageStyle &&
+    prev.blogPostTitleStyle === next.blogPostTitleStyle &&
+    prev.imageSizeType === next.imageSizeType &&
+    prev.pillText === next.pillText
+  );
+};
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -40,27 +66,13 @@ function ArticleItem({
   blogPostImageStyle,
   blogPostTitleStyle,
   imageSizeType,
-  showModal,
-  iconSize,
-  hideProfileName,
   pillText,
   onPress,
   onCommentsPress,
   parentRefreshContent,
-}: {
-  item: ArticleType;
-  blogPostStyle?: StyleProp<ViewStyle>;
-  blogPostImageStyle?: ImageStyle;
-  blogPostTitleStyle?: StyleProp<TextStyle>;
-  imageSizeType: ResizeMode;
-  iconSize?: number;
-  showModal: (item: ArticleType) => void;
-  hideProfileName?: boolean;
-  pillText?: string;
-  onPress?: (item: ArticleType) => void;
-  onCommentsPress?: () => void;
-  parentRefreshContent?: Function;
-}) {
+  onTelemetryEvent,
+  originFeedType,
+}: ArticleItemProps) {
   const { colors, dark } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const navigation = useNavigation<ScreenNavigationProp>();
@@ -108,6 +120,15 @@ function ArticleItem({
         reactions: item.reactions ?? [],
         myReaction,
       }}
+      repostPayload={{
+        sourceType: 'rss',
+        sourceId: String(item.id ?? ''),
+        sourcePreview: {
+          title: isObject(itemData?.title) ? itemData?.title?.a.$text : itemData?.title,
+          link: item.link,
+        },
+        originFeedType,
+      }}
       created={itemData?.created}
       userData={item.userData}
       isApprovedInfluencer={itemData.userData.isApprovedInfluencer}
@@ -127,9 +148,13 @@ function ArticleItem({
       style={[blogPostStyle, rssNoShadowStyle]}
       parentRefreshContent={parentRefreshContent}
       onCommentsPress={handleCommentsPress}
+      onTelemetryEvent={onTelemetryEvent}
     >
       <TouchableOpacity
         onPress={() => {
+          onTelemetryEvent?.('open_article', {
+            postType: 'rss',
+          });
           if (itemData?.link) OpenURLButton(itemData?.link);
           if (onPress) onPress(item);
         }}
@@ -156,16 +181,20 @@ function ArticleItem({
               ? [
                   styles.blogpostimage,
                   {
-                    borderBottomRightRadius: borderRadius.small,
-                    borderBottomLeftRadius: borderRadius.small,
+                    borderTopRightRadius: MEDIA_RADIUS,
+                    borderTopLeftRadius: MEDIA_RADIUS,
+                    borderBottomRightRadius: MEDIA_RADIUS,
+                    borderBottomLeftRadius: MEDIA_RADIUS,
                   },
                   blogPostImageStyle,
                 ]
               : [
                   styles.blogpostimage,
                   {
-                    borderBottomRightRadius: borderRadius.small,
-                    borderBottomLeftRadius: borderRadius.small,
+                    borderTopRightRadius: MEDIA_RADIUS,
+                    borderTopLeftRadius: MEDIA_RADIUS,
+                    borderBottomRightRadius: MEDIA_RADIUS,
+                    borderBottomLeftRadius: MEDIA_RADIUS,
                   },
                 ]
           }
@@ -186,8 +215,8 @@ function ArticleItem({
           style={{
             paddingHorizontal: spacing.x10,
             paddingVertical: spacing.x5,
-            borderBottomEndRadius: borderRadius.small,
-            borderBottomStartRadius: borderRadius.small,
+            borderBottomEndRadius: MEDIA_RADIUS,
+            borderBottomStartRadius: MEDIA_RADIUS,
           }}
         >
           <View
@@ -234,7 +263,7 @@ function ArticleItem({
     </BaseItem>
   );
 }
-export default ArticleItem;
+export default React.memo(ArticleItem, areArticleItemPropsEqual);
 
 // <TouchableOpacity
 //   onPress={() => {
@@ -244,7 +273,7 @@ export default ArticleItem;
 //   <View style={styles.blogpostview}>
 //     <Image
 //       style={styles.blogpostimage}
-//       resizeMode="cover"
+//       resizeMode="contain"
 //       source={{ uri: itemData?.image?.url }}
 //     />
 //     <Text numberOfLines={2} style={styles.blogpostpara}>

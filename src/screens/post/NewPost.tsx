@@ -75,6 +75,8 @@ function NewPost({ navigation, route }: Props) {
   const FEED_IMAGE_HEIGHT = 1350;
   const IMAGE_QUALITY = 0.6;
   const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+  const ACTION_BAR_ICON_SIZE = 36;
+  const MEDIA_RADIUS = 12;
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
@@ -96,6 +98,13 @@ function NewPost({ navigation, route }: Props) {
   const [uploadImagesObject, setUploadImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
   const [isGiphyInitialized, setIsGiphyInitialized] = useState(false);
+  const repostDraft = route.params?.repostDraft;
+  const isQuoteMode = Boolean(repostDraft && !route.params?.postId);
+  const quoteSourceTitle =
+    repostDraft?.sourcePreview?.title ||
+    repostDraft?.sourcePreview?.content ||
+    repostDraft?.sourcePreview?.link ||
+    '';
 
   useFocusEffect(
     useCallback(() => {
@@ -108,6 +117,18 @@ function NewPost({ navigation, route }: Props) {
       return undefined;
     }, [colors.background, dark])
   );
+
+  useEffect(() => {
+    if (!isQuoteMode) {
+      return;
+    }
+    setLocation(null);
+    setLinkAttachments([]);
+    setImagesToUpload([]);
+    setUploadImagesObject([]);
+    setImagesObject([]);
+    setGif(null);
+  }, [isQuoteMode, repostDraft?.sourceId]);
 
   const ensureGiphyInitialized = useCallback(() => {
     if (isGiphyInitialized) {
@@ -352,6 +373,85 @@ function NewPost({ navigation, route }: Props) {
     }
   };
 
+  const postQuoteRepost = async () => {
+    if (!repostDraft?.sourceId || !repostDraft?.sourceType) {
+      toast.show('Unable to quote this post right now.', {
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return;
+    }
+
+    const quoteContent = content.trim();
+    if (!quoteContent) {
+      toast.show('Please add your thoughts before sharing.', {
+        type: 'danger',
+        placement: 'bottom',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await ApiCall({
+        route: 'social/repost',
+        token,
+        params: {
+          sourceType: repostDraft.sourceType,
+          sourceId: repostDraft.sourceId,
+          quoteContent,
+        },
+        verb: 'post',
+      });
+
+      if (result.status === 200) {
+        setContent('');
+        const responseMessage =
+          typeof (result.response as { message?: unknown })?.message === 'string'
+            ? String((result.response as { message?: string }).message)
+            : '';
+        toast.show(responseMessage || 'Quote posted to your feed', {
+          type: 'success',
+          placement: 'bottom',
+        });
+        navigation.navigate('MainRoot', {
+          screen: 'Main',
+          params: {
+            screen: 'HomeTab',
+            params: {
+              screen: 'Home',
+              params: {
+                selectedTab: repostDraft.originFeedType,
+                refreshToken: Date.now(),
+              },
+            },
+          },
+        } as any);
+      } else {
+        const responseMessage =
+          typeof (result?.response as { message?: unknown })?.message === 'string'
+            ? String((result.response as { message?: string }).message)
+            : '';
+        toast.show(responseMessage || 'Unable to quote this post right now.', {
+          type: 'danger',
+          placement: 'bottom',
+        });
+      }
+    } catch (error: any) {
+      const apiMessage =
+        (typeof error?.response?.data?.message === 'string' && error.response.data.message) ||
+        (typeof error?.response?.message === 'string' && error.response.message) ||
+        (typeof error?.message === 'string' && error.message) ||
+        '';
+      toast.show(apiMessage || 'Unable to quote this post right now.', {
+        type: 'danger',
+        placement: 'bottom',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // const getPostSocial = async () => {
   //   setIsLoading(true);
   //   try {
@@ -554,13 +654,14 @@ function NewPost({ navigation, route }: Props) {
     setLinkAttachments((previous) => previous.filter((item) => item.id !== id));
   };
 
-  const hasUploadData =
-    !!location ||
-    !!content ||
-    linkAttachments.length > 0 ||
-    !!uploadImagesObject?.length ||
-    imagesObject.length > 0 ||
-    !!mediaGif;
+  const hasUploadData = isQuoteMode
+    ? content.trim().length > 0
+    : !!location ||
+      !!content ||
+      linkAttachments.length > 0 ||
+      !!uploadImagesObject?.length ||
+      imagesObject.length > 0 ||
+      !!mediaGif;
 
   return (
     <ErrorBoundary>
@@ -608,7 +709,7 @@ function NewPost({ navigation, route }: Props) {
                 color: colors.text,
               }}
             >
-              Create Post
+              {isQuoteMode ? 'Quote Post' : 'Create Post'}
             </StyledText>
             <View style={{ width: 36 }} />
           </View>
@@ -661,6 +762,29 @@ function NewPost({ navigation, route }: Props) {
             </View>
 
             <View>
+              {isQuoteMode ? (
+                <View
+                  style={{
+                    marginBottom: spacing.x16,
+                    borderRadius: borderRadius.base,
+                    borderWidth: 1,
+                    borderColor: Colors.neutral[700],
+                    backgroundColor: Colors.neutral[700],
+                    paddingHorizontal: spacing.x13,
+                    paddingVertical: spacing.x10,
+                  }}
+                >
+                  <StyledText style={{ color: Colors.primary.brand, fontWeight: '700' }}>
+                    Quoting
+                  </StyledText>
+                  <StyledText
+                    numberOfLines={3}
+                    style={{ marginTop: spacing.x5, color: colors.text }}
+                  >
+                    {quoteSourceTitle || 'Original post'}
+                  </StyledText>
+                </View>
+              ) : null}
               {location ? (
                 <View
                   style={{
@@ -726,7 +850,7 @@ function NewPost({ navigation, route }: Props) {
                 returnKeyType="default"
                 label=""
                 autoCorrect
-                placeholder="What's on your heart?"
+                placeholder={isQuoteMode ? 'Add your thoughts...' : "What's on your heart?"}
                 placeholderTextColor={Colors.neutral[300]}
                 // onSubmitEditing={() => inputRefs.password?.current.focus()}
                 onChangeText={(value) => {
@@ -828,17 +952,26 @@ function NewPost({ navigation, route }: Props) {
                           >
                             <CloseCircle size="30" color="#fff" />
                           </TouchableOpacity>
-                          <FastImage
+                          <View
                             style={{
                               height: 80,
                               width: 80,
-                              borderRadius: borderRadius.base,
+                              borderRadius: MEDIA_RADIUS,
+                              overflow: 'hidden',
                             }}
-                            source={{
-                              uri: image.uri,
-                            }}
-                            resizeMode="cover"
-                          />
+                          >
+                            <FastImage
+                              style={{
+                                height: 80,
+                                width: 80,
+                                borderRadius: MEDIA_RADIUS,
+                              }}
+                              source={{
+                                uri: image.uri,
+                              }}
+                              resizeMode="contain"
+                            />
+                          </View>
                         </View>
                       );
                     })}
@@ -869,17 +1002,26 @@ function NewPost({ navigation, route }: Props) {
                           >
                             <CloseCircle size="30" color="#fff" />
                           </TouchableOpacity>
-                          <FastImage
+                          <View
                             style={{
                               height: 80,
                               width: 80,
-                              borderRadius: borderRadius.base,
+                              borderRadius: MEDIA_RADIUS,
+                              overflow: 'hidden',
                             }}
-                            source={{
-                              uri: image,
-                            }}
-                            resizeMode="cover"
-                          />
+                          >
+                            <FastImage
+                              style={{
+                                height: 80,
+                                width: 80,
+                                borderRadius: MEDIA_RADIUS,
+                              }}
+                              source={{
+                                uri: image,
+                              }}
+                              resizeMode="contain"
+                            />
+                          </View>
                         </View>
                       );
                     })}
@@ -890,7 +1032,8 @@ function NewPost({ navigation, route }: Props) {
                         padding: 10,
                         height: 100,
                         width: 100,
-                        borderRadius: borderRadius.base,
+                        borderRadius: MEDIA_RADIUS,
+                        overflow: 'hidden',
                       }}
                     >
                       <TouchableOpacity
@@ -912,10 +1055,10 @@ function NewPost({ navigation, route }: Props) {
                       </TouchableOpacity>
                       <GiphyMediaView
                         media={mediaGif}
-                        resizeMode="cover"
+                        resizeMode="contain"
                         style={{
                           aspectRatio: mediaGif.aspectRatio,
-                          borderRadius: borderRadius.base,
+                          borderRadius: MEDIA_RADIUS,
 
                           overflow: 'hidden',
                         }}
@@ -988,18 +1131,25 @@ function NewPost({ navigation, route }: Props) {
 
               <View
                 style={{
-                  columnGap: spacing.x16,
                   flexDirection: 'row',
                   paddingVertical: spacing.x13,
+                  paddingHorizontal: spacing.x8,
                   borderTopWidth: 1,
                   borderTopColor: Colors.neutral[700],
                   marginTop: spacing.x16,
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  justifyContent: 'center',
+                  columnGap: 'spacing.x12',
                 }}
               >
                 <View
-                  style={{ flexDirection: 'row', alignItems: 'center', columnGap: spacing.x16 }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    columnGap: spacing.x32,
+                  }}
                 >
                   <TouchableOpacity
                     onPress={() => {
@@ -1039,7 +1189,18 @@ function NewPost({ navigation, route }: Props) {
                   >
                     <MaterialCommunityIcons
                       name="image-outline"
-                      size={26}
+                      size={ACTION_BAR_ICON_SIZE}
+                      color={Colors.primary.brand}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={async () => {
+                      navigation.navigate('VideoPost', { openCameraOnMount: true });
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="video-outline"
+                      size={ACTION_BAR_ICON_SIZE}
                       color={Colors.primary.brand}
                     />
                   </TouchableOpacity>
@@ -1057,71 +1218,22 @@ function NewPost({ navigation, route }: Props) {
                   >
                     <MaterialCommunityIcons
                       name="file-gif-box"
-                      size={26}
-                      color={Colors.primary.brand}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={async () => {
-                      navigation.navigate('VideoPost');
-                    }}
-                  >
-                    <MaterialCommunityIcons
-                      name="video-outline"
-                      size={26}
+                      size={ACTION_BAR_ICON_SIZE}
                       color={Colors.primary.brand}
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
-                      setIsEmojiPickerOpen(true);
-                      setAttachmentMode(null);
+                      setLocationSelector(true);
                     }}
                   >
                     <MaterialCommunityIcons
-                      name="emoticon-happy-outline"
-                      size={26}
-                      color={Colors.primary.brand}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setAttachmentMode((previous) =>
-                        previous === 'document' ? null : 'document'
-                      );
-                      setIsEmojiPickerOpen(false);
-                    }}
-                  >
-                    <MaterialCommunityIcons
-                      name="file-document-outline"
-                      size={26}
-                      color={Colors.primary.brand}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setAttachmentMode((previous) => (previous === 'link' ? null : 'link'));
-                      setIsEmojiPickerOpen(false);
-                    }}
-                  >
-                    <MaterialCommunityIcons
-                      name="link-variant"
-                      size={26}
-                      color={Colors.primary.brand}
+                      name="map-marker-outline"
+                      size={ACTION_BAR_ICON_SIZE}
+                      color={location ? Colors.primary.brand : Colors.neutral[300]}
                     />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  onPress={() => {
-                    setLocationSelector(true);
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name="map-marker-outline"
-                    size={24}
-                    color={location ? Colors.primary.brand : Colors.neutral[300]}
-                  />
-                </TouchableOpacity>
               </View>
               <Button
                 disabled={
@@ -1130,6 +1242,8 @@ function NewPost({ navigation, route }: Props) {
                 onPress={() => {
                   if (route.params?.postId) {
                     editSocial();
+                  } else if (isQuoteMode) {
+                    postQuoteRepost();
                   } else {
                     postSocial();
                   }
@@ -1156,7 +1270,7 @@ function NewPost({ navigation, route }: Props) {
                       <ActivityIndicator />
                     ) : (
                       <StyledText style={{ color: 'white' }}>
-                        {route.params?.postId ? 'Update Post' : 'Post'}
+                        {route.params?.postId ? 'Update Post' : isQuoteMode ? 'Quote Post' : 'Post'}
                       </StyledText>
                     )}
                   </>

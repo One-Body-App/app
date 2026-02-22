@@ -121,14 +121,33 @@ function SinglePost({ navigation, route }: Props) {
           type={PostType.social}
           postId={route.params?.postId ?? ''}
           onPostRefresh={getPost}
+          headerContainerStyle={{
+            paddingHorizontal: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            borderBottomWidth: 0,
+          }}
           header={
             <SocialItem
               editPost={editPost}
               removePost={removePost}
               itemData={post}
               socialPostviewStyle={{
+                marginHorizontal: 0,
+                marginBottom: 0,
+                borderRadius: 0,
+                borderWidth: 0,
+                borderTopWidth: 0,
+                borderRightWidth: 0,
+                borderLeftWidth: 0,
                 borderBottomColor: Colors.neutral[800],
                 borderBottomWidth: borderWidth.thin,
+                shadowColor: 'transparent',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0,
+                shadowRadius: 0,
+                elevation: 0,
+                backgroundColor: 'transparent',
               }}
             />
           }

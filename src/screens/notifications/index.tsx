@@ -69,13 +69,13 @@ const CHIP_ICONS: Partial<Record<CategoryKey, MaterialIconName>> = {
 };
 
 const CHIP_MIN_WIDTHS: Record<CategoryKey, number> = {
-  all: 88,
-  tagged: 126,
-  feed: 96,
-  prayers: 112,
-  blog_posts: 132,
-  serve: 94,
-  go: 82,
+  all: 59,
+  tagged: 84,
+  feed: 64,
+  prayers: 75,
+  blog_posts: 88,
+  serve: 63,
+  go: 55,
 };
 
 const CATEGORY_LABELS: Record<CategoryKey, string> = CATEGORY_OPTIONS.reduce(
@@ -173,7 +173,7 @@ const getPrimaryCategory = (item: InboxNotification): Exclude<CategoryKey, 'all'
 function NotificationScreen({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors, dark } = useTheme();
-  const styles = useMemo(() => createStyles(dark, colors), [colors, dark]);
+  const styles = createStyles(dark, colors);
 
   const [notifications, setNotifications] = useState<InboxNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -239,15 +239,51 @@ function NotificationScreen({ navigation }: Props) {
   }, [loadNotifications]);
 
   useEffect(() => {
+    const parent = navigation.getParent();
+
+    const hideAndroidTabBar = () => {
+      if (Platform.OS !== 'android') {
+        return;
+      }
+
+      parent?.setOptions({
+        tabBarStyle: {
+          display: 'none',
+          height: 0,
+          opacity: 0,
+        },
+      });
+    };
+
+    const restoreAndroidTabBar = () => {
+      if (Platform.OS !== 'android') {
+        return;
+      }
+
+      parent?.setOptions({
+        tabBarStyle: undefined,
+      });
+    };
+
     if (navigation.isFocused()) {
       setListInstanceKey((current) => current + 1);
+      hideAndroidTabBar();
     }
 
-    const unsubscribe = navigation.addListener('focus', () => {
+    const unsubscribeFocus = navigation.addListener('focus', () => {
       setListInstanceKey((current) => current + 1);
+      hideAndroidTabBar();
     });
 
-    return unsubscribe;
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      restoreAndroidTabBar();
+    });
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+      restoreAndroidTabBar();
+    };
   }, [navigation]);
 
   const markAsRead = useCallback(
@@ -336,7 +372,7 @@ function NotificationScreen({ navigation }: Props) {
           <Pressable onPress={() => navigation.goBack()} style={styles.headerBackButton}>
             <MaterialCommunityIcons
               name="chevron-left"
-              size={30}
+              size={Platform.OS === 'ios' ? 40 : 30}
               color={dark ? Colors.neutral[200] : Colors.neutral[300]}
             />
           </Pressable>
@@ -574,7 +610,7 @@ const createStyles = (dark: boolean, colors: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingTop: spacing.x8,
+      paddingTop: Platform.OS === 'ios' ? spacing.x64 : spacing.x13,
       paddingHorizontal: spacing.x16,
       paddingBottom: spacing.x5,
     },
@@ -596,11 +632,8 @@ const createStyles = (dark: boolean, colors: any) =>
     headerTitleIOS: {
       ...Typography.body.x5M,
       color: colors.text,
-      position: 'absolute',
-      left: 0,
-      right: 0,
+      flex: 1,
       textAlign: 'center',
-      zIndex: -1,
     },
     headerActionButton: {
       width: 32,
@@ -610,13 +643,14 @@ const createStyles = (dark: boolean, colors: any) =>
     },
     chipsContainer: {
       paddingHorizontal: spacing.x16,
+      paddingTop: spacing.x10,
       paddingBottom: spacing.x8,
       gap: spacing.x8,
     },
     chip: {
-      paddingHorizontal: spacing.x16,
-      height: 38,
-      borderRadius: 19,
+      paddingHorizontal: 11,
+      height: 25,
+      borderRadius: 12.5,
       backgroundColor: dark ? Colors.neutral[800] : '#EDEEF1',
       alignItems: 'center',
       justifyContent: 'center',

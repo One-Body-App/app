@@ -43,6 +43,7 @@ type VideoItemProps = {
   fromSavedPosts: boolean;
   parentRefreshContent?: Function;
   onShowDismissCard?: (e?: boolean) => void;
+  onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
 };
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<HomeStackParamsList, 'Home'>,
@@ -61,6 +62,7 @@ const VideoItem = gestureHandlerRootHOC(
     parentRefreshContent,
     onShowDismissCard,
     currentIndex,
+    onTelemetryEvent,
   }: PropsWithChildren<VideoItemProps>) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
@@ -286,7 +288,11 @@ const VideoItem = gestureHandlerRootHOC(
         ) : null}
         <TouchableHighlight
           onPress={() => {
-            setIsPaused(!isPaused);
+            const nextPaused = !isPaused;
+            setIsPaused(nextPaused);
+            onTelemetryEvent?.(nextPaused ? 'video_pause' : 'video_play', {
+              postType: PostType.watch,
+            });
           }}
           style={styles.video}
         >
@@ -294,7 +300,7 @@ const VideoItem = gestureHandlerRootHOC(
             <CustomVideo
               ref={videRef}
               source={{ uri: `https://stream.mux.com/${item.playBackId!}.m3u8` }}
-              resizeMode="cover"
+              resizeMode="contain"
               style={[styles.video, { width, height: viewHeight }]}
               onLoad={() => {
                 setIsLoading(false);
@@ -329,6 +335,7 @@ const VideoItem = gestureHandlerRootHOC(
             isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
             onShowDismissCard={onShowDismissCard}
             index={currentIndex}
+            onTelemetryEvent={onTelemetryEvent}
             onPress={() => {
               if (item.userData._id !== user?._id) {
                 navigation.navigate('Main', {
@@ -343,6 +350,9 @@ const VideoItem = gestureHandlerRootHOC(
               }
             }}
             onCommentsPress={() => {
+              onTelemetryEvent?.('open_comments', {
+                postType: PostType.watch,
+              });
               handlePresentModalPress();
             }}
           >

@@ -1281,7 +1281,7 @@ function SkiaImageEditorModal({
                         y={imageFrame.y}
                         width={imageFrame.width}
                         height={imageFrame.height}
-                        fit="fill"
+                        fit="contain"
                       >
                         <ColorMatrix matrix={combinedColorMatrix} />
                       </SkiaImage>
@@ -1417,7 +1417,7 @@ function SkiaImageEditorModal({
                     ) : (
                       <Canvas style={styles.previewCanvas}>
                         {image ? (
-                          <SkiaImage image={image} x={0} y={0} width={64} height={64} fit="cover">
+                          <SkiaImage image={image} x={0} y={0} width={64} height={64} fit="contain">
                             <ColorMatrix
                               matrix={multiply4x5(adjustMatrixById(adjust), filterMatrixById(id))}
                             />

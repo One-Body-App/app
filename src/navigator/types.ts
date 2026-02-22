@@ -44,7 +44,7 @@
 
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { Animated, StyleProp, TextProps, TextStyle } from 'react-native';
-import { AccountType, PostType } from '@/utils/types';
+import { AccountType, PostType, WatchPost } from '@/utils/types';
 import { FeedTypes } from '../screens/home';
 
 //   RemoveAccount: undefined;
@@ -92,6 +92,7 @@ export type HomeStackParamsList = {
   Home: {
     tabs?: string;
     selectedTab?: FeedTypes;
+    refreshToken?: number;
   };
   InfluencerSettings: {
     code?: string;
@@ -117,7 +118,11 @@ export type HomeStackParamsList = {
   };
   Search: undefined;
   Notifications: undefined;
-  WatchPortal: undefined;
+  WatchPortal?: {
+    initialPostId?: string;
+    initialPlaybackId?: string;
+    initialWatchPost?: WatchPost;
+  };
   UserProfile: {
     id: string;
   };
@@ -177,6 +182,14 @@ export type SearchStackParamsList = {
   };
 };
 
+export type ConnectStackParamsList = {
+  ConnectPortal: undefined;
+  ConnectMap: undefined;
+  UserProfile: {
+    id: string;
+  };
+};
+
 export type MyProfileStackParamsList = {
   MyProfile?: {
     openSettings?: boolean;
@@ -186,10 +199,11 @@ export type MyProfileStackParamsList = {
 };
 
 export type MainBottomStackParamsList = {
-  ExploreTab: NavigatorScreenParams<ExploreStackParamsList>;
-  SearchTab: NavigatorScreenParams<SearchStackParamsList>;
+  ExploreTab: NavigatorScreenParams<ConnectStackParamsList>;
+  SearchTab: NavigatorScreenParams<ExploreStackParamsList>;
   PostTab: NavigatorScreenParams<PostStackParamsList>;
   HomeTab: NavigatorScreenParams<HomeStackParamsList>;
+  ZoeTab: undefined;
   MyProfileTab: NavigatorScreenParams<MyProfileStackParamsList>;
 };
 
@@ -290,6 +304,18 @@ export type MainStackParamList = {
   MainRoot?: NavigatorScreenParams<MainDrawerParamsList>;
   Post?: {
     postId?: string;
+    repostDraft?: {
+      sourceType: 'social' | 'prayer' | 'rss';
+      sourceId: string;
+      sourcePreview?: {
+        title?: string;
+        content?: string;
+        link?: string;
+        category?: string;
+        isPrivate?: boolean;
+      };
+      originFeedType?: FeedTypes;
+    };
   };
   UploadImage?: {
     requestId: string;
@@ -345,7 +371,13 @@ export type MainStackParamList = {
   ForgotPassword: { email?: string } | undefined;
 
   ConfirmLogin: ConfirmLoginScreen;
-  VideoPost: undefined;
+  VideoPost:
+    | {
+        imagePath?: string;
+        videoPath?: string;
+        openCameraOnMount?: boolean;
+      }
+    | undefined;
 };
 
 type ConfirmLoginScreen = {
