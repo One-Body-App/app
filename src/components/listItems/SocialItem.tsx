@@ -67,6 +67,7 @@ const SUPPORTED_FEED_VIDEO_RATIOS = [16 / 9, 4 / 3, 1, 9 / 16];
 const FEED_PORTRAIT_VIDEO_RATIO = 9 / 16;
 const FEED_MEDIA_RADIUS = 12;
 const CONTAIN_FRAME_BACKGROUND = Colors.containFrame;
+const HOME_FEED_MAX_VIDEO_HEIGHT = 420;
 
 const stripTrailingPunctuation = (url: string) => url.replace(/[^A-Za-z0-9/?#&=._~:-]+$/g, '');
 
@@ -198,6 +199,13 @@ const getNearestSupportedVideoRatio = (ratio?: number) => {
   });
 };
 
+const getSafeVideoRatio = (ratio?: number) => {
+  if (!ratio || !Number.isFinite(ratio) || ratio <= 0) {
+    return 16 / 9;
+  }
+  return ratio;
+};
+
 const getDomainName = (linkUrl: string) => {
   const domainText = linkUrl.replace('https://', '').replace('http://', '').replace('www.', '');
 
@@ -293,7 +301,8 @@ function SocialItem({
   const repostMeta = itemData?.repost;
   const isQuoteRepost = repostMeta?.repostType === 'quote';
   const isPlainRepost = repostMeta?.repostType === 'repost';
-  const isPrimaryHomeFeed = originFeedType === 'connected' || originFeedType === 'forYou';
+  const isPrimaryHomeFeed =
+    originFeedType === 'connected' || originFeedType === 'forYou' || originFeedType === 'foryou';
 
   let profileUrl = '';
   if (itemData?.source === 'twitter') {
@@ -814,9 +823,9 @@ function SocialItem({
               onPress={handleRepostSourceOpen}
               style={{
                 borderRadius: FEED_MEDIA_RADIUS,
-                borderColor: colors.border,
+                borderColor: 'rgba(3, 47, 60, 0.3)',
                 borderWidth: borderWidth.thin,
-                backgroundColor: colors.card,
+                backgroundColor: 'transparent',
                 overflow: 'hidden',
               }}
             >
@@ -1132,12 +1141,26 @@ function SocialItem({
             const isVideoMedia = mediaType === 'video' || mediaType.startsWith('video/');
             if (isVideoMedia) {
               const { playBackId } = itemData as SocialPost & { playBackId?: string };
-              const resolvedVideoAspect = getNearestSupportedVideoRatio(
-                videoAspectByUrl[mediaItem.url]
-              );
+              const sourceVideoAspect = getSafeVideoRatio(videoAspectByUrl[mediaItem.url]);
+              const resolvedVideoAspect = isPrimaryHomeFeed
+                ? sourceVideoAspect
+                : getNearestSupportedVideoRatio(sourceVideoAspect);
               const isPortraitVideo =
                 Math.abs(resolvedVideoAspect - FEED_PORTRAIT_VIDEO_RATIO) < 0.001;
               const videoRadius = isPortraitVideo ? FEED_MEDIA_RADIUS : 0;
+              const resolvedWidth = Number(width ?? 0);
+              const canApplyHomeSizing = isPrimaryHomeFeed && resolvedWidth > 0;
+              const rawHomeHeight = canApplyHomeSizing ? resolvedWidth / resolvedVideoAspect : 0;
+              const shouldCapHomePortrait =
+                canApplyHomeSizing &&
+                resolvedVideoAspect < 1 &&
+                rawHomeHeight > HOME_FEED_MAX_VIDEO_HEIGHT;
+              const homeVideoWidth = shouldCapHomePortrait
+                ? HOME_FEED_MAX_VIDEO_HEIGHT * resolvedVideoAspect
+                : resolvedWidth;
+              const homeVideoHeight = shouldCapHomePortrait
+                ? HOME_FEED_MAX_VIDEO_HEIGHT
+                : rawHomeHeight;
               return (
                 <Pressable
                   key={`${mediaItem.type}-${mediaItem.url ?? `video-${mediaIndex}`}`}
@@ -1162,14 +1185,18 @@ function SocialItem({
                     style={{
                       marginVertical: 10,
                       borderRadius: videoRadius,
+                      alignSelf: canApplyHomeSizing ? 'center' : undefined,
+                      width: canApplyHomeSizing ? homeVideoWidth : '100%',
+                      height: canApplyHomeSizing ? homeVideoHeight : undefined,
                       overflow: videoRadius > 0 ? 'hidden' : 'visible',
                     }}
                   >
                     <CustomVideo
                       source={{ uri: mediaItem.url }}
                       style={{
-                        width: '100%',
-                        aspectRatio: resolvedVideoAspect,
+                        width: canApplyHomeSizing ? homeVideoWidth : '100%',
+                        height: canApplyHomeSizing ? homeVideoHeight : undefined,
+                        aspectRatio: canApplyHomeSizing ? undefined : resolvedVideoAspect,
                         borderRadius: videoRadius,
                       }}
                       controls={false}
@@ -1188,9 +1215,10 @@ function SocialItem({
                         ) {
                           return;
                         }
-                        const nextRatio = getNearestSupportedVideoRatio(
-                          naturalWidth / naturalHeight
-                        );
+                        const naturalRatio = naturalWidth / naturalHeight;
+                        const nextRatio = isPrimaryHomeFeed
+                          ? getSafeVideoRatio(naturalRatio)
+                          : getNearestSupportedVideoRatio(naturalRatio);
                         setVideoAspectByUrl((previous) => {
                           if (previous[mediaItem.url] === nextRatio) {
                             return previous;

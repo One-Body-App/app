@@ -752,17 +752,14 @@ function Explore({ navigation }: Props) {
 
   const handleOpenWatchPost = useCallback(
     (watchItem: WatchPost) => {
-      navigation.navigate('Main', {
-        screen: 'HomeTab',
-        params: {
-          screen: 'WatchPortal',
-          params: {
-            initialPostId: String(watchItem.postId ?? watchItem.id ?? ''),
-            initialPlaybackId: watchItem.playBackId,
-            initialWatchPost: watchItem,
-          },
-        },
-      });
+      navigation.push(
+        'WatchPortal' as never,
+        {
+          initialPostId: String(watchItem.postId ?? watchItem.id ?? ''),
+          initialPlaybackId: watchItem.playBackId,
+          initialWatchPost: watchItem,
+        } as never
+      );
     },
     [navigation]
   );

@@ -11,6 +11,7 @@ export const ApiCall = async <T = any>({
   baseurl,
   external,
   isFormUrlEncode,
+  suppressErrorLog = false,
   timeoutMs = 300000,
 }: //
 {
@@ -21,6 +22,7 @@ export const ApiCall = async <T = any>({
   baseurl?: string;
   external?: boolean;
   isFormUrlEncode?: boolean;
+  suppressErrorLog?: boolean;
   timeoutMs?: number;
 }): Promise<{ status: number; response: T }> => {
   try {
@@ -117,7 +119,9 @@ export const ApiCall = async <T = any>({
   } catch (err: unknown) {
     const axiosError = err as AxiosError;
     const message = axiosError.response?.data ?? axiosError.message ?? err;
-    console.warn('ApiCall error', route, axiosError?.response?.status, message);
+    if (!suppressErrorLog) {
+      console.warn('ApiCall error', route, axiosError?.response?.status, message);
+    }
 
     const status = axiosError?.response?.status;
     const isAuthEndpoint = route.startsWith('auth/login') || route.startsWith('auth/register');
@@ -178,7 +182,9 @@ export const ApiCall = async <T = any>({
           const retryStatus = retryAxiosError?.response?.status ?? 400;
           const retryMessage =
             retryAxiosError.response?.data ?? retryAxiosError.message ?? retryErr;
-          console.warn('ApiCall retry error', route, retryStatus, retryMessage);
+          if (!suppressErrorLog) {
+            console.warn('ApiCall retry error', route, retryStatus, retryMessage);
+          }
         }
       }
     }

@@ -31,6 +31,45 @@ const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const getScreenParam = (params: unknown): string | undefined => {
+  if (!isRecord(params)) {
+    return undefined;
+  }
+  const { screen } = params;
+  return typeof screen === 'string' ? screen : undefined;
+};
+
+const getNestedScreenParam = (params: unknown): string | undefined => {
+  if (!isRecord(params)) {
+    return undefined;
+  }
+  return getScreenParam(params.params);
+};
+
+const getActiveNestedRouteName = (route: any): string | undefined => {
+  if (!route) {
+    return undefined;
+  }
+
+  const { state } = route;
+  if (!state || !Array.isArray(state.routes) || typeof state.index !== 'number') {
+    if (typeof route.params?.screen === 'string') {
+      return route.params.screen;
+    }
+    return route.name;
+  }
+
+  const childRoute = state.routes[state.index];
+  if (!childRoute) {
+    return route.name;
+  }
+
+  return getActiveNestedRouteName(childRoute) ?? childRoute.name;
+};
+
 function SlideInOnFocus({ children }: { children: React.ReactNode }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const hasFocusedOnce = useRef(false);
@@ -156,18 +195,14 @@ function HomeTabIcon({ color }: { color: string }) {
 
 HomeTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
-  focused: PropTypes.bool,
-  size: PropTypes.number,
 };
 
 function ExploreTabIcon({ color }: { color: string }) {
-  return <MaterialIcons name="public" size={28} color={color} />;
+  return <MaterialIcons name="search" size={28} color={color} />;
 }
 
 ExploreTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
-  focused: PropTypes.bool,
-  size: PropTypes.number,
 };
 
 function ConnectTabIcon({ color }: { color: string }) {
@@ -180,8 +215,6 @@ function ConnectTabIcon({ color }: { color: string }) {
 
 ConnectTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
-  focused: PropTypes.bool,
-  size: PropTypes.number,
 };
 
 function ZoeTabIcon({ focused, color }: { focused: boolean; color: string }) {
@@ -200,7 +233,6 @@ function ZoeTabIcon({ focused, color }: { focused: boolean; color: string }) {
 ZoeTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
   focused: PropTypes.bool,
-  size: PropTypes.number,
 };
 
 function BottomStack() {
@@ -311,7 +343,14 @@ function BottomStack() {
             },
           }}
           options={({ route }) => {
-            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'Home';
+            const pendingScreen = getScreenParam(route.params);
+            const nestedPendingScreen = getNestedScreenParam(route.params);
+            const focusedRouteName =
+              getActiveNestedRouteName(route) ??
+              (typeof pendingScreen === 'string' ? pendingScreen : undefined) ??
+              (typeof nestedPendingScreen === 'string' ? nestedPendingScreen : undefined) ??
+              getFocusedRouteNameFromRoute(route) ??
+              'Home';
             const shouldHideTabBar = focusedRouteName === 'Notifications';
 
             return {

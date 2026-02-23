@@ -22,6 +22,7 @@ import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
   PostType,
+  SocialPostReaction,
   ReactionDetailsResponse,
   ReactionDetailsTab,
   ReactionDetailsUser,
@@ -32,6 +33,7 @@ type PostReactionsModalProps = {
   visible: boolean;
   postType?: PostType;
   postId?: string;
+  fallbackReactions?: SocialPostReaction[];
   initialTab?: ReactionDetailsTab;
   onClose: () => void;
 };
@@ -125,6 +127,7 @@ function PostReactionsModal({
   visible,
   postType,
   postId,
+  fallbackReactions,
   initialTab = 'all',
   onClose,
 }: PostReactionsModalProps) {
@@ -137,9 +140,13 @@ function PostReactionsModal({
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [useLegacyFallback, setUseLegacyFallback] = useState(false);
   const [connectionOverrides, setConnectionOverrides] = useState<Record<string, boolean>>({});
   const [connectingUserIds, setConnectingUserIds] = useState<string[]>([]);
   const itemsCountRef = useRef(0);
+  const userProfileCacheRef = useRef<
+    Record<string, { name?: string; username?: string; profileImage?: string }>
+  >({});
 
   const route = useMemo(() => getReactionsRoute(postType, postId), [postId, postType]);
 
@@ -173,10 +180,110 @@ function PostReactionsModal({
       }
 
       try {
+        if (useLegacyFallback) {
+          const allReactions = Array.isArray(fallbackReactions) ? fallbackReactions : [];
+          const latestReactionByUser = new Map<
+            string,
+            {
+              userId: string;
+              reactionType: Exclude<ReactionDetailsTab, 'all'>;
+              sortTime: number;
+            }
+          >();
+
+          allReactions.forEach((reaction) => {
+            const userId = String(reaction?.userId ?? '').trim();
+            if (!userId) {
+              return;
+            }
+
+            const reactionType = normalizeReactionType(reaction?.type);
+            const updatedAtMs = reaction?.updatedAt ? new Date(reaction.updatedAt).getTime() : 0;
+            const createdAtMs = reaction?.createdAt ? new Date(reaction.createdAt).getTime() : 0;
+            const sortTime =
+              Number.isFinite(updatedAtMs) && updatedAtMs > 0 ? updatedAtMs : createdAtMs;
+
+            const existing = latestReactionByUser.get(userId);
+            if (!existing || sortTime >= existing.sortTime) {
+              latestReactionByUser.set(userId, {
+                userId,
+                reactionType,
+                sortTime,
+              });
+            }
+          });
+
+          const normalizedReactions = Array.from(latestReactionByUser.values()).sort(
+            (first, second) => second.sortTime - first.sortTime
+          );
+
+          const nextTotals = { ...DEFAULT_TOTALS };
+          normalizedReactions.forEach((entry) => {
+            nextTotals[entry.reactionType] += 1;
+            nextTotals.all += 1;
+          });
+          setTotals(nextTotals);
+
+          const filteredReactions =
+            activeTab === 'all'
+              ? normalizedReactions
+              : normalizedReactions.filter((entry) => entry.reactionType === activeTab);
+          const pagedReactions = filteredReactions.slice(skip, skip + PAGE_SIZE);
+          const userIdsToLoad = Array.from(
+            new Set(pagedReactions.map((entry) => entry.userId))
+          ).filter((userId) => !userProfileCacheRef.current[userId]);
+
+          if (userIdsToLoad.length > 0) {
+            await Promise.all(
+              userIdsToLoad.map(async (userId) => {
+                try {
+                  const userRes = await ApiCall({
+                    token,
+                    route: `user/${userId}`,
+                    verb: 'get',
+                  });
+
+                  if (userRes?.status === 200) {
+                    const profile = userRes.response as {
+                      name?: string;
+                      username?: string;
+                      profileImage?: string;
+                    };
+                    userProfileCacheRef.current[userId] = {
+                      name: profile?.name ?? '',
+                      username: profile?.username ?? '',
+                      profileImage: profile?.profileImage ?? '',
+                    };
+                  }
+                } catch (error) {
+                  userProfileCacheRef.current[userId] = {};
+                }
+              })
+            );
+          }
+
+          const mappedItems: ReactionDetailsUser[] = pagedReactions.map((entry) => {
+            const cachedUser = userProfileCacheRef.current[entry.userId] ?? {};
+            return {
+              userId: entry.userId,
+              name: cachedUser.name || 'User',
+              username: cachedUser.username || 'unknown',
+              profileImage: cachedUser.profileImage || NO_PROFILE_IMAGE,
+              reactionType: entry.reactionType,
+              isConnected: Boolean(currentUser?.following?.includes(entry.userId)),
+            };
+          });
+
+          setItems((previous) => (reset ? mappedItems : mergeUsers(previous, mappedItems)));
+          setHasMore(skip + PAGE_SIZE < filteredReactions.length);
+          return;
+        }
+
         const res = await ApiCall<ReactionDetailsResponse>({
           token,
           route: `${route}?tab=${activeTab}&skip=${skip}&limit=${PAGE_SIZE}`,
           verb: 'get',
+          suppressErrorLog: true,
         });
 
         if (res?.status === 200 && res.response) {
@@ -197,6 +304,11 @@ function PostReactionsModal({
           return;
         }
 
+        if (res?.status === 404) {
+          setUseLegacyFallback(true);
+          return;
+        }
+
         const message =
           typeof (res?.response as { message?: unknown })?.message === 'string'
             ? String((res.response as { message?: string }).message)
@@ -212,7 +324,16 @@ function PostReactionsModal({
         }
       }
     },
-    [activeTab, mergeUsers, route, token, visible]
+    [
+      activeTab,
+      currentUser?.following,
+      fallbackReactions,
+      mergeUsers,
+      route,
+      token,
+      useLegacyFallback,
+      visible,
+    ]
   );
 
   useEffect(() => {
@@ -241,6 +362,8 @@ function PostReactionsModal({
     if (!visible) {
       setConnectionOverrides({});
       setConnectingUserIds([]);
+      setUseLegacyFallback(false);
+      userProfileCacheRef.current = {};
     }
   }, [visible]);
 
@@ -389,8 +512,7 @@ function PostReactionsModal({
         backgroundColor: dark ? '#0f1f25' : '#ffffff',
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
-        minHeight: 420,
-        maxHeight: '88%',
+        height: '75%',
       }}
     >
       <View style={styles.dragHandleWrap}>

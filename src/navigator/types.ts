@@ -118,11 +118,6 @@ export type HomeStackParamsList = {
   };
   Search: undefined;
   Notifications: undefined;
-  WatchPortal?: {
-    initialPostId?: string;
-    initialPlaybackId?: string;
-    initialWatchPost?: WatchPost;
-  };
   UserProfile: {
     id: string;
   };
@@ -382,6 +377,11 @@ export type MainStackParamList = {
         openCameraOnMount?: boolean;
       }
     | undefined;
+  WatchPortal?: {
+    initialPostId?: string;
+    initialPlaybackId?: string;
+    initialWatchPost?: WatchPost;
+  };
 };
 
 type ConfirmLoginScreen = {

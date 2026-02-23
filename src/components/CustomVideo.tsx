@@ -1,8 +1,6 @@
 import React, { forwardRef, useRef, useImperativeHandle } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Video, { OnLoadData, OnProgressData } from 'react-native-video';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 type CustomVideoProps = {
   source: { uri: string };
@@ -26,7 +24,7 @@ const CustomVideo = forwardRef<VideoRef, CustomVideoProps>((props, ref) => {
     paused = false,
     repeat = true,
     resizeMode = 'contain',
-    controls = true,
+    controls = false,
     muted = false,
     poster,
     style,
@@ -62,9 +60,8 @@ const CustomVideo = forwardRef<VideoRef, CustomVideoProps>((props, ref) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: screenWidth,
-    aspectRatio: 16 / 9,
-    backgroundColor: '#000',
+    width: '100%',
+    height: '100%',
     overflow: 'hidden',
   },
 });

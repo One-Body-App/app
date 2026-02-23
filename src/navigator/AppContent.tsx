@@ -65,6 +65,7 @@ import SinglePost from '../screens/post/Single'; // Adjust path
 import RssPost from '../screens/post/RssPost'; // Adjust path
 import ReportPost from '../screens/post/ReportPost'; // Adjust path
 import ReportStatus from '../screens/post/ReportStatus'; // Adjust path
+import Watch from '../screens/home/watch';
 import { headerOptions } from './global'; // Adjust path
 import { PostType } from '@/utils/types';
 import {
@@ -1117,6 +1118,17 @@ function AppContent() {
                 headerBackTitleVisible: false,
                 title: 'Comment',
                 animation: 'slide_from_right',
+              }}
+            />
+            <MainStack.Screen
+              name="WatchPortal"
+              component={Watch}
+              options={{
+                headerShown: false,
+                animation: 'none',
+                statusBarStyle: 'light',
+                statusBarColor: '#000000',
+                statusBarTranslucent: true,
               }}
             />
             <MainStack.Screen

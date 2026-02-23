@@ -3,11 +3,13 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  LayoutChangeEvent,
   Platform,
   SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
   type EventSubscription,
@@ -32,6 +34,7 @@ import CustomVideo from '@/src/components/CustomVideo';
 import { MainStackParamList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
+import { formatAspectRatioLabel, getVideoFitSize, isSuccessfulStatus } from './videoPostUtils';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
@@ -79,13 +82,6 @@ const LIGHT_PALETTE: ThemePalette = {
   trimFrame: '#c6d2d6',
   overlay: 'rgba(0,0,0,0.25)',
 };
-
-const SUPPORTED_ASPECT_RATIOS = [
-  { id: '16:9', ratio: 16 / 9 },
-  { id: '4:3', ratio: 4 / 3 },
-  { id: '1:1', ratio: 1 },
-  { id: '9:16', ratio: 9 / 16 },
-];
 
 function ActionButton({
   icon,
@@ -141,17 +137,6 @@ const ensureFileUri = (value?: string | null) => {
   return `file://${value}`;
 };
 
-const getSupportedAspectRatio = (rawRatio: number) => {
-  if (!Number.isFinite(rawRatio) || rawRatio <= 0) {
-    return SUPPORTED_ASPECT_RATIOS[0];
-  }
-  return SUPPORTED_ASPECT_RATIOS.reduce((closest, current) => {
-    const closestDiff = Math.abs(closest.ratio - rawRatio);
-    const currentDiff = Math.abs(current.ratio - rawRatio);
-    return currentDiff < closestDiff ? current : closest;
-  });
-};
-
 export default function VideoPost({ navigation, route }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
@@ -164,13 +149,19 @@ export default function VideoPost({ navigation, route }: Props) {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [videoPath, setVideoPath] = useState('');
+  const [uploadedMuxId, setUploadedMuxId] = useState('');
+  const [uploadedVideoPath, setUploadedVideoPath] = useState('');
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [uploadAspectRatio, setUploadAspectRatio] = useState(SUPPORTED_ASPECT_RATIOS[0]);
+  const [caption, setCaption] = useState('');
+  const [previewAspectRatio, setPreviewAspectRatio] = useState(16 / 9);
+  const [videoNaturalSize, setVideoNaturalSize] = useState<{ width?: number; height?: number }>({});
+  const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 });
   const [isPreparingVideo, setIsPreparingVideo] = useState(false);
   const [isLiveCameraVisible, setIsLiveCameraVisible] = useState(false);
   const listenerSubscription = useRef<Record<string, EventSubscription>>({});
   const hasAutoOpenedCameraRef = useRef(false);
+  const latestUploadRequestRef = useRef(0);
 
   const formatTime = (seconds: number) => {
     const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
@@ -184,6 +175,8 @@ export default function VideoPost({ navigation, route }: Props) {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(true);
+    setPreviewAspectRatio(16 / 9);
+    setVideoNaturalSize({});
   }, []);
 
   const resolveVideoUri = useCallback(async (asset?: Asset, explicitUri?: string) => {
@@ -223,6 +216,85 @@ export default function VideoPost({ navigation, route }: Props) {
     return rawPath;
   }, []);
 
+  const uploadVideoToMux = useCallback(async (uploadUrl: string, sourcePath: string) => {
+    if (Platform.OS === 'ios' || sourcePath.startsWith('content://')) {
+      const response = await fetch(sourcePath, { method: 'GET' });
+      const blob = await response.blob();
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: blob,
+        headers: { 'content-type': blob.type || 'video/mp4' },
+      });
+      if (!isSuccessfulStatus(uploadResponse.status)) {
+        throw new Error(`Video upload failed (${uploadResponse.status}).`);
+      }
+      return;
+    }
+
+    const sanitizedPath = sourcePath.replace('file://', '');
+    const uploadResponse = await RNFetchBlob.fetch(
+      'PUT',
+      uploadUrl,
+      undefined,
+      RNFetchBlob.wrap(sanitizedPath)
+    );
+    const { status } = uploadResponse.info();
+    if (!isSuccessfulStatus(status)) {
+      throw new Error(`Video upload failed (${status}).`);
+    }
+  }, []);
+
+  const uploadVideoAndCache = useCallback(
+    async (sourcePath: string) => {
+      const uploadLink = await ApiCall<{
+        url?: string;
+        id?: string;
+        message?: string;
+      }>({
+        route: 'watch/authenticated-link/mux',
+        verb: 'get',
+        token,
+      });
+
+      if (uploadLink.status !== 200 || !uploadLink?.response?.url || !uploadLink?.response?.id) {
+        const message =
+          typeof uploadLink?.response?.message === 'string'
+            ? uploadLink.response.message
+            : 'Unable to initialize video upload. Please try again.';
+        throw new Error(message);
+      }
+
+      await uploadVideoToMux(uploadLink.response.url, sourcePath);
+      return uploadLink.response.id;
+    },
+    [token, uploadVideoToMux]
+  );
+
+  const prepareVideoForEditor = useCallback(
+    async (nextPath: string, sourceName = 'video') => {
+      setIsPreparingVideo(true);
+      const requestId = ++latestUploadRequestRef.current;
+      try {
+        const uploadId = await uploadVideoAndCache(nextPath);
+        if (latestUploadRequestRef.current !== requestId) {
+          return;
+        }
+        setUploadedMuxId(uploadId);
+        setUploadedVideoPath(nextPath);
+        applySelectedVideo(nextPath);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : `Unable to upload selected ${sourceName}.`;
+        toast.show(message, { type: 'danger' });
+      } finally {
+        if (latestUploadRequestRef.current === requestId) {
+          setIsPreparingVideo(false);
+        }
+      }
+    },
+    [applySelectedVideo, toast, uploadVideoAndCache]
+  );
+
   const applyVideoFromPickerResponse = useCallback(
     async (response?: ImagePickerResponse, sourceName = 'video') => {
       if (!response || response.didCancel) {
@@ -245,16 +317,16 @@ export default function VideoPost({ navigation, route }: Props) {
         const nextPath = await resolveVideoUri(selectedAsset);
         if (!nextPath) {
           toast.show(`Unable to use selected ${sourceName}.`, { type: 'danger' });
+          setIsPreparingVideo(false);
           return;
         }
-        applySelectedVideo(nextPath);
+        await prepareVideoForEditor(nextPath, sourceName);
       } catch (error) {
         toast.show(`Unable to prepare selected ${sourceName}.`, { type: 'danger' });
-      } finally {
         setIsPreparingVideo(false);
       }
     },
-    [applySelectedVideo, resolveVideoUri, toast]
+    [prepareVideoForEditor, resolveVideoUri, toast]
   );
 
   const handleBackPress = () => {
@@ -320,8 +392,15 @@ export default function VideoPost({ navigation, route }: Props) {
     const rawWidth = Number(data?.naturalSize?.width);
     const rawHeight = Number(data?.naturalSize?.height);
     if (Number.isFinite(rawWidth) && Number.isFinite(rawHeight) && rawWidth > 0 && rawHeight > 0) {
-      const nextAspect = getSupportedAspectRatio(rawWidth / rawHeight);
-      setUploadAspectRatio(nextAspect);
+      setVideoNaturalSize({ width: rawWidth, height: rawHeight });
+      setPreviewAspectRatio(rawWidth / rawHeight);
+    }
+  };
+
+  const handlePreviewLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    if (width > 0 && height > 0) {
+      setPreviewContainerSize({ width, height });
     }
   };
 
@@ -366,17 +445,17 @@ export default function VideoPost({ navigation, route }: Props) {
           const preparedPath = await resolveVideoUri(undefined, resolvedPath);
           if (!preparedPath) {
             toast.show('Unable to load selected video.', { type: 'danger' });
+            setIsPreparingVideo(false);
             return;
           }
-          applySelectedVideo(preparedPath);
+          await prepareVideoForEditor(preparedPath);
         } catch (error) {
           toast.show('Unable to prepare selected video.', { type: 'danger' });
-        } finally {
           setIsPreparingVideo(false);
         }
       })();
     },
-    [applySelectedVideo, resolveVideoUri, toast, videoPath]
+    [prepareVideoForEditor, resolveVideoUri, toast, videoPath]
   );
 
   const handleChooseVideoSource = () => {
@@ -405,22 +484,6 @@ export default function VideoPost({ navigation, route }: Props) {
     ]);
   };
 
-  const uploadVideoToMux = async (uploadUrl: string) => {
-    if (Platform.OS === 'ios' || videoPath.startsWith('content://')) {
-      const response = await fetch(videoPath, { method: 'GET' });
-      const blob = await response.blob();
-      await fetch(uploadUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: { 'content-type': blob.type || 'video/mp4' },
-      });
-      return;
-    }
-
-    const sanitizedPath = videoPath.replace('file://', '');
-    await RNFetchBlob.fetch('PUT', uploadUrl, undefined, RNFetchBlob.wrap(sanitizedPath));
-  };
-
   const handleDonePress = async () => {
     if (!videoPath) {
       toast.show('Please select or record a video first.', { type: 'danger' });
@@ -429,25 +492,19 @@ export default function VideoPost({ navigation, route }: Props) {
 
     setLoading(true);
     try {
-      const uploadLink = await ApiCall({
-        route: 'watch/authenticated-link/mux',
-        verb: 'get',
-        token,
-      });
-
-      if (!uploadLink?.response?.url || !uploadLink?.response?.id) {
-        toast.show('Unable to initialize video upload. Please try again.', { type: 'danger' });
-        return;
+      let finalUploadId = uploadedMuxId;
+      if (!finalUploadId || uploadedVideoPath !== videoPath) {
+        finalUploadId = await uploadVideoAndCache(videoPath);
+        setUploadedMuxId(finalUploadId);
+        setUploadedVideoPath(videoPath);
       }
 
-      await uploadVideoToMux(uploadLink.response?.url);
-
-      const result = await ApiCall({
+      const result = await ApiCall<{ message?: string }>({
         route: 'watch/post',
         verb: 'post',
         params: {
-          uploadId: uploadLink.response?.id,
-          content: '',
+          uploadId: finalUploadId,
+          content: caption.trim(),
         },
         token,
       });
@@ -457,16 +514,23 @@ export default function VideoPost({ navigation, route }: Props) {
           type: 'success',
           placement: 'bottom',
         });
-        navigation.navigate('MainRoot', {
-          screen: 'Main',
-          params: { screen: 'HomeTab', params: { screen: 'WatchPortal' } },
-        });
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('MainRoot', {
+            screen: 'Main',
+            params: { screen: 'HomeTab' },
+          });
+        }
         return;
       }
 
-      toast.show('Upload failed. Please try again.', { type: 'danger' });
+      toast.show(result.response?.message || 'Upload failed. Please try again.', {
+        type: 'danger',
+      });
     } catch (error) {
-      toast.show('Upload failed. Please try again.', { type: 'danger' });
+      const message = error instanceof Error ? error.message : 'Upload failed. Please try again.';
+      toast.show(message, { type: 'danger' });
       console.error(error);
     } finally {
       setLoading(false);
@@ -488,15 +552,15 @@ export default function VideoPost({ navigation, route }: Props) {
       try {
         const resolvedPath = await resolveVideoUri(undefined, incomingVideoPath);
         if (!isDisposed && resolvedPath) {
-          applySelectedVideo(resolvedPath);
+          await prepareVideoForEditor(resolvedPath);
         }
       } catch (error) {
         if (!isDisposed) {
           toast.show('Unable to load selected video.', { type: 'danger' });
+          setIsPreparingVideo(false);
         }
       } finally {
         if (!isDisposed) {
-          setIsPreparingVideo(false);
           navigation.setParams({ videoPath: undefined });
         }
       }
@@ -505,7 +569,7 @@ export default function VideoPost({ navigation, route }: Props) {
     return () => {
       isDisposed = true;
     };
-  }, [applySelectedVideo, navigation, resolveVideoUri, route.params?.videoPath, toast]);
+  }, [navigation, prepareVideoForEditor, resolveVideoUri, route.params?.videoPath, toast]);
 
   useEffect(() => {
     listenerSubscription.current.onFinishTrimming = VideoTrim.onFinishTrimming(
@@ -517,7 +581,7 @@ export default function VideoPost({ navigation, route }: Props) {
         try {
           const resolvedPath = await resolveVideoUri(undefined, outputPath);
           if (resolvedPath) {
-            applySelectedVideo(resolvedPath);
+            await prepareVideoForEditor(resolvedPath, 'trimmed video');
           }
         } catch (error) {
           toast.show('Unable to load trimmed video.', { type: 'danger' });
@@ -535,9 +599,19 @@ export default function VideoPost({ navigation, route }: Props) {
       listenerSubscription.current.onError?.remove();
       listenerSubscription.current = {};
     };
-  }, [applySelectedVideo, resolveVideoUri, toast]);
+  }, [prepareVideoForEditor, resolveVideoUri, toast]);
 
   const selectedDuration = Math.min(duration || 0, 60);
+  const fittedPreview = getVideoFitSize(
+    previewContainerSize.width,
+    previewContainerSize.height,
+    previewAspectRatio
+  );
+  const ratioLabel = formatAspectRatioLabel(
+    videoNaturalSize.width,
+    videoNaturalSize.height,
+    previewAspectRatio
+  );
 
   useEffect(() => {
     if (!route.params?.openCameraOnMount || hasAutoOpenedCameraRef.current) {
@@ -578,7 +652,7 @@ export default function VideoPost({ navigation, route }: Props) {
         <TouchableOpacity
           style={[styles.doneButton, { backgroundColor: palette.primary }]}
           onPress={handleDonePress}
-          disabled={loading}
+          disabled={loading || isPreparingVideo}
         >
           {loading ? (
             <ActivityIndicator color={palette.textPrimary} size="small" />
@@ -588,13 +662,14 @@ export default function VideoPost({ navigation, route }: Props) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.previewContainer}>
+      <View style={styles.previewContainer} onLayout={handlePreviewLayout}>
         <View
           style={[
             styles.videoWrapper,
             {
               backgroundColor: palette.previewBackground,
-              aspectRatio: uploadAspectRatio.ratio,
+              width: fittedPreview.width,
+              height: fittedPreview.height,
             },
           ]}
         >
@@ -611,7 +686,10 @@ export default function VideoPost({ navigation, route }: Props) {
                 repeat
               />
               <TouchableOpacity
-                style={[styles.playOverlay, { backgroundColor: palette.overlay }]}
+                style={[
+                  styles.playOverlay,
+                  { backgroundColor: isPlaying ? 'transparent' : palette.overlay },
+                ]}
                 activeOpacity={0.8}
                 onPress={handleTogglePlayback}
               >
@@ -652,37 +730,38 @@ export default function VideoPost({ navigation, route }: Props) {
       </View>
 
       <View style={styles.toolsSection}>
+        <View
+          style={[
+            styles.captionBlock,
+            {
+              backgroundColor: palette.cardBackground,
+              borderColor: palette.border,
+            },
+          ]}
+        >
+          <Text style={[styles.captionLabel, { color: palette.textMuted }]}>Caption</Text>
+          <TextInput
+            style={[styles.captionInput, { color: palette.textPrimary }]}
+            value={caption}
+            onChangeText={setCaption}
+            placeholder="Write a caption..."
+            placeholderTextColor={palette.textMuted}
+            multiline
+            maxLength={500}
+            textAlignVertical="top"
+          />
+        </View>
+
         <TouchableOpacity style={styles.trimmerBlock} onPress={handleTrimPress} activeOpacity={0.8}>
           <View style={styles.trimmerHeader}>
             <Text style={[styles.trimmerTitle, { color: palette.textMuted }]}>TRIM VIDEO</Text>
             <Text style={[styles.trimmerSelectedText, { color: palette.primary }]}>
-              {formatTime(selectedDuration)} selected • {uploadAspectRatio.id}
+              {formatTime(selectedDuration)} selected • {ratioLabel}
             </Text>
           </View>
-
-          <View
-            style={[
-              styles.timelineTrack,
-              {
-                backgroundColor: palette.trimTrack,
-                borderColor: palette.border,
-              },
-            ]}
-          >
-            <View style={styles.timelineFrames}>
-              {[1, 2, 3, 4, 5, 6].map((frame) => (
-                <View
-                  key={frame}
-                  style={[styles.mockFrame, { backgroundColor: palette.trimFrame }]}
-                />
-              ))}
-            </View>
-            <View style={[styles.trimHighlight, { borderColor: palette.primary }]}>
-              <View style={[styles.trimHandleLeft, { backgroundColor: palette.primary }]} />
-              <View style={[styles.trimHandleRight, { backgroundColor: palette.primary }]} />
-            </View>
-            <View style={[styles.playhead, { backgroundColor: palette.textPrimary }]} />
-          </View>
+          <Text style={[styles.trimmerHelperText, { color: palette.textSecondary }]}>
+            Opens native trim editor. Max duration remains 60 seconds.
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.actionGrid}>
@@ -831,6 +910,28 @@ const createStyles = () =>
       paddingHorizontal: 24,
       paddingBottom: 24,
     },
+    captionBlock: {
+      borderWidth: 1,
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingTop: 10,
+      paddingBottom: 8,
+      marginBottom: 16,
+    },
+    captionLabel: {
+      fontSize: 11,
+      letterSpacing: 0.6,
+      fontWeight: '700',
+      marginBottom: 6,
+      textTransform: 'uppercase',
+    },
+    captionInput: {
+      minHeight: 76,
+      maxHeight: 120,
+      fontSize: 14,
+      fontWeight: '500',
+      padding: 0,
+    },
     trimmerBlock: {
       marginBottom: 24,
     },
@@ -848,57 +949,9 @@ const createStyles = () =>
       fontSize: 12,
       fontWeight: '700',
     },
-    timelineTrack: {
-      height: 64,
-      borderRadius: 12,
-      overflow: 'hidden',
-      borderWidth: 1,
-      justifyContent: 'center',
-    },
-    timelineFrames: {
-      flexDirection: 'row',
-      height: '100%',
-      opacity: 0.6,
-    },
-    mockFrame: {
-      flex: 1,
-      borderRightWidth: 1,
-      borderRightColor: 'rgba(0,0,0,0.2)',
-    },
-    trimHighlight: {
-      position: 'absolute',
-      top: 0,
-      bottom: 0,
-      left: '15%',
-      right: '25%',
-      borderTopWidth: 3,
-      borderBottomWidth: 3,
-      backgroundColor: 'rgba(65, 137, 159, 0.2)',
-    },
-    trimHandleLeft: {
-      position: 'absolute',
-      left: -8,
-      top: 0,
-      bottom: 0,
-      width: 12,
-      borderTopLeftRadius: 6,
-      borderBottomLeftRadius: 6,
-    },
-    trimHandleRight: {
-      position: 'absolute',
-      right: -8,
-      top: 0,
-      bottom: 0,
-      width: 12,
-      borderTopRightRadius: 6,
-      borderBottomRightRadius: 6,
-    },
-    playhead: {
-      position: 'absolute',
-      left: '35%',
-      top: 0,
-      bottom: 0,
-      width: 2,
+    trimmerHelperText: {
+      fontSize: 12,
+      fontWeight: '500',
     },
     actionGrid: {
       flexDirection: 'row',

@@ -498,7 +498,7 @@ function PrayerLiquidIndicator({ tabWidth }: PrayerLiquidIndicatorProps) {
         style={{
           ...StyleSheet.absoluteFillObject,
           borderRadius: pillRadius,
-          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          backgroundColor: 'rgba(18, 107, 135, 0.15)',
           overflow: 'hidden',
           elevation: 4,
         }}
@@ -1358,6 +1358,7 @@ function Home({ navigation, route }: Props) {
   const renderEntryFallbackKeySequenceRef = useRef(0);
   const feedVisibleStartByKeyRef = useRef<Map<string, number>>(new Map());
   const feedImpressionsByKeyRef = useRef<Set<string>>(new Set());
+  const [viewableSocialPostIds, setViewableSocialPostIds] = useState<Set<string>>(new Set());
   useScrollToTop(listRef as any);
   const scrollIntent = useScrollIntentLock();
 
@@ -1696,10 +1697,7 @@ function Home({ navigation, route }: Props) {
   const handleTabChange = useCallback(
     (tabValue: FeedTypes) => {
       if (tabValue === FeedTypes.Watch) {
-        navigation.navigate('MainRoot', {
-          screen: 'Main',
-          params: { screen: 'HomeTab', params: { screen: 'WatchPortal' } },
-        });
+        navigation.push('WatchPortal');
         return;
       }
       reloadFeed(tabValue);
@@ -2321,10 +2319,18 @@ function Home({ navigation, route }: Props) {
               '',
             reactions: normalizedWithImage.reactions ?? [],
           } as SocialPost & { type?: 'social' };
+          const socialItemId = socialItem.postId ?? socialItem.id ?? socialItem._id;
           renderedItem = (
             <SocialItem
               itemData={socialItem}
               originFeedType={feedOptions.type}
+              visible={
+                (feedOptions.type === FeedTypes.Connected ||
+                  feedOptions.type === FeedTypes.ForYou) &&
+                socialItemId !== undefined &&
+                socialItemId !== null &&
+                viewableSocialPostIds.has(String(socialItemId))
+              }
               removePost={() => undefined}
               parentRefreshContent={() => {
                 getFeedData(feedOptions.type, 1);
@@ -2381,22 +2387,13 @@ function Home({ navigation, route }: Props) {
                     source: 'home_feed',
                   });
                 }
-                navigation.navigate('MainRoot', {
-                  screen: 'Main',
-                  params: {
-                    screen: 'HomeTab',
-                    params: {
-                      screen: 'WatchPortal',
-                      params: {
-                        initialPostId: postId ? String(postId) : undefined,
-                        initialPlaybackId: playBackId,
-                        initialWatchPost: {
-                          ...itemData,
-                          playBackId,
-                          postId: postId ? String(postId) : itemData.postId,
-                        },
-                      },
-                    },
+                navigation.push('WatchPortal', {
+                  initialPostId: postId ? String(postId) : undefined,
+                  initialPlaybackId: playBackId,
+                  initialWatchPost: {
+                    ...itemData,
+                    playBackId,
+                    postId: postId ? String(postId) : itemData.postId,
                   },
                 } as any);
               }}
@@ -2552,6 +2549,7 @@ function Home({ navigation, route }: Props) {
       preserveFeedPositionOnNextFocus,
       selectedSuggestionIds,
       suggestedForYouUsers,
+      viewableSocialPostIds,
     ]
   );
 
@@ -2730,6 +2728,55 @@ function Home({ navigation, route }: Props) {
     ({ viewableItems, changed }: { viewableItems: ViewToken[]; changed?: ViewToken[] }) => {
       latestVisibleItems.current = viewableItems;
       maybeStartFeedCardIntro(viewableItems);
+
+      const shouldTrackVisibleSocial =
+        feedOptions.type === FeedTypes.Connected || feedOptions.type === FeedTypes.ForYou;
+
+      if (shouldTrackVisibleSocial) {
+        const nextVisibleSocialIds = new Set<string>();
+        viewableItems.forEach((tokenItem) => {
+          if (!tokenItem.isViewable) {
+            return;
+          }
+
+          const renderEntry = tokenItem.item as RenderFeedEntry;
+          if (isSuggestionsModuleItem(renderEntry)) {
+            return;
+          }
+
+          const unwrappedItem = unwrapFeedItem(renderEntry as FeedEntry);
+          if (!unwrappedItem || isPrayerPost(unwrappedItem)) {
+            return;
+          }
+
+          const normalizedItem = normalizeFeedImage(unwrappedItem);
+          if (!isSocialPost(normalizedItem) && !isLikelySocialPost(normalizedItem)) {
+            return;
+          }
+
+          const socialId = normalizedItem.postId ?? normalizedItem.id ?? normalizedItem._id;
+          if (socialId !== undefined && socialId !== null) {
+            nextVisibleSocialIds.add(String(socialId));
+          }
+        });
+
+        setViewableSocialPostIds((previous) => {
+          if (previous.size === nextVisibleSocialIds.size) {
+            let isUnchanged = true;
+            previous.forEach((id) => {
+              if (!nextVisibleSocialIds.has(id)) {
+                isUnchanged = false;
+              }
+            });
+            if (isUnchanged) {
+              return previous;
+            }
+          }
+          return nextVisibleSocialIds;
+        });
+      } else {
+        setViewableSocialPostIds((previous) => (previous.size > 0 ? new Set<string>() : previous));
+      }
 
       if (!isTelemetryTrackedFeedType(feedOptions.type)) {
         return;

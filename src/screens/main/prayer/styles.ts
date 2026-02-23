@@ -1,5 +1,7 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { getHeight, getWidth } from '@/utils/ResponsiveFun';
+
+const isAndroid = Platform.OS === 'android';
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -70,6 +72,8 @@ const styles = StyleSheet.create({
     bottom: 4,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 999,
+    backgroundColor: 'rgba(18, 107, 135, 0.45)',
   },
   liquidCanvasLayer: {
     position: 'absolute',
@@ -85,9 +89,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 210, 217, 0.28)',
     shadowColor: '#12D2D9',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: isAndroid ? 0 : 0.2,
+    shadowRadius: isAndroid ? 0 : 8,
+    elevation: isAndroid ? 0 : 2,
   },
   liquidBlob: {
     position: 'absolute',

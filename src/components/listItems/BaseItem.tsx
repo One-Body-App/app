@@ -20,11 +20,11 @@ import {
 import FastImage from 'react-native-fast-image';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { Heart, Location } from 'iconsax-react-native';
+import { Location } from 'iconsax-react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
+import { faEllipsis, faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import Toast from 'react-native-simple-toast';
 import { getHeight, timeSince } from '@/utils/ResponsiveFun';
@@ -32,9 +32,6 @@ import styles from './style';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
 import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
-import PrayersIcon from '@/assets/svg/prayers.svg';
-import PrayersOutlineIcon from '@/assets/svg/prayers-outline.svg';
-import NounHands from '@/assets/svg/NounHands.svg';
 import SendIcon from '@/assets/icons/send.svg';
 import RepeatIcon from '@/assets/icons/repeat.svg';
 
@@ -431,14 +428,12 @@ function BaseItem({
           }
         : undefined;
 
-  const canRepost =
-    !reelLayout &&
-    Boolean(
-      effectiveRepostPayload?.sourceId &&
-        (effectiveRepostPayload?.sourceType === PostType.social ||
-          effectiveRepostPayload?.sourceType === PostType.prayer ||
-          effectiveRepostPayload?.sourceType === PostType.rss)
-    );
+  const canRepost = Boolean(
+    effectiveRepostPayload?.sourceId &&
+      (effectiveRepostPayload?.sourceType === PostType.social ||
+        effectiveRepostPayload?.sourceType === PostType.prayer ||
+        effectiveRepostPayload?.sourceType === PostType.rss)
+  );
 
   const canViewReactions = Boolean(
     postData?.id &&
@@ -887,12 +882,6 @@ function BaseItem({
     });
   }
 
-  const displayReactionCounts = {
-    love: reactionTypes.like + reactionTypes.love,
-    praise: reactionTypes.praise + reactionTypes.haha + reactionTypes.wow,
-    praying: reactionTypes.praying + reactionTypes.sad + reactionTypes.angry,
-  };
-
   const totalReactionCount =
     reactionTypes.like +
     reactionTypes.love +
@@ -916,52 +905,34 @@ function BaseItem({
           style,
         ]}
       >
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'column',
-            // alignItems: 'flex-start',
-            gap: spacing.x10,
-            // marginRight: spacing.x10,
-            position: 'relative',
-          }}
-        >
+        <View style={{ flex: 1, justifyContent: 'flex-end', position: 'relative' }}>
           <View
             style={{
-              // position: 'absolute',
-              // top: -165,
-              left: 0,
-              zIndex: 2,
-              flexDirection: 'column',
+              position: 'absolute',
+              right: spacing.x16,
+              bottom: spacing.x56,
+              zIndex: 8,
+              alignItems: 'center',
+              gap: spacing.x13,
             }}
           >
             <TouchableOpacity
               onPress={() => {
                 onPress();
               }}
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginTop: spacing.x5,
-                flex: 1,
-                marginBottom: spacing.x20,
-              }}
+              activeOpacity={0.85}
             >
               {userData.profileIcon && !userData.profileImage ? (
                 <View
                   style={{
-                    width: 40,
-                    height: 40,
+                    width: 52,
+                    height: 52,
                     borderRadius: borderRadius.max,
-                    borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                    borderWidth: borderWidth.thin,
-                    padding: spacing.x5,
-                    marginBottom: spacing.x5,
-                    marginLeft: 0,
-                    display: 'flex',
+                    borderColor: '#f6f6f7',
+                    borderWidth: 2,
                     justifyContent: 'center',
                     alignItems: 'center',
+                    backgroundColor: 'rgba(3, 47, 60, 0.35)',
                   }}
                 >
                   {userData.profileIcon}
@@ -972,439 +943,242 @@ function BaseItem({
                     uri: userData.profileImage !== '' ? userData.profileImage : NO_PROFILE_IMAGE,
                   }}
                   style={{
-                    width: 40,
-                    height: 40,
+                    width: 52,
+                    height: 52,
                     borderRadius: borderRadius.max,
-                    marginBottom: spacing.x5,
-                    borderColor: userData.profileImage !== NO_PROFILE_IMAGE ? '#032F3C' : '#09aadb',
-                    borderWidth: borderWidth.thin,
-                    marginLeft: 0,
+                    borderColor: '#f6f6f7',
+                    borderWidth: 2,
+                    backgroundColor: 'rgba(3, 47, 60, 0.35)',
                   }}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               )}
-              <View style={{ flexGrow: 1, flex: 1 }}>
-                {userData ? (
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        // navigation.navigate('UserProfile', {
-                        //   id: userData?._id,
-                        // });
-                        onPress();
-                      }}
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'flex-start',
-                        alignItems: 'center',
-                        flexGrow: 1,
-                        flex: 1,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'column' }}>
-                        <View style={{ flexDirection: 'row' }}>
-                          <StyledText
-                            style={{
-                              color: 'white',
-                              alignItems: 'center',
-                              ...fontSize.x1,
-                              marginLeft: spacing.x5,
-                              paddingLeft: spacing.x5,
-                              paddingBottom: 0,
-                              fontWeight: 'bold',
-                              lineHeight: 8,
-                            }}
-                            numberOfLines={2}
-                          >
-                            r{userData?.name}
-                          </StyledText>
-                          {isApprovedInfluencer ? (
-                            <Icon
-                              name="check-decagram"
-                              size={spacing.x13}
-                              style={{ marginLeft: spacing.x8, marginTop: spacing.x5 }}
-                              color="white"
-                            />
-                          ) : null}
-                        </View>
-                        <StyledText
-                          numberOfLines={2}
-                          style={{
-                            color: 'white',
-                            alignItems: 'center',
-                            ...fontSize.x3,
-                            marginLeft: spacing.x5,
-                            marginTop: 0,
-                          }}
-                        >
-                          {formattedHandle}
+            </TouchableOpacity>
 
-                          {created ? (
-                            <>
-                              {hasHandle ? ` • ` : ''}
-                              <StyledText
-                                style={[
-                                  fontSize.x1,
-                                  {
-                                    color: 'white',
-                                    alignItems: 'center',
-                                  },
-                                ]}
-                              >
-                                {timeSince(created)} ago
-                              </StyledText>
-                            </>
-                          ) : null}
-                          {edited && updated ? (
-                            <>
-                              {' '}
-                              • {' Edited '}
-                              <StyledText
-                                style={[
-                                  fontSize.x1,
-                                  {
-                                    color: 'white',
-                                    alignItems: 'center',
-                                  },
-                                ]}
-                              >
-                                {timeSince(updated)} ago
-                              </StyledText>
-                            </>
-                          ) : null}
-                        </StyledText>
+            <View style={{ position: 'relative', alignItems: 'center' }}>
+              <TouchableOpacity
+                onLongPress={showReactionBar}
+                onPress={() => {
+                  dismissReactionBar();
+                  if (myReaction) {
+                    setSelectedReactionId(undefined);
+                    removeReactPost();
+                    return;
+                  }
+                  setSelectedReactionId('love');
+                  triggerReactionFeedback(SocialPostReactionType.love);
+                  reactPost(SocialPostReactionType.love);
+                }}
+                delayLongPress={180}
+                activeOpacity={0.8}
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: borderRadius.max,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(3, 47, 60, 0.42)',
+                }}
+              >
+                <Animated.View style={{ transform: [{ scale: mainReactionScale }] }}>
+                  {selectedReactionIconUrl ? (
+                    <Image
+                      source={{ uri: selectedReactionIconUrl }}
+                      style={{ width: 22, height: 22 }}
+                    />
+                  ) : (
+                    <MaterialIcons
+                      name={myReaction ? 'favorite' : 'favorite-border'}
+                      size={22}
+                      color={reactionIconColor}
+                    />
+                  )}
+                </Animated.View>
+              </TouchableOpacity>
+              {isReactionBarVisible ? (
+                <View
+                  pointerEvents="box-none"
+                  style={{
+                    position: 'absolute',
+                    right: spacing.x48,
+                    bottom: 0,
+                    zIndex: 20,
+                    elevation: 20,
+                    transform: [{ scale: REACTION_BAR_SCALE }],
+                  }}
+                >
+                  <InlineReactionBar
+                    ref={reactionBarRef}
+                    onReactionSelect={handleAnimatedReactionSelect}
+                    onDismiss={() => {
+                      setIsReactionBarVisible(false);
+                    }}
+                  />
+                </View>
+              ) : null}
+              <TouchableOpacity
+                disabled={!canViewReactions}
+                onPress={() => openReactionsModal('all')}
+                style={{ marginTop: spacing.x5 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <StyledText style={{ color: '#f6f6f7', ...fontSize.x1, fontWeight: '700' }}>
+                  {totalReactionCount}
+                </StyledText>
+              </TouchableOpacity>
+            </View>
 
-                        {shouldShowLocation && !isSocialPost ? (
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Location size={15} color="white" style={{ marginRight: spacing.x5 }} />
-                            <StyledText
-                              style={[
-                                fontSize.x1,
-                                {
-                                  color: 'white',
-                                  marginTop: 0,
-                                },
-                              ]}
-                            >
-                              {postData.locationName}
-                            </StyledText>
-                          </View>
-                        ) : null}
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setShowOptions(true);
-                      }}
-                    >
-                      <FontAwesomeIcon
-                        icon={faEllipsisVertical}
-                        color="white"
-                        style={{ marginTop: spacing.x10, marginRight: -1 * spacing.x5 }}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
+            <TouchableOpacity
+              disabled={!onCommentsPress}
+              onPress={() => {
+                if (onCommentsPress) {
+                  onTelemetryEvent?.('open_comments', {
+                    postType: postData.type,
+                  });
+                  onCommentsPress();
+                }
+              }}
+              style={{ alignItems: 'center' }}
+            >
+              <View
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: borderRadius.max,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(3, 47, 60, 0.42)',
+                }}
+              >
+                <MaterialIcons name="chat-bubble-outline" size={22} color="#f6f6f7" />
+              </View>
+              <StyledText
+                style={{
+                  marginTop: spacing.x5,
+                  color: '#f6f6f7',
+                  ...fontSize.x1,
+                  fontWeight: '700',
+                }}
+              >
+                {postData?.commentNumber ?? postData.comments?.length ?? '0'}
+              </StyledText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              disabled={!canRepost || isReposting}
+              onPress={openRepostSheet}
+              style={{ alignItems: 'center', opacity: !canRepost || isReposting ? 0.6 : 1 }}
+            >
+              <View
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: borderRadius.max,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(3, 47, 60, 0.42)',
+                }}
+              >
+                <RepeatIcon width={22} height={22} color="#f6f6f7" />
               </View>
             </TouchableOpacity>
 
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                gap: spacing.x16,
-                marginLeft: spacing.x8,
-                marginTop: spacing.x5,
-                alignContent: 'space-between',
+            <TouchableOpacity
+              onPress={() => {
+                if (isThisPostSaved) {
+                  onTelemetryEvent?.('unsave', {
+                    postType: postData.type,
+                  });
+                  if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
+                  else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
+                } else {
+                  onTelemetryEvent?.('save', {
+                    postType: postData.type,
+                  });
+                  savePost(
+                    postData?.id,
+                    postData?.type,
+                    postData.title,
+                    created,
+                    userData?._id,
+                    postData?.postlink,
+                    postData?.image?.url
+                  );
+                }
               }}
+              style={{ alignItems: 'center' }}
             >
-              <View style={{ position: 'relative' }}>
-                <TouchableOpacity
-                  onLongPress={showReactionBar}
-                  onPress={() => {
-                    dismissReactionBar();
-                    if (myReaction) {
-                      setSelectedReactionId(undefined);
-                      removeReactPost();
-                      return;
-                    }
-                    setSelectedReactionId('love');
-                    triggerReactionFeedback(SocialPostReactionType.love);
-                    reactPost(SocialPostReactionType.love);
-                  }}
-                  delayLongPress={180}
-                  activeOpacity={0.8}
-                >
-                  <Animated.View style={{ transform: [{ scale: mainReactionScale }] }}>
-                    {selectedReactionIconUrl ? (
-                      <Image
-                        source={{ uri: selectedReactionIconUrl }}
-                        style={{ width: 22, height: 22 }}
-                      />
-                    ) : (
-                      <MaterialIcons
-                        name={myReaction ? 'favorite' : 'favorite-border'}
-                        size={22}
-                        color={reactionIconColor}
-                      />
-                    )}
-                  </Animated.View>
-                </TouchableOpacity>
-                {isReactionBarVisible ? (
-                  <View
-                    pointerEvents="box-none"
-                    style={{
-                      position: 'absolute',
-                      left: REACTION_BAR_OFFSET_X,
-                      bottom: REACTION_BAR_OFFSET_Y,
-                      zIndex: 20,
-                      elevation: 20,
-                      transform: [{ scale: REACTION_BAR_SCALE }],
-                    }}
-                  >
-                    <InlineReactionBar
-                      ref={reactionBarRef}
-                      onReactionSelect={handleAnimatedReactionSelect}
-                      onDismiss={() => {
-                        setIsReactionBarVisible(false);
-                      }}
-                    />
-                  </View>
-                ) : null}
-              </View>
-
-              <TouchableOpacity
-                disabled={!onCommentsPress}
-                onPress={() => {
-                  if (onCommentsPress) {
-                    onTelemetryEvent?.('open_comments', {
-                      postType: postData.type,
-                    });
-                    onCommentsPress();
-                  }
-                }}
+              <View
                 style={{
-                  flexDirection: 'row',
+                  width: 46,
+                  height: 46,
+                  borderRadius: borderRadius.max,
                   alignItems: 'center',
-                }}
-              >
-                <MaterialIcons
-                  name="chat-bubble-outline"
-                  size={22}
-                  color={transparency ? Colors.neutral[600] : 'white'}
-                />
-                <StyledText
-                  style={{
-                    marginLeft: spacing.x10,
-                    // marginVertical: spacing.x5,
-                    color: transparency ? Colors.neutral[600] : 'white',
-                  }}
-                >
-                  {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-                </StyledText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  if (isThisPostSaved) {
-                    onTelemetryEvent?.('unsave', {
-                      postType: postData.type,
-                    });
-                    if (postData.id) removeSavedPost(postData.type, undefined, postData.id);
-                    else if (postData.postlink) removeSavedPost(postData.type, postData.postlink);
-                  } else {
-                    onTelemetryEvent?.('save', {
-                      postType: postData.type,
-                    });
-                    savePost(
-                      postData?.id,
-                      postData?.type,
-                      postData.title,
-                      created,
-                      userData?._id,
-                      postData?.postlink,
-                      postData?.image?.url
-                    );
-                  }
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(3, 47, 60, 0.42)',
                 }}
               >
                 <MaterialIcons
                   name={isThisPostSaved ? 'bookmark' : 'bookmark-border'}
                   size={22}
-                  color={transparency ? Colors.neutral[600] : 'white'}
+                  color="#f6f6f7"
                 />
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setShowOptions(true);
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <View
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: borderRadius.max,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(3, 47, 60, 0.42)',
+                }}
+              >
+                <FontAwesomeIcon icon={faEllipsis} color="#f6f6f7" />
+              </View>
+            </TouchableOpacity>
           </View>
 
-          <View style={{ flexGrow: 1, flex: 1 }}>
-            {children && <View style={{ marginTop: spacing.x5 }}>{children}</View>}
-
-            <View style={{ flexDirection: 'row' }}>
-              {postData?.reactions && postData.reactions.length > 0 ? (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    marginTop: spacing.x10,
-                    alignItems: 'center',
-                  }}
-                >
-                  {displayReactionCounts.love > 0 ? (
-                    <>
-                      <View
-                        style={{
-                          padding: spacing.x5,
-                          backgroundColor: Colors.errorFeedback[200],
-                          borderRadius: borderRadius.max,
-                          borderWidth: borderWidth.thin,
-                          borderColor: Colors.main.white,
-                          marginRight: spacing.x5 / 2,
-                        }}
-                      >
-                        <Heart size={15} color="white" />
-                      </View>
-                      <TouchableOpacity onPress={() => openReactionsModal('love')}>
-                        <StyledText
-                          style={[
-                            fontSize.x2,
-                            {
-                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
-                              marginRight: spacing.x5,
-                            },
-                          ]}
-                        >
-                          {displayReactionCounts.love}
-                        </StyledText>
-                      </TouchableOpacity>
-                    </>
-                  ) : null}
-
-                  {displayReactionCounts.praise > 0 ? (
-                    <>
-                      <View
-                        style={{
-                          padding: spacing.x5,
-                          backgroundColor: Colors.infoFeedback[200],
-                          borderRadius: borderRadius.max,
-                          borderWidth: borderWidth.thin,
-                          borderColor: Colors.main.white,
-                          marginRight: spacing.x5 / 2,
-                        }}
-                      >
-                        <NounHands width={15} height={15} color="white" />
-                      </View>
-                      <TouchableOpacity onPress={() => openReactionsModal('praise')}>
-                        <StyledText
-                          style={[
-                            fontSize.x2,
-                            {
-                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
-                              marginRight: spacing.x5,
-                            },
-                          ]}
-                        >
-                          {displayReactionCounts.praise}
-                        </StyledText>
-                      </TouchableOpacity>
-                    </>
-                  ) : null}
-
-                  {displayReactionCounts.praying > 0 ? (
-                    <>
-                      <View
-                        style={{
-                          padding: spacing.x5,
-                          backgroundColor: Colors.successFeedback[200],
-                          borderRadius: borderRadius.max,
-                          borderWidth: borderWidth.thin,
-                          borderColor: Colors.main.white,
-                          marginRight: spacing.x5 / 2,
-                        }}
-                      >
-                        <PrayersOutlineIcon width={15} height={15} color="white" />
-                      </View>
-                      <TouchableOpacity onPress={() => openReactionsModal('praying')}>
-                        <StyledText
-                          style={[
-                            fontSize.x2,
-                            {
-                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
-                              marginRight: spacing.x5,
-                            },
-                          ]}
-                        >
-                          {displayReactionCounts.praying}
-                        </StyledText>
-                      </TouchableOpacity>
-                    </>
-                  ) : null}
-                </View>
-              ) : null}
-            </View>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: spacing.x10,
+          <View
+            style={{
+              paddingHorizontal: spacing.x16,
+              paddingRight: spacing.x88,
+              paddingBottom: spacing.x24,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                onPress();
               }}
+              activeOpacity={0.85}
+              style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}
             >
-              <View style={{ justifyContent: 'center' }}>
-                {postData.externalLink ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (postData.externalLink) OpenURLButton(postData.externalLink);
-                    }}
-                    style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.x5 }}
-                  >
-                    <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
-                      {source === 'instagram' ? (
-                        <Instagram height={getHeight(2.5)} fill="#00acee" />
-                      ) : null}
-
-                      {source === 'twitter' ? (
-                        <Twitter height={getHeight(2.5)} fill="#00acee" />
-                      ) : null}
-                    </View>
-
-                    <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                      View Post
-                    </StyledText>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              <View style={{ alignItems: 'center' }}>
-                {postData.type === PostType.rss ? (
-                  <View
-                    style={
-                      {
-                        // alignItems: 'flex-end',
-                        // marginTop: spacing.x5,
-                        // marginEnd: spacing.x10,
-                        // marginLeft: 270,
-                        // marginVertical: spacing.x5,
-                      }
-                    }
-                  >
-                    <TouchableOpacity
-                      onPress={() => {
-                        Share.share({
-                          title: `${postData?.title}`,
-                          url: Platform.OS === 'ios' && postData.postlink ? postData?.postlink : '',
-                          message:
-                            Platform.OS === 'android' && postData?.postlink
-                              ? postData?.postlink
-                              : '',
-                        });
-                      }}
-                    >
-                      <SendIcon width={22} height={22} color={shareIconColor} />
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
-              </View>
-            </View>
+              <StyledText style={{ color: '#f6f6f7', fontWeight: '700', fontSize: 16 }}>
+                {formattedHandle || userData?.name || '@onebody'}
+              </StyledText>
+              {isApprovedInfluencer ? (
+                <Icon
+                  name="check-decagram"
+                  size={spacing.x16}
+                  style={{ marginLeft: spacing.x5 }}
+                  color="#12d2d9"
+                />
+              ) : null}
+              {created ? (
+                <StyledText style={{ color: '#f6f6f7', ...fontSize.x1, marginLeft: spacing.x5 }}>
+                  • {timeSince(created)} ago
+                </StyledText>
+              ) : null}
+            </TouchableOpacity>
+            {children ? <View style={{ marginTop: spacing.x8 }}>{children}</View> : null}
           </View>
         </View>
         <OptionsModal
@@ -1529,6 +1303,7 @@ function BaseItem({
           visible={showReactionsModal}
           postType={postData.type}
           postId={postData.id}
+          fallbackReactions={postData.reactions}
           initialTab={reactionModalInitialTab}
           onClose={() => setShowReactionsModal(false)}
         />
@@ -1743,51 +1518,55 @@ function BaseItem({
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.x16 }}>
             <View style={{ position: 'relative' }}>
-              <TouchableOpacity
-                onLongPress={showReactionBar}
-                onPress={() => {
-                  dismissReactionBar();
-                  if (myReaction) {
-                    setSelectedReactionId(undefined);
-                    removeReactPost();
-                    return;
-                  }
-                  setSelectedReactionId('love');
-                  triggerReactionFeedback(SocialPostReactionType.love);
-                  reactPost(SocialPostReactionType.love);
-                }}
-                delayLongPress={180}
-                activeOpacity={0.8}
-              >
-                <Animated.View style={{ transform: [{ scale: mainReactionScale }] }}>
-                  {selectedReactionIconUrl ? (
-                    <Image
-                      source={{ uri: selectedReactionIconUrl }}
-                      style={{ width: 22, height: 22 }}
-                    />
-                  ) : (
-                    <MaterialIcons
-                      name={myReaction ? 'favorite' : 'favorite-border'}
-                      size={22}
-                      color={myReaction ? Colors.errorFeedback[200] : secondaryTextColor}
-                    />
-                  )}
-                </Animated.View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                disabled={!canViewReactions}
-                onPress={() => openReactionsModal('all')}
-                style={{ marginLeft: spacing.x5 }}
-              >
-                <StyledText
-                  style={{
-                    color: transparency ? Colors.neutral[600] : secondaryTextColor,
-                    ...fontSize.x1,
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onLongPress={showReactionBar}
+                  onPress={() => {
+                    dismissReactionBar();
+                    if (myReaction) {
+                      setSelectedReactionId(undefined);
+                      removeReactPost();
+                      return;
+                    }
+                    setSelectedReactionId('love');
+                    triggerReactionFeedback(SocialPostReactionType.love);
+                    reactPost(SocialPostReactionType.love);
                   }}
+                  delayLongPress={180}
+                  activeOpacity={0.8}
+                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                 >
-                  {totalReactionCount}
-                </StyledText>
-              </TouchableOpacity>
+                  <Animated.View style={{ transform: [{ scale: mainReactionScale }] }}>
+                    {selectedReactionIconUrl ? (
+                      <Image
+                        source={{ uri: selectedReactionIconUrl }}
+                        style={{ width: 22, height: 22 }}
+                      />
+                    ) : (
+                      <MaterialIcons
+                        name={myReaction ? 'favorite' : 'favorite-border'}
+                        size={22}
+                        color={myReaction ? Colors.errorFeedback[200] : secondaryTextColor}
+                      />
+                    )}
+                  </Animated.View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={!canViewReactions}
+                  onPress={() => openReactionsModal('all')}
+                  style={{ marginLeft: spacing.x5, paddingHorizontal: spacing.x2 }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <StyledText
+                    style={{
+                      color: transparency ? Colors.neutral[600] : secondaryTextColor,
+                      ...fontSize.x1,
+                    }}
+                  >
+                    {totalReactionCount}
+                  </StyledText>
+                </TouchableOpacity>
+              </View>
               {isReactionBarVisible ? (
                 <View
                   pointerEvents="box-none"
@@ -2050,6 +1829,7 @@ function BaseItem({
         visible={showReactionsModal}
         postType={postData.type}
         postId={postData.id}
+        fallbackReactions={postData.reactions}
         initialTab={reactionModalInitialTab}
         onClose={() => setShowReactionsModal(false)}
       />

@@ -11,8 +11,10 @@ import {
   StyleSheet,
   Animated,
   Image,
-  Dimensions,
+  TouchableOpacity,
 } from 'react-native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSelector } from 'react-redux';
 
@@ -31,8 +33,7 @@ import {
   setFeedTelemetryAuthToken,
   trackFeedTelemetry,
 } from '@/services/feedTelemetry';
-
-const { width } = Dimensions.get('window');
+import { spacing } from '@/src/styles/spacing';
 
 function Watch({ navigation, route }: any) {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -51,11 +52,12 @@ function Watch({ navigation, route }: any) {
   const flatListRef = useRef<FlatList>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
-  const { width } = useWindowDimensions();
+  const { width: screenWidth } = useWindowDimensions();
   const activeWatchStartMsRef = useRef<number | null>(null);
   const activeWatchTelemetryKeyRef = useRef<string | null>(null);
   const seenWatchImpressionsRef = useRef<Set<string>>(new Set());
   const hasAppliedInitialSelectionRef = useRef(false);
+  const insets = useSafeAreaInsets();
 
   // Accede al estado del usuario
   const { dark } = useTheme();
@@ -141,16 +143,18 @@ function Watch({ navigation, route }: any) {
           if (initialWatchPost) {
             const initialWatchPostId =
               initialWatchPost.postId ?? initialWatchPost.id ?? initialWatchPost._id;
-            const isInitialPostInFeed = initialFeedData.some((post) => {
-              if (initialPlaybackId && post.playBackId === initialPlaybackId) {
-                return true;
+            const isInitialPostInFeed = initialFeedData.some(
+              (post: { playBackId: any; postId: any; id: any; _id: any }) => {
+                if (initialPlaybackId && post.playBackId === initialPlaybackId) {
+                  return true;
+                }
+                if (!initialPostId && !initialWatchPostId) {
+                  return false;
+                }
+                const currentPostId = post.postId ?? post.id ?? post._id;
+                return String(currentPostId) === String(initialPostId ?? initialWatchPostId);
               }
-              if (!initialPostId && !initialWatchPostId) {
-                return false;
-              }
-              const currentPostId = post.postId ?? post.id ?? post._id;
-              return String(currentPostId) === String(initialPostId ?? initialWatchPostId);
-            });
+            );
             if (!isInitialPostInFeed) {
               initialFeedData = [initialWatchPost, ...initialFeedData];
             }
@@ -298,7 +302,7 @@ function Watch({ navigation, route }: any) {
     };
   }, [finalizeWatchDwell, token]);
 
-  const resizeMode = 'contain';
+  const frameWidth = Math.min(screenWidth, viewHeight * (9 / 16));
 
   return (
     <View
@@ -308,6 +312,24 @@ function Watch({ navigation, route }: any) {
         setViewHeight(height);
       }}
     >
+      <TouchableOpacity
+        onPress={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+          }
+          navigation.navigate('MainRoot', { screen: 'Main', params: { screen: 'HomeTab' } });
+        }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={{
+          position: 'absolute',
+          top: insets.top + spacing.x10,
+          left: spacing.x16,
+          zIndex: 40,
+        }}
+      >
+        <MaterialIcons name="arrow-back" size={26} color="#FFFFFF" />
+      </TouchableOpacity>
       {isLoading && page === 1 && !isRefreshing ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicator size="small" />
@@ -321,13 +343,20 @@ function Watch({ navigation, route }: any) {
         >
           {feedData.map((i) => {
             return (
-              <Image
-                resizeMode={resizeMode}
+              <View
+                key={`watch-placeholder-${i.postId ?? i.id ?? i._id ?? i.playBackId}`}
                 style={[styles.item, { height: viewHeight }]}
-                source={{
-                  uri: `https://image.mux.com/${i.playBackId}/thumbnail.webp?fit_mode=preserve&width=${Math.round(width)}&height=${Math.round(viewHeight)}`,
-                }}
-              />
+              >
+                <View style={{ width: frameWidth, height: viewHeight, overflow: 'hidden' }}>
+                  <Image
+                    resizeMode="cover"
+                    style={{ width: frameWidth, height: viewHeight }}
+                    source={{
+                      uri: `https://image.mux.com/${i.playBackId}/thumbnail.webp?fit_mode=crop&width=${Math.round(frameWidth)}&height=${Math.round(viewHeight)}`,
+                    }}
+                  />
+                </View>
+              </View>
             );
           })}
 
@@ -342,7 +371,7 @@ function Watch({ navigation, route }: any) {
                 currentIndex={index}
                 item={feedData[index]}
                 viewHeight={viewHeight}
-                width={width}
+                frameWidth={frameWidth}
                 fromSavedPosts={false}
                 onTelemetryEvent={(eventType, metadata) => {
                   const post = feedData[index];
@@ -381,7 +410,9 @@ const styles = StyleSheet.create({
   },
   item: {
     height: '100%',
-    width,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
     overflow: 'hidden',
   },
   video: { flex: 1 },
