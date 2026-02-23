@@ -752,6 +752,7 @@ function SocialItem({
         edited: itemData.edited,
         comments: itemData.comments,
         commentNumber: itemData.commentNumber,
+        repostCount: itemData.repostCount,
       }}
       repostPayload={{
         sourceType: 'social',

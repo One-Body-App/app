@@ -183,7 +183,11 @@ export type SearchStackParamsList = {
 };
 
 export type ConnectStackParamsList = {
-  ConnectPortal: undefined;
+  ConnectPortal:
+    | {
+        initialTab?: 'Places' | 'Go!' | 'Serve';
+      }
+    | undefined;
   ConnectMap: undefined;
   UserProfile: {
     id: string;
@@ -199,8 +203,8 @@ export type MyProfileStackParamsList = {
 };
 
 export type MainBottomStackParamsList = {
-  ExploreTab: NavigatorScreenParams<ConnectStackParamsList>;
-  SearchTab: NavigatorScreenParams<ExploreStackParamsList>;
+  ExploreTab: NavigatorScreenParams<ExploreStackParamsList>;
+  ConnectTab: NavigatorScreenParams<ConnectStackParamsList>;
   PostTab: NavigatorScreenParams<PostStackParamsList>;
   HomeTab: NavigatorScreenParams<HomeStackParamsList>;
   ZoeTab: undefined;

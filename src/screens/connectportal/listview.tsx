@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -25,16 +25,7 @@ import { spacing } from '@/src/styles/spacing';
 import { getHeight } from '@/utils/ResponsiveFun';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
-
-type ConnectTab = 'Places' | 'Go!' | 'Serve';
-
-type ListItem = {
-  id: string;
-  title: string;
-  location: string;
-  tags: string[];
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-};
+import { CONNECT_PORTAL_LIST_DATA, type ConnectPortalListItem, type ConnectTab } from './data';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectPortal'>;
 
@@ -42,64 +33,6 @@ type HeaderProps = {
   activeTab: ConnectTab;
   onTabChange: (tab: ConnectTab) => void;
 };
-
-const PLACE_ITEMS: ListItem[] = [
-  {
-    id: '1',
-    title: 'Grace Community Center',
-    location: 'Downtown, Chicago • 1.2 mi',
-    tags: ['Weekly', 'Active'],
-    icon: 'location-city',
-  },
-  {
-    id: '2',
-    title: 'Hope Fellowship',
-    location: 'North Side, Chicago • 2.5 mi',
-    tags: ['Youth', 'Outreach'],
-    icon: 'groups',
-  },
-  {
-    id: '3',
-    title: "St. Paul's Cathedral",
-    location: 'West Loop, Chicago • 0.8 mi',
-    tags: ['Traditional'],
-    icon: 'account-balance',
-  },
-];
-
-const EVENT_ITEMS: ListItem[] = [
-  {
-    id: '4',
-    title: 'Youth Night Worship',
-    location: 'Midtown, Atlanta • Fri 7:00 PM',
-    tags: ['Event', 'Live'],
-    icon: 'event',
-  },
-  {
-    id: '5',
-    title: 'Community Prayer Walk',
-    location: 'Buckhead, Atlanta • Sat 9:00 AM',
-    tags: ['Outdoor', 'Community'],
-    icon: 'directions-walk',
-  },
-];
-
-const JOB_ITEMS: ListItem[] = [
-  {
-    id: '6',
-    title: 'Youth Coordinator',
-    location: 'North Druid Hills • Full-time',
-    tags: ['Serve', 'Hiring'],
-    icon: 'work',
-  },
-  {
-    id: '7',
-    title: 'Worship Director',
-    location: 'Sandy Springs • Part-time',
-    tags: ['Music', 'Hiring'],
-    icon: 'music-note',
-  },
-];
 
 function ConnectPortalHeader({ activeTab, onTabChange }: HeaderProps): React.JSX.Element {
   const { dark, colors } = useTheme();
@@ -216,14 +149,21 @@ function ConnectPortalHeader({ activeTab, onTabChange }: HeaderProps): React.JSX
   );
 }
 
-function ListViewScreen({ navigation }: Props): React.JSX.Element {
+function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   const { dark } = useTheme();
   const styles = useMemo(() => createStyles(dark), [dark]);
   const screenEnterTranslateX = useRef(new Animated.Value(120)).current;
   const screenEnterOpacity = useRef(new Animated.Value(0)).current;
+  const initialRouteTab = route.params?.initialTab;
 
-  const [activeTab, setActiveTab] = useState<ConnectTab>('Places');
+  const [activeTab, setActiveTab] = useState<ConnectTab>(initialRouteTab ?? 'Places');
   const [searchText, setSearchText] = useState('');
+
+  useEffect(() => {
+    if (route.params?.initialTab) {
+      setActiveTab(route.params.initialTab);
+    }
+  }, [route.params?.initialTab]);
 
   useFocusEffect(
     useCallback(() => {
@@ -252,11 +192,10 @@ function ListViewScreen({ navigation }: Props): React.JSX.Element {
     }, [screenEnterOpacity, screenEnterTranslateX])
   );
 
-  const items = useMemo(() => {
-    if (activeTab === 'Go!') return EVENT_ITEMS;
-    if (activeTab === 'Serve') return JOB_ITEMS;
-    return PLACE_ITEMS;
-  }, [activeTab]);
+  const items = useMemo<ConnectPortalListItem[]>(
+    () => CONNECT_PORTAL_LIST_DATA[activeTab] ?? [],
+    [activeTab]
+  );
 
   const filteredItems = useMemo(() => {
     const term = searchText.trim().toLowerCase();

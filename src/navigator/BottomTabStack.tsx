@@ -17,9 +17,7 @@ import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
 import { MainBottomStackParamsList } from './types';
-import SearchStack from './SearchStack';
 import ConnectStack from './ConnectStack';
-import PostStack from './PostStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
 import { TabBarAnimationProvider, useTabBarAnimation } from './TabBarAnimationContext';
@@ -64,7 +62,7 @@ function HomeTabWrapper() {
   );
 }
 
-function SearchTabWrapper() {
+function ExploreTabWrapper() {
   return (
     <SlideInOnFocus>
       <ExploreStack />
@@ -78,6 +76,10 @@ function ConnectTabWrapper() {
       <ConnectStack />
     </SlideInOnFocus>
   );
+}
+
+function PostTabPlaceholder() {
+  return null;
 }
 
 function AnimatedTabBar(props: BottomTabBarProps) {
@@ -158,16 +160,6 @@ HomeTabIcon.propTypes = {
   size: PropTypes.number,
 };
 
-function SearchTabIcon({ color }: { color: string }) {
-  return <MaterialIcons name="search" size={30} color={color} />;
-}
-
-SearchTabIcon.propTypes = {
-  color: PropTypes.string.isRequired,
-  focused: PropTypes.bool,
-  size: PropTypes.number,
-};
-
 function ExploreTabIcon({ color }: { color: string }) {
   return <MaterialIcons name="public" size={28} color={color} />;
 }
@@ -192,9 +184,8 @@ ConnectTabIcon.propTypes = {
   size: PropTypes.number,
 };
 
-function ZoeTabIcon({ focused }: { focused: boolean }) {
+function ZoeTabIcon({ focused, color }: { focused: boolean; color: string }) {
   const size = focused ? 32 : 30;
-  const color = focused ? '#126b87' : '#032f3c';
   return (
     <View style={{ width: size, height: size }}>
       {focused ? (
@@ -238,6 +229,11 @@ function BottomStack() {
     overflow: 'visible' as const,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
+  };
+  const exploreTabBarStyle = {
+    ...defaultTabBarStyle,
+    height: getHeight(7) + insets.bottom,
+    paddingBottom: insets.bottom,
   };
   const brandColors = {
     primaryBase: '#41899f',
@@ -328,16 +324,17 @@ function BottomStack() {
           }}
         />
         <Tab.Screen
-          name="SearchTab"
-          component={SearchTabWrapper}
+          name="ExploreTab"
+          component={ExploreTabWrapper}
           options={{
-            tabBarLabel: 'Search',
+            tabBarLabel: 'Explore',
             tabBarIcon: ExploreTabIcon,
+            tabBarStyle: exploreTabBarStyle,
           }}
         />
         <Tab.Screen
           name="PostTab"
-          component={SearchStack}
+          component={PostTabPlaceholder}
           options={{
             tabBarLabel: 'Post',
             tabBarIcon: () => (
@@ -363,7 +360,7 @@ function BottomStack() {
           })}
         />
         <Tab.Screen
-          name="ExploreTab"
+          name="ConnectTab"
           component={ConnectTabWrapper}
           options={({ route }) => {
             const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectPortal';

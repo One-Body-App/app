@@ -160,6 +160,7 @@ export type ArticleType = {
   description?: string;
   comments?: CommentPost[];
   commentNumber?: number;
+  repostCount?: number;
   userData: {
     _id: string;
     name: string;
@@ -238,6 +239,7 @@ export interface SocialPost {
   mediaUrl?: string;
   comments?: CommentPost[];
   commentNumber?: number;
+  repostCount?: number;
   attachments?: [
     {
       media_key: string;
@@ -377,6 +379,7 @@ export interface PrayerPost {
   id: string;
   comments: CommentPost[];
   commentNumber: number;
+  repostCount?: number;
 
   reactions: SocialPostReaction[];
   location?: {

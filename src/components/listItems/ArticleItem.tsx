@@ -117,6 +117,7 @@ function ArticleItem({
         postlink: item.link,
         image: item.image,
         commentNumber: item.commentNumber,
+        repostCount: item.repostCount,
         comments: item.comments,
         reactions: item.reactions ?? [],
         myReaction,

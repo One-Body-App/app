@@ -6,7 +6,6 @@ import Explore from '../screens/explore';
 import UserProfile from '../screens/main/userProfile';
 import { ExploreStackParamsList } from './types';
 import { Colors } from '../styles';
-import mainPageOptions from './global';
 
 const Stack = createNativeStackNavigator<ExploreStackParamsList>();
 
@@ -21,16 +20,14 @@ function ExploreStack() {
         animation: 'slide_from_right',
         animationDuration: 750,
         statusBarStyle: dark ? 'light' : 'dark',
-        headerTransparent: true,
-        headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
       }}
     >
       <Stack.Screen
         name="Explore"
         component={Explore}
-        options={({ navigation }) =>
-          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Explore')
-        }
+        options={{
+          headerShown: false,
+        }}
       />
       <Stack.Screen
         name="UserProfile"

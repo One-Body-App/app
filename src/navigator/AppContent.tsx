@@ -664,7 +664,7 @@ function AppContent() {
         screens: {
           Main: {
             screens: {
-              SearchTab: {
+              ExploreTab: {
                 screens: {
                   UserProfile: {
                     path: '/profile/:id',

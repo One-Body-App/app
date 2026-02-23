@@ -334,6 +334,7 @@ function PrayerItem({
           isPrivate: item.private,
           comments: item.comments,
           commentNumber: item.commentNumber,
+          repostCount: item.repostCount,
         }}
         repostPayload={{
           sourceType: 'prayer',

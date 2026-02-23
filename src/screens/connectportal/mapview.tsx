@@ -13,19 +13,14 @@ import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import { MAPBOX_PUBLIC_TOKEN } from '@/services/constants';
 import { ConnectStackParamsList } from '@/src/navigator/types';
+import {
+  CONNECT_PORTAL_MAP_DATA,
+  type ConnectPortalMapItem,
+  type ConnectTab,
+  type Coordinate,
+} from './data';
 
-type ConnectTab = 'Places' | 'Go!' | 'Serve';
-type Coordinate = [number, number];
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectMap'>;
-
-type ConnectItem = {
-  id: string;
-  title: string;
-  subtitle: string;
-  address: string;
-  coordinate: Coordinate;
-  type: 'organization' | 'event' | 'job';
-};
 
 const FALLBACK_MAPBOX_PUBLIC_TOKEN =
   'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
@@ -68,90 +63,9 @@ function resolveMapboxModule(): MapboxModule | null {
   }
 }
 
-const CONNECT_DATA: Record<ConnectTab, ConnectItem[]> = {
-  Places: [
-    {
-      id: 'place-1',
-      title: 'The Christian Post',
-      subtitle: 'Organization',
-      address: 'Grandview Ave, Atlanta, GA',
-      coordinate: [-84.3895, 33.7535],
-      type: 'organization',
-    },
-    {
-      id: 'place-2',
-      title: 'Orthodox Times',
-      subtitle: 'Organization',
-      address: 'Peachtree St NE, Atlanta, GA',
-      coordinate: [-84.3866, 33.7629],
-      type: 'organization',
-    },
-    {
-      id: 'place-3',
-      title: 'Covenant Eyes',
-      subtitle: 'Organization',
-      address: 'West End, Atlanta, GA',
-      coordinate: [-84.4194, 33.7406],
-      type: 'organization',
-    },
-  ],
-  'Go!': [
-    {
-      id: 'event-1',
-      title: 'Youth Worship Night',
-      subtitle: 'Fri, 7:00 PM',
-      address: 'Buckhead, Atlanta, GA',
-      coordinate: [-84.3807, 33.8473],
-      type: 'event',
-    },
-    {
-      id: 'event-2',
-      title: 'Community Prayer Walk',
-      subtitle: 'Sat, 9:00 AM',
-      address: 'Downtown, Atlanta, GA',
-      coordinate: [-84.3929, 33.7488],
-      type: 'event',
-    },
-    {
-      id: 'event-3',
-      title: 'Faith & Tech Meet',
-      subtitle: 'Sun, 1:30 PM',
-      address: 'Midtown, Atlanta, GA',
-      coordinate: [-84.388, 33.7832],
-      type: 'event',
-    },
-  ],
-  Serve: [
-    {
-      id: 'job-1',
-      title: 'Youth Coordinator',
-      subtitle: 'Full-time',
-      address: 'North Druid Hills, Atlanta, GA',
-      coordinate: [-84.3346, 33.8038],
-      type: 'job',
-    },
-    {
-      id: 'job-2',
-      title: 'Worship Director',
-      subtitle: 'Part-time',
-      address: 'Sandy Springs, GA',
-      coordinate: [-84.3733, 33.9304],
-      type: 'job',
-    },
-    {
-      id: 'job-3',
-      title: 'Media Producer',
-      subtitle: 'Contract',
-      address: 'Decatur, GA',
-      coordinate: [-84.2977, 33.7748],
-      type: 'job',
-    },
-  ],
-};
-
 const DEFAULT_CENTER: Coordinate = [-84.388, 33.749];
 
-function getMarkerIcon(itemType: ConnectItem['type']) {
+function getMarkerIcon(itemType: ConnectPortalMapItem['type']) {
   if (itemType === 'event') return 'event';
   if (itemType === 'job') return 'work';
   return 'location-city';
@@ -167,7 +81,7 @@ function MapViewScreen({ navigation }: Props): React.JSX.Element {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  const activeItems = useMemo(() => CONNECT_DATA[activeTab], [activeTab]);
+  const activeItems = useMemo(() => CONNECT_PORTAL_MAP_DATA[activeTab] ?? [], [activeTab]);
 
   const filteredItems = useMemo(() => {
     const normalized = searchTerm.trim().toLowerCase();

@@ -1430,7 +1430,7 @@ function Home({ navigation, route }: Props) {
   const handleOpenExplore = useCallback(() => {
     navigation.navigate('MainRoot', {
       screen: 'Main',
-      params: { screen: 'SearchTab', params: { screen: 'Explore' } },
+      params: { screen: 'ExploreTab', params: { screen: 'Explore' } },
     });
   }, [navigation]);
 
@@ -1442,7 +1442,7 @@ function Home({ navigation, route }: Props) {
       navigation.navigate('MainRoot', {
         screen: 'Main',
         params: {
-          screen: 'SearchTab',
+          screen: 'ExploreTab',
           params: {
             screen: 'UserProfile',
             params: { id },

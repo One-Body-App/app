@@ -92,6 +92,7 @@ interface BaseItemProps {
     isPrivate?: boolean;
     comments?: CommentPost[];
     commentNumber?: number;
+    repostCount?: number;
   };
   onCommentsPress?: Function;
   onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
@@ -331,6 +332,16 @@ function BaseItem({
   const locationPillBackground = dark ? Colors.neutral[800] : Colors.neutral[900];
   const locationPillBorder = dark ? 'rgba(255,255,255,0.08)' : Colors.neutral[600];
   const [myReaction, setMyReaction] = useState<SocialPostReaction | undefined>(postData.myReaction);
+  const toSafeCount = (value: unknown) => {
+    const numericCount = Number(value);
+    if (!Number.isFinite(numericCount) || numericCount < 0) {
+      return 0;
+    }
+    return Math.floor(numericCount);
+  };
+  const [displayRepostCount, setDisplayRepostCount] = useState<number>(
+    toSafeCount(postData.repostCount)
+  );
   // const [reactions, setReactions] = useState<SocialPostReaction[]>(postData.reactions ?? []);
 
   const formatLocationLabel = (locationName?: string) => {
@@ -473,6 +484,7 @@ function BaseItem({
             ? String((res.response as { message?: string }).message)
             : '';
         Toast.show(responseMessage || 'Post reposted to your feed', Toast.LONG);
+        setDisplayRepostCount((previous) => previous + 1);
         setShowRepostSheet(false);
         onTelemetryEvent?.('repost', {
           postType: postData.type,
@@ -580,6 +592,10 @@ function BaseItem({
       return fallbackReactionId;
     });
   }, [myReaction?.type]);
+
+  useEffect(() => {
+    setDisplayRepostCount(toSafeCount(postData.repostCount));
+  }, [postData.id, postData.repostCount, postData.type]);
 
   const selectedReactionIconUrl =
     selectedReactionId &&
@@ -1730,6 +1746,15 @@ function BaseItem({
                 }}
               >
                 <RepeatIcon width={22} height={22} color={repostIconColor} />
+                <StyledText
+                  style={{
+                    marginLeft: spacing.x5,
+                    color: transparency ? Colors.neutral[600] : secondaryTextColor,
+                    ...fontSize.x1,
+                  }}
+                >
+                  {displayRepostCount}
+                </StyledText>
               </TouchableOpacity>
             ) : null}
 
