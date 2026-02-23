@@ -53,11 +53,13 @@ import {
   PostType,
   PrayerWallCategory,
   PostUserData,
+  ReactionDetailsTab,
   SocialPostReaction,
   SocialPostReactionType,
 } from '@/utils/types';
 import OptionsModal from './OptionsModal';
 import CustomModal from '../CustomModal';
+import PostReactionsModal from '@/components/reactions/PostReactionsModal';
 
 interface BaseItemProps {
   children: ReactNode;
@@ -164,14 +166,17 @@ const mapReactionIdToType = (reactionId: string): SocialPostReactionType => {
     case 'pray':
       return SocialPostReactionType.praying;
     case 'praise':
-      return SocialPostReactionType.happy;
+      return SocialPostReactionType.praise;
     case 'haha':
+      return SocialPostReactionType.haha;
     case 'wow':
-      return SocialPostReactionType.happy;
+      return SocialPostReactionType.wow;
     case 'sad':
+      return SocialPostReactionType.sad;
     case 'angry':
-      return SocialPostReactionType.praying;
+      return SocialPostReactionType.angry;
     case 'like':
+      return SocialPostReactionType.like;
     case 'love':
     default:
       return SocialPostReactionType.love;
@@ -182,13 +187,38 @@ const getFallbackReactionIdFromType = (type?: SocialPostReactionType): string | 
   if (!type) {
     return undefined;
   }
+  if (type === SocialPostReactionType.like) {
+    return 'like';
+  }
+  if (type === SocialPostReactionType.love) {
+    return 'love';
+  }
   if (type === SocialPostReactionType.praying) {
     return 'pray';
   }
-  if (type === SocialPostReactionType.happy) {
+  if (type === SocialPostReactionType.praise || type === SocialPostReactionType.happy) {
     return 'praise';
   }
-  return 'love';
+  if (type === SocialPostReactionType.haha) {
+    return 'haha';
+  }
+  if (type === SocialPostReactionType.wow) {
+    return 'wow';
+  }
+  if (type === SocialPostReactionType.sad) {
+    return 'sad';
+  }
+  if (type === SocialPostReactionType.angry) {
+    return 'angry';
+  }
+  return undefined;
+};
+
+const normalizeReactionType = (type?: SocialPostReactionType) => {
+  if (type === SocialPostReactionType.happy) {
+    return SocialPostReactionType.praise;
+  }
+  return type;
 };
 
 const InlineReactionBar = forwardRef<
@@ -370,6 +400,8 @@ function BaseItem({
 
   const [showOptions, setShowOptions] = useState(false);
   const [showRepostSheet, setShowRepostSheet] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const [reactionModalInitialTab, setReactionModalInitialTab] = useState<ReactionDetailsTab>('all');
   const [isReposting, setIsReposting] = useState(false);
   const [isReactionBarVisible, setIsReactionBarVisible] = useState(false);
   const [selectedReactionId, setSelectedReactionId] = useState<string | undefined>(undefined);
@@ -407,6 +439,22 @@ function BaseItem({
           effectiveRepostPayload?.sourceType === PostType.prayer ||
           effectiveRepostPayload?.sourceType === PostType.rss)
     );
+
+  const canViewReactions = Boolean(
+    postData?.id &&
+      (postData.type === PostType.social ||
+        postData.type === PostType.prayer ||
+        postData.type === PostType.rss ||
+        postData.type === PostType.watch)
+  );
+
+  const openReactionsModal = (initialTab: ReactionDetailsTab = 'all') => {
+    if (!canViewReactions) {
+      return;
+    }
+    setReactionModalInitialTab(initialTab);
+    setShowReactionsModal(true);
+  };
 
   const isPrayerRepostBlocked = Boolean(
     effectiveRepostPayload?.sourceType === PostType.prayer &&
@@ -570,7 +618,7 @@ function BaseItem({
 
   const handleAnimatedReactionSelect = async (reaction: AnimatedReaction) => {
     const selectedType = mapReactionIdToType(reaction.id);
-    if (myReaction?.type === selectedType) {
+    if (normalizeReactionType(myReaction?.type) === selectedType) {
       setSelectedReactionId(undefined);
       await removeReactPost();
       return;
@@ -581,12 +629,17 @@ function BaseItem({
   };
 
   useEffect(() => {
-    const fallbackReactionId = getFallbackReactionIdFromType(myReaction?.type);
+    const fallbackReactionId = getFallbackReactionIdFromType(
+      normalizeReactionType(myReaction?.type)
+    );
     setSelectedReactionId((currentReactionId) => {
       if (!fallbackReactionId) {
         return undefined;
       }
-      if (currentReactionId && mapReactionIdToType(currentReactionId) === myReaction?.type) {
+      if (
+        currentReactionId &&
+        mapReactionIdToType(currentReactionId) === normalizeReactionType(myReaction?.type)
+      ) {
         return currentReactionId;
       }
       return fallbackReactionId;
@@ -645,13 +698,14 @@ function BaseItem({
   const reactPost = async (type?: SocialPostReactionType) => {
     dispatch(setLoader(true));
     try {
+      const normalizedType = normalizeReactionType(type) ?? SocialPostReactionType.love;
       const res = await ApiCall({
         route: `${postData.type}/react`,
         verb: 'patch',
         token,
         params: {
           postId: postData.id,
-          type,
+          type: normalizedType,
         },
       });
 
@@ -675,7 +729,7 @@ function BaseItem({
 
         onTelemetryEvent?.('reaction', {
           postType: postData.type,
-          reactionType: type,
+          reactionType: normalizedType,
         });
 
         if (parentRefreshContent) parentRefreshContent();
@@ -691,8 +745,12 @@ function BaseItem({
     if (showLoading) dispatch(setLoader(true));
 
     try {
+      const removeReactionRoute =
+        postData.type === PostType.watch
+          ? 'watch/react/remove'
+          : `${postData.type}/remove-reaction`;
       const res = await ApiCall({
-        route: `${PostType.social}/remove-reaction`,
+        route: removeReactionRoute,
         verb: 'patch',
         token,
         params: {
@@ -807,17 +865,43 @@ function BaseItem({
   }
 
   const reactionTypes = {
+    like: 0,
     love: 0,
     praying: 0,
-    happy: 0,
+    praise: 0,
+    haha: 0,
+    wow: 0,
+    sad: 0,
+    angry: 0,
   };
 
   if (postData.reactions) {
     postData.reactions.forEach((reaction) => {
-      reactionTypes[reaction.type] += 1;
+      const normalizedType = normalizeReactionType(reaction.type);
+      if (!normalizedType) {
+        return;
+      }
+      if (normalizedType in reactionTypes) {
+        reactionTypes[normalizedType as keyof typeof reactionTypes] += 1;
+      }
     });
   }
-  const totalReactionCount = reactionTypes.love + reactionTypes.praying + reactionTypes.happy;
+
+  const displayReactionCounts = {
+    love: reactionTypes.like + reactionTypes.love,
+    praise: reactionTypes.praise + reactionTypes.haha + reactionTypes.wow,
+    praying: reactionTypes.praying + reactionTypes.sad + reactionTypes.angry,
+  };
+
+  const totalReactionCount =
+    reactionTypes.like +
+    reactionTypes.love +
+    reactionTypes.praying +
+    reactionTypes.praise +
+    reactionTypes.haha +
+    reactionTypes.wow +
+    reactionTypes.sad +
+    reactionTypes.angry;
 
   if (reelLayout)
     return (
@@ -1165,7 +1249,7 @@ function BaseItem({
                     alignItems: 'center',
                   }}
                 >
-                  {reactionTypes.love > 0 ? (
+                  {displayReactionCounts.love > 0 ? (
                     <>
                       <View
                         style={{
@@ -1179,21 +1263,23 @@ function BaseItem({
                       >
                         <Heart size={15} color="white" />
                       </View>
-                      <StyledText
-                        style={[
-                          fontSize.x2,
-                          {
-                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
-                            marginRight: spacing.x5,
-                          },
-                        ]}
-                      >
-                        {reactionTypes.love}
-                      </StyledText>
+                      <TouchableOpacity onPress={() => openReactionsModal('love')}>
+                        <StyledText
+                          style={[
+                            fontSize.x2,
+                            {
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              marginRight: spacing.x5,
+                            },
+                          ]}
+                        >
+                          {displayReactionCounts.love}
+                        </StyledText>
+                      </TouchableOpacity>
                     </>
                   ) : null}
 
-                  {reactionTypes.happy > 0 ? (
+                  {displayReactionCounts.praise > 0 ? (
                     <>
                       <View
                         style={{
@@ -1207,21 +1293,23 @@ function BaseItem({
                       >
                         <NounHands width={15} height={15} color="white" />
                       </View>
-                      <StyledText
-                        style={[
-                          fontSize.x2,
-                          {
-                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
-                            marginRight: spacing.x5,
-                          },
-                        ]}
-                      >
-                        {reactionTypes.happy}
-                      </StyledText>
+                      <TouchableOpacity onPress={() => openReactionsModal('praise')}>
+                        <StyledText
+                          style={[
+                            fontSize.x2,
+                            {
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              marginRight: spacing.x5,
+                            },
+                          ]}
+                        >
+                          {displayReactionCounts.praise}
+                        </StyledText>
+                      </TouchableOpacity>
                     </>
                   ) : null}
 
-                  {reactionTypes.praying > 0 ? (
+                  {displayReactionCounts.praying > 0 ? (
                     <>
                       <View
                         style={{
@@ -1235,17 +1323,19 @@ function BaseItem({
                       >
                         <PrayersOutlineIcon width={15} height={15} color="white" />
                       </View>
-                      <StyledText
-                        style={[
-                          fontSize.x2,
-                          {
-                            color: transparency ? Colors.neutral[600] : Colors.neutral[300],
-                            marginRight: spacing.x5,
-                          },
-                        ]}
-                      >
-                        {reactionTypes.praying}
-                      </StyledText>
+                      <TouchableOpacity onPress={() => openReactionsModal('praying')}>
+                        <StyledText
+                          style={[
+                            fontSize.x2,
+                            {
+                              color: transparency ? Colors.neutral[600] : Colors.neutral[300],
+                              marginRight: spacing.x5,
+                            },
+                          ]}
+                        >
+                          {displayReactionCounts.praying}
+                        </StyledText>
+                      </TouchableOpacity>
                     </>
                   ) : null}
                 </View>
@@ -1435,6 +1525,13 @@ function BaseItem({
             </TouchableOpacity>
           </View>
         </CustomModal>
+        <PostReactionsModal
+          visible={showReactionsModal}
+          postType={postData.type}
+          postId={postData.id}
+          initialTab={reactionModalInitialTab}
+          onClose={() => setShowReactionsModal(false)}
+        />
       </WebView>
     );
   return (
@@ -1662,31 +1759,34 @@ function BaseItem({
                 delayLongPress={180}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Animated.View style={{ transform: [{ scale: mainReactionScale }] }}>
-                    {selectedReactionIconUrl ? (
-                      <Image
-                        source={{ uri: selectedReactionIconUrl }}
-                        style={{ width: 22, height: 22 }}
-                      />
-                    ) : (
-                      <MaterialIcons
-                        name={myReaction ? 'favorite' : 'favorite-border'}
-                        size={22}
-                        color={myReaction ? Colors.errorFeedback[200] : secondaryTextColor}
-                      />
-                    )}
-                  </Animated.View>
-                  <StyledText
-                    style={{
-                      marginLeft: spacing.x5,
-                      color: transparency ? Colors.neutral[600] : secondaryTextColor,
-                      ...fontSize.x1,
-                    }}
-                  >
-                    {totalReactionCount}
-                  </StyledText>
-                </View>
+                <Animated.View style={{ transform: [{ scale: mainReactionScale }] }}>
+                  {selectedReactionIconUrl ? (
+                    <Image
+                      source={{ uri: selectedReactionIconUrl }}
+                      style={{ width: 22, height: 22 }}
+                    />
+                  ) : (
+                    <MaterialIcons
+                      name={myReaction ? 'favorite' : 'favorite-border'}
+                      size={22}
+                      color={myReaction ? Colors.errorFeedback[200] : secondaryTextColor}
+                    />
+                  )}
+                </Animated.View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={!canViewReactions}
+                onPress={() => openReactionsModal('all')}
+                style={{ marginLeft: spacing.x5 }}
+              >
+                <StyledText
+                  style={{
+                    color: transparency ? Colors.neutral[600] : secondaryTextColor,
+                    ...fontSize.x1,
+                  }}
+                >
+                  {totalReactionCount}
+                </StyledText>
               </TouchableOpacity>
               {isReactionBarVisible ? (
                 <View
@@ -1946,6 +2046,13 @@ function BaseItem({
           </TouchableOpacity>
         </View>
       </CustomModal>
+      <PostReactionsModal
+        visible={showReactionsModal}
+        postType={postData.type}
+        postId={postData.id}
+        initialTab={reactionModalInitialTab}
+        onClose={() => setShowReactionsModal(false)}
+      />
     </WebView>
   );
 }

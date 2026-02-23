@@ -183,8 +183,14 @@ export enum AccountType {
 }
 
 export enum SocialPostReactionType {
+  like = 'like',
   love = 'love',
   praying = 'praying',
+  praise = 'praise',
+  haha = 'haha',
+  wow = 'wow',
+  sad = 'sad',
+  angry = 'angry',
   happy = 'happy',
 }
 
@@ -202,6 +208,33 @@ export type SocialPostReaction = {
   userId: string;
   createdAt?: Date;
   updatedAt?: Date;
+};
+
+export type ReactionDetailsTab =
+  | 'all'
+  | 'like'
+  | 'love'
+  | 'praying'
+  | 'praise'
+  | 'haha'
+  | 'wow'
+  | 'sad'
+  | 'angry';
+
+export type ReactionDetailsUser = {
+  userId: string;
+  name: string;
+  username: string;
+  profileImage?: string;
+  reactionType: Exclude<ReactionDetailsTab, 'all'>;
+  isConnected: boolean;
+};
+
+export type ReactionDetailsResponse = {
+  totals: Record<ReactionDetailsTab, number>;
+  tab: ReactionDetailsTab;
+  items: ReactionDetailsUser[];
+  hasMore: boolean;
 };
 
 export interface ResponseGenerator {
