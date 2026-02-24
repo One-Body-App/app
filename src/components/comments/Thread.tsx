@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActionSheetIOS,
   ActivityIndicator,
+  Alert,
   FlatList,
+  ListRenderItemInfo,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -27,9 +30,24 @@ import { ApiCall } from '@/src/services/api';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
-import CommentItem from './CommentItem';
 import CommentField from './Field';
-import { CommentPost, PostType, SocialPostReaction, SocialPostReactionType } from '@/utils/types';
+import CommentFilterTabs from './CommentFilterTabs';
+import FlatCommentRow from './FlatCommentRow';
+import {
+  appendReplyToTree,
+  applyOptimisticReaction,
+  CommentListFilter,
+  FlatCommentItem,
+  countCommentsInTree,
+  flattenCommentsForList,
+  getCommentId,
+  normalizeCommentTreeFallback,
+  removeCommentFromTree,
+  sortFlatComments,
+  toDateFromSource,
+  updateCommentInTree,
+} from './commentListUtils';
+import { CommentPost, PostType, SocialPostReactionType } from '@/utils/types';
 
 interface CommentThreadProps {
   postId: string;
@@ -48,6 +66,11 @@ interface CommentThreadProps {
   scrollToEndOnPublish?: boolean;
 }
 
+type ReplyTarget = {
+  id: string;
+  name: string;
+};
+
 const isLocalImageUri = (value: string) =>
   value.startsWith('file://') || value.startsWith('content://');
 
@@ -65,164 +88,11 @@ const toUploadImageFile = (uri: string, index: number) => {
   };
 };
 
-const getCommentId = (comment?: Partial<CommentPost> | null) => {
-  const raw = comment?.commentId ?? comment?._id;
-  if (!raw) return '';
-  return String(raw);
-};
-
-const getCommentReplies = (comment?: Partial<CommentPost> | null): CommentPost[] => {
-  if (!comment) return [];
-  const rawReplies = (comment as any)?.response ?? (comment as any)?.replies;
-  return Array.isArray(rawReplies) ? (rawReplies as CommentPost[]) : [];
-};
-
-const getParentCommentId = (comment?: Partial<CommentPost> | null) => {
-  if (!comment) return '';
-  const rawParentId =
-    (comment as any)?.parentCommentId ??
-    (comment as any)?.replyToCommentId ??
-    (comment as any)?.parentId ??
-    (comment as any)?.parent?._id ??
-    (comment as any)?.parent?.commentId ??
-    (typeof (comment as any)?.parent === 'string' ? (comment as any)?.parent : undefined);
-  if (!rawParentId) return '';
-  return String(rawParentId);
-};
-
-const flattenCommentNodes = (nodes: CommentPost[]): CommentPost[] => {
-  const flattened: CommentPost[] = [];
-  const walk = (items: CommentPost[]) => {
-    items.forEach((item) => {
-      flattened.push(item);
-      const replies = getCommentReplies(item);
-      if (replies.length > 0) {
-        walk(replies);
-      }
-    });
-  };
-  walk(nodes);
-  return flattened;
-};
-
-const normalizeCommentTreeFallback = (nodes: CommentPost[]): CommentPost[] => {
-  if (!Array.isArray(nodes) || nodes.length === 0) {
-    return [];
-  }
-
-  const flattened = flattenCommentNodes(nodes);
-  const hasParentPointers = flattened.some((item) => getParentCommentId(item));
-  if (!hasParentPointers) {
-    return nodes;
-  }
-
-  const byId = new Map<string, CommentPost>();
-  const ordered: CommentPost[] = [];
-  const orphans: CommentPost[] = [];
-
-  flattened.forEach((item) => {
-    const itemId = getCommentId(item);
-    const clonedItem: CommentPost = {
-      ...item,
-      response: [],
-    };
-
-    if (!itemId) {
-      orphans.push(clonedItem);
-      return;
-    }
-
-    if (!byId.has(itemId)) {
-      byId.set(itemId, clonedItem);
-      ordered.push(clonedItem);
-    }
-  });
-
-  const roots: CommentPost[] = [];
-  ordered.forEach((item) => {
-    const itemId = getCommentId(item);
-    const parentId = getParentCommentId(item);
-    const parent = parentId ? byId.get(parentId) : undefined;
-
-    if (parent && parentId !== itemId) {
-      parent.response = [...(parent.response ?? []), item];
-      return;
-    }
-
-    roots.push(item);
-  });
-
-  return [...roots, ...orphans];
-};
-
-const updateCommentInTree = (
-  nodes: CommentPost[],
-  targetId: string,
-  updater: (comment: CommentPost) => CommentPost
-): CommentPost[] =>
-  nodes.map((node) => {
-    const nodeId = getCommentId(node);
-    const hasReplies = Array.isArray(node.response);
-    const nextReplies = hasReplies
-      ? updateCommentInTree(node.response ?? [], targetId, updater)
-      : undefined;
-    if (nodeId === targetId) {
-      const updatedNode = updater(node);
-      return {
-        ...updatedNode,
-        response: nextReplies ?? [],
-      };
-    }
-    if (hasReplies && nextReplies !== node.response) {
-      return {
-        ...node,
-        response: nextReplies,
-      };
-    }
-    return node;
-  });
-
-const appendReplyToTree = (
-  nodes: CommentPost[],
-  targetId: string,
-  reply: CommentPost
-): { comments: CommentPost[]; inserted: boolean } => {
-  let inserted = false;
-
-  const nextComments = nodes.map((node) => {
-    const nodeId = getCommentId(node);
-    const currentReplies = Array.isArray(node.response) ? node.response : [];
-
-    if (nodeId === targetId) {
-      inserted = true;
-      return {
-        ...node,
-        response: [...currentReplies, reply],
-      };
-    }
-
-    if (currentReplies.length > 0) {
-      const nestedResult = appendReplyToTree(currentReplies, targetId, reply);
-      if (nestedResult.inserted) {
-        inserted = true;
-        return {
-          ...node,
-          response: nestedResult.comments,
-        };
-      }
-    }
-
-    return node;
-  });
-
-  return {
-    comments: nextComments,
-    inserted,
-  };
-};
-
 function CommentThreadEmptyState({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <ActivityIndicator />;
+  if (isLoading) {
+    return <ActivityIndicator color={Colors.primary.brand} />;
+  }
+
   return (
     <View style={{ padding: spacing.x16 }}>
       <StyledText style={{ color: Colors.neutral[400] }}>No comments yet.</StyledText>
@@ -251,7 +121,7 @@ function CommentThread({
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
-  const listRef = useRef<FlatList<CommentPost>>(null);
+  const listRef = useRef<FlatList<any>>(null);
   const activeRequest = useRef(0);
   const isMounted = useRef(true);
   const giphySelectListenerRef = useRef<{ remove: () => void } | null>(null);
@@ -262,13 +132,18 @@ function CommentThread({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [isEndOfList, setIsEndOfList] = useState(false);
-  const [isEditingComment, setIsEditingComment] = useState(false);
-  const [editingCommentId, setEditingCommentId] = useState<string>('');
+
+  const [editingCommentId, setEditingCommentId] = useState('');
+  const [editingSeedText, setEditingSeedText] = useState('');
+  const [replyingTo, setReplyingTo] = useState<ReplyTarget | null>(null);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
   const [mediaImages, setMediaImages] = useState<string[]>([]);
   const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
-  const [replyingTo, setReplyingTo] = useState<{ id: string; name: string } | null>(null);
+
+  const [selectedFilter, setSelectedFilter] = useState<CommentListFilter>('relevant');
+  const [activeReactionPickerId, setActiveReactionPickerId] = useState('');
   const [reactingCommentId, setReactingCommentId] = useState('');
+
   const allowMedia = type === PostType.social || type === PostType.rss;
   const commentsRef = useRef<CommentPost[]>([]);
 
@@ -276,41 +151,85 @@ function CommentThread({
   let backgroundColor = '#f6f7f8';
   let surfaceColor = '#ffffff';
   let dividerColor = '#e7eaed';
+  let primaryTextColor = '#0f1419';
+  let secondaryTextColor = '#536471';
+  let accentColor = '#1d9bf0';
   if (dark && useBrandDarkForSocial) {
     backgroundColor = colors.background;
     surfaceColor = colors.card;
     dividerColor = colors.border;
+    primaryTextColor = '#f7f9f9';
+    secondaryTextColor = '#71767b';
+    accentColor = '#12d2d9';
+  } else if (dark) {
+    backgroundColor = '#0f1419';
+    surfaceColor = '#16181c';
+    dividerColor = '#2f3336';
+    primaryTextColor = '#f7f9f9';
+    secondaryTextColor = '#71767b';
   }
+
   const keyboardOffset = insets.top + 44;
+
+  const flatComments = useMemo(
+    () => sortFlatComments(flattenCommentsForList(comments), selectedFilter),
+    [comments, selectedFilter]
+  );
+
   const listHeader = useMemo(() => {
-    if (!header) return null;
     return (
-      <View
-        style={[
-          {
-            paddingHorizontal: spacing.x16,
-            paddingTop: spacing.x16,
-            paddingBottom: spacing.x13,
-            backgroundColor,
-            borderBottomWidth: 1,
-            borderBottomColor: dividerColor,
-          },
-          headerContainerStyle,
-        ]}
-      >
-        {header}
+      <View>
+        {header ? (
+          <View
+            style={[
+              {
+                paddingHorizontal: spacing.x16,
+                paddingTop: spacing.x16,
+                paddingBottom: spacing.x13,
+                backgroundColor,
+                borderBottomWidth: 1,
+                borderBottomColor: dividerColor,
+              },
+              headerContainerStyle,
+            ]}
+          >
+            {header}
+          </View>
+        ) : null}
+
+        <CommentFilterTabs
+          value={selectedFilter}
+          onChange={setSelectedFilter}
+          backgroundColor={backgroundColor}
+          borderColor={dividerColor}
+          activeColor={primaryTextColor}
+          inactiveColor={secondaryTextColor}
+        />
       </View>
     );
-  }, [backgroundColor, dividerColor, header, headerContainerStyle]);
+  }, [
+    backgroundColor,
+    dividerColor,
+    header,
+    headerContainerStyle,
+    primaryTextColor,
+    secondaryTextColor,
+    selectedFilter,
+  ]);
 
   const listFooter = useMemo(() => {
-    if (!footer) return null;
+    if (!footer) {
+      return null;
+    }
     return <View style={{ marginTop: spacing.x13 }}>{footer}</View>;
   }, [footer]);
 
   const fetchComments = useCallback(
     async (pageToLoad: number, reset?: boolean) => {
-      if (!postId) return;
+      if (!postId) {
+        return;
+      }
+
       const requestId = ++activeRequest.current;
       setIsLoading(true);
       try {
@@ -323,6 +242,7 @@ function CommentThread({
         if (!isMounted.current || requestId !== activeRequest.current) {
           return;
         }
+
         setIsLoading(false);
         setIsRefreshing(false);
 
@@ -332,12 +252,19 @@ function CommentThread({
           if (reset || pageToLoad === 1) {
             setComments(nextComments);
             setIsEndOfList(nextComments.length < 1);
-          } else {
-            setComments((prev) => normalizeCommentTreeFallback([...prev, ...nextComments]));
-            setIsEndOfList(nextComments.length < 1);
+            return;
           }
+
+          setComments((previous) => normalizeCommentTreeFallback([...previous, ...nextComments]));
+          setIsEndOfList(nextComments.length < 1);
+          return;
         }
-      } catch (e) {
+
+        if (reset || pageToLoad === 1) {
+          setComments([]);
+          setIsEndOfList(true);
+        }
+      } catch (_error) {
         if (!isMounted.current || requestId !== activeRequest.current) {
           return;
         }
@@ -365,13 +292,22 @@ function CommentThread({
     setComments([]);
     setPage(1);
     setIsEndOfList(false);
+    setSelectedFilter('relevant');
+    setReplyingTo(null);
+    setEditingCommentId('');
+    setEditingSeedText('');
+    setGif(null);
+    setMediaImages([]);
+    setActiveReactionPickerId('');
     if (postId) {
       fetchComments(1, true);
     }
   }, [fetchComments, postId, type]);
 
   useEffect(() => {
-    if (!enablePagination) return;
+    if (!enablePagination) {
+      return;
+    }
     if (page > 1) {
       fetchComments(page);
     }
@@ -389,16 +325,10 @@ function CommentThread({
   }, [comments]);
 
   useEffect(() => {
-    if (!isEditingComment) {
-      setGif(null);
-      setMediaImages([]);
-    }
-  }, [isEditingComment]);
-
-  useEffect(() => {
     if (Platform.OS !== 'android') {
       return undefined;
     }
+
     const updateKeyboardHeight = (event: {
       endCoordinates?: {
         height?: number;
@@ -413,6 +343,7 @@ function CommentThread({
     const onHide = Keyboard.addListener('keyboardDidHide', () => {
       setAndroidKeyboardHeight(0);
     });
+
     return () => {
       onShow.remove();
       onFrameChange.remove();
@@ -424,140 +355,18 @@ function CommentThread({
     setAndroidKeyboardHeight(0);
   }, [postId, type]);
 
-  useEffect(() => {
-    setReplyingTo(null);
-  }, [postId, type]);
-
-  const publishComment = async (content?: string) => {
-    if (!postId) return false;
-    setIsLoading(true);
-    try {
-      const localImageUris = allowMedia ? mediaImages.filter(isLocalImageUri) : [];
-      const localUploadImages = localImageUris.map((uri, index) => toUploadImageFile(uri, index));
-      const shouldUploadImages = localUploadImages.length > 0;
-      const replyTargetId = replyingTo?.id;
-
-      const result = await ApiCall({
-        route: `comments/${type}/${postId}`,
-        token,
-        verb: 'post',
-        params: shouldUploadImages
-          ? serialize(
-              {
-                content,
-                gif: allowMedia ? mediaGif : undefined,
-                images: localUploadImages,
-                parentCommentId: replyTargetId,
-                replyToCommentId: replyTargetId,
-              },
-              {
-                noAttributesWithArrayNotation: true,
-                noFilesWithArrayNotation: true,
-              }
-            )
-          : {
-              content,
-              gif: allowMedia ? mediaGif : undefined,
-              parentCommentId: replyTargetId,
-              replyToCommentId: replyTargetId,
-            },
-        isFormUrlEncode: shouldUploadImages,
-      });
-
-      if (result.status === 200) {
-        const now = new Date();
-        const createdAtValue =
-          (result.response as any)?.created ??
-          (result.response as any)?.createdAt ??
-          (result.response as any)?.date ??
-          now;
-        const updatedAtValue =
-          (result.response as any)?.updated ??
-          (result.response as any)?.updatedAt ??
-          (result.response as any)?.date ??
-          now;
-        const createdDate = new Date(createdAtValue);
-        const updatedDate = new Date(updatedAtValue);
-        const replyId =
-          getCommentId((result.response as CommentPost) ?? null) ||
-          `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const optimisticReply: CommentPost = {
-          _id: (result.response as any)?._id ?? replyId,
-          commentId: (result.response as any)?.commentId ?? replyId,
-          dateSeconds: Math.ceil(createdDate.getTime() / 1000),
-          date: createdDate.toISOString(),
-          objectId: postId,
-          objectType: type,
-          content: (result.response as any)?.content ?? content ?? '',
-          userData: (result.response as any)?.userData ?? {
-            _id: user?._id,
-            name: user?.name ?? user?.username ?? 'You',
-            username: user?.username,
-            accountType: user?.accountType,
-            profileImage: user?.profileImage,
-          },
-          images:
-            ((result.response as any)?.images as string[] | undefined) ??
-            (allowMedia ? mediaImages : []),
-          gif: ((result.response as any)?.gif as GiphyMedia | undefined) ?? mediaGif ?? undefined,
-          videos: [],
-          created: createdDate,
-          updated: updatedDate,
-          reactions:
-            ((result.response as any)?.reactions as SocialPostReaction[] | undefined) ?? [],
-          response: [],
-          edited: false,
-        };
-
-        setGif(null);
-        setMediaImages([]);
-        if (replyTargetId) {
-          const appendResult = appendReplyToTree(
-            commentsRef.current,
-            replyTargetId,
-            optimisticReply
-          );
-          if (appendResult.inserted) {
-            setComments(appendResult.comments);
-          } else {
-            setComments((prev) => [...prev, optimisticReply]);
-          }
-          setReplyingTo(null);
-        } else {
-          refreshContent();
-        }
-        if (onPostRefresh) onPostRefresh();
-        if (scrollToEndOnPublish) {
-          requestAnimationFrame(() => {
-            listRef.current?.scrollToEnd({ animated: true });
-          });
-        }
-        if (onCommentPublished) onCommentPublished();
-        return true;
-      }
-
-      toast.show(result?.response?.message ?? 'Unable to post comment. Please try again.', {
-        id: 'commentPublishError',
-        type: 'danger',
-        placement: 'bottom',
-      });
-      return false;
-    } catch (e) {
-      toast.show('Unable to post comment. Please try again.', {
-        id: 'commentPublishError',
-        type: 'danger',
-        placement: 'bottom',
-      });
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const clearEditingState = useCallback(() => {
+    setEditingCommentId('');
+    setEditingSeedText('');
+    setGif(null);
+    setMediaImages([]);
+  }, []);
 
   const openGifPicker = useCallback(() => {
     if (!allowMedia) {
       return;
     }
+
     if (!isGiphyInitializedRef.current) {
       try {
         GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
@@ -571,9 +380,10 @@ function CommentThread({
         return;
       }
     }
+
     giphySelectListenerRef.current?.remove();
-    const handler: GiphyDialogMediaSelectEventHandler = (e) => {
-      setGif(e.media);
+    const handler: GiphyDialogMediaSelectEventHandler = (event) => {
+      setGif(event.media);
       try {
         GiphyDialog.hide();
       } catch (error) {
@@ -597,10 +407,55 @@ function CommentThread({
     }
   }, [allowMedia, toast]);
 
-  const editComment = useCallback(
-    async (commentId: string, content: string) => {
-      if (!postId) return;
-      try {
+  const createLocalComment = useCallback(
+    (payload: any, content: string): CommentPost => {
+      const now = new Date();
+      const createdDate = toDateFromSource(payload?.created, payload?.createdAt, now);
+      const updatedDate = toDateFromSource(payload?.updated, payload?.updatedAt, createdDate);
+      const fallbackId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const responseCommentId = getCommentId(payload);
+      const id = responseCommentId || fallbackId;
+
+      return {
+        _id: payload?._id ?? id,
+        commentId: payload?.commentId ?? id,
+        dateSeconds: Math.ceil(createdDate.getTime() / 1000),
+        date: createdDate.toISOString(),
+        objectId: postId,
+        objectType: type,
+        content: payload?.content ?? content,
+        userData: payload?.userData ?? {
+          _id: user?._id,
+          name: user?.name ?? user?.username ?? 'You',
+          username: user?.username,
+          accountType: user?.accountType,
+          profileImage: user?.profileImage,
+        },
+        images: payload?.images ?? (allowMedia ? mediaImages : []),
+        gif: payload?.gif ?? (allowMedia ? mediaGif : undefined),
+        videos: [],
+        created: createdDate,
+        updated: updatedDate,
+        reactions: payload?.reactions ?? [],
+        response: payload?.response ?? [],
+        edited: payload?.edited ?? false,
+      };
+    },
+    [allowMedia, mediaGif, mediaImages, postId, type, user]
+  );
+
+  const publishComment = useCallback(
+    async (content: string) => {
+      if (!postId) {
+        return false;
+      }
+
+      const value = content.trim();
+      if (!value && !mediaGif && mediaImages.length < 1) {
+        return false;
+      }
+
+      if (editingCommentId) {
         const localImageUris = allowMedia ? mediaImages.filter(isLocalImageUri) : [];
         const remoteImageUris = allowMedia
           ? mediaImages.filter((imageUri) => imageUri.startsWith('http'))
@@ -608,17 +463,84 @@ function CommentThread({
         const uploadImages = localImageUris.map((uri, index) => toUploadImageFile(uri, index));
         const shouldUploadImages = uploadImages.length > 0;
 
+        try {
+          const result = await ApiCall({
+            route: `comments/${type}/${postId}/${editingCommentId}`,
+            verb: 'patch',
+            token,
+            params: shouldUploadImages
+              ? serialize(
+                  {
+                    content: value,
+                    gif: allowMedia ? mediaGif : undefined,
+                    images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
+                    uploadImages,
+                  },
+                  {
+                    noAttributesWithArrayNotation: true,
+                    noFilesWithArrayNotation: true,
+                  }
+                )
+              : {
+                  content: value,
+                  gif: allowMedia ? mediaGif : undefined,
+                  images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
+                },
+            isFormUrlEncode: shouldUploadImages,
+          });
+
+          if (result?.status === 200) {
+            setComments((previous) =>
+              updateCommentInTree(previous, editingCommentId, (comment) => ({
+                ...comment,
+                content: value,
+                images: allowMedia ? mediaImages : undefined,
+                gif: allowMedia ? (mediaGif ?? undefined) : undefined,
+                edited: true,
+                updated: new Date(),
+              }))
+            );
+            clearEditingState();
+            setReplyingTo(null);
+            if (onPostRefresh) {
+              onPostRefresh();
+            }
+            return true;
+          }
+
+          toast.show(result?.response?.message ?? 'Unable to update comment right now.', {
+            id: 'commentEditError',
+            type: 'danger',
+            placement: 'bottom',
+          });
+          return false;
+        } catch (_error) {
+          toast.show('Unable to update comment right now.', {
+            id: 'commentEditError',
+            type: 'danger',
+            placement: 'bottom',
+          });
+          return false;
+        }
+      }
+
+      try {
+        const localImageUris = allowMedia ? mediaImages.filter(isLocalImageUri) : [];
+        const localUploadImages = localImageUris.map((uri, index) => toUploadImageFile(uri, index));
+        const shouldUploadImages = localUploadImages.length > 0;
+
         const result = await ApiCall({
-          route: `comments/${type}/${postId}/${commentId}`,
-          verb: 'patch',
+          route: `comments/${type}/${postId}`,
           token,
+          verb: 'post',
           params: shouldUploadImages
             ? serialize(
                 {
-                  content,
+                  content: value,
                   gif: allowMedia ? mediaGif : undefined,
-                  images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
-                  uploadImages,
+                  images: localUploadImages,
+                  parentCommentId: replyingTo?.id,
+                  replyToCommentId: replyingTo?.id,
                 },
                 {
                   noAttributesWithArrayNotation: true,
@@ -626,32 +548,99 @@ function CommentThread({
                 }
               )
             : {
-                content,
+                content: value,
                 gif: allowMedia ? mediaGif : undefined,
-                images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
+                parentCommentId: replyingTo?.id,
+                replyToCommentId: replyingTo?.id,
               },
           isFormUrlEncode: shouldUploadImages,
         });
 
-        if (result?.status === 200) {
-          refreshContent();
-          toast.show('Comment modified successfully', {
-            id: 'successMessage',
-            type: 'success',
-            placement: 'bottom',
-          });
-          if (onPostRefresh) onPostRefresh();
+        if (result.status === 200) {
+          const optimisticComment = createLocalComment(result.response, value);
+
+          if (replyingTo?.id) {
+            const appendResult = appendReplyToTree(
+              commentsRef.current,
+              replyingTo.id,
+              optimisticComment
+            );
+            if (appendResult.inserted) {
+              setComments(appendResult.comments);
+            } else {
+              setComments((previous) => [optimisticComment, ...previous]);
+            }
+          } else {
+            setComments((previous) => [optimisticComment, ...previous]);
+          }
+
+          setGif(null);
+          setMediaImages([]);
+          setReplyingTo(null);
+          if (onPostRefresh) {
+            onPostRefresh();
+          }
+          if (onCommentPublished) {
+            onCommentPublished();
+          }
+          if (scrollToEndOnPublish) {
+            requestAnimationFrame(() => {
+              listRef.current?.scrollToOffset({ animated: true, offset: 0 });
+            });
+          }
+          return true;
         }
-      } catch (e) {
-        console.log('comment edit error -- ', e);
+
+        toast.show(result?.response?.message ?? 'Unable to post comment. Please try again.', {
+          id: 'commentPublishError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+        return false;
+      } catch (_error) {
+        toast.show('Unable to post comment. Please try again.', {
+          id: 'commentPublishError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+        return false;
       }
     },
-    [allowMedia, mediaGif, mediaImages, onPostRefresh, postId, refreshContent, toast, token, type]
+    [
+      allowMedia,
+      clearEditingState,
+      createLocalComment,
+      editingCommentId,
+      mediaGif,
+      mediaImages,
+      onCommentPublished,
+      onPostRefresh,
+      postId,
+      replyingTo,
+      scrollToEndOnPublish,
+      toast,
+      token,
+      type,
+    ]
   );
 
-  const removeComment = useCallback(
-    async (_type: string, commentId: string) => {
-      if (!postId) return;
+  const handleDeleteComment = useCallback(
+    async (commentId: string) => {
+      const previousComments = commentsRef.current;
+      const removedResult = removeCommentFromTree(previousComments, commentId);
+      if (removedResult.removedCount < 1) {
+        return;
+      }
+
+      setComments(removedResult.comments);
+
+      if (editingCommentId === commentId) {
+        clearEditingState();
+      }
+      if (replyingTo?.id === commentId) {
+        setReplyingTo(null);
+      }
+
       try {
         const result = await ApiCall({
           route: `comments/${type}/${postId}/${commentId}`,
@@ -660,14 +649,101 @@ function CommentThread({
         });
 
         if (result?.status === 200) {
-          refreshContent();
-          if (onPostRefresh) onPostRefresh();
+          if (onPostRefresh) {
+            onPostRefresh();
+          }
+          return;
         }
-      } catch (e) {
-        console.log('comment delete error -- ', e);
+
+        setComments(previousComments);
+        toast.show(result?.response?.message ?? 'Unable to delete comment right now.', {
+          id: 'commentDeleteError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+      } catch (_error) {
+        setComments(previousComments);
+        toast.show('Unable to delete comment right now.', {
+          id: 'commentDeleteError',
+          type: 'danger',
+          placement: 'bottom',
+        });
       }
     },
-    [onPostRefresh, postId, refreshContent, token, type]
+    [clearEditingState, editingCommentId, onPostRefresh, postId, replyingTo?.id, toast, token, type]
+  );
+
+  const showDeleteConfirmation = useCallback(
+    (commentId: string) => {
+      Alert.alert('Delete comment', 'This action cannot be undone.', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            handleDeleteComment(commentId).catch(() => undefined);
+          },
+        },
+      ]);
+    },
+    [handleDeleteComment]
+  );
+
+  const openCommentActions = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      if (!commentId) {
+        return;
+      }
+
+      const openEdit = () => {
+        setEditingCommentId(commentId);
+        setEditingSeedText(comment.content ?? '');
+        setReplyingTo(null);
+        setGif(comment.gif ?? null);
+        setMediaImages(comment.images ?? []);
+      };
+
+      const openDelete = () => {
+        showDeleteConfirmation(commentId);
+      };
+
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['Cancel', 'Edit', 'Delete'],
+            cancelButtonIndex: 0,
+            destructiveButtonIndex: 2,
+          },
+          (index) => {
+            if (index === 1) {
+              openEdit();
+            }
+            if (index === 2) {
+              openDelete();
+            }
+          }
+        );
+        return;
+      }
+
+      Alert.alert('Comment actions', 'Select an action', [
+        {
+          text: 'Edit',
+          onPress: openEdit,
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: openDelete,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]);
+    },
+    [showDeleteConfirmation]
   );
 
   const reactToComment = useCallback(
@@ -677,30 +753,16 @@ function CommentThread({
       }
 
       const previousComments = commentsRef.current;
-      const optimisticComments = updateCommentInTree(previousComments, commentId, (comment) => {
-        const filtered = (comment.reactions ?? []).filter(
-          (reaction) => reaction.userId !== user._id
-        );
-        const nextReactions = reactionType
-          ? [
-              ...filtered,
-              {
-                type: reactionType,
-                userId: user._id,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              },
-            ]
-          : filtered;
-
-        return {
-          ...comment,
-          reactions: nextReactions,
-        };
-      });
+      const optimisticComments = applyOptimisticReaction(
+        previousComments,
+        commentId,
+        user._id,
+        reactionType
+      );
 
       setComments(optimisticComments);
       setReactingCommentId(commentId);
+      setActiveReactionPickerId('');
       try {
         const result = await ApiCall({
           route: `comments/${type}/${postId}/${commentId}/reaction`,
@@ -717,7 +779,7 @@ function CommentThread({
             placement: 'bottom',
           });
         }
-      } catch (error) {
+      } catch (_error) {
         setComments(previousComments);
         toast.show('Unable to update reaction right now.', {
           id: 'commentReactionError',
@@ -731,229 +793,135 @@ function CommentThread({
     [postId, token, toast, type, user?._id]
   );
 
-  const renderCommentNode = useCallback(
-    (
-      item: CommentPost,
-      nodeKeyPrefix = 'comment',
-      hasNextSibling = false,
-      depth = 0,
-      hasPreviousSibling = false
-    ) => {
-      const itemId = getCommentId(item);
-      let myReaction: SocialPostReaction | undefined;
+  const handleToggleReaction = useCallback(
+    (commentId: string, hasReaction: boolean) => {
+      reactToComment(commentId, hasReaction ? undefined : SocialPostReactionType.love).catch(
+        () => undefined
+      );
+    },
+    [reactToComment]
+  );
 
-      item.reactions?.forEach((reaction: SocialPostReaction) => {
-        if (reaction.userId === user?._id) {
-          myReaction = reaction;
-        }
+  const handleSelectReaction = useCallback(
+    (commentId: string, reactionType: SocialPostReactionType) => {
+      reactToComment(commentId, reactionType).catch(() => undefined);
+    },
+    [reactToComment]
+  );
+
+  const handleShowReactionPicker = useCallback((commentId: string) => {
+    setActiveReactionPickerId(commentId);
+  }, []);
+
+  const handleReplyPress = useCallback(
+    (commentId: string, authorName: string) => {
+      if (editingCommentId) {
+        return;
+      }
+      setReplyingTo({ id: commentId, name: authorName });
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToOffset({ animated: true, offset: 0 });
       });
+    },
+    [editingCommentId]
+  );
 
-      const threadedStyle: ViewStyle = {
-        paddingHorizontal: spacing.x16,
-      };
-      const threadLineColor = '#12d2d9';
-      const avatarCenterX = spacing.x16 + 18;
-      const branchIndent = avatarCenterX;
-      const avatarCenterY = spacing.x8 + 18;
-      const elbowRadius = spacing.x8;
-      const replies = item.response ?? [];
+  const handleRowUserPress = useCallback(
+    (userId: string) => {
+      if (type === PostType.prayer && Boolean(isPrivate)) {
+        return;
+      }
+      onUserPress?.(userId);
+    },
+    [isPrivate, onUserPress, type]
+  );
 
+  const handleScrollBeginDrag = useCallback(() => {
+    setActiveReactionPickerId('');
+  }, []);
+
+  const handleEndReached = useCallback(() => {
+    if (enablePagination && !isLoading && !isRefreshing && !isEndOfList) {
+      setPage((previous) => previous + 1);
+    }
+  }, [enablePagination, isEndOfList, isLoading, isRefreshing]);
+
+  const renderCommentItem = useCallback(
+    (info: ListRenderItemInfo<FlatCommentItem>) => {
+      const rowItem = info.item;
       return (
-        <View key={`${nodeKeyPrefix}_${itemId || 'comment'}`} style={{ position: 'relative' }}>
-          {depth === 0 && hasPreviousSibling ? (
-            <View
-              style={{
-                position: 'absolute',
-                left: branchIndent,
-                top: 0,
-                height: avatarCenterY,
-                width: 1,
-                backgroundColor: threadLineColor,
-              }}
-            />
-          ) : null}
-          {hasNextSibling ? (
-            <View
-              style={{
-                position: 'absolute',
-                left: branchIndent,
-                top: avatarCenterY,
-                bottom: 0,
-                width: 1,
-                backgroundColor: threadLineColor,
-              }}
-            />
-          ) : null}
-          <View style={{ position: 'relative' }}>
-            {replies.length > 0 ? (
-              <View
-                style={{
-                  position: 'absolute',
-                  left: branchIndent,
-                  top: avatarCenterY,
-                  bottom: 0,
-                  width: 1,
-                  backgroundColor: threadLineColor,
-                }}
-              />
-            ) : null}
-            <CommentItem
-              style={threadedStyle}
-              removePost={removeComment}
-              editCommentAction={editComment}
-              onPress={() => {
-                if (onUserPress && item.userData?._id) {
-                  onUserPress(item.userData._id);
-                }
-              }}
-              setEditingComment={(isEditing: boolean) => {
-                if (isEditing) {
-                  setGif(item.gif ?? null);
-                  setMediaImages(item.images ?? []);
-                  setReplyingTo(null);
-                }
-                setIsEditingComment(isEditing);
-                if (itemId) setEditingCommentId(itemId);
-              }}
-              onReactPress={(selectedReactionType?: SocialPostReactionType) => {
-                if (itemId) {
-                  reactToComment(itemId, selectedReactionType);
-                }
-              }}
-              isReacting={reactingCommentId === itemId}
-              onReplyPress={() => {
-                if (!itemId || isEditingComment) {
-                  return;
-                }
-                setReplyingTo({
-                  id: itemId,
-                  name: item.userData?.name ?? 'Unknown',
-                });
-                requestAnimationFrame(() => {
-                  listRef.current?.scrollToEnd({ animated: true });
-                });
-              }}
-              postData={{
-                id: itemId,
-                objectId: item.objectId,
-                objectType: item.objectType,
-                content: item.content,
-                reactions: item.reactions,
-                myReaction,
-                edited: item.edited,
-                gif: isEditingComment && editingCommentId === itemId ? mediaGif : item.gif,
-                images:
-                  isEditingComment && editingCommentId === itemId
-                    ? mediaImages
-                    : (item.images ?? []),
-              }}
-              useBrandDarkTheme={useBrandDarkForSocial}
-              isPrivate={type === PostType.prayer ? Boolean(isPrivate) : false}
-              userData={item.userData}
-              allowMedia={allowMedia}
-              allowImageAttachments={allowMedia}
-              setThreadImages={setMediaImages}
-              onOpenGifPicker={openGifPicker}
-            />
-          </View>
-          {replies.length > 0 ? (
-            <View
-              style={{
-                marginLeft: branchIndent,
-                position: 'relative',
-              }}
-            >
-              {replies.map((reply, replyIndex) => (
-                <View
-                  key={`${nodeKeyPrefix}_${itemId}_${getCommentId(reply) || `reply_${replyIndex}`}`}
-                  style={{ position: 'relative' }}
-                >
-                  <View
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      width: branchIndent,
-                      height: avatarCenterY,
-                      borderLeftWidth: 1,
-                      borderBottomWidth: 1,
-                      borderColor: threadLineColor,
-                      borderBottomLeftRadius: elbowRadius,
-                    }}
-                  />
-                  {renderCommentNode(
-                    reply,
-                    `${nodeKeyPrefix}_${itemId}_${getCommentId(reply) || `reply_${replyIndex}`}`,
-                    replyIndex < replies.length - 1,
-                    depth + 1,
-                    replyIndex > 0
-                  )}
-                </View>
-              ))}
-            </View>
-          ) : null}
-        </View>
+        <FlatCommentRow
+          item={rowItem}
+          currentUserId={user?._id}
+          isReacting={reactingCommentId === rowItem.id}
+          isReactionPickerVisible={activeReactionPickerId === rowItem.id}
+          allowMedia={allowMedia}
+          backgroundColor={backgroundColor}
+          borderColor={dividerColor}
+          primaryTextColor={primaryTextColor}
+          secondaryTextColor={secondaryTextColor}
+          accentColor={accentColor}
+          mutedColor={secondaryTextColor}
+          onToggleReaction={handleToggleReaction}
+          onShowReactionPicker={handleShowReactionPicker}
+          onSelectReaction={handleSelectReaction}
+          onReplyPress={handleReplyPress}
+          onActionsPress={openCommentActions}
+          onUserPress={handleRowUserPress}
+        />
       );
     },
     [
-      allowMedia,
-      editComment,
-      editingCommentId,
-      isEditingComment,
-      isPrivate,
-      mediaGif,
-      mediaImages,
-      onUserPress,
-      openGifPicker,
-      reactToComment,
-      reactingCommentId,
-      removeComment,
-      type,
-      useBrandDarkForSocial,
       user?._id,
+      reactingCommentId,
+      activeReactionPickerId,
+      allowMedia,
+      backgroundColor,
+      dividerColor,
+      primaryTextColor,
+      secondaryTextColor,
+      accentColor,
+      handleToggleReaction,
+      handleShowReactionPicker,
+      handleSelectReaction,
+      handleReplyPress,
+      openCommentActions,
+      handleRowUserPress,
     ]
   );
 
-  const Container = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
   const isAndroid = Platform.OS === 'android';
   let listBottomPadding = spacing.x16;
   if (!hideComposer && isAndroid) {
     listBottomPadding = spacing.x104;
   }
-  let keyboardAvoidingProps: {
-    behavior?: 'height' | 'padding' | 'position';
-    keyboardVerticalOffset?: number;
-  } = {};
-  if (Platform.OS === 'ios') {
-    keyboardAvoidingProps = {
-      behavior: 'padding',
-      keyboardVerticalOffset: keyboardOffset,
-    };
-  }
 
-  return (
-    <Container style={{ flex: 1, backgroundColor }} {...keyboardAvoidingProps}>
+  const composerKey = `${postId}_${type}_${editingCommentId || 'new'}_${replyingTo?.id || 'none'}`;
+
+  const content = (
+    <>
       <FlatList
         ref={listRef}
-        data={comments}
+        data={flatComments}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={Platform.OS === 'android'}
         style={[{ backgroundColor }, listStyle]}
         contentContainerStyle={[
           {
             paddingBottom: listBottomPadding,
-            paddingTop: header ? 0 : spacing.x16,
             backgroundColor,
           },
           contentContainerStyle,
         ]}
         ListHeaderComponent={listHeader}
         ListFooterComponent={listFooter}
-        keyExtractor={(item, index) => `${item.commentId ?? item._id ?? index}`}
+        keyExtractor={(item) => item.id}
         onEndReachedThreshold={0.8}
-        onEndReached={() => {
-          if (enablePagination && !isLoading && !isRefreshing && !isEndOfList) {
-            setPage((prev) => prev + 1);
-          }
-        }}
+        onEndReached={handleEndReached}
+        onScrollBeginDrag={handleScrollBeginDrag}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -963,12 +931,10 @@ function CommentThread({
           />
         }
         ListEmptyComponent={<CommentThreadEmptyState isLoading={isLoading} />}
-        renderItem={({ item, index }) =>
-          renderCommentNode(item, `root_${index}`, index < comments.length - 1, 0, index > 0)
-        }
+        renderItem={renderCommentItem}
       />
 
-      {!hideComposer && !isEditingComment ? (
+      {!hideComposer ? (
         <View
           style={{
             position: isAndroid ? 'absolute' : 'relative',
@@ -981,6 +947,7 @@ function CommentThread({
           }}
         >
           <CommentField
+            key={composerKey}
             mediaGif={mediaGif}
             setGif={setGif}
             mediaImages={mediaImages}
@@ -995,16 +962,43 @@ function CommentThread({
                   }
                 : undefined
             }
-            isEditingComment={false}
+            text={editingSeedText}
+            isEditingComment={Boolean(editingCommentId)}
+            setEditingComment={(isEditing) => {
+              if (!isEditing) {
+                clearEditingState();
+              }
+            }}
             useBrandDarkTheme={useBrandDarkForSocial}
             allowMedia={allowMedia}
             allowImageAttachments={allowMedia}
             onOpenGifPicker={openGifPicker}
+            isFromBottomField={false}
           />
         </View>
       ) : null}
-    </Container>
+
+      {isLoading && countCommentsInTree(comments) > 0 ? (
+        <View style={{ paddingVertical: spacing.x10, alignItems: 'center' }}>
+          <ActivityIndicator color={accentColor} />
+        </View>
+      ) : null}
+    </>
   );
+
+  if (Platform.OS === 'ios') {
+    return (
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor }}
+        behavior="padding"
+        keyboardVerticalOffset={keyboardOffset}
+      >
+        {content}
+      </KeyboardAvoidingView>
+    );
+  }
+
+  return <View style={{ flex: 1, backgroundColor }}>{content}</View>;
 }
 
 export default CommentThread;

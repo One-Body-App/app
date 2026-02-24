@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  ListRenderItemInfo,
   Platform,
   Text,
   TouchableOpacity,
@@ -17,11 +18,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
-import { timeSince } from '@/utils/ResponsiveFun';
+import {
+  appendReplyToTree,
+  applyOptimisticReaction,
+  CommentListFilter,
+  FlatCommentItem,
+  countCommentsInTree,
+  flattenCommentsForList,
+  getCommentId,
+  normalizeCommentTreeFallback,
+  removeCommentFromTree,
+  sortFlatComments,
+  toDateFromSource,
+  updateCommentInTree,
+} from '@/components/comments/commentListUtils';
 import { CommentPost, PostType, SocialPostReactionType } from '@/utils/types';
-import { COLORS, styles } from './commentstyles';
-
-const watchStyles = styles as Record<string, object>;
+import CommentFilterTabs from '@/components/comments/CommentFilterTabs';
+import FlatCommentRow from '@/components/comments/FlatCommentRow';
+import { COLORS, styles as watchStyles } from './commentstyles';
 
 type ReplyTarget = {
   id: string;
@@ -37,257 +51,7 @@ type WatchCommentsProps = {
   sheetOpenKey?: number;
 };
 
-type CommentTreeUpdateResult = {
-  comments: CommentPost[];
-  inserted: boolean;
-};
-
-type CommentDeleteResult = {
-  comments: CommentPost[];
-  removedCount: number;
-};
-
-type ReactionPickerItem = {
-  id: string;
-  iconUrl: string;
-  type: SocialPostReactionType;
-};
-
 const QUICK_EMOJIS = ['🔥', '💪', '👏', '💯', '❤️'];
-
-const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72';
-const REACTION_PICKER_ITEMS: ReactionPickerItem[] = [
-  { id: 'pray', iconUrl: `${TWEMOJI_BASE}/1f64f.png`, type: SocialPostReactionType.praying },
-  { id: 'praise', iconUrl: `${TWEMOJI_BASE}/1f64c.png`, type: SocialPostReactionType.happy },
-  { id: 'like', iconUrl: `${TWEMOJI_BASE}/1f44d.png`, type: SocialPostReactionType.love },
-  { id: 'love', iconUrl: `${TWEMOJI_BASE}/2764.png`, type: SocialPostReactionType.love },
-  { id: 'haha', iconUrl: `${TWEMOJI_BASE}/1f602.png`, type: SocialPostReactionType.happy },
-  { id: 'wow', iconUrl: `${TWEMOJI_BASE}/1f632.png`, type: SocialPostReactionType.happy },
-  { id: 'sad', iconUrl: `${TWEMOJI_BASE}/1f622.png`, type: SocialPostReactionType.praying },
-  { id: 'angry', iconUrl: `${TWEMOJI_BASE}/1f621.png`, type: SocialPostReactionType.praying },
-];
-
-const getCommentId = (comment?: Partial<CommentPost> | null) => {
-  const raw = comment?.commentId ?? comment?._id;
-  return raw ? String(raw) : '';
-};
-
-const getCommentReplies = (comment?: Partial<CommentPost> | null): CommentPost[] => {
-  if (!comment) {
-    return [];
-  }
-  const rawReplies = (comment as any)?.response ?? (comment as any)?.replies;
-  return Array.isArray(rawReplies) ? (rawReplies as CommentPost[]) : [];
-};
-
-const getParentCommentId = (comment?: Partial<CommentPost> | null) => {
-  if (!comment) {
-    return '';
-  }
-  const rawParentId =
-    (comment as any)?.parentCommentId ??
-    (comment as any)?.replyToCommentId ??
-    (comment as any)?.parentId ??
-    (comment as any)?.parent?._id ??
-    (comment as any)?.parent?.commentId ??
-    (typeof (comment as any)?.parent === 'string' ? (comment as any)?.parent : undefined);
-  return rawParentId ? String(rawParentId) : '';
-};
-
-const flattenCommentNodes = (nodes: CommentPost[]): CommentPost[] => {
-  const flattened: CommentPost[] = [];
-  const walk = (items: CommentPost[]) => {
-    items.forEach((item) => {
-      flattened.push(item);
-      const replies = getCommentReplies(item);
-      if (replies.length > 0) {
-        walk(replies);
-      }
-    });
-  };
-  walk(nodes);
-  return flattened;
-};
-
-const normalizeCommentTreeFallback = (nodes: CommentPost[]): CommentPost[] => {
-  if (!Array.isArray(nodes) || nodes.length === 0) {
-    return [];
-  }
-
-  const flattened = flattenCommentNodes(nodes);
-  const hasParentPointers = flattened.some((comment) => getParentCommentId(comment));
-  if (!hasParentPointers) {
-    return nodes;
-  }
-
-  const byId = new Map<string, CommentPost>();
-  const ordered: CommentPost[] = [];
-  const orphans: CommentPost[] = [];
-
-  flattened.forEach((comment) => {
-    const commentId = getCommentId(comment);
-    const cloned: CommentPost = {
-      ...comment,
-      response: [],
-    };
-
-    if (!commentId) {
-      orphans.push(cloned);
-      return;
-    }
-
-    if (!byId.has(commentId)) {
-      byId.set(commentId, cloned);
-      ordered.push(cloned);
-    }
-  });
-
-  const roots: CommentPost[] = [];
-  ordered.forEach((comment) => {
-    const commentId = getCommentId(comment);
-    const parentId = getParentCommentId(comment);
-    const parentComment = parentId ? byId.get(parentId) : undefined;
-
-    if (parentComment && parentId !== commentId) {
-      parentComment.response = [...(parentComment.response ?? []), comment];
-      return;
-    }
-
-    roots.push(comment);
-  });
-
-  return [...roots, ...orphans];
-};
-
-const updateCommentInTree = (
-  nodes: CommentPost[],
-  targetId: string,
-  updater: (comment: CommentPost) => CommentPost
-): CommentPost[] =>
-  nodes.map((node) => {
-    const nodeId = getCommentId(node);
-    const hasReplies = Array.isArray(node.response);
-    const nextReplies = hasReplies
-      ? updateCommentInTree(node.response ?? [], targetId, updater)
-      : undefined;
-
-    if (nodeId === targetId) {
-      const updated = updater(node);
-      return {
-        ...updated,
-        response: nextReplies ?? [],
-      };
-    }
-
-    if (hasReplies && nextReplies !== node.response) {
-      return {
-        ...node,
-        response: nextReplies,
-      };
-    }
-
-    return node;
-  });
-
-const appendReplyToTree = (
-  nodes: CommentPost[],
-  targetId: string,
-  reply: CommentPost
-): CommentTreeUpdateResult => {
-  let inserted = false;
-
-  const comments = nodes.map((node) => {
-    const nodeId = getCommentId(node);
-    const currentReplies = Array.isArray(node.response) ? node.response : [];
-
-    if (nodeId === targetId) {
-      inserted = true;
-      return {
-        ...node,
-        response: [...currentReplies, reply],
-      };
-    }
-
-    if (currentReplies.length > 0) {
-      const nested = appendReplyToTree(currentReplies, targetId, reply);
-      if (nested.inserted) {
-        inserted = true;
-        return {
-          ...node,
-          response: nested.comments,
-        };
-      }
-    }
-
-    return node;
-  });
-
-  return {
-    comments,
-    inserted,
-  };
-};
-
-const removeCommentFromTree = (nodes: CommentPost[], targetId: string): CommentDeleteResult => {
-  let removedCount = 0;
-
-  const comments = nodes
-    .map((node) => {
-      const nodeId = getCommentId(node);
-      if (nodeId === targetId) {
-        removedCount += flattenCommentNodes([node]).length;
-        return null;
-      }
-
-      const currentReplies = Array.isArray(node.response) ? node.response : [];
-      if (currentReplies.length < 1) {
-        return node;
-      }
-
-      const nested = removeCommentFromTree(currentReplies, targetId);
-      if (nested.removedCount < 1) {
-        return node;
-      }
-
-      removedCount += nested.removedCount;
-      return {
-        ...node,
-        response: nested.comments,
-      };
-    })
-    .filter(Boolean) as CommentPost[];
-
-  return {
-    comments,
-    removedCount,
-  };
-};
-
-const toDateFromSource = (firstValue: unknown, secondValue: unknown, fallback: Date) => {
-  const firstDate = firstValue ? new Date(String(firstValue)) : null;
-  if (firstDate && !Number.isNaN(firstDate.getTime())) {
-    return firstDate;
-  }
-  const secondDate = secondValue ? new Date(String(secondValue)) : null;
-  if (secondDate && !Number.isNaN(secondDate.getTime())) {
-    return secondDate;
-  }
-  return fallback;
-};
-
-const getCommentTimestamp = (comment: CommentPost): Date => {
-  const createdValue =
-    (comment as any)?.created ??
-    (comment as any)?.createdAt ??
-    (comment as any)?.updated ??
-    (comment as any)?.updatedAt ??
-    comment.date;
-  const parsed = createdValue ? new Date(createdValue) : new Date();
-  if (Number.isNaN(parsed.getTime())) {
-    return new Date();
-  }
-  return parsed;
-};
 
 function WatchComments({
   postId,
@@ -308,6 +72,7 @@ function WatchComments({
   const [isEndOfList, setIsEndOfList] = useState(false);
   const [page, setPage] = useState(1);
 
+  const [selectedFilter, setSelectedFilter] = useState<CommentListFilter>('relevant');
   const [composerText, setComposerText] = useState('');
   const [replyingTo, setReplyingTo] = useState<ReplyTarget | null>(null);
   const [editingCommentId, setEditingCommentId] = useState('');
@@ -363,6 +128,11 @@ function WatchComments({
     [onCountChange]
   );
 
+  const flatComments = useMemo(
+    () => sortFlatComments(flattenCommentsForList(comments), selectedFilter),
+    [comments, selectedFilter]
+  );
+
   const fetchComments = useCallback(
     async (pageToLoad: number, reset?: boolean) => {
       if (!postId) {
@@ -390,7 +160,7 @@ function WatchComments({
           if (reset || pageToLoad === 1) {
             setComments(nextComments);
             setIsEndOfList(nextComments.length < 1);
-            const loadedCount = flattenCommentNodes(nextComments).length;
+            const loadedCount = countCommentsInTree(nextComments);
             if (loadedCount > commentCountRef.current) {
               setCount(loadedCount);
             }
@@ -428,6 +198,7 @@ function WatchComments({
     setReplyingTo(null);
     setEditingCommentId('');
     setActiveReactionPickerId('');
+    setSelectedFilter('relevant');
     fetchComments(1, true);
   }, [fetchComments, postId, sheetOpenKey]);
 
@@ -480,6 +251,11 @@ function WatchComments({
     },
     [postId, user]
   );
+
+  const stopEditing = useCallback(() => {
+    setEditingCommentId('');
+    setComposerText('');
+  }, []);
 
   const submitComment = useCallback(async () => {
     const value = composerText.trim();
@@ -728,27 +504,12 @@ function WatchComments({
       }
 
       const previousComments = commentsRef.current;
-      const optimisticComments = updateCommentInTree(previousComments, commentId, (comment) => {
-        const filtered = (comment.reactions ?? []).filter(
-          (reaction) => reaction.userId !== user._id
-        );
-        const nextReactions = reactionType
-          ? [
-              ...filtered,
-              {
-                type: reactionType,
-                userId: user._id,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              },
-            ]
-          : filtered;
-
-        return {
-          ...comment,
-          reactions: nextReactions,
-        };
-      });
+      const optimisticComments = applyOptimisticReaction(
+        previousComments,
+        commentId,
+        user._id,
+        reactionType
+      );
 
       setComments(optimisticComments);
       setReactingCommentId(commentId);
@@ -790,183 +551,94 @@ function WatchComments({
     [onTelemetryEvent, postId, toast, token, user?._id]
   );
 
-  const stopEditing = useCallback(() => {
-    setEditingCommentId('');
-    setComposerText('');
+  const handleToggleReaction = useCallback(
+    (commentId: string, hasReaction: boolean) => {
+      reactToComment(commentId, hasReaction ? undefined : SocialPostReactionType.love).catch(
+        () => undefined
+      );
+    },
+    [reactToComment]
+  );
+
+  const handleSelectReaction = useCallback(
+    (commentId: string, reactionType: SocialPostReactionType) => {
+      reactToComment(commentId, reactionType).catch(() => undefined);
+    },
+    [reactToComment]
+  );
+
+  const handleShowReactionPicker = useCallback((commentId: string) => {
+    setActiveReactionPickerId(commentId);
   }, []);
 
-  const composerPlaceholder = useMemo(() => {
-    if (editingCommentId) {
-      return 'Edit comment...';
-    }
-    if (replyingTo) {
-      return `Reply to ${replyingTo.name}...`;
-    }
-    return 'Add a comment...';
-  }, [editingCommentId, replyingTo]);
+  const handleReplyPress = useCallback(
+    (commentId: string, authorName: string) => {
+      if (editingCommentId) {
+        return;
+      }
+      setReplyingTo({ id: commentId, name: authorName });
+      setEditingCommentId('');
+      onTelemetryEvent?.('reply_comment', {
+        postType: PostType.watch,
+        commentId,
+      });
+    },
+    [editingCommentId, onTelemetryEvent]
+  );
 
-  const renderCommentNode = useCallback(
-    (comment: CommentPost, depth = 0, nodePath = 'root') => {
-      const commentId = getCommentId(comment);
-      const nodeKey = commentId || nodePath;
-      const replies = Array.isArray(comment.response) ? comment.response : [];
-      const isOwnComment = comment.userData?._id && comment.userData._id === user?._id;
-      const myReaction = (comment.reactions ?? []).find(
-        (reaction) => reaction.userId === user?._id
-      );
-      const isPickerVisible = activeReactionPickerId === commentId;
-      const isEditingThisComment = editingCommentId === commentId;
-      const commentTime = `${timeSince(getCommentTimestamp(comment))} ago`;
-      const reactionCount = comment.reactions?.length ?? 0;
-      const isReacting = reactingCommentId === commentId;
-      const hasProfileImage = Boolean(
-        comment.userData?.profileImage && comment.userData.profileImage !== ''
-      );
-      const profileImage = hasProfileImage ? comment.userData.profileImage : NO_PROFILE_IMAGE;
+  const handleScrollBeginDrag = useCallback(() => {
+    setActiveReactionPickerId('');
+  }, []);
 
+  const handleEndReached = useCallback(() => {
+    if (!isLoading && !isRefreshing && !isEndOfList) {
+      setPage((previous) => previous + 1);
+    }
+  }, [isEndOfList, isLoading, isRefreshing]);
+
+  const renderCommentItem = useCallback(
+    (info: ListRenderItemInfo<FlatCommentItem>) => {
+      const rowItem = info.item;
       return (
-        <View key={`comment_${nodeKey}`} style={{ marginLeft: depth * 24 }}>
-          <View style={watchStyles.commentRow}>
-            <Image source={{ uri: profileImage }} style={watchStyles.avatar} />
-
-            <View style={watchStyles.commentContent}>
-              <View style={watchStyles.commentHeader}>
-                <View style={watchStyles.commentRow}>
-                  <Text style={watchStyles.commentName} numberOfLines={1}>
-                    {comment.userData?.name ?? 'Unknown'}
-                  </Text>
-                  <Text style={watchStyles.commentTime}>{commentTime}</Text>
-                  {comment.edited ? (
-                    <Text style={{ marginLeft: 8, color: COLORS.slate500, fontSize: 11 }}>
-                      Edited
-                    </Text>
-                  ) : null}
-                </View>
-
-                {isOwnComment ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      openCommentActions(comment);
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <MaterialCommunityIcons
-                      name="dots-horizontal"
-                      size={18}
-                      color={COLORS.slate500}
-                    />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-
-              <Text style={watchStyles.commentText}>{comment.content}</Text>
-
-              <View style={watchStyles.commentActions}>
-                <TouchableOpacity
-                  disabled={isReacting}
-                  onLongPress={() => {
-                    if (!commentId) {
-                      return;
-                    }
-                    setActiveReactionPickerId(commentId);
-                  }}
-                  delayLongPress={180}
-                  onPress={() => {
-                    if (!commentId) {
-                      return;
-                    }
-                    if (myReaction) {
-                      reactToComment(commentId, undefined).catch(() => undefined);
-                    } else {
-                      reactToComment(commentId, SocialPostReactionType.love).catch(() => undefined);
-                    }
-                  }}
-                  style={watchStyles.reactionAction}
-                >
-                  <MaterialCommunityIcons
-                    name={myReaction ? 'heart' : 'heart-outline'}
-                    size={18}
-                    color={myReaction ? COLORS.primary : COLORS.slate400}
-                  />
-                  <Text
-                    style={[
-                      watchStyles.reactionCount,
-                      myReaction ? watchStyles.reactionCountActive : undefined,
-                    ]}
-                  >
-                    {reactionCount}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!commentId) {
-                      return;
-                    }
-                    if (isEditingThisComment) {
-                      return;
-                    }
-                    setReplyingTo({
-                      id: commentId,
-                      name: comment.userData?.name ?? 'Unknown',
-                    });
-                    setEditingCommentId('');
-                    onTelemetryEvent?.('reply_comment', {
-                      postType: PostType.watch,
-                      commentId,
-                    });
-                  }}
-                >
-                  <Text style={watchStyles.replyActionText}>Reply</Text>
-                </TouchableOpacity>
-              </View>
-
-              {isPickerVisible ? (
-                <View style={watchStyles.reactionPickerContainer}>
-                  {REACTION_PICKER_ITEMS.map((reactionItem) => (
-                    <TouchableOpacity
-                      key={`${commentId}_${reactionItem.id}`}
-                      onPress={() => {
-                        if (!commentId) {
-                          return;
-                        }
-                        reactToComment(commentId, reactionItem.type).catch(() => undefined);
-                      }}
-                      style={watchStyles.reactionPickerButton}
-                    >
-                      <Image
-                        source={{ uri: reactionItem.iconUrl }}
-                        style={watchStyles.reactionPickerIcon}
-                      />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              ) : null}
-            </View>
-          </View>
-
-          {replies.length > 0 ? (
-            <View style={watchStyles.replyStack}>
-              {replies.map((reply, replyIndex) =>
-                renderCommentNode(reply, depth + 1, `${nodeKey}_${replyIndex}`)
-              )}
-            </View>
-          ) : null}
-        </View>
+        <FlatCommentRow
+          item={rowItem}
+          currentUserId={user?._id}
+          isReacting={reactingCommentId === rowItem.id}
+          isReactionPickerVisible={activeReactionPickerId === rowItem.id}
+          allowMedia
+          backgroundColor={COLORS.bgDark}
+          borderColor={COLORS.white10}
+          primaryTextColor={COLORS.slate100}
+          secondaryTextColor={COLORS.slate400}
+          accentColor={COLORS.primary}
+          mutedColor={COLORS.slate400}
+          onToggleReaction={handleToggleReaction}
+          onShowReactionPicker={handleShowReactionPicker}
+          onSelectReaction={handleSelectReaction}
+          onReplyPress={handleReplyPress}
+          onActionsPress={openCommentActions}
+        />
       );
     },
     [
-      activeReactionPickerId,
-      editingCommentId,
-      onTelemetryEvent,
-      openCommentActions,
-      reactToComment,
-      reactingCommentId,
       user?._id,
+      reactingCommentId,
+      activeReactionPickerId,
+      handleToggleReaction,
+      handleShowReactionPicker,
+      handleSelectReaction,
+      handleReplyPress,
+      openCommentActions,
     ]
   );
 
   const canPost = composerText.trim().length > 0 && !isSubmitting;
+  let composerPlaceholder = 'Add a comment...';
+  if (editingCommentId) {
+    composerPlaceholder = 'Edit comment...';
+  } else if (replyingTo) {
+    composerPlaceholder = `Reply to ${replyingTo.name}...`;
+  }
 
   return (
     <View style={watchStyles.container}>
@@ -984,25 +656,33 @@ function WatchComments({
           }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <MaterialCommunityIcons name="close" size={30} color={COLORS.slate200} />
+          <MaterialCommunityIcons name="close" size={28} color={COLORS.slate100} />
         </TouchableOpacity>
       </View>
 
+      <CommentFilterTabs
+        value={selectedFilter}
+        onChange={setSelectedFilter}
+        backgroundColor={COLORS.bgDark}
+        borderColor={COLORS.white10}
+        activeColor={COLORS.slate100}
+        inactiveColor={COLORS.slate400}
+      />
+
       <BottomSheetFlatList
-        data={comments}
-        keyExtractor={(item, index) => `${getCommentId(item) || index}`}
+        data={flatComments}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={Platform.OS === 'android'}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={watchStyles.listContent}
         refreshing={isRefreshing}
         onRefresh={refreshComments}
-        onScrollBeginDrag={() => {
-          setActiveReactionPickerId('');
-        }}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onEndReachedThreshold={0.8}
-        onEndReached={() => {
-          if (!isLoading && !isRefreshing && !isEndOfList) {
-            setPage((previous) => previous + 1);
-          }
-        }}
+        onEndReached={handleEndReached}
         ListEmptyComponent={
           isLoading ? (
             <View style={watchStyles.emptyStateWrap}>
@@ -1015,13 +695,13 @@ function WatchComments({
           )
         }
         ListFooterComponent={
-          isLoading && comments.length > 0 ? (
+          isLoading && countCommentsInTree(comments) > 0 ? (
             <View style={watchStyles.loadingMoreWrap}>
               <ActivityIndicator color={COLORS.primary} />
             </View>
           ) : null
         }
-        renderItem={({ item }) => renderCommentNode(item)}
+        renderItem={renderCommentItem}
       />
 
       <View style={[watchStyles.composerArea, { paddingBottom: Math.max(insets.bottom, 12) }]}>

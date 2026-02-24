@@ -315,6 +315,31 @@ function AppContent() {
       if (!navigationRef.isReady()) {
         return true;
       }
+      const currentRouteName = navigationRef.getCurrentRoute()?.name;
+      const rootState = navigationRef.getRootState();
+      const rootIndex =
+        typeof rootState?.index === 'number'
+          ? rootState.index
+          : (rootState?.routes?.length ?? 1) - 1;
+      const previousRouteName =
+        rootIndex > 0 && Array.isArray(rootState?.routes)
+          ? rootState.routes[rootIndex - 1]?.name
+          : undefined;
+
+      if (token && currentRouteName && PUBLIC_ROUTES.has(currentRouteName)) {
+        navigationRef.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'MainRoot' }],
+          })
+        );
+        return true;
+      }
+
+      if (token && previousRouteName && PUBLIC_ROUTES.has(previousRouteName)) {
+        return true;
+      }
+
       if (navigationRef.canGoBack()) {
         navigationRef.goBack();
       }
@@ -322,7 +347,7 @@ function AppContent() {
     };
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => subscription.remove();
-  }, [navigationRef]);
+  }, [navigationRef, token]);
 
   useEffect(() => {
     if (!token) {
@@ -710,8 +735,8 @@ function AppContent() {
     try {
       const parsed = new URL(rawUrl);
 
-      // Firebase Dynamic Links use a 'link' parameter that contains the actual deep link
-      // Example: https://app.onebodyapp.com/?link=https://app.onebodyapp.com/auth/action?...
+      // Firebase Dynamic Links use a 'link' parameter that contains the actual deep link.
+      // Example: https://app.onebodyapp.com/?link=https://app.onebodyapp.com/verify/action?...
       const nestedLink = parsed.searchParams.get('link');
       if (nestedLink) {
         const decoded = decodeURIComponent(nestedLink);
@@ -769,7 +794,12 @@ function AppContent() {
   const shouldIgnoreAuthLink = (url?: string | null) => {
     if (!url) return false;
     if (!ignoreAuthLinksRef.current) return false;
-    return url.includes('/auth/action') || url.includes('/__/auth/action');
+    return (
+      url.includes('/auth/action') ||
+      url.includes('/__/auth/action') ||
+      url.includes('/verify/') ||
+      url.includes('/verify-email')
+    );
   };
 
   const openNotificationsCenter = useCallback(() => {
@@ -911,8 +941,8 @@ function AppContent() {
           console.log('[Deep Link getStateFromPath] Adjusted /verify/* to:', adjustedPath);
         }
       }
-      // Legacy /auth/verify pattern - DEPRECATED, but kept for backwards compatibility
-      // New links should use /auth/action directly from the API
+      // Legacy /auth/verify pattern - DEPRECATED, but kept for backwards compatibility.
+      // New verification links should use /verify/action from the API.
       else if (normalizedPath.startsWith('/auth/verify')) {
         adjustedPath = normalizedPath.replace('/auth/verify', '/auth/action');
         if (__DEV__) {

@@ -59,6 +59,15 @@ type Props = {
   onClose?: () => void;
 };
 
+const isRecordingCanceledError = (error: unknown) => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const { code } = error as { code?: unknown };
+  return code === 'capture/recording-canceled' || code === 'capture/recording-cancelled';
+};
+
 function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<Props>) {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const insets = useSafeAreaInsets();
@@ -352,6 +361,9 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
             },
             onRecordingError: (error) => {
               setIsRecording(false);
+              if (isRecordingCanceledError(error)) {
+                return;
+              }
               console.log('🚀 ~ handleStartRecording ~ error:', error);
               console.error(error);
             },
@@ -359,13 +371,17 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
         }
       } catch (error) {
         setIsRecording(false);
-        console.log(error);
+        if (!isRecordingCanceledError(error)) {
+          console.log(error);
+        }
       }
     } else {
       try {
         await camera.current?.stopRecording();
       } catch (error) {
-        console.log(error);
+        if (!isRecordingCanceledError(error)) {
+          console.log(error);
+        }
       } finally {
         setIsRecording(false);
       }
