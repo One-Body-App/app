@@ -13,10 +13,14 @@ import { PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { PostType, PrayerPost } from '@/utils/types';
+import { CommentPost, PostType, PrayerPost } from '@/utils/types';
 
 import PrayerItem from '@/components/listItems/PrayerItem';
 import CommentThread from '@/components/comments/Thread';
+import {
+  getCommentId,
+  toSerializableCommentSnapshot,
+} from '@/components/comments/commentListUtils';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'Single'>;
 function SinglePrayer({ navigation, route }: Props) {
@@ -81,6 +85,22 @@ function SinglePrayer({ navigation, route }: Props) {
     // setIsEditing(true);
   };
 
+  const openCommentThread = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      if (!postId || !commentId) {
+        return;
+      }
+
+      navigation.push('Single', {
+        postId,
+        threadRootCommentId: commentId,
+        threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+      });
+    },
+    [navigation, postId]
+  );
+
   useEffect(() => {
     getPostPrayer();
   }, [getPostPrayer]);
@@ -112,6 +132,9 @@ function SinglePrayer({ navigation, route }: Props) {
             <CommentThread
               type={PostType.prayer}
               postId={postId ?? ''}
+              threadRootCommentId={route.params?.threadRootCommentId}
+              threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
+              onOpenCommentThread={openCommentThread}
               isPrivate={Boolean(prayer.private)}
               hideComposer={prayer.answered}
               headerContainerStyle={{

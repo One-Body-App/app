@@ -15,11 +15,12 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import {
-  appendReplyToTree,
   applyOptimisticReaction,
   CommentListFilter,
   FlatCommentItem,
@@ -29,6 +30,7 @@ import {
   normalizeCommentTreeFallback,
   removeCommentFromTree,
   sortFlatComments,
+  toSerializableCommentSnapshot,
   toDateFromSource,
   updateCommentInTree,
 } from '@/components/comments/commentListUtils';
@@ -36,11 +38,7 @@ import { CommentPost, PostType, SocialPostReactionType } from '@/utils/types';
 import CommentFilterTabs from '@/components/comments/CommentFilterTabs';
 import FlatCommentRow from '@/components/comments/FlatCommentRow';
 import { COLORS, styles as watchStyles } from './commentstyles';
-
-type ReplyTarget = {
-  id: string;
-  name: string;
-};
+import { MainStackParamList } from '@/src/navigator/types';
 
 type WatchCommentsProps = {
   postId: string;
@@ -61,6 +59,7 @@ function WatchComments({
   onTelemetryEvent,
   sheetOpenKey,
 }: WatchCommentsProps) {
+  const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const insets = useSafeAreaInsets();
@@ -74,12 +73,13 @@ function WatchComments({
 
   const [selectedFilter, setSelectedFilter] = useState<CommentListFilter>('relevant');
   const [composerText, setComposerText] = useState('');
-  const [replyingTo, setReplyingTo] = useState<ReplyTarget | null>(null);
   const [editingCommentId, setEditingCommentId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [activeReactionPickerId, setActiveReactionPickerId] = useState('');
   const [reactingCommentId, setReactingCommentId] = useState('');
+  const [repostingCommentId, setRepostingCommentId] = useState('');
+  const [bookmarkingCommentId, setBookmarkingCommentId] = useState('');
   const [commentCount, setCommentCount] = useState(Math.max(0, initialCommentCount ?? 0));
 
   const commentsRef = useRef<CommentPost[]>([]);
@@ -195,7 +195,6 @@ function WatchComments({
     setPage(1);
     setIsEndOfList(false);
     setComposerText('');
-    setReplyingTo(null);
     setEditingCommentId('');
     setActiveReactionPickerId('');
     setSelectedFilter('relevant');
@@ -245,6 +244,9 @@ function WatchComments({
         created: createdDate,
         updated: updatedDate,
         reactions: payload?.reactions ?? [],
+        repostCount: Number(payload?.repostCount ?? 0),
+        bookmarkCount: Number(payload?.bookmarkCount ?? 0),
+        bookmarkedByMe: Boolean(payload?.bookmarkedByMe),
         response: payload?.response ?? [],
         edited: payload?.edited ?? false,
       };
@@ -286,7 +288,6 @@ function WatchComments({
           );
           setComposerText('');
           setEditingCommentId('');
-          setReplyingTo(null);
           onTelemetryEvent?.('edit_comment', {
             postType: PostType.watch,
           });
@@ -318,32 +319,18 @@ function WatchComments({
         verb: 'post',
         params: {
           content: value,
-          parentCommentId: replyingTo?.id,
-          replyToCommentId: replyingTo?.id,
         },
       });
 
       if (result?.status === 200) {
         const nextComment = createLocalComment(result.response, value);
-
-        if (replyingTo?.id) {
-          const appendResult = appendReplyToTree(commentsRef.current, replyingTo.id, nextComment);
-          if (appendResult.inserted) {
-            setComments(appendResult.comments);
-          } else {
-            setComments((previous) => [nextComment, ...previous]);
-          }
-        } else {
-          setComments((previous) => [nextComment, ...previous]);
-        }
+        setComments((previous) => [nextComment, ...previous]);
 
         bumpCount(1);
         setComposerText('');
-        setReplyingTo(null);
         setEditingCommentId('');
         onTelemetryEvent?.('post_comment', {
           postType: PostType.watch,
-          isReply: Boolean(replyingTo?.id),
         });
         return;
       }
@@ -370,7 +357,6 @@ function WatchComments({
     isSubmitting,
     onTelemetryEvent,
     postId,
-    replyingTo,
     toast,
     token,
   ]);
@@ -389,9 +375,6 @@ function WatchComments({
       if (editingCommentId === commentId) {
         setEditingCommentId('');
         setComposerText('');
-      }
-      if (replyingTo?.id === commentId) {
-        setReplyingTo(null);
       }
 
       try {
@@ -425,7 +408,7 @@ function WatchComments({
         });
       }
     },
-    [bumpCount, editingCommentId, onTelemetryEvent, postId, replyingTo?.id, toast, token]
+    [bumpCount, editingCommentId, onTelemetryEvent, postId, toast, token]
   );
 
   const showDeleteConfirmation = useCallback(
@@ -453,7 +436,6 @@ function WatchComments({
 
       const openEdit = () => {
         setEditingCommentId(commentId);
-        setReplyingTo(null);
         setComposerText(comment.content ?? '');
       };
       const openDelete = () => {
@@ -567,23 +549,193 @@ function WatchComments({
     [reactToComment]
   );
 
+  const handleToggleBookmark = useCallback(
+    async (commentId: string, isBookmarked: boolean) => {
+      if (!commentId || !user?._id) {
+        return;
+      }
+
+      const previousComments = commentsRef.current;
+      setComments((previous) =>
+        updateCommentInTree(previous, commentId, (comment) => ({
+          ...comment,
+          bookmarkedByMe: !isBookmarked,
+          bookmarkCount: Math.max(0, Number(comment.bookmarkCount ?? 0) + (isBookmarked ? -1 : 1)),
+          updated: new Date(),
+        }))
+      );
+      setBookmarkingCommentId(commentId);
+
+      try {
+        const result = await ApiCall({
+          route: `comments/watch/${postId}/${commentId}/bookmark`,
+          verb: isBookmarked ? 'delete' : 'patch',
+          token,
+        });
+
+        if (result?.status !== 200) {
+          setComments(previousComments);
+          toast.show(result?.response?.message ?? 'Unable to update bookmark right now.', {
+            id: 'watchCommentBookmarkError',
+            type: 'danger',
+            placement: 'bottom',
+          });
+        }
+      } catch (_error) {
+        setComments(previousComments);
+        toast.show('Unable to update bookmark right now.', {
+          id: 'watchCommentBookmarkError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+      } finally {
+        setBookmarkingCommentId('');
+      }
+    },
+    [postId, toast, token, user?._id]
+  );
+
+  const handleSubmitCommentRepost = useCallback(
+    async (comment: CommentPost, withQuote?: boolean) => {
+      const commentId = getCommentId(comment);
+      if (!commentId) {
+        return;
+      }
+
+      if (withQuote) {
+        onClose();
+        setTimeout(() => {
+          navigation.navigate('Post', {
+            repostDraft: {
+              sourceType: 'comment',
+              sourceId: commentId,
+              sourcePreview: {
+                content: comment.content,
+              },
+            },
+          });
+        }, 220);
+        return;
+      }
+
+      setRepostingCommentId(commentId);
+      try {
+        const result = await ApiCall({
+          route: 'social/repost',
+          token,
+          verb: 'post',
+          params: {
+            sourceType: 'comment',
+            sourceId: commentId,
+          },
+        });
+
+        if (result?.status === 200) {
+          setComments((previous) =>
+            updateCommentInTree(previous, commentId, (currentComment) => ({
+              ...currentComment,
+              repostCount: Number(currentComment.repostCount ?? 0) + 1,
+            }))
+          );
+          return;
+        }
+
+        toast.show(result?.response?.message ?? 'Unable to repost right now.', {
+          id: 'watchCommentRepostError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+      } catch (_error) {
+        toast.show('Unable to repost right now.', {
+          id: 'watchCommentRepostError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+      } finally {
+        setRepostingCommentId('');
+      }
+    },
+    [navigation, onClose, toast, token]
+  );
+
+  const handleOpenRepostActions = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      if (!commentId) {
+        return;
+      }
+
+      const repostNow = () => {
+        handleSubmitCommentRepost(comment, false).catch(() => undefined);
+      };
+      const quotePost = () => {
+        handleSubmitCommentRepost(comment, true).catch(() => undefined);
+      };
+
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['Cancel', 'Repost', 'Quote'],
+            cancelButtonIndex: 0,
+          },
+          (index) => {
+            if (index === 1) {
+              repostNow();
+            }
+            if (index === 2) {
+              quotePost();
+            }
+          }
+        );
+        return;
+      }
+
+      Alert.alert('Repost comment', 'Choose an action', [
+        {
+          text: 'Repost',
+          onPress: repostNow,
+        },
+        {
+          text: 'Quote',
+          onPress: quotePost,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]);
+    },
+    [handleSubmitCommentRepost]
+  );
+
   const handleShowReactionPicker = useCallback((commentId: string) => {
     setActiveReactionPickerId(commentId);
   }, []);
 
-  const handleReplyPress = useCallback(
-    (commentId: string, authorName: string) => {
-      if (editingCommentId) {
+  const handleOpenCommentThread = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      if (!commentId || !postId) {
         return;
       }
-      setReplyingTo({ id: commentId, name: authorName });
-      setEditingCommentId('');
-      onTelemetryEvent?.('reply_comment', {
+
+      setActiveReactionPickerId('');
+      onTelemetryEvent?.('open_comment_thread', {
         postType: PostType.watch,
         commentId,
       });
+      onClose();
+
+      setTimeout(() => {
+        navigation.push('SingleRss', {
+          postId,
+          postType: PostType.watch,
+          threadRootCommentId: commentId,
+          threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+        });
+      }, 220);
     },
-    [editingCommentId, onTelemetryEvent]
+    [navigation, onClose, onTelemetryEvent, postId]
   );
 
   const handleScrollBeginDrag = useCallback(() => {
@@ -613,10 +765,16 @@ function WatchComments({
           accentColor={COLORS.primary}
           mutedColor={COLORS.slate400}
           onToggleReaction={handleToggleReaction}
+          onPressRepost={handleOpenRepostActions}
+          onToggleBookmark={(commentId, isBookmarked) => {
+            handleToggleBookmark(commentId, isBookmarked).catch(() => undefined);
+          }}
           onShowReactionPicker={handleShowReactionPicker}
           onSelectReaction={handleSelectReaction}
-          onReplyPress={handleReplyPress}
+          isReposting={repostingCommentId === rowItem.id}
+          isBookmarking={bookmarkingCommentId === rowItem.id}
           onActionsPress={openCommentActions}
+          onOpenThread={handleOpenCommentThread}
         />
       );
     },
@@ -624,11 +782,15 @@ function WatchComments({
       user?._id,
       reactingCommentId,
       activeReactionPickerId,
+      repostingCommentId,
+      bookmarkingCommentId,
       handleToggleReaction,
+      handleOpenRepostActions,
+      handleToggleBookmark,
       handleShowReactionPicker,
       handleSelectReaction,
-      handleReplyPress,
       openCommentActions,
+      handleOpenCommentThread,
     ]
   );
 
@@ -636,8 +798,6 @@ function WatchComments({
   let composerPlaceholder = 'Add a comment...';
   if (editingCommentId) {
     composerPlaceholder = 'Edit comment...';
-  } else if (replyingTo) {
-    composerPlaceholder = `Reply to ${replyingTo.name}...`;
   }
 
   return (
@@ -705,23 +865,6 @@ function WatchComments({
       />
 
       <View style={[watchStyles.composerArea, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        {replyingTo ? (
-          <View style={watchStyles.replyingBanner}>
-            <Text style={watchStyles.replyingText}>Replying to {replyingTo.name}</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setReplyingTo(null);
-              }}
-            >
-              <MaterialCommunityIcons
-                name="close-circle-outline"
-                size={16}
-                color={COLORS.primary}
-              />
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
         {editingCommentId ? (
           <View style={watchStyles.replyingBanner}>
             <Text style={watchStyles.replyingText}>Editing comment</Text>

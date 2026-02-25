@@ -12,9 +12,13 @@ import { MainStackParamList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
-import { PostType, SocialPost } from '@/utils/types';
+import { CommentPost, PostType, SocialPost } from '@/utils/types';
 import CommentThread from '@/components/comments/Thread';
 import SocialItem from '@/components/listItems/SocialItem';
+import {
+  getCommentId,
+  toSerializableCommentSnapshot,
+} from '@/components/comments/commentListUtils';
 
 type Props = StackScreenProps<MainStackParamList, 'SinglePost'>;
 
@@ -89,6 +93,23 @@ function SinglePost({ navigation, route }: Props) {
     navigation.navigate('Post', { postId: id });
   };
 
+  const openCommentThread = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      const currentPostId = route.params?.postId;
+      if (!commentId || !currentPostId) {
+        return;
+      }
+
+      navigation.push('SinglePost', {
+        postId: currentPostId,
+        threadRootCommentId: commentId,
+        threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+      });
+    },
+    [navigation, route.params?.postId]
+  );
+
   useEffect(() => {
     if (route.params?.postId) {
       getPost();
@@ -120,6 +141,9 @@ function SinglePost({ navigation, route }: Props) {
         <CommentThread
           type={PostType.social}
           postId={route.params?.postId ?? ''}
+          threadRootCommentId={route.params?.threadRootCommentId}
+          threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
+          onOpenCommentThread={openCommentThread}
           onPostRefresh={getPost}
           headerContainerStyle={{
             paddingHorizontal: 0,

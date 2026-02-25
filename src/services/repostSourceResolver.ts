@@ -6,6 +6,9 @@ export type RepostMeta = NonNullable<SocialPost['repost']>;
 export type ResolvedRepostSourceSnapshot = {
   sourceType: RepostMeta['sourceType'];
   sourceId: string;
+  sourceCommentId?: string;
+  sourceObjectType?: 'social' | 'prayer' | 'rss' | 'watch';
+  sourceObjectId?: string;
   sourceAuthorId?: string;
   sourceAuthorName?: string;
   sourceAuthorUsername?: string;
@@ -137,6 +140,19 @@ const buildSnapshotFromSource = (
   source: Record<string, unknown>,
   createdFromIndexId?: string
 ): ResolvedRepostSourceSnapshot => {
+  const sourceCommentId =
+    sourceType === 'comment'
+      ? toObjectIdString(source.commentId ?? source._id) || sourceId
+      : undefined;
+  const sourceObjectTypeRaw = toNonEmptyString(source.objectType ?? source.sourceObjectType);
+  const sourceObjectType =
+    sourceObjectTypeRaw === 'social' ||
+    sourceObjectTypeRaw === 'prayer' ||
+    sourceObjectTypeRaw === 'rss' ||
+    sourceObjectTypeRaw === 'watch'
+      ? sourceObjectTypeRaw
+      : undefined;
+  const sourceObjectId = toObjectIdString(source.objectId ?? source.sourceObjectId) || undefined;
   const sourceAuthorId = toObjectIdString(
     (source.userData as { _id?: unknown } | undefined)?._id ??
       (source.user as { _id?: unknown } | undefined)?._id ??
@@ -238,6 +254,9 @@ const buildSnapshotFromSource = (
   return {
     sourceType,
     sourceId,
+    sourceCommentId,
+    sourceObjectType,
+    sourceObjectId,
     sourceAuthorId: sourceAuthorId || undefined,
     sourceAuthorName: sourceAuthorName || undefined,
     sourceAuthorUsername: sourceAuthorUsername || undefined,
@@ -297,6 +316,9 @@ export const buildRepostSourceSnapshot = (
   return {
     sourceType: repost.sourceType,
     sourceId: toObjectIdString(repost.sourceId) || repost.sourceId,
+    sourceCommentId: toObjectIdString(repost.sourceCommentId) || undefined,
+    sourceObjectType: repost.sourceObjectType || undefined,
+    sourceObjectId: toObjectIdString(repost.sourceObjectId) || undefined,
     sourceAuthorId: toObjectIdString(repost.sourceAuthorId) || undefined,
     sourceAuthorName: toNonEmptyString(repost.sourceAuthorName) || undefined,
     sourceAuthorUsername: toNonEmptyString(repost.sourceAuthorUsername) || undefined,
@@ -355,10 +377,28 @@ const normalizeSourceRouteId = (sourceType: RepostMeta['sourceType'], sourceId: 
   return normalized || sourceId.trim();
 };
 
-const getRouteForSource = (sourceType: RepostMeta['sourceType'], sourceId: string) => {
-  const normalizedSourceId = normalizeSourceRouteId(sourceType, sourceId);
+const getRouteForSource = (snapshot: ResolvedRepostSourceSnapshot) => {
+  const normalizedSourceId = normalizeSourceRouteId(snapshot.sourceType, snapshot.sourceId);
 
-  switch (sourceType) {
+  if (snapshot.sourceType === 'comment') {
+    const { sourceObjectType } = snapshot;
+    const sourceObjectId = snapshot.sourceObjectId
+      ? normalizeSourceRouteId(
+          sourceObjectType === 'rss' ? 'rss' : 'social',
+          snapshot.sourceObjectId
+        )
+      : '';
+    const sourceCommentId = normalizeSourceRouteId(
+      'comment',
+      snapshot.sourceCommentId || snapshot.sourceId
+    );
+    if (!sourceObjectType || !sourceObjectId || !sourceCommentId) {
+      return '';
+    }
+    return `comments/${sourceObjectType}/${sourceObjectId}/${sourceCommentId}`;
+  }
+
+  switch (snapshot.sourceType) {
     case 'prayer':
       return `prayer/${normalizedSourceId}`;
     case 'rss':
@@ -396,7 +436,10 @@ export const resolveRepostSourceSnapshot = async (
   }
 
   const fetchPromise = (async () => {
-    const route = getRouteForSource(baseSnapshot.sourceType, baseSnapshot.sourceId);
+    const route = getRouteForSource(baseSnapshot);
+    if (!route) {
+      return baseSnapshot;
+    }
     const response = await ApiCall<Record<string, unknown>>({
       route,
       verb: 'get',
@@ -409,7 +452,9 @@ export const resolveRepostSourceSnapshot = async (
 
     const source = response.response as Record<string, unknown>;
     const normalizedSourceId =
-      toObjectIdString(source.postId ?? source.id ?? source._id) || baseSnapshot.sourceId;
+      baseSnapshot.sourceType === 'comment'
+        ? toObjectIdString(source.commentId ?? source._id) || baseSnapshot.sourceId
+        : toObjectIdString(source.postId ?? source.id ?? source._id) || baseSnapshot.sourceId;
 
     const resolvedSnapshot = buildSnapshotFromSource(
       baseSnapshot.sourceType,

@@ -10,11 +10,14 @@ import {
   Platform,
   RefreshControl,
   StyleProp,
+  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import FastImage from 'react-native-fast-image';
 import { useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { serialize } from 'object-to-formdata';
 import {
@@ -27,6 +30,7 @@ import {
 import { useToast } from 'react-native-toast-notifications';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
+import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
@@ -39,15 +43,24 @@ import {
   CommentListFilter,
   FlatCommentItem,
   countCommentsInTree,
+  findCommentById,
+  fromSerializableCommentSnapshot,
   flattenCommentsForList,
   getCommentId,
+  getCommentReplies,
+  getCommentTimestampMs,
   normalizeCommentTreeFallback,
   removeCommentFromTree,
   sortFlatComments,
   toDateFromSource,
   updateCommentInTree,
 } from './commentListUtils';
-import { CommentPost, PostType, SocialPostReactionType } from '@/utils/types';
+import {
+  CommentPost,
+  PostType,
+  SerializableCommentSnapshot,
+  SocialPostReactionType,
+} from '@/utils/types';
 
 interface CommentThreadProps {
   postId: string;
@@ -64,6 +77,9 @@ interface CommentThreadProps {
   listStyle?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
   scrollToEndOnPublish?: boolean;
+  threadRootCommentId?: string;
+  threadRootCommentSnapshot?: SerializableCommentSnapshot;
+  onOpenCommentThread?: (comment: CommentPost) => void;
 }
 
 type ReplyTarget = {
@@ -115,7 +131,11 @@ function CommentThread({
   listStyle,
   contentContainerStyle,
   scrollToEndOnPublish,
+  threadRootCommentId,
+  threadRootCommentSnapshot,
+  onOpenCommentThread,
 }: CommentThreadProps) {
+  const navigation = useNavigation<any>();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const { dark, colors } = useTheme();
@@ -143,6 +163,16 @@ function CommentThread({
   const [selectedFilter, setSelectedFilter] = useState<CommentListFilter>('relevant');
   const [activeReactionPickerId, setActiveReactionPickerId] = useState('');
   const [reactingCommentId, setReactingCommentId] = useState('');
+  const [repostingCommentId, setRepostingCommentId] = useState('');
+  const [bookmarkingCommentId, setBookmarkingCommentId] = useState('');
+  const [replyFocusRequestKey] = useState(0);
+  const rootToggleReactionRef = useRef<(commentId: string, hasReaction: boolean) => void>(
+    () => undefined
+  );
+  const rootOpenRepostRef = useRef<(comment: CommentPost) => void>(() => undefined);
+  const rootToggleBookmarkRef = useRef<(commentId: string, isBookmarked: boolean) => void>(
+    () => undefined
+  );
 
   const allowMedia = type === PostType.social || type === PostType.rss;
   const commentsRef = useRef<CommentPost[]>([]);
@@ -153,7 +183,7 @@ function CommentThread({
   let dividerColor = '#e7eaed';
   let primaryTextColor = '#0f1419';
   let secondaryTextColor = '#536471';
-  let accentColor = '#1d9bf0';
+  let accentColor = '#12d2d9';
   if (dark && useBrandDarkForSocial) {
     backgroundColor = colors.background;
     surfaceColor = colors.card;
@@ -170,16 +200,220 @@ function CommentThread({
   }
 
   const keyboardOffset = insets.top + 44;
+  const normalizedThreadRootCommentId = threadRootCommentId ? String(threadRootCommentId) : '';
+  const isThreadDrillMode = normalizedThreadRootCommentId.length > 0;
+  const snapshotRootComment = useMemo(
+    () => fromSerializableCommentSnapshot(threadRootCommentSnapshot),
+    [threadRootCommentSnapshot]
+  );
+  const [threadRootShadow, setThreadRootShadow] = useState<CommentPost | undefined>(
+    snapshotRootComment
+  );
+  const rootCommentFromComments = useMemo(
+    () =>
+      isThreadDrillMode ? findCommentById(comments, normalizedThreadRootCommentId) : undefined,
+    [comments, isThreadDrillMode, normalizedThreadRootCommentId]
+  );
+  const resolvedThreadRootComment =
+    rootCommentFromComments ?? threadRootShadow ?? snapshotRootComment;
+  const isThreadRootUnavailable = isThreadDrillMode && !resolvedThreadRootComment && !isLoading;
+  const drillModeDefaultReplyTarget = useMemo<ReplyTarget | null>(() => {
+    if (!isThreadDrillMode || !resolvedThreadRootComment) {
+      return null;
+    }
+
+    const rootCommentId = getCommentId(resolvedThreadRootComment);
+    if (!rootCommentId) {
+      return null;
+    }
+
+    return {
+      id: rootCommentId,
+      name: resolvedThreadRootComment.userData?.name ?? 'Unknown',
+    };
+  }, [isThreadDrillMode, resolvedThreadRootComment]);
+  const sourceComments = useMemo(() => {
+    if (!isThreadDrillMode) {
+      return comments;
+    }
+    if (!resolvedThreadRootComment) {
+      return [];
+    }
+    return normalizeCommentTreeFallback(getCommentReplies(resolvedThreadRootComment));
+  }, [comments, isThreadDrillMode, resolvedThreadRootComment]);
 
   const flatComments = useMemo(
-    () => sortFlatComments(flattenCommentsForList(comments), selectedFilter),
-    [comments, selectedFilter]
+    () => sortFlatComments(flattenCommentsForList(sourceComments), selectedFilter),
+    [selectedFilter, sourceComments]
   );
 
   const listHeader = useMemo(() => {
+    const shouldRenderMainHeader = !isThreadDrillMode && Boolean(header);
+    const rootCommentDateLabel = resolvedThreadRootComment
+      ? new Date(getCommentTimestampMs(resolvedThreadRootComment)).toLocaleDateString()
+      : '';
+    let drillHeaderContent: React.ReactNode = <ActivityIndicator color={accentColor} />;
+
+    if (resolvedThreadRootComment) {
+      const rootCommentId = getCommentId(resolvedThreadRootComment);
+      const rootMyReaction = (resolvedThreadRootComment.reactions ?? []).find(
+        (reaction) => reaction.userId === user?._id
+      );
+      const rootReactionCount = resolvedThreadRootComment.reactions?.length ?? 0;
+      const rootReplyCount = getCommentReplies(resolvedThreadRootComment).length;
+      const rootRepostCount = Number(resolvedThreadRootComment.repostCount ?? 0);
+      const rootBookmarkedByMe = Boolean(resolvedThreadRootComment.bookmarkedByMe);
+      const rootProfileImage =
+        resolvedThreadRootComment.userData?.profileImage &&
+        resolvedThreadRootComment.userData.profileImage !== ''
+          ? resolvedThreadRootComment.userData.profileImage
+          : NO_PROFILE_IMAGE;
+      const rootHandle = resolvedThreadRootComment.userData?.username
+        ? `@${resolvedThreadRootComment.userData.username}`
+        : `@${(resolvedThreadRootComment.userData?.name ?? 'unknown')
+            .replace(/\s+/g, '')
+            .toLowerCase()}`;
+      let rootMeta: React.ReactNode = null;
+      rootMeta = (
+        <StyledText style={{ marginTop: 2, color: secondaryTextColor, fontSize: 13 }}>
+          {rootHandle}
+          {rootCommentDateLabel ? ` · ${rootCommentDateLabel}` : ''}
+        </StyledText>
+      );
+
+      drillHeaderContent = (
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <FastImage
+            source={{ uri: rootProfileImage }}
+            resizeMode="cover"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              marginRight: spacing.x10,
+            }}
+          />
+          <View style={{ flex: 1 }}>
+            <StyledText style={{ color: primaryTextColor, fontSize: 18, fontWeight: '700' }}>
+              {resolvedThreadRootComment.userData?.name ?? 'Unknown'}
+            </StyledText>
+            {rootMeta}
+            <StyledText
+              style={{
+                marginTop: spacing.x8,
+                color: primaryTextColor,
+                fontSize: 16,
+                lineHeight: 22,
+              }}
+            >
+              {resolvedThreadRootComment.content ?? ''}
+            </StyledText>
+            {resolvedThreadRootComment.edited ? (
+              <StyledText
+                style={{ marginTop: spacing.x5, color: secondaryTextColor, fontSize: 12 }}
+              >
+                Edited
+              </StyledText>
+            ) : null}
+            <View
+              style={{
+                marginTop: spacing.x10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.x16,
+              }}
+            >
+              <TouchableOpacity
+                disabled={reactingCommentId === rootCommentId || !rootCommentId}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+                onPress={() => {
+                  if (!rootCommentId) {
+                    return;
+                  }
+                  rootToggleReactionRef.current(rootCommentId, Boolean(rootMyReaction));
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={rootMyReaction ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={rootMyReaction ? accentColor : secondaryTextColor}
+                />
+                {rootReactionCount > 0 ? (
+                  <StyledText
+                    style={{ marginLeft: spacing.x5, color: secondaryTextColor, fontSize: 13 }}
+                  >
+                    {rootReactionCount}
+                  </StyledText>
+                ) : null}
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+                onPress={() => undefined}
+              >
+                <MaterialCommunityIcons
+                  name="comment-outline"
+                  size={22}
+                  color={secondaryTextColor}
+                />
+                {rootReplyCount > 0 ? (
+                  <StyledText
+                    style={{ marginLeft: spacing.x5, color: secondaryTextColor, fontSize: 13 }}
+                  >
+                    {rootReplyCount}
+                  </StyledText>
+                ) : null}
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={repostingCommentId === rootCommentId || !rootCommentId}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+                onPress={() => {
+                  if (!rootCommentId) {
+                    return;
+                  }
+                  rootOpenRepostRef.current(resolvedThreadRootComment);
+                }}
+              >
+                <MaterialCommunityIcons name="repeat" size={22} color={secondaryTextColor} />
+                {rootRepostCount > 0 ? (
+                  <StyledText
+                    style={{ marginLeft: spacing.x5, color: secondaryTextColor, fontSize: 13 }}
+                  >
+                    {rootRepostCount}
+                  </StyledText>
+                ) : null}
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={bookmarkingCommentId === rootCommentId || !rootCommentId}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+                onPress={() => {
+                  if (!rootCommentId) {
+                    return;
+                  }
+                  rootToggleBookmarkRef.current(rootCommentId, rootBookmarkedByMe);
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={rootBookmarkedByMe ? 'bookmark' : 'bookmark-outline'}
+                  size={22}
+                  color={rootBookmarkedByMe ? accentColor : secondaryTextColor}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      );
+    } else if (isThreadRootUnavailable) {
+      drillHeaderContent = (
+        <StyledText style={{ color: secondaryTextColor, fontSize: 14 }}>
+          This comment is unavailable.
+        </StyledText>
+      );
+    }
+
     return (
       <View>
-        {header ? (
+        {shouldRenderMainHeader ? (
           <View
             style={[
               {
@@ -194,6 +428,20 @@ function CommentThread({
             ]}
           >
             {header}
+          </View>
+        ) : null}
+        {isThreadDrillMode ? (
+          <View
+            style={{
+              paddingHorizontal: spacing.x16,
+              paddingTop: spacing.x16,
+              paddingBottom: spacing.x13,
+              backgroundColor,
+              borderBottomWidth: 1,
+              borderBottomColor: dividerColor,
+            }}
+          >
+            {drillHeaderContent}
           </View>
         ) : null}
 
@@ -212,17 +460,25 @@ function CommentThread({
     dividerColor,
     header,
     headerContainerStyle,
+    isThreadRootUnavailable,
+    isThreadDrillMode,
     primaryTextColor,
+    resolvedThreadRootComment,
+    reactingCommentId,
+    repostingCommentId,
+    bookmarkingCommentId,
+    user?._id,
+    accentColor,
     secondaryTextColor,
     selectedFilter,
   ]);
 
   const listFooter = useMemo(() => {
-    if (!footer) {
+    if (isThreadDrillMode || !footer) {
       return null;
     }
     return <View style={{ marginTop: spacing.x13 }}>{footer}</View>;
-  }, [footer]);
+  }, [footer, isThreadDrillMode]);
 
   const fetchComments = useCallback(
     async (pageToLoad: number, reset?: boolean) => {
@@ -299,10 +555,28 @@ function CommentThread({
     setGif(null);
     setMediaImages([]);
     setActiveReactionPickerId('');
+    setRepostingCommentId('');
+    setBookmarkingCommentId('');
+    setThreadRootShadow(snapshotRootComment);
     if (postId) {
       fetchComments(1, true);
     }
-  }, [fetchComments, postId, type]);
+  }, [fetchComments, postId, snapshotRootComment, type]);
+
+  useEffect(() => {
+    if (!rootCommentFromComments) {
+      return;
+    }
+    setThreadRootShadow(rootCommentFromComments);
+  }, [rootCommentFromComments]);
+
+  useEffect(() => {
+    if (!isThreadDrillMode || !drillModeDefaultReplyTarget) {
+      return;
+    }
+
+    setReplyingTo((previous) => previous ?? drillModeDefaultReplyTarget);
+  }, [drillModeDefaultReplyTarget, isThreadDrillMode]);
 
   useEffect(() => {
     if (!enablePagination) {
@@ -354,6 +628,14 @@ function CommentThread({
   useEffect(() => {
     setAndroidKeyboardHeight(0);
   }, [postId, type]);
+
+  const resetReplyTarget = useCallback(() => {
+    if (isThreadDrillMode && drillModeDefaultReplyTarget) {
+      setReplyingTo(drillModeDefaultReplyTarget);
+      return;
+    }
+    setReplyingTo(null);
+  }, [drillModeDefaultReplyTarget, isThreadDrillMode]);
 
   const clearEditingState = useCallback(() => {
     setEditingCommentId('');
@@ -437,6 +719,9 @@ function CommentThread({
         created: createdDate,
         updated: updatedDate,
         reactions: payload?.reactions ?? [],
+        repostCount: Number(payload?.repostCount ?? 0),
+        bookmarkCount: Number(payload?.bookmarkCount ?? 0),
+        bookmarkedByMe: Boolean(payload?.bookmarkedByMe),
         response: payload?.response ?? [],
         edited: payload?.edited ?? false,
       };
@@ -501,7 +786,7 @@ function CommentThread({
               }))
             );
             clearEditingState();
-            setReplyingTo(null);
+            resetReplyTarget();
             if (onPostRefresh) {
               onPostRefresh();
             }
@@ -576,7 +861,7 @@ function CommentThread({
 
           setGif(null);
           setMediaImages([]);
-          setReplyingTo(null);
+          resetReplyTarget();
           if (onPostRefresh) {
             onPostRefresh();
           }
@@ -616,6 +901,7 @@ function CommentThread({
       onCommentPublished,
       onPostRefresh,
       postId,
+      resetReplyTarget,
       replyingTo,
       scrollToEndOnPublish,
       toast,
@@ -638,7 +924,7 @@ function CommentThread({
         clearEditingState();
       }
       if (replyingTo?.id === commentId) {
-        setReplyingTo(null);
+        resetReplyTarget();
       }
 
       try {
@@ -670,7 +956,17 @@ function CommentThread({
         });
       }
     },
-    [clearEditingState, editingCommentId, onPostRefresh, postId, replyingTo?.id, toast, token, type]
+    [
+      clearEditingState,
+      editingCommentId,
+      onPostRefresh,
+      postId,
+      replyingTo?.id,
+      resetReplyTarget,
+      toast,
+      token,
+      type,
+    ]
   );
 
   const showDeleteConfirmation = useCallback(
@@ -753,6 +1049,7 @@ function CommentThread({
       }
 
       const previousComments = commentsRef.current;
+      const previousRootShadow = threadRootShadow;
       const optimisticComments = applyOptimisticReaction(
         previousComments,
         commentId,
@@ -761,6 +1058,29 @@ function CommentThread({
       );
 
       setComments(optimisticComments);
+      setThreadRootShadow((previous) => {
+        if (!previous || getCommentId(previous) !== commentId) {
+          return previous;
+        }
+        const filtered = (previous.reactions ?? []).filter(
+          (reaction) => reaction.userId !== user._id
+        );
+        return {
+          ...previous,
+          reactions: reactionType
+            ? [
+                ...filtered,
+                {
+                  type: reactionType,
+                  userId: user._id,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              ]
+            : filtered,
+          updated: new Date(),
+        };
+      });
       setReactingCommentId(commentId);
       setActiveReactionPickerId('');
       try {
@@ -773,6 +1093,7 @@ function CommentThread({
 
         if (result.status !== 200) {
           setComments(previousComments);
+          setThreadRootShadow(previousRootShadow);
           toast.show(result?.response?.message ?? 'Unable to update reaction right now.', {
             id: 'commentReactionError',
             type: 'danger',
@@ -781,6 +1102,7 @@ function CommentThread({
         }
       } catch (_error) {
         setComments(previousComments);
+        setThreadRootShadow(previousRootShadow);
         toast.show('Unable to update reaction right now.', {
           id: 'commentReactionError',
           type: 'danger',
@@ -790,7 +1112,7 @@ function CommentThread({
         setReactingCommentId('');
       }
     },
-    [postId, token, toast, type, user?._id]
+    [postId, threadRootShadow, token, toast, type, user?._id]
   );
 
   const handleToggleReaction = useCallback(
@@ -809,22 +1131,194 @@ function CommentThread({
     [reactToComment]
   );
 
+  const handleToggleBookmark = useCallback(
+    async (commentId: string, isBookmarked: boolean) => {
+      if (!commentId || !user?._id || !postId) {
+        return;
+      }
+
+      const previousComments = commentsRef.current;
+      const previousRootShadow = threadRootShadow;
+      setComments((previous) =>
+        updateCommentInTree(previous, commentId, (comment) => ({
+          ...comment,
+          bookmarkedByMe: !isBookmarked,
+          bookmarkCount: Math.max(0, Number(comment.bookmarkCount ?? 0) + (isBookmarked ? -1 : 1)),
+          updated: new Date(),
+        }))
+      );
+      setThreadRootShadow((previous) => {
+        if (!previous || getCommentId(previous) !== commentId) {
+          return previous;
+        }
+        return {
+          ...previous,
+          bookmarkedByMe: !isBookmarked,
+          bookmarkCount: Math.max(0, Number(previous.bookmarkCount ?? 0) + (isBookmarked ? -1 : 1)),
+          updated: new Date(),
+        };
+      });
+      setBookmarkingCommentId(commentId);
+
+      try {
+        const result = await ApiCall({
+          route: `comments/${type}/${postId}/${commentId}/bookmark`,
+          verb: isBookmarked ? 'delete' : 'patch',
+          token,
+        });
+
+        if (result?.status !== 200) {
+          setComments(previousComments);
+          setThreadRootShadow(previousRootShadow);
+          toast.show(result?.response?.message ?? 'Unable to update bookmark right now.', {
+            id: 'commentBookmarkError',
+            type: 'danger',
+            placement: 'bottom',
+          });
+        }
+      } catch (_error) {
+        setComments(previousComments);
+        setThreadRootShadow(previousRootShadow);
+        toast.show('Unable to update bookmark right now.', {
+          id: 'commentBookmarkError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+      } finally {
+        setBookmarkingCommentId('');
+      }
+    },
+    [postId, threadRootShadow, toast, token, type, user?._id]
+  );
+
+  const handleSubmitCommentRepost = useCallback(
+    async (comment: CommentPost, withQuote?: boolean) => {
+      const commentId = getCommentId(comment);
+      if (!commentId) {
+        return;
+      }
+
+      if (withQuote) {
+        navigation.navigate('Post', {
+          repostDraft: {
+            sourceType: 'comment',
+            sourceId: commentId,
+            sourcePreview: {
+              content: comment.content,
+            },
+          },
+        });
+        return;
+      }
+
+      setRepostingCommentId(commentId);
+      try {
+        const result = await ApiCall({
+          route: 'social/repost',
+          token,
+          verb: 'post',
+          params: {
+            sourceType: 'comment',
+            sourceId: commentId,
+          },
+        });
+
+        if (result?.status === 200) {
+          setComments((previous) =>
+            updateCommentInTree(previous, commentId, (currentComment) => ({
+              ...currentComment,
+              repostCount: Number(currentComment.repostCount ?? 0) + 1,
+            }))
+          );
+          setThreadRootShadow((previous) => {
+            if (!previous || getCommentId(previous) !== commentId) {
+              return previous;
+            }
+            return {
+              ...previous,
+              repostCount: Number(previous.repostCount ?? 0) + 1,
+            };
+          });
+          return;
+        }
+
+        toast.show(result?.response?.message ?? 'Unable to repost right now.', {
+          id: 'commentRepostError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+      } catch (_error) {
+        toast.show('Unable to repost right now.', {
+          id: 'commentRepostError',
+          type: 'danger',
+          placement: 'bottom',
+        });
+      } finally {
+        setRepostingCommentId('');
+      }
+    },
+    [navigation, toast, token]
+  );
+
+  const handleOpenRepostActions = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      if (!commentId) {
+        return;
+      }
+
+      const repostNow = () => {
+        handleSubmitCommentRepost(comment, false).catch(() => undefined);
+      };
+      const quotePost = () => {
+        handleSubmitCommentRepost(comment, true).catch(() => undefined);
+      };
+
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ['Cancel', 'Repost', 'Quote'],
+            cancelButtonIndex: 0,
+          },
+          (index) => {
+            if (index === 1) {
+              repostNow();
+            }
+            if (index === 2) {
+              quotePost();
+            }
+          }
+        );
+        return;
+      }
+
+      Alert.alert('Repost comment', 'Choose an action', [
+        {
+          text: 'Repost',
+          onPress: repostNow,
+        },
+        {
+          text: 'Quote',
+          onPress: quotePost,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]);
+    },
+    [handleSubmitCommentRepost]
+  );
+
+  rootToggleReactionRef.current = handleToggleReaction;
+  rootOpenRepostRef.current = handleOpenRepostActions;
+  rootToggleBookmarkRef.current = (commentId: string, isBookmarked: boolean) => {
+    handleToggleBookmark(commentId, isBookmarked).catch(() => undefined);
+  };
+
   const handleShowReactionPicker = useCallback((commentId: string) => {
     setActiveReactionPickerId(commentId);
   }, []);
-
-  const handleReplyPress = useCallback(
-    (commentId: string, authorName: string) => {
-      if (editingCommentId) {
-        return;
-      }
-      setReplyingTo({ id: commentId, name: authorName });
-      requestAnimationFrame(() => {
-        listRef.current?.scrollToOffset({ animated: true, offset: 0 });
-      });
-    },
-    [editingCommentId]
-  );
 
   const handleRowUserPress = useCallback(
     (userId: string) => {
@@ -834,6 +1328,16 @@ function CommentThread({
       onUserPress?.(userId);
     },
     [isPrivate, onUserPress, type]
+  );
+
+  const handleOpenCommentThread = useCallback(
+    (comment: CommentPost) => {
+      if (!onOpenCommentThread || editingCommentId) {
+        return;
+      }
+      onOpenCommentThread(comment);
+    },
+    [editingCommentId, onOpenCommentThread]
   );
 
   const handleScrollBeginDrag = useCallback(() => {
@@ -863,11 +1367,17 @@ function CommentThread({
           accentColor={accentColor}
           mutedColor={secondaryTextColor}
           onToggleReaction={handleToggleReaction}
+          onPressRepost={handleOpenRepostActions}
+          onToggleBookmark={(commentId, isBookmarked) => {
+            handleToggleBookmark(commentId, isBookmarked).catch(() => undefined);
+          }}
           onShowReactionPicker={handleShowReactionPicker}
           onSelectReaction={handleSelectReaction}
-          onReplyPress={handleReplyPress}
+          isReposting={repostingCommentId === rowItem.id}
+          isBookmarking={bookmarkingCommentId === rowItem.id}
           onActionsPress={openCommentActions}
           onUserPress={handleRowUserPress}
+          onOpenThread={handleOpenCommentThread}
         />
       );
     },
@@ -875,6 +1385,8 @@ function CommentThread({
       user?._id,
       reactingCommentId,
       activeReactionPickerId,
+      repostingCommentId,
+      bookmarkingCommentId,
       allowMedia,
       backgroundColor,
       dividerColor,
@@ -882,21 +1394,28 @@ function CommentThread({
       secondaryTextColor,
       accentColor,
       handleToggleReaction,
+      handleOpenRepostActions,
+      handleToggleBookmark,
       handleShowReactionPicker,
       handleSelectReaction,
-      handleReplyPress,
       openCommentActions,
       handleRowUserPress,
+      handleOpenCommentThread,
     ]
   );
 
   const isAndroid = Platform.OS === 'android';
+  const shouldHideComposer = Boolean(
+    hideComposer || isThreadRootUnavailable || (isThreadDrillMode && !drillModeDefaultReplyTarget)
+  );
   let listBottomPadding = spacing.x16;
-  if (!hideComposer && isAndroid) {
+  if (!shouldHideComposer && isAndroid) {
     listBottomPadding = spacing.x104;
   }
 
-  const composerKey = `${postId}_${type}_${editingCommentId || 'new'}_${replyingTo?.id || 'none'}`;
+  const composerKey = `${postId}_${type}_${normalizedThreadRootCommentId || 'root'}_${
+    editingCommentId || 'new'
+  }_${replyingTo?.id || 'none'}`;
 
   const content = (
     <>
@@ -934,7 +1453,7 @@ function CommentThread({
         renderItem={renderCommentItem}
       />
 
-      {!hideComposer ? (
+      {!shouldHideComposer ? (
         <View
           style={{
             position: isAndroid ? 'absolute' : 'relative',
@@ -958,15 +1477,17 @@ function CommentThread({
             onCancelReply={
               replyingTo
                 ? () => {
-                    setReplyingTo(null);
+                    resetReplyTarget();
                   }
                 : undefined
             }
+            focusRequestKey={replyFocusRequestKey}
             text={editingSeedText}
             isEditingComment={Boolean(editingCommentId)}
             setEditingComment={(isEditing) => {
               if (!isEditing) {
                 clearEditingState();
+                resetReplyTarget();
               }
             }}
             useBrandDarkTheme={useBrandDarkForSocial}
@@ -978,7 +1499,7 @@ function CommentThread({
         </View>
       ) : null}
 
-      {isLoading && countCommentsInTree(comments) > 0 ? (
+      {isLoading && countCommentsInTree(sourceComments) > 0 ? (
         <View style={{ paddingVertical: spacing.x10, alignItems: 'center' }}>
           <ActivityIndicator color={accentColor} />
         </View>

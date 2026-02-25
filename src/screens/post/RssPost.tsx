@@ -13,12 +13,16 @@ import { Colors } from '@/src/styles';
 
 import { spacing } from '@/src/styles/spacing';
 import { borderWidth } from '@/src/styles/outlines';
-import { ArticleType, PostType, SocialPost } from '@/utils/types';
+import { ArticleType, CommentPost, PostType, SocialPost } from '@/utils/types';
 
 import ArticleItem from '@/src/components/listItems/ArticleItem';
 import globalStyle from '@/components/listItems/style';
 import VideoItem from '../home/watch/VideoItem';
 import CommentThread from '@/components/comments/Thread';
+import {
+  getCommentId,
+  toSerializableCommentSnapshot,
+} from '@/components/comments/commentListUtils';
 
 type Props = StackScreenProps<MainStackParamList, 'SingleRss'>;
 function RssPost({ navigation, route }: Props) {
@@ -87,6 +91,23 @@ function RssPost({ navigation, route }: Props) {
   }, [getRssPost, route.params?.postId]);
 
   const commentType = route.params?.postType === 'watch' ? PostType.watch : PostType.rss;
+  const openCommentThread = useCallback(
+    (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      const currentPostId = route.params?.postId;
+      if (!commentId || !currentPostId) {
+        return;
+      }
+
+      navigation.push('SingleRss', {
+        postId: currentPostId,
+        postType: route.params?.postType,
+        threadRootCommentId: commentId,
+        threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+      });
+    },
+    [navigation, route.params?.postId, route.params?.postType]
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -113,6 +134,9 @@ function RssPost({ navigation, route }: Props) {
         <CommentThread
           type={commentType}
           postId={route.params?.postId ?? ''}
+          threadRootCommentId={route.params?.threadRootCommentId}
+          threadRootCommentSnapshot={route.params?.threadRootCommentSnapshot}
+          onOpenCommentThread={openCommentThread}
           enablePagination
           onPostRefresh={getRssPost}
           scrollToEndOnPublish

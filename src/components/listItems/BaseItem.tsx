@@ -359,6 +359,9 @@ function BaseItem({
   const locationPillBackground = dark ? Colors.neutral[800] : Colors.neutral[900];
   const locationPillBorder = dark ? 'rgba(255,255,255,0.08)' : Colors.neutral[600];
   const [myReaction, setMyReaction] = useState<SocialPostReaction | undefined>(postData.myReaction);
+  const [displayReactions, setDisplayReactions] = useState<SocialPostReaction[]>(
+    postData.reactions ?? []
+  );
   const toSafeCount = (value: unknown) => {
     const numericCount = Number(value);
     if (!Number.isFinite(numericCount) || numericCount < 0) {
@@ -408,6 +411,7 @@ function BaseItem({
   ];
   const reactionIconColor = myReaction ? activeReactionColor : defaultReactionColor;
   const reactionBarRef = useRef<ReactionBarRef>(null);
+  const isReactionUpdatingRef = useRef(false);
   const mainReactionScale = useRef(new Animated.Value(1)).current;
   const effectiveRepostPayload =
     repostPayload && repostPayload.sourceId
@@ -601,6 +605,9 @@ function BaseItem({
   };
 
   const showReactionBar = () => {
+    if (isReactionUpdatingRef.current) {
+      return;
+    }
     ReactNativeHapticFeedback.trigger('impactMedium', {
       enableVibrateFallback: true,
       ignoreAndroidSystemSettings: false,
@@ -612,6 +619,9 @@ function BaseItem({
   };
 
   const handleAnimatedReactionSelect = async (reaction: AnimatedReaction) => {
+    if (isReactionUpdatingRef.current) {
+      return;
+    }
     const selectedType = mapReactionIdToType(reaction.id);
     if (normalizeReactionType(myReaction?.type) === selectedType) {
       setSelectedReactionId(undefined);
@@ -622,6 +632,14 @@ function BaseItem({
     triggerReactionFeedback(selectedType);
     await reactPost(selectedType);
   };
+
+  useEffect(() => {
+    setDisplayReactions(postData.reactions ?? []);
+  }, [postData.id, postData.reactions]);
+
+  useEffect(() => {
+    setMyReaction(postData.myReaction);
+  }, [postData.id, postData.myReaction]);
 
   useEffect(() => {
     const fallbackReactionId = getFallbackReactionIdFromType(
@@ -691,7 +709,10 @@ function BaseItem({
   const WebView = View as any;
 
   const reactPost = async (type?: SocialPostReactionType) => {
-    dispatch(setLoader(true));
+    if (isReactionUpdatingRef.current) {
+      return;
+    }
+    isReactionUpdatingRef.current = true;
     try {
       const normalizedType = normalizeReactionType(type) ?? SocialPostReactionType.love;
       const res = await ApiCall({
@@ -705,40 +726,41 @@ function BaseItem({
       });
 
       if (res?.status === 200) {
-        // dispatch(getuserGet({ token }));
-        // setMyReaction()
-        if (res.response?.reactions?.length > 0) {
-          let foundReaction: SocialPostReaction | undefined;
-          res.response?.reactions.forEach((reaction: SocialPostReaction) => {
-            if (reaction.userId === user?._id) {
-              foundReaction = reaction;
-            }
-          });
-
-          // if (foundReaction) setReactions([...reactions, foundReaction]);
-          // setShowActions(false);
-          if (foundReaction) setMyReaction(foundReaction);
-        } else {
-          setMyReaction(undefined);
-        }
+        const nextReactions = Array.isArray(res.response?.reactions)
+          ? (res.response.reactions as SocialPostReaction[])
+          : [];
+        const foundReaction = nextReactions.find((reaction) => reaction.userId === user?._id);
+        setDisplayReactions(nextReactions);
+        setMyReaction(foundReaction);
 
         onTelemetryEvent?.('reaction', {
           postType: postData.type,
           reactionType: normalizedType,
         });
-
-        if (parentRefreshContent) parentRefreshContent();
+      } else {
+        const fallbackReactionId = getFallbackReactionIdFromType(
+          normalizeReactionType(myReaction?.type)
+        );
+        setSelectedReactionId(fallbackReactionId);
+        Toast.show('Unable to update reaction right now.', Toast.LONG);
       }
-
-      dispatch(setLoader(false));
     } catch (e: any) {
+      const fallbackReactionId = getFallbackReactionIdFromType(
+        normalizeReactionType(myReaction?.type)
+      );
+      setSelectedReactionId(fallbackReactionId);
+      Toast.show('Unable to update reaction right now.', Toast.LONG);
       console.log('saga error -- ', e.toString());
+    } finally {
+      isReactionUpdatingRef.current = false;
     }
   };
 
-  const removeReactPost = async (showLoading = true) => {
-    if (showLoading) dispatch(setLoader(true));
-
+  const removeReactPost = async () => {
+    if (isReactionUpdatingRef.current) {
+      return;
+    }
+    isReactionUpdatingRef.current = true;
     try {
       const removeReactionRoute =
         postData.type === PostType.watch
@@ -754,28 +776,31 @@ function BaseItem({
       });
 
       if (res?.status === 200) {
-        // dispatch(getuserGet({ token }));
-
-        if (res.response?.reactions?.length > 0) {
-          let foundReaction: SocialPostReaction | undefined;
-          res.response?.reactions.forEach((reaction: any) => {
-            if (reaction.userId === user?._id) {
-              foundReaction = reaction;
-            }
-          });
-
-          setMyReaction(foundReaction);
-        } else {
-          setMyReaction(undefined);
-        }
+        const nextReactions = Array.isArray(res.response?.reactions)
+          ? (res.response.reactions as SocialPostReaction[])
+          : [];
+        const foundReaction = nextReactions.find((reaction) => reaction.userId === user?._id);
+        setDisplayReactions(nextReactions);
+        setMyReaction(foundReaction);
         onTelemetryEvent?.('reaction_removed', {
           postType: postData.type,
         });
-        if (parentRefreshContent) parentRefreshContent();
+      } else {
+        const fallbackReactionId = getFallbackReactionIdFromType(
+          normalizeReactionType(myReaction?.type)
+        );
+        setSelectedReactionId(fallbackReactionId);
+        Toast.show('Unable to update reaction right now.', Toast.LONG);
       }
-      if (showLoading) dispatch(setLoader(false));
     } catch (e: any) {
+      const fallbackReactionId = getFallbackReactionIdFromType(
+        normalizeReactionType(myReaction?.type)
+      );
+      setSelectedReactionId(fallbackReactionId);
+      Toast.show('Unable to update reaction right now.', Toast.LONG);
       console.log('saga error -- ', e.toString());
+    } finally {
+      isReactionUpdatingRef.current = false;
     }
   };
 
@@ -870,17 +895,15 @@ function BaseItem({
     angry: 0,
   };
 
-  if (postData.reactions) {
-    postData.reactions.forEach((reaction) => {
-      const normalizedType = normalizeReactionType(reaction.type);
-      if (!normalizedType) {
-        return;
-      }
-      if (normalizedType in reactionTypes) {
-        reactionTypes[normalizedType as keyof typeof reactionTypes] += 1;
-      }
-    });
-  }
+  displayReactions.forEach((reaction) => {
+    const normalizedType = normalizeReactionType(reaction.type);
+    if (!normalizedType) {
+      return;
+    }
+    if (normalizedType in reactionTypes) {
+      reactionTypes[normalizedType as keyof typeof reactionTypes] += 1;
+    }
+  });
 
   const totalReactionCount =
     reactionTypes.like +
@@ -891,6 +914,7 @@ function BaseItem({
     reactionTypes.wow +
     reactionTypes.sad +
     reactionTypes.angry;
+  const displayCommentCount = toSafeCount(postData?.commentNumber ?? postData.comments?.length);
 
   if (reelLayout)
     return (
@@ -959,6 +983,9 @@ function BaseItem({
               <TouchableOpacity
                 onLongPress={showReactionBar}
                 onPress={() => {
+                  if (isReactionUpdatingRef.current) {
+                    return;
+                  }
                   dismissReactionBar();
                   if (myReaction) {
                     setSelectedReactionId(undefined);
@@ -1016,16 +1043,18 @@ function BaseItem({
                   />
                 </View>
               ) : null}
-              <TouchableOpacity
-                disabled={!canViewReactions}
-                onPress={() => openReactionsModal('all')}
-                style={{ marginTop: spacing.x5 }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <StyledText style={{ color: '#f6f6f7', ...fontSize.x1, fontWeight: '700' }}>
-                  {totalReactionCount}
-                </StyledText>
-              </TouchableOpacity>
+              {totalReactionCount > 0 ? (
+                <TouchableOpacity
+                  disabled={!canViewReactions}
+                  onPress={() => openReactionsModal('all')}
+                  style={{ marginTop: spacing.x5 }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <StyledText style={{ color: '#f6f6f7', ...fontSize.x1, fontWeight: '700' }}>
+                    {totalReactionCount}
+                  </StyledText>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <TouchableOpacity
@@ -1052,16 +1081,18 @@ function BaseItem({
               >
                 <MaterialIcons name="chat-bubble-outline" size={22} color="#f6f6f7" />
               </View>
-              <StyledText
-                style={{
-                  marginTop: spacing.x5,
-                  color: '#f6f6f7',
-                  ...fontSize.x1,
-                  fontWeight: '700',
-                }}
-              >
-                {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-              </StyledText>
+              {displayCommentCount > 0 ? (
+                <StyledText
+                  style={{
+                    marginTop: spacing.x5,
+                    color: '#f6f6f7',
+                    ...fontSize.x1,
+                    fontWeight: '700',
+                  }}
+                >
+                  {displayCommentCount}
+                </StyledText>
+              ) : null}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1081,6 +1112,11 @@ function BaseItem({
               >
                 <RepeatIcon width={22} height={22} color="#f6f6f7" />
               </View>
+              {displayRepostCount > 0 ? (
+                <StyledText style={{ color: '#f6f6f7', ...fontSize.x1, fontWeight: '700' }}>
+                  {displayRepostCount}
+                </StyledText>
+              ) : null}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1303,7 +1339,7 @@ function BaseItem({
           visible={showReactionsModal}
           postType={postData.type}
           postId={postData.id}
-          fallbackReactions={postData.reactions}
+          fallbackReactions={displayReactions}
           initialTab={reactionModalInitialTab}
           onClose={() => setShowReactionsModal(false)}
         />
@@ -1522,6 +1558,9 @@ function BaseItem({
                 <TouchableOpacity
                   onLongPress={showReactionBar}
                   onPress={() => {
+                    if (isReactionUpdatingRef.current) {
+                      return;
+                    }
                     dismissReactionBar();
                     if (myReaction) {
                       setSelectedReactionId(undefined);
@@ -1551,21 +1590,23 @@ function BaseItem({
                     )}
                   </Animated.View>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  disabled={!canViewReactions}
-                  onPress={() => openReactionsModal('all')}
-                  style={{ marginLeft: spacing.x5, paddingHorizontal: spacing.x2 }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <StyledText
-                    style={{
-                      color: transparency ? Colors.neutral[600] : secondaryTextColor,
-                      ...fontSize.x1,
-                    }}
+                {totalReactionCount > 0 ? (
+                  <TouchableOpacity
+                    disabled={!canViewReactions}
+                    onPress={() => openReactionsModal('all')}
+                    style={{ marginLeft: spacing.x5, paddingHorizontal: spacing.x2 }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    {totalReactionCount}
-                  </StyledText>
-                </TouchableOpacity>
+                    <StyledText
+                      style={{
+                        color: transparency ? Colors.neutral[600] : secondaryTextColor,
+                        ...fontSize.x1,
+                      }}
+                    >
+                      {totalReactionCount}
+                    </StyledText>
+                  </TouchableOpacity>
+                ) : null}
               </View>
               {isReactionBarVisible ? (
                 <View
@@ -1603,15 +1644,17 @@ function BaseItem({
               style={{ flexDirection: 'row', alignItems: 'center' }}
             >
               <MaterialIcons name="chat-bubble-outline" size={22} color={secondaryTextColor} />
-              <StyledText
-                style={{
-                  marginLeft: spacing.x5,
-                  color: transparency ? Colors.neutral[600] : secondaryTextColor,
-                  ...fontSize.x1,
-                }}
-              >
-                {postData?.commentNumber ?? postData.comments?.length ?? '0'}
-              </StyledText>
+              {displayCommentCount > 0 ? (
+                <StyledText
+                  style={{
+                    marginLeft: spacing.x5,
+                    color: transparency ? Colors.neutral[600] : secondaryTextColor,
+                    ...fontSize.x1,
+                  }}
+                >
+                  {displayCommentCount}
+                </StyledText>
+              ) : null}
             </TouchableOpacity>
 
             {canRepost ? (
@@ -1625,15 +1668,17 @@ function BaseItem({
                 }}
               >
                 <RepeatIcon width={22} height={22} color={repostIconColor} />
-                <StyledText
-                  style={{
-                    marginLeft: spacing.x5,
-                    color: transparency ? Colors.neutral[600] : secondaryTextColor,
-                    ...fontSize.x1,
-                  }}
-                >
-                  {displayRepostCount}
-                </StyledText>
+                {displayRepostCount > 0 ? (
+                  <StyledText
+                    style={{
+                      marginLeft: spacing.x5,
+                      color: transparency ? Colors.neutral[600] : secondaryTextColor,
+                      ...fontSize.x1,
+                    }}
+                  >
+                    {displayRepostCount}
+                  </StyledText>
+                ) : null}
               </TouchableOpacity>
             ) : null}
 
@@ -1829,7 +1874,7 @@ function BaseItem({
         visible={showReactionsModal}
         postType={postData.type}
         postId={postData.id}
-        fallbackReactions={postData.reactions}
+        fallbackReactions={displayReactions}
         initialTab={reactionModalInitialTab}
         onClose={() => setShowReactionsModal(false)}
       />

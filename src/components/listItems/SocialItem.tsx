@@ -219,7 +219,7 @@ const getDomainName = (linkUrl: string) => {
 };
 
 const normalizeSourceIdForNavigation = (
-  sourceType: ResolvedRepostSourceSnapshot['sourceType'],
+  sourceType: ResolvedRepostSourceSnapshot['sourceType'] | 'watch',
   sourceId: string
 ) => {
   if (sourceType === 'rss') {
@@ -675,11 +675,53 @@ function SocialItem({
 
     const rootNavigation = navigation.getParent?.()?.getParent?.()?.getParent?.() as any;
     const navigator = rootNavigation ?? (navigation as any);
+    if (sourceSnapshot.sourceType === 'comment') {
+      const { sourceObjectType } = sourceSnapshot;
+      const { sourceObjectId } = sourceSnapshot;
+      const threadRootCommentId = sourceSnapshot.sourceCommentId || sourceSnapshot.sourceId;
+
+      if (!sourceObjectType || !sourceObjectId || !threadRootCommentId) {
+        return;
+      }
+
+      const targetPostId = normalizeSourceIdForNavigation(sourceObjectType, sourceObjectId);
+      const targetCommentId = normalizeSourceIdForNavigation('comment', threadRootCommentId);
+
+      if (!targetPostId || !targetCommentId) {
+        return;
+      }
+
+      if (sourceObjectType === 'prayer') {
+        navigator?.navigate?.('PrayerWall', {
+          screen: 'Single',
+          params: {
+            postId: targetPostId,
+            threadRootCommentId: targetCommentId,
+          },
+        });
+        return;
+      }
+
+      if (sourceObjectType === 'rss' || sourceObjectType === 'watch') {
+        navigator?.navigate?.('SingleRss', {
+          postId: targetPostId,
+          postType: sourceObjectType === 'watch' ? PostType.watch : PostType.rss,
+          threadRootCommentId: targetCommentId,
+        });
+        return;
+      }
+
+      navigator?.navigate?.('SinglePost', {
+        postId: targetPostId,
+        threadRootCommentId: targetCommentId,
+      });
+      return;
+    }
+
     const targetPostId = normalizeSourceIdForNavigation(
       sourceSnapshot.sourceType,
       sourceSnapshot.sourceId
     );
-
     if (!targetPostId) {
       return;
     }
@@ -698,7 +740,7 @@ function SocialItem({
     }
 
     navigator?.navigate?.('SinglePost', { postId: targetPostId });
-  }, [navigation, sourceSnapshot?.sourceId, sourceSnapshot?.sourceType]);
+  }, [navigation, sourceSnapshot]);
 
   const handleRepostSourceOpen = () => {
     if (!sourceSnapshot?.sourceId) {
@@ -706,7 +748,10 @@ function SocialItem({
     }
 
     onTelemetryEvent?.('open_post', {
-      postType: sourceSnapshot.sourceType,
+      postType:
+        sourceSnapshot.sourceType === 'comment'
+          ? sourceSnapshot.sourceObjectType || sourceSnapshot.sourceType
+          : sourceSnapshot.sourceType,
     });
     handleRepostSourcePress();
   };

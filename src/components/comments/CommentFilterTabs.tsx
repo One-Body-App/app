@@ -1,4 +1,5 @@
 import { TouchableOpacity, View, Text } from 'react-native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { CommentListFilter } from './commentListUtils';
 import { flatStyles } from './flatStyles';
 
@@ -19,44 +20,24 @@ function CommentFilterTabs({
   activeColor,
   inactiveColor,
 }: CommentFilterTabsProps) {
+  const label = value === 'latest' ? 'Latest' : 'Relevant';
+  const nextValue: CommentListFilter = value === 'latest' ? 'relevant' : 'latest';
+  const chevronColor = activeColor || inactiveColor;
+
   return (
     <View style={[flatStyles.filterBar, { backgroundColor, borderBottomColor: borderColor }]}>
       <TouchableOpacity
-        style={flatStyles.filterButton}
+        style={flatStyles.filterDropdownButton}
         onPress={() => {
-          onChange('relevant');
+          onChange(nextValue);
         }}
+        accessibilityRole="button"
+        accessibilityLabel={`Comment filter. Current selection ${label}.`}
       >
-        <Text
-          style={[
-            flatStyles.filterText,
-            value === 'relevant' ? flatStyles.filterTextActive : undefined,
-            {
-              color: value === 'relevant' ? activeColor : inactiveColor,
-            },
-          ]}
-        >
-          Relevant
+        <Text style={[flatStyles.filterText, flatStyles.filterTextActive, { color: activeColor }]}>
+          {label}
         </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={flatStyles.filterButton}
-        onPress={() => {
-          onChange('latest');
-        }}
-      >
-        <Text
-          style={[
-            flatStyles.filterText,
-            value === 'latest' ? flatStyles.filterTextActive : undefined,
-            {
-              color: value === 'latest' ? activeColor : inactiveColor,
-            },
-          ]}
-        >
-          Latest
-        </Text>
+        <MaterialIcons name="keyboard-arrow-down" size={18} color={chevronColor} />
       </TouchableOpacity>
     </View>
   );

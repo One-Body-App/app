@@ -1,6 +1,7 @@
 import {
   ActionSheetIOS,
   Alert,
+  TextInput as RNTextInput,
   TextInput,
   TouchableOpacity,
   View,
@@ -11,7 +12,7 @@ import { CloseCircle, TickCircle } from 'iconsax-react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import FastImage from 'react-native-fast-image';
 import { GiphyDialog, GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -91,6 +92,7 @@ interface Props {
   onOpenGifPicker?: () => void;
   replyingToLabel?: string;
   onCancelReply?: () => void;
+  focusRequestKey?: number;
 }
 
 function CommentField({
@@ -110,6 +112,7 @@ function CommentField({
   onOpenGifPicker,
   replyingToLabel,
   onCancelReply,
+  focusRequestKey,
 }: Props) {
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
   const { dark, colors } = useTheme();
@@ -119,6 +122,7 @@ function CommentField({
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
+  const inputRef = useRef<RNTextInput | null>(null);
   const InputComponent = isFromBottomField ? BottomSheetTextInput : TextInput;
   const gifAspectRatioRaw = mediaGif?.aspectRatio;
   const gifAspectRatio = Number(gifAspectRatioRaw);
@@ -147,6 +151,21 @@ function CommentField({
     user?.profileImage && user.profileImage !== '' ? user.profileImage : NO_PROFILE_IMAGE;
   const safeProfileImageUri = profileImageUri || 'https://via.placeholder.com/72';
   const isActionBlocked = isImageUploading || isSubmitting;
+
+  useEffect(() => {
+    if (!focusRequestKey || isEditingComment) {
+      return () => undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const input = inputRef.current as unknown as { focus?: () => void } | null;
+      input?.focus?.();
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [focusRequestKey, isEditingComment]);
 
   // const onKeyboardWillShow = (e: KeyboardEvent) => {
   //   setKeyboardHeight(e.endCoordinates.height);
@@ -368,6 +387,7 @@ function CommentField({
           />
           <View style={{ flex: 1, position: 'relative' }}>
             <InputComponent
+              ref={inputRef as any}
               placeholder={
                 isEditingComment ? 'Edit comment...' : (placeholderText ?? 'Add a comment...')
               }

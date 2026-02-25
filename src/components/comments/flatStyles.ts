@@ -12,6 +12,12 @@ export const flatStyles = StyleSheet.create({
     marginRight: 20,
     paddingVertical: 4,
   },
+  filterDropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 2,
+  },
   filterText: {
     fontSize: 15,
     fontWeight: '600',
@@ -36,25 +42,33 @@ export const flatStyles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  headerMeta: {
+    flex: 1,
+    minWidth: 0,
+  },
+  authorMetaRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 2,
   },
   authorName: {
     fontSize: 15,
     fontWeight: '700',
-    maxWidth: '38%',
+    flexShrink: 1,
   },
   authorHandle: {
-    fontSize: 14,
-    marginLeft: 6,
-    maxWidth: '30%',
+    fontSize: 13,
+    flexShrink: 1,
   },
   dot: {
-    marginHorizontal: 4,
+    marginHorizontal: 6,
     fontSize: 12,
     opacity: 0.8,
   },
   time: {
-    fontSize: 14,
+    fontSize: 13,
     flexShrink: 1,
   },
   replyContext: {
@@ -64,8 +78,8 @@ export const flatStyles = StyleSheet.create({
   },
   contentText: {
     marginTop: 4,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 17,
+    lineHeight: 24,
   },
   imageWrap: {
     marginTop: 10,
@@ -101,7 +115,12 @@ export const flatStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  replyText: {
+  commentThreadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentThreadCount: {
+    marginLeft: 6,
     fontSize: 13,
     fontWeight: '600',
   },

@@ -1,4 +1,9 @@
-import { CommentPost, SocialPostReaction, SocialPostReactionType } from '@/utils/types';
+import {
+  CommentPost,
+  SerializableCommentSnapshot,
+  SocialPostReaction,
+  SocialPostReactionType,
+} from '@/utils/types';
 
 export type CommentListFilter = 'relevant' | 'latest';
 
@@ -35,6 +40,150 @@ export const getCommentReplies = (comment?: Partial<CommentPost> | null): Commen
   }
   const rawReplies = (comment as any)?.response ?? (comment as any)?.replies;
   return Array.isArray(rawReplies) ? (rawReplies as CommentPost[]) : [];
+};
+
+export const findCommentById = (
+  nodes: CommentPost[],
+  targetId: string
+): CommentPost | undefined => {
+  if (!targetId || !Array.isArray(nodes) || nodes.length < 1) {
+    return undefined;
+  }
+
+  const directMatch = nodes.find((node) => getCommentId(node) === targetId);
+  if (directMatch) {
+    return directMatch;
+  }
+
+  let nestedMatch: CommentPost | undefined;
+  nodes.some((node) => {
+    const nested = getCommentReplies(node);
+    if (nested.length < 1) {
+      return false;
+    }
+    nestedMatch = findCommentById(nested, targetId);
+    return Boolean(nestedMatch);
+  });
+
+  return nestedMatch;
+};
+
+const toSerializableDate = (value: unknown) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+
+  return date.toISOString();
+};
+
+export const toSerializableCommentSnapshot = (
+  comment?: CommentPost | null
+): SerializableCommentSnapshot | undefined => {
+  if (!comment) {
+    return undefined;
+  }
+
+  const createdAtIso = toSerializableDate(comment.created);
+  const updatedAtIso = toSerializableDate(comment.updated);
+  const commentDateIso = toSerializableDate(comment.date);
+  const replies = getCommentReplies(comment)
+    .map((reply) => toSerializableCommentSnapshot(reply))
+    .filter((replySnapshot): replySnapshot is SerializableCommentSnapshot =>
+      Boolean(replySnapshot)
+    );
+
+  return {
+    _id: comment._id ? String(comment._id) : undefined,
+    commentId: comment.commentId ? String(comment.commentId) : undefined,
+    dateSeconds: Number.isFinite(comment.dateSeconds) ? Number(comment.dateSeconds) : undefined,
+    date: commentDateIso ?? comment.date,
+    objectId: comment.objectId ? String(comment.objectId) : undefined,
+    objectType: comment.objectType ? String(comment.objectType) : undefined,
+    content: comment.content,
+    userData: comment.userData
+      ? {
+          _id: comment.userData._id ? String(comment.userData._id) : undefined,
+          name: comment.userData.name,
+          username: comment.userData.username,
+          accountType: comment.userData.accountType,
+          profileImage: comment.userData.profileImage,
+          twitterHandler: comment.userData.twitterHandler,
+          instagramHandler: comment.userData.instagramHandler,
+          isApprovedInfluencer: comment.userData.isApprovedInfluencer,
+        }
+      : undefined,
+    images: Array.isArray(comment.images) ? [...comment.images] : undefined,
+    reactions: Array.isArray(comment.reactions) ? [...comment.reactions] : undefined,
+    repostCount: typeof comment.repostCount === 'number' ? comment.repostCount : undefined,
+    bookmarkCount: typeof comment.bookmarkCount === 'number' ? comment.bookmarkCount : undefined,
+    bookmarkedByMe:
+      typeof comment.bookmarkedByMe === 'boolean' ? comment.bookmarkedByMe : undefined,
+    created: createdAtIso,
+    updated: updatedAtIso,
+    edited: Boolean(comment.edited),
+    response: replies,
+  } as SerializableCommentSnapshot;
+};
+
+export const fromSerializableCommentSnapshot = (
+  snapshot?: SerializableCommentSnapshot | null
+): CommentPost | undefined => {
+  if (!snapshot) {
+    return undefined;
+  }
+
+  const createdDate = toDateFromSource(snapshot.created, snapshot.date, new Date());
+  const updatedDate = toDateFromSource(snapshot.updated, snapshot.created, createdDate);
+  const fallbackId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const resolvedId =
+    (snapshot.commentId ? String(snapshot.commentId) : undefined) ??
+    (snapshot._id ? String(snapshot._id) : undefined) ??
+    fallbackId;
+  const dateIso = toSerializableDate(snapshot.date) ?? createdDate.toISOString();
+  const normalizedReplies = Array.isArray(snapshot.response)
+    ? snapshot.response
+        .map((replySnapshot) => fromSerializableCommentSnapshot(replySnapshot))
+        .filter((reply): reply is CommentPost => Boolean(reply))
+    : [];
+
+  return {
+    _id: snapshot._id ? String(snapshot._id) : resolvedId,
+    commentId: resolvedId,
+    dateSeconds:
+      typeof snapshot.dateSeconds === 'number'
+        ? snapshot.dateSeconds
+        : Math.ceil(createdDate.getTime() / 1000),
+    date: dateIso,
+    objectId: snapshot.objectId ? String(snapshot.objectId) : '',
+    objectType: snapshot.objectType ? String(snapshot.objectType) : '',
+    content: snapshot.content ?? '',
+    userData: {
+      _id: snapshot.userData?._id ? String(snapshot.userData._id) : undefined,
+      name: snapshot.userData?.name ?? 'Unknown',
+      username: snapshot.userData?.username,
+      accountType: snapshot.userData?.accountType,
+      profileImage: snapshot.userData?.profileImage,
+      twitterHandler: snapshot.userData?.twitterHandler,
+      instagramHandler: snapshot.userData?.instagramHandler,
+      isApprovedInfluencer: snapshot.userData?.isApprovedInfluencer,
+    },
+    images: Array.isArray(snapshot.images) ? [...snapshot.images] : undefined,
+    videos: [],
+    created: createdDate,
+    updated: updatedDate,
+    reactions: Array.isArray(snapshot.reactions) ? [...snapshot.reactions] : [],
+    repostCount: typeof snapshot.repostCount === 'number' ? snapshot.repostCount : undefined,
+    bookmarkCount: typeof snapshot.bookmarkCount === 'number' ? snapshot.bookmarkCount : undefined,
+    bookmarkedByMe:
+      typeof snapshot.bookmarkedByMe === 'boolean' ? snapshot.bookmarkedByMe : undefined,
+    response: normalizedReplies,
+    edited: Boolean(snapshot.edited),
+  };
 };
 
 export const getParentCommentId = (comment?: Partial<CommentPost> | null) => {

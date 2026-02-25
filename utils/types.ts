@@ -312,8 +312,11 @@ export interface SocialPost {
   locationName?: string;
   edited?: boolean;
   repost?: {
-    sourceType: 'social' | 'prayer' | 'rss';
+    sourceType: 'social' | 'prayer' | 'rss' | 'comment';
     sourceId: string;
+    sourceCommentId?: string;
+    sourceObjectType?: 'social' | 'prayer' | 'rss' | 'watch';
+    sourceObjectId?: string;
     sourceAuthorId?: string;
     sourceAuthorName?: string;
     sourceAuthorUsername?: string;
@@ -465,6 +468,38 @@ export interface CommentPost {
   updated: Date;
 
   reactions?: SocialPostReaction[];
+  repostCount?: number;
+  bookmarkCount?: number;
+  bookmarkedByMe?: boolean;
   response?: CommentPost[];
   edited?: boolean;
+}
+
+export interface SerializableCommentSnapshot {
+  _id?: string;
+  commentId?: string;
+  dateSeconds?: number;
+  date?: string;
+  objectId?: string;
+  objectType?: string;
+  content?: string;
+  userData?: {
+    _id?: string;
+    name?: string;
+    username?: string;
+    accountType?: AccountType;
+    profileImage?: string;
+    twitterHandler?: string;
+    instagramHandler?: string;
+    isApprovedInfluencer?: boolean;
+  };
+  images?: string[];
+  reactions?: SocialPostReaction[];
+  repostCount?: number;
+  bookmarkCount?: number;
+  bookmarkedByMe?: boolean;
+  created?: string;
+  updated?: string;
+  edited?: boolean;
+  response?: SerializableCommentSnapshot[];
 }

@@ -91,11 +91,15 @@ type FlatCommentRowProps = {
   accentColor: string;
   mutedColor: string;
   onToggleReaction: (commentId: string, hasReaction: boolean) => void;
+  onPressRepost?: (comment: CommentPost) => void;
+  onToggleBookmark?: (commentId: string, isBookmarked: boolean) => void;
   onShowReactionPicker: (commentId: string) => void;
   onSelectReaction: (commentId: string, reactionType: SocialPostReactionType) => void;
-  onReplyPress: (commentId: string, authorName: string) => void;
+  isReposting?: boolean;
+  isBookmarking?: boolean;
   onActionsPress?: (comment: CommentPost) => void;
   onUserPress?: (userId: string) => void;
+  onOpenThread?: (comment: CommentPost) => void;
 };
 
 function FlatCommentRow({
@@ -111,11 +115,15 @@ function FlatCommentRow({
   accentColor,
   mutedColor,
   onToggleReaction,
+  onPressRepost,
+  onToggleBookmark,
   onShowReactionPicker,
   onSelectReaction,
-  onReplyPress,
+  isReposting,
+  isBookmarking,
   onActionsPress,
   onUserPress,
+  onOpenThread,
 }: FlatCommentRowProps) {
   const { comment } = item;
   const commentId = item.id;
@@ -124,6 +132,8 @@ function FlatCommentRow({
   );
   const isOwnComment = Boolean(comment.userData?._id && comment.userData._id === currentUserId);
   const reactionCount = comment.reactions?.length ?? 0;
+  const repostCount = Number(comment.repostCount ?? 0);
+  const isBookmarked = Boolean(comment.bookmarkedByMe);
   const profileImage =
     comment.userData?.profileImage && comment.userData.profileImage !== ''
       ? comment.userData.profileImage
@@ -149,69 +159,93 @@ function FlatCommentRow({
       </TouchableOpacity>
 
       <View style={flatStyles.commentBody}>
-        <View style={flatStyles.headerRow}>
-          <Text style={[flatStyles.authorName, { color: primaryTextColor }]} numberOfLines={1}>
-            {comment.userData?.name ?? 'Unknown'}
-          </Text>
-          <Text style={[flatStyles.authorHandle, { color: secondaryTextColor }]} numberOfLines={1}>
-            {toHandle(comment)}
-          </Text>
-          <Text style={[flatStyles.dot, { color: secondaryTextColor }]}>·</Text>
-          <Text style={[flatStyles.time, { color: secondaryTextColor }]} numberOfLines={1}>
-            {timeSince(new Date(getCommentTimestampMs(comment)))}
-          </Text>
-
-          <View style={{ flex: 1 }} />
-
-          {isOwnComment && onActionsPress ? (
-            <TouchableOpacity
-              onPress={() => {
-                onActionsPress(comment);
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialCommunityIcons name="dots-horizontal" size={18} color={secondaryTextColor} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        {item.parentAuthorName ? (
-          <Text style={[flatStyles.replyContext, { color: accentColor }]} numberOfLines={1}>
-            Replying to @{item.parentAuthorName.replace(/\s+/g, '').toLowerCase()}
-          </Text>
-        ) : null}
-
-        <Text style={[flatStyles.contentText, { color: primaryTextColor }]}>{comment.content}</Text>
-
-        {comment.edited ? (
-          <Text style={{ marginTop: 4, color: secondaryTextColor, fontSize: 11 }}>Edited</Text>
-        ) : null}
-
-        {allowMedia && Array.isArray(comment.images) && comment.images.length > 0
-          ? comment.images.map((imageUrl) => (
-              <View key={`${commentId}_${imageUrl}`} style={flatStyles.imageWrap}>
-                <FastImage source={{ uri: imageUrl }} style={flatStyles.image} resizeMode="cover" />
+        <TouchableOpacity
+          activeOpacity={onOpenThread ? 0.85 : 1}
+          disabled={!onOpenThread}
+          onPress={() => {
+            onOpenThread?.(comment);
+          }}
+        >
+          <View style={flatStyles.headerRow}>
+            <View style={flatStyles.headerMeta}>
+              <Text style={[flatStyles.authorName, { color: primaryTextColor }]} numberOfLines={1}>
+                {comment.userData?.name ?? 'Unknown'}
+              </Text>
+              <View style={flatStyles.authorMetaRow}>
+                <Text
+                  style={[flatStyles.authorHandle, { color: secondaryTextColor }]}
+                  numberOfLines={1}
+                >
+                  {toHandle(comment)}
+                </Text>
+                <Text style={[flatStyles.dot, { color: secondaryTextColor }]}>·</Text>
+                <Text style={[flatStyles.time, { color: secondaryTextColor }]} numberOfLines={1}>
+                  {timeSince(new Date(getCommentTimestampMs(comment)))}
+                </Text>
               </View>
-            ))
-          : null}
+            </View>
 
-        {allowMedia && comment.gif ? (
-          <View style={flatStyles.imageWrap}>
-            {Platform.OS === 'android' && gifPreviewUrl ? (
-              <FastImage
-                source={{ uri: gifPreviewUrl }}
-                resizeMode="contain"
-                style={[flatStyles.gif, { aspectRatio: safeGifAspectRatio }]}
-              />
-            ) : (
-              <GiphyMediaView
-                media={comment.gif}
-                resizeMode="contain"
-                style={[flatStyles.gif, { aspectRatio: safeGifAspectRatio }]}
-              />
-            )}
+            {isOwnComment && onActionsPress ? (
+              <TouchableOpacity
+                onPress={(event) => {
+                  event.stopPropagation();
+                  onActionsPress(comment);
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialCommunityIcons
+                  name="dots-horizontal"
+                  size={18}
+                  color={secondaryTextColor}
+                />
+              </TouchableOpacity>
+            ) : null}
           </View>
-        ) : null}
+
+          {item.parentAuthorName ? (
+            <Text style={[flatStyles.replyContext, { color: accentColor }]} numberOfLines={1}>
+              Replying to @{item.parentAuthorName.replace(/\s+/g, '').toLowerCase()}
+            </Text>
+          ) : null}
+
+          <Text style={[flatStyles.contentText, { color: primaryTextColor }]}>
+            {comment.content}
+          </Text>
+
+          {comment.edited ? (
+            <Text style={{ marginTop: 4, color: secondaryTextColor, fontSize: 11 }}>Edited</Text>
+          ) : null}
+
+          {allowMedia && Array.isArray(comment.images) && comment.images.length > 0
+            ? comment.images.map((imageUrl) => (
+                <View key={`${commentId}_${imageUrl}`} style={flatStyles.imageWrap}>
+                  <FastImage
+                    source={{ uri: imageUrl }}
+                    style={flatStyles.image}
+                    resizeMode="cover"
+                  />
+                </View>
+              ))
+            : null}
+
+          {allowMedia && comment.gif ? (
+            <View style={flatStyles.imageWrap}>
+              {Platform.OS === 'android' && gifPreviewUrl ? (
+                <FastImage
+                  source={{ uri: gifPreviewUrl }}
+                  resizeMode="contain"
+                  style={[flatStyles.gif, { aspectRatio: safeGifAspectRatio }]}
+                />
+              ) : (
+                <GiphyMediaView
+                  media={comment.gif}
+                  resizeMode="contain"
+                  style={[flatStyles.gif, { aspectRatio: safeGifAspectRatio }]}
+                />
+              )}
+            </View>
+          ) : null}
+        </TouchableOpacity>
 
         <View style={flatStyles.actionsRow}>
           <View style={flatStyles.leftActions}>
@@ -228,27 +262,62 @@ function FlatCommentRow({
             >
               <MaterialCommunityIcons
                 name={myReaction ? 'heart' : 'heart-outline'}
-                size={18}
+                size={22}
                 color={myReaction ? accentColor : mutedColor}
               />
-              <Text
-                style={[
-                  flatStyles.reactionCount,
-                  {
-                    color: myReaction ? accentColor : mutedColor,
-                  },
-                ]}
-              >
-                {reactionCount}
-              </Text>
+              {reactionCount > 0 ? (
+                <Text
+                  style={[
+                    flatStyles.reactionCount,
+                    {
+                      color: myReaction ? accentColor : mutedColor,
+                    },
+                  ]}
+                >
+                  {reactionCount}
+                </Text>
+              ) : null}
             </TouchableOpacity>
-
             <TouchableOpacity
+              style={flatStyles.commentThreadButton}
+              disabled={!onOpenThread}
               onPress={() => {
-                onReplyPress(commentId, comment.userData?.name ?? 'Unknown');
+                onOpenThread?.(comment);
               }}
             >
-              <Text style={[flatStyles.replyText, { color: mutedColor }]}>Reply</Text>
+              <MaterialCommunityIcons name="comment-outline" size={22} color={mutedColor} />
+              {item.directReplyCount > 0 ? (
+                <Text style={[flatStyles.commentThreadCount, { color: mutedColor }]}>
+                  {item.directReplyCount}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={flatStyles.commentThreadButton}
+              disabled={isReposting || !onPressRepost}
+              onPress={() => {
+                onPressRepost?.(comment);
+              }}
+            >
+              <MaterialCommunityIcons name="repeat" size={22} color={mutedColor} />
+              {repostCount > 0 ? (
+                <Text style={[flatStyles.commentThreadCount, { color: mutedColor }]}>
+                  {repostCount}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={flatStyles.commentThreadButton}
+              disabled={isBookmarking || !onToggleBookmark}
+              onPress={() => {
+                onToggleBookmark?.(commentId, isBookmarked);
+              }}
+            >
+              <MaterialCommunityIcons
+                name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                size={22}
+                color={isBookmarked ? accentColor : mutedColor}
+              />
             </TouchableOpacity>
           </View>
         </View>

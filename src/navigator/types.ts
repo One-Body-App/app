@@ -44,7 +44,7 @@
 
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { Animated, StyleProp, TextProps, TextStyle } from 'react-native';
-import { AccountType, PostType, WatchPost } from '@/utils/types';
+import { AccountType, PostType, SerializableCommentSnapshot, WatchPost } from '@/utils/types';
 import { FeedTypes } from '../screens/home';
 
 //   RemoveAccount: undefined;
@@ -228,6 +228,8 @@ export type PrayerWallStackParamsList = {
   };
   Single: {
     postId: string;
+    threadRootCommentId?: string;
+    threadRootCommentSnapshot?: SerializableCommentSnapshot;
   };
 };
 
@@ -304,7 +306,7 @@ export type MainStackParamList = {
   Post?: {
     postId?: string;
     repostDraft?: {
-      sourceType: 'social' | 'prayer' | 'rss';
+      sourceType: 'social' | 'prayer' | 'rss' | 'comment';
       sourceId: string;
       sourcePreview?: {
         title?: string;
@@ -335,10 +337,14 @@ export type MainStackParamList = {
   };
   SinglePost: {
     postId: string;
+    threadRootCommentId?: string;
+    threadRootCommentSnapshot?: SerializableCommentSnapshot;
   };
   SingleRss: {
     postId: string;
     postType?: PostType;
+    threadRootCommentId?: string;
+    threadRootCommentSnapshot?: SerializableCommentSnapshot;
   };
   NewPassword: undefined;
   Intro: undefined;
