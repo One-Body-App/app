@@ -32,6 +32,7 @@ import {
   useImage,
 } from '@shopify/react-native-skia';
 import { useToast } from 'react-native-toast-notifications';
+import BrandPaletteBackground from '@/components/BrandPaletteBackground';
 import StyledText from '@/components/styled/Text';
 import { ApiCall } from '@/services/api';
 import { borderRadius } from '@/src/styles/outlines';
@@ -1196,7 +1197,8 @@ function SkiaImageEditorModal({
       presentationStyle="fullScreen"
       onRequestClose={maybeCancel}
     >
-      <View style={[styles.screen, { backgroundColor: bgColor }]}>
+      <View style={[styles.screen, { backgroundColor: 'transparent' }]}>
+        <BrandPaletteBackground />
         <View style={styles.header}>
           <TouchableOpacity onPress={maybeCancel} style={styles.headerAction}>
             <MaterialCommunityIcons name="close" size={30} color={textColor} />

@@ -11,6 +11,7 @@ import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BaseItem from '@/src/components/listItems/BaseItem';
 import StyledText from '@/src/components/styled/Text';
 import styles from '@/screens/home/watch/styles';
+import BottomSheetEntranceGlow from '@/components/BottomSheetEntranceGlow';
 import { PostType, SocialPostReaction, WatchPost } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
@@ -66,6 +67,8 @@ const VideoItem = gestureHandlerRootHOC(
     const navigation = useNavigation<ScreenNavigationProp>();
     const user = useSelector((state: RootState) => state.auth.getProfileData);
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+    const hasPlayedSheetGlowRef = useRef(false);
+    const [sheetGlowPlayKey, setSheetGlowPlayKey] = useState(0);
     const snapPoints = useMemo(() => ['50%', '85%'], []);
 
     useEffect(() => {
@@ -73,6 +76,10 @@ const VideoItem = gestureHandlerRootHOC(
     }, [item.commentNumber, item.comments?.length, item.id, item.postId, item._id]);
 
     const handlePresentModalPress = useCallback(() => {
+      if (!hasPlayedSheetGlowRef.current) {
+        hasPlayedSheetGlowRef.current = true;
+        setSheetGlowPlayKey((previous) => previous + 1);
+      }
       bottomSheetModalRef.current?.present();
       setCommentsOpenKey((previous) => previous + 1);
     }, []);
@@ -234,17 +241,22 @@ const VideoItem = gestureHandlerRootHOC(
           onChange={handleSheetChanges}
           backdropComponent={renderBackdrop}
           keyboardBehavior="extend"
+          backgroundStyle={{ backgroundColor: '#032f3c' }}
+          handleIndicatorStyle={{ backgroundColor: 'rgba(230,234,236,0.6)' }}
         >
-          <WatchComments
-            postId={item.id}
-            initialCommentCount={commentCount}
-            sheetOpenKey={commentsOpenKey}
-            onClose={() => {
-              bottomSheetModalRef.current?.dismiss();
-            }}
-            onCountChange={setCommentCount}
-            onTelemetryEvent={onTelemetryEvent}
-          />
+          <View style={{ flex: 1 }}>
+            <BottomSheetEntranceGlow playKey={sheetGlowPlayKey} />
+            <WatchComments
+              postId={item.id}
+              initialCommentCount={commentCount}
+              sheetOpenKey={commentsOpenKey}
+              onClose={() => {
+                bottomSheetModalRef.current?.dismiss();
+              }}
+              onCountChange={setCommentCount}
+              onTelemetryEvent={onTelemetryEvent}
+            />
+          </View>
         </BottomSheetModal>
       </View>
     );

@@ -505,6 +505,21 @@ export default function VideoPost({ navigation, route }: Props) {
         params: {
           uploadId: finalUploadId,
           content: caption.trim(),
+          aspectRatio:
+            Number.isFinite(videoNaturalSize.width) &&
+            Number.isFinite(videoNaturalSize.height) &&
+            Number(videoNaturalSize.width) > 0 &&
+            Number(videoNaturalSize.height) > 0
+              ? Number(videoNaturalSize.width) / Number(videoNaturalSize.height)
+              : previewAspectRatio,
+          videoWidth:
+            Number.isFinite(videoNaturalSize.width) && Number(videoNaturalSize.width) > 0
+              ? Number(videoNaturalSize.width)
+              : undefined,
+          videoHeight:
+            Number.isFinite(videoNaturalSize.height) && Number(videoNaturalSize.height) > 0
+              ? Number(videoNaturalSize.height)
+              : undefined,
         },
         token,
       });
@@ -519,7 +534,13 @@ export default function VideoPost({ navigation, route }: Props) {
         } else {
           navigation.navigate('MainRoot', {
             screen: 'Main',
-            params: { screen: 'HomeTab' },
+            params: {
+              screen: 'HomeTab',
+              params: {
+                screen: 'Home',
+                params: {},
+              },
+            },
           });
         }
         return;

@@ -15,8 +15,8 @@ import { useTheme } from '@react-navigation/native';
 import { useToast } from 'react-native-toast-notifications';
 import type { ImageEditorUIConfig } from '@vitaliez/react-native-image-editor-sdk';
 import StyledText from '@/components/styled/Text';
+import BrandPaletteBackground from '@/components/BrandPaletteBackground';
 import { ApiCall } from '@/services/api';
-import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 
@@ -1496,7 +1496,6 @@ function FilerobotImageEditorModal({
     [canUseNativeEditor, nativeImageEditorModule, onCancel, saveFromNativeEditor, toast]
   );
 
-  const themeBackground = dark ? Colors.neutral[900] : Colors.neutral[700];
   const brandText = dark ? '#e6eaec' : colors.text;
   const alertTitle = useMemo(() => {
     if (!errorMessage) {
@@ -1522,7 +1521,8 @@ function FilerobotImageEditorModal({
       presentationStyle="fullScreen"
       onRequestClose={onCancel}
     >
-      <SafeAreaView style={[styles.screen, { backgroundColor: themeBackground }]}>
+      <SafeAreaView style={[styles.screen, { backgroundColor: 'transparent' }]}>
+        <BrandPaletteBackground />
         <View style={styles.header}>
           <TouchableOpacity onPress={onCancel} style={styles.headerIconButton}>
             <MaterialCommunityIcons name="close" size={24} color={brandText} />

@@ -76,7 +76,7 @@ import StyledText from '@/components/styled/Text';
 import ArticleItem from '@/components/listItems/ArticleItem';
 import SocialItem from '@/components/listItems/SocialItem';
 import PrayerItem from '@/components/listItems/PrayerItem';
-import { ArticleType, PrayerPost, SocialPost, User } from '@/utils/types';
+import { ArticleType, PostType, PrayerPost, SocialPost, User } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import useScrollIntentLock from '@/src/hooks/useScrollIntentLock';
@@ -161,10 +161,12 @@ const PRAYER_WATER_SHADER_EFFECT = Skia.RuntimeEffect.Make(PRAYER_WATER_SHADER_S
 
 // --- TYPES ---
 type FeedPost = (ArticleType | SocialPost) & {
-  type?: 'social' | 'posts';
+  type?: 'social' | 'posts' | 'watch';
   body?: string;
   content?: string;
   postId?: string;
+  playBackId?: string;
+  mediaType?: string;
   authorName?: string;
   authorAvatar?: string;
   source?: string | { name: string };
@@ -286,7 +288,15 @@ const isPrayerPost = (entry: FeedPost | PrayerPost): entry is PrayerPost =>
 const isSocialPost = (entry: FeedPost): entry is SocialPost & { type?: 'social' } =>
   entry.type === 'social';
 
+const isWatchPost = (
+  entry: FeedPost
+): entry is SocialPost & { type?: 'watch'; playBackId?: string } =>
+  entry.type === 'watch' || (typeof entry.playBackId === 'string' && entry.playBackId.length > 0);
+
 const isLikelySocialPost = (entry: FeedPost) => {
+  if (isWatchPost(entry)) {
+    return false;
+  }
   const entryId = entry.postId || ('_id' in entry ? entry._id : undefined);
   return Boolean(
     (entry.content ||
@@ -2305,7 +2315,117 @@ function Home({ navigation, route }: Props) {
       } else {
         const normalizedWithImage = normalizeFeedImage(unwrapped);
 
-        if (isSocialPost(normalizedWithImage) || isLikelySocialPost(normalizedWithImage)) {
+        if (isWatchPost(normalizedWithImage)) {
+          const watchBody = 'body' in normalizedWithImage ? normalizedWithImage.body : undefined;
+          const watchItem = {
+            ...normalizedWithImage,
+            type: 'watch',
+            mediaType: normalizedWithImage.mediaType ?? 'video',
+            mediaUrl:
+              normalizedWithImage.mediaUrl ||
+              (normalizedWithImage.playBackId
+                ? `https://stream.mux.com/${normalizedWithImage.playBackId}.m3u8`
+                : undefined),
+            content:
+              normalizedWithImage.content ||
+              watchBody ||
+              (typeof normalizedWithImage.title === 'string'
+                ? normalizedWithImage.title
+                : normalizedWithImage.title?.a?.$text) ||
+              '',
+            reactions: normalizedWithImage.reactions ?? [],
+          } as SocialPost & { type?: 'watch'; playBackId?: string };
+          const watchItemId = watchItem.postId ?? watchItem.id ?? watchItem._id;
+          renderedItem = (
+            <SocialItem
+              itemData={watchItem}
+              postType={PostType.watch}
+              originFeedType={feedOptions.type}
+              visible={
+                (feedOptions.type === FeedTypes.Connected ||
+                  feedOptions.type === FeedTypes.ForYou) &&
+                watchItemId !== undefined &&
+                watchItemId !== null &&
+                viewableSocialPostIds.has(String(watchItemId))
+              }
+              removePost={() => undefined}
+              parentRefreshContent={() => {
+                getFeedData(feedOptions.type, 1);
+              }}
+              fromSavedPosts={false}
+              onTelemetryEvent={(eventType, metadata) => {
+                const postId = watchItem.postId ?? watchItem.id ?? watchItem._id;
+                if (!postId || !isTelemetryTrackedFeedType(feedOptions.type)) {
+                  return;
+                }
+                trackFeedTelemetry({
+                  eventType,
+                  feedType: feedOptions.type,
+                  postId: String(postId),
+                  postType: 'watch',
+                  contentType: 'watch',
+                  tags: normalizeTelemetryTags(getObjectField(watchItem, 'tags')),
+                  position: index,
+                  source: 'home_feed',
+                  metadata,
+                });
+              }}
+              onCommentsPress={() => {
+                preserveFeedPositionOnNextFocus();
+                const postId = watchItem.postId ?? watchItem.id ?? watchItem._id;
+                const { playBackId } = watchItem;
+                if (!postId || !playBackId) {
+                  return;
+                }
+                navigation.push('WatchPortal', {
+                  initialPostId: String(postId),
+                  initialPlaybackId: playBackId,
+                  initialWatchPost: {
+                    ...watchItem,
+                    playBackId,
+                    postId: String(postId),
+                  },
+                } as any);
+              }}
+              onOpenVideoPress={({
+                postId,
+                playBackId,
+                itemData,
+                aspectRatio,
+                videoWidth,
+                videoHeight,
+              }) => {
+                if (!playBackId) {
+                  return;
+                }
+                preserveFeedPositionOnNextFocus();
+                if (postId && isTelemetryTrackedFeedType(feedOptions.type)) {
+                  trackFeedTelemetry({
+                    eventType: 'open_watch',
+                    feedType: feedOptions.type,
+                    postId: String(postId),
+                    postType: 'watch',
+                    contentType: 'watch',
+                    position: index,
+                    source: 'home_feed',
+                  });
+                }
+                navigation.push('WatchPortal', {
+                  initialPostId: postId ? String(postId) : undefined,
+                  initialPlaybackId: playBackId,
+                  initialWatchPost: {
+                    ...itemData,
+                    playBackId,
+                    postId: postId ? String(postId) : itemData.postId,
+                    aspectRatio: aspectRatio ?? itemData.aspectRatio,
+                    videoWidth: videoWidth ?? itemData.videoWidth,
+                    videoHeight: videoHeight ?? itemData.videoHeight,
+                  },
+                } as any);
+              }}
+            />
+          );
+        } else if (isSocialPost(normalizedWithImage) || isLikelySocialPost(normalizedWithImage)) {
           const socialBody = 'body' in normalizedWithImage ? normalizedWithImage.body : undefined;
           const socialItem = {
             ...normalizedWithImage,
@@ -2371,7 +2491,14 @@ function Home({ navigation, route }: Props) {
                   navigation.navigate('SinglePost', { postId } as any);
                 }
               }}
-              onOpenVideoPress={({ postId, playBackId, itemData }) => {
+              onOpenVideoPress={({
+                postId,
+                playBackId,
+                itemData,
+                aspectRatio,
+                videoWidth,
+                videoHeight,
+              }) => {
                 if (!playBackId) {
                   return;
                 }
@@ -2394,6 +2521,9 @@ function Home({ navigation, route }: Props) {
                     ...itemData,
                     playBackId,
                     postId: postId ? String(postId) : itemData.postId,
+                    aspectRatio: aspectRatio ?? itemData.aspectRatio,
+                    videoWidth: videoWidth ?? itemData.videoWidth,
+                    videoHeight: videoHeight ?? itemData.videoHeight,
                   },
                 } as any);
               }}
@@ -2750,7 +2880,11 @@ function Home({ navigation, route }: Props) {
           }
 
           const normalizedItem = normalizeFeedImage(unwrappedItem);
-          if (!isSocialPost(normalizedItem) && !isLikelySocialPost(normalizedItem)) {
+          if (
+            !isWatchPost(normalizedItem) &&
+            !isSocialPost(normalizedItem) &&
+            !isLikelySocialPost(normalizedItem)
+          ) {
             return;
           }
 

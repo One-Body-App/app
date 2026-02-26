@@ -1,23 +1,24 @@
 import { StyleSheet } from 'react-native';
 
 export const COLORS = {
-  primary: '#13ecc8',
-  bgDark: '#0f1419',
+  primary: '#12d2d9',
+  bgDark: 'rgba(3, 47, 60, 0.72)',
+  surfaceDark: 'rgba(3, 47, 60, 0.88)',
   white: '#f6f6f7',
   slate100: '#f1f5f9',
   slate200: '#e2e8f0',
   slate300: '#cbd5e1',
   slate400: '#94a3b8',
   slate500: '#64748b',
-  white10: 'rgba(255, 255, 255, 0.1)',
-  white5: 'rgba(255, 255, 255, 0.05)',
-  primary20: 'rgba(19, 236, 200, 0.2)',
+  white10: 'rgba(255, 255, 255, 0.12)',
+  white5: 'rgba(255, 255, 255, 0.07)',
+  primary20: 'rgba(18, 210, 217, 0.24)',
 };
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
@@ -68,7 +69,7 @@ export const styles = StyleSheet.create({
   composerArea: {
     borderTopWidth: 1,
     borderTopColor: COLORS.white10,
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: COLORS.surfaceDark,
     paddingTop: 10,
     paddingHorizontal: 12,
   },
@@ -111,7 +112,7 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.white10,
-    backgroundColor: '#171d24',
+    backgroundColor: 'rgba(18, 107, 135, 0.24)',
     color: COLORS.slate100,
     paddingHorizontal: 14,
     paddingTop: 11,
@@ -132,7 +133,7 @@ export const styles = StyleSheet.create({
     opacity: 0.5,
   },
   postButtonText: {
-    color: '#00221b',
+    color: '#032f3c',
     fontWeight: '700',
     fontSize: 19,
   },

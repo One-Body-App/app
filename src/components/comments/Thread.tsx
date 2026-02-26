@@ -209,6 +209,75 @@ function CommentThread({
   const [threadRootShadow, setThreadRootShadow] = useState<CommentPost | undefined>(
     snapshotRootComment
   );
+  const [rootHeaderComment, setRootHeaderComment] = useState<CommentPost | undefined>(
+    snapshotRootComment
+  );
+  const hydrateRootHeaderComment = useCallback(
+    (rawComment: any, fallback?: CommentPost): CommentPost | undefined => {
+      if (!rawComment || typeof rawComment !== 'object') {
+        return fallback;
+      }
+
+      const rawId = getCommentId(rawComment);
+      const fallbackId = getCommentId(fallback);
+      const resolvedId = rawId || fallbackId;
+      if (!resolvedId) {
+        return fallback;
+      }
+
+      const createdDate = toDateFromSource(
+        rawComment.created,
+        rawComment.date,
+        fallback?.created ?? new Date()
+      );
+      const updatedDate = toDateFromSource(
+        rawComment.updated,
+        rawComment.created,
+        fallback?.updated ?? createdDate
+      );
+
+      return {
+        ...(fallback ?? ({} as CommentPost)),
+        ...rawComment,
+        _id: rawComment._id ?? resolvedId,
+        commentId: resolvedId,
+        dateSeconds: Number.isFinite(rawComment.dateSeconds)
+          ? Number(rawComment.dateSeconds)
+          : Math.ceil(createdDate.getTime() / 1000),
+        date: rawComment.date ?? createdDate.toISOString(),
+        objectId: rawComment.objectId ?? fallback?.objectId ?? postId,
+        objectType: rawComment.objectType ?? fallback?.objectType ?? type,
+        content: rawComment.content ?? fallback?.content ?? '',
+        userData: rawComment.userData ?? fallback?.userData,
+        images: Array.isArray(rawComment.images) ? rawComment.images : fallback?.images,
+        videos: Array.isArray(rawComment.videos) ? rawComment.videos : fallback?.videos,
+        gif: rawComment.gif ?? fallback?.gif,
+        created: createdDate,
+        updated: updatedDate,
+        reactions: Array.isArray(rawComment.reactions)
+          ? rawComment.reactions
+          : (fallback?.reactions ?? []),
+        repostCount:
+          typeof rawComment.repostCount === 'number'
+            ? rawComment.repostCount
+            : Number(fallback?.repostCount ?? 0),
+        bookmarkCount:
+          typeof rawComment.bookmarkCount === 'number'
+            ? rawComment.bookmarkCount
+            : Number(fallback?.bookmarkCount ?? 0),
+        bookmarkedByMe:
+          typeof rawComment.bookmarkedByMe === 'boolean'
+            ? rawComment.bookmarkedByMe
+            : Boolean(fallback?.bookmarkedByMe),
+        response: Array.isArray(rawComment.response)
+          ? rawComment.response
+          : (fallback?.response ?? []),
+        edited:
+          typeof rawComment.edited === 'boolean' ? rawComment.edited : Boolean(fallback?.edited),
+      };
+    },
+    [postId, type]
+  );
   const rootCommentFromComments = useMemo(
     () =>
       isThreadDrillMode ? findCommentById(comments, normalizedThreadRootCommentId) : undefined,
@@ -256,13 +325,17 @@ function CommentThread({
 
     if (resolvedThreadRootComment) {
       const rootCommentId = getCommentId(resolvedThreadRootComment);
-      const rootMyReaction = (resolvedThreadRootComment.reactions ?? []).find(
+      const headerActionComment =
+        rootHeaderComment && getCommentId(rootHeaderComment) === rootCommentId
+          ? rootHeaderComment
+          : resolvedThreadRootComment;
+      const rootMyReaction = (headerActionComment.reactions ?? []).find(
         (reaction) => reaction.userId === user?._id
       );
-      const rootReactionCount = resolvedThreadRootComment.reactions?.length ?? 0;
-      const rootReplyCount = getCommentReplies(resolvedThreadRootComment).length;
-      const rootRepostCount = Number(resolvedThreadRootComment.repostCount ?? 0);
-      const rootBookmarkedByMe = Boolean(resolvedThreadRootComment.bookmarkedByMe);
+      const rootReactionCount = headerActionComment.reactions?.length ?? 0;
+      const rootReplyCount = sourceComments.length;
+      const rootRepostCount = Number(headerActionComment.repostCount ?? 0);
+      const rootBookmarkedByMe = Boolean(headerActionComment.bookmarkedByMe);
       const rootProfileImage =
         resolvedThreadRootComment.userData?.profileImage &&
         resolvedThreadRootComment.userData.profileImage !== ''
@@ -371,7 +444,7 @@ function CommentThread({
                   if (!rootCommentId) {
                     return;
                   }
-                  rootOpenRepostRef.current(resolvedThreadRootComment);
+                  rootOpenRepostRef.current(headerActionComment);
                 }}
               >
                 <MaterialCommunityIcons name="repeat" size={22} color={secondaryTextColor} />
@@ -471,6 +544,8 @@ function CommentThread({
     accentColor,
     secondaryTextColor,
     selectedFilter,
+    sourceComments.length,
+    rootHeaderComment,
   ]);
 
   const listFooter = useMemo(() => {
@@ -558,6 +633,7 @@ function CommentThread({
     setRepostingCommentId('');
     setBookmarkingCommentId('');
     setThreadRootShadow(snapshotRootComment);
+    setRootHeaderComment(snapshotRootComment);
     if (postId) {
       fetchComments(1, true);
     }
@@ -569,6 +645,74 @@ function CommentThread({
     }
     setThreadRootShadow(rootCommentFromComments);
   }, [rootCommentFromComments]);
+
+  useEffect(() => {
+    if (!isThreadDrillMode || !normalizedThreadRootCommentId) {
+      setRootHeaderComment(undefined);
+      return;
+    }
+
+    const fallbackRootComment = rootCommentFromComments ?? threadRootShadow ?? snapshotRootComment;
+    setRootHeaderComment((previous) => {
+      const previousId = getCommentId(previous);
+      if (previousId && previousId === normalizedThreadRootCommentId) {
+        return previous;
+      }
+      return fallbackRootComment;
+    });
+  }, [
+    isThreadDrillMode,
+    normalizedThreadRootCommentId,
+    rootCommentFromComments,
+    snapshotRootComment,
+    threadRootShadow,
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isThreadDrillMode && postId && normalizedThreadRootCommentId) {
+      const loadRootHeaderComment = async () => {
+        try {
+          const result = await ApiCall({
+            route: `comments/${type}/${postId}/${normalizedThreadRootCommentId}`,
+            token,
+            verb: 'get',
+          });
+
+          if (cancelled || !isMounted.current) {
+            return;
+          }
+          if (result?.status !== 200 || !result?.response) {
+            return;
+          }
+
+          const fetchedId = getCommentId(result.response);
+          if (fetchedId && fetchedId !== normalizedThreadRootCommentId) {
+            return;
+          }
+
+          setRootHeaderComment((previous) =>
+            hydrateRootHeaderComment(result.response, previous ?? snapshotRootComment)
+          );
+        } catch (_error) {
+          // Keep fallback root header comment state when canonical fetch fails.
+        }
+      };
+
+      loadRootHeaderComment();
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hydrateRootHeaderComment,
+    isThreadDrillMode,
+    normalizedThreadRootCommentId,
+    postId,
+    snapshotRootComment,
+    token,
+    type,
+  ]);
 
   useEffect(() => {
     if (!isThreadDrillMode || !drillModeDefaultReplyTarget) {
@@ -1050,6 +1194,7 @@ function CommentThread({
 
       const previousComments = commentsRef.current;
       const previousRootShadow = threadRootShadow;
+      const previousRootHeaderComment = rootHeaderComment;
       const optimisticComments = applyOptimisticReaction(
         previousComments,
         commentId,
@@ -1059,6 +1204,29 @@ function CommentThread({
 
       setComments(optimisticComments);
       setThreadRootShadow((previous) => {
+        if (!previous || getCommentId(previous) !== commentId) {
+          return previous;
+        }
+        const filtered = (previous.reactions ?? []).filter(
+          (reaction) => reaction.userId !== user._id
+        );
+        return {
+          ...previous,
+          reactions: reactionType
+            ? [
+                ...filtered,
+                {
+                  type: reactionType,
+                  userId: user._id,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              ]
+            : filtered,
+          updated: new Date(),
+        };
+      });
+      setRootHeaderComment((previous) => {
         if (!previous || getCommentId(previous) !== commentId) {
           return previous;
         }
@@ -1094,6 +1262,7 @@ function CommentThread({
         if (result.status !== 200) {
           setComments(previousComments);
           setThreadRootShadow(previousRootShadow);
+          setRootHeaderComment(previousRootHeaderComment);
           toast.show(result?.response?.message ?? 'Unable to update reaction right now.', {
             id: 'commentReactionError',
             type: 'danger',
@@ -1103,6 +1272,7 @@ function CommentThread({
       } catch (_error) {
         setComments(previousComments);
         setThreadRootShadow(previousRootShadow);
+        setRootHeaderComment(previousRootHeaderComment);
         toast.show('Unable to update reaction right now.', {
           id: 'commentReactionError',
           type: 'danger',
@@ -1112,7 +1282,7 @@ function CommentThread({
         setReactingCommentId('');
       }
     },
-    [postId, threadRootShadow, token, toast, type, user?._id]
+    [postId, threadRootShadow, rootHeaderComment, token, toast, type, user?._id]
   );
 
   const handleToggleReaction = useCallback(
@@ -1139,6 +1309,7 @@ function CommentThread({
 
       const previousComments = commentsRef.current;
       const previousRootShadow = threadRootShadow;
+      const previousRootHeaderComment = rootHeaderComment;
       setComments((previous) =>
         updateCommentInTree(previous, commentId, (comment) => ({
           ...comment,
@@ -1148,6 +1319,17 @@ function CommentThread({
         }))
       );
       setThreadRootShadow((previous) => {
+        if (!previous || getCommentId(previous) !== commentId) {
+          return previous;
+        }
+        return {
+          ...previous,
+          bookmarkedByMe: !isBookmarked,
+          bookmarkCount: Math.max(0, Number(previous.bookmarkCount ?? 0) + (isBookmarked ? -1 : 1)),
+          updated: new Date(),
+        };
+      });
+      setRootHeaderComment((previous) => {
         if (!previous || getCommentId(previous) !== commentId) {
           return previous;
         }
@@ -1170,6 +1352,7 @@ function CommentThread({
         if (result?.status !== 200) {
           setComments(previousComments);
           setThreadRootShadow(previousRootShadow);
+          setRootHeaderComment(previousRootHeaderComment);
           toast.show(result?.response?.message ?? 'Unable to update bookmark right now.', {
             id: 'commentBookmarkError',
             type: 'danger',
@@ -1179,6 +1362,7 @@ function CommentThread({
       } catch (_error) {
         setComments(previousComments);
         setThreadRootShadow(previousRootShadow);
+        setRootHeaderComment(previousRootHeaderComment);
         toast.show('Unable to update bookmark right now.', {
           id: 'commentBookmarkError',
           type: 'danger',
@@ -1188,7 +1372,7 @@ function CommentThread({
         setBookmarkingCommentId('');
       }
     },
-    [postId, threadRootShadow, toast, token, type, user?._id]
+    [postId, threadRootShadow, rootHeaderComment, toast, token, type, user?._id]
   );
 
   const handleSubmitCommentRepost = useCallback(
@@ -1231,6 +1415,15 @@ function CommentThread({
             }))
           );
           setThreadRootShadow((previous) => {
+            if (!previous || getCommentId(previous) !== commentId) {
+              return previous;
+            }
+            return {
+              ...previous,
+              repostCount: Number(previous.repostCount ?? 0) + 1,
+            };
+          });
+          setRootHeaderComment((previous) => {
             if (!previous || getCommentId(previous) !== commentId) {
               return previous;
             }

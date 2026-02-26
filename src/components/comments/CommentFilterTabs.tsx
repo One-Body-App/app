@@ -1,7 +1,7 @@
 import { TouchableOpacity, View, Text } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { CommentListFilter } from './commentListUtils';
-import { flatStyles } from './flatStyles';
+import flatStyles from './flatStyles';
 
 type CommentFilterTabsProps = {
   value: CommentListFilter;

@@ -206,6 +206,51 @@ const getSafeVideoRatio = (ratio?: number) => {
   return ratio;
 };
 
+const toPositiveNumber = (value: unknown) => {
+  let parsed: number;
+  if (typeof value === 'string') {
+    parsed = Number(value.trim());
+  } else if (typeof value === 'number') {
+    parsed = value;
+  } else {
+    parsed = Number(value);
+  }
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+};
+
+const parseAspectRatioValue = (value: unknown) => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.includes(':')) {
+      const [leftRaw, rightRaw] = trimmed.split(':');
+      const left = Number(leftRaw);
+      const right = Number(rightRaw);
+      if (Number.isFinite(left) && Number.isFinite(right) && left > 0 && right > 0) {
+        return left / right;
+      }
+    }
+    return toPositiveNumber(trimmed);
+  }
+
+  return toPositiveNumber(value);
+};
+
+const getMetadataVideoAspectRatio = (itemData: SocialPost) => {
+  const explicitAspectRatio = parseAspectRatioValue(itemData.aspectRatio);
+  if (explicitAspectRatio) {
+    return explicitAspectRatio;
+  }
+
+  const width = toPositiveNumber(itemData.videoWidth);
+  const height = toPositiveNumber(itemData.videoHeight);
+  if (width && height) {
+    return width / height;
+  }
+
+  return undefined;
+};
+
 const getDomainName = (linkUrl: string) => {
   const domainText = linkUrl.replace('https://', '').replace('http://', '').replace('www.', '');
 
@@ -233,6 +278,7 @@ const normalizeSourceIdForNavigation = (
 type SocialItemProps = {
   visible?: boolean;
   itemData: SocialPost;
+  postType?: PostType;
   socialPostviewStyle?: StyleProp<ViewStyle>;
   onCommentsPress?: () => void;
   onOpenVideoPress?: (params: {
@@ -240,6 +286,9 @@ type SocialItemProps = {
     playBackId?: string;
     itemData: SocialPost;
     mediaUrl?: string;
+    aspectRatio?: number;
+    videoWidth?: number;
+    videoHeight?: number;
   }) => void;
   onTelemetryEvent?: (eventType: string, metadata?: Record<string, unknown>) => void;
   onShowDismissCard?: (e?: boolean) => void;
@@ -256,6 +305,7 @@ const areSocialItemPropsEqual = (prev: SocialItemProps, next: SocialItemProps) =
     prev.itemData === next.itemData &&
     prev.visible === next.visible &&
     prev.index === next.index &&
+    prev.postType === next.postType &&
     prev.fromSavedPosts === next.fromSavedPosts &&
     prev.socialPostviewStyle === next.socialPostviewStyle
   );
@@ -263,6 +313,7 @@ const areSocialItemPropsEqual = (prev: SocialItemProps, next: SocialItemProps) =
 
 function SocialItem({
   itemData,
+  postType = PostType.social,
   socialPostviewStyle,
   visible,
   index,
@@ -301,8 +352,12 @@ function SocialItem({
   const repostMeta = itemData?.repost;
   const isQuoteRepost = repostMeta?.repostType === 'quote';
   const isPlainRepost = repostMeta?.repostType === 'repost';
+  const isWatchPost = postType === PostType.watch;
   const isPrimaryHomeFeed =
     originFeedType === 'connected' || originFeedType === 'forYou' || originFeedType === 'foryou';
+  const metadataVideoAspectRatio = getMetadataVideoAspectRatio(itemData);
+  const metadataVideoWidth = toPositiveNumber(itemData.videoWidth);
+  const metadataVideoHeight = toPositiveNumber(itemData.videoHeight);
 
   let profileUrl = '';
   if (itemData?.source === 'twitter') {
@@ -661,8 +716,8 @@ function SocialItem({
 
   const handleContentPress = () => {
     if (handleCommentsPress) {
-      onTelemetryEvent?.('open_post', {
-        postType: 'social',
+      onTelemetryEvent?.(isWatchPost ? 'open_watch' : 'open_post', {
+        postType,
       });
       handleCommentsPress();
     }
@@ -794,7 +849,7 @@ function SocialItem({
       postData={{
         title: itemData?.title,
         id: itemData.postId ?? itemData.id ?? itemData._id,
-        type: PostType.social,
+        type: postType,
         postlink: itemData.link,
         image:
           itemData.images && itemData.images.length > 0 ? { url: itemData.images[0] } : undefined,
@@ -808,16 +863,20 @@ function SocialItem({
         commentNumber: itemData.commentNumber,
         repostCount: itemData.repostCount,
       }}
-      repostPayload={{
-        sourceType: 'social',
-        sourceId: String(itemData.postId ?? itemData.id ?? itemData._id ?? ''),
-        sourcePreview: {
-          title: itemData.title,
-          content: itemData.content,
-          link: itemData.link || itemData.permalink,
-        },
-        originFeedType,
-      }}
+      repostPayload={
+        isWatchPost
+          ? undefined
+          : {
+              sourceType: 'social',
+              sourceId: String(itemData.postId ?? itemData.id ?? itemData._id ?? ''),
+              sourcePreview: {
+                title: itemData.title,
+                content: itemData.content,
+                link: itemData.link || itemData.permalink,
+              },
+              originFeedType,
+            }
+      }
       parentRefreshContent={parentRefreshContent}
       created={itemData?.created}
       source={itemData.source}
@@ -1186,12 +1245,15 @@ function SocialItem({
             const isVideoMedia = mediaType === 'video' || mediaType.startsWith('video/');
             if (isVideoMedia) {
               const { playBackId } = itemData as SocialPost & { playBackId?: string };
-              const sourceVideoAspect = getSafeVideoRatio(videoAspectByUrl[mediaItem.url]);
+              const runtimeVideoAspect = videoAspectByUrl[mediaItem.url];
+              const sourceVideoAspect = getSafeVideoRatio(
+                metadataVideoAspectRatio ?? runtimeVideoAspect
+              );
               const resolvedVideoAspect = isPrimaryHomeFeed
                 ? sourceVideoAspect
                 : getNearestSupportedVideoRatio(sourceVideoAspect);
               const isPortraitVideo =
-                Math.abs(resolvedVideoAspect - FEED_PORTRAIT_VIDEO_RATIO) < 0.001;
+                Math.abs(resolvedVideoAspect - FEED_PORTRAIT_VIDEO_RATIO) < 0.05;
               const videoRadius = isPortraitVideo ? FEED_MEDIA_RADIUS : 0;
               const resolvedWidth = Number(width ?? 0);
               const canApplyHomeSizing = isPrimaryHomeFeed && resolvedWidth > 0;
@@ -1210,9 +1272,9 @@ function SocialItem({
                 <Pressable
                   key={`${mediaItem.type}-${mediaItem.url ?? `video-${mediaIndex}`}`}
                   onPress={() => {
-                    if (onOpenVideoPress && playBackId) {
+                    if (onOpenVideoPress && playBackId && isPortraitVideo) {
                       onTelemetryEvent?.('open_watch', {
-                        postType: PostType.social,
+                        postType,
                         playBackId,
                       });
                       onOpenVideoPress({
@@ -1220,6 +1282,9 @@ function SocialItem({
                         playBackId,
                         itemData,
                         mediaUrl: mediaItem.url,
+                        aspectRatio: sourceVideoAspect,
+                        videoWidth: metadataVideoWidth,
+                        videoHeight: metadataVideoHeight,
                       });
                       return;
                     }
@@ -1278,7 +1343,7 @@ function SocialItem({
                         if (!isPlaying) {
                           setIsPlaying(true);
                         }
-                        setIsMuted(!isMuted);
+                        setIsMuted(true);
                       }}
                     />
                   </View>

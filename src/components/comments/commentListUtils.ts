@@ -420,41 +420,19 @@ export const flattenCommentsForList = (
   nodes: CommentPost[],
   nowMs = Date.now()
 ): FlatCommentItem[] => {
-  const items: FlatCommentItem[] = [];
+  return nodes.map((comment, index) => {
+    const commentId = getCommentId(comment) || `comment_${index}`;
+    const replies = getCommentReplies(comment);
+    const createdAtMs = getCommentTimestampMs(comment);
 
-  const walk = (
-    comments: CommentPost[],
-    parentMeta?: {
-      id: string;
-      name?: string;
-    }
-  ) => {
-    comments.forEach((comment, index) => {
-      const commentId = getCommentId(comment) || `comment_${index}_${items.length}`;
-      const replies = getCommentReplies(comment);
-      const createdAtMs = getCommentTimestampMs(comment);
-
-      items.push({
-        id: commentId,
-        comment,
-        parentCommentId: parentMeta?.id,
-        parentAuthorName: parentMeta?.name,
-        directReplyCount: replies.length,
-        createdAtMs,
-        relevantScore: buildRelevantScore(comment, replies.length, nowMs),
-      });
-
-      if (replies.length > 0) {
-        walk(replies, {
-          id: commentId,
-          name: comment.userData?.username || comment.userData?.name,
-        });
-      }
-    });
-  };
-
-  walk(nodes);
-  return items;
+    return {
+      id: commentId,
+      comment,
+      directReplyCount: replies.length,
+      createdAtMs,
+      relevantScore: buildRelevantScore(comment, replies.length, nowMs),
+    };
+  });
 };
 
 export const sortFlatComments = (items: FlatCommentItem[], filter: CommentListFilter) => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -16,6 +16,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import BottomSheetEntranceGlow from './BottomSheetEntranceGlow';
 
 const screenHeight = Dimensions.get('window').height;
 
@@ -31,6 +32,10 @@ export default function CustomModal({
   style?: object;
 }) {
   const translateY = useSharedValue(0);
+  const previouslyVisibleRef = useRef(false);
+  const hasPlayedEntranceGlowRef = useRef(false);
+  const [glowPlayKey, setGlowPlayKey] = useState(0);
+
   const handleClose = useCallback(() => {
     if (onclose) {
       onclose();
@@ -38,9 +43,15 @@ export default function CustomModal({
   }, [onclose]);
 
   useEffect(() => {
-    if (modalVisible) {
+    const opening = modalVisible && !previouslyVisibleRef.current;
+    if (opening) {
       translateY.value = 0;
+      if (!hasPlayedEntranceGlowRef.current) {
+        hasPlayedEntranceGlowRef.current = true;
+        setGlowPlayKey((previous) => previous + 1);
+      }
     }
+    previouslyVisibleRef.current = modalVisible;
   }, [modalVisible, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -69,7 +80,9 @@ export default function CustomModal({
   return (
     <Modal visible={modalVisible} animationType="fade" transparent onRequestClose={onclose}>
       <TouchableWithoutFeedback onPress={onclose}>
-        <View style={styles.backdrop} />
+        <View style={styles.backdrop}>
+          <View style={styles.backdropScrim} />
+        </View>
       </TouchableWithoutFeedback>
 
       <KeyboardAvoidingView
@@ -77,9 +90,10 @@ export default function CustomModal({
         style={styles.wrapper}
         pointerEvents="box-none"
       >
+        <BottomSheetEntranceGlow playKey={glowPlayKey} style={styles.entranceGlow} />
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.modalContainer, style, animatedStyle]}>
-            {children}
+            <View style={styles.content}>{children}</View>
           </Animated.View>
         </GestureDetector>
       </KeyboardAvoidingView>
@@ -89,7 +103,10 @@ export default function CustomModal({
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  backdropScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.36)',
   },
   wrapper: {
     ...StyleSheet.absoluteFillObject,
@@ -97,11 +114,19 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
   },
+  entranceGlow: {
+    height: 460,
+  },
   modalContainer: {
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '100%',
     minHeight: '50%',
     width: '100%',
+    overflow: 'hidden',
+    backgroundColor: '#032f3c',
+  },
+  content: {
+    zIndex: 1,
   },
 });

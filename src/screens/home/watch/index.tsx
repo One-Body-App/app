@@ -35,6 +35,32 @@ import {
 } from '@/services/feedTelemetry';
 import { spacing } from '@/src/styles/spacing';
 
+const NINE_SIXTEEN_RATIO = 9 / 16;
+const NINE_SIXTEEN_TOLERANCE = 0.05;
+
+const parsePositiveNumber = (value: unknown) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+};
+
+const parseAspectRatioValue = (value: unknown) => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.includes(':')) {
+      const [widthRaw, heightRaw] = trimmed.split(':');
+      const width = parsePositiveNumber(widthRaw);
+      const height = parsePositiveNumber(heightRaw);
+      if (width && height) {
+        return width / height;
+      }
+    }
+
+    return parsePositiveNumber(trimmed);
+  }
+
+  return parsePositiveNumber(value);
+};
+
 function Watch({ navigation, route }: any) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const initialPostId = route?.params?.initialPostId
@@ -66,6 +92,25 @@ function Watch({ navigation, route }: any) {
     if (!post) return null;
     const candidate = post.postId ?? post.id ?? post._id;
     return candidate ? String(candidate) : null;
+  }, []);
+
+  const isNineBySixteenWatchPost = useCallback((post?: WatchPost | null) => {
+    if (!post) {
+      return false;
+    }
+
+    const aspectRatioCandidate = parseAspectRatioValue(post.aspectRatio);
+    if (aspectRatioCandidate) {
+      return Math.abs(aspectRatioCandidate - NINE_SIXTEEN_RATIO) <= NINE_SIXTEEN_TOLERANCE;
+    }
+
+    const width = parsePositiveNumber(post.videoWidth);
+    const height = parsePositiveNumber(post.videoHeight);
+    if (width && height) {
+      return Math.abs(width / height - NINE_SIXTEEN_RATIO) <= NINE_SIXTEEN_TOLERANCE;
+    }
+
+    return false;
   }, []);
 
   const trackWatchImpression = useCallback(
@@ -131,7 +176,7 @@ function Watch({ navigation, route }: any) {
 
       if (res?.status === 200) {
         const feedPosts = res.response
-          .filter((i: any) => !!i?.playBackId)
+          .filter((i: any) => !!i?.playBackId && isNineBySixteenWatchPost(i))
           .sort((a: any, b: any) => {
             const dateA = new Date(a.created);
             const dateB = new Date(b.created);
@@ -140,7 +185,7 @@ function Watch({ navigation, route }: any) {
 
         if (page === 1) {
           let initialFeedData = feedPosts ?? [];
-          if (initialWatchPost) {
+          if (initialWatchPost && isNineBySixteenWatchPost(initialWatchPost)) {
             const initialWatchPostId =
               initialWatchPost.postId ?? initialWatchPost.id ?? initialWatchPost._id;
             const isInitialPostInFeed = initialFeedData.some(
@@ -185,7 +230,7 @@ function Watch({ navigation, route }: any) {
       setFeedData([]);
       // console.log(`saga get twitter timline  error -- `, e.toString());
     }
-  }, [initialPlaybackId, initialPostId, initialWatchPost, page, token]);
+  }, [initialPlaybackId, initialPostId, initialWatchPost, isNineBySixteenWatchPost, page, token]);
 
   useEffect(() => {
     // getData(page);

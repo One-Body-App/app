@@ -32,13 +32,41 @@ function RssPost({ navigation, route }: Props) {
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors, dark } = useTheme();
+  const resetToHomeFeed = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'MainRoot',
+          params: {
+            screen: 'Main',
+            params: {
+              screen: 'HomeTab',
+              params: {
+                screen: 'Home',
+              },
+            },
+          },
+        } as any,
+      ],
+    });
+  }, [navigation]);
   const handleBackPress = () => {
+    const navigationState = navigation.getState();
+    const previousRoute =
+      navigationState.index > 0 ? navigationState.routes[navigationState.index - 1] : undefined;
+
+    if (Platform.OS === 'android' && previousRoute?.name === 'MainRoot') {
+      resetToHomeFeed();
+      return;
+    }
+
     if (navigation.canGoBack()) {
       navigation.goBack();
       return;
     }
 
-    navigation.navigate('MainRoot');
+    resetToHomeFeed();
   };
 
   const showModal = (_item: ArticleType) => {};

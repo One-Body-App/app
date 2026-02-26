@@ -18,6 +18,7 @@ import { FacebookAuthProvider, getAuth, getIdTokenResult } from '@react-native-f
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
+import BrandPaletteBackground from '@/components/BrandPaletteBackground';
 
 import Button from '@/components/Button';
 import { styles } from './styles';
@@ -266,6 +267,7 @@ function InfluencerStepTwo({ navigation, route }: Props) {
         }}
       >
         <View style={styles.centeredView}>
+          <BrandPaletteBackground />
           <View style={styles.modalView}>
             <Ionicons
               name="close"

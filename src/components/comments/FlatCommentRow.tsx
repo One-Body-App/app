@@ -7,7 +7,7 @@ import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { CommentPost, SocialPostReaction, SocialPostReactionType } from '@/utils/types';
 import { FlatCommentItem, getCommentTimestampMs } from './commentListUtils';
-import { flatStyles } from './flatStyles';
+import flatStyles from './flatStyles';
 
 type ReactionPickerItem = {
   id: string;

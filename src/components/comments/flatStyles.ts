@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-export const flatStyles = StyleSheet.create({
+const flatStyles = StyleSheet.create({
   filterBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -144,3 +144,5 @@ export const flatStyles = StyleSheet.create({
     height: 24,
   },
 });
+
+export default flatStyles;

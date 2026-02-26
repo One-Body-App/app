@@ -340,6 +340,32 @@ function AppContent() {
         return true;
       }
 
+      const isCommentsToMainRootTransition =
+        (currentRouteName === 'SinglePost' || currentRouteName === 'SingleRss') &&
+        previousRouteName === 'MainRoot';
+      if (isCommentsToMainRootTransition) {
+        navigationRef.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'MainRoot',
+                params: {
+                  screen: 'Main',
+                  params: {
+                    screen: 'HomeTab',
+                    params: {
+                      screen: 'Home',
+                    },
+                  },
+                },
+              } as any,
+            ],
+          })
+        );
+        return true;
+      }
+
       if (navigationRef.canGoBack()) {
         navigationRef.goBack();
       }
