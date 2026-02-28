@@ -1,5 +1,4 @@
  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.onebody"
      xmlns:tools="http://schemas.android.com/tools">
 
 
@@ -57,7 +56,8 @@
           android:resource="@drawable/ic_stat_notification" />
         <meta-data
           android:name="com.google.firebase.messaging.default_notification_color"
-          android:resource="@color/notification_icon_tint" />
+          android:resource="@color/notification_icon_tint"
+          tools:replace="android:resource" />
 
     </application>
     <uses-permission android:name="android.permission.INTERNET" />
