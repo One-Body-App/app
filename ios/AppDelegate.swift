@@ -7,9 +7,11 @@ import ReactAppDependencyProvider
 // Third party plugins
 import react_native_lottie_splash_screen
 import Firebase
+import FirebaseMessaging
+import UserNotifications
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
   var window: UIWindow?
   private var splashPlayer: AVPlayer?
   private var splashPlayerLayer: AVPlayerLayer?
@@ -24,6 +26,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
       FirebaseApp.configure()
+      UNUserNotificationCenter.current().delegate = self
+      application.registerForRemoteNotifications()
 
       // Initialize React Native components
       let delegate = ReactNativeDelegate()
@@ -103,6 +107,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
       return true
     }
+
+  func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    Messaging.messaging().apnsToken = deviceToken
+    NSLog("[Push][iOS] Registered for remote notifications; APNs token assigned.")
+  }
+
+  func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    NSLog("[Push][iOS] Failed to register for remote notifications: \(error.localizedDescription)")
+  }
+
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .sound, .badge, .list])
+      return
+    }
+    completionHandler([.alert, .sound, .badge])
+  }
 
   private func cleanupSplashVideoPlayer() {
       if let observer = splashDidEndObserver {

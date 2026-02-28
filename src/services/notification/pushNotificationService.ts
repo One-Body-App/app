@@ -2,9 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   AuthorizationStatus,
   FirebaseMessagingTypes,
+  getAPNSToken,
   isDeviceRegisteredForRemoteMessages,
   getMessaging,
   getToken,
+  hasPermission,
   onMessage,
   onTokenRefresh,
   requestPermission,
@@ -16,9 +18,55 @@ import { ApiCall } from '@/src/services/api';
 import { queueRemoteNotificationPayload, QueuedPushNotification } from './pushNotificationStorage';
 
 const FCM_TOKEN_CACHE_KEY = '@onebody/push/fcm-token';
+// iOS uses the app icon for push identity; custom push icons are Android-only.
 
 const isAuthorizedStatus = (status: number) =>
   status === AuthorizationStatus.AUTHORIZED || status === AuthorizationStatus.PROVISIONAL;
+
+const toTokenPreview = (token?: string | null) => {
+  if (!token) {
+    return '';
+  }
+  if (token.length <= 12) {
+    return token;
+  }
+  return `${token.slice(0, 6)}...${token.slice(-6)}`;
+};
+
+const permissionStatusToLabel = (status: number) => {
+  switch (status) {
+    case AuthorizationStatus.NOT_DETERMINED:
+      return 'NOT_DETERMINED';
+    case AuthorizationStatus.DENIED:
+      return 'DENIED';
+    case AuthorizationStatus.AUTHORIZED:
+      return 'AUTHORIZED';
+    case AuthorizationStatus.PROVISIONAL:
+      return 'PROVISIONAL';
+    case AuthorizationStatus.EPHEMERAL:
+      return 'EPHEMERAL';
+    default:
+      return 'UNKNOWN';
+  }
+};
+
+const logPushDebug = (event: string, details: Record<string, unknown> = {}) => {
+  if (!__DEV__) {
+    return;
+  }
+  console.log(`[PushDebug] ${event}`, details);
+};
+
+export type PushDebugSnapshot = {
+  platform: string;
+  isDeviceRegisteredForRemoteMessages: boolean;
+  permissionStatus: number;
+  permissionStatusLabel: string;
+  apnsTokenPresent: boolean;
+  apnsTokenPreview?: string;
+  fcmTokenPresent: boolean;
+  fcmTokenPreview?: string;
+};
 
 const ensureRemoteMessageRegistration = async () => {
   const messaging = getMessaging();
@@ -71,6 +119,34 @@ export const ensurePushPermission = async (): Promise<boolean> => {
   }
 };
 
+export const getPushDebugSnapshot = async (options?: {
+  requestIosPermission?: boolean;
+}): Promise<PushDebugSnapshot> => {
+  const messaging = await ensureRemoteMessageRegistration();
+  const shouldRequestIosPermission = options?.requestIosPermission === true;
+
+  let permissionStatus = AuthorizationStatus.AUTHORIZED;
+  if (Platform.OS === 'ios') {
+    permissionStatus = shouldRequestIosPermission
+      ? await requestPermission(messaging)
+      : await hasPermission(messaging);
+  }
+
+  const fcmToken = await getToken(messaging).catch(() => '');
+  const apnsToken = Platform.OS === 'ios' ? await getAPNSToken(messaging).catch(() => null) : null;
+
+  return {
+    platform: Platform.OS,
+    isDeviceRegisteredForRemoteMessages: isDeviceRegisteredForRemoteMessages(messaging),
+    permissionStatus,
+    permissionStatusLabel: permissionStatusToLabel(permissionStatus),
+    apnsTokenPresent: Boolean(apnsToken),
+    apnsTokenPreview: toTokenPreview(apnsToken || ''),
+    fcmTokenPresent: Boolean(fcmToken),
+    fcmTokenPreview: toTokenPreview(fcmToken),
+  };
+};
+
 const sendTokenToBackend = async (authToken: string, tokenValue: string) => {
   const response = await ApiCall({
     route: 'user/set-fcm',
@@ -88,21 +164,38 @@ export const syncPushTokenWithBackend = async (
   force = false
 ): Promise<string | undefined> => {
   if (!authToken) {
+    logPushDebug('sync_skipped_missing_auth_token');
     return undefined;
   }
 
   const messaging = await ensureRemoteMessageRegistration();
   const tokenValue = nextToken || (await getToken(messaging));
+  logPushDebug('sync_token_loaded', {
+    hasNextToken: Boolean(nextToken),
+    tokenPresent: Boolean(tokenValue),
+    tokenPreview: toTokenPreview(tokenValue || ''),
+    isDeviceRegisteredForRemoteMessages: isDeviceRegisteredForRemoteMessages(messaging),
+    force,
+  });
+
   if (!tokenValue) {
+    logPushDebug('sync_skipped_missing_token');
     return undefined;
   }
 
   const cachedToken = await AsyncStorage.getItem(FCM_TOKEN_CACHE_KEY);
   if (!force && cachedToken === tokenValue) {
+    logPushDebug('sync_skipped_cached_token_match', {
+      tokenPreview: toTokenPreview(tokenValue),
+    });
     return tokenValue;
   }
 
   const didSave = await sendTokenToBackend(authToken, tokenValue);
+  logPushDebug('sync_backend_result', {
+    didSave,
+    tokenPreview: toTokenPreview(tokenValue),
+  });
   if (didSave) {
     await AsyncStorage.setItem(FCM_TOKEN_CACHE_KEY, tokenValue);
     return tokenValue;
@@ -112,12 +205,25 @@ export const syncPushTokenWithBackend = async (
 };
 
 export const enablePushNotifications = async (authToken: string, forceTokenSync = false) => {
+  logPushDebug('enable_push_start', {
+    forceTokenSync,
+    hasAuthToken: Boolean(authToken),
+    platform: Platform.OS,
+  });
+
   const granted = await ensurePushPermission();
+  logPushDebug('enable_push_permission_result', { granted, platform: Platform.OS });
   if (!granted) {
     return false;
   }
 
+  const snapshot = await getPushDebugSnapshot().catch(() => undefined);
+  if (snapshot) {
+    logPushDebug('enable_push_snapshot', snapshot);
+  }
+
   const syncedToken = await syncPushTokenWithBackend(authToken, undefined, forceTokenSync);
+  logPushDebug('enable_push_complete', { synced: Boolean(syncedToken) });
   return Boolean(syncedToken);
 };
 
