@@ -16,6 +16,7 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
+import { useToast } from 'react-native-toast-notifications';
 import { NotificationBing } from 'iconsax-react-native';
 
 import StyledText from '@/components/styled/Text';
@@ -172,6 +173,7 @@ const getPrimaryCategory = (item: InboxNotification): Exclude<CategoryKey, 'all'
 
 function NotificationScreen({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
+  const toast = useToast();
   const { colors, dark } = useTheme();
   const styles = createStyles(dark, colors);
 
@@ -197,7 +199,7 @@ function NotificationScreen({ navigation }: Props) {
       }
 
       try {
-        const [serverResponse, queuedPush] = await Promise.all([
+        const [serverResult, queuedPushResult] = await Promise.allSettled([
           ApiCall<{ data?: any[] }>({
             route: 'user/notifications',
             verb: 'get',
@@ -206,9 +208,30 @@ function NotificationScreen({ navigation }: Props) {
           getQueuedNotifications(),
         ]);
 
-        const serverNotifications = Array.isArray(serverResponse?.response?.data)
-          ? serverResponse.response.data.map(toServerNotification).filter(isInboxNotification)
-          : [];
+        const queuedPush = queuedPushResult.status === 'fulfilled' ? queuedPushResult.value : [];
+
+        let serverNotifications: InboxNotification[] = [];
+        let didServerFetchFail = false;
+
+        if (serverResult.status === 'fulfilled') {
+          const serverResponse = serverResult.value;
+          if (serverResponse?.status === 200 && Array.isArray(serverResponse?.response?.data)) {
+            serverNotifications = serverResponse.response.data
+              .map(toServerNotification)
+              .filter(isInboxNotification);
+          } else if (serverResponse?.status !== 200) {
+            didServerFetchFail = true;
+          }
+        } else {
+          didServerFetchFail = true;
+        }
+
+        if (didServerFetchFail) {
+          toast.show('Unable to load server notifications right now.', {
+            type: 'danger',
+            placement: 'top',
+          });
+        }
 
         const serverCampaignIds = new Set(
           serverNotifications
@@ -231,7 +254,7 @@ function NotificationScreen({ navigation }: Props) {
         setRefreshing(false);
       }
     },
-    [token]
+    [token, toast]
   );
 
   useEffect(() => {

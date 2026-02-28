@@ -4,10 +4,6 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
-import {
-  getMessaging,
-  requestPermission as requestNotificationPermission,
-} from '@react-native-firebase/messaging';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
@@ -23,6 +19,7 @@ import StyledText from '@/components/styled/Text';
 import Button from '@/components/Button';
 import { clearAuthTokens } from '@/services/authTokens';
 import { ApiCall } from '@/src/services/api';
+import { ensurePushPermission } from '@/src/services/notification/pushNotificationService';
 
 type Props = StackScreenProps<MainStackParamList, 'ConfirmLogin'>;
 
@@ -151,7 +148,7 @@ function ConfirmLogin({ route, navigation }: Props) {
             await Geolocation.requestAuthorization();
           }
 
-          await requestNotificationPermission(getMessaging());
+          await ensurePushPermission();
         } catch (e) {
           // ignore errors
         } finally {
@@ -185,7 +182,7 @@ function ConfirmLogin({ route, navigation }: Props) {
               await Geolocation.requestAuthorization();
             }
 
-            await requestNotificationPermission(getMessaging());
+            await ensurePushPermission();
           } catch (e) {
             // ignore errors
           } finally {

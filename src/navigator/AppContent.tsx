@@ -850,12 +850,14 @@ function AppContent() {
       clearCachedPushToken().catch(() => undefined);
       return undefined;
     }
-    if (!hasMfaTrustedToken) {
+
+    const profileData = authState.getProfileData;
+    if (!profileData) {
       return undefined;
     }
 
-    const pushEnabled = authState.getProfileData?.pushNotificationsEnabled === true;
-    const shouldKeepSyncing = () => authState.getProfileData?.pushNotificationsEnabled === true;
+    const pushEnabled = profileData.pushNotificationsEnabled !== false;
+    const shouldKeepSyncing = () => authState.getProfileData?.pushNotificationsEnabled !== false;
     let isMounted = true;
 
     const bootstrapPush = async () => {
@@ -886,7 +888,7 @@ function AppContent() {
       unsubscribeTokenRefresh();
       unsubscribeForeground();
     };
-  }, [authState.getProfileData?.pushNotificationsEnabled, hasMfaTrustedToken, token, toast]);
+  }, [authState.getProfileData, authState.getProfileData?.pushNotificationsEnabled, token, toast]);
 
   const resolvePostLinkState = (path: string) => {
     const pathWithoutQuery = path.split('?')[0];

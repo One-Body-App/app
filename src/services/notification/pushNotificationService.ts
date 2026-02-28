@@ -2,11 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   AuthorizationStatus,
   FirebaseMessagingTypes,
+  isDeviceRegisteredForRemoteMessages,
   getMessaging,
   getToken,
   onMessage,
   onTokenRefresh,
   requestPermission,
+  registerDeviceForRemoteMessages,
   deleteToken,
 } from '@react-native-firebase/messaging';
 import { PermissionsAndroid, Platform } from 'react-native';
@@ -17,6 +19,18 @@ const FCM_TOKEN_CACHE_KEY = '@onebody/push/fcm-token';
 
 const isAuthorizedStatus = (status: number) =>
   status === AuthorizationStatus.AUTHORIZED || status === AuthorizationStatus.PROVISIONAL;
+
+const ensureRemoteMessageRegistration = async () => {
+  const messaging = getMessaging();
+  try {
+    if (!isDeviceRegisteredForRemoteMessages(messaging)) {
+      await registerDeviceForRemoteMessages(messaging);
+    }
+  } catch (_error) {
+    // continue with best-effort registration state
+  }
+  return messaging;
+};
 
 const getAndroidPostNotificationsPermission = async () => {
   if (Platform.OS !== 'android') {
@@ -41,18 +55,19 @@ const getAndroidPostNotificationsPermission = async () => {
 };
 
 export const ensurePushPermission = async (): Promise<boolean> => {
-  const hasAndroidPermission = await getAndroidPostNotificationsPermission();
-  if (!hasAndroidPermission) {
-    return false;
+  if (Platform.OS === 'android') {
+    // Android 13+ requires POST_NOTIFICATIONS runtime permission.
+    // Android 12 and below grant notification capability at install time.
+    return getAndroidPostNotificationsPermission();
   }
 
-  const messaging = getMessaging();
+  const messaging = await ensureRemoteMessageRegistration();
 
   try {
     const authStatus = await requestPermission(messaging);
     return isAuthorizedStatus(authStatus);
   } catch (_error) {
-    return Platform.OS === 'android';
+    return false;
   }
 };
 
@@ -76,7 +91,7 @@ export const syncPushTokenWithBackend = async (
     return undefined;
   }
 
-  const messaging = getMessaging();
+  const messaging = await ensureRemoteMessageRegistration();
   const tokenValue = nextToken || (await getToken(messaging));
   if (!tokenValue) {
     return undefined;

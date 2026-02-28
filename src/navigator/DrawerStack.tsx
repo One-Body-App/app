@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unstable-nested-components */
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import { createDrawerNavigator, getDrawerStatusFromState } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
 import { Platform, View, useWindowDimensions } from 'react-native';
@@ -7,7 +7,6 @@ import { Home3, Profile2User } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import Feather from '@react-native-vector-icons/feather';
 
-import { getMessaging, requestPermission } from '@react-native-firebase/messaging';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { MainDrawerParamsList } from './types';
 import OnboardingStack from './OnboardingStack';
@@ -28,18 +27,9 @@ const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 function DrawerNav() {
   const authState = useSelector((state: RootState) => state.auth);
   const dimensions = useWindowDimensions();
-  const firebaseMessaging = getMessaging();
 
   const { dark, colors } = useTheme();
   const isProfileCompleted = authState.getProfileData?.isProfileCompleted === true;
-
-  const requestNotificationPermission = useCallback(async () => {
-    await requestPermission(firebaseMessaging);
-  }, [firebaseMessaging]);
-
-  useEffect(() => {
-    requestNotificationPermission();
-  }, [requestNotificationPermission]);
 
   if (isProfileCompleted) {
     let drawerType: 'front' | 'back' | 'slide' | 'permanent' = 'front';
