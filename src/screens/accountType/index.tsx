@@ -38,7 +38,7 @@ function AccountType({ navigation }: Props) {
   const { width: windowWidth } = useWindowDimensions();
   const isTablet = windowWidth >= 768;
   const isIos = Platform.OS === 'ios';
-  const primaryTextColor = dark ? '#f6f6f6' : Colors.primary.brand;
+  const primaryTextColor = '#032F3C';
   const cardRadius = typeof card.borderRadius === 'number' ? card.borderRadius : 14;
   const glassOverlayStyle = {
     backgroundColor: colors.card,
@@ -335,10 +335,7 @@ function AccountType({ navigation }: Props) {
                 style={[
                   GeneralStyle.radioButton,
                   {
-                    borderColor:
-                      accountType === AccountTypeType.individual
-                        ? Colors.secondary.brand
-                        : Colors.primarySapphire.brand,
+                    borderColor: Colors.primarySapphire.brand,
                   },
                 ]}
               >
@@ -439,10 +436,7 @@ function AccountType({ navigation }: Props) {
                 style={[
                   GeneralStyle.radioButton,
                   {
-                    borderColor:
-                      accountType === AccountTypeType.organization
-                        ? Colors.secondary.brand
-                        : Colors.primarySapphire.brand,
+                    borderColor: Colors.primarySapphire.brand,
                   },
                 ]}
               >
@@ -508,7 +502,7 @@ function AccountType({ navigation }: Props) {
             }}
           >
             <StyledText style={{ color: primaryTextColor }}>Already have an account? </StyledText>
-            <StyledText style={{ color: Colors.secondary.brand }}>Sign in</StyledText>
+            <StyledText style={{ color: Colors.primarySapphire.brand }}>Sign in</StyledText>
           </TouchableOpacity>
         </Animated.View>
       </View>

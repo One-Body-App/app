@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
+import { Platform } from 'react-native';
 
 const QUEUED_NOTIFICATIONS_KEY = '@onebody/push/queued-notifications';
 const MAX_QUEUED_NOTIFICATIONS = 100;
@@ -9,6 +10,7 @@ export type QueuedPushNotification = {
   title: string;
   body: string;
   url?: string;
+  iconUrl?: string;
   type?: string;
   campaignId?: string;
   data?: Record<string, string>;
@@ -49,6 +51,19 @@ const getMessageCreatedAt = (message?: FirebaseMessagingTypes.RemoteMessage) => 
   return new Date().toISOString();
 };
 
+const resolveNotificationIconUrl = (messageData: Record<string, string>) => {
+  const value =
+    messageData.iconUrl ||
+    messageData.iconURL ||
+    messageData.notificationIconUrl ||
+    messageData.notificationIconURL ||
+    messageData.imageUrl ||
+    messageData.imageURL ||
+    '';
+  const trimmed = value.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : undefined;
+};
+
 export const buildQueuedNotificationFromRemoteMessage = (
   message?: FirebaseMessagingTypes.RemoteMessage | null
 ): QueuedPushNotification | null => {
@@ -70,6 +85,7 @@ export const buildQueuedNotificationFromRemoteMessage = (
     messageData.message ||
     '';
   const campaignId = messageData.campaignId || messageData.campaignID || undefined;
+  const iconUrl = resolveNotificationIconUrl(messageData);
 
   const id =
     message.messageId ||
@@ -83,6 +99,7 @@ export const buildQueuedNotificationFromRemoteMessage = (
     title,
     body,
     url: messageData.url || messageData.deepLink || messageData.link || undefined,
+    iconUrl,
     type: messageData.type || messageData.notificationType || messageData.targetType || undefined,
     campaignId,
     data: messageData,
@@ -124,6 +141,21 @@ export const getQueuedNotifications = async (): Promise<QueuedPushNotification[]
 export const queueRemoteNotificationPayload = async (
   message?: FirebaseMessagingTypes.RemoteMessage | null
 ): Promise<QueuedPushNotification | null> => {
+  if (__DEV__ && Platform.OS === 'android' && message) {
+    const notificationAndroid = (message.notification as any)?.android as
+      | { imageUrl?: string; icon?: string }
+      | undefined;
+    const dataIconUrl = message.data?.iconUrl || message.data?.notificationIconUrl || '';
+    const dataImageUrl = message.data?.imageUrl || message.data?.imageURL || '';
+    console.log('[PushDebug] incoming_payload_visuals', {
+      messageId: message.messageId,
+      notificationIcon: notificationAndroid?.icon,
+      notificationImageUrl: notificationAndroid?.imageUrl,
+      dataIconUrl,
+      dataImageUrl,
+    });
+  }
+
   const nextItem = buildQueuedNotificationFromRemoteMessage(message);
   if (!nextItem) {
     return null;

@@ -5,6 +5,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { rootSaga } from '../sagas/rootSaga';
 import { rootReducer } from '../reducers/rootReducer';
 
+const DEV_IMMUTABLE_CHECK = {
+  // Keep mutation detection in dev, but reduce noise for known large list slices.
+  warnAfter: 128,
+  ignoredPaths: [
+    'social.SocialPost',
+    'social.AllBlog',
+    'social.TodayNews',
+    'social.AllNews',
+    'social.LocalNews',
+    'social.RecentBlog',
+    'prayer.userPrayers',
+    'prayer.prayers',
+    'prayer.prayersLive',
+    'prayer.Testimonies',
+    'general.allSms',
+    'general.chats',
+    'user.allUser',
+  ],
+};
+
 // Configuration for Redux Persist
 const persistConfig = {
   key: 'root',
@@ -24,6 +44,7 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
+      immutableCheck: process.env.NODE_ENV !== 'production' ? DEV_IMMUTABLE_CHECK : false,
       // Redux-persist dispatches actions that are not serializable,
       // so we ignore them to prevent console warnings.
       serializableCheck: {

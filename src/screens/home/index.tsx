@@ -103,6 +103,13 @@ import {
   MainDrawerParamsList,
   MainStackParamList,
 } from '@/src/navigator/types';
+import {
+  DEFAULT_REFRESH_DEBOUNCE_MS,
+  isSameIdentitySequence,
+  reorderFeedEntriesForRefresh,
+  shouldSkipRefreshTrigger,
+} from './feedRefreshUtils';
+import type { RefreshTrigger } from './feedRefreshUtils';
 
 // --- BRAND HEX CODES ---
 const BRAND = {
@@ -227,6 +234,9 @@ const isTelemetryTrackedFeedType = (feedType: FeedTypes): feedType is TelemetryT
   feedType === FeedTypes.Read ||
   feedType === FeedTypes.Watch;
 
+const isPrimarySocialFeedType = (feedType: FeedTypes) =>
+  feedType === FeedTypes.Connected || feedType === FeedTypes.ForYou;
+
 const normalizeTelemetryTags = (value: unknown) => {
   if (!Array.isArray(value)) {
     return [] as string[];
@@ -331,6 +341,24 @@ const FEED_INTRO_CARD_STAGGER_MS = 75;
 const FEED_INTRO_MAX_VISIBLE_CARDS = 5;
 const SUGGESTION_INTERVAL = 15;
 const MAX_SUGGESTIONS_VISIBLE = 7;
+const FEED_STALE_MS = 60 * 1000;
+const FEED_REFRESH_DEBOUNCE_MS = DEFAULT_REFRESH_DEBOUNCE_MS;
+
+type FeedRefreshReason =
+  | 'manual_pull'
+  | 'focus_stale'
+  | 'route_refresh'
+  | 'tab_switch'
+  | 'initial_load'
+  | 'pagination';
+
+type FeedRefreshRequestContext = {
+  reason: FeedRefreshReason;
+  forceNetwork: boolean;
+  allowReorder: boolean;
+  refreshSeed: number;
+  preserveExistingOnError: boolean;
+};
 
 const isSuggestionsModuleItem = (entry: RenderFeedEntry): entry is SuggestionsModuleItem =>
   'type' in entry && entry.type === 'suggestionsModule';
@@ -1336,6 +1364,14 @@ function Home({ navigation, route }: Props) {
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [prayerWallRefreshSignal, setPrayerWallRefreshSignal] = useState(0);
   const feedRequestSequenceRef = useRef(0);
+  const activeFirstPageRequestRef = useRef<{ feedType: FeedTypes; requestId: number } | null>(null);
+  const pendingFirstPageContextRef = useRef<FeedRefreshRequestContext | null>(null);
+  const lastRefreshTriggerRef = useRef<RefreshTrigger | null>(null);
+  const skipNextFocusRefreshRef = useRef(false);
+  const lastSuccessfulLoadAtRef = useRef<number>(0);
+  const manualRefreshSeedRef = useRef<number>(Date.now());
+  const hasUserInteractedRef = useRef(false);
+  const blockEndReachedUntilInteractionRef = useRef(true);
   const pendingScrollToTopRef = useRef(false);
   const preserveFeedPositionOnNextFocusRef = useRef(false);
   const hasHandledInitialFocusRef = useRef(false);
@@ -1419,23 +1455,116 @@ function Home({ navigation, route }: Props) {
     });
   }, []);
 
-  const reloadFeed = useCallback(
-    (nextType: FeedTypes) => {
+  const requestFeedRefresh = useCallback(
+    ({
+      reason,
+      targetType = feedTypeRef.current,
+      scrollToTop = false,
+      forceNetwork = false,
+      allowReorder = false,
+      hardReset = false,
+      showRefreshSpinner = false,
+      refreshSeed,
+    }: {
+      reason: FeedRefreshReason;
+      targetType?: FeedTypes;
+      scrollToTop?: boolean;
+      forceNetwork?: boolean;
+      allowReorder?: boolean;
+      hardReset?: boolean;
+      showRefreshSpinner?: boolean;
+      refreshSeed?: number;
+    }) => {
+      if (targetType === FeedTypes.Pray) {
+        feedRequestSequenceRef.current += 1;
+        isPaginatingRef.current = false;
+        setIsRefreshing(false);
+        setIsLoadingMore(false);
+        if (hardReset) {
+          setFeedData([]);
+          setIsEndOfList(false);
+        }
+        setFeedOptions({ type: targetType, page: 1 });
+        return false;
+      }
+
+      const now = Date.now();
+      const inFlightFeedType = activeFirstPageRequestRef.current?.feedType ?? null;
+      if (
+        shouldSkipRefreshTrigger({
+          now,
+          reason,
+          feedType: targetType,
+          lastTrigger: lastRefreshTriggerRef.current,
+          inFlightFeedType,
+          debounceMs: FEED_REFRESH_DEBOUNCE_MS,
+        })
+      ) {
+        return false;
+      }
+
+      lastRefreshTriggerRef.current = { reason, feedType: targetType, at: now };
       feedRequestSequenceRef.current += 1;
+      activeFirstPageRequestRef.current = null;
       isPaginatingRef.current = false;
-      setIsRefreshing(false);
+      blockEndReachedUntilInteractionRef.current = true;
+      hasUserInteractedRef.current = false;
       setIsLoadingMore(false);
-      setFeedData([]);
       setIsEndOfList(false);
-      setFeedOptions({ type: nextType, page: 1 });
-      if (nextType !== FeedTypes.Pray) {
-        setFeedRefreshToken((previous) => previous + 1);
+      if (hardReset) {
+        setFeedData([]);
+      }
+
+      const resolvedSeed =
+        typeof refreshSeed === 'number' && Number.isFinite(refreshSeed) ? refreshSeed : now;
+      if (reason === 'manual_pull') {
+        manualRefreshSeedRef.current = resolvedSeed;
+      }
+
+      pendingFirstPageContextRef.current = {
+        reason,
+        forceNetwork,
+        allowReorder,
+        refreshSeed: resolvedSeed,
+        preserveExistingOnError: !hardReset,
+      };
+
+      if (showRefreshSpinner) {
+        setIsRefreshing(true);
+      } else {
+        setIsRefreshing(false);
+      }
+
+      setFeedOptions((previous) =>
+        previous.type === targetType && previous.page === 1
+          ? previous
+          : { type: targetType, page: 1 }
+      );
+      setFeedRefreshToken((previous) => previous + 1);
+
+      if (scrollToTop) {
         scrollFeedToTop();
       } else {
         pendingScrollToTopRef.current = false;
       }
+
+      return true;
     },
     [scrollFeedToTop]
+  );
+
+  const reloadFeed = useCallback(
+    (nextType: FeedTypes) => {
+      requestFeedRefresh({
+        reason: 'tab_switch',
+        targetType: nextType,
+        scrollToTop: nextType !== FeedTypes.Pray,
+        forceNetwork: true,
+        allowReorder: false,
+        hardReset: true,
+      });
+    },
+    [requestFeedRefresh]
   );
 
   const handleOpenExplore = useCallback(() => {
@@ -1561,6 +1690,10 @@ function Home({ navigation, route }: Props) {
     return `row-${index}`;
   }, []);
 
+  const getFeedIdentitySequence = useCallback((entries: FeedEntry[]) => {
+    return entries.map((entry, index) => getFeedEntryIdentity(entry) ?? `fallback:${index}`);
+  }, []);
+
   useEffect(() => {
     if (feedOptions.type !== FeedTypes.Connected && feedOptions.type !== FeedTypes.ForYou) {
       return undefined;
@@ -1626,17 +1759,52 @@ function Home({ navigation, route }: Props) {
   const getFeedData = useCallback(
     async (type: FeedTypes, pageNumber: number) => {
       const isFirstPageLoad = pageNumber <= 1;
+      const pageOneContext: FeedRefreshRequestContext | null = isFirstPageLoad
+        ? (pendingFirstPageContextRef.current ?? {
+            reason: 'initial_load',
+            forceNetwork: false,
+            allowReorder: false,
+            refreshSeed: Date.now(),
+            preserveExistingOnError: false,
+          })
+        : null;
+
       if (isFirstPageLoad) {
+        pendingFirstPageContextRef.current = null;
+        const activeFirstPage = activeFirstPageRequestRef.current;
+        if (activeFirstPage && activeFirstPage.feedType === type) {
+          return;
+        }
         isPaginatingRef.current = false;
         setIsLoading(true);
         setIsLoadingMore(false);
       } else {
         setIsLoadingMore(true);
       }
+
       const requestSequence = ++feedRequestSequenceRef.current;
+      if (isFirstPageLoad) {
+        activeFirstPageRequestRef.current = {
+          feedType: type,
+          requestId: requestSequence,
+        };
+      }
+
       try {
         const isPrayerFeed = type === FeedTypes.Pray;
-        const refreshQuery = !isPrayerFeed && pageNumber === 1 ? `?refresh=${Date.now()}` : '';
+        let refreshQuery = '';
+        if (!isPrayerFeed && isFirstPageLoad) {
+          const refreshQueryParams = new URLSearchParams();
+          refreshQueryParams.set('refresh', String(Date.now()));
+          if (pageOneContext?.forceNetwork || pageOneContext?.reason === 'manual_pull') {
+            refreshQueryParams.set(
+              'refreshSeed',
+              String(pageOneContext?.refreshSeed ?? Date.now())
+            );
+          }
+          refreshQuery = `?${refreshQueryParams.toString()}`;
+        }
+
         const res = await ApiCall({
           route: isPrayerFeed
             ? `prayer?page=${pageNumber}`
@@ -1652,13 +1820,33 @@ function Home({ navigation, route }: Props) {
           } else if (Array.isArray(res?.response)) {
             response = res.response as FeedEntry[];
           }
+
           if (requestSequence !== feedRequestSequenceRef.current) {
             return;
           }
+
           const sanitizedResponse = response;
           if (pageNumber === 1) {
             setIsEndOfList(sanitizedResponse.length < 1);
-            setFeedData(mergeUniqueFeedEntries([], sanitizedResponse));
+            const latestFeedEntries = mergeUniqueFeedEntries([], sanitizedResponse);
+            const shouldReorderOnRefresh =
+              Boolean(pageOneContext?.allowReorder) && isPrimarySocialFeedType(type);
+            if (shouldReorderOnRefresh) {
+              setFeedData((previous) => {
+                const previousIdentitySequence = getFeedIdentitySequence(previous);
+                const incomingIdentitySequence = getFeedIdentitySequence(latestFeedEntries);
+                if (!isSameIdentitySequence(previousIdentitySequence, incomingIdentitySequence)) {
+                  return latestFeedEntries;
+                }
+                return reorderFeedEntriesForRefresh(
+                  latestFeedEntries,
+                  pageOneContext?.refreshSeed ?? Date.now()
+                );
+              });
+            } else {
+              setFeedData(latestFeedEntries);
+            }
+            lastSuccessfulLoadAtRef.current = Date.now();
           } else if (sanitizedResponse.length < 1) {
             setIsEndOfList(true);
           } else {
@@ -1668,7 +1856,7 @@ function Home({ navigation, route }: Props) {
           if (requestSequence !== feedRequestSequenceRef.current) {
             return;
           }
-          if (pageNumber === 1) {
+          if (pageNumber === 1 && !pageOneContext?.preserveExistingOnError) {
             setFeedData([]);
           }
           setIsEndOfList(true);
@@ -1677,10 +1865,11 @@ function Home({ navigation, route }: Props) {
         if (requestSequence !== feedRequestSequenceRef.current) {
           return;
         }
-        if (pageNumber === 1) {
+        if (pageNumber === 1 && !pageOneContext?.preserveExistingOnError) {
           setFeedData([]);
         }
       }
+
       if (requestSequence === feedRequestSequenceRef.current) {
         isPaginatingRef.current = false;
         if (isFirstPageLoad) {
@@ -1690,12 +1879,21 @@ function Home({ navigation, route }: Props) {
         }
         setIsRefreshing(false);
       }
+
+      if (
+        isFirstPageLoad &&
+        activeFirstPageRequestRef.current?.requestId === requestSequence &&
+        activeFirstPageRequestRef.current?.feedType === type
+      ) {
+        activeFirstPageRequestRef.current = null;
+      }
     },
-    [token]
+    [getFeedIdentitySequence, token]
   );
 
   useEffect(() => {
     if (feedOptions.type === FeedTypes.Pray) {
+      activeFirstPageRequestRef.current = null;
       setIsLoading(false);
       setIsRefreshing(false);
       setIsLoadingMore(false);
@@ -1776,12 +1974,19 @@ function Home({ navigation, route }: Props) {
       });
       if (result?.status === 200) {
         setQuickPostText('');
-        reloadFeed(feedTypeRef.current);
+        requestFeedRefresh({
+          reason: 'route_refresh',
+          targetType: feedTypeRef.current,
+          scrollToTop: true,
+          forceNetwork: true,
+          allowReorder: false,
+          hardReset: false,
+        });
       }
     } finally {
       setIsQuickPosting(false);
     }
-  }, [isQuickPosting, quickPostText, reloadFeed, token]);
+  }, [isQuickPosting, quickPostText, requestFeedRefresh, token]);
 
   const hasQuickPostText = quickPostText.trim().length > 0;
   const handleQuickComposerAction = useCallback(() => {
@@ -1825,17 +2030,18 @@ function Home({ navigation, route }: Props) {
     }
 
     if (shouldHandleRefresh) {
-      setFeedOptions((previous) =>
-        previous.type === targetFeedType && previous.page === 1
-          ? previous
-          : { type: targetFeedType, page: 1 }
-      );
-      setFeedRefreshToken((previous) => previous + 1);
-      if (targetFeedType !== FeedTypes.Pray) {
-        scrollFeedToTop();
-      }
+      skipNextFocusRefreshRef.current = true;
+      requestFeedRefresh({
+        reason: 'route_refresh',
+        targetType: targetFeedType,
+        scrollToTop: targetFeedType !== FeedTypes.Pray,
+        forceNetwork: true,
+        allowReorder: false,
+        hardReset: false,
+        refreshSeed: routeRefreshToken,
+      });
     }
-  }, [reloadFeed, route.params?.refreshToken, route.params?.selectedTab, scrollFeedToTop]);
+  }, [reloadFeed, requestFeedRefresh, route.params?.refreshToken, route.params?.selectedTab]);
 
   const renderTabs = useCallback(
     (containerStyle?: StyleProp<ViewStyle>) => (
@@ -2729,6 +2935,8 @@ function Home({ navigation, route }: Props) {
   const lastScrollRef = useRef(0);
   const resolvedHeaderHeight = headerHeight || defaultHeaderHeight;
   const headerInset = resolvedHeaderHeight + spacing.x10;
+  const iosRefreshOffset = resolvedHeaderHeight + spacing.x13;
+  const hideFloatingHeaderForIOSRefresh = Platform.OS === 'ios' && isRefreshing;
   const clampDistance = headerInset + footerHeight;
   const scrollClampSource = useMemo(
     () =>
@@ -2782,6 +2990,10 @@ function Home({ navigation, route }: Props) {
           const nextValue = Math.max(0, rawValue);
           const diff = nextValue - lastScrollRef.current;
           const threshold = 1;
+          if (nextValue > 8 && !hasUserInteractedRef.current) {
+            hasUserInteractedRef.current = true;
+            blockEndReachedUntilInteractionRef.current = false;
+          }
 
           if (nextValue <= 0) {
             headerVisibility.setValue(1);
@@ -2805,7 +3017,7 @@ function Home({ navigation, route }: Props) {
     feedOptions.page === 1 &&
     feedOptions.type !== FeedTypes.Pray &&
     feedData.length === 0;
-  const feedListKey = `${feedOptions.type}-${feedRefreshToken}`;
+  const feedListKey = feedOptions.type;
 
   const maybeStartFeedCardIntro = useCallback(
     (viewableItems: ViewToken[]) => {
@@ -3099,10 +3311,30 @@ function Home({ navigation, route }: Props) {
         return undefined;
       }
 
-      reloadFeed(feedTypeRef.current);
+      if (skipNextFocusRefreshRef.current) {
+        skipNextFocusRefreshRef.current = false;
+        return undefined;
+      }
+
+      const now = Date.now();
+      const isFeedStale =
+        !lastSuccessfulLoadAtRef.current || now - lastSuccessfulLoadAtRef.current >= FEED_STALE_MS;
+      if (!isFeedStale) {
+        return undefined;
+      }
+
+      requestFeedRefresh({
+        reason: 'focus_stale',
+        targetType: feedTypeRef.current,
+        scrollToTop: false,
+        forceNetwork: false,
+        allowReorder: false,
+        hardReset: false,
+        showRefreshSpinner: false,
+      });
 
       return undefined;
-    }, [reloadFeed])
+    }, [requestFeedRefresh])
   );
 
   useFocusEffect(
@@ -3153,19 +3385,47 @@ function Home({ navigation, route }: Props) {
 
   const handleFeedRefresh = useCallback(() => {
     if (feedOptions.type === FeedTypes.Pray || isRefreshing) {
+      if (__DEV__ && Platform.OS === 'ios') {
+        console.log('[Home Refresh] Ignored pull refresh trigger', {
+          feedType: feedOptions.type,
+          isRefreshing,
+        });
+      }
       return;
     }
 
-    isPaginatingRef.current = false;
-    setIsRefreshing(true);
-    setIsEndOfList(false);
-    setFeedOptions((previous) => (previous.page === 1 ? previous : { ...previous, page: 1 }));
-    setFeedRefreshToken((previous) => previous + 1);
+    if (__DEV__ && Platform.OS === 'ios') {
+      console.log('[Home Refresh] Pull refresh requested', {
+        feedType: feedTypeRef.current,
+      });
+    }
+
+    requestFeedRefresh({
+      reason: 'manual_pull',
+      targetType: feedTypeRef.current,
+      scrollToTop: false,
+      forceNetwork: true,
+      allowReorder: isPrimarySocialFeedType(feedTypeRef.current),
+      hardReset: false,
+      showRefreshSpinner: true,
+      refreshSeed: Date.now(),
+    });
+  }, [feedOptions.type, isRefreshing, requestFeedRefresh]);
+
+  useEffect(() => {
+    if (__DEV__ && Platform.OS === 'ios') {
+      console.log('[Home Refresh] Spinner state changed', {
+        isRefreshing,
+        feedType: feedOptions.type,
+      });
+    }
   }, [feedOptions.type, isRefreshing]);
 
   const handleFeedEndReached = useCallback(() => {
     if (
       feedOptions.type !== FeedTypes.Pray &&
+      hasUserInteractedRef.current &&
+      !blockEndReachedUntilInteractionRef.current &&
       !isLoading &&
       !isLoadingMore &&
       !isRefreshing &&
@@ -3214,20 +3474,18 @@ function Home({ navigation, route }: Props) {
   ]);
 
   const feedRefreshControl = useMemo(() => {
-    if (Platform.OS !== 'android') {
-      return undefined;
-    }
-
+    const iosSpinnerColor = dark ? BRAND.gray100 : BRAND.primaryDark;
     return (
       <RefreshControl
         refreshing={isRefreshing}
         onRefresh={handleFeedRefresh}
-        progressViewOffset={headerInset}
-        tintColor={BRAND.primaryDark}
+        progressViewOffset={Platform.OS === 'ios' ? iosRefreshOffset : headerInset}
+        tintColor={iosSpinnerColor}
+        titleColor={iosSpinnerColor}
         colors={[BRAND.primaryDark]}
       />
     );
-  }, [handleFeedRefresh, headerInset, isRefreshing]);
+  }, [dark, handleFeedRefresh, headerInset, iosRefreshOffset, isRefreshing]);
 
   let mainFeedContent: React.ReactNode;
 
@@ -3268,15 +3526,21 @@ function Home({ navigation, route }: Props) {
         ListEmptyComponent={emptyFeedState}
         ListFooterComponent={endOfFeedFooter}
         renderItem={renderFeedItem}
-        refreshing={Platform.OS === 'ios' ? isRefreshing : false}
-        onRefresh={Platform.OS === 'ios' ? handleFeedRefresh : undefined}
         refreshControl={feedRefreshControl}
         onEndReachedThreshold={0.5}
         onEndReached={handleFeedEndReached}
         onScroll={handleScroll}
-        onScrollBeginDrag={scrollIntent.onScrollBeginDrag}
+        onScrollBeginDrag={(event) => {
+          hasUserInteractedRef.current = true;
+          blockEndReachedUntilInteractionRef.current = false;
+          scrollIntent.onScrollBeginDrag(event);
+        }}
         onScrollEndDrag={scrollIntent.onScrollEndDrag}
-        onMomentumScrollBegin={scrollIntent.onMomentumScrollBegin}
+        onMomentumScrollBegin={(event) => {
+          hasUserInteractedRef.current = true;
+          blockEndReachedUntilInteractionRef.current = false;
+          scrollIntent.onMomentumScrollBegin(event);
+        }}
         onMomentumScrollEnd={scrollIntent.onMomentumScrollEnd}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={feedViewabilityConfig}
@@ -3296,7 +3560,7 @@ function Home({ navigation, route }: Props) {
           left: 0,
           right: 0,
           zIndex: 10,
-          opacity: feedIntroHeaderOpacity,
+          opacity: hideFloatingHeaderForIOSRefresh ? 0 : feedIntroHeaderOpacity,
           transform: [
             {
               translateY: Animated.add(headerTranslateY, feedIntroHeaderTranslateY),

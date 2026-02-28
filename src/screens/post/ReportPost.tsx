@@ -1,6 +1,6 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import { useTheme } from '@react-navigation/native';
-import { useState } from 'react';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -83,6 +83,18 @@ function ReportPost({ navigation, route }: Props) {
   const inputBorder = dark ? '#273941' : '#e5e7eb';
   const footerSafeInset = spacing.x24 + spacing.x16 + 56 + spacing.x20;
 
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') {
+        return undefined;
+      }
+      StatusBar.setBarStyle(dark ? 'light-content' : 'dark-content');
+      StatusBar.setBackgroundColor(screenBackground);
+      StatusBar.setTranslucent(false);
+      return undefined;
+    }, [dark, screenBackground])
+  );
+
   const submitReport = async () => {
     if (!selectedOption) return;
     if (isOtherSelected && !normalizedComment) {
@@ -107,6 +119,14 @@ function ReportPost({ navigation, route }: Props) {
       });
 
       if (result.status === 200) {
+        if (__DEV__) {
+          const state = navigation.getState();
+          const currentRouteName = state.routes[state.index]?.name;
+          console.log(
+            '[ReportPost] Report submitted successfully. Replacing route from:',
+            currentRouteName
+          );
+        }
         navigation.replace('ReportStatus', {
           reportedUserId: route.params.reportedUserId,
         });

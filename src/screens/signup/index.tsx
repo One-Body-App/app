@@ -359,9 +359,16 @@ function SignupForm({ navigation, route }: Props) {
         if (userValidation.status === 200) {
           recaptcha.current?.open();
         } else {
+          const responseMessage =
+            typeof (userValidation.response as { message?: unknown })?.message === 'string'
+              ? (userValidation.response as { message: string }).message.trim()
+              : Array.isArray((userValidation.response as { message?: unknown })?.message)
+                ? ((userValidation.response as { message: string[] }).message ?? []).join(', ')
+                : '';
           setIsloading(false);
           setFormError(
-            'Unable to create account. Please try a different email or reset your password.'
+            responseMessage ||
+              'Unable to create account. Please try a different email or reset your password.'
           );
         }
       } else {

@@ -1,5 +1,5 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { CommonActions, useFocusEffect, useTheme } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -57,12 +57,34 @@ function ReportStatus({ navigation, route }: Props) {
   );
 
   const closeFlow = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
+    if (__DEV__) {
+      const state = navigation.getState();
+      const currentRouteName = state.routes[state.index]?.name;
+      console.log(
+        '[ReportStatus] Closing report flow from route:',
+        currentRouteName,
+        '-> resetting to MainRoot/Main/HomeTab/Home'
+      );
     }
-
-    navigation.navigate('MainRoot');
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainRoot',
+            params: {
+              screen: 'Main',
+              params: {
+                screen: 'HomeTab',
+                params: {
+                  screen: 'Home',
+                },
+              },
+            },
+          } as any,
+        ],
+      })
+    );
   };
 
   const blockUser = async () => {

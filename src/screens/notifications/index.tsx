@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Linking,
   Modal,
   Platform,
@@ -21,6 +22,8 @@ import { NotificationBing } from 'iconsax-react-native';
 
 import StyledText from '@/components/styled/Text';
 import { ApiCall } from '@/services/api';
+import Logo from '@/assets/icons/logo.svg';
+import LogoWhite from '@/assets/icons/logo_white.svg';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors, Typography } from '@/src/styles';
@@ -52,6 +55,7 @@ type InboxNotification = {
   createdAt: string;
   read: boolean;
   url?: string;
+  iconUrl?: string;
   campaignId?: string;
 };
 
@@ -96,6 +100,14 @@ const MATCHERS: Record<Exclude<CategoryKey, 'all'>, RegExp> = {
   go: /\bgo\b|mission|missions|outreach/i,
 };
 
+const normalizeNotificationIconUrl = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : undefined;
+};
+
 const toServerNotification = (item: any): InboxNotification | null => {
   const sourceId = String(item?._id || '');
   if (!sourceId) return null;
@@ -109,6 +121,9 @@ const toServerNotification = (item: any): InboxNotification | null => {
     createdAt: String(item?.createdAt || new Date().toISOString()),
     read: Boolean(item?.read),
     url: typeof item?.url === 'string' ? item.url : undefined,
+    iconUrl: normalizeNotificationIconUrl(
+      item?.iconUrl || item?.notificationIconUrl || item?.icon || item?.imageUrl || item?.image
+    ),
     campaignId: typeof item?.campaignId === 'string' ? item.campaignId : undefined,
   };
 };
@@ -125,6 +140,7 @@ const toPushNotification = (item: QueuedPushNotification): InboxNotification => 
   createdAt: item.createdAt || new Date().toISOString(),
   read: Boolean(item.read),
   url: item.url,
+  iconUrl: normalizeNotificationIconUrl(item.iconUrl || item.data?.iconUrl || item.data?.imageUrl),
   campaignId: item.campaignId,
 });
 
@@ -184,6 +200,7 @@ function NotificationScreen({ navigation }: Props) {
   const [menuNotification, setMenuNotification] = useState<InboxNotification | null>(null);
   const [mutedCategories, setMutedCategories] = useState<Array<Exclude<CategoryKey, 'all'>>>([]);
   const [listInstanceKey, setListInstanceKey] = useState(0);
+  const [failedRemoteIcons, setFailedRemoteIcons] = useState<Record<string, true>>({});
 
   const loadNotifications = useCallback(
     async (showLoader = false) => {
@@ -249,6 +266,15 @@ function NotificationScreen({ navigation }: Props) {
         );
 
         setNotifications(merged);
+        setFailedRemoteIcons((current) => {
+          const validIds = new Set(merged.map((item) => item.id));
+          return Object.keys(current).reduce<Record<string, true>>((accumulator, key) => {
+            if (validIds.has(key)) {
+              accumulator[key] = true;
+            }
+            return accumulator;
+          }, {});
+        });
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -484,52 +510,68 @@ function NotificationScreen({ navigation }: Props) {
             }}
           />
         }
-        renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => openNotification(item)}>
-            <View style={styles.avatarWrap}>
-              <MaterialCommunityIcons
-                name="account"
-                size={16}
-                color={dark ? Colors.neutral[500] : Colors.neutral[400]}
+        renderItem={({ item }) => {
+          const hasRemoteIcon = Boolean(item.iconUrl) && !failedRemoteIcons[item.id];
+          let avatarContent: React.ReactNode;
+
+          if (hasRemoteIcon) {
+            avatarContent = (
+              <Image
+                source={{ uri: item.iconUrl as string }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+                onError={() => {
+                  setFailedRemoteIcons((current) => ({ ...current, [item.id]: true }));
+                }}
               />
-            </View>
+            );
+          } else if (dark) {
+            avatarContent = <LogoWhite width={20} height={18} />;
+          } else {
+            avatarContent = <Logo width={20} height={18} />;
+          }
 
-            <View style={styles.cardContent}>
-              <View style={styles.cardHeader}>
-                <StyledText style={[styles.cardTitle, !item.read && styles.cardTitleUnread]}>
-                  {item.title}
-                </StyledText>
-                <View style={styles.cardHeaderRight}>
-                  {!item.read ? <View style={styles.unreadDot} /> : null}
-                  <StyledText style={styles.cardTime}>
-                    {formatRelativeTime(item.createdAt)}
+          return (
+            <Pressable style={styles.card} onPress={() => openNotification(item)}>
+              <View style={styles.avatarWrap}>{avatarContent}</View>
+
+              <View style={styles.cardContent}>
+                <View style={styles.cardHeader}>
+                  <StyledText style={[styles.cardTitle, !item.read && styles.cardTitleUnread]}>
+                    {item.title}
                   </StyledText>
-                  <Pressable
-                    hitSlop={10}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      setMenuNotification(item);
-                    }}
-                    style={styles.menuButton}
-                  >
-                    <MaterialCommunityIcons
-                      name="dots-vertical"
-                      size={18}
-                      color={dark ? Colors.neutral[300] : Colors.neutral[400]}
-                    />
-                  </Pressable>
+                  <View style={styles.cardHeaderRight}>
+                    {!item.read ? <View style={styles.unreadDot} /> : null}
+                    <StyledText style={styles.cardTime}>
+                      {formatRelativeTime(item.createdAt)}
+                    </StyledText>
+                    <Pressable
+                      hitSlop={10}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        setMenuNotification(item);
+                      }}
+                      style={styles.menuButton}
+                    >
+                      <MaterialCommunityIcons
+                        name="dots-vertical"
+                        size={18}
+                        color={dark ? Colors.neutral[300] : Colors.neutral[400]}
+                      />
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
 
-              <StyledText
-                numberOfLines={2}
-                style={[styles.cardBody, !item.read && styles.cardBodyUnread]}
-              >
-                {item.body || item.title}
-              </StyledText>
-            </View>
-          </Pressable>
-        )}
+                <StyledText
+                  numberOfLines={2}
+                  style={[styles.cardBody, !item.read && styles.cardBodyUnread]}
+                >
+                  {item.body || item.title}
+                </StyledText>
+              </View>
+            </Pressable>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconWrap}>
@@ -724,6 +766,11 @@ const createStyles = (dark: boolean, colors: any) =>
       justifyContent: 'center',
       backgroundColor: dark ? Colors.neutral[700] : '#E6E8EF',
       marginRight: spacing.x10,
+      overflow: 'hidden',
+    },
+    avatarImage: {
+      width: '100%',
+      height: '100%',
     },
     cardContent: {
       flex: 1,

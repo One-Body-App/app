@@ -1219,6 +1219,14 @@ function AppContent() {
               options={{
                 headerShown: false,
                 animation: 'slide_from_left',
+                ...(Platform.OS === 'android'
+                  ? {
+                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                      statusBarColor:
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      statusBarTranslucent: false,
+                    }
+                  : {}),
               }}
             />
             <MainStack.Screen
@@ -1227,6 +1235,14 @@ function AppContent() {
               options={{
                 headerShown: false,
                 animation: 'slide_from_right',
+                ...(Platform.OS === 'android'
+                  ? {
+                      statusBarStyle: scheme === 'dark' ? 'light' : 'dark',
+                      statusBarColor:
+                        scheme === 'dark' ? darkTheme.colors.background : theme.colors.background,
+                      statusBarTranslucent: false,
+                    }
+                  : {}),
               }}
             />
 

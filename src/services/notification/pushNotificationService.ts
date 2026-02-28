@@ -283,6 +283,20 @@ export const subscribeToForegroundPushMessages = (
   const messaging = getMessaging();
 
   return onMessage(messaging, async (remoteMessage) => {
+    if (__DEV__ && Platform.OS === 'android') {
+      const notificationAndroid = (remoteMessage.notification as any)?.android as
+        | { imageUrl?: string; icon?: string }
+        | undefined;
+      console.log('[PushDebug] foreground_payload_visuals', {
+        messageId: remoteMessage.messageId,
+        notificationIcon: notificationAndroid?.icon,
+        notificationImageUrl: notificationAndroid?.imageUrl,
+        dataIconUrl:
+          remoteMessage.data?.iconUrl || remoteMessage.data?.notificationIconUrl || undefined,
+        dataImageUrl: remoteMessage.data?.imageUrl || remoteMessage.data?.imageURL || undefined,
+      });
+    }
+
     const payload = await queueRemoteNotificationPayload(remoteMessage);
     if (!payload) {
       return;
