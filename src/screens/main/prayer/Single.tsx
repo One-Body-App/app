@@ -3,7 +3,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
+import { CommonActions, useTheme } from '@react-navigation/native';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import StyledText from '@/components/styled/Text';
@@ -32,13 +32,32 @@ function SinglePrayer({ navigation, route }: Props) {
   const postId = route.params?.postId;
 
   const user = useSelector((state: RootState) => state.auth.getProfileData);
+  const resetToPrayerWallIndex = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainRoot',
+            params: {
+              screen: 'PrayerWall',
+              params: {
+                screen: 'index',
+              },
+            },
+          },
+        ],
+      })
+    );
+  }, [navigation]);
+
   const handleBackPress = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
       return;
     }
 
-    navigation.navigate('index');
+    resetToPrayerWallIndex();
   };
 
   const getPostPrayer = useCallback(async () => {

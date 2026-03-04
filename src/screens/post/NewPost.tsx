@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { CloseCircle, Location as LocationIcon } from 'iconsax-react-native';
-import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { CommonActions, useFocusEffect, useTheme } from '@react-navigation/native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import ImagePicker from 'react-native-image-crop-picker';
 import { Asset, CameraOptions, MediaType, launchCamera } from 'react-native-image-picker';
@@ -105,6 +105,64 @@ function NewPost({ navigation, route }: Props) {
     repostDraft?.sourcePreview?.content ||
     repostDraft?.sourcePreview?.link ||
     '';
+
+  const navigateToHomeFallback = useCallback(
+    (reason: string) => {
+      if (__DEV__) {
+        const currentRoute = navigation.getState().routes[navigation.getState().index]?.name;
+        console.log('[NewPost] fallback navigation', {
+          reason,
+          canGoBack: navigation.canGoBack(),
+          currentRoute,
+          destination: 'MainRoot > Main > HomeTab > Home',
+        });
+      }
+
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'MainRoot',
+              params: {
+                screen: 'Main',
+                params: {
+                  screen: 'HomeTab',
+                  params: {
+                    screen: 'Home',
+                  },
+                },
+              },
+            },
+          ],
+        })
+      );
+    },
+    [navigation]
+  );
+
+  const navigateAfterSocialPostSuccess = useCallback(
+    (reason: 'create' | 'edit') => {
+      const canGoBack = navigation.canGoBack();
+      const currentRoute = navigation.getState().routes[navigation.getState().index]?.name;
+      if (__DEV__) {
+        console.log('[NewPost] social post success navigation', {
+          reason,
+          canGoBack,
+          currentRoute,
+          destination: canGoBack ? 'previous-screen' : 'MainRoot > Main > HomeTab > Home',
+        });
+      }
+
+      if (canGoBack) {
+        navigation.goBack();
+        return;
+      }
+
+      navigateToHomeFallback(`${reason}-no-back`);
+    },
+    [navigateToHomeFallback, navigation]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -277,13 +335,7 @@ function NewPost({ navigation, route }: Props) {
 
       if (result.status === 200) {
         setContent('');
-        navigation.popToTop();
-        navigation.navigate('MainRoot', {
-          screen: 'Main',
-          params: {
-            screen: 'MyProfileTab',
-          },
-        });
+        navigateAfterSocialPostSuccess('edit');
       }
       setIsLoading(false);
     } catch (e) {
@@ -327,13 +379,7 @@ function NewPost({ navigation, route }: Props) {
       console.log('postSocial result', result.status, result.response);
       if (result.status === 200) {
         setContent('');
-        navigation.popToTop();
-        navigation.navigate('MainRoot', {
-          screen: 'Main',
-          params: {
-            screen: 'MyProfileTab',
-          },
-        });
+        navigateAfterSocialPostSuccess('create');
       } else if (result.status === 413) {
         toast.show('Image too large. Please choose a smaller image.', {
           type: 'danger',
@@ -696,7 +742,11 @@ function NewPost({ navigation, route }: Props) {
             <TouchableOpacity
               style={{ padding: spacing.x5 }}
               onPress={() => {
-                navigation.goBack();
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                  return;
+                }
+                navigateToHomeFallback('close-no-back');
               }}
             >
               <MaterialCommunityIcons name="close" size={24} color={colors.text} />

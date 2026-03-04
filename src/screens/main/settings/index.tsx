@@ -41,6 +41,10 @@ import {
   disablePushNotifications,
   enablePushNotifications,
 } from '@/src/services/notification/pushNotificationService';
+import {
+  isSecureMessagePreviewEnabled,
+  setSecureMessagePreviewEnabled,
+} from '@/src/services/chat/backgroundHandler';
 
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
 
@@ -56,6 +60,8 @@ function Settings({ navigation }: Props) {
   const [subscribedToNewsletter, setSubscribedToNewsletter] = React.useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = React.useState(false);
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(false);
+  const [securePreviewEnabled, setSecurePreviewEnabledState] = React.useState(false);
+  const [isSecurePreviewLoading, setIsSecurePreviewLoading] = React.useState(true);
   const dispatch = useDispatch();
   const toast = useToast();
 
@@ -92,8 +98,36 @@ function Settings({ navigation }: Props) {
     }
   };
 
+  const loadSecurePreviewPreference = async () => {
+    try {
+      const enabled = await isSecureMessagePreviewEnabled();
+      setSecurePreviewEnabledState(enabled);
+    } finally {
+      setIsSecurePreviewLoading(false);
+    }
+  };
+
+  const updateSecurePreview = async (enabled: boolean) => {
+    setSecurePreviewEnabledState(enabled);
+    try {
+      await setSecureMessagePreviewEnabled(enabled);
+      toast.show(
+        enabled ? 'Secure lock-screen previews enabled' : 'Secure lock-screen previews disabled',
+        {
+          id: 'securePreviewMessage',
+          type: 'normal',
+          placement: 'top',
+        }
+      );
+    } catch {
+      const fallback = await isSecureMessagePreviewEnabled();
+      setSecurePreviewEnabledState(fallback);
+    }
+  };
+
   useEffect(() => {
     getUserProfile();
+    loadSecurePreviewPreference();
   }, []);
 
   const updateNotifications = async (
@@ -433,6 +467,45 @@ function Settings({ navigation }: Props) {
                     setPushNotificationsEnabled(value);
                     updateNotifications(value, subscribedToNewsletter, emailNotificationsEnabled);
                   }}
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {}}
+              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
+            >
+              <View
+                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
+              >
+                <View
+                  style={{
+                    borderRadius: borderRadius.max,
+                    backgroundColor: Colors.neutral[800],
+                    padding: 6,
+                  }}
+                >
+                  <Feather name="lock" color={Colors.primary.brand} size={18} />
+                </View>
+              </View>
+              <View style={{ flex: 1 }}>
+                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                  Secure Lock-Screen Preview
+                </StyledText>
+                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                  Show message text on lock screen
+                </StyledText>
+              </View>
+              <View
+                style={{
+                  paddingLeft: spacing.x10,
+                  alignItems: 'flex-end',
+                }}
+              >
+                <Switch
+                  disabled={isLoading || isSecurePreviewLoading}
+                  value={securePreviewEnabled}
+                  onValueChange={updateSecurePreview}
                 />
               </View>
             </TouchableOpacity>

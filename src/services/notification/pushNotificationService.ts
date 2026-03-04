@@ -13,9 +13,11 @@ import {
   registerDeviceForRemoteMessages,
   deleteToken,
 } from '@react-native-firebase/messaging';
+import DeviceInfo from 'react-native-device-info';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { ApiCall } from '@/src/services/api';
 import { queueRemoteNotificationPayload, QueuedPushNotification } from './pushNotificationStorage';
+import { registerChatDeviceToken, unregisterChatDeviceToken } from '@/src/services/chat/api';
 
 const FCM_TOKEN_CACHE_KEY = '@onebody/push/fcm-token';
 // iOS uses the app icon for push identity; custom push icons are Android-only.
@@ -148,12 +150,25 @@ export const getPushDebugSnapshot = async (options?: {
 };
 
 const sendTokenToBackend = async (authToken: string, tokenValue: string) => {
+  const deviceId = DeviceInfo.getUniqueIdSync();
+  const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+
   const response = await ApiCall({
     route: 'user/set-fcm',
     token: authToken,
-    params: { FCM: tokenValue },
+    params: { FCM: tokenValue, deviceId, platform },
     verb: 'patch',
   });
+
+  // Keep chat device-token registry synced for E2EE push fallback.
+  await registerChatDeviceToken(
+    {
+      deviceId,
+      platform,
+      token: tokenValue,
+    },
+    authToken
+  ).catch(() => undefined);
 
   return response.status === 200;
 };
@@ -243,12 +258,15 @@ export const disablePushNotifications = async (authToken?: string) => {
   }
 
   try {
+    const deviceId = DeviceInfo.getUniqueIdSync();
     await ApiCall({
       route: 'user/set-fcm',
       token: authToken,
-      params: { FCM: '' },
+      params: { FCM: '', deviceId, platform: Platform.OS === 'ios' ? 'ios' : 'android' },
       verb: 'patch',
     });
+
+    await unregisterChatDeviceToken(deviceId, authToken).catch(() => undefined);
   } catch (_error) {
     // ignore backend cleanup failures
   }

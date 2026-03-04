@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.x20,
+    paddingHorizontal: spacing.x16,
     paddingTop: spacing.x5,
     paddingBottom: spacing.x8,
     borderBottomWidth: 1,
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   tabItemSelected: {},
   tabLabelUnderline: {
     paddingBottom: spacing.x8,
-    paddingHorizontal: 7,
+    paddingHorizontal: 5,
     alignItems: 'center',
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',

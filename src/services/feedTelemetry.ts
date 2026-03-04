@@ -42,6 +42,7 @@ let queue: FeedTelemetryEventInput[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let isFlushing = false;
 let authToken: string | undefined;
+let authRejectedToken: string | null = null;
 let appStateSubscription: { remove: () => void } | null = null;
 
 const sanitizeDurationMs = (durationMs?: number): number | undefined => {
@@ -75,6 +76,9 @@ const scheduleFlush = () => {
   if (flushTimer || queue.length < 1) {
     return;
   }
+  if (authToken && authRejectedToken && authToken === authRejectedToken) {
+    return;
+  }
   flushTimer = setTimeout(() => {
     flushTimer = null;
     flushFeedTelemetry().catch(() => undefined);
@@ -94,7 +98,15 @@ const ensureAppStateListener = () => {
 };
 
 export const setFeedTelemetryAuthToken = (token?: string) => {
+  const tokenChanged = token !== authToken;
   authToken = token;
+  if (!token) {
+    authRejectedToken = null;
+    return;
+  }
+  if (tokenChanged && authRejectedToken) {
+    authRejectedToken = null;
+  }
   if (token && queue.length > 0) {
     flushFeedTelemetry(token).catch(() => undefined);
   }
@@ -131,6 +143,9 @@ export const flushFeedTelemetry = async (tokenOverride?: string) => {
     scheduleFlush();
     return;
   }
+  if (authRejectedToken && authRejectedToken === tokenToUse) {
+    return;
+  }
 
   isFlushing = true;
   clearFlushTimer();
@@ -143,6 +158,7 @@ export const flushFeedTelemetry = async (tokenOverride?: string) => {
       route: 'user/feed-telemetry/batch',
       token: tokenToUse,
       verb: 'post',
+      suppressErrorLog: true,
       params: {
         events: batch,
       },
@@ -150,6 +166,16 @@ export const flushFeedTelemetry = async (tokenOverride?: string) => {
 
     if (result.status !== 200) {
       queue = [...batch, ...queue].slice(-MAX_QUEUE_SIZE);
+      if (result.status === 401 || result.status === 403) {
+        authRejectedToken = tokenToUse;
+        if (__DEV__) {
+          console.log('[FeedTelemetry] Pausing telemetry flush after auth rejection', {
+            status: result.status,
+          });
+        }
+      }
+    } else if (authRejectedToken === tokenToUse) {
+      authRejectedToken = null;
     }
   } catch (error) {
     queue = [...batch, ...queue].slice(-MAX_QUEUE_SIZE);

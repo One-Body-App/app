@@ -6,6 +6,7 @@ import { AppRegistry, Platform } from 'react-native';
 import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 import { name as appName } from './app.json';
 import { queueRemoteNotificationPayload } from './src/services/notification/pushNotificationStorage';
+import { handleBackgroundChatPush } from './src/services/chat/backgroundHandler';
 
 if (typeof process !== 'undefined') {
   process.env = process.env || {};
@@ -17,6 +18,10 @@ if (typeof process !== 'undefined') {
 const App = require('./App').default;
 
 setBackgroundMessageHandler(getMessaging(), async (remoteMessage) => {
+  const handledByChat = await handleBackgroundChatPush(remoteMessage).catch(() => false);
+  if (handledByChat) {
+    return;
+  }
   await queueRemoteNotificationPayload(remoteMessage);
 });
 

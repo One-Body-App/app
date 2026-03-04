@@ -30,12 +30,10 @@ import {
   ViewStyle,
 } from 'react-native';
 import { TabView, SceneRendererProps, NavigationState } from 'react-native-tab-view';
-import { Canvas, Rect, Shader, Skia } from '@shopify/react-native-skia';
 import Toast from 'react-native-simple-toast';
 import Reanimated, {
   SensorType,
   useAnimatedSensor,
-  useDerivedValue,
   useFrameCallback,
   useSharedValue,
   useAnimatedStyle,
@@ -129,42 +127,6 @@ const BRAND = {
 const PRAYER_LIQUID_HEIGHT = 36;
 const PRAYER_GLASS_PILL_HORIZONTAL_INSET = 0;
 const PRAYER_GLASS_PILL_HEIGHT = 36;
-const PRAYER_WATER_SHADER_SOURCE = `
-uniform float u_time;
-uniform float u_gravityX;
-uniform float u_gravityY;
-uniform float u_width;
-uniform float u_height;
-
-half4 main(vec2 p) {
-  float width = max(u_width, 1.0);
-  float height = max(u_height, 1.0);
-  vec2 uv = vec2(p.x / width, p.y / height);
-
-  float gx = clamp(u_gravityX, -1.4, 1.4) * 0.11;
-  float gy = clamp(u_gravityY, -1.4, 1.4) * 0.11;
-  vec2 sloshUv = uv + vec2(gx * (uv.y - 0.5), gy * (uv.x - 0.5));
-
-  float waveA = sin((sloshUv.x * 13.0) + (sloshUv.y * 5.0) + u_time * 2.1) * 0.028;
-  float waveB = cos((sloshUv.y * 16.0) - (sloshUv.x * 7.0) - u_time * 1.7) * 0.023;
-  float waveC = sin(((sloshUv.x + sloshUv.y) * 18.0) + u_time * 1.35) * 0.017;
-  float wave = waveA + waveB + waveC;
-
-  float depth = clamp((sloshUv.y - 0.5) * 0.65 + wave * 1.4 + 0.52, 0.0, 1.0);
-  vec3 shallow = vec3(0.29, 0.78, 0.82);
-  vec3 deep = vec3(0.08, 0.58, 0.65);
-  vec3 water = mix(shallow, deep, depth);
-
-  float highlightBand = smoothstep(0.16, 0.0, abs((sloshUv.y + wave * 0.9) - 0.31));
-  float caustic = smoothstep(0.35, 0.0, abs(sin((sloshUv.x * 22.0) - u_time * 2.7) * 0.08));
-  water += vec3(0.06, 0.08, 0.08) * highlightBand;
-  water += vec3(0.02, 0.03, 0.03) * caustic * 0.25;
-
-  float alpha = clamp(0.32 + wave * 0.3 + (1.0 - depth) * 0.1, 0.24, 0.52);
-  return half4(water, alpha);
-}
-`;
-const PRAYER_WATER_SHADER_EFFECT = Skia.RuntimeEffect.Make(PRAYER_WATER_SHADER_SOURCE);
 
 // --- TYPES ---
 type FeedPost = (ArticleType | SocialPost) & {
@@ -268,6 +230,15 @@ const getObjectField = (value: unknown, key: string): unknown => {
   return (value as Record<string, unknown>)[key];
 };
 
+const getFeedTitleText = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  const nestedAnchor = getObjectField(value, 'a');
+  const nestedText = getObjectField(nestedAnchor, '$text');
+  return typeof nestedText === 'string' ? nestedText : '';
+};
+
 const getFeedPostId = (item: FeedPost) => {
   if (item.postId) return item.postId;
   if (item.id) return String(item.id);
@@ -309,11 +280,7 @@ const isLikelySocialPost = (entry: FeedPost) => {
   }
   const entryId = entry.postId || ('_id' in entry ? entry._id : undefined);
   return Boolean(
-    (entry.content ||
-      entry.body ||
-      (typeof entry.title === 'string' ? entry.title : entry.title?.a?.$text)) &&
-      entryId &&
-      entry.userData
+    (entry.content || entry.body || getFeedTitleText(entry.title)) && entryId && entry.userData
   );
 };
 
@@ -495,14 +462,6 @@ function PrayerLiquidIndicator({ tabWidth }: PrayerLiquidIndicatorProps) {
     waterGravityX.value += (rawX - waterGravityX.value) * 0.06;
     waterGravityY.value += (rawY - waterGravityY.value) * 0.06;
   });
-
-  const waterUniforms = useDerivedValue(() => ({
-    u_time: waterTime.value,
-    u_gravityX: waterGravityX.value,
-    u_gravityY: waterGravityY.value,
-    u_width: waterWidth.value,
-    u_height: waterHeight.value,
-  }));
 
   const sheenAnimatedStyle = useAnimatedStyle(() => {
     const width = Math.max(waterWidth.value, 1);
@@ -2535,9 +2494,7 @@ function Home({ navigation, route }: Props) {
             content:
               normalizedWithImage.content ||
               watchBody ||
-              (typeof normalizedWithImage.title === 'string'
-                ? normalizedWithImage.title
-                : normalizedWithImage.title?.a?.$text) ||
+              getFeedTitleText(normalizedWithImage.title) ||
               '',
             reactions: normalizedWithImage.reactions ?? [],
           } as SocialPost & { type?: 'watch'; playBackId?: string };
@@ -2639,9 +2596,7 @@ function Home({ navigation, route }: Props) {
             content:
               normalizedWithImage.content ||
               socialBody ||
-              (typeof normalizedWithImage.title === 'string'
-                ? normalizedWithImage.title
-                : normalizedWithImage.title?.a?.$text) ||
+              getFeedTitleText(normalizedWithImage.title) ||
               '',
             reactions: normalizedWithImage.reactions ?? [],
           } as SocialPost & { type?: 'social' };
@@ -3100,7 +3055,7 @@ function Home({ navigation, route }: Props) {
             return;
           }
 
-          const socialId = normalizedItem.postId ?? normalizedItem.id ?? normalizedItem._id;
+          const socialId = getFeedPostId(normalizedItem);
           if (socialId !== undefined && socialId !== null) {
             nextVisibleSocialIds.add(String(socialId));
           }
@@ -3530,16 +3485,16 @@ function Home({ navigation, route }: Props) {
         onEndReachedThreshold={0.5}
         onEndReached={handleFeedEndReached}
         onScroll={handleScroll}
-        onScrollBeginDrag={(event) => {
+        onScrollBeginDrag={() => {
           hasUserInteractedRef.current = true;
           blockEndReachedUntilInteractionRef.current = false;
-          scrollIntent.onScrollBeginDrag(event);
+          scrollIntent.onScrollBeginDrag();
         }}
         onScrollEndDrag={scrollIntent.onScrollEndDrag}
-        onMomentumScrollBegin={(event) => {
+        onMomentumScrollBegin={() => {
           hasUserInteractedRef.current = true;
           blockEndReachedUntilInteractionRef.current = false;
-          scrollIntent.onMomentumScrollBegin(event);
+          scrollIntent.onMomentumScrollBegin();
         }}
         onMomentumScrollEnd={scrollIntent.onMomentumScrollEnd}
         onViewableItemsChanged={handleViewableItemsChanged}

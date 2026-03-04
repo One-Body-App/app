@@ -197,12 +197,30 @@ export type MyProfileStackParamsList = {
   InviteFriends: undefined;
 };
 
+export type MessagesStackParamsList = {
+  MessagesList: undefined;
+  NewMessage: undefined;
+  CreateGroup: undefined;
+  ChatDetail:
+    | {
+        conversationType: 'direct';
+        peerUserId: string;
+        peerName: string;
+        peerAvatarUri?: string;
+      }
+    | {
+        conversationType: 'group';
+        groupId: string;
+        groupName: string;
+      };
+};
+
 export type MainBottomStackParamsList = {
   ExploreTab: NavigatorScreenParams<ExploreStackParamsList>;
   ConnectTab: NavigatorScreenParams<ConnectStackParamsList>;
   PostTab: NavigatorScreenParams<PostStackParamsList>;
   HomeTab: NavigatorScreenParams<HomeStackParamsList>;
-  ZoeTab: undefined;
+  Messages: NavigatorScreenParams<MessagesStackParamsList> | undefined;
   MyProfileTab: NavigatorScreenParams<MyProfileStackParamsList>;
 };
 
@@ -210,6 +228,7 @@ export type MainDrawerParamsList = {
   Main: NavigatorScreenParams<MainBottomStackParamsList>;
 
   Connections: undefined;
+  ZoeAI: undefined;
   Saved: undefined;
   Settings: NavigatorScreenParams<SettingsStackParamsList>;
   PrayerWall: undefined;

@@ -241,7 +241,7 @@ function ArticleItem({
               </StyledText>
               {itemData?.description ? (
                 <StyledText
-                  numberOfLines={3}
+                  numberOfLines={2}
                   style={{ color: Colors.neutral['500'], marginTop: 2 }}
                 >
                   {itemData.description}

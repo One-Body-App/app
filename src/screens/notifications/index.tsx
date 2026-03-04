@@ -34,6 +34,7 @@ import {
   markQueuedNotificationAsRead,
   removeQueuedNotification,
 } from '@/src/services/notification/pushNotificationStorage';
+import { formatRelativeTime, nowUtcIso, parseIsoOrNull } from '@/src/utils/time';
 
 type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
 
@@ -57,7 +58,25 @@ type InboxNotification = {
   url?: string;
   iconUrl?: string;
   campaignId?: string;
+  notificationType?: string;
+  notificationSource?: string;
+  actorId?: string;
+  data?: Record<string, unknown>;
 };
+
+type SortMode = 'newest' | 'oldest';
+
+type NotificationListRow =
+  | {
+      kind: 'header';
+      id: string;
+      title: string;
+    }
+  | {
+      kind: 'item';
+      id: string;
+      item: InboxNotification;
+    };
 
 const CATEGORY_OPTIONS: CategoryOption[] = [
   { key: 'all', label: 'All' },
@@ -100,6 +119,69 @@ const MATCHERS: Record<Exclude<CategoryKey, 'all'>, RegExp> = {
   go: /\bgo\b|mission|missions|outreach/i,
 };
 
+const ACTIVITY_SIGNAL_REGEX = /\bcomment|reaction|reacted|message|messaged|reply|replied|like\b/i;
+const ONEBODY_WEB_HOSTS = new Set([
+  'app.onebodyapp.com',
+  'www.onebodyapp.com',
+  'onebodyapp.com',
+  'auth.onebodyapp.com',
+  'stagingauth.onebodyapp.com',
+]);
+
+const normalizeOptionalString = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const tryParseUrl = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+};
+
+const isOneBodyDeepLinkCandidate = (value?: string | null) => {
+  const parsed = tryParseUrl(value);
+  if (!parsed) {
+    return false;
+  }
+
+  const protocol = parsed.protocol.toLowerCase();
+  if (protocol === 'onebodyapp:') {
+    return true;
+  }
+
+  return (protocol === 'https:' || protocol === 'http:') && ONEBODY_WEB_HOSTS.has(parsed.host);
+};
+
+const normalizeNotificationTapUrl = (rawUrl?: string | null) => {
+  const parsed = tryParseUrl(rawUrl);
+  if (!parsed || !rawUrl) {
+    return rawUrl || '';
+  }
+
+  if (parsed.protocol.toLowerCase() === 'onebodyapp:') {
+    return rawUrl;
+  }
+
+  if (!ONEBODY_WEB_HOSTS.has(parsed.host)) {
+    return rawUrl;
+  }
+
+  const normalizedPath = parsed.pathname.replace(/^\/+/, '');
+  const query = parsed.search || '';
+  const hash = parsed.hash || '';
+  return `onebodyapp://${normalizedPath}${query}${hash}`;
+};
+
 const normalizeNotificationIconUrl = (value: unknown) => {
   if (typeof value !== 'string') {
     return undefined;
@@ -111,6 +193,8 @@ const normalizeNotificationIconUrl = (value: unknown) => {
 const toServerNotification = (item: any): InboxNotification | null => {
   const sourceId = String(item?._id || '');
   if (!sourceId) return null;
+  const data =
+    item?.data && typeof item.data === 'object' ? (item.data as Record<string, unknown>) : {};
 
   return {
     id: `server:${sourceId}`,
@@ -118,49 +202,88 @@ const toServerNotification = (item: any): InboxNotification | null => {
     sourceId,
     title: String(item?.title || 'Notification'),
     body: String(item?.description || ''),
-    createdAt: String(item?.createdAt || new Date().toISOString()),
+    createdAt: String(item?.createdAt || nowUtcIso()),
     read: Boolean(item?.read),
     url: typeof item?.url === 'string' ? item.url : undefined,
     iconUrl: normalizeNotificationIconUrl(
       item?.iconUrl || item?.notificationIconUrl || item?.icon || item?.imageUrl || item?.image
     ),
     campaignId: typeof item?.campaignId === 'string' ? item.campaignId : undefined,
+    notificationType: normalizeOptionalString(item?.type) || normalizeOptionalString(data?.type),
+    notificationSource:
+      normalizeOptionalString(item?.source) || normalizeOptionalString(data?.source),
+    actorId: normalizeOptionalString(data?.actorId),
+    data,
   };
 };
 
 const isInboxNotification = (value: InboxNotification | null): value is InboxNotification =>
   value !== null;
 
-const toPushNotification = (item: QueuedPushNotification): InboxNotification => ({
-  id: `push:${item.id}`,
-  source: 'push',
-  sourceId: item.id,
-  title: item.title || 'Notification',
-  body: item.body || '',
-  createdAt: item.createdAt || new Date().toISOString(),
-  read: Boolean(item.read),
-  url: item.url,
-  iconUrl: normalizeNotificationIconUrl(item.iconUrl || item.data?.iconUrl || item.data?.imageUrl),
-  campaignId: item.campaignId,
-});
+const toPushNotification = (item: QueuedPushNotification): InboxNotification => {
+  const data = (item.data || {}) as Record<string, unknown>;
 
-const formatRelativeTime = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
+  return {
+    id: `push:${item.id}`,
+    source: 'push',
+    sourceId: item.id,
+    title: item.title || 'Notification',
+    body: item.body || '',
+    createdAt: item.createdAt || nowUtcIso(),
+    read: Boolean(item.read),
+    url: item.url,
+    iconUrl: normalizeNotificationIconUrl(
+      item.iconUrl || item.data?.iconUrl || item.data?.imageUrl
+    ),
+    campaignId: item.campaignId,
+    notificationType:
+      normalizeOptionalString(item.type) ||
+      normalizeOptionalString(item.data?.type) ||
+      normalizeOptionalString(item.data?.notificationType),
+    notificationSource: normalizeOptionalString(item.data?.source),
+    actorId: normalizeOptionalString(item.data?.actorId),
+    data,
+  };
+};
+
+const getCreatedAtTimestamp = (value: string) => {
+  const timestamp = parseIsoOrNull(value)?.getTime() ?? 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const sortNotifications = (items: InboxNotification[], sortMode: SortMode) =>
+  [...items].sort((first, second) => {
+    const firstTime = getCreatedAtTimestamp(first.createdAt);
+    const secondTime = getCreatedAtTimestamp(second.createdAt);
+    return sortMode === 'newest' ? secondTime - firstTime : firstTime - secondTime;
+  });
+
+const containsActivitySignal = (value?: string) =>
+  typeof value === 'string' && ACTIVITY_SIGNAL_REGEX.test(value.toLowerCase());
+
+const isActivityNotification = (item: InboxNotification) => {
+  const text = `${item.title} ${item.body}`;
+  return (
+    containsActivitySignal(item.notificationType) ||
+    containsActivitySignal(item.notificationSource) ||
+    containsActivitySignal(text)
+  );
+};
+
+const isCreatorNotification = (
+  item: InboxNotification,
+  approvedCreatorFollowingSet: Set<string>
+) => {
+  if (!isActivityNotification(item)) {
+    return false;
   }
 
-  const diffMs = Date.now() - date.getTime();
-  const minutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
-  if (minutes < 60) return `${minutes}m ago`;
+  const actorId = normalizeOptionalString(item.actorId);
+  if (!actorId) {
+    return false;
+  }
 
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-
-  return date.toLocaleDateString();
+  return approvedCreatorFollowingSet.has(actorId);
 };
 
 const getNotificationCategories = (item: InboxNotification): CategoryKey[] => {
@@ -197,10 +320,12 @@ function NotificationScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('newest');
   const [menuNotification, setMenuNotification] = useState<InboxNotification | null>(null);
   const [mutedCategories, setMutedCategories] = useState<Array<Exclude<CategoryKey, 'all'>>>([]);
   const [listInstanceKey, setListInstanceKey] = useState(0);
   const [failedRemoteIcons, setFailedRemoteIcons] = useState<Record<string, true>>({});
+  const [approvedCreatorFollowingIds, setApprovedCreatorFollowingIds] = useState<string[]>([]);
 
   const loadNotifications = useCallback(
     async (showLoader = false) => {
@@ -216,13 +341,18 @@ function NotificationScreen({ navigation }: Props) {
       }
 
       try {
-        const [serverResult, queuedPushResult] = await Promise.allSettled([
+        const [serverResult, queuedPushResult, followingResult] = await Promise.allSettled([
           ApiCall<{ data?: any[] }>({
             route: 'user/notifications',
             verb: 'get',
             token,
           }),
           getQueuedNotifications(),
+          ApiCall<{ data?: any[] }>({
+            route: 'user/get-following',
+            verb: 'get',
+            token,
+          }),
         ]);
 
         const queuedPush = queuedPushResult.status === 'fulfilled' ? queuedPushResult.value : [];
@@ -262,9 +392,40 @@ function NotificationScreen({ navigation }: Props) {
 
         const merged = [...serverNotifications, ...pushNotifications].sort(
           (first, second) =>
-            new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
+            (parseIsoOrNull(second.createdAt)?.getTime() || 0) -
+            (parseIsoOrNull(first.createdAt)?.getTime() || 0)
         );
 
+        const nextApprovedCreatorIds =
+          followingResult.status === 'fulfilled' &&
+          followingResult.value?.status === 200 &&
+          Array.isArray(followingResult.value?.response?.data)
+            ? followingResult.value.response.data.reduce<string[]>((accumulator, entry: any) => {
+                const id = String(entry?._id || entry?.id || '').trim();
+                if (!id) {
+                  return accumulator;
+                }
+
+                const influencerStatus = String(
+                  entry?.influencerProfile?.influencerStatus ||
+                    entry?.influencerStatus ||
+                    entry?.status ||
+                    ''
+                ).toLowerCase();
+                const isApprovedCreator =
+                  influencerStatus === 'approved' ||
+                  entry?.isApprovedInfluencer === true ||
+                  entry?.userData?.isApprovedInfluencer === true;
+
+                if (isApprovedCreator) {
+                  accumulator.push(id);
+                }
+
+                return accumulator;
+              }, [])
+            : [];
+
+        setApprovedCreatorFollowingIds(Array.from(new Set(nextApprovedCreatorIds)));
         setNotifications(merged);
         setFailedRemoteIcons((current) => {
           const validIds = new Set(merged.map((item) => item.id));
@@ -365,6 +526,18 @@ function NotificationScreen({ navigation }: Props) {
         return;
       }
 
+      const normalizedUrl = normalizeNotificationTapUrl(item.url);
+      const shouldTryInApp = isOneBodyDeepLinkCandidate(item.url) || normalizedUrl !== item.url;
+
+      if (shouldTryInApp) {
+        try {
+          await Linking.openURL(normalizedUrl);
+          return;
+        } catch (_inAppError) {
+          // Fall back to external open for malformed/unhandled links.
+        }
+      }
+
       try {
         await Linking.openURL(item.url);
       } catch (_error) {
@@ -403,6 +576,68 @@ function NotificationScreen({ navigation }: Props) {
 
     return withoutMuted.filter((item) => getNotificationCategories(item).includes(activeCategory));
   }, [activeCategory, mutedCategories, notifications]);
+
+  const approvedCreatorFollowingSet = useMemo(
+    () =>
+      new Set(
+        approvedCreatorFollowingIds
+          .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+          .filter((entry) => entry.length > 0)
+      ),
+    [approvedCreatorFollowingIds]
+  );
+
+  const sortedNotifications = useMemo(
+    () => sortNotifications(visibleNotifications, sortMode),
+    [sortMode, visibleNotifications]
+  );
+
+  const { creatorNotifications, regularNotifications } = useMemo(() => {
+    const creators: InboxNotification[] = [];
+    const regular: InboxNotification[] = [];
+
+    sortedNotifications.forEach((item) => {
+      if (isCreatorNotification(item, approvedCreatorFollowingSet)) {
+        creators.push(item);
+      } else {
+        regular.push(item);
+      }
+    });
+
+    return { creatorNotifications: creators, regularNotifications: regular };
+  }, [approvedCreatorFollowingSet, sortedNotifications]);
+
+  const listRows = useMemo<NotificationListRow[]>(() => {
+    if (!creatorNotifications.length) {
+      return regularNotifications.map((item) => ({
+        kind: 'item',
+        id: `item-${item.id}`,
+        item,
+      }));
+    }
+
+    const nextRows: NotificationListRow[] = [
+      { kind: 'header', id: 'header-creators', title: 'Creators' },
+      ...creatorNotifications.map((item) => ({
+        kind: 'item' as const,
+        id: `item-${item.id}`,
+        item,
+      })),
+    ];
+
+    if (regularNotifications.length) {
+      nextRows.push({ kind: 'header', id: 'header-all-notifications', title: 'All Notifications' });
+      nextRows.push(
+        ...regularNotifications.map((item) => ({
+          kind: 'item' as const,
+          id: `item-${item.id}`,
+          item,
+        }))
+      );
+    }
+
+    return nextRows;
+  }, [creatorNotifications, regularNotifications]);
 
   const menuCategory = menuNotification ? getPrimaryCategory(menuNotification) : 'feed';
 
@@ -453,53 +688,72 @@ function NotificationScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipsContainer}
-      >
-        {CATEGORY_OPTIONS.map((category) => {
-          const active = activeCategory === category.key;
-          const iconName = CHIP_ICONS[category.key];
-          let chipIconColor = dark ? Colors.neutral[300] : Colors.neutral[300];
-          if (active) {
-            chipIconColor = dark ? Colors.neutral.brand : Colors.main.white;
-          }
-          return (
-            <Pressable
-              key={category.key}
-              onPress={() => setActiveCategory(category.key)}
-              style={[
-                styles.chip,
-                { minWidth: CHIP_MIN_WIDTHS[category.key] },
-                active && styles.activeChip,
-              ]}
-            >
-              <View style={styles.chipInner}>
-                {iconName ? (
-                  <MaterialCommunityIcons
-                    name={iconName}
-                    size={17}
-                    color={chipIconColor}
-                    style={styles.chipIcon}
-                  />
-                ) : null}
-                <StyledText style={[styles.chipLabel, active && styles.activeChipLabel]}>
-                  {category.label}
-                </StyledText>
-              </View>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.filtersRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsContainer}
+          style={styles.chipsScroll}
+        >
+          {CATEGORY_OPTIONS.map((category) => {
+            const active = activeCategory === category.key;
+            const iconName = CHIP_ICONS[category.key];
+            let chipIconColor = dark ? Colors.neutral[300] : Colors.neutral[300];
+            if (active) {
+              chipIconColor = dark ? Colors.neutral.brand : Colors.main.white;
+            }
+            return (
+              <Pressable
+                key={category.key}
+                onPress={() => setActiveCategory(category.key)}
+                style={[
+                  styles.chip,
+                  { minWidth: CHIP_MIN_WIDTHS[category.key] },
+                  active && styles.activeChip,
+                ]}
+              >
+                <View style={styles.chipInner}>
+                  {iconName ? (
+                    <MaterialCommunityIcons
+                      name={iconName}
+                      size={17}
+                      color={chipIconColor}
+                      style={styles.chipIcon}
+                    />
+                  ) : null}
+                  <StyledText style={[styles.chipLabel, active && styles.activeChipLabel]}>
+                    {category.label}
+                  </StyledText>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        <Pressable
+          onPress={() => setSortMode((current) => (current === 'newest' ? 'oldest' : 'newest'))}
+          style={styles.sortToggle}
+        >
+          <StyledText style={styles.sortToggleText}>
+            {sortMode === 'newest' ? 'Most recent' : 'Oldest first'}
+          </StyledText>
+          <MaterialCommunityIcons
+            name={sortMode === 'newest' ? 'chevron-down' : 'chevron-up'}
+            size={18}
+            color={dark ? Colors.neutral[200] : Colors.neutral[300]}
+            style={styles.sortToggleIcon}
+          />
+        </Pressable>
+      </View>
 
       <FlatList
-        key={`notifications-${listInstanceKey}-${activeCategory}`}
-        data={visibleNotifications}
-        keyExtractor={(item) => item.id}
+        style={styles.list}
+        key={`notifications-${listInstanceKey}-${activeCategory}-${sortMode}`}
+        data={listRows}
+        keyExtractor={(row) => row.id}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listRows.length > 0 ? styles.listContent : styles.listContentEmpty}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -510,7 +764,16 @@ function NotificationScreen({ navigation }: Props) {
             }}
           />
         }
-        renderItem={({ item }) => {
+        renderItem={({ item: row }) => {
+          if (row.kind === 'header') {
+            return (
+              <View style={styles.sectionHeaderWrap}>
+                <StyledText style={styles.sectionHeaderText}>{row.title}</StyledText>
+              </View>
+            );
+          }
+
+          const { item } = row;
           const hasRemoteIcon = Boolean(item.iconUrl) && !failedRemoteIcons[item.id];
           let avatarContent: React.ReactNode;
 
@@ -712,6 +975,38 @@ const createStyles = (dark: boolean, colors: any) =>
       paddingBottom: spacing.x8,
       gap: spacing.x8,
     },
+    filtersRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingRight: spacing.x16,
+    },
+    chipsScroll: {
+      flex: 1,
+    },
+    sortToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 14,
+      height: 28,
+      paddingHorizontal: spacing.x8,
+      marginLeft: spacing.x8,
+      backgroundColor: dark ? Colors.neutral[800] : '#EDEEF1',
+      borderWidth: 1,
+      borderColor: dark ? Colors.neutral[700] : '#E0E2E7',
+    },
+    sortToggleText: {
+      ...Typography.body.x1,
+      color: dark ? Colors.neutral[200] : '#5F636B',
+      marginRight: 2,
+    },
+    sortToggleIcon: {
+      marginTop: 1,
+    },
+    list: {
+      flex: 1,
+    },
     chip: {
       paddingHorizontal: 11,
       height: 25,
@@ -741,7 +1036,23 @@ const createStyles = (dark: boolean, colors: any) =>
     listContent: {
       paddingHorizontal: spacing.x16,
       paddingBottom: spacing.x48,
-      paddingTop: 0,
+      paddingTop: spacing.x8,
+    },
+    listContentEmpty: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.x16,
+      paddingBottom: spacing.x48,
+      paddingTop: spacing.x8,
+    },
+    sectionHeaderWrap: {
+      paddingTop: spacing.x8,
+      paddingBottom: spacing.x5,
+    },
+    sectionHeaderText: {
+      ...Typography.body.x2M,
+      color: dark ? Colors.neutral[300] : '#6D727A',
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
     },
     card: {
       flexDirection: 'row',
@@ -799,7 +1110,7 @@ const createStyles = (dark: boolean, colors: any) =>
       width: 10,
       height: 10,
       borderRadius: 5,
-      backgroundColor: '#3B82F6',
+      backgroundColor: '#12D2D9',
       marginRight: spacing.x5,
     },
     cardTime: {
@@ -822,9 +1133,9 @@ const createStyles = (dark: boolean, colors: any) =>
       color: colors.text,
     },
     emptyContainer: {
-      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
+      flexGrow: 1,
       paddingBottom: spacing.x72,
       paddingHorizontal: spacing.x32,
     },

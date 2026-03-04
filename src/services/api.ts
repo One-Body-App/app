@@ -3,6 +3,8 @@ import { DevSettings } from 'react-native';
 import { BASE_URL } from './constants';
 import { getValidAccessToken, refreshAuthTokens } from './authTokens';
 
+const shouldPreferManagedSessionToken = (route: string) => !route.startsWith('auth/social-login');
+
 export const ApiCall = async <T = any>({
   params,
   route,
@@ -25,92 +27,93 @@ export const ApiCall = async <T = any>({
   suppressErrorLog?: boolean;
   timeoutMs?: number;
 }): Promise<{ status: number; response: T }> => {
+  let tokenToUse = '';
+  const requestUrl = baseurl ? `${baseurl}/${route}` : `${!external ? `${BASE_URL}/` : ''}${route}`;
+
+  const makeAuthHeader = (value: string) =>
+    value ? { Authorization: `Bearer ${value}` } : undefined;
+
+  const executeRequest = async (url: string, authValue?: string) => {
+    const authHeader = makeAuthHeader(authValue ?? tokenToUse);
+    let response: AxiosResponse<unknown, unknown> | null = null;
+
+    switch (verb) {
+      case 'get':
+        response = await axios.get(
+          url,
+          authHeader ? { headers: authHeader, timeout: timeoutMs } : { timeout: timeoutMs }
+        );
+        break;
+      case 'post':
+        response = await axios.post(
+          url,
+          params,
+          authHeader
+            ? {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                  ...authHeader,
+                },
+                timeout: timeoutMs,
+              }
+            : {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                },
+                timeout: timeoutMs,
+              }
+        );
+        break;
+      case 'patch':
+        response = await axios.patch(
+          url,
+          params,
+          authHeader
+            ? {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                  ...authHeader,
+                },
+                timeout: timeoutMs,
+              }
+            : {
+                headers: {
+                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
+                },
+                timeout: timeoutMs,
+              }
+        );
+        break;
+      case 'delete':
+        response = await axios.delete(url, {
+          headers: authHeader,
+          params,
+          timeout: timeoutMs,
+        });
+        break;
+      default:
+        response = null;
+    }
+
+    return response;
+  };
+
   try {
-    let tokenToUse = '';
     if (token !== undefined) {
+      const managedAccessToken = shouldPreferManagedSessionToken(route)
+        ? await getValidAccessToken()
+        : null;
+
       if (typeof token === 'string' && token.length > 0) {
-        tokenToUse = token;
+        // Most app calls pass Redux token strings. Prefer the managed token source so we don't
+        // keep retrying with stale in-memory tokens after refresh.
+        tokenToUse = managedAccessToken ?? token;
       } else {
-        tokenToUse = (await getValidAccessToken()) ?? '';
+        tokenToUse = managedAccessToken ?? '';
       }
     }
 
-    let url = null;
-    if (baseurl) {
-      url = `${baseurl}/${route}`;
-    } else {
-      //
-      // url = `${!external ? `${BASE_URL}/` : ''}${route}`;
-      url = `${!external ? `${BASE_URL}/` : ''}${route}`;
-    }
-
-    const makeAuthHeader = (value: string) =>
-      value ? { Authorization: `Bearer ${value}` } : undefined;
-
-    const performRequest = async (authValue?: string) => {
-      const authHeader = makeAuthHeader(authValue ?? tokenToUse);
-      let response: AxiosResponse<unknown, unknown> | null = null;
-      switch (verb) {
-        case 'get':
-          response = await axios.get(
-            url,
-            authHeader ? { headers: authHeader, timeout: timeoutMs } : { timeout: timeoutMs }
-          );
-          break;
-        case 'post':
-          response = await axios.post(
-            url,
-            params,
-            authHeader
-              ? {
-                  headers: {
-                    'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
-                    ...authHeader,
-                  },
-                  timeout: timeoutMs,
-                }
-              : {
-                  headers: {
-                    'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
-                  },
-                  timeout: timeoutMs,
-                }
-          );
-          break;
-        case 'patch':
-          response = await axios.patch(
-            url,
-            params,
-            authHeader
-              ? {
-                  headers: {
-                    'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
-                    ...authHeader,
-                  },
-                  timeout: timeoutMs,
-                }
-              : {
-                  headers: {
-                    'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
-                  },
-                  timeout: timeoutMs,
-                }
-          );
-          break;
-        case 'delete':
-          response = await axios.delete(url, {
-            headers: authHeader,
-            params,
-            timeout: timeoutMs,
-          });
-          break;
-        default:
-          return null;
-      }
-      return response;
-    };
-
-    const response = await performRequest();
+    const response = await executeRequest(requestUrl);
     if (!response) {
       return { status: 400, response: 'method not found' as any };
     }
@@ -126,54 +129,48 @@ export const ApiCall = async <T = any>({
     const status = axiosError?.response?.status;
     const isAuthEndpoint = route.startsWith('auth/login') || route.startsWith('auth/register');
     const isRefreshEndpoint = route.startsWith('auth/refresh');
+    const canRetryWithManagedToken =
+      status === 401 &&
+      token !== undefined &&
+      typeof token === 'string' &&
+      token.length > 0 &&
+      shouldPreferManagedSessionToken(route);
     const canRetryWithRefresh =
       status === 401 && token !== undefined && !isRefreshEndpoint && !isAuthEndpoint;
+
+    if (canRetryWithManagedToken) {
+      const managedAccess = await getValidAccessToken();
+      if (managedAccess && managedAccess !== tokenToUse) {
+        try {
+          const managedRetryResponse = await executeRequest(requestUrl, managedAccess);
+          if (managedRetryResponse) {
+            return { status: 200, response: managedRetryResponse.data as T };
+          }
+        } catch (managedRetryErr: unknown) {
+          const managedRetryAxiosError = managedRetryErr as AxiosError;
+          const managedRetryStatus = managedRetryAxiosError?.response?.status ?? 400;
+          const managedRetryMessage =
+            managedRetryAxiosError.response?.data ??
+            managedRetryAxiosError.message ??
+            managedRetryErr;
+          if (!suppressErrorLog) {
+            console.warn(
+              'ApiCall managed-token retry error',
+              route,
+              managedRetryStatus,
+              managedRetryMessage
+            );
+          }
+        }
+      }
+    }
 
     if (canRetryWithRefresh) {
       const refreshed = await refreshAuthTokens();
       const refreshedAccess = refreshed?.accessToken;
       if (refreshedAccess) {
         try {
-          const retryUrl = baseurl
-            ? `${baseurl}/${route}`
-            : `${!external ? `${BASE_URL}/` : ''}${route}`;
-          const retryHeaders = { Authorization: `Bearer ${refreshedAccess}` };
-          let retryResponse: AxiosResponse<unknown, unknown> | null = null;
-          switch (verb) {
-            case 'get':
-              retryResponse = await axios.get(retryUrl, {
-                headers: retryHeaders,
-                timeout: timeoutMs,
-              });
-              break;
-            case 'post':
-              retryResponse = await axios.post(retryUrl, params, {
-                headers: {
-                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
-                  ...retryHeaders,
-                },
-                timeout: timeoutMs,
-              });
-              break;
-            case 'patch':
-              retryResponse = await axios.patch(retryUrl, params, {
-                headers: {
-                  'Content-Type': isFormUrlEncode ? 'multipart/form-data' : 'application/json',
-                  ...retryHeaders,
-                },
-                timeout: timeoutMs,
-              });
-              break;
-            case 'delete':
-              retryResponse = await axios.delete(retryUrl, {
-                headers: retryHeaders,
-                params,
-                timeout: timeoutMs,
-              });
-              break;
-            default:
-              retryResponse = null;
-          }
+          const retryResponse = await executeRequest(requestUrl, refreshedAccess);
           if (retryResponse) {
             return { status: 200, response: retryResponse.data as T };
           }

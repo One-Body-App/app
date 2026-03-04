@@ -12,6 +12,9 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		192AF28EB6144CDEA8AB4BC5 /* OpenSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F600F980D00242D595AFCFC2 /* OpenSans-Regular.ttf */; };
 		2090F3BBD18A4F16B334AC91 /* OpenSans-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8968D0792BEF457284B37032 /* OpenSans-ExtraBold.ttf */; };
+		27BEB5F107001BD7C3A8030E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 86F36F35A00072FD0271974E /* Foundation.framework */; };
+		2C3360096D32D6707E1746F5 /* OneBodyNotificationServiceExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 83DD21742A1173CA286F24C8 /* OneBodyNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+		2E5AE84D5BE1625EA6B5828C /* Pods_OneBodyNotificationServiceExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 75315A586E0038FD62E6797E /* Pods_OneBodyNotificationServiceExtension.framework */; };
 		2EA93BA195A84134B1AEF091 /* OpenSans_Condensed-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 91847383F0F5441BB127ADEB /* OpenSans_Condensed-BoldItalic.ttf */; };
 		35D194E7755D4600A914EFFA /* OpenSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0BF4D5D6250C4EF988083CB7 /* OpenSans-SemiBold.ttf */; };
 		3904D6ABFBAB467C96934354 /* OpenSans-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3450CE321B0A4152A308E81C /* OpenSans-LightItalic.ttf */; };
@@ -21,6 +24,7 @@
 		4CF5837DA7A0A201A54B31BA /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91F16DD5215F81E3F6EE2CA /* ExpoModulesProvider.swift */; };
 		5C505C2A543243BE9F9DBC43 /* OpenSans-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C83D0FD48824D7E864A921B /* OpenSans-BoldItalic.ttf */; };
 		61991BDF50CA4D6F919B7704 /* OpenSans_SemiCondensed-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EE6CB3AC63364411B65CF45C /* OpenSans_SemiCondensed-LightItalic.ttf */; };
+		68AAD907259692308732C638 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC87182345B3F0EBA21FE6B /* NotificationService.swift */; };
 		6966016AF3054CEEBC90B8FB /* OpenSans_SemiCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9675D4F89B6E499787990203 /* OpenSans_SemiCondensed-ExtraBold.ttf */; };
 		6D832677E8A94471A7D62C87 /* OpenSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 50E1FEF601FE4585AEDBCC7F /* OpenSans-Medium.ttf */; };
 		7278A14B289CB24F003FC089 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7278A14A289CB24F003FC089 /* GoogleService-Info.plist */; };
@@ -65,6 +69,13 @@
 			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
 			remoteInfo = onebody;
 		};
+		8DF3A6FCB2BEB6C1C05A9C0C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B4E2BEE31E844DB85E9C9645;
+			remoteInfo = OneBodyNotificationServiceExtension;
+		};
 		C0D3F7A02F0DF05800652AC4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C0D3F79C2F0DF05400652AC4 /* RNHapticFeedback.xcodeproj */;
@@ -74,11 +85,26 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		33E41ED2A36DED52D7F3533F /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				2C3360096D32D6707E1746F5 /* OneBodyNotificationServiceExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		00E356EE1AD99517003FC87E /* onebodyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = onebodyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		08B5E8DB14964BEEA703163E /* OpenSans_Condensed-MediumItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-MediumItalic.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-MediumItalic.ttf"; sourceTree = "<group>"; };
 		0BF4D5D6250C4EF988083CB7 /* OpenSans-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-SemiBold.ttf"; path = "../src/assets/fonts/OpenSans-SemiBold.ttf"; sourceTree = "<group>"; };
+		0D359C9E4A19ECE6087AB3B7 /* Pods-OneBodyNotificationServiceExtension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneBodyNotificationServiceExtension.release.xcconfig"; path = "Target Support Files/Pods-OneBodyNotificationServiceExtension/Pods-OneBodyNotificationServiceExtension.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* onebody.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = onebody.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = onebody/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = onebody/Info.plist; sourceTree = "<group>"; };
@@ -86,6 +112,7 @@
 		178CD6E161734C35870FE3F7 /* OpenSans_SemiCondensed-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-ExtraBoldItalic.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
 		2BDAB1CF64254CF5B0D90A53 /* OpenSans_SemiCondensed-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-Medium.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-Medium.ttf"; sourceTree = "<group>"; };
 		2E67AB8045CA4BEEBCEBD50B /* OpenSans_Condensed-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-Medium.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-Medium.ttf"; sourceTree = "<group>"; };
+		2FF83A1F3FA37459E50D2011 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3450CE321B0A4152A308E81C /* OpenSans-LightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-LightItalic.ttf"; path = "../src/assets/fonts/OpenSans-LightItalic.ttf"; sourceTree = "<group>"; };
 		3E5D2CD7D9DC4C38898F98DB /* OpenSans_Condensed-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-ExtraBoldItalic.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
 		4AD548BFD8C147A5A3768825 /* OpenSans_SemiCondensed-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-Light.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-Light.ttf"; sourceTree = "<group>"; };
@@ -106,11 +133,15 @@
 		728E61972B1FFDB80013DA59 /* splash.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = splash.mp4; sourceTree = "<group>"; };
 		72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		75315A586E0038FD62E6797E /* Pods_OneBodyNotificationServiceExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_OneBodyNotificationServiceExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A33052A304E4AF1B4A20B1E /* OpenSans_Condensed-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-SemiBold.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-SemiBold.ttf"; sourceTree = "<group>"; };
 		7C83D0FD48824D7E864A921B /* OpenSans-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-BoldItalic.ttf"; path = "../src/assets/fonts/OpenSans-BoldItalic.ttf"; sourceTree = "<group>"; };
 		7E417E7EA4764689BA519E04 /* OpenSans-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-SemiBoldItalic.ttf"; path = "../src/assets/fonts/OpenSans-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
+		83DD21742A1173CA286F24C8 /* OneBodyNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = OneBodyNotificationServiceExtension.appex; path = OneBodyNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		86F36F35A00072FD0271974E /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		8968D0792BEF457284B37032 /* OpenSans-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-ExtraBold.ttf"; path = "../src/assets/fonts/OpenSans-ExtraBold.ttf"; sourceTree = "<group>"; };
 		91847383F0F5441BB127ADEB /* OpenSans_Condensed-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-BoldItalic.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-BoldItalic.ttf"; sourceTree = "<group>"; };
+		96269CECE12FE0EAADC74E3C /* Pods-OneBodyNotificationServiceExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneBodyNotificationServiceExtension.debug.xcconfig"; path = "Target Support Files/Pods-OneBodyNotificationServiceExtension/Pods-OneBodyNotificationServiceExtension.debug.xcconfig"; sourceTree = "<group>"; };
 		9675D4F89B6E499787990203 /* OpenSans_SemiCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-ExtraBold.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-ExtraBold.ttf"; sourceTree = "<group>"; };
 		967AD7B40C4A481585BE3032 /* OpenSans_SemiCondensed-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-Italic.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-Italic.ttf"; sourceTree = "<group>"; };
 		9AF47B614ED740FC812E7C7A /* OpenSans_Condensed-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-Regular.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-Regular.ttf"; sourceTree = "<group>"; };
@@ -118,6 +149,7 @@
 		ABA070994F3D498A8F8D1519 /* OpenSans_Condensed-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-Italic.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-Italic.ttf"; sourceTree = "<group>"; };
 		ABB5AA1D3BBE4F9A9B558AF0 /* OpenSans-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-Italic.ttf"; path = "../src/assets/fonts/OpenSans-Italic.ttf"; sourceTree = "<group>"; };
 		AF3A9BB15E764506B2E6F756 /* OpenSans_SemiCondensed-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-SemiBoldItalic.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
+		BDC87182345B3F0EBA21FE6B /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		C0D3F79C2F0DF05400652AC4 /* RNHapticFeedback.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = RNHapticFeedback.xcodeproj; sourceTree = "<group>"; };
 		C0D3F7A22F0DF12000652AC4 /* RNReactNativeHapticFeedback.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RNReactNativeHapticFeedback.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0E94AA5412B4975A8FF9D2D /* OpenSans_SemiCondensed-MediumItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-MediumItalic.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-MediumItalic.ttf"; sourceTree = "<group>"; };
@@ -132,6 +164,7 @@
 		F27285D2127D4BBC9F5FAEE6 /* OpenSans_Condensed-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-ExtraBold.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-ExtraBold.ttf"; sourceTree = "<group>"; };
 		F3697ABF779C4510A7A920FF /* OpenSans-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-Bold.ttf"; path = "../src/assets/fonts/OpenSans-Bold.ttf"; sourceTree = "<group>"; };
 		F600F980D00242D595AFCFC2 /* OpenSans-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-Regular.ttf"; path = "../src/assets/fonts/OpenSans-Regular.ttf"; sourceTree = "<group>"; };
+		F8DAF2013052FE1EC03A61A7 /* OneBodyNotificationServiceExtension.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = OneBodyNotificationServiceExtension.entitlements; sourceTree = "<group>"; };
 		FE16E9142207BEF3407166D3 /* Pods-onebody.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-onebody.debug.xcconfig"; path = "Target Support Files/Pods-onebody/Pods-onebody.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -149,6 +182,15 @@
 			files = (
 				C0D3F7A32F0DF12000652AC4 /* RNReactNativeHapticFeedback.framework in Frameworks */,
 				BC63E9790B59DF51F8397F02 /* Pods_onebody.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		46B0A1BF1F9D98A4F535C04B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27BEB5F107001BD7C3A8030E /* Foundation.framework in Frameworks */,
+				2E5AE84D5BE1625EA6B5828C /* Pods_OneBodyNotificationServiceExtension.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -190,6 +232,8 @@
 				C0D3F7A22F0DF12000652AC4 /* RNReactNativeHapticFeedback.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				158542D8825809DC65F10471 /* Pods_onebody.framework */,
+				B88D19B46B91EA95917873E9 /* iOS */,
+				75315A586E0038FD62E6797E /* Pods_OneBodyNotificationServiceExtension.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -262,6 +306,7 @@
 				7283441D28AF460F0048A31B /* onebody-Bridging-Header.h */,
 				609B3330584E4B66AB4C92BB /* Resources */,
 				A26214E56A28782452FEB0D2 /* ExpoModulesProviders */,
+				B0C0B9F734A3B6BD5981D2D4 /* OneBodyNotificationServiceExtension */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -273,6 +318,7 @@
 			children = (
 				13B07F961A680F5B00A75B9A /* onebody.app */,
 				00E356EE1AD99517003FC87E /* onebodyTests.xctest */,
+				83DD21742A1173CA286F24C8 /* OneBodyNotificationServiceExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -293,11 +339,32 @@
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
+		B0C0B9F734A3B6BD5981D2D4 /* OneBodyNotificationServiceExtension */ = {
+			isa = PBXGroup;
+			children = (
+				2FF83A1F3FA37459E50D2011 /* Info.plist */,
+				BDC87182345B3F0EBA21FE6B /* NotificationService.swift */,
+				F8DAF2013052FE1EC03A61A7 /* OneBodyNotificationServiceExtension.entitlements */,
+			);
+			name = OneBodyNotificationServiceExtension;
+			path = OneBodyNotificationServiceExtension;
+			sourceTree = "<group>";
+		};
+		B88D19B46B91EA95917873E9 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				86F36F35A00072FD0271974E /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
 				FE16E9142207BEF3407166D3 /* Pods-onebody.debug.xcconfig */,
 				542F92835AA0A70F899A9FFC /* Pods-onebody.release.xcconfig */,
+				0D359C9E4A19ECE6087AB3B7 /* Pods-OneBodyNotificationServiceExtension.release.xcconfig */,
+				96269CECE12FE0EAADC74E3C /* Pods-OneBodyNotificationServiceExtension.debug.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -345,15 +412,35 @@
 				CC068BFAE89399049CB89EC9 /* [CP] Embed Pods Frameworks */,
 				FB560F97ED02A1A1D6A47CB3 /* [CP] Copy Pods Resources */,
 				8909C73B96B582894A55C811 /* [CP-User] [RNFB] Core Configuration */,
+				33E41ED2A36DED52D7F3533F /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B5F547624DE0B85A8A6C0E95 /* PBXTargetDependency */,
 			);
 			name = onebody;
 			productName = onebody;
 			productReference = 13B07F961A680F5B00A75B9A /* onebody.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B4E2BEE31E844DB85E9C9645 /* OneBodyNotificationServiceExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8BCBC40572BDBD82096F6817 /* Build configuration list for PBXNativeTarget "OneBodyNotificationServiceExtension" */;
+			buildPhases = (
+				2E400FBF4D08CEB161B462C9 /* [CP] Check Pods Manifest.lock */,
+				146A803D001298A3D7653965 /* Sources */,
+				46B0A1BF1F9D98A4F535C04B /* Frameworks */,
+				5AF2B4A8C24003B82FAA7DE1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OneBodyNotificationServiceExtension;
+			productName = OneBodyNotificationServiceExtension;
+			productReference = 83DD21742A1173CA286F24C8 /* OneBodyNotificationServiceExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -370,6 +457,10 @@
 					};
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1340;
+					};
+					B4E2BEE31E844DB85E9C9645 = {
+						DevelopmentTeam = 9N63S64RJ2;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -394,6 +485,7 @@
 			targets = (
 				13B07F861A680F5B00A75B9A /* onebody */,
 				00E356ED1AD99517003FC87E /* onebodyTests */,
+				B4E2BEE31E844DB85E9C9645 /* OneBodyNotificationServiceExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -465,6 +557,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5AF2B4A8C24003B82FAA7DE1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -500,6 +599,28 @@
 			);
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Pods-onebody-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		2E400FBF4D08CEB161B462C9 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-OneBodyNotificationServiceExtension-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -612,6 +733,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		146A803D001298A3D7653965 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68AAD907259692308732C638 /* NotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -619,6 +748,12 @@
 			isa = PBXTargetDependency;
 			target = 13B07F861A680F5B00A75B9A /* onebody */;
 			targetProxy = 00E356F41AD99517003FC87E /* PBXContainerItemProxy */;
+		};
+		B5F547624DE0B85A8A6C0E95 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = OneBodyNotificationServiceExtension;
+			target = B4E2BEE31E844DB85E9C9645 /* OneBodyNotificationServiceExtension */;
+			targetProxy = 8DF3A6FCB2BEB6C1C05A9C0C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -990,6 +1125,57 @@
 			};
 			name = Release;
 		};
+		52DF01D50617BB0ECCFD55EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 96269CECE12FE0EAADC74E3C /* Pods-OneBodyNotificationServiceExtension.debug.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = OneBodyNotificationServiceExtension/OneBodyNotificationServiceExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 9N63S64RJ2;
+				INFOPLIST_FILE = OneBodyNotificationServiceExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.onebodyapp.OneBodyNotificationServiceExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		81FB485119C2FE979BDA840B /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0D359C9E4A19ECE6087AB3B7 /* Pods-OneBodyNotificationServiceExtension.release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = OneBodyNotificationServiceExtension/OneBodyNotificationServiceExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 9N63S64RJ2;
+				INFOPLIST_FILE = OneBodyNotificationServiceExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.onebodyapp.OneBodyNotificationServiceExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1206,6 +1392,15 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
+		};
+		8BCBC40572BDBD82096F6817 /* Build configuration list for PBXNativeTarget "OneBodyNotificationServiceExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				81FB485119C2FE979BDA840B /* Release */,
+				52DF01D50617BB0ECCFD55EA /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

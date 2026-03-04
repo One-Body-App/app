@@ -1,5 +1,5 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
@@ -29,6 +29,7 @@ function SinglePost({ navigation, route }: Props) {
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors, dark } = useTheme();
+  const backNavigationInFlightRef = useRef(false);
   const resetToHomeFeed = useCallback(() => {
     navigation.reset({
       index: 0,
@@ -49,14 +50,14 @@ function SinglePost({ navigation, route }: Props) {
     });
   }, [navigation]);
   const handleBackPress = () => {
-    const navigationState = navigation.getState();
-    const previousRoute =
-      navigationState.index > 0 ? navigationState.routes[navigationState.index - 1] : undefined;
-
-    if (Platform.OS === 'android' && previousRoute?.name === 'MainRoot') {
-      resetToHomeFeed();
+    if (backNavigationInFlightRef.current) {
       return;
     }
+
+    backNavigationInFlightRef.current = true;
+    setTimeout(() => {
+      backNavigationInFlightRef.current = false;
+    }, 350);
 
     if (navigation.canGoBack()) {
       navigation.goBack();

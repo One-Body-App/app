@@ -21,11 +21,10 @@ import ConnectStack from './ConnectStack';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { FeedTypes } from '../screens/home';
 import { TabBarAnimationProvider, useTabBarAnimation } from './TabBarAnimationContext';
-import ZoeChat from '../screens/main/zoeChat';
-import ZoeIcon from '@/assets/svg/zoeicon.svg';
-import ZoeIconSelected from '@/assets/svg/zoeicon_selected.svg';
 import ConnectIcon from '@/assets/icons/connect.svg';
 import Home2Icon from '@/assets/icons/home2.svg';
+import MessagesIcon from '@/assets/icons/messages.svg';
+import MessagesStack from './MessagesStack';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -73,22 +72,52 @@ const getActiveNestedRouteName = (route: any): string | undefined => {
 function SlideInOnFocus({ children }: { children: React.ReactNode }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const hasFocusedOnce = useRef(false);
+  const runningAnimation = useRef<Animated.CompositeAnimation | null>(null);
 
   useFocusEffect(
     useCallback(() => {
+      if (Platform.OS === 'android') {
+        translateX.setValue(0);
+        return () => {
+          runningAnimation.current?.stop();
+          runningAnimation.current = null;
+          translateX.setValue(0);
+        };
+      }
+
       if (!hasFocusedOnce.current) {
         hasFocusedOnce.current = true;
-        return;
+        translateX.setValue(0);
+        return () => {
+          runningAnimation.current?.stop();
+          runningAnimation.current = null;
+          translateX.setValue(0);
+        };
       }
+
+      runningAnimation.current?.stop();
       translateX.setValue(SCREEN_WIDTH);
-      Animated.timing(translateX, {
+      runningAnimation.current = Animated.timing(translateX, {
         toValue: 0,
         duration: 350,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
-      }).start();
+      });
+      runningAnimation.current.start(() => {
+        runningAnimation.current = null;
+      });
+
+      return () => {
+        runningAnimation.current?.stop();
+        runningAnimation.current = null;
+        translateX.setValue(0);
+      };
     }, [translateX])
   );
+
+  if (Platform.OS === 'android') {
+    return <View style={{ flex: 1 }}>{children}</View>;
+  }
 
   return <Animated.View style={{ flex: 1, transform: [{ translateX }] }}>{children}</Animated.View>;
 }
@@ -217,20 +246,16 @@ ConnectTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
 };
 
-function ZoeTabIcon({ focused, color }: { focused: boolean; color: string }) {
-  const size = focused ? 32 : 30;
+function ChatTabIcon({ focused, color }: { focused: boolean; color: string }) {
+  const size = focused ? 22 : 22;
   return (
     <View style={{ width: size, height: size }}>
-      {focused ? (
-        <ZoeIconSelected width={size} height={size} color={color} />
-      ) : (
-        <ZoeIcon width={size} height={size} color={color} />
-      )}
+      <MessagesIcon width={size} height={size} color={color} />
     </View>
   );
 }
 
-ZoeTabIcon.propTypes = {
+ChatTabIcon.propTypes = {
   color: PropTypes.string.isRequired,
   focused: PropTypes.bool,
 };
@@ -423,15 +448,22 @@ function BottomStack() {
           }}
         />
         <Tab.Screen
-          name="ZoeTab"
-          component={ZoeChat}
-          options={{
-            tabBarLabel: 'Zoe',
-            tabBarIcon: ZoeTabIcon,
-            tabBarStyle: connectVisibleTabBarStyle,
-            lazy: false,
-            unmountOnBlur: false,
-            freezeOnBlur: false,
+          name="Messages"
+          component={MessagesStack}
+          options={({ route }) => {
+            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'MessagesList';
+            const shouldShowTabBar = focusedRouteName === 'MessagesList';
+
+            return {
+              tabBarLabel: 'Chat',
+              tabBarIcon: ChatTabIcon,
+              tabBarStyle: shouldShowTabBar
+                ? connectVisibleTabBarStyle
+                : { ...connectVisibleTabBarStyle, display: 'none', height: 0, opacity: 0 },
+              lazy: false,
+              unmountOnBlur: false,
+              freezeOnBlur: false,
+            };
           }}
         />
       </Tab.Navigator>

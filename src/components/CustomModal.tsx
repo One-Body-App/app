@@ -7,6 +7,8 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -25,11 +27,13 @@ export default function CustomModal({
   onclose,
   children,
   style,
+  enableEntranceGlow = false,
 }: {
   modalVisible: boolean;
   onclose?: () => void;
   children: React.ReactNode;
-  style?: object;
+  style?: StyleProp<ViewStyle>;
+  enableEntranceGlow?: boolean;
 }) {
   const translateY = useSharedValue(0);
   const previouslyVisibleRef = useRef(false);
@@ -46,13 +50,13 @@ export default function CustomModal({
     const opening = modalVisible && !previouslyVisibleRef.current;
     if (opening) {
       translateY.value = 0;
-      if (!hasPlayedEntranceGlowRef.current) {
+      if (enableEntranceGlow && !hasPlayedEntranceGlowRef.current) {
         hasPlayedEntranceGlowRef.current = true;
         setGlowPlayKey((previous) => previous + 1);
       }
     }
     previouslyVisibleRef.current = modalVisible;
-  }, [modalVisible, translateY]);
+  }, [enableEntranceGlow, modalVisible, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -90,7 +94,9 @@ export default function CustomModal({
         style={styles.wrapper}
         pointerEvents="box-none"
       >
-        <BottomSheetEntranceGlow playKey={glowPlayKey} style={styles.entranceGlow} />
+        {enableEntranceGlow ? (
+          <BottomSheetEntranceGlow playKey={glowPlayKey} style={styles.entranceGlow} />
+        ) : null}
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.modalContainer, style, animatedStyle]}>
             <View style={styles.content}>{children}</View>
@@ -127,6 +133,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#032f3c',
   },
   content: {
+    flex: 1,
     zIndex: 1,
   },
 });

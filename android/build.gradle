@@ -1,5 +1,29 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+def abiToTriple = [
+    'arm64-v8a'  : 'aarch64-linux-android',
+    'armeabi-v7a': 'arm-linux-androideabi',
+    'x86'        : 'i686-linux-android',
+    'x86_64'     : 'x86_64-linux-android',
+]
+
+def resolveNitroSoPath = { rootDir, variantName, abi ->
+    def nitroCxxDir = new File(rootDir, "../node_modules/react-native-nitro-modules/android/build/intermediates/cxx/${variantName}")
+    if (!nitroCxxDir.exists()) {
+        return null
+    }
+
+    def candidates = []
+    nitroCxxDir.eachDir { hashDir ->
+        def so = new File(hashDir, "obj/${abi}/libNitroModules.so")
+        if (so.exists()) {
+            candidates << so
+        }
+    }
+
+    return candidates ? candidates[0] : null
+}
+
 buildscript {
     ext {
         buildToolsVersion = "35.0.0"
@@ -53,6 +77,60 @@ subprojects {
             project.configurations.all {
                 resolutionStrategy {
                     force 'com.google.firebase:firebase-iid:21.1.0'
+                }
+            }
+        }
+
+        // Workaround for QuickCrypto+Nitro prefab metadata occasionally generating
+        // header-only linkage, which causes undefined Nitro symbols at link time.
+        if (project.name == "react-native-quick-crypto") {
+            project.tasks.matching { task -> task.name.startsWith("configureCMake") }.configureEach { task ->
+                task.doLast {
+                    def matcher = (task.name =~ /^configureCMake([A-Za-z]+)\[(.+)\]$/)
+                    if (!matcher.matches()) {
+                        return
+                    }
+
+                    def variantName = matcher[0][1]
+                    def abi = matcher[0][2]
+                    def triple = abiToTriple[abi] ?: abi
+                    def nitroSo = resolveNitroSoPath(rootProject.projectDir, variantName, abi)
+                    if (nitroSo == null) {
+                        logger.warn("[QuickCrypto/Nitro] Could not locate libNitroModules.so for ${variantName}/${abi}")
+                        return
+                    }
+
+                    def nitroSoPath = nitroSo.absolutePath.replace("\\", "/")
+                    def quickCryptoCxxDir = new File(project.projectDir, ".cxx/${variantName}")
+                    if (!quickCryptoCxxDir.exists()) {
+                        return
+                    }
+
+                    quickCryptoCxxDir.eachDir { hashDir ->
+                        def configs = []
+                        hashDir.eachFileRecurse { file ->
+                            if (file.name == "react-native-nitro-modulesConfig.cmake") {
+                                configs << file
+                            }
+                        }
+
+                        if (configs.isEmpty()) {
+                            logger.warn("[QuickCrypto/Nitro] No nitro config file found under ${hashDir.path} for ${variantName}/${abi}")
+                        }
+
+                        configs.each { nitroConfig ->
+                            def configText = nitroConfig.getText("UTF-8")
+                            if (configText.contains('INTERFACE_LINK_LIBRARIES ""')) {
+                                configText = configText.replace('INTERFACE_LINK_LIBRARIES ""', "INTERFACE_LINK_LIBRARIES \"${nitroSoPath}\"")
+                                nitroConfig.write(configText, "UTF-8")
+                                logger.lifecycle("[QuickCrypto/Nitro] Linked Nitro .so in ${nitroConfig.path}")
+                            } else if (configText.contains(nitroSoPath)) {
+                                logger.lifecycle("[QuickCrypto/Nitro] Nitro .so already linked in ${nitroConfig.path}")
+                            } else {
+                                logger.warn("[QuickCrypto/Nitro] Could not patch nitro link line in ${nitroConfig.path}")
+                            }
+                        }
+                    }
                 }
             }
         }

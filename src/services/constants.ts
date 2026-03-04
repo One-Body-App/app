@@ -22,6 +22,11 @@ export const { TWITTER_CLIENT_ID } = Config;
 export const { GIPHY_KEY_IOS } = Config;
 export const { GIPHY_KEY_ANDROID } = Config;
 export const { MAPBOX_PUBLIC_TOKEN } = Config;
+export const ENABLE_NATIVE_CHAT = ['1', 'true', 'yes', 'on'].includes(
+  String(Config.ENABLE_NATIVE_CHAT ?? '')
+    .toLowerCase()
+    .trim()
+);
 
 export const OpenURLButton = async (
   url: string,

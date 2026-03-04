@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   ImageBackground,
+  type ListRenderItemInfo,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -14,7 +15,6 @@ import {
 import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { BlurView } from '@react-native-community/blur';
-import Toast from 'react-native-simple-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { CompositeScreenProps, DrawerActions, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -50,7 +50,6 @@ import {
 import {
   AccountType,
   ArticleType,
-  Interest,
   PrayerPost,
   PrayerWallCategory,
   SocialPost,
@@ -160,6 +159,44 @@ type ExploreSearchResult =
   | SearchWatchResult
   | SearchServeGoResult;
 
+interface TrendingNowItem {
+  id: string;
+  backgroundImageUri: string;
+  title: string;
+  isLive: boolean;
+  metaIcon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  metaText: string;
+}
+
+interface NewCreatorItem {
+  id: string;
+  avatarUri: string;
+  name: string;
+  isFollowing: boolean;
+}
+
+interface ServeOpportunityItem {
+  id: string;
+  imageUri: string;
+  title: string;
+  organization: string;
+  distance: string;
+}
+
+interface GoEventItem {
+  id: string;
+  backgroundImageUri: string;
+  dateString: string;
+  title: string;
+  buttonText: string;
+}
+
+interface PopularTopicItem {
+  id: string;
+  backgroundImageUri: string;
+  title: string;
+}
+
 const SEARCH_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -197,6 +234,15 @@ const resolveImageUrl = (item: BaseSearchHit) => {
     return item.image;
   }
   return item.image?.url ?? '';
+};
+
+const resolveImageList = (item: BaseSearchHit) => {
+  if (Array.isArray(item.images) && item.images.length > 0) {
+    return item.images;
+  }
+
+  const fallbackImage = resolveImageUrl(item);
+  return fallbackImage ? [fallbackImage] : [];
 };
 
 const normalizePrayerCategory = (category?: string): PrayerWallCategory => {
@@ -272,10 +318,84 @@ function Explore({ navigation }: Props) {
   const [activeFilter, setActiveFilter] = useState<SearchFeedFilter>(SearchFeedFilter.top);
   const [searchText, setSearchText] = useState('');
 
-  const [creatorUsers, setCreatorUsers] = useState<User[]>([]);
-  const [followingUsers, setFollowingUsers] = useState<User[]>([]);
-  const [searchInterests, setSearchInterests] = useState<Interest[]>([]);
-  const [isBrowseLoading, setIsBrowseLoading] = useState(false);
+  const [trendingNowItems] = useState<TrendingNowItem[]>([
+    {
+      id: 'trending-1',
+      backgroundImageUri: 'https://images.unsplash.com/photo-1543616991-75a2c125ff5b',
+      title: 'Global Worship Night 2024',
+      isLive: true,
+      metaIcon: 'eye-outline',
+      metaText: '12.4K watching',
+    },
+    {
+      id: 'trending-2',
+      backgroundImageUri: 'https://images.unsplash.com/photo-1556761175-5973dc0f32d7',
+      title: 'Faith in Business Summit',
+      isLive: false,
+      metaIcon: 'clock-outline',
+      metaText: '2 days ago',
+    },
+  ]);
+  const [newCreatorsItems, setNewCreatorsItems] = useState<NewCreatorItem[]>([
+    {
+      id: 'creator-1',
+      avatarUri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
+      name: 'Mark J.',
+      isFollowing: false,
+    },
+    {
+      id: 'creator-2',
+      avatarUri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
+      name: 'Naomi A.',
+      isFollowing: true,
+    },
+    {
+      id: 'creator-3',
+      avatarUri: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
+      name: 'Daniel P.',
+      isFollowing: false,
+    },
+  ]);
+  const [serveOpportunityItems] = useState<ServeOpportunityItem[]>([
+    {
+      id: 'serve-1',
+      imageUri: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c',
+      title: 'Local Food Drive Assistance',
+      organization: 'Central Community Hub',
+      distance: '1.2 miles away',
+    },
+  ]);
+  const [goEventItems] = useState<GoEventItem[]>([
+    {
+      id: 'go-1',
+      backgroundImageUri: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b',
+      dateString: 'COMING JULY 12-15',
+      title: 'Unleash Leadership 2024',
+      buttonText: 'Register Now',
+    },
+  ]);
+  const [popularTopicItems] = useState<PopularTopicItem[]>([
+    {
+      id: 'topic-1',
+      backgroundImageUri: 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6',
+      title: 'Theology & Life',
+    },
+    {
+      id: 'topic-2',
+      backgroundImageUri: 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0',
+      title: 'Tech & Ethics',
+    },
+    {
+      id: 'topic-3',
+      backgroundImageUri: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18',
+      title: 'Prayer Habits',
+    },
+    {
+      id: 'topic-4',
+      backgroundImageUri: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c',
+      title: 'Church Leadership',
+    },
+  ]);
   const [isRefreshingBrowse, setIsRefreshingBrowse] = useState(false);
 
   const [searchResults, setSearchResults] = useState<ExploreSearchResult[]>([]);
@@ -340,73 +460,6 @@ function Explore({ navigation }: Props) {
     [serveGoSearchPool]
   );
 
-  const fetchFollowing = useCallback(async () => {
-    try {
-      const response = await ApiCall({ route: 'user/get-following', token, verb: 'get' });
-      if (response?.status === 200 && Array.isArray(response?.response?.data)) {
-        setFollowingUsers(response.response.data as User[]);
-      }
-    } catch {
-      // Keep browse UI resilient when this call fails.
-    }
-  }, [token]);
-
-  const fetchInterests = useCallback(async () => {
-    try {
-      const response = await ApiCall({ route: 'tags/interest', token, verb: 'get' });
-      if (response?.status === 200 && Array.isArray(response?.response)) {
-        setSearchInterests(response.response as Interest[]);
-      }
-    } catch {
-      // Keep browse UI resilient when this call fails.
-    }
-  }, [token]);
-
-  const fetchCreators = useCallback(async () => {
-    try {
-      setIsBrowseLoading(true);
-      const response = await ApiCall({
-        route: 'user/get-users-to-subscribe/1?itemsPerPage=12',
-        token,
-        verb: 'get',
-      });
-      if (response?.status === 200 && Array.isArray(response?.response?.data)) {
-        setCreatorUsers(response.response.data as User[]);
-      }
-    } catch {
-      setCreatorUsers([]);
-    } finally {
-      setIsBrowseLoading(false);
-      setIsRefreshingBrowse(false);
-    }
-  }, [token]);
-
-  const handleSubscribe = useCallback(
-    async (id: string) => {
-      if (!id) return;
-      const response = await ApiCall({ route: `user/subscribe/${id}`, token, verb: 'patch' });
-      if (response?.status === 200) {
-        fetchFollowing();
-        return;
-      }
-      Toast.show('Error connecting. Please try again.', Toast.LONG);
-    },
-    [fetchFollowing, token]
-  );
-
-  const handleUnsubscribe = useCallback(
-    async (id: string) => {
-      if (!id) return;
-      const response = await ApiCall({ route: `user/unsubscribe/${id}`, token, verb: 'patch' });
-      if (response?.status === 200) {
-        fetchFollowing();
-        return;
-      }
-      Toast.show('Error disconnecting. Please try again.', Toast.LONG);
-    },
-    [fetchFollowing, token]
-  );
-
   const buildUserResult = useCallback((raw: any): SearchUserResult | null => {
     const id = resolveResultId(raw);
     if (!id) return null;
@@ -441,12 +494,7 @@ function Explore({ navigation }: Props) {
       comments: Array.isArray(raw.comments) ? raw.comments : [],
       commentNumber: Number(raw.commentNumber ?? 0),
       repostCount: Number(raw.repostCount ?? 0),
-      images:
-        Array.isArray(raw.images) && raw.images.length > 0
-          ? raw.images
-          : resolveImageUrl(raw)
-            ? [resolveImageUrl(raw)]
-            : [],
+      images: resolveImageList(raw),
       mediaUrl: raw.mediaUrl,
       mediaType: raw.mediaType,
       userData: {
@@ -512,12 +560,7 @@ function Explore({ navigation }: Props) {
         isApprovedInfluencer: raw.userData?.isApprovedInfluencer,
       },
       answered: Boolean(raw.answered),
-      images:
-        Array.isArray(raw.images) && raw.images.length > 0
-          ? raw.images
-          : resolveImageUrl(raw)
-            ? [resolveImageUrl(raw)]
-            : [],
+      images: resolveImageList(raw),
       comments: Array.isArray(raw.comments) ? raw.comments : [],
       commentNumber: Number(raw.commentNumber ?? 0),
       repostCount: Number(raw.repostCount ?? 0),
@@ -675,11 +718,8 @@ function Explore({ navigation }: Props) {
   );
 
   useEffect(() => {
-    fetchCreators();
-    fetchInterests();
-    fetchFollowing();
     dispatch(getUserProfile({ token }));
-  }, [dispatch, fetchCreators, fetchFollowing, fetchInterests, token]);
+  }, [dispatch, token]);
 
   useEffect(() => {
     if (!isSearchMode) {
@@ -693,16 +733,15 @@ function Explore({ navigation }: Props) {
       setIsSearchLoading(false);
       setIsSearchLoadingMore(false);
       setActiveFilter(SearchFeedFilter.top);
-      return;
-    }
+    } else {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
 
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = setTimeout(() => {
+        runSearch(trimmedSearchText, 1, true);
+      }, SEARCH_DEBOUNCE_MS);
     }
-
-    searchDebounceRef.current = setTimeout(() => {
-      runSearch(trimmedSearchText, 1, true);
-    }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       if (searchDebounceRef.current) {
@@ -718,10 +757,10 @@ function Explore({ navigation }: Props) {
     }
 
     setIsRefreshingBrowse(true);
-    fetchCreators();
-    fetchInterests();
-    fetchFollowing();
-  }, [fetchCreators, fetchFollowing, fetchInterests, isSearchMode, runSearch, trimmedSearchText]);
+    setTimeout(() => {
+      setIsRefreshingBrowse(false);
+    }, 350);
+  }, [isSearchMode, runSearch, trimmedSearchText]);
 
   const handleEndReached = useCallback(() => {
     if (!isSearchMode || isSearchLoading || isSearchLoadingMore || !searchHasMore) {
@@ -780,54 +819,56 @@ function Explore({ navigation }: Props) {
   );
 
   const renderSearchItem = useCallback(
-    ({ item }: { item: ExploreSearchResult }) => {
-      if (item.kind === 'user') {
+    (info: ListRenderItemInfo<ExploreSearchResult>) => {
+      const result = info.item;
+
+      if (result.kind === 'user') {
         return (
           <View style={styles.searchRowSpacing}>
-            <UserItem item={item.item} />
+            <UserItem item={result.item} />
           </View>
         );
       }
 
-      if (item.kind === 'social') {
+      if (result.kind === 'social') {
         return (
           <View style={styles.searchRowSpacing}>
-            <SocialItem itemData={item.item} originFeedType="forYou" />
+            <SocialItem itemData={result.item} originFeedType="forYou" />
           </View>
         );
       }
 
-      if (item.kind === 'prayer') {
+      if (result.kind === 'prayer') {
         return (
           <View style={styles.searchRowSpacing}>
-            <PrayerItem item={item.item} originFeedType="forYou" />
+            <PrayerItem item={result.item} originFeedType="forYou" />
           </View>
         );
       }
 
-      if (item.kind === 'rss') {
+      if (result.kind === 'rss') {
         return (
           <View style={styles.searchRowSpacing}>
-            <ArticleItem item={item.item} imageSizeType="cover" originFeedType="forYou" />
+            <ArticleItem item={result.item} imageSizeType="cover" originFeedType="forYou" />
           </View>
         );
       }
 
-      if (item.kind === 'watch') {
+      if (result.kind === 'watch') {
         return (
           <TouchableOpacity
             activeOpacity={0.88}
-            onPress={() => handleOpenWatchPost(item.item)}
+            onPress={() => handleOpenWatchPost(result.item)}
             style={[styles.watchCard, { borderColor: colors.border, backgroundColor: colors.card }]}
           >
             <View style={styles.watchHeader}>
               <Image
-                source={{ uri: item.item.userData?.profileImage || NO_PROFILE_IMAGE }}
+                source={{ uri: result.item.userData?.profileImage || NO_PROFILE_IMAGE }}
                 style={styles.watchAvatar}
               />
               <View style={{ flex: 1 }}>
                 <StyledText numberOfLines={1} style={[Typography.body.x2M, { color: colors.text }]}>
-                  {item.item.userData?.name ?? 'Unknown user'}
+                  {result.item.userData?.name ?? 'Unknown user'}
                 </StyledText>
                 <StyledText style={{ color: Colors.neutral[300] }}>Watch</StyledText>
               </View>
@@ -838,11 +879,11 @@ function Explore({ navigation }: Props) {
               />
             </View>
             <StyledText style={[styles.watchTitle, { color: colors.text }]} numberOfLines={2}>
-              {item.item.title || item.item.content || 'Watch post'}
+              {result.item.title || result.item.content || 'Watch post'}
             </StyledText>
-            {item.item.content ? (
+            {result.item.content ? (
               <StyledText style={{ color: Colors.neutral[300] }} numberOfLines={2}>
-                {item.item.content}
+                {result.item.content}
               </StyledText>
             ) : null}
           </TouchableOpacity>
@@ -852,7 +893,7 @@ function Explore({ navigation }: Props) {
       return (
         <TouchableOpacity
           activeOpacity={0.9}
-          onPress={() => handleOpenConnectPortal(item.item.connectTab)}
+          onPress={() => handleOpenConnectPortal(result.item.connectTab)}
           style={[
             styles.connectSearchCard,
             {
@@ -863,21 +904,21 @@ function Explore({ navigation }: Props) {
         >
           <View style={styles.connectSearchIconWrap}>
             <MaterialCommunityIcons
-              name={item.item.searchKind === 'serve' ? 'hand-heart' : 'calendar'}
+              name={result.item.searchKind === 'serve' ? 'hand-heart' : 'calendar'}
               size={20}
               color={Colors.primarySapphire.brand}
             />
           </View>
           <View style={{ flex: 1 }}>
             <StyledText numberOfLines={1} style={[Typography.body.x2M, { color: colors.text }]}>
-              {item.item.title}
+              {result.item.title}
             </StyledText>
             <StyledText numberOfLines={1} style={{ color: Colors.neutral[300], marginTop: 2 }}>
-              {item.item.location}
+              {result.item.location}
             </StyledText>
           </View>
           <StyledText style={{ color: Colors.primarySapphire.brand, fontWeight: '700' }}>
-            {item.item.searchKind === 'serve' ? 'Serve' : 'Go'}
+            {result.item.searchKind === 'serve' ? 'Serve' : 'Go'}
           </StyledText>
         </TouchableOpacity>
       );
@@ -979,33 +1020,43 @@ function Explore({ navigation }: Props) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.horizontalContent}
         >
-          <TouchableOpacity style={styles.trendingCard}>
-            <ImageBackground
-              source={{ uri: 'https://images.unsplash.com/photo-1543616991-75a2c125ff5b' }}
-              style={styles.trendingImage}
-              imageStyle={{ borderRadius: 12 }}
-            >
-              <View style={styles.liveBadge}>
-                <StyledText style={styles.liveBadgeText}>LIVE</StyledText>
-              </View>
-            </ImageBackground>
-            <StyledText style={[styles.trendingTitle, { color: colors.text }]} numberOfLines={2}>
-              Global Worship Night 2024
-            </StyledText>
-            <StyledText style={{ color: Colors.neutral[300] }}>12.4K watching</StyledText>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.trendingCard}>
-            <ImageBackground
-              source={{ uri: 'https://images.unsplash.com/photo-1556761175-5973dc0f32d7' }}
-              style={styles.trendingImage}
-              imageStyle={{ borderRadius: 12 }}
+          {trendingNowItems.length > 0 ? (
+            trendingNowItems.map((item) => (
+              <TouchableOpacity key={item.id} style={styles.trendingCard}>
+                <ImageBackground
+                  source={{ uri: item.backgroundImageUri }}
+                  style={styles.trendingImage}
+                  imageStyle={{ borderRadius: 12 }}
+                >
+                  {item.isLive ? (
+                    <View style={styles.liveBadge}>
+                      <StyledText style={styles.liveBadgeText}>LIVE</StyledText>
+                    </View>
+                  ) : null}
+                </ImageBackground>
+                <StyledText
+                  style={[styles.trendingTitle, { color: colors.text }]}
+                  numberOfLines={2}
+                >
+                  {item.title}
+                </StyledText>
+                <View style={styles.trendingMetaRow}>
+                  <MaterialCommunityIcons
+                    name={item.metaIcon}
+                    size={16}
+                    color={Colors.neutral[300]}
+                    style={styles.trendingMetaIcon}
+                  />
+                  <StyledText style={{ color: Colors.neutral[300] }}>{item.metaText}</StyledText>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <ActivityIndicator
+              color={Colors.primarySapphire.brand}
+              style={styles.sectionInlineSpinner}
             />
-            <StyledText style={[styles.trendingTitle, { color: colors.text }]} numberOfLines={2}>
-              Faith in Business Summit
-            </StyledText>
-            <StyledText style={{ color: Colors.neutral[300] }}>2 days ago</StyledText>
-          </TouchableOpacity>
+          )}
         </ScrollView>
       </View>
 
@@ -1019,42 +1070,25 @@ function Explore({ navigation }: Props) {
           </StyledText>
         </View>
 
-        {isBrowseLoading ? (
-          <ActivityIndicator
-            color={Colors.primarySapphire.brand}
-            style={{ marginVertical: spacing.x16 }}
-          />
-        ) : (
+        {newCreatorsItems.length > 0 ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalContent}
           >
-            {creatorUsers.map((creator) => {
-              const creatorId = resolveResultId(creator);
-              const isFollowing =
-                creatorId.length > 0 &&
-                followingUsers.some((following) => resolveResultId(following) === creatorId);
-
+            {newCreatorsItems.map((creator) => {
               return (
                 <TouchableOpacity
-                  key={creatorId || creator.name}
+                  key={creator.id}
                   style={[
                     styles.creatorCard,
                     { borderColor: colors.border, backgroundColor: colors.card },
                   ]}
                   activeOpacity={0.9}
-                  onPress={() => {
-                    if (!creatorId) return;
-                    navigation.navigate('Main', {
-                      screen: 'ExploreTab',
-                      params: { screen: 'UserProfile', params: { id: creatorId } },
-                    });
-                  }}
                 >
                   <View style={styles.creatorAvatarFrame}>
                     <FastImage
-                      source={{ uri: creator.profileImage || NO_PROFILE_IMAGE }}
+                      source={{ uri: creator.avatarUri || NO_PROFILE_IMAGE }}
                       style={styles.creatorAvatar}
                       resizeMode={FastImage.resizeMode.contain}
                     />
@@ -1068,31 +1102,37 @@ function Explore({ navigation }: Props) {
                   <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={() => {
-                      if (!creatorId) return;
-                      if (isFollowing) {
-                        handleUnsubscribe(creatorId);
-                      } else {
-                        handleSubscribe(creatorId);
-                      }
+                      setNewCreatorsItems((previous) =>
+                        previous.map((item) =>
+                          item.id === creator.id
+                            ? { ...item, isFollowing: !item.isFollowing }
+                            : item
+                        )
+                      );
                     }}
                     style={[
                       styles.creatorActionButton,
-                      isFollowing && styles.creatorActionButtonConnected,
+                      creator.isFollowing && styles.creatorActionButtonConnected,
                     ]}
                   >
                     <StyledText
                       style={[
                         styles.creatorActionButtonText,
-                        isFollowing && { color: Colors.primarySapphire.brand },
+                        creator.isFollowing && { color: Colors.primarySapphire.brand },
                       ]}
                     >
-                      {isFollowing ? 'Connected' : 'Connect'}
+                      {creator.isFollowing ? 'Following' : 'Follow'}
                     </StyledText>
                   </TouchableOpacity>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
+        ) : (
+          <ActivityIndicator
+            color={Colors.primarySapphire.brand}
+            style={styles.sectionInlineSpinner}
+          />
         )}
       </View>
 
@@ -1103,30 +1143,73 @@ function Explore({ navigation }: Props) {
           </StyledText>
           <MaterialCommunityIcons name="hand-heart" size={22} color={Colors.neutral[300]} />
         </View>
-        <View
-          style={[styles.serveCard, { borderColor: colors.border, backgroundColor: colors.card }]}
-        >
-          <FastImage
-            source={{ uri: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c' }}
-            style={styles.serveImage}
+        {serveOpportunityItems.length > 0 ? (
+          serveOpportunityItems.map((item) => (
+            <View
+              key={item.id}
+              style={[
+                styles.serveCard,
+                { borderColor: colors.border, backgroundColor: colors.card },
+              ]}
+            >
+              <FastImage source={{ uri: item.imageUri }} style={styles.serveImage} />
+              <View style={styles.serveContent}>
+                <View>
+                  <StyledText style={[Typography.body.x2M, { color: colors.text }]}>
+                    {item.title}
+                  </StyledText>
+                  <StyledText style={{ color: Colors.neutral[300] }}>
+                    {item.organization}
+                  </StyledText>
+                </View>
+                <View style={styles.serveFooterRow}>
+                  <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                    {item.distance}
+                  </StyledText>
+                  <TouchableOpacity style={styles.joinButton}>
+                    <StyledText style={styles.joinButtonText}>JOIN</StyledText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))
+        ) : (
+          <ActivityIndicator
+            color={Colors.primarySapphire.brand}
+            style={styles.sectionInlineSpinner}
           />
-          <View style={styles.serveContent}>
-            <View>
-              <StyledText style={[Typography.body.x2M, { color: colors.text }]}>
-                Local Food Drive Assistance
-              </StyledText>
-              <StyledText style={{ color: Colors.neutral[300] }}>Central Community Hub</StyledText>
-            </View>
-            <View style={styles.serveFooterRow}>
-              <StyledText style={{ color: Colors.primarySapphire.brand }}>
-                1.2 miles away
-              </StyledText>
-              <TouchableOpacity style={styles.joinButton}>
-                <StyledText style={styles.joinButtonText}>JOIN</StyledText>
-              </TouchableOpacity>
-            </View>
-          </View>
+        )}
+      </View>
+
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
+          <StyledText style={[styles.sectionTitle, { color: colors.text }]}>Go! Events</StyledText>
+          <MaterialCommunityIcons name="calendar" size={22} color={Colors.neutral[300]} />
         </View>
+        {goEventItems.length > 0 ? (
+          goEventItems.map((item) => (
+            <TouchableOpacity key={item.id} activeOpacity={0.9} style={styles.goEventCard}>
+              <ImageBackground
+                source={{ uri: item.backgroundImageUri }}
+                style={styles.goEventImage}
+                imageStyle={{ borderRadius: 12 }}
+              >
+                <View style={styles.goEventOverlay}>
+                  <StyledText style={styles.goEventDate}>{item.dateString}</StyledText>
+                  <StyledText style={styles.goEventTitle}>{item.title}</StyledText>
+                  <TouchableOpacity style={styles.goEventCta}>
+                    <StyledText style={styles.goEventCtaText}>{item.buttonText}</StyledText>
+                  </TouchableOpacity>
+                </View>
+              </ImageBackground>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <ActivityIndicator
+            color={Colors.primarySapphire.brand}
+            style={styles.sectionInlineSpinner}
+          />
+        )}
       </View>
 
       <View style={styles.sectionBlock}>
@@ -1136,27 +1219,26 @@ function Explore({ navigation }: Props) {
           Popular Topics
         </StyledText>
         <View style={styles.topicsGrid}>
-          {searchInterests.slice(0, 4).map((topic, index) => {
-            const images = [
-              'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6',
-              'https://images.unsplash.com/photo-1518186285589-2f7649de83e0',
-              'https://images.unsplash.com/photo-1511632765486-a01980e01a18',
-              'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c',
-            ];
-            return (
-              <TouchableOpacity key={topic._id} style={styles.topicCard} activeOpacity={0.88}>
+          {popularTopicItems.length > 0 ? (
+            popularTopicItems.map((topic) => (
+              <TouchableOpacity key={topic.id} style={styles.topicCard} activeOpacity={0.88}>
                 <ImageBackground
-                  source={{ uri: images[index % images.length] }}
+                  source={{ uri: topic.backgroundImageUri }}
                   style={styles.topicImage}
                   imageStyle={{ borderRadius: 12 }}
                 >
                   <View style={styles.topicOverlay}>
-                    <StyledText style={styles.topicText}>{topic.name}</StyledText>
+                    <StyledText style={styles.topicText}>{topic.title}</StyledText>
                   </View>
                 </ImageBackground>
               </TouchableOpacity>
-            );
-          })}
+            ))
+          ) : (
+            <ActivityIndicator
+              color={Colors.primarySapphire.brand}
+              style={styles.sectionInlineSpinner}
+            />
+          )}
         </View>
       </View>
     </ScrollView>
@@ -1255,6 +1337,21 @@ function Explore({ navigation }: Props) {
           >
             {searchFilterChips.map((chip) => {
               const isActive = activeFilter === chip.id;
+              const { 300: neutral300, 400: neutral400 } = Colors.neutral;
+              let chipBackgroundColor = '#eef2f6';
+              if (isActive) {
+                chipBackgroundColor = Colors.primarySapphire.brand;
+              } else if (dark) {
+                chipBackgroundColor = 'rgba(255,255,255,0.08)';
+              }
+
+              let chipTextColor = neutral400;
+              if (isActive) {
+                chipTextColor = '#fff';
+              } else if (dark) {
+                chipTextColor = neutral300;
+              }
+
               return (
                 <TouchableOpacity
                   key={chip.id}
@@ -1262,17 +1359,13 @@ function Explore({ navigation }: Props) {
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: isActive
-                        ? Colors.primarySapphire.brand
-                        : dark
-                          ? 'rgba(255,255,255,0.08)'
-                          : '#eef2f6',
+                      backgroundColor: chipBackgroundColor,
                     },
                   ]}
                 >
                   <StyledText
                     style={{
-                      color: isActive ? '#fff' : dark ? Colors.neutral[300] : Colors.neutral[400],
+                      color: chipTextColor,
                     }}
                   >
                     {chip.label}
@@ -1459,6 +1552,13 @@ const createStyles = (dark: boolean) =>
       fontWeight: '700',
       marginBottom: 4,
     },
+    trendingMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    trendingMetaIcon: {
+      marginRight: 6,
+    },
     creatorsWrapper: {
       paddingVertical: spacing.x20,
       backgroundColor: dark ? 'rgba(15, 23, 42, 0.5)' : '#f1f5f9',
@@ -1543,6 +1643,45 @@ const createStyles = (dark: boolean) =>
       fontWeight: '700',
       fontSize: 11,
     },
+    goEventCard: {
+      marginHorizontal: spacing.x16,
+    },
+    goEventImage: {
+      height: 200,
+      borderRadius: 12,
+      backgroundColor: dark ? '#0f172a' : '#e5edf4',
+    },
+    goEventOverlay: {
+      flex: 1,
+      borderRadius: 12,
+      backgroundColor: 'rgba(3,47,60,0.45)',
+      padding: 14,
+      justifyContent: 'flex-end',
+    },
+    goEventDate: {
+      color: Colors.neutral[200],
+      fontWeight: '600',
+      marginBottom: 4,
+      fontSize: 12,
+      letterSpacing: 0.4,
+    },
+    goEventTitle: {
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: 24,
+      marginBottom: spacing.x10,
+    },
+    goEventCta: {
+      alignSelf: 'flex-start',
+      backgroundColor: Colors.primarySapphire.brand,
+      paddingHorizontal: 12,
+      paddingVertical: spacing.x8,
+      borderRadius: borderRadius.base,
+    },
+    goEventCtaText: {
+      color: '#fff',
+      fontWeight: '700',
+    },
     topicsGrid: {
       paddingHorizontal: spacing.x16,
       marginTop: 12,
@@ -1579,6 +1718,10 @@ const createStyles = (dark: boolean) =>
     },
     searchRowSpacing: {
       marginBottom: 12,
+    },
+    sectionInlineSpinner: {
+      marginVertical: spacing.x16,
+      alignSelf: 'center',
     },
     emptyStateWrap: {
       flex: 1,

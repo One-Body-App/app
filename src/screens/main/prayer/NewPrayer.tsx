@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { ArrowDown2 } from 'iconsax-react-native';
-import { useTheme } from '@react-navigation/native';
+import { CommonActions, useTheme } from '@react-navigation/native';
 import { serialize } from 'object-to-formdata';
 import FastImage from 'react-native-fast-image';
 import { isEmpty } from 'lodash';
@@ -50,14 +50,36 @@ function NewPrayer({ navigation, route }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const toast = useToast();
 
-  const navigateAfterSubmit = useCallback(() => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-
-    navigation.navigate('index');
-  }, [navigation]);
+  const navigateAfterSubmit = useCallback(
+    (reason: 'create' | 'edit') => {
+      const currentRoute = navigation.getState().routes[navigation.getState().index]?.name;
+      if (__DEV__) {
+        console.log('[NewPrayer] submit success navigation', {
+          reason,
+          canGoBack: navigation.canGoBack(),
+          currentRoute,
+          destination: 'MainRoot > PrayerWall > index',
+        });
+      }
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'MainRoot',
+              params: {
+                screen: 'PrayerWall',
+                params: {
+                  screen: 'index',
+                },
+              },
+            },
+          ],
+        })
+      );
+    },
+    [navigation]
+  );
 
   const editPrayer = async () => {
     setIsLoading(true);
@@ -89,7 +111,7 @@ function NewPrayer({ navigation, route }: Props) {
 
       if (result.status === 200) {
         setContent('');
-        navigateAfterSubmit();
+        navigateAfterSubmit('edit');
       }
       setIsLoading(false);
     } catch (e) {
@@ -128,7 +150,7 @@ function NewPrayer({ navigation, route }: Props) {
 
       if (result.status === 200) {
         setContent('');
-        navigateAfterSubmit();
+        navigateAfterSubmit('create');
       } else {
         if (result?.response?.moderationPassed === false) {
           throw result.response;

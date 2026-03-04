@@ -61,6 +61,7 @@ import {
   SerializableCommentSnapshot,
   SocialPostReactionType,
 } from '@/utils/types';
+import { formatLocalDate } from '@/src/utils/time';
 
 interface CommentThreadProps {
   postId: string;
@@ -319,7 +320,7 @@ function CommentThread({
   const listHeader = useMemo(() => {
     const shouldRenderMainHeader = !isThreadDrillMode && Boolean(header);
     const rootCommentDateLabel = resolvedThreadRootComment
-      ? new Date(getCommentTimestampMs(resolvedThreadRootComment)).toLocaleDateString()
+      ? formatLocalDate(new Date(getCommentTimestampMs(resolvedThreadRootComment)))
       : '';
     let drillHeaderContent: React.ReactNode = <ActivityIndicator color={accentColor} />;
 

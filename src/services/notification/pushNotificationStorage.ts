@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
+import { isIsoWithZone, nowUtcIso, parseIsoOrNull } from '@/src/utils/time';
 
 const QUEUED_NOTIFICATIONS_KEY = '@onebody/push/queued-notifications';
 const MAX_QUEUED_NOTIFICATIONS = 100;
@@ -38,17 +39,20 @@ const toStringRecord = (value: unknown): Record<string, string> => {
 };
 
 const getMessageCreatedAt = (message?: FirebaseMessagingTypes.RemoteMessage) => {
+  const createdAt = message?.data?.createdAt;
+  if (typeof createdAt === 'string' && isIsoWithZone(createdAt)) {
+    return createdAt.trim();
+  }
+
   const sentTime = message?.sentTime;
   if (typeof sentTime === 'number' && Number.isFinite(sentTime) && sentTime > 0) {
-    return new Date(sentTime).toISOString();
+    const parsedSent = parseIsoOrNull(sentTime);
+    if (parsedSent) {
+      return parsedSent.toISOString();
+    }
   }
 
-  const createdAt = message?.data?.createdAt;
-  if (typeof createdAt === 'string' && createdAt.length > 0) {
-    return createdAt;
-  }
-
-  return new Date().toISOString();
+  return nowUtcIso();
 };
 
 const resolveNotificationIconUrl = (messageData: Record<string, string>) => {
@@ -134,7 +138,9 @@ const writeQueuedNotificationsRaw = async (items: QueuedPushNotification[]) => {
 export const getQueuedNotifications = async (): Promise<QueuedPushNotification[]> => {
   const queued = await readQueuedNotificationsRaw();
   return queued.sort(
-    (first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
+    (first, second) =>
+      (parseIsoOrNull(second.createdAt)?.getTime() || 0) -
+      (parseIsoOrNull(first.createdAt)?.getTime() || 0)
   );
 };
 

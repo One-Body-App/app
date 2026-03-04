@@ -18,6 +18,8 @@ declare module 'react-native-config' {
     GIPHY_KEY_IOS: string;
     GIPHY_KEY_ANDROID: string;
     MAPBOX_PUBLIC_TOKEN: string;
+    ENABLE_NATIVE_CHAT?: string;
+    CHAT_SOCKET_NAMESPACE?: string;
 
     MUX_TOKEN_ID: string;
     MUX_SECRET_KEY: string;

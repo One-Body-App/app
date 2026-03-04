@@ -508,6 +508,7 @@ function PostReactionsModal({
     <CustomModal
       modalVisible={visible}
       onclose={onClose}
+      enableEntranceGlow
       style={{
         backgroundColor: dark ? '#0f1f25' : '#ffffff',
         borderTopLeftRadius: 28,

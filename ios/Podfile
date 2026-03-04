@@ -29,6 +29,10 @@ if linkage != nil
   $RNFirebaseAsStaticFramework = true
 end
 
+target 'OneBodyNotificationServiceExtension' do
+  inherit! :search_paths
+end
+
 
 target 'onebody' do
   use_expo_modules!

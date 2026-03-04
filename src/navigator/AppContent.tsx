@@ -76,6 +76,7 @@ import {
   subscribeToPushTokenRefresh,
 } from '@/src/services/notification/pushNotificationService';
 import { queueRemoteNotificationPayload } from '@/src/services/notification/pushNotificationStorage';
+import { ensureChatReady } from '@/src/services/chat/chatClient';
 
 const closeIcon = require('../assets/images/close.png'); // Adjust path
 
@@ -337,32 +338,6 @@ function AppContent() {
       }
 
       if (token && previousRouteName && PUBLIC_ROUTES.has(previousRouteName)) {
-        return true;
-      }
-
-      const isCommentsToMainRootTransition =
-        (currentRouteName === 'SinglePost' || currentRouteName === 'SingleRss') &&
-        previousRouteName === 'MainRoot';
-      if (isCommentsToMainRootTransition) {
-        navigationRef.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'MainRoot',
-                params: {
-                  screen: 'Main',
-                  params: {
-                    screen: 'HomeTab',
-                    params: {
-                      screen: 'Home',
-                    },
-                  },
-                },
-              } as any,
-            ],
-          })
-        );
         return true;
       }
 
@@ -866,6 +841,8 @@ function AppContent() {
       } else {
         await disablePushNotifications(token);
       }
+
+      await ensureChatReady(token).catch(() => undefined);
     };
 
     bootstrapPush().catch(() => undefined);
