@@ -1,0 +1,6 @@
+framework module react_native_libsodium {
+  umbrella header "react-native-libsodium-umbrella.h"
+
+  export *
+  module * { export * }
+}

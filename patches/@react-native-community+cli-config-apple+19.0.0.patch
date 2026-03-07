@@ -1,0 +1,13 @@
+diff --git a/node_modules/@react-native-community/cli-config-apple/build/config/findXcodeProject.js b/node_modules/@react-native-community/cli-config-apple/build/config/findXcodeProject.js
+index b8609d6a..755902b6 100644
+--- a/node_modules/@react-native-community/cli-config-apple/build/config/findXcodeProject.js
++++ b/node_modules/@react-native-community/cli-config-apple/build/config/findXcodeProject.js
+@@ -23,7 +23,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
+ function findXcodeProject(files) {
+   const sortedFiles = files.sort();
+   for (let i = sortedFiles.length - 1; i >= 0; i--) {
+-    const fileName = files[i];
++    const fileName = sortedFiles[i];
+     const ext = _path().default.extname(fileName);
+     const projectPath = _path().default.dirname(fileName);
+     if (ext === '.xcworkspace') {

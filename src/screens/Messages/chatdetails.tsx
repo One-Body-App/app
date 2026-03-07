@@ -52,6 +52,11 @@ const isMissingPeerKeyError = (error: unknown) => {
   return message.toLowerCase().includes('public key not found');
 };
 
+const isDMsDisabledError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error || '');
+  return message.toLowerCase().includes('direct messages are disabled');
+};
+
 const formatConversationTimestamp = (iso?: string) => {
   if (!iso) {
     return '';
@@ -102,6 +107,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [isPeerKeyMissing, setIsPeerKeyMissing] = useState(false);
+  const [isDMsDisabled, setIsDMsDisabled] = useState(false);
   const flatListRef = useRef<FlatList<LocalMessage>>(null);
 
   const currentUserId = currentUser?._id ? String(currentUser._id) : '';
@@ -119,6 +125,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
       setIsBootstrapping(true);
       setLoadError('');
       setIsPeerKeyMissing(false);
+      setIsDMsDisabled(false);
 
       if (isGroupConversation) {
         setMessages([]);
@@ -134,21 +141,8 @@ function ChatDetailScreen({ navigation, route }: Props) {
       }
 
       try {
-        try {
-          await ensureChatReady(token || undefined);
-        } catch (error) {
-          if (__DEV__) {
-            console.log('[ChatDetail] ensureChatReady failed', error);
-          }
-        }
-
-        try {
-          await connectChatSocket();
-        } catch (error) {
-          if (__DEV__) {
-            console.log('[ChatDetail] initial socket connect failed', error);
-          }
-        }
+        await ensureChatReady(token || undefined);
+        await connectChatSocket();
 
         try {
           await getPeerPublicKey(peerUserId, token || undefined);
@@ -156,6 +150,10 @@ function ChatDetailScreen({ navigation, route }: Props) {
           if (isMissingPeerKeyError(error)) {
             if (isMounted) {
               setIsPeerKeyMissing(true);
+            }
+          } else if (isDMsDisabledError(error)) {
+            if (isMounted) {
+              setIsDMsDisabled(true);
             }
           } else {
             throw error;
@@ -303,6 +301,11 @@ function ChatDetailScreen({ navigation, route }: Props) {
       return;
     }
 
+    if (isDMsDisabled) {
+      Alert.alert('Direct Messages Disabled', `${peerLabel} has turned off direct messages.`);
+      return;
+    }
+
     try {
       await getPeerPublicKey(peerUserId, token || undefined);
     } catch (error) {
@@ -371,6 +374,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
   }, [
     currentUserId,
     draft,
+    isDMsDisabled,
     isGroupConversation,
     isPeerKeyMissing,
     isSending,
@@ -392,12 +396,15 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const shouldShowErrorState = !shouldShowGroupInfo && !isBootstrapping && Boolean(loadError);
   const shouldShowConversationList =
     !shouldShowGroupInfo && !shouldShowLoader && !shouldShowErrorState;
-  const isComposerDisabled = isSending || isGroupConversation || !peerUserId || isPeerKeyMissing;
+  const isComposerDisabled =
+    isSending || isGroupConversation || !peerUserId || isPeerKeyMissing || isDMsDisabled;
   let composerPlaceholder = 'Write your message';
   if (isGroupConversation) {
     composerPlaceholder = 'Group messaging coming soon';
   } else if (isPeerKeyMissing) {
     composerPlaceholder = 'Secure chat unavailable for this user';
+  } else if (isDMsDisabled) {
+    composerPlaceholder = 'This user has turned off direct messages';
   }
 
   const renderMainContent = () => {
@@ -451,7 +458,9 @@ function ChatDetailScreen({ navigation, route }: Props) {
             <Text style={[styles.emptyConversationText, { color: colors.text }]}>
               {isPeerKeyMissing
                 ? 'This user has not enabled secure messaging yet.'
-                : 'No messages yet. Send the first message.'}
+                : isDMsDisabled
+                  ? 'This user has turned off direct messages.'
+                  : 'No messages yet. Send the first message.'}
             </Text>
           </View>
         }
@@ -545,7 +554,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            editable={!isGroupConversation && !isPeerKeyMissing}
+            editable={!isGroupConversation && !isPeerKeyMissing && !isDMsDisabled}
             placeholder={composerPlaceholder}
             placeholderTextColor="#68707a"
             style={[styles.input, { color: colors.text }]}

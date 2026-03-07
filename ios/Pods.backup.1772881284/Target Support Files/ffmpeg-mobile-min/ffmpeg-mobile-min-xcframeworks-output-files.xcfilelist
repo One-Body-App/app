@@ -1,0 +1,8 @@
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libswscale.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libswresample.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavutil.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavformat.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavfilter.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavdevice.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavcodec.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/ffmpegkit.framework

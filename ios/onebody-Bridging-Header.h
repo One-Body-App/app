@@ -7,7 +7,7 @@
 #ifndef Onebody_Bridging_Header_h
 #define Onebody_Bridging_Header_h
 
-#import "RNSplashScreen.h" // Removed because header not found
+#import "RNSplashScreen.h"
 #import <React/RCTLinkingManager.h>
 
 #endif /* Onebody_Bridging_Header_h */

@@ -60,6 +60,7 @@ function Settings({ navigation }: Props) {
   const [subscribedToNewsletter, setSubscribedToNewsletter] = React.useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = React.useState(false);
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(false);
+  const [allowDirectMessages, setAllowDirectMessages] = React.useState(true);
   const [securePreviewEnabled, setSecurePreviewEnabledState] = React.useState(false);
   const [isSecurePreviewLoading, setIsSecurePreviewLoading] = React.useState(true);
   const dispatch = useDispatch();
@@ -87,6 +88,7 @@ function Settings({ navigation }: Props) {
         setEmailNotificationsEnabled(res.response?.emailNotificationsEnabled ?? false);
         setPushNotificationsEnabled(res.response?.pushNotificationsEnabled ?? false);
         setSubscribedToNewsletter(res.response?.subscribedToNewsletter ?? false);
+        setAllowDirectMessages(res.response?.allowDirectMessages ?? true);
 
         // setIsLoaded(true);
         // toast.hide(toastId);
@@ -133,7 +135,8 @@ function Settings({ navigation }: Props) {
   const updateNotifications = async (
     pushNotificationsEnabled: boolean,
     subscribedToNewsletter: boolean,
-    emailNotificationsEnabled: boolean
+    emailNotificationsEnabled: boolean,
+    allowDirectMessages: boolean
   ) => {
     const toastId = 'loading';
     toast.hide(toastId);
@@ -151,6 +154,7 @@ function Settings({ navigation }: Props) {
         pushNotificationsEnabled,
         subscribedToNewsletter,
         emailNotificationsEnabled,
+        allowDirectMessages,
       };
 
       const res = await ApiCall({
@@ -465,7 +469,12 @@ function Settings({ navigation }: Props) {
                   value={pushNotificationsEnabled}
                   onValueChange={(value) => {
                     setPushNotificationsEnabled(value);
-                    updateNotifications(value, subscribedToNewsletter, emailNotificationsEnabled);
+                    updateNotifications(
+                      value,
+                      subscribedToNewsletter,
+                      emailNotificationsEnabled,
+                      allowDirectMessages
+                    );
                   }}
                 />
               </View>
@@ -550,7 +559,59 @@ function Settings({ navigation }: Props) {
                   value={emailNotificationsEnabled}
                   onValueChange={(value) => {
                     setEmailNotificationsEnabled(value);
-                    updateNotifications(pushNotificationsEnabled, subscribedToNewsletter, value);
+                    updateNotifications(
+                      pushNotificationsEnabled,
+                      subscribedToNewsletter,
+                      value,
+                      allowDirectMessages
+                    );
+                  }}
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {}}
+              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
+            >
+              <View
+                style={{ alignItems: 'center', justifyContent: 'center', marginRight: spacing.x24 }}
+              >
+                <View
+                  style={{
+                    borderRadius: borderRadius.max,
+                    backgroundColor: Colors.neutral[800],
+                    padding: 6,
+                  }}
+                >
+                  <Sms color={Colors.primary.brand} size={18} />
+                </View>
+              </View>
+              <View style={{ flex: 1 }}>
+                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                  Allow Direct Messages
+                </StyledText>
+                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                  Let connected users send you messages
+                </StyledText>
+              </View>
+              <View
+                style={{
+                  paddingLeft: spacing.x10,
+                  alignItems: 'flex-end',
+                }}
+              >
+                <Switch
+                  disabled={isLoading}
+                  value={allowDirectMessages}
+                  onValueChange={(value) => {
+                    setAllowDirectMessages(value);
+                    updateNotifications(
+                      pushNotificationsEnabled,
+                      subscribedToNewsletter,
+                      emailNotificationsEnabled,
+                      value
+                    );
                   }}
                 />
               </View>
@@ -596,7 +657,12 @@ function Settings({ navigation }: Props) {
                   value={subscribedToNewsletter}
                   onValueChange={(value) => {
                     setSubscribedToNewsletter(value);
-                    updateNotifications(pushNotificationsEnabled, value, emailNotificationsEnabled);
+                    updateNotifications(
+                      pushNotificationsEnabled,
+                      value,
+                      emailNotificationsEnabled,
+                      allowDirectMessages
+                    );
                   }}
                 />
               </View>

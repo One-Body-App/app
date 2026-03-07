@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Platform,
   Pressable,
@@ -19,7 +18,6 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
 import { ApiCall } from '@/src/services/api';
-import { getPeerPublicKey } from '@/src/services/chat/keyManager';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'NewMessage'>;
 
@@ -44,11 +42,6 @@ const getContactId = (entry: any): string => {
     (value) => value !== undefined && value !== null && `${value}`.trim()
   );
   return resolved ? String(resolved) : '';
-};
-
-const isMissingPeerKeyError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error || '');
-  return message.toLowerCase().includes('public key not found');
 };
 
 const normalizeContact = (entry: any): ConnectedContact | null => {
@@ -97,7 +90,6 @@ function NewMessageScreen({ navigation }: Props) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<ConnectedContact[]>([]);
-  const [openingContactId, setOpeningContactId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -229,32 +221,13 @@ function NewMessageScreen({ navigation }: Props) {
   const frequentContacts = useMemo(() => connectedAccounts.slice(0, 2), [connectedAccounts]);
   const hasQuery = query.trim().length > 0;
 
-  const openConversation = async (contact: ConnectedContact) => {
-    if (openingContactId) {
-      return;
-    }
-
-    setOpeningContactId(contact.id);
-    try {
-      await getPeerPublicKey(contact.id, token || undefined);
-      navigation.navigate('ChatDetail', {
-        conversationType: 'direct',
-        peerUserId: contact.id,
-        peerName: contact.name,
-        peerAvatarUri: contact.avatarUri,
-      });
-    } catch (error) {
-      if (isMissingPeerKeyError(error)) {
-        Alert.alert(
-          'Secure Chat Unavailable',
-          `${contact.name} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
-        );
-      } else {
-        Alert.alert('Unable to start chat', 'Please try again in a moment.');
-      }
-    } finally {
-      setOpeningContactId(null);
-    }
+  const openConversation = (contact: ConnectedContact) => {
+    navigation.navigate('ChatDetail', {
+      conversationType: 'direct',
+      peerUserId: contact.id,
+      peerName: contact.name,
+      peerAvatarUri: contact.avatarUri,
+    });
   };
 
   const renderContactRow = (
@@ -262,12 +235,7 @@ function NewMessageScreen({ navigation }: Props) {
     subtitle?: string,
     showChatIcon?: boolean
   ) => (
-    <Pressable
-      key={contact.id}
-      style={styles.contactRow}
-      onPress={() => openConversation(contact)}
-      disabled={Boolean(openingContactId)}
-    >
+    <Pressable key={contact.id} style={styles.contactRow} onPress={() => openConversation(contact)}>
       {contact.avatarUri ? (
         <Image
           source={{ uri: contact.avatarUri }}

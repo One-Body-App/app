@@ -1,0 +1,6 @@
+framework module RecaptchaEnterprise {
+  umbrella header "RecaptchaEnterprise-umbrella.h"
+
+  export *
+  module * { export * }
+}

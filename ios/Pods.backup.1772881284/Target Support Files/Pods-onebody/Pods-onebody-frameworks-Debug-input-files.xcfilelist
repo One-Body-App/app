@@ -1,0 +1,22 @@
+${PODS_ROOT}/Target Support Files/Pods-onebody/Pods-onebody-frameworks.sh
+${BUILT_PRODUCTS_DIR}/MapboxMaps/MapboxMaps.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/FBAEMKit/FBAEMKit.framework/FBAEMKit
+${PODS_XCFRAMEWORKS_BUILD_DIR}/FBSDKCoreKit/FBSDKCoreKit.framework/FBSDKCoreKit
+${PODS_XCFRAMEWORKS_BUILD_DIR}/FBSDKCoreKit_Basics/FBSDKCoreKit_Basics.framework/FBSDKCoreKit_Basics
+${PODS_XCFRAMEWORKS_BUILD_DIR}/FBSDKGamingServicesKit/FBSDKGamingServicesKit.framework/FBSDKGamingServicesKit
+${PODS_XCFRAMEWORKS_BUILD_DIR}/FBSDKLoginKit/FBSDKLoginKit.framework/FBSDKLoginKit
+${PODS_XCFRAMEWORKS_BUILD_DIR}/FBSDKShareKit/FBSDKShareKit.framework/FBSDKShareKit
+${PODS_XCFRAMEWORKS_BUILD_DIR}/Giphy/GiphyUISDK.framework/GiphyUISDK
+${PODS_XCFRAMEWORKS_BUILD_DIR}/MapboxCommon/MapboxCommon.framework/MapboxCommon
+${PODS_XCFRAMEWORKS_BUILD_DIR}/MapboxCoreMaps/MapboxCoreMaps.framework/MapboxCoreMaps
+${PODS_XCFRAMEWORKS_BUILD_DIR}/QuickCrypto/OpenSSL.framework/OpenSSL
+${PODS_XCFRAMEWORKS_BUILD_DIR}/Turf/Turf.framework/Turf
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libswscale.framework/libswscale
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libswresample.framework/libswresample
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavutil.framework/libavutil
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavformat.framework/libavformat
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavfilter.framework/libavfilter
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavdevice.framework/libavdevice
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/libavcodec.framework/libavcodec
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg-mobile-min/ffmpegkit.framework/ffmpegkit
+${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes

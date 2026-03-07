@@ -1,0 +1,9 @@
+${PODS_ROOT}/Target Support Files/ffmpeg-mobile-min/ffmpeg-mobile-min-xcframeworks.sh
+${PODS_ROOT}/ffmpeg-mobile-min/min/libswscale.xcframework
+${PODS_ROOT}/ffmpeg-mobile-min/min/libswresample.xcframework
+${PODS_ROOT}/ffmpeg-mobile-min/min/libavutil.xcframework
+${PODS_ROOT}/ffmpeg-mobile-min/min/libavformat.xcframework
+${PODS_ROOT}/ffmpeg-mobile-min/min/libavfilter.xcframework
+${PODS_ROOT}/ffmpeg-mobile-min/min/libavdevice.xcframework
+${PODS_ROOT}/ffmpeg-mobile-min/min/libavcodec.xcframework
+${PODS_ROOT}/ffmpeg-mobile-min/min/ffmpegkit.xcframework

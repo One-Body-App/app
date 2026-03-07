@@ -1,0 +1,21 @@
+{
+  "name": "react-native-vector-icons-entypo",
+  "version": "12.0.1",
+  "summary": "Entypo font for react native vector icons",
+  "homepage": "https://github.com/oblador/react-native-vector-icons",
+  "license": "MIT",
+  "authors": {
+    "name": "Joel Arvidsson",
+    "email": "joel@oblador.se"
+  },
+  "platforms": {
+    "ios": "15.1",
+    "tvos": "9.0",
+    "visionos": "1.0"
+  },
+  "source": {
+    "git": "https://github.com/oblador/react-native-vector-icons.git",
+    "tag": "v12.0.1"
+  },
+  "resources": "fonts/*.ttf"
+}

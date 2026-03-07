@@ -1,0 +1,6 @@
+framework module QuickCrypto {
+  umbrella header "QuickCrypto-umbrella.h"
+
+  export *
+  module * { export * }
+}
