@@ -91,7 +91,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: isAndroid ? 0 : 0.2,
     shadowRadius: isAndroid ? 0 : 8,
-    elevation: isAndroid ? 0 : 2,
+    elevation: isAndroid ? 4 : 2,
+  },
+  liquidSheen: {
+    position: 'absolute',
+    top: '8%',
+    left: '25%',
+    width: '50%',
+    height: '28%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   liquidBlob: {
     position: 'absolute',

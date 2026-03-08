@@ -15,6 +15,7 @@ import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
 import { fontSize } from '@/src/styles/typography';
 import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
+import { HapticService } from '@/src/services/haptic';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'index'>;
 
@@ -194,6 +195,7 @@ function Prayer({ navigation }: Props) {
                 {tabWidth > 0 ? (
                   <Animated.View
                     pointerEvents="none"
+                    renderToHardwareTextureAndroid={!isIOS}
                     style={[
                       styles.liquidIndicatorContainer,
                       {
@@ -210,6 +212,7 @@ function Prayer({ navigation }: Props) {
                         },
                       ]}
                     />
+                    {!isIOS ? <View pointerEvents="none" style={styles.liquidSheen} /> : null}
                     <Animated.View style={[styles.liquidBlob, styles.liquidBlobLeft]} />
                     <Animated.View style={[styles.liquidBlob, styles.liquidBlobRight]} />
                   </Animated.View>
@@ -219,7 +222,10 @@ function Prayer({ navigation }: Props) {
                     <TouchableOpacity
                       key={route.key}
                       style={styles.tabItem}
-                      onPress={() => setIndex(i)}
+                      onPress={() => {
+                        setIndex(i);
+                        setTimeout(() => HapticService.trigger('selection'), 40);
+                      }}
                     >
                       {props?.navigationState?.index === i ? (
                         <StyledText

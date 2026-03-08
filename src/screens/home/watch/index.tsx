@@ -306,6 +306,10 @@ function Watch({ navigation, route }: any) {
     };
   }, [finalizeWatchDwell, token]);
 
+  const shouldShowEmptyState = !isLoading && feedData.length < 1;
+  const shouldShowInitialLoader = isLoading && page === 1 && !isRefreshing;
+  const shouldShowWatchFeed = !shouldShowInitialLoader && feedData.length > 0;
+
   return (
     <View
       style={{ flex: 1 }}
@@ -332,11 +336,13 @@ function Watch({ navigation, route }: any) {
       >
         <MaterialIcons name="arrow-back" size={26} color="#FFFFFF" />
       </TouchableOpacity>
-      {isLoading && page === 1 && !isRefreshing ? (
+      {shouldShowEmptyState ? <View style={{ flex: 1, backgroundColor: '#000000' }} /> : null}
+      {shouldShowInitialLoader ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicator size="small" />
         </View>
-      ) : (
+      ) : null}
+      {shouldShowWatchFeed ? (
         <ScrollView
           ref={scrollViewRef}
           style={styles.container}
@@ -416,7 +422,7 @@ function Watch({ navigation, route }: any) {
             </Animated.View>
           ) : null}
         </ScrollView>
-      )}
+      ) : null}
     </View>
   );
 }

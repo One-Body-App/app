@@ -4,7 +4,6 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 
 import CustomVideo from '@/src/components/CustomVideo';
 import StyledText from '@/src/components/styled/Text';
-import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
 import {
@@ -29,6 +28,7 @@ type UniversalVideoCardProps = {
   poster?: string;
   videoRef?: any;
   onLoad?: (loadData: any) => void;
+  onProgress?: (data: any) => void;
   onEnd?: () => void;
   onPress?: () => void;
   onExpandPress?: () => void;
@@ -51,6 +51,7 @@ function UniversalVideoCard({
   poster,
   videoRef,
   onLoad,
+  onProgress,
   onEnd,
   onPress,
   onExpandPress,
@@ -99,6 +100,7 @@ function UniversalVideoCard({
           muted={muted}
           repeat={repeat}
           onLoad={onLoad}
+          onProgress={onProgress}
           onEnd={onEnd}
           poster={poster}
         />

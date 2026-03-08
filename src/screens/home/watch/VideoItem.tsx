@@ -1,5 +1,4 @@
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { useState, useEffect, PropsWithChildren, useRef, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
@@ -8,11 +7,9 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { gestureHandlerRootHOC } from 'react-native-gesture-handler';
 import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import BaseItem from '@/src/components/listItems/BaseItem';
-import StyledText from '@/src/components/styled/Text';
 import styles from '@/screens/home/watch/styles';
 import BottomSheetEntranceGlow from '@/components/BottomSheetEntranceGlow';
-import { PostType, SocialPostReaction, WatchPost } from '@/utils/types';
+import { PostType, WatchPost } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import {
@@ -23,6 +20,7 @@ import {
 import WatchComments from './watchComments';
 import UniversalVideoCard from '@/src/components/video/UniversalVideoCard';
 import { getWatchVideoLayout } from '@/src/components/video/universalVideoLayout';
+import WatchOverlay from './WatchOverlay';
 
 type VideoItemProps = {
   item: WatchPost;
@@ -53,7 +51,6 @@ const VideoItem = gestureHandlerRootHOC(
     fromSavedPosts,
     parentRefreshContent,
     onShowDismissCard,
-    currentIndex,
     onTelemetryEvent,
   }: PropsWithChildren<VideoItemProps>) => {
     const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +60,10 @@ const VideoItem = gestureHandlerRootHOC(
       item.commentNumber ?? item.comments?.length ?? 0
     );
     const [commentsOpenKey, setCommentsOpenKey] = useState(0);
+    const [progress, setProgress] = useState(0);
+    const [durationSeconds, setDurationSeconds] = useState<number>(
+      item.durationMs ? item.durationMs / 1000 : Number(item.duration ?? 0)
+    );
     const viewportWidth = frameWidth ?? width ?? 0;
     const videoLayout = getWatchVideoLayout(viewportWidth, viewHeight, item);
 
@@ -71,7 +72,7 @@ const VideoItem = gestureHandlerRootHOC(
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
     const hasPlayedSheetGlowRef = useRef(false);
     const [sheetGlowPlayKey, setSheetGlowPlayKey] = useState(0);
-    const snapPoints = useMemo(() => ['50%', '85%'], []);
+    const snapPoints = useMemo(() => ['75%', '90%'], []);
 
     useEffect(() => {
       setCommentCount(item.commentNumber ?? item.comments?.length ?? 0);
@@ -101,19 +102,13 @@ const VideoItem = gestureHandlerRootHOC(
     );
 
     const videRef = useRef<any>(null);
-    let myReaction: SocialPostReaction | undefined;
-
-    item.reactions?.forEach((reaction) => {
-      if (reaction.userId === user?._id) {
-        myReaction = reaction;
-      }
-    });
 
     const onEnd = useCallback(() => {
       if (!isPaused && playedTimes < 2) {
         videRef.current?.seek(0);
         setPlayedTimes(playedTimes + 1);
       }
+      setProgress(1);
     }, [isPaused, playedTimes]);
 
     useEffect(() => {
@@ -122,8 +117,22 @@ const VideoItem = gestureHandlerRootHOC(
       }
     }, [playedTimes]);
 
+    useEffect(() => {
+      setProgress(0);
+      setDurationSeconds(item.durationMs ? item.durationMs / 1000 : Number(item.duration ?? 0));
+      setIsLoading(true);
+    }, [item.duration, item.durationMs, item.id, item.playBackId, item.postId, item._id]);
+
     const renderBackdrop = useCallback(
-      (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={0} appearsOnIndex={1} />,
+      (props: any) => (
+        <BottomSheetBackdrop
+          {...props}
+          appearsOnIndex={0}
+          disappearsOnIndex={-1}
+          opacity={0.72}
+          pressBehavior="close"
+        />
+      ),
       []
     );
 
@@ -176,91 +185,76 @@ const VideoItem = gestureHandlerRootHOC(
             controls={false}
             poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp`}
             videoRef={videRef}
-            onLoad={() => {
+            onLoad={(loadData) => {
               setIsLoading(false);
+              const nextDuration = Number(loadData?.duration);
+              if (Number.isFinite(nextDuration) && nextDuration > 0) {
+                setDurationSeconds(nextDuration);
+              }
+            }}
+            onProgress={(progressData) => {
+              const currentTime = Number(progressData?.currentTime);
+              if (!Number.isFinite(currentTime) || currentTime < 0) {
+                return;
+              }
+              const effectiveDuration =
+                durationSeconds > 0 ? durationSeconds : Number(progressData?.seekableDuration);
+              if (!Number.isFinite(effectiveDuration) || effectiveDuration <= 0) {
+                return;
+              }
+              setProgress(Math.max(0, Math.min(currentTime / effectiveDuration, 1)));
             }}
             onEnd={onEnd}
           >
             <View style={{ flex: 1 }} />
           </UniversalVideoCard>
         </Pressable>
-
-        <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
-          <BaseItem
-            reelLayout
-            style={styles.videoInfo}
-            userData={item.userData}
-            edited={item.edited}
-            updated={item.updated}
-            fromSavedPosts={fromSavedPosts}
-            postData={{
-              title: item?.title,
-              id: item.postId ?? item.id ?? item.id,
-              type: PostType.watch,
-              postlink: item.link,
-              reactions: item.reactions ?? [],
-              myReaction,
-              edited: item.edited,
-              comments: item.comments,
-              commentNumber: commentCount,
-              repostCount: Number((item as any)?.repostCount ?? 0),
-            }}
-            repostPayload={{
-              sourceType: 'social',
-              sourceId: String(item.postId ?? item.id ?? item._id ?? ''),
-              sourcePreview: {
-                title: item.title,
-                content: item.content,
-                link: item.link,
-              },
-            }}
-            parentRefreshContent={parentRefreshContent}
-            created={item?.created}
-            isApprovedInfluencer={item.userData?.isApprovedInfluencer ?? false}
-            onShowDismissCard={onShowDismissCard}
-            index={currentIndex}
-            onTelemetryEvent={onTelemetryEvent}
-            onPress={() => {
-              if (item.userData._id !== user?._id) {
-                navigation.navigate('Main', {
-                  screen: 'HomeTab',
+        <WatchOverlay
+          item={item}
+          commentCount={commentCount}
+          fromSavedPosts={fromSavedPosts}
+          parentRefreshContent={parentRefreshContent}
+          progress={progress}
+          onTelemetryEvent={onTelemetryEvent}
+          onCommentsPress={handlePresentModalPress}
+          onProfilePress={() => {
+            if (item.userData._id !== user?._id) {
+              navigation.navigate('Main', {
+                screen: 'HomeTab',
+                params: {
+                  screen: 'UserProfile',
                   params: {
-                    screen: 'UserProfile',
-                    params: {
-                      id: item?.userData._id,
-                    },
+                    id: item?.userData._id,
                   },
-                });
-              }
-            }}
-            onCommentsPress={() => {
-              handlePresentModalPress();
-            }}
-          >
-            {item.content ? (
-              <View>
-                <StyledText style={[styles.videoDescription, { color: '#f6f6f7' }]}>
-                  {item.content}
-                </StyledText>
-              </View>
-            ) : null}
-          </BaseItem>
-        </LinearGradient>
+                },
+              });
+            }
+          }}
+        />
 
         <BottomSheetModal
           ref={bottomSheetModalRef}
-          index={1}
+          index={0}
           snapPoints={snapPoints}
           onChange={handleSheetChanges}
           backdropComponent={renderBackdrop}
           keyboardBehavior="extend"
-          backgroundStyle={{ backgroundColor: '#032f3c' }}
-          handleIndicatorStyle={{ backgroundColor: 'rgba(230,234,236,0.6)' }}
+          enablePanDownToClose
+          backgroundStyle={{
+            backgroundColor: '#032f3c',
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+          }}
+          handleIndicatorStyle={{
+            backgroundColor: 'rgba(230,234,236,0.42)',
+            height: 6,
+            width: 44,
+          }}
         >
           <View style={{ flex: 1 }}>
             <BottomSheetEntranceGlow playKey={sheetGlowPlayKey} />
             <WatchComments
-              postId={item.id}
+              postId={String(item.id ?? item.postId ?? item._id ?? '')}
               initialCommentCount={commentCount}
               sheetOpenKey={commentsOpenKey}
               onClose={() => {
