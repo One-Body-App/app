@@ -2,11 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 import {
   View,
-  FlatList,
-  RefreshControl,
   useWindowDimensions,
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Animated,
@@ -18,8 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSelector } from 'react-redux';
 
-import { useTheme } from '@react-navigation/native';
-
 import { RootState } from '@/src/redux/reducers/rootReducer';
 
 import { ApiCall } from '@/services/api';
@@ -27,39 +22,16 @@ import { FeedTypes } from '@/screens/home';
 
 import VideoItem from './VideoItem';
 import { WatchPost } from '@/utils/types';
-import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 import {
   flushFeedTelemetry,
   setFeedTelemetryAuthToken,
   trackFeedTelemetry,
 } from '@/services/feedTelemetry';
 import { spacing } from '@/src/styles/spacing';
-
-const NINE_SIXTEEN_RATIO = 9 / 16;
-const NINE_SIXTEEN_TOLERANCE = 0.05;
-
-const parsePositiveNumber = (value: unknown) => {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
-};
-
-const parseAspectRatioValue = (value: unknown) => {
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (trimmed.includes(':')) {
-      const [widthRaw, heightRaw] = trimmed.split(':');
-      const width = parsePositiveNumber(widthRaw);
-      const height = parsePositiveNumber(heightRaw);
-      if (width && height) {
-        return width / height;
-      }
-    }
-
-    return parsePositiveNumber(trimmed);
-  }
-
-  return parsePositiveNumber(value);
-};
+import {
+  BRAND_VIDEO_BACKGROUND,
+  getWatchVideoLayout,
+} from '@/src/components/video/universalVideoLayout';
 
 function Watch({ navigation, route }: any) {
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -70,12 +42,9 @@ function Watch({ navigation, route }: any) {
   const initialWatchPost = route?.params?.initialWatchPost as WatchPost | undefined;
   const [feedData, setFeedData] = useState<WatchPost[]>([]);
   const [page, setPage] = useState<number>(1);
-  const [activeWatchReel, setActiveWatchReel] = useState<number>(0);
   const [viewHeight, setViewHeight] = useState<number>(1);
-  const [isEndOfList, setIsEndOfList] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const flatListRef = useRef<FlatList>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [isScrollEnable, setIsScrollEnable] = useState(true);
   const { width: screenWidth } = useWindowDimensions();
@@ -83,34 +52,14 @@ function Watch({ navigation, route }: any) {
   const activeWatchTelemetryKeyRef = useRef<string | null>(null);
   const seenWatchImpressionsRef = useRef<Set<string>>(new Set());
   const hasAppliedInitialSelectionRef = useRef(false);
+  const entryOpacity = useRef(new Animated.Value(0)).current;
+  const entryScale = useRef(new Animated.Value(0.985)).current;
   const insets = useSafeAreaInsets();
-
-  // Accede al estado del usuario
-  const { dark } = useTheme();
 
   const getWatchPostId = useCallback((post?: WatchPost | null) => {
     if (!post) return null;
     const candidate = post.postId ?? post.id ?? post._id;
     return candidate ? String(candidate) : null;
-  }, []);
-
-  const isNineBySixteenWatchPost = useCallback((post?: WatchPost | null) => {
-    if (!post) {
-      return false;
-    }
-
-    const aspectRatioCandidate = parseAspectRatioValue(post.aspectRatio);
-    if (aspectRatioCandidate) {
-      return Math.abs(aspectRatioCandidate - NINE_SIXTEEN_RATIO) <= NINE_SIXTEEN_TOLERANCE;
-    }
-
-    const width = parsePositiveNumber(post.videoWidth);
-    const height = parsePositiveNumber(post.videoHeight);
-    if (width && height) {
-      return Math.abs(width / height - NINE_SIXTEEN_RATIO) <= NINE_SIXTEEN_TOLERANCE;
-    }
-
-    return false;
   }, []);
 
   const trackWatchImpression = useCallback(
@@ -176,7 +125,7 @@ function Watch({ navigation, route }: any) {
 
       if (res?.status === 200) {
         const feedPosts = res.response
-          .filter((i: any) => !!i?.playBackId && isNineBySixteenWatchPost(i))
+          .filter((i: any) => !!i?.playBackId)
           .sort((a: any, b: any) => {
             const dateA = new Date(a.created);
             const dateB = new Date(b.created);
@@ -185,7 +134,7 @@ function Watch({ navigation, route }: any) {
 
         if (page === 1) {
           let initialFeedData = feedPosts ?? [];
-          if (initialWatchPost && isNineBySixteenWatchPost(initialWatchPost)) {
+          if (initialWatchPost?.playBackId) {
             const initialWatchPostId =
               initialWatchPost.postId ?? initialWatchPost.id ?? initialWatchPost._id;
             const isInitialPostInFeed = initialFeedData.some(
@@ -205,7 +154,6 @@ function Watch({ navigation, route }: any) {
             }
           }
           setFeedData(initialFeedData);
-          setIsEndOfList(false);
         } else {
           setFeedData((previous) =>
             [...previous, ...(feedPosts ?? [])].sort((a: any, b: any) => {
@@ -214,14 +162,10 @@ function Watch({ navigation, route }: any) {
               return dateB.getTime() - dateA.getTime(); // Newest first
             })
           );
-          if (res?.response.length < 1) {
-            setIsEndOfList(true);
-          }
         }
       } else {
         // console.log('error', res?.response);
         setFeedData([]);
-        setIsEndOfList(true);
       }
 
       setIsLoading(false);
@@ -230,7 +174,7 @@ function Watch({ navigation, route }: any) {
       setFeedData([]);
       // console.log(`saga get twitter timline  error -- `, e.toString());
     }
-  }, [initialPlaybackId, initialPostId, initialWatchPost, isNineBySixteenWatchPost, page, token]);
+  }, [initialPlaybackId, initialPostId, initialWatchPost, page, token]);
 
   useEffect(() => {
     // getData(page);
@@ -240,7 +184,6 @@ function Watch({ navigation, route }: any) {
       } else {
         setPage(1);
       }
-      setIsEndOfList(false);
     }
   }, [getFeedData, isRefreshing, page]);
 
@@ -315,7 +258,6 @@ function Watch({ navigation, route }: any) {
     });
     const nextIndex = targetIndex >= 0 ? targetIndex : 0;
     setIndex(nextIndex);
-    setActiveWatchReel(nextIndex);
     requestAnimationFrame(() => {
       scrollViewRef.current?.scrollTo({ y: nextIndex * viewHeight, animated: false });
     });
@@ -341,13 +283,28 @@ function Watch({ navigation, route }: any) {
   }, [feedData, finalizeWatchDwell, getWatchPostId, index, trackWatchImpression]);
 
   useEffect(() => {
+    entryOpacity.setValue(0);
+    entryScale.setValue(0.985);
+    Animated.parallel([
+      Animated.timing(entryOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(entryScale, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [entryOpacity, entryScale, index]);
+
+  useEffect(() => {
     return () => {
       finalizeWatchDwell('unmount');
       flushFeedTelemetry(token || undefined).catch(() => undefined);
     };
   }, [finalizeWatchDwell, token]);
-
-  const frameWidth = Math.min(screenWidth, viewHeight * (9 / 16));
 
   return (
     <View
@@ -384,20 +341,31 @@ function Watch({ navigation, route }: any) {
           ref={scrollViewRef}
           style={styles.container}
           pagingEnabled
+          scrollEnabled={isScrollEnable}
           onMomentumScrollEnd={onMomentumScrollEnd}
         >
           {feedData.map((i) => {
+            const layout = getWatchVideoLayout(screenWidth, viewHeight, i);
             return (
               <View
                 key={`watch-placeholder-${i.postId ?? i.id ?? i._id ?? i.playBackId}`}
                 style={[styles.item, { height: viewHeight }]}
               >
-                <View style={{ width: frameWidth, height: viewHeight, overflow: 'hidden' }}>
+                <View
+                  style={{
+                    width: screenWidth,
+                    height: viewHeight,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: layout.backgroundColor,
+                    overflow: 'hidden',
+                  }}
+                >
                   <Image
-                    resizeMode="cover"
-                    style={{ width: frameWidth, height: viewHeight }}
+                    resizeMode={layout.resizeMode}
+                    style={{ width: layout.frameWidth, height: layout.frameHeight }}
                     source={{
-                      uri: `https://image.mux.com/${i.playBackId}/thumbnail.webp?fit_mode=crop&width=${Math.round(frameWidth)}&height=${Math.round(viewHeight)}`,
+                      uri: `https://image.mux.com/${i.playBackId}/thumbnail.webp?width=${Math.round(layout.frameWidth)}&height=${Math.round(layout.frameHeight)}`,
                     }}
                   />
                 </View>
@@ -409,14 +377,20 @@ function Watch({ navigation, route }: any) {
             <Animated.View
               style={[
                 StyleSheet.absoluteFillObject,
-                { height: viewHeight, flex: 1, top: index * viewHeight },
+                {
+                  height: viewHeight,
+                  flex: 1,
+                  top: index * viewHeight,
+                  opacity: entryOpacity,
+                  transform: [{ scale: entryScale }],
+                },
               ]}
             >
               <VideoItem
                 currentIndex={index}
                 item={feedData[index]}
                 viewHeight={viewHeight}
-                frameWidth={frameWidth}
+                frameWidth={screenWidth}
                 fromSavedPosts={false}
                 onTelemetryEvent={(eventType, metadata) => {
                   const post = feedData[index];
@@ -450,8 +424,7 @@ function Watch({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-
-    backgroundColor: 'black',
+    backgroundColor: BRAND_VIDEO_BACKGROUND,
   },
   item: {
     height: '100%',

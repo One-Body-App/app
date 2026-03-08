@@ -285,9 +285,12 @@ export interface SocialPost {
     },
   ];
   mediaType?: string;
+  aspect_ratio?: string;
   aspectRatio?: number;
   videoWidth?: number;
   videoHeight?: number;
+  duration?: string;
+  durationMs?: number;
   permalink?: string;
   userData: {
     _id: string;
@@ -347,9 +350,12 @@ export interface WatchPost {
   _id?: string;
   playBackId?: string;
   postId?: string;
+  aspect_ratio?: string;
   aspectRatio?: number;
   videoWidth?: number;
   videoHeight?: number;
+  duration?: string;
+  durationMs?: number;
   content: string;
   date: string;
   handler: string;

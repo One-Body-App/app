@@ -77,6 +77,7 @@ import {
 } from '@/src/services/notification/pushNotificationService';
 import { queueRemoteNotificationPayload } from '@/src/services/notification/pushNotificationStorage';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
+import { resumePendingVideoUploads } from '@/src/services/videoProcessing/videoUploadQueue';
 
 const closeIcon = require('../assets/images/close.png'); // Adjust path
 
@@ -296,6 +297,7 @@ function AppContent() {
       appStateRef.current = nextAppState;
       if (wasBackground && nextAppState === 'active') {
         refreshTokenOnResume().catch(() => undefined);
+        resumePendingVideoUploads().catch(() => undefined);
       }
     });
 
@@ -303,6 +305,10 @@ function AppContent() {
       subscription.remove();
     };
   }, [refreshTokenOnResume]);
+
+  useEffect(() => {
+    resumePendingVideoUploads().catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;
@@ -1160,7 +1166,7 @@ function AppContent() {
               component={Watch}
               options={{
                 headerShown: false,
-                animation: 'none',
+                animation: 'fade_from_bottom',
                 statusBarStyle: 'light',
                 statusBarColor: '#000000',
                 statusBarTranslucent: true,

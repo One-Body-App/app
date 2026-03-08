@@ -80,20 +80,6 @@ function UserProfile({ navigation, route }: Props) {
     }
   }, [user]);
 
-  useEffect(() => {
-    dispatch(setLoader(true));
-    getUser();
-    getRelatedUser();
-  }, [id]);
-
-  useEffect(() => {
-    if (user) {
-      navigation.setOptions({
-        title: user.name,
-      });
-    }
-  }, [user]);
-
   const getUser = async () => {
     try {
       const res = await ApiCall({
@@ -133,6 +119,21 @@ function UserProfile({ navigation, route }: Props) {
     }
   };
 
+  useEffect(() => {
+    dispatch(setLoader(true));
+    getUser();
+    getRelatedUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
+    if (user) {
+      navigation.setOptions({
+        title: user.name,
+      });
+    }
+  }, [navigation, user]);
+
   const handleUnSubscribe = async (id: string) => {
     try {
       const res = await ApiCall({
@@ -140,7 +141,7 @@ function UserProfile({ navigation, route }: Props) {
         token,
         verb: 'patch',
       });
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         dispatch(getProfile.Request({ token }));
         // Toast.show('unfollowed successfully.', Toast.LONG);
         // dispatch(getuserAll({ token: token }));
@@ -160,7 +161,7 @@ function UserProfile({ navigation, route }: Props) {
         token,
         verb: 'patch',
       });
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         // dispatch(getuserAll({ token: token }));
         // dispatch(getuserGet({ token: token }));
         dispatch(getProfile.Request({ token }));

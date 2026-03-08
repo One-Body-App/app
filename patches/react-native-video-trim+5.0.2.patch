@@ -1,0 +1,808 @@
+diff --git a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/utils/VideoTrimmerUtil.java b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/utils/VideoTrimmerUtil.java
+index b6b9ba4f..58d60018 100644
+--- a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/utils/VideoTrimmerUtil.java
++++ b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/utils/VideoTrimmerUtil.java
+@@ -32,8 +32,8 @@ public class VideoTrimmerUtil {
+ 
+   private static final String TAG = VideoTrimmerUtil.class.getSimpleName();
+   public static final String FILE_PREFIX = "trimmedVideo";
+-  public static final long MIN_SHOOT_DURATION = 1000L;// min 3 seconds for trimming
+-  public static final int VIDEO_MAX_TIME = 10;// max 10 seconds for trimming
++  public static final long MIN_SHOOT_DURATION = 1000L;
++  public static final int VIDEO_MAX_TIME = 60;
+   public static final long MAX_SHOOT_DURATION = VIDEO_MAX_TIME * 1000L;
+ //  public static long maxShootDuration = 10 * 1000L;
+   public static int MAX_COUNT_RANGE = 10;  // how many images in the highlight range of seek bar
+@@ -164,4 +164,3 @@ public class VideoTrimmerUtil {
+     });
+   }
+ }
+-
+diff --git a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/VideoTrimModule.kt b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/VideoTrimModule.kt
+index f82a8330..7a2fd366 100644
+--- a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/VideoTrimModule.kt
++++ b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/VideoTrimModule.kt
+@@ -10,6 +10,9 @@ import android.content.DialogInterface
+ import android.content.Intent
+ import android.content.pm.PackageManager
+ import android.content.res.ColorStateList
++import android.graphics.Bitmap
++import android.media.MediaMetadataRetriever
++import android.net.Uri
+ import android.os.Build
+ import android.util.Log
+ import android.util.TypedValue
+@@ -39,9 +42,12 @@ import com.videotrim.widgets.VideoTrimmerView
+ import iknow.android.utils.BaseUtils
+ import java.io.File
+ import java.io.FileInputStream
++import java.io.FileOutputStream
+ import java.io.IOException
++import java.io.InputStream
+ import java.text.SimpleDateFormat
+ import java.util.Date
++import java.util.Locale
+ import java.util.TimeZone
+ 
+ @ReactModule(name = VideoTrimModule.NAME)
+@@ -623,6 +629,305 @@ class VideoTrimModule(reactContext: ReactApplicationContext) :
+     })
+   }
+ 
++  override fun extractEditedFrames(url: String, options: ReadableMap, promise: Promise) {
++    Thread {
++      var releaseInputPath: String? = null
++      var retriever: MediaMetadataRetriever? = null
++      try {
++        val resolvedInput = resolveProcessingInputPath(url)
++        val inputPath = resolvedInput.first
++        if (resolvedInput.second) {
++          releaseInputPath = inputPath
++        }
++
++        retriever = MediaMetadataRetriever()
++        retriever.setDataSource(inputPath)
++
++        val sourceWidth =
++          retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull()
++            ?: 0
++        val sourceHeight =
++          retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull()
++            ?: 0
++        val durationMs =
++          retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
++            ?: 0L
++
++        if (sourceWidth <= 0 || sourceHeight <= 0 || durationMs <= 0L) {
++          throw IllegalStateException("Unable to read video metadata for frame extraction.")
++        }
++
++        val cropRect = resolveCropRect(
++          sourceWidth,
++          sourceHeight,
++          options.getDouble("cropX"),
++          options.getDouble("cropY"),
++          options.getDouble("cropWidth"),
++          options.getDouble("cropHeight")
++        )
++        val outputWidth = ensureEvenDimension(options.getDouble("outputWidth").toInt(), 1080)
++        val outputHeight = ensureEvenDimension(options.getDouble("outputHeight").toInt(), 1080)
++        val frameCount = options.getDouble("frameCount").toInt().coerceIn(1, 10)
++
++        val framePaths = mutableListOf<String>()
++        for (index in 0 until frameCount) {
++          val timeUs =
++            if (frameCount == 1) {
++              (durationMs * 1000L) / 2L
++            } else {
++              ((durationMs * 1000L) * index.toLong()) / (frameCount - 1).toLong()
++            }
++
++          val bitmap =
++            retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
++              ?: continue
++          val processedBitmap =
++            createProcessedBitmap(bitmap, cropRect, outputWidth, outputHeight)
++          val framePath = StorageUtil.getOutputPath(reactApplicationContext, "jpg")
++          FileOutputStream(framePath).use { outputStream ->
++            processedBitmap.compress(Bitmap.CompressFormat.JPEG, 88, outputStream)
++          }
++
++          framePaths.add(framePath)
++          if (processedBitmap != bitmap) {
++            processedBitmap.recycle()
++          }
++          bitmap.recycle()
++        }
++
++        promise.resolve(Arguments.fromList(framePaths))
++      } catch (error: Exception) {
++        promise.reject("EXTRACT_EDITED_FRAMES_FAILED", error)
++      } finally {
++        try {
++          retriever?.release()
++        } catch (_: Exception) {
++        }
++        if (releaseInputPath != null) {
++          StorageUtil.deleteFile(releaseInputPath)
++        }
++      }
++    }.start()
++  }
++
++  override fun exportEditedVideo(url: String, options: ReadableMap, promise: Promise) {
++    var releaseInputPath: String? = null
++    try {
++      val resolvedInput = resolveProcessingInputPath(url)
++      val inputPath = resolvedInput.first
++      if (resolvedInput.second) {
++        releaseInputPath = inputPath
++      }
++
++      val retriever = MediaMetadataRetriever()
++      retriever.setDataSource(inputPath)
++      val sourceWidth =
++        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull()
++          ?: 0
++      val sourceHeight =
++        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull()
++          ?: 0
++      retriever.release()
++
++      if (sourceWidth <= 0 || sourceHeight <= 0) {
++        throw IllegalStateException("Unable to read video metadata for export.")
++      }
++
++      val cropRect = resolveCropRect(
++        sourceWidth,
++        sourceHeight,
++        options.getDouble("cropX"),
++        options.getDouble("cropY"),
++        options.getDouble("cropWidth"),
++        options.getDouble("cropHeight")
++      )
++      val outputWidth = ensureEvenDimension(options.getDouble("outputWidth").toInt(), 1080)
++      val outputHeight = ensureEvenDimension(options.getDouble("outputHeight").toInt(), 1920)
++      val videoBitrate = options.getDouble("videoBitrate").toInt().coerceAtLeast(500_000)
++      val audioBitrate = options.getDouble("audioBitrate").toInt().coerceAtLeast(64_000)
++      val outputPath = StorageUtil.getOutputPath(reactApplicationContext, "mp4")
++
++      val videoFilter =
++        "crop=${cropRect.width}:${cropRect.height}:${cropRect.x}:${cropRect.y}," +
++          "scale=$outputWidth:$outputHeight:flags=lanczos,setsar=1"
++
++      val cmds = arrayOf(
++        "-y",
++        "-i",
++        inputPath,
++        "-vf",
++        videoFilter,
++        "-map",
++        "0:v:0",
++        "-map",
++        "0:a?",
++        "-c:v",
++        "libx264",
++        "-preset",
++        "faster",
++        "-pix_fmt",
++        "yuv420p",
++        "-b:v",
++        videoBitrate.toString(),
++        "-maxrate",
++        videoBitrate.toString(),
++        "-bufsize",
++        (videoBitrate * 2).toString(),
++        "-movflags",
++        "+faststart",
++        "-c:a",
++        "aac",
++        "-b:a",
++        audioBitrate.toString(),
++        "-ar",
++        "44100",
++        outputPath
++      )
++
++      FFmpegKit.executeWithArgumentsAsync(cmds, { session ->
++        if (releaseInputPath != null) {
++          StorageUtil.deleteFile(releaseInputPath)
++        }
++
++        val state = session.state
++        val returnCode = session.returnCode
++        when {
++          ReturnCode.isSuccess(returnCode) -> {
++            try {
++              val outputRetriever = MediaMetadataRetriever()
++              outputRetriever.setDataSource(outputPath)
++              val duration =
++                outputRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
++                  ?.toDoubleOrNull() ?: 0.0
++              val width =
++                outputRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
++                  ?.toIntOrNull() ?: outputWidth
++              val height =
++                outputRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
++                  ?.toIntOrNull() ?: outputHeight
++              outputRetriever.release()
++
++              val result = Arguments.createMap()
++              result.putString("outputPath", outputPath)
++              result.putDouble("duration", duration)
++              result.putInt("width", width)
++              result.putInt("height", height)
++              promise.resolve(result)
++            } catch (metadataError: Exception) {
++              promise.reject("EXPORT_EDITED_VIDEO_METADATA_FAILED", metadataError)
++            }
++          }
++          ReturnCode.isCancel(returnCode) -> {
++            promise.reject(Exception("Edited video export was cancelled"))
++          }
++          else -> {
++            val errorMessage =
++              String.format(
++                Locale.US,
++                "Command failed with state %s and rc %s.%s",
++                state,
++                returnCode,
++                session.failStackTrace
++              )
++            promise.reject(Exception(errorMessage))
++          }
++        }
++      }, { log ->
++        Log.d(TAG, "Export video log ${log.message}")
++      }, { statistics ->
++        Log.d(TAG, "Export video stats ${statistics.time}")
++      })
++    } catch (error: Exception) {
++      if (releaseInputPath != null) {
++        StorageUtil.deleteFile(releaseInputPath)
++      }
++      promise.reject("EXPORT_EDITED_VIDEO_FAILED", error)
++    }
++  }
++
++  private fun resolveProcessingInputPath(url: String): Pair<String, Boolean> {
++    if (url.startsWith("content://")) {
++      val uri = Uri.parse(url)
++      val inputStream =
++        reactApplicationContext.contentResolver.openInputStream(uri)
++          ?: throw IOException("Unable to open content URI: $url")
++      val tempFile =
++        File(reactApplicationContext.cacheDir, "videotrim_input_${System.currentTimeMillis()}.mp4")
++      copyToFile(inputStream, tempFile)
++      return Pair(tempFile.absolutePath, true)
++    }
++
++    if (url.startsWith("file://")) {
++      return Pair(url.removePrefix("file://"), false)
++    }
++
++    return Pair(url, false)
++  }
++
++  private fun copyToFile(inputStream: InputStream, targetFile: File) {
++    inputStream.use { input ->
++      FileOutputStream(targetFile).use { output ->
++        input.copyTo(output)
++      }
++    }
++  }
++
++  private fun createProcessedBitmap(
++    bitmap: Bitmap,
++    cropRect: CropRect,
++    outputWidth: Int,
++    outputHeight: Int
++  ): Bitmap {
++    val safeX = cropRect.x.coerceIn(0, (bitmap.width - 1).coerceAtLeast(0))
++    val safeY = cropRect.y.coerceIn(0, (bitmap.height - 1).coerceAtLeast(0))
++    val safeWidth = cropRect.width.coerceIn(1, bitmap.width - safeX)
++    val safeHeight = cropRect.height.coerceIn(1, bitmap.height - safeY)
++    val croppedBitmap = Bitmap.createBitmap(bitmap, safeX, safeY, safeWidth, safeHeight)
++    return if (croppedBitmap.width == outputWidth && croppedBitmap.height == outputHeight) {
++      croppedBitmap
++    } else {
++      Bitmap.createScaledBitmap(croppedBitmap, outputWidth, outputHeight, true)
++    }
++  }
++
++  private fun resolveCropRect(
++    sourceWidth: Int,
++    sourceHeight: Int,
++    cropX: Double,
++    cropY: Double,
++    cropWidth: Double,
++    cropHeight: Double
++  ): CropRect {
++    val normalizedWidth = ensureEvenDimension(cropWidth.toInt(), sourceWidth)
++      .coerceAtMost(sourceWidth)
++      .coerceAtLeast(2)
++    val normalizedHeight = ensureEvenDimension(cropHeight.toInt(), sourceHeight)
++      .coerceAtMost(sourceHeight)
++      .coerceAtLeast(2)
++    val maxX = (sourceWidth - normalizedWidth).coerceAtLeast(0)
++    val maxY = (sourceHeight - normalizedHeight).coerceAtLeast(0)
++    val normalizedX = ensureEvenCoordinate(cropX.toInt()).coerceIn(0, maxX)
++    val normalizedY = ensureEvenCoordinate(cropY.toInt()).coerceIn(0, maxY)
++    return CropRect(normalizedX, normalizedY, normalizedWidth, normalizedHeight)
++  }
++
++  private fun ensureEvenDimension(value: Int, fallback: Int): Int {
++    val safeValue = (if (value > 0) value else fallback).coerceAtLeast(2)
++    return if (safeValue % 2 == 0) safeValue else safeValue - 1
++  }
++
++  private fun ensureEvenCoordinate(value: Int): Int {
++    val safeValue = value.coerceAtLeast(0)
++    return if (safeValue % 2 == 0) safeValue else safeValue - 1
++  }
++
++  data class CropRect(
++    val x: Int,
++    val y: Int,
++    val width: Int,
++    val height: Int
++  )
++
+   private fun saveFileToExternalStorage(file: File) {
+     val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+     intent.addCategory(Intent.CATEGORY_OPENABLE)
+diff --git a/node_modules/react-native-video-trim/ios/VideoTrim.h b/node_modules/react-native-video-trim/ios/VideoTrim.h
+index 7f616724..3e2b20b4 100644
+--- a/node_modules/react-native-video-trim/ios/VideoTrim.h
++++ b/node_modules/react-native-video-trim/ios/VideoTrim.h
+@@ -27,5 +27,6 @@
+ - (void)shareFile:(NSURL *)fileURL;
+ - (int)deleteFileAtURL:(NSURL *)url;
+ - (void)onError:(NSString *)message code:(NSString *)code;
++- (NSURL *)resolveInputURL:(NSString *)value;
+ 
+ @end
+diff --git a/node_modules/react-native-video-trim/ios/VideoTrim.mm b/node_modules/react-native-video-trim/ios/VideoTrim.mm
+index 1c943270..007163a7 100644
+--- a/node_modules/react-native-video-trim/ios/VideoTrim.mm
++++ b/node_modules/react-native-video-trim/ios/VideoTrim.mm
+@@ -102,6 +102,16 @@ RCT_EXPORT_MODULE()
+     resolve(result);
+ }
+ 
++- (NSURL *)resolveInputURL:(NSString *)value {
++    if ([value hasPrefix:@"file://"] || [value hasPrefix:@"http://"] || [value hasPrefix:@"https://"]) {
++        return [NSURL URLWithString:value];
++    }
++    if ([value hasPrefix:@"/"]) {
++        return [NSURL fileURLWithPath:value];
++    }
++    return [NSURL URLWithString:value];
++}
++
+ - (void)listFiles:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject { 
+     NSMutableArray *files = [NSMutableArray array];
+     NSURL *documentsDirectory = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject];
+@@ -251,7 +261,7 @@ RCT_EXPORT_MODULE()
+ }
+ 
+ - (void)trim:(nonnull NSString *)url options:(JS::NativeVideoTrim::TrimOptions &)options resolve:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject { 
+-    NSURL *inputURL = [NSURL URLWithString:url];
++    NSURL *inputURL = [self resolveInputURL:url];
+     if (!inputURL) {
+         reject(@"INVALID_URL", @"Invalid input URL", nil);
+         return;
+@@ -292,6 +302,231 @@ RCT_EXPORT_MODULE()
+     } withLogCallback:nil withStatisticsCallback:nil];
+ }
+ 
++- (CGRect)normalizedCropRectForWidth:(NSInteger)width
++                              height:(NSInteger)height
++                               cropX:(double)cropX
++                               cropY:(double)cropY
++                           cropWidth:(double)cropWidth
++                          cropHeight:(double)cropHeight {
++    NSInteger normalizedWidth = MAX(2, (NSInteger)cropWidth);
++    NSInteger normalizedHeight = MAX(2, (NSInteger)cropHeight);
++    if (normalizedWidth % 2 != 0) {
++        normalizedWidth -= 1;
++    }
++    if (normalizedHeight % 2 != 0) {
++        normalizedHeight -= 1;
++    }
++    normalizedWidth = MIN(MAX(2, normalizedWidth), width);
++    normalizedHeight = MIN(MAX(2, normalizedHeight), height);
++
++    NSInteger normalizedX = MAX(0, (NSInteger)cropX);
++    NSInteger normalizedY = MAX(0, (NSInteger)cropY);
++    if (normalizedX % 2 != 0) {
++        normalizedX -= 1;
++    }
++    if (normalizedY % 2 != 0) {
++        normalizedY -= 1;
++    }
++    normalizedX = MIN(normalizedX, MAX(0, width - normalizedWidth));
++    normalizedY = MIN(normalizedY, MAX(0, height - normalizedHeight));
++
++    return CGRectMake(normalizedX, normalizedY, normalizedWidth, normalizedHeight);
++}
++
++- (UIImage *)processedImageFromCGImage:(CGImageRef)cgImage
++                              cropRect:(CGRect)cropRect
++                           outputWidth:(NSInteger)outputWidth
++                          outputHeight:(NSInteger)outputHeight {
++    CGRect integralCropRect = CGRectIntegral(cropRect);
++    CGImageRef croppedImage = CGImageCreateWithImageInRect(cgImage, integralCropRect);
++    if (!croppedImage) {
++        return nil;
++    }
++
++    UIGraphicsBeginImageContextWithOptions(CGSizeMake(outputWidth, outputHeight), YES, 1.0);
++    CGContextRef context = UIGraphicsGetCurrentContext();
++    if (!context) {
++        CGImageRelease(croppedImage);
++        UIGraphicsEndImageContext();
++        return nil;
++    }
++
++    CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
++    UIImage *image = [UIImage imageWithCGImage:croppedImage];
++    [image drawInRect:CGRectMake(0, 0, outputWidth, outputHeight)];
++    UIImage *scaledImage = UIGraphicsGetImageFromCurrentImageContext();
++    UIGraphicsEndImageContext();
++    CGImageRelease(croppedImage);
++    return scaledImage;
++}
++
++- (void)extractEditedFrames:(nonnull NSString *)url options:(JS::NativeVideoTrim::EditedFrameOptions &)options resolve:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject {
++    NSURL *inputURL = [self resolveInputURL:url];
++    if (!inputURL) {
++        reject(@"INVALID_URL", @"Invalid input URL", nil);
++        return;
++    }
++
++    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
++        AVAsset *asset = [AVAsset assetWithURL:inputURL];
++        AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
++        if (!videoTrack) {
++            reject(@"EXTRACT_EDITED_FRAMES_FAILED", @"Video track unavailable", nil);
++            return;
++        }
++
++        CGSize presentationSize = CGSizeApplyAffineTransform(videoTrack.naturalSize, videoTrack.preferredTransform);
++        NSInteger sourceWidth = (NSInteger)fabs(presentationSize.width);
++        NSInteger sourceHeight = (NSInteger)fabs(presentationSize.height);
++        NSInteger outputWidth = MAX(2, (NSInteger)options.outputWidth());
++        NSInteger outputHeight = MAX(2, (NSInteger)options.outputHeight());
++        NSInteger frameCount = MIN(10, MAX(1, (NSInteger)options.frameCount()));
++        CGRect cropRect = [self normalizedCropRectForWidth:sourceWidth
++                                                    height:sourceHeight
++                                                     cropX:options.cropX()
++                                                     cropY:options.cropY()
++                                                 cropWidth:options.cropWidth()
++                                                cropHeight:options.cropHeight()];
++
++        AVAssetImageGenerator *generator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
++        generator.appliesPreferredTrackTransform = YES;
++        NSMutableArray<NSString *> *framePaths = [NSMutableArray array];
++        Float64 durationSeconds = CMTimeGetSeconds(asset.duration);
++        if (!isfinite(durationSeconds) || durationSeconds <= 0) {
++            reject(@"EXTRACT_EDITED_FRAMES_FAILED", @"Video duration unavailable", nil);
++            return;
++        }
++
++        NSURL *documentsDirectory = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory
++                                                                            inDomains:NSUserDomainMask] firstObject];
++
++        for (NSInteger index = 0; index < frameCount; index++) {
++            Float64 frameSecond = frameCount == 1
++                ? durationSeconds / 2.0
++                : (durationSeconds * (Float64)index) / (Float64)(frameCount - 1);
++            CMTime requestedTime = CMTimeMakeWithSeconds(frameSecond, 600);
++            NSError *frameError = nil;
++            CMTime actualTime = kCMTimeZero;
++            CGImageRef imageRef = [generator copyCGImageAtTime:requestedTime actualTime:&actualTime error:&frameError];
++            if (!imageRef || frameError) {
++                if (imageRef) {
++                    CGImageRelease(imageRef);
++                }
++                continue;
++            }
++
++            @autoreleasepool {
++                UIImage *processedImage = [self processedImageFromCGImage:imageRef
++                                                                 cropRect:cropRect
++                                                              outputWidth:outputWidth
++                                                             outputHeight:outputHeight];
++                CGImageRelease(imageRef);
++                if (!processedImage) {
++                    continue;
++                }
++
++                NSData *imageData = UIImageJPEGRepresentation(processedImage, 0.88);
++                if (!imageData) {
++                    continue;
++                }
++
++                NSString *fileName = [NSString stringWithFormat:@"%@_%lld_%ld.jpg", self.FILE_PREFIX, (long long)[[NSDate date] timeIntervalSince1970], (long)index];
++                NSURL *frameURL = [documentsDirectory URLByAppendingPathComponent:fileName];
++                NSError *writeError = nil;
++                [imageData writeToURL:frameURL options:NSDataWritingAtomic error:&writeError];
++                if (!writeError) {
++                    [framePaths addObject:frameURL.absoluteString];
++                }
++            }
++        }
++
++        resolve(framePaths);
++    });
++}
++
++- (void)exportEditedVideo:(nonnull NSString *)url options:(JS::NativeVideoTrim::ExportVideoOptions &)options resolve:(nonnull RCTPromiseResolveBlock)resolve reject:(nonnull RCTPromiseRejectBlock)reject {
++    NSURL *inputURL = [self resolveInputURL:url];
++    if (!inputURL) {
++        reject(@"INVALID_URL", @"Invalid input URL", nil);
++        return;
++    }
++
++    AVAsset *asset = [AVAsset assetWithURL:inputURL];
++    AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
++    if (!videoTrack) {
++        reject(@"EXPORT_EDITED_VIDEO_FAILED", @"Video track unavailable", nil);
++        return;
++    }
++
++    CGSize presentationSize = CGSizeApplyAffineTransform(videoTrack.naturalSize, videoTrack.preferredTransform);
++    NSInteger sourceWidth = (NSInteger)fabs(presentationSize.width);
++    NSInteger sourceHeight = (NSInteger)fabs(presentationSize.height);
++    NSInteger outputWidth = MAX(2, (NSInteger)options.outputWidth());
++    NSInteger outputHeight = MAX(2, (NSInteger)options.outputHeight());
++    CGRect cropRect = [self normalizedCropRectForWidth:sourceWidth
++                                                height:sourceHeight
++                                                 cropX:options.cropX()
++                                                 cropY:options.cropY()
++                                             cropWidth:options.cropWidth()
++                                            cropHeight:options.cropHeight()];
++
++    NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970];
++    NSString *outputName = [NSString stringWithFormat:@"%@_%d.mp4", self.FILE_PREFIX, (int)timestamp];
++    NSURL *documentsDirectory = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory
++                                                                        inDomains:NSUserDomainMask] firstObject];
++    NSURL *outputURL = [documentsDirectory URLByAppendingPathComponent:outputName];
++    NSString *videoFilter = [NSString stringWithFormat:@"crop=%ld:%ld:%ld:%ld,scale=%ld:%ld:flags=lanczos,setsar=1",
++                             (long)cropRect.size.width,
++                             (long)cropRect.size.height,
++                             (long)cropRect.origin.x,
++                             (long)cropRect.origin.y,
++                             (long)outputWidth,
++                             (long)outputHeight];
++
++    NSMutableArray *cmds = [NSMutableArray arrayWithObjects:
++        @"-y",
++        @"-i", inputURL.absoluteString,
++        @"-vf", videoFilter,
++        @"-map", @"0:v:0",
++        @"-map", @"0:a?",
++        @"-c:v", @"libx264",
++        @"-preset", @"faster",
++        @"-pix_fmt", @"yuv420p",
++        @"-b:v", [NSString stringWithFormat:@"%.0f", options.videoBitrate()],
++        @"-maxrate", [NSString stringWithFormat:@"%.0f", options.videoBitrate()],
++        @"-bufsize", [NSString stringWithFormat:@"%.0f", options.videoBitrate() * 2.0],
++        @"-movflags", @"+faststart",
++        @"-c:a", @"aac",
++        @"-b:a", [NSString stringWithFormat:@"%.0f", options.audioBitrate()],
++        @"-ar", @"44100",
++        outputURL.absoluteString,
++        nil];
++
++    [FFmpegKit executeWithArgumentsAsync:cmds
++                      withCompleteCallback:^(FFmpegSession *session) {
++        SessionState state = [session getState];
++        ReturnCode *returnCode = [session getReturnCode];
++        if ([ReturnCode isSuccess:returnCode]) {
++            AVAsset *outputAsset = [AVAsset assetWithURL:outputURL];
++            AVAssetTrack *outputTrack = [[outputAsset tracksWithMediaType:AVMediaTypeVideo] firstObject];
++            CGSize outputPresentationSize = CGSizeApplyAffineTransform(outputTrack.naturalSize, outputTrack.preferredTransform);
++            NSDictionary *result = @{
++                @"outputPath": outputURL.absoluteString,
++                @"duration": @(CMTimeGetSeconds(outputAsset.duration) * 1000.0),
++                @"width": @((NSInteger)fabs(outputPresentationSize.width)),
++                @"height": @((NSInteger)fabs(outputPresentationSize.height))
++            };
++            resolve(result);
++        } else {
++            NSString *errorMessage = [NSString stringWithFormat:@"Command failed with state %@ and rc %@.%@",
++                                      [FFmpegKitConfig sessionStateToString:state],
++                                      returnCode,
++                                      [session getFailStackTrace] ?: @""];
++            reject(@"EXPORT_EDITED_VIDEO_FAILED", errorMessage, nil);
++        }
++    } withLogCallback:nil withStatisticsCallback:nil];
++}
++
+ - (void)trimWithViewController:(VideoTrimmerViewController *)viewController 
+                      inputFile:(NSURL *)inputFile 
+                  videoDuration:(double)videoDuration 
+diff --git a/node_modules/react-native-video-trim/src/NativeVideoTrim.ts b/node_modules/react-native-video-trim/src/NativeVideoTrim.ts
+index ca35ef97..aae81304 100644
+--- a/node_modules/react-native-video-trim/src/NativeVideoTrim.ts
++++ b/node_modules/react-native-video-trim/src/NativeVideoTrim.ts
+@@ -66,6 +66,34 @@ export interface FileValidationResult {
+   duration: number;
+ }
+ 
++export interface EditedFrameOptions {
++  cropX: number;
++  cropY: number;
++  cropWidth: number;
++  cropHeight: number;
++  outputWidth: number;
++  outputHeight: number;
++  frameCount: number;
++}
++
++export interface ExportVideoOptions extends BaseOptions {
++  cropX: number;
++  cropY: number;
++  cropWidth: number;
++  cropHeight: number;
++  outputWidth: number;
++  outputHeight: number;
++  videoBitrate: number;
++  audioBitrate: number;
++}
++
++export interface ExportedVideoResult {
++  outputPath: string;
++  duration: number;
++  width: number;
++  height: number;
++}
++
+ export interface Spec extends TurboModule {
+   showEditor(filePath: string, config: EditorConfig): void;
+   listFiles(): Promise<string[]>;
+@@ -74,6 +102,8 @@ export interface Spec extends TurboModule {
+   closeEditor(): void;
+   isValidFile(url: string): Promise<FileValidationResult>;
+   trim(url: string, options: TrimOptions): Promise<string>;
++  extractEditedFrames(url: string, options: EditedFrameOptions): Promise<string[]>;
++  exportEditedVideo(url: string, options: ExportVideoOptions): Promise<ExportedVideoResult>;
+ 
+   readonly onStartTrimming: EventEmitter<void>;
+   readonly onCancelTrimming: EventEmitter<void>;
+diff --git a/node_modules/react-native-video-trim/src/index.tsx b/node_modules/react-native-video-trim/src/index.tsx
+index 7c22f937..69e9f1d1 100644
+--- a/node_modules/react-native-video-trim/src/index.tsx
++++ b/node_modules/react-native-video-trim/src/index.tsx
+@@ -1,7 +1,10 @@
+ import VideoTrim from './NativeVideoTrim';
+ import type {
+   BaseOptions,
++  EditedFrameOptions,
+   EditorConfig,
++  ExportedVideoResult,
++  ExportVideoOptions,
+   FileValidationResult,
+   TrimOptions,
+ } from './NativeVideoTrim';
+@@ -168,5 +171,22 @@ export function trim(
+   return VideoTrim.trim(url, createTrimOptions(options));
+ }
+ 
++export function extractEditedFrames(
++  url: string,
++  options: EditedFrameOptions
++): Promise<string[]> {
++  return VideoTrim.extractEditedFrames(url, options);
++}
++
++export function exportEditedVideo(
++  url: string,
++  options: Partial<ExportVideoOptions>
++): Promise<ExportedVideoResult> {
++  return VideoTrim.exportEditedVideo(
++    url,
++    createBaseOptions(options) as ExportVideoOptions
++  );
++}
++
+ export * from './NativeVideoTrim';
+ export default VideoTrim;
+diff --git a/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts b/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts
+index f0e7f7e5..5e1753cc 100644
+--- a/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts
++++ b/node_modules/react-native-video-trim/lib/typescript/src/NativeVideoTrim.d.ts
+@@ -60,6 +60,31 @@ export interface FileValidationResult {
+     fileType: string;
+     duration: number;
+ }
++export interface EditedFrameOptions {
++    cropX: number;
++    cropY: number;
++    cropWidth: number;
++    cropHeight: number;
++    outputWidth: number;
++    outputHeight: number;
++    frameCount: number;
++}
++export interface ExportVideoOptions extends BaseOptions {
++    cropX: number;
++    cropY: number;
++    cropWidth: number;
++    cropHeight: number;
++    outputWidth: number;
++    outputHeight: number;
++    videoBitrate: number;
++    audioBitrate: number;
++}
++export interface ExportedVideoResult {
++    outputPath: string;
++    duration: number;
++    width: number;
++    height: number;
++}
+ export interface Spec extends TurboModule {
+     showEditor(filePath: string, config: EditorConfig): void;
+     listFiles(): Promise<string[]>;
+@@ -68,6 +93,8 @@ export interface Spec extends TurboModule {
+     closeEditor(): void;
+     isValidFile(url: string): Promise<FileValidationResult>;
+     trim(url: string, options: TrimOptions): Promise<string>;
++    extractEditedFrames(url: string, options: EditedFrameOptions): Promise<string[]>;
++    exportEditedVideo(url: string, options: ExportVideoOptions): Promise<ExportedVideoResult>;
+     readonly onStartTrimming: EventEmitter<void>;
+     readonly onCancelTrimming: EventEmitter<void>;
+     readonly onCancel: EventEmitter<void>;
+@@ -104,4 +131,4 @@ export interface Spec extends TurboModule {
+ }
+ declare const _default: Spec;
+ export default _default;
+-//# sourceMappingURL=NativeVideoTrim.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=NativeVideoTrim.d.ts.map
+diff --git a/node_modules/react-native-video-trim/lib/typescript/src/index.d.ts b/node_modules/react-native-video-trim/lib/typescript/src/index.d.ts
+index 212ce1ef..9702c30f 100644
+--- a/node_modules/react-native-video-trim/lib/typescript/src/index.d.ts
++++ b/node_modules/react-native-video-trim/lib/typescript/src/index.d.ts
+@@ -1,5 +1,5 @@
+ import VideoTrim from './NativeVideoTrim';
+-import type { EditorConfig, FileValidationResult, TrimOptions } from './NativeVideoTrim';
++import type { EditedFrameOptions, EditorConfig, ExportedVideoResult, ExportVideoOptions, FileValidationResult, TrimOptions } from './NativeVideoTrim';
+ export * from './NativeVideoTrim';
+ /**
+  * Show video editor
+@@ -50,6 +50,8 @@ export declare function isValidFile(url: string): Promise<FileValidationResult>;
+  * @returns {Promise<string>} A **Promise** which resolves to the trimmed file path
+  */
+ export declare function trim(url: string, options: Partial<TrimOptions>): Promise<string>;
++export declare function extractEditedFrames(url: string, options: EditedFrameOptions): Promise<string[]>;
++export declare function exportEditedVideo(url: string, options: ExportVideoOptions): Promise<ExportedVideoResult>;
+ export * from './NativeVideoTrim';
+ export default VideoTrim;
+-//# sourceMappingURL=index.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=index.d.ts.map
+diff --git a/node_modules/react-native-video-trim/lib/module/index.js b/node_modules/react-native-video-trim/lib/module/index.js
+index e8fcab07..d8b57975 100644
+--- a/node_modules/react-native-video-trim/lib/module/index.js
++++ b/node_modules/react-native-video-trim/lib/module/index.js
+@@ -147,6 +147,15 @@ export function isValidFile(url) {
+ export function trim(url, options) {
+   return VideoTrim.trim(url, createTrimOptions(options));
+ }
++export function extractEditedFrames(url, options) {
++  return VideoTrim.extractEditedFrames(url, options);
++}
++export function exportEditedVideo(url, options) {
++  return VideoTrim.exportEditedVideo(url, {
++    ...createBaseOptions(options),
++    ...options
++  });
++}
+ export * from "./NativeVideoTrim.js";
+ export default VideoTrim;
+-//# sourceMappingURL=index.js.map
+\ No newline at end of file
++//# sourceMappingURL=index.js.map

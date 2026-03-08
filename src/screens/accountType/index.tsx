@@ -38,7 +38,7 @@ function AccountType({ navigation }: Props) {
   const { width: windowWidth } = useWindowDimensions();
   const isTablet = windowWidth >= 768;
   const isIos = Platform.OS === 'ios';
-  const primaryTextColor = '#032F3C';
+  const primaryTextColor = dark ? colors.text : '#032F3C';
   const cardRadius = typeof card.borderRadius === 'number' ? card.borderRadius : 14;
   const glassOverlayStyle = {
     backgroundColor: colors.card,

@@ -17,3 +17,27 @@ index 8d1d440..9c68d62 100644
          target_link_libraries(${CMAKE_PROJECT_NAME} ${AUTOLINKED_LIBRARIES})
          foreach(autolinked_library ${AUTOLINKED_LIBRARIES})
              target_link_libraries(${autolinked_library} common_flags)
+diff --git a/node_modules/react-native/scripts/react-native-xcode.sh b/node_modules/react-native/scripts/react-native-xcode.sh
+index b26bc3c..32f0b4c 100755
+--- a/node_modules/react-native/scripts/react-native-xcode.sh
++++ b/node_modules/react-native/scripts/react-native-xcode.sh
+@@ -149,13 +149,18 @@ else
+   EXTRA_ARGS+=("--config-cmd" "'$NODE_BINARY' $NODE_ARGS '$REACT_NATIVE_DIR/cli.js' config")
+ fi
+ 
++RESET_CACHE_FLAG=()
++if [[ "$RN_XCODE_BUNDLE_RESET_CACHE" == "1" ]]; then
++  RESET_CACHE_FLAG+=(--reset-cache)
++fi
++
+ # shellcheck disable=SC2086
+ "$NODE_BINARY" $NODE_ARGS "$CLI_PATH" $BUNDLE_COMMAND \
+   $CONFIG_ARG \
+   --entry-file "$ENTRY_FILE" \
+   --platform "$BUNDLE_PLATFORM" \
+   --dev $DEV \
+-  --reset-cache \
++  "${RESET_CACHE_FLAG[@]}" \
+   --bundle-output "$BUNDLE_FILE" \
+   --assets-dest "$DEST" \
+   "${EXTRA_ARGS[@]}" \

@@ -16,9 +16,8 @@ import {
 } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
-import RNFetchBlob from 'rn-fetch-blob';
 import RNFS from 'react-native-fs';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useToast } from 'react-native-toast-notifications';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {
@@ -27,14 +26,26 @@ import {
   launchImageLibrary,
   type ImagePickerResponse,
 } from 'react-native-image-picker';
-import VideoTrim, { isValidFile, showEditor } from 'react-native-video-trim';
-
+import VideoTrim, { showEditor } from 'react-native-video-trim';
 import CameraComponent from '@/src/components/VideoPost/Camera';
 import CustomVideo from '@/src/components/CustomVideo';
 import { MainStackParamList } from '@/src/navigator/types';
-import { RootState } from '@/src/redux/reducers/rootReducer';
-import { ApiCall } from '@/src/services/api';
-import { formatAspectRatioLabel, getVideoFitSize, isSuccessfulStatus } from './videoPostUtils';
+import {
+  createDefaultVideoTransform,
+  MAX_VIDEO_EDITOR_SCALE,
+  MIN_VIDEO_EDITOR_SCALE,
+  VIDEO_RATIO_CONFIG,
+  clampVideoTransform,
+  resolveDisplayedVideoFrame,
+  resolveSourceCrop,
+  resolveCropRect as resolveEditorCropRect,
+} from '@/src/services/videoProcessing/videoEditMath';
+import { enqueuePendingVideoUpload } from '@/src/services/videoProcessing/videoUploadQueue';
+import type {
+  VideoDimensions,
+  VideoRatioId,
+  VideoTransformState,
+} from '@/src/services/videoProcessing/types';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
@@ -48,9 +59,9 @@ type ThemePalette = {
   primary: string;
   primarySoft: string;
   border: string;
-  trimTrack: string;
-  trimFrame: string;
   overlay: string;
+  success: string;
+  warning: string;
 };
 
 const DARK_PALETTE: ThemePalette = {
@@ -63,9 +74,9 @@ const DARK_PALETTE: ThemePalette = {
   primary: '#41899f',
   primarySoft: '#355963',
   border: '#68828a',
-  trimTrack: '#355963',
-  trimFrame: '#68828a',
-  overlay: 'rgba(0,0,0,0.35)',
+  overlay: 'rgba(0,0,0,0.4)',
+  success: '#17b26a',
+  warning: '#f59e0b',
 };
 
 const LIGHT_PALETTE: ThemePalette = {
@@ -78,9 +89,33 @@ const LIGHT_PALETTE: ThemePalette = {
   primary: '#126b87',
   primarySoft: '#e6eaec',
   border: '#c8d4d8',
-  trimTrack: '#e6eaec',
-  trimFrame: '#c6d2d6',
   overlay: 'rgba(0,0,0,0.25)',
+  success: '#15803d',
+  warning: '#b45309',
+};
+
+const RATIO_OPTIONS: VideoRatioId[] = ['1:1', '4:3', '16:9', '9:16'];
+
+const ensureFileUri = (value?: string | null) => {
+  if (!value) {
+    return '';
+  }
+  if (value.startsWith('file://') || value.startsWith('content://')) {
+    return value;
+  }
+  return `file://${value}`;
+};
+
+const sameTransform = (left: VideoTransformState, right: VideoTransformState) =>
+  Math.abs(left.scale - right.scale) < 0.001 &&
+  Math.abs(left.translateX - right.translateX) < 0.5 &&
+  Math.abs(left.translateY - right.translateY) < 0.5;
+
+const formatTime = (seconds: number) => {
+  const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+  const mins = Math.floor(safeSeconds / 60);
+  const secs = Math.floor(safeSeconds % 60);
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
 function ActionButton({
@@ -127,57 +162,84 @@ function ActionButton({
   );
 }
 
-const ensureFileUri = (value?: string | null) => {
-  if (!value) {
-    return '';
-  }
-  if (value.startsWith('file://') || value.startsWith('content://')) {
-    return value;
-  }
-  return `file://${value}`;
-};
-
 export default function VideoPost({ navigation, route }: Props) {
-  const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
   const { dark } = useTheme();
 
   const palette = dark ? DARK_PALETTE : LIGHT_PALETTE;
   const styles = useMemo(() => createStyles(), []);
+  const listenerSubscription = useRef<Record<string, EventSubscription>>({});
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const pinchStartRef = useRef(1);
+  const hasAutoOpenedCameraRef = useRef(false);
+  const hasShownTrimWarningRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const [videoPath, setVideoPath] = useState('');
-  const [uploadedMuxId, setUploadedMuxId] = useState('');
-  const [uploadedVideoPath, setUploadedVideoPath] = useState('');
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [caption, setCaption] = useState('');
-  const [previewAspectRatio, setPreviewAspectRatio] = useState(16 / 9);
-  const [videoNaturalSize, setVideoNaturalSize] = useState<{ width?: number; height?: number }>({});
-  const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 });
   const [isPreparingVideo, setIsPreparingVideo] = useState(false);
   const [isLiveCameraVisible, setIsLiveCameraVisible] = useState(false);
-  const listenerSubscription = useRef<Record<string, EventSubscription>>({});
-  const hasAutoOpenedCameraRef = useRef(false);
-  const latestUploadRequestRef = useRef(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [caption, setCaption] = useState('');
+  const [originalVideoUri, setOriginalVideoUri] = useState('');
+  const [trimmedVideoUri, setTrimmedVideoUri] = useState('');
+  const [editableVideoUri, setEditableVideoUri] = useState('');
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [videoNaturalSize, setVideoNaturalSize] = useState<VideoDimensions>({
+    width: 0,
+    height: 0,
+  });
+  const [previewStageSize, setPreviewStageSize] = useState({ width: 1, height: 1 });
+  const [selectedRatio, setSelectedRatio] = useState<VideoRatioId>('9:16');
+  const [transform, setTransform] = useState<VideoTransformState>(createDefaultVideoTransform());
+  const [cropConfirmed, setCropConfirmed] = useState(false);
 
-  const formatTime = (seconds: number) => {
-    const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
-    const mins = Math.floor(safeSeconds / 60);
-    const secs = Math.floor(safeSeconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  const hasVideo = Boolean(editableVideoUri);
+  const currentDurationSeconds = Math.max(0, videoDuration || 0);
+  const requiresTrim = currentDurationSeconds > 60.05;
+  const ratioConfig = VIDEO_RATIO_CONFIG[selectedRatio];
+  const cropFrame = useMemo(
+    () => resolveEditorCropRect(previewStageSize.width, previewStageSize.height, selectedRatio),
+    [previewStageSize.height, previewStageSize.width, selectedRatio]
+  );
 
-  const applySelectedVideo = useCallback((nextPath: string) => {
-    setVideoPath(nextPath);
-    setCurrentTime(0);
-    setDuration(0);
-    setIsPlaying(true);
-    setPreviewAspectRatio(16 / 9);
-    setVideoNaturalSize({});
+  const clampedTransform = useMemo(
+    () => clampVideoTransform(transform, videoNaturalSize, cropFrame),
+    [cropFrame, transform, videoNaturalSize]
+  );
+  const displayedFrame = useMemo(() => {
+    if (!hasVideo || !videoNaturalSize.width || !videoNaturalSize.height) {
+      return null;
+    }
+    return resolveDisplayedVideoFrame(videoNaturalSize, cropFrame, clampedTransform);
+  }, [clampedTransform, cropFrame, hasVideo, videoNaturalSize]);
+
+  useEffect(() => {
+    if (!sameTransform(transform, clampedTransform)) {
+      setTransform(clampedTransform);
+    }
+  }, [clampedTransform, transform]);
+
+  const resetCropState = useCallback(() => {
+    setTransform(createDefaultVideoTransform());
+    setCropConfirmed(false);
   }, []);
+
+  const applySelectedVideo = useCallback(
+    (nextPath: string, nextOriginalPath?: string) => {
+      if (nextOriginalPath) {
+        setOriginalVideoUri(nextOriginalPath);
+      }
+      setEditableVideoUri(nextPath);
+      setCurrentTime(0);
+      setVideoDuration(0);
+      setVideoNaturalSize({ width: 0, height: 0 });
+      setIsPlaying(true);
+      hasShownTrimWarningRef.current = false;
+      resetCropState();
+    },
+    [resetCropState]
+  );
 
   const resolveVideoUri = useCallback(async (asset?: Asset, explicitUri?: string) => {
     const preferredPath =
@@ -209,6 +271,17 @@ export default function VideoPost({ navigation, route }: Props) {
     return ensureFileUri(targetPath);
   }, []);
 
+  const handlePreviewLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    if (width > 0 && height > 0) {
+      setPreviewStageSize({ width, height });
+    }
+  }, []);
+
+  const handleBackPress = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
   const getTrimEditorPath = useCallback((rawPath: string) => {
     if (Platform.OS === 'android' && rawPath.startsWith('file://')) {
       return rawPath.replace('file://', '');
@@ -216,83 +289,28 @@ export default function VideoPost({ navigation, route }: Props) {
     return rawPath;
   }, []);
 
-  const uploadVideoToMux = useCallback(async (uploadUrl: string, sourcePath: string) => {
-    if (Platform.OS === 'ios' || sourcePath.startsWith('content://')) {
-      const response = await fetch(sourcePath, { method: 'GET' });
-      const blob = await response.blob();
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: { 'content-type': blob.type || 'video/mp4' },
-      });
-      if (!isSuccessfulStatus(uploadResponse.status)) {
-        throw new Error(`Video upload failed (${uploadResponse.status}).`);
-      }
-      return;
-    }
+  const handleVideoLoad = useCallback(
+    (data: any) => {
+      const nextDuration = Number(data?.duration || 0);
+      const rawWidth = Number(data?.naturalSize?.width);
+      const rawHeight = Number(data?.naturalSize?.height);
 
-    const sanitizedPath = sourcePath.replace('file://', '');
-    const uploadResponse = await RNFetchBlob.fetch(
-      'PUT',
-      uploadUrl,
-      undefined,
-      RNFetchBlob.wrap(sanitizedPath)
-    );
-    const { status } = uploadResponse.info();
-    if (!isSuccessfulStatus(status)) {
-      throw new Error(`Video upload failed (${status}).`);
-    }
-  }, []);
-
-  const uploadVideoAndCache = useCallback(
-    async (sourcePath: string) => {
-      const uploadLink = await ApiCall<{
-        url?: string;
-        id?: string;
-        message?: string;
-      }>({
-        route: 'watch/authenticated-link/mux',
-        verb: 'get',
-        token,
-      });
-
-      if (uploadLink.status !== 200 || !uploadLink?.response?.url || !uploadLink?.response?.id) {
-        const message =
-          typeof uploadLink?.response?.message === 'string'
-            ? uploadLink.response.message
-            : 'Unable to initialize video upload. Please try again.';
-        throw new Error(message);
+      setVideoDuration(nextDuration);
+      if (
+        Number.isFinite(rawWidth) &&
+        Number.isFinite(rawHeight) &&
+        rawWidth > 0 &&
+        rawHeight > 0
+      ) {
+        setVideoNaturalSize({ width: rawWidth, height: rawHeight });
       }
 
-      await uploadVideoToMux(uploadLink.response.url, sourcePath);
-      return uploadLink.response.id;
-    },
-    [token, uploadVideoToMux]
-  );
-
-  const prepareVideoForEditor = useCallback(
-    async (nextPath: string, sourceName = 'video') => {
-      setIsPreparingVideo(true);
-      const requestId = ++latestUploadRequestRef.current;
-      try {
-        const uploadId = await uploadVideoAndCache(nextPath);
-        if (latestUploadRequestRef.current !== requestId) {
-          return;
-        }
-        setUploadedMuxId(uploadId);
-        setUploadedVideoPath(nextPath);
-        applySelectedVideo(nextPath);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : `Unable to upload selected ${sourceName}.`;
-        toast.show(message, { type: 'danger' });
-      } finally {
-        if (latestUploadRequestRef.current === requestId) {
-          setIsPreparingVideo(false);
-        }
+      if (nextDuration > 60 && !hasShownTrimWarningRef.current) {
+        hasShownTrimWarningRef.current = true;
+        toast.show('Trim this video to 60 seconds or less before posting.', { type: 'warning' });
       }
     },
-    [applySelectedVideo, toast, uploadVideoAndCache]
+    [toast]
   );
 
   const applyVideoFromPickerResponse = useCallback(
@@ -317,94 +335,22 @@ export default function VideoPost({ navigation, route }: Props) {
         const nextPath = await resolveVideoUri(selectedAsset);
         if (!nextPath) {
           toast.show(`Unable to use selected ${sourceName}.`, { type: 'danger' });
-          setIsPreparingVideo(false);
           return;
         }
-        await prepareVideoForEditor(nextPath, sourceName);
-      } catch (error) {
+
+        setTrimmedVideoUri('');
+        setSelectedRatio('9:16');
+        applySelectedVideo(nextPath, nextPath);
+      } catch {
         toast.show(`Unable to prepare selected ${sourceName}.`, { type: 'danger' });
+      } finally {
         setIsPreparingVideo(false);
       }
     },
-    [prepareVideoForEditor, resolveVideoUri, toast]
+    [applySelectedVideo, resolveVideoUri, toast]
   );
 
-  const handleBackPress = () => {
-    navigation.goBack();
-  };
-
-  const handleTogglePlayback = () => {
-    if (!videoPath) {
-      return;
-    }
-    setIsPlaying((previous) => !previous);
-  };
-
-  const handleToggleMute = () => {
-    setIsMuted((previous) => !previous);
-  };
-
-  const handleTrimPress = () => {
-    if (!videoPath) {
-      toast.show('Please select or record a video first.', { type: 'danger' });
-      return;
-    }
-
-    const editorPath = getTrimEditorPath(videoPath);
-    if (!editorPath) {
-      toast.show('Unable to open trim editor.', { type: 'danger' });
-      return;
-    }
-
-    try {
-      isValidFile(editorPath || 'xxxx');
-      showEditor(editorPath, {
-        saveToPhoto: false,
-        enableSaveDialog: false,
-        alertOnFailToLoad: true,
-        alertOnFailMessage: 'Failed to load video',
-        alertOnFailTitle: 'Error',
-        maxDuration: 60,
-        cancelDialogMessage: 'Are you sure you want to delete this?',
-        cancelDialogConfirmText: 'Delete',
-      });
-    } catch (error) {
-      toast.show('Unable to open trim editor.', { type: 'danger' });
-    }
-  };
-
-  const handleAddMusicPress = () => {
-    toast.show('Add Music is not connected yet.', { type: 'normal' });
-  };
-
-  const handleAddTextPress = () => {
-    toast.show('Add Text is not connected yet.', { type: 'normal' });
-  };
-
-  const handleVideoLoad = (data: any) => {
-    const videoDuration = Number(data?.duration || 0);
-    setDuration(videoDuration);
-
-    if (videoDuration > 60) {
-      toast.show('Videos must be 60 seconds or less.', { type: 'danger' });
-    }
-
-    const rawWidth = Number(data?.naturalSize?.width);
-    const rawHeight = Number(data?.naturalSize?.height);
-    if (Number.isFinite(rawWidth) && Number.isFinite(rawHeight) && rawWidth > 0 && rawHeight > 0) {
-      setVideoNaturalSize({ width: rawWidth, height: rawHeight });
-      setPreviewAspectRatio(rawWidth / rawHeight);
-    }
-  };
-
-  const handlePreviewLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    if (width > 0 && height > 0) {
-      setPreviewContainerSize({ width, height });
-    }
-  };
-
-  const handleSelectFromLibrary = async () => {
+  const handleSelectFromLibrary = useCallback(async () => {
     const options: ImageLibraryOptions = {
       mediaType: 'video',
       selectionLimit: 1,
@@ -419,18 +365,18 @@ export default function VideoPost({ navigation, route }: Props) {
     };
     const response = await launchImageLibrary(options).catch(() => undefined);
     await applyVideoFromPickerResponse(response, 'video');
-  };
+  }, [applyVideoFromPickerResponse]);
 
-  const handleRecordNewVideo = async () => {
+  const handleRecordNewVideo = useCallback(() => {
     setIsLiveCameraVisible(true);
-  };
+  }, []);
 
   const handleVisionCameraVideoPath = useCallback(
     (nextValue: React.SetStateAction<string | undefined>) => {
       const resolvedPath =
         typeof nextValue === 'function'
           ? (nextValue as (previousState: string | undefined) => string | undefined)(
-              videoPath || undefined
+              editableVideoUri || undefined
             )
           : nextValue;
 
@@ -445,20 +391,22 @@ export default function VideoPost({ navigation, route }: Props) {
           const preparedPath = await resolveVideoUri(undefined, resolvedPath);
           if (!preparedPath) {
             toast.show('Unable to load selected video.', { type: 'danger' });
-            setIsPreparingVideo(false);
             return;
           }
-          await prepareVideoForEditor(preparedPath);
-        } catch (error) {
+          setTrimmedVideoUri('');
+          setSelectedRatio('9:16');
+          applySelectedVideo(preparedPath, preparedPath);
+        } catch {
           toast.show('Unable to prepare selected video.', { type: 'danger' });
+        } finally {
           setIsPreparingVideo(false);
         }
       })();
     },
-    [prepareVideoForEditor, resolveVideoUri, toast, videoPath]
+    [applySelectedVideo, editableVideoUri, resolveVideoUri, toast]
   );
 
-  const handleChooseVideoSource = () => {
+  const handleChooseVideoSource = useCallback(() => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -482,115 +430,243 @@ export default function VideoPost({ navigation, route }: Props) {
       { text: 'Choose From Library', onPress: handleSelectFromLibrary },
       { text: 'Record New Video', onPress: handleRecordNewVideo },
     ]);
-  };
+  }, [handleRecordNewVideo, handleSelectFromLibrary]);
 
-  const handleDonePress = async () => {
-    if (!videoPath) {
+  const handleTrimPress = useCallback(() => {
+    if (!editableVideoUri) {
       toast.show('Please select or record a video first.', { type: 'danger' });
+      return;
+    }
+
+    const editorPath = getTrimEditorPath(editableVideoUri);
+    if (!editorPath) {
+      toast.show('Unable to open trim editor.', { type: 'danger' });
+      return;
+    }
+
+    try {
+      showEditor(editorPath, {
+        saveToPhoto: false,
+        enableSaveDialog: false,
+        alertOnFailToLoad: true,
+        alertOnFailMessage: 'Failed to load video',
+        alertOnFailTitle: 'Error',
+        maxDuration: 60,
+        cancelDialogMessage: 'Discard your trim changes?',
+        cancelDialogConfirmText: 'Discard',
+      });
+    } catch {
+      toast.show('Unable to open trim editor.', { type: 'danger' });
+    }
+  }, [editableVideoUri, getTrimEditorPath, toast]);
+
+  const handleUseOriginalVideo = useCallback(() => {
+    if (!originalVideoUri) {
+      return;
+    }
+    setTrimmedVideoUri('');
+    applySelectedVideo(originalVideoUri);
+  }, [applySelectedVideo, originalVideoUri]);
+
+  const handleTogglePlayback = useCallback(() => {
+    if (!hasVideo) {
+      return;
+    }
+    setIsPlaying((previous) => !previous);
+  }, [hasVideo]);
+
+  const handleToggleMute = useCallback(() => {
+    setIsMuted((previous) => !previous);
+  }, []);
+
+  const handleConfirmCrop = useCallback(() => {
+    if (!hasVideo || !videoNaturalSize.width || !videoNaturalSize.height) {
+      toast.show('Wait for the video preview to finish loading.', { type: 'warning' });
+      return;
+    }
+
+    setCropConfirmed(true);
+    toast.show('Crop confirmed. You can post this in the background now.', {
+      type: 'success',
+    });
+  }, [hasVideo, toast, videoNaturalSize.height, videoNaturalSize.width]);
+
+  const handleDonePress = useCallback(async () => {
+    if (!editableVideoUri) {
+      toast.show('Please select or record a video first.', { type: 'danger' });
+      return;
+    }
+
+    if (requiresTrim) {
+      toast.show('Trim this video to 60 seconds or less before posting.', { type: 'danger' });
+      return;
+    }
+
+    if (!videoNaturalSize.width || !videoNaturalSize.height) {
+      toast.show('Wait for the video to finish loading before posting.', { type: 'warning' });
+      return;
+    }
+
+    if (!cropConfirmed) {
+      toast.show('Confirm your crop before posting.', { type: 'warning' });
       return;
     }
 
     setLoading(true);
     try {
-      let finalUploadId = uploadedMuxId;
-      if (!finalUploadId || uploadedVideoPath !== videoPath) {
-        finalUploadId = await uploadVideoAndCache(videoPath);
-        setUploadedMuxId(finalUploadId);
-        setUploadedVideoPath(videoPath);
-      }
-
-      const result = await ApiCall<{ message?: string }>({
-        route: 'watch/post',
-        verb: 'post',
-        params: {
-          uploadId: finalUploadId,
-          content: caption.trim(),
-          aspectRatio:
-            Number.isFinite(videoNaturalSize.width) &&
-            Number.isFinite(videoNaturalSize.height) &&
-            Number(videoNaturalSize.width) > 0 &&
-            Number(videoNaturalSize.height) > 0
-              ? Number(videoNaturalSize.width) / Number(videoNaturalSize.height)
-              : previewAspectRatio,
-          videoWidth:
-            Number.isFinite(videoNaturalSize.width) && Number(videoNaturalSize.width) > 0
-              ? Number(videoNaturalSize.width)
-              : undefined,
-          videoHeight:
-            Number.isFinite(videoNaturalSize.height) && Number(videoNaturalSize.height) > 0
-              ? Number(videoNaturalSize.height)
-              : undefined,
-        },
-        token,
+      const sourceCrop = resolveSourceCrop(videoNaturalSize, cropFrame, clampedTransform);
+      await enqueuePendingVideoUpload({
+        sourceUri: editableVideoUri,
+        caption,
+        ratioId: selectedRatio,
+        cropRect: sourceCrop,
+        transform: clampedTransform,
+        sourceWidth: videoNaturalSize.width,
+        sourceHeight: videoNaturalSize.height,
+        outputWidth: ratioConfig.outputWidth,
+        outputHeight: ratioConfig.outputHeight,
+        videoBitrate: ratioConfig.videoBitrate,
+        audioBitrate: 128_000,
       });
 
-      if (result.status === 200) {
-        toast.show('Your video is being processed. It will be public shortly!', {
+      toast.show(
+        'Video queued. We are moderating, compressing, and uploading it in the background.',
+        {
           type: 'success',
           placement: 'bottom',
-        });
-        if (navigation.canGoBack()) {
-          navigation.goBack();
-        } else {
-          navigation.navigate('MainRoot', {
-            screen: 'Main',
-            params: {
-              screen: 'HomeTab',
-              params: {
-                screen: 'Home',
-                params: {},
-              },
-            },
-          });
         }
-        return;
-      }
+      );
 
-      toast.show(result.response?.message || 'Upload failed. Please try again.', {
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('MainRoot', {
+          screen: 'Main',
+          params: {
+            screen: 'HomeTab',
+            params: {
+              screen: 'Home',
+              params: {},
+            },
+          },
+        });
+      }
+    } catch (error) {
+      toast.show(error instanceof Error ? error.message : 'Unable to queue video.', {
         type: 'danger',
       });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Upload failed. Please try again.';
-      toast.show(message, { type: 'danger' });
-      console.error(error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    caption,
+    clampedTransform,
+    cropConfirmed,
+    cropFrame,
+    editableVideoUri,
+    navigation,
+    ratioConfig.outputHeight,
+    ratioConfig.outputWidth,
+    ratioConfig.videoBitrate,
+    requiresTrim,
+    selectedRatio,
+    toast,
+    videoNaturalSize,
+  ]);
+
+  const cropGesture = useMemo(() => {
+    const pan = Gesture.Pan()
+      .enabled(hasVideo)
+      .onBegin(() => {
+        panStartRef.current = {
+          x: clampedTransform.translateX,
+          y: clampedTransform.translateY,
+        };
+      })
+      .onUpdate((event) => {
+        setTransform((previous) =>
+          clampVideoTransform(
+            {
+              ...previous,
+              translateX: panStartRef.current.x + event.translationX,
+              translateY: panStartRef.current.y + event.translationY,
+            },
+            videoNaturalSize,
+            cropFrame
+          )
+        );
+        setCropConfirmed(false);
+      })
+      .runOnJS(true);
+
+    const pinch = Gesture.Pinch()
+      .enabled(hasVideo)
+      .onBegin(() => {
+        pinchStartRef.current = clampedTransform.scale;
+      })
+      .onUpdate((event) => {
+        setTransform((previous) =>
+          clampVideoTransform(
+            {
+              ...previous,
+              scale: Math.min(
+                MAX_VIDEO_EDITOR_SCALE,
+                Math.max(MIN_VIDEO_EDITOR_SCALE, pinchStartRef.current * event.scale)
+              ),
+            },
+            videoNaturalSize,
+            cropFrame
+          )
+        );
+        setCropConfirmed(false);
+      })
+      .runOnJS(true);
+
+    return Gesture.Simultaneous(pan, pinch);
+  }, [
+    clampedTransform.scale,
+    clampedTransform.translateX,
+    clampedTransform.translateY,
+    cropFrame,
+    hasVideo,
+    videoNaturalSize,
+  ]);
 
   useEffect(() => {
     const incomingVideoPath = route.params?.videoPath;
-    let isDisposed = false;
+    let cancelled = false;
 
     if (!incomingVideoPath) {
       return () => {
-        isDisposed = true;
+        cancelled = true;
       };
     }
 
+    setIsPreparingVideo(true);
     (async () => {
-      setIsPreparingVideo(true);
       try {
         const resolvedPath = await resolveVideoUri(undefined, incomingVideoPath);
-        if (!isDisposed && resolvedPath) {
-          await prepareVideoForEditor(resolvedPath);
+        if (!cancelled && resolvedPath) {
+          setTrimmedVideoUri('');
+          setSelectedRatio('9:16');
+          applySelectedVideo(resolvedPath, resolvedPath);
         }
-      } catch (error) {
-        if (!isDisposed) {
+      } catch {
+        if (!cancelled) {
           toast.show('Unable to load selected video.', { type: 'danger' });
-          setIsPreparingVideo(false);
         }
       } finally {
-        if (!isDisposed) {
+        if (!cancelled) {
+          setIsPreparingVideo(false);
           navigation.setParams({ videoPath: undefined });
         }
       }
     })();
 
     return () => {
-      isDisposed = true;
+      cancelled = true;
     };
-  }, [navigation, prepareVideoForEditor, resolveVideoUri, route.params?.videoPath, toast]);
+  }, [applySelectedVideo, navigation, resolveVideoUri, route.params?.videoPath, toast]);
 
   useEffect(() => {
     listenerSubscription.current.onFinishTrimming = VideoTrim.onFinishTrimming(
@@ -602,16 +678,17 @@ export default function VideoPost({ navigation, route }: Props) {
         try {
           const resolvedPath = await resolveVideoUri(undefined, outputPath);
           if (resolvedPath) {
-            await prepareVideoForEditor(resolvedPath, 'trimmed video');
+            setTrimmedVideoUri(resolvedPath);
+            applySelectedVideo(resolvedPath);
+            toast.show('Trim saved. Confirm your crop to continue.', { type: 'success' });
           }
-        } catch (error) {
+        } catch {
           toast.show('Unable to load trimmed video.', { type: 'danger' });
         }
       }
     );
 
-    listenerSubscription.current.onError = VideoTrim.onError(({ message, errorCode }) => {
-      console.error('[VideoTrim] Error event:', { message, errorCode });
+    listenerSubscription.current.onError = VideoTrim.onError(({ message }) => {
       toast.show(message || 'Video trim failed.', { type: 'danger' });
     });
 
@@ -620,19 +697,7 @@ export default function VideoPost({ navigation, route }: Props) {
       listenerSubscription.current.onError?.remove();
       listenerSubscription.current = {};
     };
-  }, [prepareVideoForEditor, resolveVideoUri, toast]);
-
-  const selectedDuration = Math.min(duration || 0, 60);
-  const fittedPreview = getVideoFitSize(
-    previewContainerSize.width,
-    previewContainerSize.height,
-    previewAspectRatio
-  );
-  const ratioLabel = formatAspectRatioLabel(
-    videoNaturalSize.width,
-    videoNaturalSize.height,
-    previewAspectRatio
-  );
+  }, [applySelectedVideo, resolveVideoUri, toast]);
 
   useEffect(() => {
     if (!route.params?.openCameraOnMount || hasAutoOpenedCameraRef.current) {
@@ -654,6 +719,9 @@ export default function VideoPost({ navigation, route }: Props) {
     );
   }
 
+  const cropStatusColor = cropConfirmed ? palette.success : palette.warning;
+  const cropStatusLabel = cropConfirmed ? 'Crop confirmed' : 'Crop confirmation required';
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
       {Platform.OS === 'android' ? (
@@ -663,6 +731,7 @@ export default function VideoPost({ navigation, route }: Props) {
           barStyle={dark ? 'light-content' : 'dark-content'}
         />
       ) : null}
+
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.iconButton}>
           <MaterialIcons name="close" size={28} color={palette.textPrimary} />
@@ -671,7 +740,13 @@ export default function VideoPost({ navigation, route }: Props) {
         <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>Edit Video</Text>
 
         <TouchableOpacity
-          style={[styles.doneButton, { backgroundColor: palette.primary }]}
+          style={[
+            styles.doneButton,
+            {
+              backgroundColor: palette.primary,
+              opacity: loading || isPreparingVideo ? 0.7 : 1,
+            },
+          ]}
           onPress={handleDonePress}
           disabled={loading || isPreparingVideo}
         >
@@ -683,71 +758,145 @@ export default function VideoPost({ navigation, route }: Props) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.previewContainer} onLayout={handlePreviewLayout}>
-        <View
-          style={[
-            styles.videoWrapper,
-            {
-              backgroundColor: palette.previewBackground,
-              width: fittedPreview.width,
-              height: fittedPreview.height,
-            },
-          ]}
-        >
-          {videoPath ? (
-            <>
-              <CustomVideo
-                source={{ uri: videoPath }}
-                resizeMode="contain"
-                paused={!isPlaying}
-                muted={isMuted}
-                onLoad={handleVideoLoad}
-                onProgress={(data: any) => setCurrentTime(data.currentTime)}
-                style={styles.fullSize}
-                repeat
-              />
-              <TouchableOpacity
-                style={[
-                  styles.playOverlay,
-                  { backgroundColor: isPlaying ? 'transparent' : palette.overlay },
-                ]}
-                activeOpacity={0.8}
-                onPress={handleTogglePlayback}
-              >
-                {!isPlaying ? (
-                  <View style={styles.playIconWrapper}>
-                    <MaterialIcons name="play-arrow" size={40} color={palette.textPrimary} />
-                  </View>
-                ) : null}
-              </TouchableOpacity>
-              <View style={styles.timeBadge}>
-                <Text style={[styles.timeText, { color: '#f6f6f7' }]}>
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </Text>
-              </View>
-            </>
-          ) : (
-            <View style={styles.emptyVideoState}>
-              <MaterialIcons name="videocam" size={46} color={palette.textMuted} />
-              <Text style={[styles.emptyVideoText, { color: palette.textSecondary }]}>
-                Select or record a video to continue
-              </Text>
-              <TouchableOpacity
-                style={[styles.sourcePickerButton, { backgroundColor: palette.primary }]}
-                onPress={handleChooseVideoSource}
-                disabled={isPreparingVideo}
-              >
-                {isPreparingVideo ? (
-                  <ActivityIndicator size="small" color={palette.textPrimary} />
-                ) : (
-                  <Text style={[styles.sourcePickerButtonText, { color: palette.textPrimary }]}>
-                    Select Video
+      <View style={styles.previewContainer}>
+        <GestureDetector gesture={cropGesture}>
+          <View
+            style={[styles.previewStage, { backgroundColor: palette.previewBackground }]}
+            onLayout={handlePreviewLayout}
+          >
+            {hasVideo && displayedFrame ? (
+              <>
+                <View
+                  style={[
+                    styles.cropWindow,
+                    {
+                      left: cropFrame.x,
+                      top: cropFrame.y,
+                      width: cropFrame.width,
+                      height: cropFrame.height,
+                    },
+                  ]}
+                >
+                  <CustomVideo
+                    source={{ uri: editableVideoUri }}
+                    resizeMode="cover"
+                    paused={!isPlaying}
+                    muted={isMuted}
+                    onLoad={handleVideoLoad}
+                    onProgress={(data: any) => setCurrentTime(data.currentTime)}
+                    repeat
+                    style={[
+                      styles.videoSurface,
+                      {
+                        left: displayedFrame.x - cropFrame.x,
+                        top: displayedFrame.y - cropFrame.y,
+                        width: displayedFrame.width,
+                        height: displayedFrame.height,
+                      },
+                    ]}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.playOverlay,
+                      { backgroundColor: isPlaying ? 'transparent' : palette.overlay },
+                    ]}
+                    activeOpacity={0.85}
+                    onPress={handleTogglePlayback}
+                  >
+                    {!isPlaying ? (
+                      <View style={styles.playIconWrapper}>
+                        <MaterialIcons name="play-arrow" size={40} color={palette.textPrimary} />
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                  <View style={styles.gridLineVertical} />
+                  <View style={[styles.gridLineVertical, { left: '66.66%' }]} />
+                  <View style={styles.gridLineHorizontal} />
+                  <View style={[styles.gridLineHorizontal, { top: '66.66%' }]} />
+                </View>
+
+                <View
+                  style={[
+                    styles.maskTop,
+                    { height: cropFrame.y, backgroundColor: palette.overlay },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.maskBottom,
+                    {
+                      top: cropFrame.y + cropFrame.height,
+                      backgroundColor: palette.overlay,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.maskSide,
+                    {
+                      top: cropFrame.y,
+                      width: cropFrame.x,
+                      height: cropFrame.height,
+                      backgroundColor: palette.overlay,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.maskSide,
+                    {
+                      left: cropFrame.x + cropFrame.width,
+                      top: cropFrame.y,
+                      right: 0,
+                      width: Math.max(0, previewStageSize.width - cropFrame.x - cropFrame.width),
+                      height: cropFrame.height,
+                      backgroundColor: palette.overlay,
+                    },
+                  ]}
+                />
+
+                <View
+                  style={[
+                    styles.cropFrameOutline,
+                    {
+                      left: cropFrame.x,
+                      top: cropFrame.y,
+                      width: cropFrame.width,
+                      height: cropFrame.height,
+                      borderColor: cropStatusColor,
+                    },
+                  ]}
+                />
+
+                <View style={styles.timeBadge}>
+                  <Text style={[styles.timeText, { color: '#f6f6f7' }]}>
+                    {formatTime(currentTime)} / {formatTime(videoDuration)}
                   </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+                </View>
+              </>
+            ) : (
+              <View style={styles.emptyVideoState}>
+                <MaterialIcons name="videocam" size={46} color={palette.textMuted} />
+                <Text style={[styles.emptyVideoText, { color: palette.textSecondary }]}>
+                  Select or record a video to continue
+                </Text>
+                <TouchableOpacity
+                  style={[styles.sourcePickerButton, { backgroundColor: palette.primary }]}
+                  onPress={handleChooseVideoSource}
+                  disabled={isPreparingVideo}
+                >
+                  {isPreparingVideo ? (
+                    <ActivityIndicator size="small" color={palette.textPrimary} />
+                  ) : (
+                    <Text style={[styles.sourcePickerButtonText, { color: palette.textPrimary }]}>
+                      Select Video
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </GestureDetector>
       </View>
 
       <View style={styles.toolsSection}>
@@ -773,19 +922,78 @@ export default function VideoPost({ navigation, route }: Props) {
           />
         </View>
 
-        <TouchableOpacity style={styles.trimmerBlock} onPress={handleTrimPress} activeOpacity={0.8}>
-          <View style={styles.trimmerHeader}>
-            <Text style={[styles.trimmerTitle, { color: palette.textMuted }]}>TRIM VIDEO</Text>
-            <Text style={[styles.trimmerSelectedText, { color: palette.primary }]}>
-              {formatTime(selectedDuration)} selected • {ratioLabel}
+        <View
+          style={[
+            styles.statusCard,
+            { backgroundColor: palette.cardBackground, borderColor: palette.border },
+          ]}
+        >
+          <Text style={[styles.statusTitle, { color: palette.textPrimary }]}>Trim and Crop</Text>
+          <Text style={[styles.statusBody, { color: palette.textSecondary }]}>
+            {requiresTrim
+              ? 'This clip is longer than 60 seconds. Trim it before posting.'
+              : `Current source length: ${formatTime(currentDurationSeconds)}. ${cropStatusLabel}.`}
+          </Text>
+          <Text style={[styles.statusMeta, { color: cropStatusColor }]}>
+            Ratio {selectedRatio} • Output {ratioConfig.outputWidth}x{ratioConfig.outputHeight}
+          </Text>
+          {trimmedVideoUri ? (
+            <Text style={[styles.statusMeta, { color: palette.textMuted }]}>
+              Using trimmed source. You can switch back to the original clip.
             </Text>
-          </View>
-          <Text style={[styles.trimmerHelperText, { color: palette.textSecondary }]}>
-            Opens native trim editor. Max duration remains 60 seconds.
+          ) : null}
+        </View>
+
+        <View style={styles.ratioRow}>
+          {RATIO_OPTIONS.map((ratioId) => {
+            const selected = ratioId === selectedRatio;
+            return (
+              <TouchableOpacity
+                key={ratioId}
+                style={[
+                  styles.ratioPill,
+                  {
+                    backgroundColor: selected ? palette.primary : palette.cardBackground,
+                    borderColor: selected ? palette.primary : palette.border,
+                  },
+                ]}
+                onPress={() => {
+                  setSelectedRatio(ratioId);
+                  resetCropState();
+                }}
+              >
+                <Text
+                  style={[
+                    styles.ratioPillText,
+                    { color: selected ? palette.textPrimary : palette.textSecondary },
+                  ]}
+                >
+                  {ratioId}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.confirmCropButton, { backgroundColor: cropStatusColor }]}
+          onPress={handleConfirmCrop}
+          disabled={!hasVideo}
+        >
+          <Text style={styles.confirmCropText}>
+            {cropConfirmed ? 'Crop Confirmed' : 'Confirm Crop'}
           </Text>
         </TouchableOpacity>
 
         <View style={styles.actionGrid}>
+          <ActionButton
+            icon="video-library"
+            label="Library"
+            onPress={handleSelectFromLibrary}
+            styles={styles}
+            palette={palette}
+            disabled={isPreparingVideo}
+          />
           <ActionButton
             icon="videocam"
             label="Record"
@@ -799,29 +1007,30 @@ export default function VideoPost({ navigation, route }: Props) {
             labelColor="#d13a3f"
           />
           <ActionButton
+            icon="content-cut"
+            label="Trim"
+            onPress={handleTrimPress}
+            styles={styles}
+            palette={palette}
+            disabled={!hasVideo}
+          />
+          <ActionButton
             icon={isMuted ? 'volume-off' : 'volume-up'}
             label={isMuted ? 'Unmute' : 'Mute'}
             onPress={handleToggleMute}
             styles={styles}
             palette={palette}
-            disabled={!videoPath}
+            disabled={!hasVideo}
           />
-          <ActionButton
-            icon="music-note"
-            label="Add Music"
-            onPress={handleAddMusicPress}
-            styles={styles}
-            palette={palette}
-            disabled={!videoPath}
-          />
-          <ActionButton
-            icon="title"
-            label="Add Text"
-            onPress={handleAddTextPress}
-            styles={styles}
-            palette={palette}
-            disabled={!videoPath}
-          />
+          {trimmedVideoUri ? (
+            <ActionButton
+              icon="history"
+              label="Original"
+              onPress={handleUseOriginalVideo}
+              styles={styles}
+              palette={palette}
+            />
+          ) : null}
         </View>
       </View>
     </SafeAreaView>
@@ -864,22 +1073,90 @@ const createStyles = () =>
     },
     previewContainer: {
       flex: 1,
+      paddingHorizontal: 16,
+      paddingBottom: 12,
+    },
+    previewStage: {
+      flex: 1,
+      borderRadius: 24,
+      overflow: 'hidden',
+      position: 'relative',
+    },
+    cropWindow: {
+      position: 'absolute',
+      overflow: 'hidden',
+      borderRadius: 20,
+    },
+    cropFrameOutline: {
+      position: 'absolute',
+      borderWidth: 2,
+      borderRadius: 20,
+    },
+    videoSurface: {
+      position: 'absolute',
+    },
+    playOverlay: {
+      ...StyleSheet.absoluteFillObject,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 0,
-      paddingVertical: 16,
     },
-    videoWrapper: {
-      width: '100%',
-      borderRadius: 0,
-      overflow: 'hidden',
+    playIconWrapper: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.3)',
     },
-    fullSize: {
-      width: '100%',
-      height: '100%',
+    gridLineVertical: {
+      position: 'absolute',
+      left: '33.33%',
+      top: 0,
+      bottom: 0,
+      width: 1,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+    },
+    gridLineHorizontal: {
+      position: 'absolute',
+      top: '33.33%',
+      left: 0,
+      right: 0,
+      height: 1,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+    },
+    maskTop: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+    },
+    maskBottom: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    maskSide: {
+      position: 'absolute',
+      left: 0,
+    },
+    timeBadge: {
+      position: 'absolute',
+      bottom: 18,
+      right: 18,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 16,
+    },
+    timeText: {
+      fontSize: 12,
+      fontWeight: '600',
     },
     emptyVideoState: {
-      minHeight: 220,
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 24,
@@ -899,37 +1176,10 @@ const createStyles = () =>
       fontSize: 14,
       fontWeight: '700',
     },
-    playOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    playIconWrapper: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: 'rgba(255,255,255,0.2)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.3)',
-    },
-    timeBadge: {
-      position: 'absolute',
-      bottom: 16,
-      right: 16,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 4,
-    },
-    timeText: {
-      fontSize: 12,
-      fontWeight: '500',
-    },
     toolsSection: {
-      paddingHorizontal: 24,
+      paddingHorizontal: 20,
       paddingBottom: 24,
+      gap: 14,
     },
     captionBlock: {
       borderWidth: 1,
@@ -937,7 +1187,6 @@ const createStyles = () =>
       paddingHorizontal: 14,
       paddingTop: 10,
       paddingBottom: 8,
-      marginBottom: 16,
     },
     captionLabel: {
       fontSize: 11,
@@ -947,43 +1196,65 @@ const createStyles = () =>
       textTransform: 'uppercase',
     },
     captionInput: {
-      minHeight: 76,
+      minHeight: 72,
       maxHeight: 120,
       fontSize: 14,
       fontWeight: '500',
       padding: 0,
     },
-    trimmerBlock: {
-      marginBottom: 24,
+    statusCard: {
+      borderWidth: 1,
+      borderRadius: 16,
+      padding: 14,
+      gap: 6,
     },
-    trimmerHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 12,
-    },
-    trimmerTitle: {
-      fontSize: 12,
-      fontWeight: '700',
-      letterSpacing: 1,
-    },
-    trimmerSelectedText: {
-      fontSize: 12,
+    statusTitle: {
+      fontSize: 15,
       fontWeight: '700',
     },
-    trimmerHelperText: {
-      fontSize: 12,
-      fontWeight: '500',
+    statusBody: {
+      fontSize: 13,
+      lineHeight: 18,
     },
-    actionGrid: {
+    statusMeta: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    ratioRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       gap: 10,
       flexWrap: 'wrap',
     },
+    ratioPill: {
+      borderWidth: 1,
+      borderRadius: 999,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    ratioPillText: {
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    confirmCropButton: {
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+    },
+    confirmCropText: {
+      color: '#ffffff',
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    actionGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
     actionButton: {
       alignItems: 'center',
-      minWidth: '18%',
-      marginBottom: 8,
+      minWidth: 64,
+      marginBottom: 4,
     },
     actionIconWrapper: {
       width: 56,

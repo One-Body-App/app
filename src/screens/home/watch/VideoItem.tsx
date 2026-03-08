@@ -1,4 +1,4 @@
-import { ActivityIndicator, TouchableHighlight, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useState, useEffect, PropsWithChildren, useRef, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
@@ -20,8 +20,9 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
-import CustomVideo from '@/src/components/CustomVideo';
 import WatchComments from './watchComments';
+import UniversalVideoCard from '@/src/components/video/UniversalVideoCard';
+import { getWatchVideoLayout } from '@/src/components/video/universalVideoLayout';
 
 type VideoItemProps = {
   item: WatchPost;
@@ -62,7 +63,8 @@ const VideoItem = gestureHandlerRootHOC(
       item.commentNumber ?? item.comments?.length ?? 0
     );
     const [commentsOpenKey, setCommentsOpenKey] = useState(0);
-    const resolvedFrameWidth = frameWidth ?? width ?? 0;
+    const viewportWidth = frameWidth ?? width ?? 0;
+    const videoLayout = getWatchVideoLayout(viewportWidth, viewHeight, item);
 
     const navigation = useNavigation<ScreenNavigationProp>();
     const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -81,16 +83,22 @@ const VideoItem = gestureHandlerRootHOC(
         setSheetGlowPlayKey((previous) => previous + 1);
       }
       bottomSheetModalRef.current?.present();
+      onShowDismissCard?.(true);
       setCommentsOpenKey((previous) => previous + 1);
-    }, []);
+    }, [onShowDismissCard]);
 
-    const handleSheetChanges = useCallback((index: number) => {
-      if (index === -1) {
-        setIsPaused(false);
-      } else if (index > -1) {
-        setIsPaused(true);
-      }
-    }, []);
+    const handleSheetChanges = useCallback(
+      (index: number) => {
+        if (index === -1) {
+          setIsPaused(false);
+          onShowDismissCard?.(false);
+        } else if (index > -1) {
+          setIsPaused(true);
+          onShowDismissCard?.(true);
+        }
+      },
+      [onShowDismissCard]
+    );
 
     const videRef = useRef<any>(null);
     let myReaction: SocialPostReaction | undefined;
@@ -136,8 +144,8 @@ const VideoItem = gestureHandlerRootHOC(
           <View
             style={{
               height: viewHeight,
-              width: resolvedFrameWidth,
-              backgroundColor: 'transparent',
+              width: viewportWidth,
+              backgroundColor: videoLayout.backgroundColor,
               justifyContent: 'center',
               alignItems: 'center',
             }}
@@ -146,7 +154,7 @@ const VideoItem = gestureHandlerRootHOC(
           </View>
         ) : null}
 
-        <TouchableHighlight
+        <Pressable
           onPress={() => {
             const nextPaused = !isPaused;
             setIsPaused(nextPaused);
@@ -154,23 +162,28 @@ const VideoItem = gestureHandlerRootHOC(
               postType: PostType.watch,
             });
           }}
-          style={styles.video}
+          style={{ width: '100%', height: '100%' }}
         >
-          <View style={{ flex: 1 }}>
-            <CustomVideo
-              ref={videRef}
-              source={{ uri: `https://stream.mux.com/${item.playBackId!}.m3u8` }}
-              resizeMode="cover"
-              style={[styles.video, { width: resolvedFrameWidth, height: viewHeight }]}
-              onLoad={() => {
-                setIsLoading(false);
-              }}
-              paused={isPaused}
-              onEnd={onEnd}
-              poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp`}
-            />
-          </View>
-        </TouchableHighlight>
+          <UniversalVideoCard
+            context="watch"
+            sourceUri={`https://stream.mux.com/${item.playBackId!}.m3u8`}
+            metadata={item}
+            viewportWidth={viewportWidth}
+            viewportHeight={viewHeight}
+            paused={isPaused}
+            muted={false}
+            repeat={false}
+            controls={false}
+            poster={`https://image.mux.com/${item.playBackId!}/thumbnail.webp`}
+            videoRef={videRef}
+            onLoad={() => {
+              setIsLoading(false);
+            }}
+            onEnd={onEnd}
+          >
+            <View style={{ flex: 1 }} />
+          </UniversalVideoCard>
+        </Pressable>
 
         <LinearGradient colors={['transparent', '#00000040', '#000000']} style={styles.videoInfo}>
           <BaseItem

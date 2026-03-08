@@ -64,6 +64,8 @@
 	<string>871a04e1e70813d7517dff1a75dc8a14</string>
 	<key>FacebookDisplayName</key>
 	<string>One Body</string>
+	<key>FirebaseCrashlyticsCollectionEnabled</key>
+	<false/>
 	<key>FirebaseDynamicLinksCustomDomains</key>
 	<array>
 		<string>https://app.onebodyapp.com</string>
@@ -170,14 +172,14 @@
 		<string>OpenSans_SemiCondensed-SemiBoldItalic.ttf</string>
 		<string>MaterialDesignIcons.ttf</string>
 	</array>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>LaunchScreen</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
@@ -190,5 +192,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>firebase_json_raw</key>
+	<string>e30=</string>
 </dict>
 </plist>

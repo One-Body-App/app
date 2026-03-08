@@ -12,6 +12,7 @@ import { decode } from 'html-entities';
 
 import { NO_POST_IMAGE_URL, NO_PROFILE_IMAGE } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
+import CommentThread from '@/components/comments/Thread';
 import {
   buildRepostSourceSnapshot,
   isRepostSourceSnapshotMissing,
@@ -33,6 +34,8 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import ImageSlider from '../imageSlider/ImageSlider';
 import { ImageForSlider } from '../imageSlider/types';
 import CustomVideo from '../CustomVideo';
+import UniversalVideoCard from '@/src/components/video/UniversalVideoCard';
+import { resolveVideoMetadata } from '@/src/components/video/universalVideoLayout';
 
 type ScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<ExploreStackParamsList, 'Explore'>,
@@ -63,11 +66,8 @@ type LinkPreview = {
 const URL_REGEX = /((https?:\/\/)?(www\.)?[\w.-]+\.[a-z]{2,}(?:\/[^\s]*)?)/i;
 const COMMON_TLDS = ['.com', '.net', '.info', '.org', '.io'];
 
-const SUPPORTED_FEED_VIDEO_RATIOS = [16 / 9, 4 / 3, 1, 9 / 16];
-const FEED_PORTRAIT_VIDEO_RATIO = 9 / 16;
 const FEED_MEDIA_RADIUS = 12;
 const CONTAIN_FRAME_BACKGROUND = Colors.containFrame;
-const HOME_FEED_MAX_VIDEO_HEIGHT = 420;
 
 const stripTrailingPunctuation = (url: string) => url.replace(/[^A-Za-z0-9/?#&=._~:-]+$/g, '');
 
@@ -188,24 +188,6 @@ const toSafeNumber = (value: unknown, fallback = 1) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-const getNearestSupportedVideoRatio = (ratio?: number) => {
-  if (!ratio || !Number.isFinite(ratio) || ratio <= 0) {
-    return 16 / 9;
-  }
-  return SUPPORTED_FEED_VIDEO_RATIOS.reduce((closest, current) => {
-    const closestDelta = Math.abs(closest - ratio);
-    const currentDelta = Math.abs(current - ratio);
-    return currentDelta < closestDelta ? current : closest;
-  });
-};
-
-const getSafeVideoRatio = (ratio?: number) => {
-  if (!ratio || !Number.isFinite(ratio) || ratio <= 0) {
-    return 16 / 9;
-  }
-  return ratio;
-};
-
 const toPositiveNumber = (value: unknown) => {
   let parsed: number;
   if (typeof value === 'string') {
@@ -218,39 +200,6 @@ const toPositiveNumber = (value: unknown) => {
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 };
-
-const parseAspectRatioValue = (value: unknown) => {
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (trimmed.includes(':')) {
-      const [leftRaw, rightRaw] = trimmed.split(':');
-      const left = Number(leftRaw);
-      const right = Number(rightRaw);
-      if (Number.isFinite(left) && Number.isFinite(right) && left > 0 && right > 0) {
-        return left / right;
-      }
-    }
-    return toPositiveNumber(trimmed);
-  }
-
-  return toPositiveNumber(value);
-};
-
-const getMetadataVideoAspectRatio = (itemData: SocialPost) => {
-  const explicitAspectRatio = parseAspectRatioValue(itemData.aspectRatio);
-  if (explicitAspectRatio) {
-    return explicitAspectRatio;
-  }
-
-  const width = toPositiveNumber(itemData.videoWidth);
-  const height = toPositiveNumber(itemData.videoHeight);
-  if (width && height) {
-    return width / height;
-  }
-
-  return undefined;
-};
-
 const getDomainName = (linkUrl: string) => {
   const domainText = linkUrl.replace('https://', '').replace('http://', '').replace('www.', '');
 
@@ -344,6 +293,10 @@ function SocialItem({
   const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
   const [resolvedSourceSnapshot, setResolvedSourceSnapshot] =
     useState<ResolvedRepostSourceSnapshot | null>(null);
+  const [inlineCommentCount, setInlineCommentCount] = useState<number>(
+    itemData.commentNumber ?? itemData.comments?.length ?? 0
+  );
+  const [isInlineWatchCommentsVisible, setIsInlineWatchCommentsVisible] = useState(false);
 
   const navigation = useNavigation<ScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -355,9 +308,6 @@ function SocialItem({
   const isWatchPost = postType === PostType.watch;
   const isPrimaryHomeFeed =
     originFeedType === 'connected' || originFeedType === 'forYou' || originFeedType === 'foryou';
-  const metadataVideoAspectRatio = getMetadataVideoAspectRatio(itemData);
-  const metadataVideoWidth = toPositiveNumber(itemData.videoWidth);
-  const metadataVideoHeight = toPositiveNumber(itemData.videoHeight);
 
   let profileUrl = '';
   if (itemData?.source === 'twitter') {
@@ -370,6 +320,16 @@ function SocialItem({
     setIsPlaying(visible ?? false);
     if (!visible && !isMuted) setIsMuted(true);
   }, [isMuted, visible]);
+
+  useEffect(() => {
+    setInlineCommentCount(itemData.commentNumber ?? itemData.comments?.length ?? 0);
+  }, [
+    itemData.commentNumber,
+    itemData.comments?.length,
+    itemData.id,
+    itemData.postId,
+    itemData._id,
+  ]);
 
   useEffect(() => {
     let isMounted = true;
@@ -703,9 +663,40 @@ function SocialItem({
     sourceImageUrls[0] || sourceSnapshot?.sourceImage || sourceMediaUrl || '';
 
   const postId = itemData.postId ?? itemData.id ?? itemData._id;
+  const { playBackId } = itemData as SocialPost & { playBackId?: string };
+  const watchCommentPostId = postId ? String(postId) : '';
+  const shouldInlineWatchComments =
+    isWatchPost && isPrimaryHomeFeed && watchCommentPostId.length > 0;
+
+  const openWatchPortal = useCallback(
+    (mediaUrl?: string, aspectRatio?: number) => {
+      if (!onOpenVideoPress || !playBackId) {
+        return;
+      }
+
+      onTelemetryEvent?.('open_watch', {
+        postType,
+        playBackId,
+      });
+      onOpenVideoPress({
+        postId: watchCommentPostId || undefined,
+        playBackId,
+        itemData,
+        mediaUrl,
+        aspectRatio,
+        videoWidth: toPositiveNumber(itemData.videoWidth),
+        videoHeight: toPositiveNumber(itemData.videoHeight),
+      });
+    },
+    [itemData, onOpenVideoPress, onTelemetryEvent, playBackId, postType, watchCommentPostId]
+  );
 
   const handleCommentsPress =
-    onCommentsPress ||
+    (shouldInlineWatchComments
+      ? () => {
+          setIsInlineWatchCommentsVisible((previous) => !previous);
+        }
+      : onCommentsPress) ||
     (postId
       ? () => {
           const rootNavigation = navigation.getParent?.()?.getParent?.()?.getParent?.() as any;
@@ -840,480 +831,454 @@ function SocialItem({
   }
 
   return (
-    <BaseItem
-      removePost={removePost}
-      editPost={editPost}
-      edited={itemData.edited}
-      updated={itemData.updated}
-      fromSavedPosts={fromSavedPosts}
-      postData={{
-        title: itemData?.title,
-        id: itemData.postId ?? itemData.id ?? itemData._id,
-        type: postType,
-        postlink: itemData.link,
-        image:
-          itemData.images && itemData.images.length > 0 ? { url: itemData.images[0] } : undefined,
-        externalLink: profileUrl,
-        reactions: itemData.reactions ?? [],
-        myReaction,
-        location: itemData.location,
-        locationName: itemData.locationName,
-        edited: itemData.edited,
-        comments: itemData.comments,
-        commentNumber: itemData.commentNumber,
-        repostCount: itemData.repostCount,
-      }}
-      repostPayload={
-        isWatchPost
-          ? undefined
-          : {
-              sourceType: 'social',
-              sourceId: String(itemData.postId ?? itemData.id ?? itemData._id ?? ''),
-              sourcePreview: {
-                title: itemData.title,
-                content: itemData.content,
-                link: itemData.link || itemData.permalink,
-              },
-              originFeedType,
-            }
-      }
-      parentRefreshContent={parentRefreshContent}
-      created={itemData?.created}
-      source={itemData.source}
-      userData={itemData.userData}
-      isApprovedInfluencer={itemData.userData?.isApprovedInfluencer ?? false}
-      onShowDismissCard={onShowDismissCard}
-      index={index}
-      onCommentsPress={handleCommentsPress}
-      onTelemetryEvent={onTelemetryEvent}
-      onPress={() => {
-        if (itemData.userData._id !== user?._id) {
-          navigation.navigate('Main', {
-            screen: 'HomeTab',
-            params: {
-              screen: 'UserProfile',
-              params: {
-                id: itemData?.userData._id,
-              },
-            },
-          });
-        }
-      }}
-      style={socialPostviewStyle}
-    >
-      <View
-        style={{ flexGrow: 1 }}
-        onLayout={({ nativeEvent }) => {
-          setWidth(nativeEvent.layout.width);
+    <>
+      <BaseItem
+        removePost={removePost}
+        editPost={editPost}
+        edited={itemData.edited}
+        updated={itemData.updated}
+        fromSavedPosts={fromSavedPosts}
+        postData={{
+          title: itemData?.title,
+          id: itemData.postId ?? itemData.id ?? itemData._id,
+          type: postType,
+          postlink: itemData.link,
+          image:
+            itemData.images && itemData.images.length > 0 ? { url: itemData.images[0] } : undefined,
+          externalLink: profileUrl,
+          reactions: itemData.reactions ?? [],
+          myReaction,
+          location: itemData.location,
+          locationName: itemData.locationName,
+          edited: itemData.edited,
+          comments: itemData.comments,
+          commentNumber: inlineCommentCount,
+          repostCount: itemData.repostCount,
         }}
+        repostPayload={
+          isWatchPost
+            ? undefined
+            : {
+                sourceType: 'social',
+                sourceId: String(itemData.postId ?? itemData.id ?? itemData._id ?? ''),
+                sourcePreview: {
+                  title: itemData.title,
+                  content: itemData.content,
+                  link: itemData.link || itemData.permalink,
+                },
+                originFeedType,
+              }
+        }
+        parentRefreshContent={parentRefreshContent}
+        created={itemData?.created}
+        source={itemData.source}
+        userData={itemData.userData}
+        isApprovedInfluencer={itemData.userData?.isApprovedInfluencer ?? false}
+        onShowDismissCard={onShowDismissCard}
+        index={index}
+        onCommentsPress={handleCommentsPress}
+        onTelemetryEvent={onTelemetryEvent}
+        onPress={() => {
+          if (itemData.userData._id !== user?._id) {
+            navigation.navigate('Main', {
+              screen: 'HomeTab',
+              params: {
+                screen: 'UserProfile',
+                params: {
+                  id: itemData?.userData._id,
+                },
+              },
+            });
+          }
+        }}
+        style={socialPostviewStyle}
       >
-        {shouldRenderPrimaryText ? (
-          <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
-            <StyledText
-              style={{
-                color: colors.text,
-                marginBottom: spacing.x8,
-                flexGrow: 1,
-              }}
-            >
-              {primaryTextToRender}
-            </StyledText>
-          </Pressable>
-        ) : null}
+        <View
+          style={{ flexGrow: 1 }}
+          onLayout={({ nativeEvent }) => {
+            setWidth(nativeEvent.layout.width);
+          }}
+        >
+          {shouldRenderPrimaryText ? (
+            <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
+              <StyledText
+                style={{
+                  color: colors.text,
+                  marginBottom: spacing.x8,
+                  flexGrow: 1,
+                }}
+              >
+                {primaryTextToRender}
+              </StyledText>
+            </Pressable>
+          ) : null}
 
-        {repostMeta && hasSourceCardData ? (
-          <View style={{ marginBottom: spacing.x10 }}>
-            <Pressable
-              onPress={handleRepostSourceOpen}
-              style={{
-                borderRadius: FEED_MEDIA_RADIUS,
-                borderColor: 'rgba(3, 47, 60, 0.3)',
-                borderWidth: borderWidth.thin,
-                backgroundColor: 'transparent',
-                overflow: 'hidden',
-              }}
-            >
-              <View style={{ padding: spacing.x10 }}>
-                {shouldShowSourceHeader ? (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginBottom:
-                        sourceContent ||
-                        sourceTitle ||
-                        sourceDescription ||
-                        sourceImageUrls.length > 0 ||
-                        sourceVideoUrls.length > 0 ||
-                        sourceGifUrl
-                          ? spacing.x8
-                          : 0,
-                    }}
-                  >
-                    <Image
-                      source={{
-                        uri: sourceSnapshot?.sourceAuthorProfileImage || NO_PROFILE_IMAGE,
-                      }}
+          {repostMeta && hasSourceCardData ? (
+            <View style={{ marginBottom: spacing.x10 }}>
+              <Pressable
+                onPress={handleRepostSourceOpen}
+                style={{
+                  borderRadius: FEED_MEDIA_RADIUS,
+                  borderColor: 'rgba(3, 47, 60, 0.3)',
+                  borderWidth: borderWidth.thin,
+                  backgroundColor: 'transparent',
+                  overflow: 'hidden',
+                }}
+              >
+                <View style={{ padding: spacing.x10 }}>
+                  {shouldShowSourceHeader ? (
+                    <View
                       style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 17,
-                        marginRight: spacing.x8,
-                        backgroundColor: Colors.neutral[700],
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginBottom:
+                          sourceContent ||
+                          sourceTitle ||
+                          sourceDescription ||
+                          sourceImageUrls.length > 0 ||
+                          sourceVideoUrls.length > 0 ||
+                          sourceGifUrl
+                            ? spacing.x8
+                            : 0,
                       }}
-                    />
+                    >
+                      <Image
+                        source={{
+                          uri: sourceSnapshot?.sourceAuthorProfileImage || NO_PROFILE_IMAGE,
+                        }}
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 17,
+                          marginRight: spacing.x8,
+                          backgroundColor: Colors.neutral[700],
+                        }}
+                      />
 
-                    <View style={{ flex: 1 }}>
-                      {sourceSnapshot?.sourceAuthorName ? (
-                        <StyledText
-                          numberOfLines={1}
-                          style={{ color: colors.text, fontWeight: '700' }}
-                        >
-                          {sourceSnapshot.sourceAuthorName}
-                        </StyledText>
+                      <View style={{ flex: 1 }}>
+                        {sourceSnapshot?.sourceAuthorName ? (
+                          <StyledText
+                            numberOfLines={1}
+                            style={{ color: colors.text, fontWeight: '700' }}
+                          >
+                            {sourceSnapshot.sourceAuthorName}
+                          </StyledText>
+                        ) : null}
+
+                        {sourceMetaLine ? (
+                          <StyledText
+                            numberOfLines={1}
+                            style={{
+                              color: Colors.neutral[400],
+                              marginTop: 1,
+                            }}
+                          >
+                            {sourceMetaLine}
+                          </StyledText>
+                        ) : null}
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {sourceIsRss ? (
+                    <>
+                      {sourceLinkCardImage ? (
+                        <FastImage
+                          style={{
+                            width: '100%',
+                            aspectRatio: 16 / 9,
+                            borderRadius: FEED_MEDIA_RADIUS,
+                            marginBottom: spacing.x8,
+                          }}
+                          resizeMode="cover"
+                          source={{ uri: sourceLinkCardImage }}
+                        />
                       ) : null}
 
-                      {sourceMetaLine ? (
+                      {sourceDomain ? (
                         <StyledText
                           numberOfLines={1}
                           style={{
                             color: Colors.neutral[400],
-                            marginTop: 1,
+                            fontSize: 11,
+                            letterSpacing: 0.6,
+                            fontWeight: '700',
+                            textTransform: 'uppercase',
+                            marginBottom: 2,
                           }}
                         >
-                          {sourceMetaLine}
+                          {sourceDomain}
                         </StyledText>
                       ) : null}
-                    </View>
-                  </View>
-                ) : null}
 
-                {sourceIsRss ? (
-                  <>
-                    {sourceLinkCardImage ? (
-                      <FastImage
-                        style={{
-                          width: '100%',
-                          aspectRatio: 16 / 9,
-                          borderRadius: FEED_MEDIA_RADIUS,
-                          marginBottom: spacing.x8,
-                        }}
-                        resizeMode="cover"
-                        source={{ uri: sourceLinkCardImage }}
-                      />
-                    ) : null}
+                      {sourceTitle ? (
+                        <StyledText
+                          numberOfLines={3}
+                          style={{ color: colors.text, fontWeight: '700' }}
+                        >
+                          {decode(sourceTitle)}
+                        </StyledText>
+                      ) : null}
 
-                    {sourceDomain ? (
-                      <StyledText
-                        numberOfLines={1}
-                        style={{
-                          color: Colors.neutral[400],
-                          fontSize: 11,
-                          letterSpacing: 0.6,
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          marginBottom: 2,
-                        }}
-                      >
-                        {sourceDomain}
-                      </StyledText>
-                    ) : null}
+                      {sourceDescription ? (
+                        <StyledText numberOfLines={3} style={{ color: Colors.neutral[400] }}>
+                          {decode(sourceDescription)}
+                        </StyledText>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      {sourceContent ? (
+                        <StyledText
+                          style={{
+                            color: colors.text,
+                            marginBottom:
+                              sourceImageUrls.length > 0 ||
+                              sourceVideoUrls.length > 0 ||
+                              sourceGifUrl ||
+                              sourceLink
+                                ? spacing.x8
+                                : 0,
+                          }}
+                        >
+                          {sourceContent}
+                        </StyledText>
+                      ) : null}
 
-                    {sourceTitle ? (
-                      <StyledText
-                        numberOfLines={3}
-                        style={{ color: colors.text, fontWeight: '700' }}
-                      >
-                        {decode(sourceTitle)}
-                      </StyledText>
-                    ) : null}
-
-                    {sourceDescription ? (
-                      <StyledText numberOfLines={3} style={{ color: Colors.neutral[400] }}>
-                        {decode(sourceDescription)}
-                      </StyledText>
-                    ) : null}
-                  </>
-                ) : (
-                  <>
-                    {sourceContent ? (
-                      <StyledText
-                        style={{
-                          color: colors.text,
-                          marginBottom:
-                            sourceImageUrls.length > 0 ||
-                            sourceVideoUrls.length > 0 ||
-                            sourceGifUrl ||
-                            sourceLink
-                              ? spacing.x8
-                              : 0,
-                        }}
-                      >
-                        {sourceContent}
-                      </StyledText>
-                    ) : null}
-
-                    {sourceImageUrls.map((url) => (
-                      <FastImage
-                        key={url}
-                        style={{
-                          width: '100%',
-                          aspectRatio: 16 / 9,
-                          borderRadius: FEED_MEDIA_RADIUS,
-                          marginBottom: spacing.x8,
-                        }}
-                        resizeMode="cover"
-                        source={{ uri: url }}
-                      />
-                    ))}
-
-                    {sourceVideoUrls.map((videoUrl) => (
-                      <View
-                        key={videoUrl}
-                        style={{
-                          marginBottom: spacing.x8,
-                          borderRadius: FEED_MEDIA_RADIUS,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <CustomVideo
-                          source={{ uri: videoUrl }}
+                      {sourceImageUrls.map((url) => (
+                        <FastImage
+                          key={url}
                           style={{
                             width: '100%',
                             aspectRatio: 16 / 9,
+                            borderRadius: FEED_MEDIA_RADIUS,
+                            marginBottom: spacing.x8,
                           }}
-                          controls={false}
-                          resizeMode="contain"
-                          paused
-                          muted
-                          repeat
+                          resizeMode="cover"
+                          source={{ uri: url }}
                         />
-                      </View>
-                    ))}
+                      ))}
 
-                    {sourceGifUrl ? (
-                      <FastImage
-                        style={{
-                          width: '100%',
-                          aspectRatio: 16 / 9,
-                          borderRadius: FEED_MEDIA_RADIUS,
-                          marginBottom: spacing.x8,
-                        }}
-                        resizeMode="cover"
-                        source={{ uri: sourceGifUrl }}
-                      />
-                    ) : null}
-
-                    {sourceLink ? (
-                      <View
-                        style={{
-                          borderRadius: FEED_MEDIA_RADIUS,
-                          borderWidth: borderWidth.thin,
-                          borderColor: colors.border,
-                          backgroundColor: colors.card,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {sourceLinkCardImage ? (
-                          <FastImage
+                      {sourceVideoUrls.map((videoUrl) => (
+                        <View
+                          key={videoUrl}
+                          style={{
+                            marginBottom: spacing.x8,
+                            borderRadius: FEED_MEDIA_RADIUS,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <CustomVideo
+                            source={{ uri: videoUrl }}
                             style={{
                               width: '100%',
                               aspectRatio: 16 / 9,
-                              borderRadius: FEED_MEDIA_RADIUS,
                             }}
-                            resizeMode="cover"
-                            source={{ uri: sourceLinkCardImage }}
+                            controls={false}
+                            resizeMode="contain"
+                            paused
+                            muted
+                            repeat
                           />
-                        ) : null}
-
-                        <View style={{ padding: spacing.x8 }}>
-                          {sourceDomain ? (
-                            <StyledText
-                              numberOfLines={1}
-                              style={{
-                                color: Colors.neutral[400],
-                                fontSize: 11,
-                                letterSpacing: 0.6,
-                                fontWeight: '700',
-                                textTransform: 'uppercase',
-                                marginBottom: 2,
-                              }}
-                            >
-                              {sourceDomain}
-                            </StyledText>
-                          ) : null}
-
-                          {sourceTitle ? (
-                            <StyledText
-                              numberOfLines={2}
-                              style={{ color: colors.text, fontWeight: '700' }}
-                            >
-                              {decode(sourceTitle)}
-                            </StyledText>
-                          ) : null}
-
-                          {sourceDescription ? (
-                            <StyledText numberOfLines={2} style={{ color: Colors.neutral[400] }}>
-                              {decode(sourceDescription)}
-                            </StyledText>
-                          ) : null}
                         </View>
-                      </View>
-                    ) : null}
-                  </>
-                )}
-              </View>
-            </Pressable>
-          </View>
-        ) : null}
+                      ))}
 
-        {shouldRenderLinkPreview
-          ? (() => {
-              const resolvedLinkCardData = linkCardData as LinkData;
-              return (
-                <Pressable
-                  onPress={handleContentPress}
-                  style={{
-                    borderRadius: FEED_MEDIA_RADIUS,
-                    marginVertical: spacing.x10,
-                    borderColor: colors.border,
-                    borderWidth: borderWidth.thin,
-                    backgroundColor: colors.card,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {resolvedLinkCardData.image?.url || NO_POST_IMAGE_URL ? (
-                    <View
-                      style={{
-                        width: '100%',
-                        aspectRatio: 16 / 9,
-                        backgroundColor: CONTAIN_FRAME_BACKGROUND,
-                        borderTopLeftRadius: FEED_MEDIA_RADIUS,
-                        borderTopRightRadius: FEED_MEDIA_RADIUS,
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <FastImage
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                        }}
-                        resizeMode="cover"
-                        source={{ uri: resolvedLinkCardData.image?.url ?? NO_POST_IMAGE_URL }}
-                      />
-                    </View>
-                  ) : (
-                    <View
-                      style={{
-                        width: '100%',
-                        aspectRatio: 16 / 9,
-                        backgroundColor: Colors.neutral[800],
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: spacing.x13,
-                      }}
-                    >
-                      <StyledText numberOfLines={1} style={{ color: Colors.neutral[200] }}>
-                        {linkUrl ? getDomainName(linkUrl) : ''}
-                      </StyledText>
-                    </View>
+                      {sourceGifUrl ? (
+                        <FastImage
+                          style={{
+                            width: '100%',
+                            aspectRatio: 16 / 9,
+                            borderRadius: FEED_MEDIA_RADIUS,
+                            marginBottom: spacing.x8,
+                          }}
+                          resizeMode="cover"
+                          source={{ uri: sourceGifUrl }}
+                        />
+                      ) : null}
+
+                      {sourceLink ? (
+                        <View
+                          style={{
+                            borderRadius: FEED_MEDIA_RADIUS,
+                            borderWidth: borderWidth.thin,
+                            borderColor: colors.border,
+                            backgroundColor: colors.card,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {sourceLinkCardImage ? (
+                            <FastImage
+                              style={{
+                                width: '100%',
+                                aspectRatio: 16 / 9,
+                                borderRadius: FEED_MEDIA_RADIUS,
+                              }}
+                              resizeMode="cover"
+                              source={{ uri: sourceLinkCardImage }}
+                            />
+                          ) : null}
+
+                          <View style={{ padding: spacing.x8 }}>
+                            {sourceDomain ? (
+                              <StyledText
+                                numberOfLines={1}
+                                style={{
+                                  color: Colors.neutral[400],
+                                  fontSize: 11,
+                                  letterSpacing: 0.6,
+                                  fontWeight: '700',
+                                  textTransform: 'uppercase',
+                                  marginBottom: 2,
+                                }}
+                              >
+                                {sourceDomain}
+                              </StyledText>
+                            ) : null}
+
+                            {sourceTitle ? (
+                              <StyledText
+                                numberOfLines={2}
+                                style={{ color: colors.text, fontWeight: '700' }}
+                              >
+                                {decode(sourceTitle)}
+                              </StyledText>
+                            ) : null}
+
+                            {sourceDescription ? (
+                              <StyledText numberOfLines={2} style={{ color: Colors.neutral[400] }}>
+                                {decode(sourceDescription)}
+                              </StyledText>
+                            ) : null}
+                          </View>
+                        </View>
+                      ) : null}
+                    </>
                   )}
+                </View>
+              </Pressable>
+            </View>
+          ) : null}
 
-                  <View style={{ padding: 10 }}>
-                    {linkUrl ? (
-                      <StyledText numberOfLines={1} style={{ color: Colors.neutral[400] }}>
-                        {getDomainName(linkUrl)}
-                      </StyledText>
-                    ) : null}
-                    {resolvedLinkCardData.title ? (
-                      <StyledText numberOfLines={2} style={{ fontWeight: '700' }}>
-                        {resolvedLinkCardData.title}
-                      </StyledText>
-                    ) : null}
-                    {resolvedLinkCardData.description ? (
-                      <StyledText numberOfLines={2}>{resolvedLinkCardData.description}</StyledText>
-                    ) : null}
-                  </View>
-                </Pressable>
-              );
-            })()
-          : null}
-
-        {media.length > 0 &&
-          media.map((mediaItem, mediaIndex) => {
-            const mediaType = (mediaItem.type ?? '').toLowerCase();
-            const isVideoMedia = mediaType === 'video' || mediaType.startsWith('video/');
-            if (isVideoMedia) {
-              const { playBackId } = itemData as SocialPost & { playBackId?: string };
-              const runtimeVideoAspect = videoAspectByUrl[mediaItem.url];
-              const sourceVideoAspect = getSafeVideoRatio(
-                metadataVideoAspectRatio ?? runtimeVideoAspect
-              );
-              const resolvedVideoAspect = isPrimaryHomeFeed
-                ? sourceVideoAspect
-                : getNearestSupportedVideoRatio(sourceVideoAspect);
-              const isPortraitVideo =
-                Math.abs(resolvedVideoAspect - FEED_PORTRAIT_VIDEO_RATIO) < 0.05;
-              const videoRadius = isPortraitVideo ? FEED_MEDIA_RADIUS : 0;
-              const resolvedWidth = Number(width ?? 0);
-              const canApplyHomeSizing = isPrimaryHomeFeed && resolvedWidth > 0;
-              const rawHomeHeight = canApplyHomeSizing ? resolvedWidth / resolvedVideoAspect : 0;
-              const shouldCapHomePortrait =
-                canApplyHomeSizing &&
-                resolvedVideoAspect < 1 &&
-                rawHomeHeight > HOME_FEED_MAX_VIDEO_HEIGHT;
-              const homeVideoWidth = shouldCapHomePortrait
-                ? HOME_FEED_MAX_VIDEO_HEIGHT * resolvedVideoAspect
-                : resolvedWidth;
-              const homeVideoHeight = shouldCapHomePortrait
-                ? HOME_FEED_MAX_VIDEO_HEIGHT
-                : rawHomeHeight;
-              return (
-                <Pressable
-                  key={`${mediaItem.type}-${mediaItem.url ?? `video-${mediaIndex}`}`}
-                  onPress={() => {
-                    if (onOpenVideoPress && playBackId && isPortraitVideo) {
-                      onTelemetryEvent?.('open_watch', {
-                        postType,
-                        playBackId,
-                      });
-                      onOpenVideoPress({
-                        postId: postId ? String(postId) : undefined,
-                        playBackId,
-                        itemData,
-                        mediaUrl: mediaItem.url,
-                        aspectRatio: sourceVideoAspect,
-                        videoWidth: metadataVideoWidth,
-                        videoHeight: metadataVideoHeight,
-                      });
-                      return;
-                    }
-                    handleContentPress();
-                  }}
-                >
-                  <View
+          {shouldRenderLinkPreview
+            ? (() => {
+                const resolvedLinkCardData = linkCardData as LinkData;
+                return (
+                  <Pressable
+                    onPress={handleContentPress}
                     style={{
-                      marginVertical: 10,
-                      borderRadius: videoRadius,
-                      alignSelf: canApplyHomeSizing ? 'center' : undefined,
-                      width: canApplyHomeSizing ? homeVideoWidth : '100%',
-                      height: canApplyHomeSizing ? homeVideoHeight : undefined,
-                      overflow: videoRadius > 0 ? 'hidden' : 'visible',
+                      borderRadius: FEED_MEDIA_RADIUS,
+                      marginVertical: spacing.x10,
+                      borderColor: colors.border,
+                      borderWidth: borderWidth.thin,
+                      backgroundColor: colors.card,
+                      overflow: 'hidden',
                     }}
                   >
-                    <CustomVideo
-                      source={{ uri: mediaItem.url }}
-                      style={{
-                        width: canApplyHomeSizing ? homeVideoWidth : '100%',
-                        height: canApplyHomeSizing ? homeVideoHeight : undefined,
-                        aspectRatio: canApplyHomeSizing ? undefined : resolvedVideoAspect,
-                        borderRadius: videoRadius,
+                    {resolvedLinkCardData.image?.url || NO_POST_IMAGE_URL ? (
+                      <View
+                        style={{
+                          width: '100%',
+                          aspectRatio: 16 / 9,
+                          backgroundColor: CONTAIN_FRAME_BACKGROUND,
+                          borderTopLeftRadius: FEED_MEDIA_RADIUS,
+                          borderTopRightRadius: FEED_MEDIA_RADIUS,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <FastImage
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                          }}
+                          resizeMode="cover"
+                          source={{ uri: resolvedLinkCardData.image?.url ?? NO_POST_IMAGE_URL }}
+                        />
+                      </View>
+                    ) : (
+                      <View
+                        style={{
+                          width: '100%',
+                          aspectRatio: 16 / 9,
+                          backgroundColor: Colors.neutral[800],
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: spacing.x13,
+                        }}
+                      >
+                        <StyledText numberOfLines={1} style={{ color: Colors.neutral[200] }}>
+                          {linkUrl ? getDomainName(linkUrl) : ''}
+                        </StyledText>
+                      </View>
+                    )}
+
+                    <View style={{ padding: 10 }}>
+                      {linkUrl ? (
+                        <StyledText numberOfLines={1} style={{ color: Colors.neutral[400] }}>
+                          {getDomainName(linkUrl)}
+                        </StyledText>
+                      ) : null}
+                      {resolvedLinkCardData.title ? (
+                        <StyledText numberOfLines={2} style={{ fontWeight: '700' }}>
+                          {resolvedLinkCardData.title}
+                        </StyledText>
+                      ) : null}
+                      {resolvedLinkCardData.description ? (
+                        <StyledText numberOfLines={2}>
+                          {resolvedLinkCardData.description}
+                        </StyledText>
+                      ) : null}
+                    </View>
+                  </Pressable>
+                );
+              })()
+            : null}
+
+          {media.length > 0 &&
+            media.map((mediaItem, mediaIndex) => {
+              const mediaType = (mediaItem.type ?? '').toLowerCase();
+              const isVideoMedia = mediaType === 'video' || mediaType.startsWith('video/');
+              if (isVideoMedia) {
+                const runtimeVideoAspect = videoAspectByUrl[mediaItem.url];
+                const resolvedMetadata = resolveVideoMetadata({
+                  aspect_ratio: itemData.aspect_ratio,
+                  aspectRatio: runtimeVideoAspect ?? itemData.aspectRatio,
+                  videoWidth: itemData.videoWidth,
+                  videoHeight: itemData.videoHeight,
+                });
+
+                return (
+                  <View
+                    key={`${mediaItem.type}-${mediaItem.url ?? `video-${mediaIndex}`}`}
+                    style={{ marginVertical: spacing.x10 }}
+                  >
+                    <UniversalVideoCard
+                      context="feed"
+                      sourceUri={mediaItem.url}
+                      metadata={{
+                        aspect_ratio: itemData.aspect_ratio,
+                        aspectRatio: runtimeVideoAspect ?? itemData.aspectRatio,
+                        videoWidth: itemData.videoWidth,
+                        videoHeight: itemData.videoHeight,
                       }}
+                      containerWidth={width ?? 1}
                       controls={false}
-                      resizeMode="contain"
                       paused={!isPlaying}
                       muted={isMuted}
                       repeat
+                      borderRadius={FEED_MEDIA_RADIUS}
+                      onPress={() => {
+                        if (isWatchPost && playBackId && onOpenVideoPress) {
+                          openWatchPortal(mediaItem.url, resolvedMetadata.aspectRatio);
+                          return;
+                        }
+                        handleContentPress();
+                      }}
+                      onExpandPress={
+                        isWatchPost && playBackId && onOpenVideoPress
+                          ? () => openWatchPortal(mediaItem.url, resolvedMetadata.aspectRatio)
+                          : undefined
+                      }
+                      showExpandButton={Boolean(isWatchPost && playBackId && onOpenVideoPress)}
                       onLoad={(loadData: any) => {
                         const naturalWidth = Number(loadData?.naturalSize?.width);
                         const naturalHeight = Number(loadData?.naturalSize?.height);
@@ -1326,16 +1291,13 @@ function SocialItem({
                           return;
                         }
                         const naturalRatio = naturalWidth / naturalHeight;
-                        const nextRatio = isPrimaryHomeFeed
-                          ? getSafeVideoRatio(naturalRatio)
-                          : getNearestSupportedVideoRatio(naturalRatio);
                         setVideoAspectByUrl((previous) => {
-                          if (previous[mediaItem.url] === nextRatio) {
+                          if (previous[mediaItem.url] === naturalRatio) {
                             return previous;
                           }
                           return {
                             ...previous,
-                            [mediaItem.url]: nextRatio,
+                            [mediaItem.url]: naturalRatio,
                           };
                         });
                       }}
@@ -1347,52 +1309,80 @@ function SocialItem({
                       }}
                     />
                   </View>
-                </Pressable>
-              );
-            }
+                );
+              }
 
-            return null;
-          })}
+              return null;
+            })}
 
-        {images.length > 0 ? (
-          <>
-            {imageModalIndexVisible > -1 ? (
-              <ImageView
-                images={images.map((item) => ({ uri: item.url }))}
-                presentationStyle="overFullScreen"
-                imageIndex={imageModalIndexVisible}
-                visible
-                onRequestClose={() => {
-                  setImageModalIndexVisible(-1);
+          {images.length > 0 ? (
+            <>
+              {imageModalIndexVisible > -1 ? (
+                <ImageView
+                  images={images.map((item) => ({ uri: item.url }))}
+                  presentationStyle="overFullScreen"
+                  imageIndex={imageModalIndexVisible}
+                  visible
+                  onRequestClose={() => {
+                    setImageModalIndexVisible(-1);
+                  }}
+                />
+              ) : null}
+
+              <ImageSlider
+                width={width ?? 0}
+                images={images}
+                minAspectRatio={isPrimaryHomeFeed ? 9 / 16 : undefined}
+                maxAspectRatio={isPrimaryHomeFeed ? 1 : undefined}
+                multiImageHeightMode={isPrimaryHomeFeed ? 'animated' : 'fixed'}
+                imageResizeMode={isPrimaryHomeFeed ? 'cover' : 'contain'}
+                frameBackgroundColor={isPrimaryHomeFeed ? 'transparent' : Colors.containFrame}
+                setImageModalIndexVisible={(selectedIndex) => {
+                  if (selectedIndex > -1) {
+                    onTelemetryEvent?.('media_open', {
+                      mediaType: 'image',
+                    });
+                  }
+                  if (handleCommentsPress) {
+                    handleCommentsPress();
+                    return;
+                  }
+                  setImageModalIndexVisible(selectedIndex);
                 }}
               />
-            ) : null}
+            </>
+          ) : null}
+        </View>
+      </BaseItem>
 
-            <ImageSlider
-              width={width ?? 0}
-              images={images}
-              minAspectRatio={isPrimaryHomeFeed ? 9 / 16 : undefined}
-              maxAspectRatio={isPrimaryHomeFeed ? 1 : undefined}
-              multiImageHeightMode={isPrimaryHomeFeed ? 'animated' : 'fixed'}
-              imageResizeMode={isPrimaryHomeFeed ? 'cover' : 'contain'}
-              frameBackgroundColor={isPrimaryHomeFeed ? 'transparent' : Colors.containFrame}
-              setImageModalIndexVisible={(selectedIndex) => {
-                if (selectedIndex > -1) {
-                  onTelemetryEvent?.('media_open', {
-                    mediaType: 'image',
-                  });
-                }
-                if (handleCommentsPress) {
-                  handleCommentsPress();
-                  return;
-                }
-                setImageModalIndexVisible(selectedIndex);
-              }}
-            />
-          </>
-        ) : null}
-      </View>
-    </BaseItem>
+      {shouldInlineWatchComments && isInlineWatchCommentsVisible ? (
+        <View
+          style={{
+            marginTop: -spacing.x10,
+            marginBottom: spacing.x16,
+            marginHorizontal: spacing.x16,
+            borderWidth: borderWidth.thin,
+            borderTopWidth: 0,
+            borderColor: colors.border,
+            borderBottomLeftRadius: FEED_MEDIA_RADIUS,
+            borderBottomRightRadius: FEED_MEDIA_RADIUS,
+            backgroundColor: colors.card,
+            overflow: 'hidden',
+          }}
+        >
+          <CommentThread
+            postId={watchCommentPostId}
+            type={PostType.watch}
+            enablePagination
+            onCommentPublished={() => {
+              setInlineCommentCount((previous) => previous + 1);
+            }}
+            contentContainerStyle={{ paddingBottom: spacing.x16 }}
+            listStyle={{ maxHeight: 420 }}
+          />
+        </View>
+      ) : null}
+    </>
   );
 }
 
