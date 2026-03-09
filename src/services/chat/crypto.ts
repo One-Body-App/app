@@ -1,33 +1,37 @@
-import sodium from 'react-native-libsodium';
+import {
+  base64_variants,
+  crypto_box_easy,
+  crypto_box_NONCEBYTES,
+  crypto_box_open_easy,
+  from_base64,
+  randombytes_buf,
+  ready,
+} from 'react-native-libsodium';
 import QuickCrypto from 'react-native-quick-crypto';
 
-const HKDF_CONTEXT = 'onebody-chat-v1';
-const HKDF_SALT = 'onebody-chat-salt-v1';
 const MAX_MESSAGE_BYTES = 10 * 1024 * 1024;
 const CryptoBuffer = QuickCrypto.Buffer;
+const BOX_SCHEME_MARKER = 'box:v1';
+const CRYPTO_INIT_ERROR =
+  'Secure messaging is unavailable right now. Please restart the app and try again.';
+const LEGACY_DECRYPT_ERROR =
+  'This message uses an older secure format that this device cannot decrypt.';
 
-const fromBase64 = (value: string) =>
-  sodium.from_base64(value, sodium.base64_variants.ORIGINAL) as Uint8Array;
-
-const deriveAesKey = (sharedSecret: Uint8Array) => {
-  const salt = sodium.from_string(HKDF_SALT) as Uint8Array;
-  const extracted = sodium._unstable_crypto_kdf_hkdf_sha256_extract(
-    sharedSecret,
-    salt
-  ) as Uint8Array;
-  return sodium._unstable_crypto_kdf_hkdf_sha256_expand(extracted, HKDF_CONTEXT, 32) as Uint8Array;
+const ensureBoxBindings = () => {
+  if (
+    typeof from_base64 !== 'function' ||
+    typeof randombytes_buf !== 'function' ||
+    typeof crypto_box_easy !== 'function' ||
+    typeof crypto_box_open_easy !== 'function' ||
+    typeof crypto_box_NONCEBYTES !== 'number'
+  ) {
+    throw new Error(CRYPTO_INIT_ERROR);
+  }
 };
 
-export const deriveSharedSecretKey = async (
-  myPrivateKeyBase64: string,
-  peerPublicKeyBase64: string
-) => {
-  await sodium.ready;
-  const myPrivateKey = fromBase64(myPrivateKeyBase64);
-  const peerPublicKey = fromBase64(peerPublicKeyBase64);
-  const sharedSecret = sodium.crypto_scalarmult(myPrivateKey, peerPublicKey) as Uint8Array;
-  return deriveAesKey(sharedSecret);
-};
+const fromBase64 = (value: string) => from_base64(value, base64_variants.ORIGINAL) as Uint8Array;
+
+const toUtf8Buffer = (value: string) => CryptoBuffer.from(value ?? '', 'utf8');
 
 export const encryptE2EEMessage = async (args: {
   plaintext: string;
@@ -35,27 +39,28 @@ export const encryptE2EEMessage = async (args: {
   peerPublicKeyBase64: string;
   aad?: string;
 }) => {
-  const sharedKey = await deriveSharedSecretKey(args.myPrivateKeyBase64, args.peerPublicKeyBase64);
+  await ready;
+  ensureBoxBindings();
 
-  const plainBuffer = CryptoBuffer.from(args.plaintext ?? '', 'utf8');
+  const plainBuffer = toUtf8Buffer(args.plaintext);
   if (plainBuffer.byteLength > MAX_MESSAGE_BYTES) {
     throw new Error('Message exceeds max encrypted payload size (10MB)');
   }
 
-  const iv = QuickCrypto.randomBytes(12);
-  const cipher = QuickCrypto.createCipheriv('aes-256-gcm', CryptoBuffer.from(sharedKey), iv);
-
-  if (args.aad) {
-    cipher.setAAD(CryptoBuffer.from(args.aad, 'utf8'));
-  }
-
-  const encrypted = CryptoBuffer.concat([cipher.update(plainBuffer), cipher.final()]);
-  const authTag = cipher.getAuthTag();
+  const myPrivateKey = fromBase64(args.myPrivateKeyBase64);
+  const peerPublicKey = fromBase64(args.peerPublicKeyBase64);
+  const nonce = randombytes_buf(crypto_box_NONCEBYTES) as Uint8Array;
+  const encrypted = crypto_box_easy(
+    new Uint8Array(plainBuffer),
+    nonce,
+    peerPublicKey,
+    myPrivateKey
+  ) as Uint8Array;
 
   return {
-    encryptedPayload: encrypted.toString('base64'),
-    nonce: iv.toString('base64'),
-    authTag: authTag.toString('base64'),
+    encryptedPayload: CryptoBuffer.from(encrypted).toString('base64'),
+    nonce: CryptoBuffer.from(nonce).toString('base64'),
+    authTag: BOX_SCHEME_MARKER,
     aad: args.aad,
   };
 };
@@ -68,23 +73,24 @@ export const decryptE2EEMessage = async (args: {
   peerPublicKeyBase64: string;
   aad?: string;
 }) => {
-  const sharedKey = await deriveSharedSecretKey(args.myPrivateKeyBase64, args.peerPublicKeyBase64);
-
-  const decipher = QuickCrypto.createDecipheriv(
-    'aes-256-gcm',
-    CryptoBuffer.from(sharedKey),
-    CryptoBuffer.from(args.nonce, 'base64')
-  );
-  decipher.setAuthTag(CryptoBuffer.from(args.authTag, 'base64'));
-
-  if (args.aad) {
-    decipher.setAAD(CryptoBuffer.from(args.aad, 'utf8'));
+  if (args.authTag !== BOX_SCHEME_MARKER) {
+    throw new Error(LEGACY_DECRYPT_ERROR);
   }
 
-  const decrypted = CryptoBuffer.concat([
-    decipher.update(CryptoBuffer.from(args.encryptedPayload, 'base64')),
-    decipher.final(),
-  ]);
+  await ready;
+  ensureBoxBindings();
 
-  return decrypted.toString('utf8');
+  const myPrivateKey = fromBase64(args.myPrivateKeyBase64);
+  const peerPublicKey = fromBase64(args.peerPublicKeyBase64);
+  const nonce = fromBase64(args.nonce);
+  const encryptedPayload = fromBase64(args.encryptedPayload);
+
+  const decrypted = crypto_box_open_easy(
+    encryptedPayload,
+    nonce,
+    peerPublicKey,
+    myPrivateKey
+  ) as Uint8Array;
+
+  return CryptoBuffer.from(decrypted).toString('utf8');
 };

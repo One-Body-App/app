@@ -1,6 +1,7 @@
 import { ApiCall } from '@/src/services/api';
 import {
   ChatEnvelope,
+  ChatConversationReadResult,
   ConversationListItem,
   CreateChatGroupPayload,
   ChatUserKey,
@@ -97,6 +98,14 @@ export const updateChatMessageStatus = async (
   });
 };
 
+export const markChatConversationRead = async (peerUserId: string, token?: string) => {
+  return ApiCall<ApiEnvelope<ChatConversationReadResult>>({
+    route: `chat/conversations/${peerUserId}/read`,
+    verb: 'patch',
+    token: withToken(token),
+  });
+};
+
 export const registerChatDeviceToken = async (
   payload: RegisterChatDeviceTokenPayload,
   token?: string
@@ -115,4 +124,28 @@ export const unregisterChatDeviceToken = async (deviceId: string, token?: string
     verb: 'delete',
     token: withToken(token),
   });
+};
+
+export const uploadChatMediaFile = async (
+  fileUri: string,
+  fileName: string,
+  mimeType: string,
+  token?: string
+): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', { uri: fileUri, name: fileName, type: mimeType } as any);
+
+  const response = await ApiCall<ApiEnvelope<{ mediaUrl: string }>>({
+    route: 'chat/media/upload',
+    verb: 'post',
+    params: formData,
+    token: withToken(token),
+    isFormUrlEncode: true,
+  });
+
+  if (response.status !== 200 || !response.response?.data?.mediaUrl) {
+    throw new Error('Media upload failed');
+  }
+
+  return response.response.data.mediaUrl;
 };

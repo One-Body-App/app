@@ -2,9 +2,42 @@ import { io, Socket } from 'socket.io-client';
 import Config from 'react-native-config';
 import { BASE_URL } from '@/src/services/constants';
 import { getValidAccessToken } from '@/src/services/authTokens';
-import { SendE2EEMessagePayload } from './types';
+import {
+  ChatConversationReadAck,
+  ChatSendAck,
+  ChatTransportErrorCode,
+  SendE2EEMessagePayload,
+} from './types';
 
-let socketRef: Socket | null = null;
+type ChatSocketErrorPayload = {
+  message?: string;
+  error?: string;
+  code?: string;
+};
+
+type ChatSocket = Socket & {
+  io: Socket['io'] & {
+    opts?: {
+      extraHeaders?: Record<string, string>;
+    };
+  };
+};
+
+const SOCKET_TIMEOUT_MS = 12_000;
+
+export class ChatTransportError extends Error {
+  public readonly code: ChatTransportErrorCode;
+
+  public constructor(message: string, code: ChatTransportErrorCode) {
+    super(message);
+    this.name = 'ChatTransportError';
+    this.code = code;
+  }
+}
+
+let socketRef: ChatSocket | null = null;
+let socketTokenRef = '';
+let connectPromise: Promise<ChatSocket> | null = null;
 
 const resolveNamespace = () => {
   const configured = String(Config.CHAT_SOCKET_NAMESPACE || '/chat').trim();
@@ -26,68 +59,253 @@ const resolveSocketBaseUrl = () => {
   return `${withoutApiSuffix}${resolveNamespace()}`;
 };
 
-const getSocket = async () => {
-  if (socketRef) {
-    return socketRef;
+const normalizeErrorCode = (value?: string): ChatTransportErrorCode => {
+  switch (String(value || '').trim()) {
+    case 'unauthorized-socket':
+      return 'unauthorized-socket';
+    case 'sid-mismatch':
+      return 'sid-mismatch';
+    case 'receiver-not-found':
+      return 'receiver-not-found';
+    case 'dms-disabled':
+      return 'dms-disabled';
+    case 'invalid-payload':
+      return 'invalid-payload';
+    case 'transport-timeout':
+      return 'transport-timeout';
+    case 'connect-error':
+      return 'connect-error';
+    default:
+      return 'send-failed';
+  }
+};
+
+const resolveSocketError = (
+  payload: unknown,
+  fallbackCode: ChatTransportErrorCode
+): ChatTransportError => {
+  if (payload instanceof ChatTransportError) {
+    return payload;
   }
 
+  if (payload instanceof Error) {
+    return new ChatTransportError(payload.message || 'Unable to send message', fallbackCode);
+  }
+
+  if (typeof payload === 'string' && payload.trim()) {
+    return new ChatTransportError(payload.trim(), fallbackCode);
+  }
+
+  const value = payload as ChatSocketErrorPayload | undefined;
+  const message = String(value?.error || value?.message || 'Unable to send message').trim();
+  return new ChatTransportError(
+    message || 'Unable to send message',
+    normalizeErrorCode(value?.code || fallbackCode)
+  );
+};
+
+const applySocketAuth = (socket: ChatSocket, token: string) => {
+  const nextAuth = {
+    ...(typeof socket.auth === 'object' && socket.auth ? socket.auth : {}),
+    token,
+  };
+  const nextIoOpts = {
+    ...(socket.io.opts || {}),
+    extraHeaders: {
+      ...(socket.io.opts?.extraHeaders || {}),
+      Authorization: `Bearer ${token}`,
+    },
+  };
+  const targetSocket = socket as ChatSocket;
+  targetSocket.auth = nextAuth;
+  targetSocket.io.opts = nextIoOpts;
+  socketTokenRef = token;
+};
+
+const refreshSocketAuth = async (socket: ChatSocket) => {
+  const latestToken = await getValidAccessToken();
+  if (!latestToken) {
+    throw new ChatTransportError('Missing auth token for chat socket', 'unauthorized-socket');
+  }
+
+  applySocketAuth(socket, latestToken);
+  return latestToken;
+};
+
+const attachReconnectAuthRefresh = (socket: ChatSocket) => {
+  socket.io.on('reconnect_attempt', () => {
+    refreshSocketAuth(socket).catch(() => undefined);
+  });
+};
+
+const createSocket = async () => {
   const token = await getValidAccessToken();
   if (!token) {
-    throw new Error('Missing auth token for chat socket');
+    throw new ChatTransportError('Missing auth token for chat socket', 'unauthorized-socket');
   }
 
   const url = resolveSocketBaseUrl();
-  socketRef = io(url, {
+  const socket = io(url, {
     transports: ['websocket'],
     forceNew: false,
     reconnection: true,
     reconnectionDelay: 500,
     reconnectionAttempts: 20,
+    autoConnect: false,
     auth: {
       token,
     },
     extraHeaders: {
       Authorization: `Bearer ${token}`,
     },
-  });
+  }) as ChatSocket;
 
+  applySocketAuth(socket, token);
+  attachReconnectAuthRefresh(socket);
+  socketRef = socket;
+  return socket;
+};
+
+const getSocket = async () => {
+  if (!socketRef) {
+    return createSocket();
+  }
+
+  const latestToken = await getValidAccessToken();
+  if (!latestToken) {
+    disconnectChatSocket();
+    throw new ChatTransportError('Missing auth token for chat socket', 'unauthorized-socket');
+  }
+
+  if (socketTokenRef && socketTokenRef !== latestToken) {
+    disconnectChatSocket();
+    return createSocket();
+  }
+
+  applySocketAuth(socketRef, latestToken);
   return socketRef;
 };
 
 export const connectChatSocket = async () => {
   const socket = await getSocket();
-  if (!socket.connected) {
-    socket.connect();
+
+  if (socket.connected) {
+    return socket;
   }
-  return socket;
+
+  if (connectPromise) {
+    return connectPromise;
+  }
+
+  connectPromise = new Promise<ChatSocket>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new ChatTransportError('Chat connection timed out', 'transport-timeout'));
+    }, SOCKET_TIMEOUT_MS);
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off('connect', handleConnect);
+      socket.off('connect_error', handleConnectError);
+      socket.off('chat:error', handleChatError);
+      connectPromise = null;
+    };
+
+    const handleConnect = () => {
+      cleanup();
+      resolve(socket);
+    };
+
+    const handleConnectError = (error: unknown) => {
+      cleanup();
+      reject(resolveSocketError(error, 'connect-error'));
+    };
+
+    const handleChatError = (payload: unknown) => {
+      cleanup();
+      reject(resolveSocketError(payload, 'unauthorized-socket'));
+    };
+
+    socket.once('connect', handleConnect);
+    socket.once('connect_error', handleConnectError);
+    socket.once('chat:error', handleChatError);
+
+    refreshSocketAuth(socket)
+      .then(() => {
+        socket.connect();
+      })
+      .catch((error) => {
+        cleanup();
+        reject(resolveSocketError(error, 'unauthorized-socket'));
+      });
+  });
+
+  return connectPromise;
 };
 
 export const disconnectChatSocket = () => {
   if (!socketRef) {
+    socketTokenRef = '';
+    connectPromise = null;
     return;
   }
+
+  socketRef.removeAllListeners();
   socketRef.disconnect();
+  socketTokenRef = '';
   socketRef = null;
+  connectPromise = null;
 };
 
 export const sendChatE2EEMessage = async (payload: SendE2EEMessagePayload) => {
   const socket = await connectChatSocket();
 
-  return new Promise<any>((resolve, reject) => {
+  return new Promise<ChatSendAck>((resolve, reject) => {
     const timeout = setTimeout(() => {
-      reject(new Error('Chat send timeout'));
-    }, 12000);
+      cleanup();
+      reject(new ChatTransportError('Chat send timed out', 'transport-timeout'));
+    }, SOCKET_TIMEOUT_MS);
 
-    socket.emit('chat:send_e2ee_message', payload, (response: any) => {
+    const cleanup = () => {
       clearTimeout(timeout);
+      socket.off('chat:error', handleChatError);
+      socket.off('exception', handleException);
+      socket.off('connect_error', handleConnectError);
+      socket.off('disconnect', handleDisconnect);
+    };
+
+    const fail = (error: unknown, fallbackCode: ChatTransportErrorCode) => {
+      cleanup();
+      reject(resolveSocketError(error, fallbackCode));
+    };
+
+    const handleChatError = (error: unknown) => fail(error, 'unauthorized-socket');
+    const handleException = (error: unknown) => fail(error, 'send-failed');
+    const handleConnectError = (error: unknown) => fail(error, 'connect-error');
+    const handleDisconnect = (reason: unknown) =>
+      fail(
+        typeof reason === 'string' ? `Chat disconnected: ${reason}` : 'Chat disconnected',
+        'send-failed'
+      );
+
+    socket.once('chat:error', handleChatError);
+    socket.once('exception', handleException);
+    socket.once('connect_error', handleConnectError);
+    socket.once('disconnect', handleDisconnect);
+
+    socket.emit('chat:send_e2ee_message', payload, (response?: ChatSendAck | null) => {
       if (!response) {
+        cleanup();
         resolve({ ok: true });
         return;
       }
-      if (response.error) {
-        reject(new Error(response.error));
+
+      if (response.ok === false) {
+        fail(response, response.code || 'send-failed');
         return;
       }
+
+      cleanup();
       resolve(response);
     });
   });
@@ -119,4 +337,63 @@ export const emitChatDelivered = async (messageId: string) => {
 export const emitChatRead = async (messageId: string) => {
   const socket = await connectChatSocket();
   socket.emit('chat:message_read', { messageId });
+};
+
+export const emitChatConversationRead = async (peerUserId: string) => {
+  const socket = await connectChatSocket();
+
+  return new Promise<ChatConversationReadAck>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new ChatTransportError('Chat read sync timed out', 'transport-timeout'));
+    }, SOCKET_TIMEOUT_MS);
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off('chat:error', handleChatError);
+      socket.off('exception', handleException);
+      socket.off('connect_error', handleConnectError);
+      socket.off('disconnect', handleDisconnect);
+    };
+
+    const fail = (error: unknown, fallbackCode: ChatTransportErrorCode) => {
+      cleanup();
+      reject(resolveSocketError(error, fallbackCode));
+    };
+
+    const handleChatError = (error: unknown) => fail(error, 'unauthorized-socket');
+    const handleException = (error: unknown) => fail(error, 'send-failed');
+    const handleConnectError = (error: unknown) => fail(error, 'connect-error');
+    const handleDisconnect = (reason: unknown) =>
+      fail(
+        typeof reason === 'string' ? `Chat disconnected: ${reason}` : 'Chat disconnected',
+        'send-failed'
+      );
+
+    socket.once('chat:error', handleChatError);
+    socket.once('exception', handleException);
+    socket.once('connect_error', handleConnectError);
+    socket.once('disconnect', handleDisconnect);
+
+    socket.emit('chat:conversation_read', { peerUserId }, (response?: ChatConversationReadAck) => {
+      if (!response) {
+        cleanup();
+        resolve({
+          ok: true,
+          peerUserId,
+          updatedCount: 0,
+          messageIds: [],
+        });
+        return;
+      }
+
+      if (response.ok === false) {
+        fail(response, response.code || 'send-failed');
+        return;
+      }
+
+      cleanup();
+      resolve(response);
+    });
+  });
 };

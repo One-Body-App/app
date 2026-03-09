@@ -31,6 +31,9 @@ export type VideoDimensions = {
 export type VideoEditRecipe = {
   sourceUri: string;
   caption: string;
+  trimStartMs: number;
+  trimEndMs: number;
+  trimDurationMs?: number;
   ratioId: VideoRatioId;
   cropRect: VideoCropRect;
   transform: VideoTransformState;

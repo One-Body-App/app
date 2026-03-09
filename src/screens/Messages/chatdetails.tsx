@@ -4,19 +4,29 @@ import {
   Alert,
   FlatList,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  useColorScheme,
   View,
 } from 'react-native';
+import { KeyboardAvoidingView as KeyboardControllerAvoidingView } from 'react-native-keyboard-controller';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import notifee from '@notifee/react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
+import {
+  GiphyDialog,
+  GiphyDialogEvent,
+  GiphyThemePreset,
+  type GiphyDialogMediaSelectEventHandler,
+} from '@giphy/react-native-sdk';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
 import {
@@ -27,11 +37,18 @@ import {
 import {
   loadAndDecryptConversation,
   ensureChatReady,
-  markMessageRead,
+  markConversationRead,
   sendEncryptedTextMessage,
+  sendEncryptedMediaMessage,
+  parseChatMessagePayload,
 } from '@/src/services/chat/chatClient';
+import {
+  clearActiveDirectConversationPeerId,
+  setActiveDirectConversationPeerId,
+} from '@/src/services/chat/activeConversation';
 import { getPeerPublicKey } from '@/src/services/chat/keyManager';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
+import { uploadChatMediaFile } from '@/src/services/chat/api';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'ChatDetail'>;
 
@@ -42,6 +59,8 @@ type LocalMessage = {
   text: string;
   status: 'sent' | 'delivered' | 'read';
   createdAt: string;
+  mediaType?: 'image' | 'gif';
+  mediaUrl?: string;
 };
 
 const sortMessages = (messages: LocalMessage[]) =>
@@ -55,6 +74,31 @@ const isMissingPeerKeyError = (error: unknown) => {
 const isDMsDisabledError = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error || '');
   return message.toLowerCase().includes('direct messages are disabled');
+};
+
+const getSendFailureMessage = (error: unknown) => {
+  const message = error instanceof Error ? error.message.trim() : String(error || '').trim();
+  if (!message) {
+    return 'Please try again in a moment.';
+  }
+
+  const normalized = message.toLowerCase();
+  if (
+    normalized.includes('timed out') ||
+    normalized.includes('timeout') ||
+    normalized.includes('unable to send message')
+  ) {
+    return 'Please try again in a moment.';
+  }
+
+  if (
+    normalized.includes('secure messaging is unavailable right now') ||
+    normalized.includes('secure messaging key setup is unavailable right now')
+  ) {
+    return 'Secure messaging is unavailable right now. Please restart the app and try again.';
+  }
+
+  return message;
 };
 
 const formatConversationTimestamp = (iso?: string) => {
@@ -84,8 +128,30 @@ const formatConversationTimestamp = (iso?: string) => {
   });
 };
 
+const formatMessageTime = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return '';
+  }
+  const diffMs = Date.now() - d.getTime();
+  const diffHrs = diffMs / (1000 * 60 * 60);
+  if (diffHrs < 1) {
+    const mins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    return `${mins} min${mins === 1 ? '' : 's'} ago`;
+  }
+  if (diffHrs < 24) {
+    const hrs = Math.floor(diffHrs);
+    return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+  }
+  const days = Math.floor(diffHrs / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+};
+
+const normalizeMessageText = (text: string) => text.trimEnd();
+
 function ChatDetailScreen({ navigation, route }: Props) {
-  const { colors, dark } = useTheme();
+  const { colors } = useTheme();
+  const isDark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
   const routeParams = route.params as MessagesStackParamsList['ChatDetail'] | undefined;
   const isGroupConversation = routeParams?.conversationType === 'group';
@@ -93,6 +159,8 @@ function ChatDetailScreen({ navigation, route }: Props) {
     routeParams?.conversationType === 'direct' ? String(routeParams.peerUserId || '') : '';
   const peerName =
     routeParams?.conversationType === 'direct' ? String(routeParams.peerName || '') : '';
+  const peerUsername =
+    routeParams?.conversationType === 'direct' ? String(routeParams.peerUsername || '').trim() : '';
   const peerAvatarUri =
     routeParams?.conversationType === 'direct'
       ? String(routeParams.peerAvatarUri || NO_PROFILE_IMAGE)
@@ -108,13 +176,68 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const [loadError, setLoadError] = useState('');
   const [isPeerKeyMissing, setIsPeerKeyMissing] = useState(false);
   const [isDMsDisabled, setIsDMsDisabled] = useState(false);
+  const [isGiphyInitialized, setIsGiphyInitialized] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const flatListRef = useRef<FlatList<LocalMessage>>(null);
+  const lastReadSyncSignatureRef = useRef('');
+  const hasScrolledToLatestRef = useRef(false);
 
   const currentUserId = currentUser?._id ? String(currentUser._id) : '';
+  const hasPeerAvatarImage = Boolean(peerAvatarUri && peerAvatarUri !== NO_PROFILE_IMAGE);
+  const peerInitial = (peerName || 'U').slice(0, 1).toUpperCase();
+
+  const renderIncomingAvatar = () => {
+    if (hasPeerAvatarImage) {
+      return <Image source={{ uri: peerAvatarUri }} style={styles.incomingAvatar} />;
+    }
+
+    return (
+      <View style={styles.incomingAvatarFallback}>
+        <Text style={styles.incomingAvatarInitial}>{peerInitial}</Text>
+      </View>
+    );
+  };
 
   useEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isGroupConversation && peerUserId) {
+        setActiveDirectConversationPeerId(peerUserId);
+      }
+
+      return () => {
+        clearActiveDirectConversationPeerId(peerUserId);
+      };
+    }, [isGroupConversation, peerUserId])
+  );
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    notifee.cancelAllNotifications().catch(() => undefined);
+    notifee.setBadgeCount(0).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    try {
+      GiphyDialog.configure({ theme: GiphyThemePreset.Dark });
+    } catch {
+      // ignore config failure
+    }
+    setIsGiphyInitialized(true);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -126,6 +249,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
       setLoadError('');
       setIsPeerKeyMissing(false);
       setIsDMsDisabled(false);
+      hasScrolledToLatestRef.current = false;
 
       if (isGroupConversation) {
         setMessages([]);
@@ -172,14 +296,19 @@ function ChatDetailScreen({ navigation, route }: Props) {
 
         setMessages(
           sortMessages(
-            history.map((entry) => ({
-              id: entry._id,
-              senderId: String(entry.senderId),
-              receiverId: String(entry.receiverId),
-              text: entry.plaintext,
-              status: entry.status,
-              createdAt: entry.createdAt || new Date().toISOString(),
-            }))
+            history.map((entry) => {
+              const parsed = parseChatMessagePayload(entry.plaintext);
+              return {
+                id: entry._id,
+                senderId: String(entry.senderId),
+                receiverId: String(entry.receiverId),
+                text: parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text,
+                status: entry.status,
+                createdAt: entry.createdAt || new Date().toISOString(),
+                mediaType: parsed.type !== 'text' ? parsed.type : undefined,
+                mediaUrl: parsed.mediaUrl,
+              };
+            })
           )
         );
 
@@ -209,16 +338,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
                   id: String(payload._id),
                   senderId,
                   receiverId,
-                  text: '[Encrypted message] ',
+                  text: normalizeMessageText('[Encrypted message]'),
                   status: payload.status || 'sent',
                   createdAt: payload.createdAt || new Date().toISOString(),
                 },
               ])
             );
-
-            if (receiverId === currentUserId && payload?._id) {
-              await markMessageRead(String(payload._id), token || undefined).catch(() => undefined);
-            }
           });
 
           offStatus = await onChatMessageStatus((statusPayload: any) => {
@@ -281,9 +406,57 @@ function ChatDetailScreen({ navigation, route }: Props) {
     }
 
     requestAnimationFrame(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: hasScrolledToLatestRef.current });
+      hasScrolledToLatestRef.current = true;
     });
   }, [messages]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isGroupConversation || !peerUserId || !currentUserId || messages.length < 1) {
+        return undefined;
+      }
+
+      const unreadIncomingIds = messages
+        .filter(
+          (message) =>
+            message.senderId === peerUserId &&
+            message.receiverId === currentUserId &&
+            message.status !== 'read'
+        )
+        .map((message) => message.id);
+
+      if (unreadIncomingIds.length < 1) {
+        lastReadSyncSignatureRef.current = '';
+        return undefined;
+      }
+
+      const signature = unreadIncomingIds.join(',');
+      if (lastReadSyncSignatureRef.current === signature) {
+        return undefined;
+      }
+
+      lastReadSyncSignatureRef.current = signature;
+      markConversationRead(peerUserId, token || undefined)
+        .then((result) => {
+          if (!result.ok || result.messageIds.length < 1) {
+            return;
+          }
+
+          const readMessageIds = new Set(result.messageIds.map(String));
+          setMessages((prev) =>
+            prev.map((message) =>
+              readMessageIds.has(message.id) ? { ...message, status: 'read' } : message
+            )
+          );
+        })
+        .catch(() => {
+          lastReadSyncSignatureRef.current = '';
+        });
+
+      return undefined;
+    }, [currentUserId, isGroupConversation, messages, peerUserId, token])
+  );
 
   const peerLabel = peerName || 'This user';
 
@@ -317,7 +490,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
         );
         return;
       }
-      Alert.alert('Unable to send message', 'Please try again in a moment.');
+      Alert.alert('Unable to send message', getSendFailureMessage(error));
       return;
     }
 
@@ -342,7 +515,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
         token: token || undefined,
       });
 
-      const ackMessage = response?.message;
+      const ackMessage = response?.ok ? response.message : undefined;
       if (ackMessage?._id) {
         setMessages((prev) =>
           prev.map((item) =>
@@ -364,7 +537,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
           `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
         );
       } else {
-        Alert.alert('Unable to send message', 'Please try again in a moment.');
+        Alert.alert('Unable to send message', getSendFailureMessage(error));
       }
       setDraft(content);
       setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
@@ -383,6 +556,108 @@ function ChatDetailScreen({ navigation, route }: Props) {
     token,
   ]);
 
+  const isMediaDisabled =
+    isSending ||
+    isUploading ||
+    isGroupConversation ||
+    !peerUserId ||
+    isPeerKeyMissing ||
+    isDMsDisabled;
+
+  const sendMediaMessage = useCallback(
+    async (mediaType: 'image' | 'gif', mediaUrl: string, giphyId?: string) => {
+      if (!peerUserId || isGroupConversation) {
+        return;
+      }
+
+      const optimisticMessage: LocalMessage = {
+        id: `local-${Date.now()}`,
+        senderId: currentUserId || 'me',
+        receiverId: peerUserId,
+        text: '',
+        status: 'sent',
+        createdAt: new Date().toISOString(),
+        mediaType,
+        mediaUrl,
+      };
+
+      setMessages((prev) => sortMessages([...prev, optimisticMessage]));
+
+      try {
+        const response = await sendEncryptedMediaMessage({
+          receiverId: peerUserId,
+          mediaType,
+          mediaUrl: mediaType === 'image' ? mediaUrl : undefined,
+          giphyId: mediaType === 'gif' ? giphyId : undefined,
+          token: token || undefined,
+        });
+
+        const ackMessage = response?.ok ? response.message : undefined;
+        if (ackMessage?._id) {
+          setMessages((prev) =>
+            prev.map((item) =>
+              item.id === optimisticMessage.id
+                ? { ...item, id: String(ackMessage._id), status: ackMessage.status || 'sent' }
+                : item
+            )
+          );
+        }
+      } catch (error) {
+        Alert.alert('Unable to send media', getSendFailureMessage(error));
+        setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
+      }
+    },
+    [currentUserId, isGroupConversation, peerUserId, token]
+  );
+
+  const handlePickImage = useCallback(async () => {
+    if (isMediaDisabled) {
+      return;
+    }
+
+    const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
+    if (result.didCancel || !result.assets?.length) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    if (!asset.uri) {
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const mediaUrl = await uploadChatMediaFile(
+        asset.uri,
+        asset.fileName || `chat_${Date.now()}.jpg`,
+        asset.type || 'image/jpeg',
+        token || undefined
+      );
+      await sendMediaMessage('image', mediaUrl);
+    } catch (error) {
+      Alert.alert('Upload failed', getSendFailureMessage(error));
+    } finally {
+      setIsUploading(false);
+    }
+  }, [isMediaDisabled, sendMediaMessage, token]);
+
+  const handlePickGif = useCallback(() => {
+    if (isMediaDisabled || !isGiphyInitialized) {
+      return;
+    }
+
+    const onSelect: GiphyDialogMediaSelectEventHandler = ({ media }) => {
+      GiphyDialog.removeAllListeners(GiphyDialogEvent.MediaSelected);
+      GiphyDialog.hide();
+      const giphyId = media.id;
+      const mediaUrl = `https://media.giphy.com/media/${giphyId}/giphy.gif`;
+      sendMediaMessage('gif', mediaUrl, giphyId);
+    };
+
+    GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, onSelect);
+    GiphyDialog.show();
+  }, [isGiphyInitialized, isMediaDisabled, sendMediaMessage]);
+
   const headerTitle = useMemo(
     () => (isGroupConversation ? groupName || 'Group Chat' : peerName || 'Secure Chat'),
     [groupName, isGroupConversation, peerName]
@@ -397,7 +672,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const shouldShowConversationList =
     !shouldShowGroupInfo && !shouldShowLoader && !shouldShowErrorState;
   const isComposerDisabled =
-    isSending || isGroupConversation || !peerUserId || isPeerKeyMissing || isDMsDisabled;
+    isSending ||
+    isUploading ||
+    isGroupConversation ||
+    !peerUserId ||
+    isPeerKeyMissing ||
+    isDMsDisabled;
   let composerPlaceholder = 'Write your message';
   if (isGroupConversation) {
     composerPlaceholder = 'Group messaging coming soon';
@@ -408,6 +688,13 @@ function ChatDetailScreen({ navigation, route }: Props) {
   }
 
   const renderMainContent = () => {
+    let emptyStateMessage = 'No messages yet. Send the first message.';
+    if (isPeerKeyMissing) {
+      emptyStateMessage = 'This user has not enabled secure messaging yet.';
+    } else if (isDMsDisabled) {
+      emptyStateMessage = 'This user has turned off direct messages.';
+    }
+
     if (shouldShowGroupInfo) {
       return (
         <View style={styles.groupInfoWrap}>
@@ -446,9 +733,18 @@ function ChatDetailScreen({ navigation, route }: Props) {
         data={messages}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesContent}
+        onContentSizeChange={() => {
+          if (!messages.length) {
+            return;
+          }
+          requestAnimationFrame(() => {
+            flatListRef.current?.scrollToEnd({ animated: hasScrolledToLatestRef.current });
+            hasScrolledToLatestRef.current = true;
+          });
+        }}
         ListHeaderComponent={
           timeLabel ? (
-            <Text style={[styles.timeLabel, { color: dark ? '#9ca3af' : '#8a9098' }]}>
+            <Text style={[styles.timeLabel, { color: isDark ? '#9ca3af' : '#8a9098' }]}>
               {timeLabel}
             </Text>
           ) : null
@@ -456,43 +752,67 @@ function ChatDetailScreen({ navigation, route }: Props) {
         ListEmptyComponent={
           <View style={styles.emptyConversationWrap}>
             <Text style={[styles.emptyConversationText, { color: colors.text }]}>
-              {isPeerKeyMissing
-                ? 'This user has not enabled secure messaging yet.'
-                : isDMsDisabled
-                  ? 'This user has turned off direct messages.'
-                  : 'No messages yet. Send the first message.'}
+              {emptyStateMessage}
             </Text>
           </View>
         }
         renderItem={({ item }) => {
           const isMine = item.senderId === currentUserId;
           const isRead = item.status === 'read';
+          let bubbleColor: { backgroundColor: string; padding?: number } = isMine
+            ? { backgroundColor: '#126b87' }
+            : { backgroundColor: 'rgba(18, 210, 217, 0.15)' };
+          if (item.mediaType) {
+            bubbleColor = { backgroundColor: 'transparent', padding: 0 };
+          }
           return (
             <View style={[styles.messageWrap, isMine ? styles.mineWrap : styles.theirsWrap]}>
-              <View
-                style={[
-                  styles.messageBubble,
-                  isMine ? styles.mineBubble : styles.theirsBubble,
-                  isMine
-                    ? { backgroundColor: '#126b87' }
-                    : { backgroundColor: dark ? colors.card : '#f5f5f6' },
-                ]}
-              >
-                <Text
-                  style={[styles.messageText, isMine ? styles.mineText : { color: colors.text }]}
-                >
-                  {item.text}
-                </Text>
-                <View style={isMine ? styles.mineTail : styles.theirsTail} />
-              </View>
               {isMine ? (
-                <View style={styles.statusWrap}>
-                  {isRead ? (
-                    <Image source={{ uri: peerAvatarUri }} style={styles.statusAvatar} />
-                  ) : null}
-                  <Text style={styles.statusText}>{isRead ? 'Seen' : item.status}</Text>
+                <>
+                  <View style={[styles.messageBubble, styles.mineBubble, bubbleColor]}>
+                    {item.mediaType && item.mediaUrl ? (
+                      <Image
+                        source={{ uri: item.mediaUrl }}
+                        style={styles.mediaBubbleImage}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Text style={[styles.messageText, styles.mineText]}>
+                        {normalizeMessageText(item.text)}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.statusWrap}>
+                    <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
+                    {isRead ? (
+                      <Image source={{ uri: peerAvatarUri }} style={styles.statusAvatar} />
+                    ) : null}
+                    <Text style={styles.statusText}>{isRead ? 'Seen' : item.status}</Text>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.incomingRow}>
+                  {renderIncomingAvatar()}
+                  <View style={styles.incomingBody}>
+                    <View style={[styles.messageBubble, styles.theirsBubble, bubbleColor]}>
+                      {item.mediaType && item.mediaUrl ? (
+                        <Image
+                          source={{ uri: item.mediaUrl }}
+                          style={styles.mediaBubbleImage}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <Text style={[styles.messageText, { color: colors.text }]}>
+                          {normalizeMessageText(item.text)}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.incomingTimeWrap}>
+                      <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
+                    </View>
+                  </View>
                 </View>
-              ) : null}
+              )}
             </View>
           );
         }}
@@ -501,15 +821,15 @@ function ChatDetailScreen({ navigation, route }: Props) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardControllerAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+      behavior="translate-with-padding"
+      keyboardVerticalOffset={0}
     >
       <View
         style={[
           styles.header,
-          { paddingTop: insets.top + 6, borderBottomColor: dark ? '#1b1b1b' : '#ececee' },
+          { paddingTop: insets.top + 6, borderBottomColor: isDark ? '#1b1b1b' : '#ececee' },
         ]}
       >
         <Pressable onPress={() => navigation.goBack()} style={styles.iconButton}>
@@ -523,19 +843,34 @@ function ChatDetailScreen({ navigation, route }: Props) {
           </View>
         )}
         <View style={styles.headerTitleWrap}>
-          <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-            {headerTitle}
-          </Text>
           {!isGroupConversation ? (
-            <MaterialIcons name="verified" size={18} color="#126b87" />
-          ) : null}
+            <View style={styles.headerTitleBlock}>
+              <View style={styles.headerNameRow}>
+                <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+                  {headerTitle}
+                </Text>
+                <MaterialIcons name="verified" size={18} color="#126b87" />
+              </View>
+              {peerUsername ? (
+                <Text style={styles.headerUsername} numberOfLines={1}>
+                  @{peerUsername}
+                </Text>
+              ) : null}
+            </View>
+          ) : (
+            <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+              {headerTitle}
+            </Text>
+          )}
         </View>
         <Pressable style={styles.iconButton}>
           <MaterialIcons name="more-vert" size={24} color="#126b87" />
         </Pressable>
       </View>
 
-      <View style={[styles.contentWrap, { backgroundColor: dark ? colors.background : '#f4f5f7' }]}>
+      <View
+        style={[styles.contentWrap, { backgroundColor: isDark ? colors.background : '#f4f5f7' }]}
+      >
         {renderMainContent()}
       </View>
 
@@ -543,29 +878,43 @@ function ChatDetailScreen({ navigation, route }: Props) {
         style={[
           styles.inputRow,
           {
-            borderTopColor: dark ? '#1b1b1b' : '#ececee',
-            paddingBottom: Math.max(insets.bottom, 8),
-            backgroundColor: dark ? colors.background : '#ffffff',
+            borderTopColor: isDark ? '#1b1b1b' : '#ececee',
+            paddingBottom:
+              Platform.OS === 'ios' && keyboardVisible ? 8 : Math.max(insets.bottom, 8),
+            backgroundColor: isDark ? colors.background : '#ffffff',
           },
         ]}
       >
-        <View style={[styles.inputWrap, { backgroundColor: dark ? colors.card : '#f1f2f4' }]}>
-          <MaterialIcons name="sentiment-satisfied-alt" size={24} color="#68707a" />
+        <View style={[styles.inputWrap, { backgroundColor: isDark ? colors.card : '#f1f2f4' }]}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
+            onFocus={() => setIsComposerFocused(true)}
+            onBlur={() => setIsComposerFocused(false)}
             editable={!isGroupConversation && !isPeerKeyMissing && !isDMsDisabled}
-            placeholder={composerPlaceholder}
+            placeholder={isComposerFocused ? '' : composerPlaceholder}
             placeholderTextColor="#68707a"
             style={[styles.input, { color: colors.text }]}
             multiline
           />
         </View>
-        <Pressable style={styles.utilityButton}>
-          <MaterialIcons name="link" size={20} color="#126b87" />
+        <Pressable
+          onPress={handlePickImage}
+          disabled={isMediaDisabled}
+          style={[styles.utilityButton, isMediaDisabled ? styles.utilityButtonDisabled : null]}
+        >
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#126b87" />
+          ) : (
+            <MaterialIcons name="image" size={20} color="#126b87" />
+          )}
         </Pressable>
-        <Pressable style={styles.utilityButton}>
-          <MaterialIcons name="keyboard-voice" size={20} color="#126b87" />
+        <Pressable
+          onPress={handlePickGif}
+          disabled={isMediaDisabled || !isGiphyInitialized}
+          style={[styles.utilityButton, isMediaDisabled ? styles.utilityButtonDisabled : null]}
+        >
+          <MaterialIcons name="gif" size={24} color="#126b87" />
         </Pressable>
         <Pressable
           onPress={sendMessage}
@@ -581,7 +930,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
           <MaterialIcons name="send" size={20} color="#ffffff" />
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardControllerAvoidingView>
   );
 }
 
@@ -619,13 +968,28 @@ const styles = StyleSheet.create({
   },
   headerTitleWrap: {
     flex: 1,
+    marginLeft: 4,
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerTitleBlock: {
+    minWidth: 0,
+  },
+  headerNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    minWidth: 0,
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
+    flexShrink: 1,
+  },
+  headerUsername: {
+    marginTop: 1,
+    fontSize: 12,
+    color: '#68828a',
   },
   contentWrap: {
     flex: 1,
@@ -693,43 +1057,48 @@ const styles = StyleSheet.create({
   theirsWrap: {
     alignSelf: 'flex-start',
   },
+  incomingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  incomingBody: {
+    flexShrink: 1,
+  },
+  incomingAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginTop: 8,
+  },
+  incomingAvatarFallback: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#126b87',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  incomingAvatarInitial: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   messageBubble: {
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     position: 'relative',
+    alignSelf: 'flex-start',
   },
   mineBubble: {
-    borderBottomRightRadius: 2,
+    alignSelf: 'flex-end',
   },
-  theirsBubble: {
-    borderBottomLeftRadius: 2,
-  },
-  mineTail: {
-    position: 'absolute',
-    right: -1,
-    bottom: -11,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 14,
-    borderTopWidth: 12,
-    borderLeftColor: '#126b87',
-    borderTopColor: 'transparent',
-  },
-  theirsTail: {
-    position: 'absolute',
-    left: -1,
-    bottom: -11,
-    width: 0,
-    height: 0,
-    borderRightWidth: 14,
-    borderTopWidth: 12,
-    borderRightColor: '#f5f5f6',
-    borderTopColor: 'transparent',
-  },
+  theirsBubble: {},
   messageText: {
     fontSize: 16,
-    lineHeight: 23,
+    lineHeight: 18,
   },
   mineText: {
     color: '#fff',
@@ -750,6 +1119,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#68828a',
     textTransform: 'capitalize',
+  },
+  timeText: {
+    fontSize: 11,
+    color: '#68828a',
+  },
+  incomingTimeWrap: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
   },
   inputRow: {
     borderTopWidth: 1,
@@ -781,6 +1158,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#d9ecf1',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  utilityButtonDisabled: {
+    opacity: 0.45,
+  },
+  mediaBubbleImage: {
+    width: 220,
+    aspectRatio: 1.5,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   sendButton: {
     width: 46,

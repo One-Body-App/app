@@ -7,6 +7,7 @@ import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebas
 import { name as appName } from './app.json';
 import { queueRemoteNotificationPayload } from './src/services/notification/pushNotificationStorage';
 import { handleBackgroundChatPush } from './src/services/chat/backgroundHandler';
+import { displayAndroidLocalNotificationIfNeeded } from './src/services/notification/pushNotificationService';
 
 if (typeof process !== 'undefined') {
   process.env = process.env || {};
@@ -22,7 +23,11 @@ setBackgroundMessageHandler(getMessaging(), async (remoteMessage) => {
   if (handledByChat) {
     return;
   }
-  await queueRemoteNotificationPayload(remoteMessage);
+  const payload = await queueRemoteNotificationPayload(remoteMessage);
+  await displayAndroidLocalNotificationIfNeeded(remoteMessage, {
+    isForeground: false,
+    payload,
+  }).catch(() => false);
 });
 
 AppRegistry.registerComponent(appName, () => App);

@@ -13,13 +13,19 @@ import {
   registerDeviceForRemoteMessages,
   deleteToken,
 } from '@react-native-firebase/messaging';
+import notifee, { AndroidImportance, AndroidStyle } from '@notifee/react-native';
 import DeviceInfo from 'react-native-device-info';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { ApiCall } from '@/src/services/api';
-import { queueRemoteNotificationPayload, QueuedPushNotification } from './pushNotificationStorage';
+import {
+  buildQueuedNotificationFromRemoteMessage,
+  queueRemoteNotificationPayload,
+  QueuedPushNotification,
+} from './pushNotificationStorage';
 import { registerChatDeviceToken, unregisterChatDeviceToken } from '@/src/services/chat/api';
 
 const FCM_TOKEN_CACHE_KEY = '@onebody/push/fcm-token';
+const DEFAULT_ANDROID_CHANNEL_ID = 'onebody-default';
 // iOS uses the app icon for push identity; custom push icons are Android-only.
 
 const isAuthorizedStatus = (status: number) =>
@@ -219,7 +225,146 @@ export const syncPushTokenWithBackend = async (
   return undefined;
 };
 
+const ensureAndroidDefaultChannel = async () => {
+  if (Platform.OS !== 'android') {
+    return DEFAULT_ANDROID_CHANNEL_ID;
+  }
+  return notifee.createChannel({
+    id: DEFAULT_ANDROID_CHANNEL_ID,
+    name: 'General Notifications',
+    importance: AndroidImportance.HIGH,
+    sound: 'onebodynotificationwave',
+  });
+};
+
+const toNotificationDataRecord = (value?: Record<string, string>) => {
+  if (!value) {
+    return {};
+  }
+
+  return Object.entries(value).reduce<Record<string, string>>((accumulator, [key, item]) => {
+    if (typeof item === 'string' && item.length > 0) {
+      accumulator[key] = item;
+    }
+    return accumulator;
+  }, {});
+};
+
+const isChatPushPayload = (remoteMessage?: FirebaseMessagingTypes.RemoteMessage | null) =>
+  remoteMessage?.data?.type === 'chat_e2ee_message';
+
+const hasAndroidVisibleNotificationPayload = (
+  remoteMessage?: FirebaseMessagingTypes.RemoteMessage | null
+) => {
+  if (!remoteMessage) {
+    return false;
+  }
+
+  return Boolean(
+    remoteMessage.notification?.title ||
+      remoteMessage.notification?.body ||
+      (remoteMessage.notification as { android?: { imageUrl?: string; icon?: string } } | undefined)
+        ?.android?.imageUrl ||
+      (remoteMessage.notification as { android?: { imageUrl?: string; icon?: string } } | undefined)
+        ?.android?.icon
+  );
+};
+
+const resolveAndroidNotificationImageUrl = (
+  remoteMessage?: FirebaseMessagingTypes.RemoteMessage | null,
+  payload?: QueuedPushNotification | null
+) => {
+  const messageData = payload?.data || {};
+  const androidNotification = remoteMessage?.notification as
+    | { android?: { imageUrl?: string; icon?: string } }
+    | undefined;
+
+  return (
+    messageData.notificationImageUrl ||
+    messageData.imageUrl ||
+    messageData.imageURL ||
+    androidNotification?.android?.imageUrl ||
+    undefined
+  );
+};
+
+export const shouldDisplayAndroidLocalNotification = (
+  remoteMessage?: FirebaseMessagingTypes.RemoteMessage | null,
+  options?: { isForeground?: boolean }
+) => {
+  if (Platform.OS !== 'android' || !remoteMessage || isChatPushPayload(remoteMessage)) {
+    return false;
+  }
+
+  const payload = buildQueuedNotificationFromRemoteMessage(remoteMessage);
+  if (!payload || (!payload.title && !payload.body)) {
+    return false;
+  }
+
+  if (options?.isForeground) {
+    return true;
+  }
+
+  return !hasAndroidVisibleNotificationPayload(remoteMessage);
+};
+
+export const displayAndroidLocalNotificationIfNeeded = async (
+  remoteMessage?: FirebaseMessagingTypes.RemoteMessage | null,
+  options?: {
+    isForeground?: boolean;
+    payload?: QueuedPushNotification | null;
+  }
+) => {
+  if (!shouldDisplayAndroidLocalNotification(remoteMessage, options)) {
+    return false;
+  }
+
+  const payload = options?.payload || buildQueuedNotificationFromRemoteMessage(remoteMessage);
+  if (!payload) {
+    return false;
+  }
+
+  const channelId = await ensureAndroidDefaultChannel();
+  const imageUrl = resolveAndroidNotificationImageUrl(remoteMessage, payload);
+  const notificationData = toNotificationDataRecord({
+    ...(payload.data || {}),
+    notificationId: payload.id,
+    title: payload.title,
+    body: payload.body,
+    url: payload.url || payload.data?.url || payload.data?.deepLink || payload.data?.link || '',
+    type: payload.type || payload.data?.type || 'activity',
+  });
+
+  await notifee.displayNotification({
+    id: payload.id,
+    title: payload.title,
+    body: payload.body,
+    data: notificationData,
+    android: {
+      channelId,
+      pressAction: {
+        id: 'default',
+      },
+      smallIcon: 'ic_stat_notification',
+      color: '#0A84FF',
+      sound: 'onebodynotificationwave',
+      ...(payload.iconUrl ? { largeIcon: payload.iconUrl } : {}),
+      ...(imageUrl
+        ? {
+            style: {
+              type: AndroidStyle.BIGPICTURE,
+              picture: imageUrl,
+            },
+          }
+        : {}),
+    },
+  });
+
+  return true;
+};
+
 export const enablePushNotifications = async (authToken: string, forceTokenSync = false) => {
+  await ensureAndroidDefaultChannel();
   logPushDebug('enable_push_start', {
     forceTokenSync,
     hasAuthToken: Boolean(authToken),

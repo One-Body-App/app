@@ -7,7 +7,7 @@ import { decryptE2EEMessage } from './crypto';
 import { getMyChatKeypair, getPeerPublicKey } from './keyManager';
 
 const CHAT_PREVIEW_PREF_KEY = '@onebody/chat/preview-enabled';
-const CHAT_NOTIFICATION_CHANNEL_ID = 'chat-e2ee';
+const CHAT_NOTIFICATION_CHANNEL_ID = 'chat-e2ee-v2';
 
 const isChatPayload = (remoteMessage: FirebaseMessagingTypes.RemoteMessage) =>
   remoteMessage?.data?.type === 'chat_e2ee_message';
@@ -23,6 +23,7 @@ const ensureAndroidChannel = async () => {
     id: CHAT_NOTIFICATION_CHANNEL_ID,
     name: 'Secure Messages',
     importance: AndroidImportance.HIGH,
+    sound: 'onebodynotificationwave',
   });
 };
 
@@ -49,8 +50,10 @@ const showSecureLocalNotification = async (args: { senderName: string; body: str
         id: 'default',
       },
       smallIcon: 'ic_stat_notification',
+      sound: 'onebodynotificationwave',
     },
     ios: {
+      sound: 'onebodynotificationwave.wav',
       foregroundPresentationOptions: {
         alert: true,
         badge: true,

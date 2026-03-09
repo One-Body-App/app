@@ -1,7 +1,17 @@
 import { ensureChatKeypair, getMyChatKeypair, getPeerPublicKey } from './keyManager';
 import { decryptE2EEMessage, encryptE2EEMessage } from './crypto';
-import { fetchConversationMessages, updateChatMessageStatus } from './api';
-import { emitChatDelivered, emitChatRead, sendChatE2EEMessage } from './socketClient';
+import {
+  fetchConversationMessages,
+  markChatConversationRead,
+  updateChatMessageStatus,
+} from './api';
+import {
+  emitChatConversationRead,
+  emitChatDelivered,
+  emitChatRead,
+  sendChatE2EEMessage,
+  ChatTransportError,
+} from './socketClient';
 
 export const ensureChatReady = async (token?: string) => {
   return ensureChatKeypair({ token });
@@ -112,6 +122,64 @@ export const loadAndDecryptConversation = async (args: {
   return decryptedMessages;
 };
 
+export const parseChatMessagePayload = (
+  plaintext: string
+): { type: 'text' | 'image' | 'gif'; text: string; mediaUrl?: string } => {
+  try {
+    const parsed = JSON.parse(plaintext);
+    if (parsed && typeof parsed === 'object' && parsed.type) {
+      if (parsed.type === 'image' && parsed.url) {
+        return { type: 'image', text: '', mediaUrl: String(parsed.url) };
+      }
+      if (parsed.type === 'gif' && parsed.giphyId) {
+        return {
+          type: 'gif',
+          text: '',
+          mediaUrl: `https://media.giphy.com/media/${parsed.giphyId}/giphy.gif`,
+        };
+      }
+    }
+  } catch {
+    // fall through to plain text
+  }
+  return { type: 'text', text: plaintext };
+};
+
+export const sendEncryptedMediaMessage = async (args: {
+  receiverId: string;
+  mediaType: 'image' | 'gif';
+  mediaUrl?: string;
+  giphyId?: string;
+  token?: string;
+}) => {
+  const [myKeys, peerKey] = await Promise.all([
+    getMyChatKeypair(),
+    getPeerPublicKey(args.receiverId, args.token),
+  ]);
+
+  const plaintext =
+    args.mediaType === 'gif'
+      ? JSON.stringify({ type: 'gif', giphyId: args.giphyId })
+      : JSON.stringify({ type: 'image', url: args.mediaUrl });
+
+  const encrypted = await encryptE2EEMessage({
+    plaintext,
+    myPrivateKeyBase64: myKeys.privateKey,
+    peerPublicKeyBase64: peerKey.publicKey,
+  });
+
+  return sendChatE2EEMessage({
+    receiverId: args.receiverId,
+    encryptedPayload: encrypted.encryptedPayload,
+    nonce: encrypted.nonce,
+    authTag: encrypted.authTag,
+    aad: encrypted.aad,
+    messageType: args.mediaType,
+    senderPublicKeyVersion: myKeys.keyVersion,
+    clientMessageId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+  });
+};
+
 export const markMessageDelivered = async (messageId: string, token?: string) => {
   await emitChatDelivered(messageId);
   await updateChatMessageStatus(messageId, 'delivered', token);
@@ -120,4 +188,32 @@ export const markMessageDelivered = async (messageId: string, token?: string) =>
 export const markMessageRead = async (messageId: string, token?: string) => {
   await emitChatRead(messageId);
   await updateChatMessageStatus(messageId, 'read', token);
+};
+
+export const markConversationRead = async (peerUserId: string, token?: string) => {
+  try {
+    const response = await emitChatConversationRead(peerUserId);
+    if (response.ok) {
+      return response;
+    }
+  } catch (error) {
+    if (
+      !(error instanceof ChatTransportError) ||
+      !['connect-error', 'send-failed', 'transport-timeout'].includes(error.code)
+    ) {
+      throw error;
+    }
+  }
+
+  const response = await markChatConversationRead(peerUserId, token);
+  if (response.status !== 200 || !response.response?.data) {
+    throw new Error(
+      (response.response as { message?: string })?.message || 'Unable to mark conversation as read'
+    );
+  }
+
+  return {
+    ok: true as const,
+    ...response.response.data,
+  };
 };

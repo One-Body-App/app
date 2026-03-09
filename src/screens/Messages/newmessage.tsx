@@ -226,15 +226,12 @@ function NewMessageScreen({ navigation }: Props) {
       conversationType: 'direct',
       peerUserId: contact.id,
       peerName: contact.name,
+      peerUsername: contact.username,
       peerAvatarUri: contact.avatarUri,
     });
   };
 
-  const renderContactRow = (
-    contact: ConnectedContact,
-    subtitle?: string,
-    showChatIcon?: boolean
-  ) => (
+  const renderContactRow = (contact: ConnectedContact, showChatIcon?: boolean) => (
     <Pressable key={contact.id} style={styles.contactRow} onPress={() => openConversation(contact)}>
       {contact.avatarUri ? (
         <Image
@@ -250,9 +247,9 @@ function NewMessageScreen({ navigation }: Props) {
         <Text style={[styles.contactName, { color: colors.text }]} numberOfLines={1}>
           {contact.name}
         </Text>
-        {subtitle ? (
+        {contact.username ? (
           <Text style={styles.contactSubtitle} numberOfLines={1}>
-            {subtitle}
+            @{contact.username}
           </Text>
         ) : null}
       </View>
@@ -301,9 +298,7 @@ function NewMessageScreen({ navigation }: Props) {
     return (
       <>
         <Text style={styles.sectionTitle}>FREQUENT</Text>
-        {frequentContacts.map((contact, index) =>
-          renderContactRow(contact, index === 0 ? 'Active now' : 'Last seen recently', true)
-        )}
+        {frequentContacts.map((contact) => renderContactRow(contact, true))}
 
         <Text style={[styles.sectionTitle, styles.allContactsTitle]}>ALL CONTACTS</Text>
         {groupedContacts.map((group) => (

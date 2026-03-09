@@ -30,6 +30,9 @@ jest.mock('react-native-video-trim', () => ({
 const baseRecipe: VideoEditRecipe = {
   sourceUri: 'file:///tmp/source.mp4',
   caption: 'queued video',
+  trimStartMs: 0,
+  trimEndMs: 20_000,
+  trimDurationMs: 20_000,
   ratioId: '9:16',
   cropRect: {
     x: 100,
@@ -269,5 +272,41 @@ describe('videoUploadQueue', () => {
     const [result] = queue.getItems();
     expect(result.status).toBe('failed');
     expect(result.retryCount).toBe(MAX_RETRY_COUNT + 1);
+  });
+
+  it('fails invalid trim settings before moderation starts', async () => {
+    const storage = createMemoryStorage();
+    const moderateVideo = jest.fn(async () => ({
+      moderationDecision: 'safe' as const,
+      moderationScores: null,
+    }));
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      moderateVideo,
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported.mp4',
+        processedDuration: 20_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo: jest.fn(async () => 'mux_upload_invalid_trim'),
+      createWatchPost: jest.fn(async () => undefined),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue({
+      ...baseRecipe,
+      trimStartMs: 10_000,
+      trimEndMs: 10_000,
+      trimDurationMs: 0,
+    });
+    await queue.waitForIdle();
+
+    const [result] = queue.getItems();
+    expect(result.status).toBe('failed');
+    expect(result.failureCode).toBe('invalid-edit');
+    expect(moderateVideo).not.toHaveBeenCalled();
   });
 });

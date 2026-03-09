@@ -101,8 +101,14 @@ const defaultDependencies: QueueDependencies = {
     const scale = longerSide > 720 ? 720 / longerSide : 1;
     const outputWidth = Math.max(180, Math.round(ratioConfig.outputWidth * scale));
     const outputHeight = Math.max(180, Math.round(ratioConfig.outputHeight * scale));
-    const frameCount = resolveModerationFrameCount(60_000);
+    const trimDurationMs = Math.max(
+      1,
+      recipe.trimDurationMs ?? recipe.trimEndMs - recipe.trimStartMs
+    );
+    const frameCount = resolveModerationFrameCount(trimDurationMs);
     const framePaths = await extractEditedFrames(recipe.sourceUri, {
+      startTime: recipe.trimStartMs,
+      endTime: recipe.trimEndMs,
       cropX: recipe.cropRect.x,
       cropY: recipe.cropRect.y,
       cropWidth: recipe.cropRect.width,
@@ -144,6 +150,8 @@ const defaultDependencies: QueueDependencies = {
       removeAfterFailedToShare: false,
       enableRotation: false,
       rotationAngle: 0,
+      startTime: recipe.trimStartMs,
+      endTime: recipe.trimEndMs,
       cropX: recipe.cropRect.x,
       cropY: recipe.cropRect.y,
       cropWidth: recipe.cropRect.width,
@@ -424,12 +432,20 @@ export const createVideoUploadQueue = (
       }
 
       if (
+        nextItem.recipe.trimEndMs <= nextItem.recipe.trimStartMs ||
+        nextItem.recipe.trimStartMs < 0 ||
         nextItem.recipe.cropRect.width <= 1 ||
         nextItem.recipe.cropRect.height <= 1 ||
         nextItem.recipe.outputWidth <= 0 ||
         nextItem.recipe.outputHeight <= 0
       ) {
         throw new QueueError('invalid-edit', 'Video crop settings are invalid.');
+      }
+
+      const trimDurationMs =
+        nextItem.recipe.trimDurationMs ?? nextItem.recipe.trimEndMs - nextItem.recipe.trimStartMs;
+      if (trimDurationMs <= 0 || trimDurationMs > 60_050) {
+        throw new QueueError('invalid-edit', 'Video trim settings are invalid.');
       }
 
       await moderateItem(nextItem);

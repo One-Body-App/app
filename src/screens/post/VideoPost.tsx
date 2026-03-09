@@ -173,6 +173,7 @@ export default function VideoPost({ navigation, route }: Props) {
   const pinchStartRef = useRef(1);
   const hasAutoOpenedCameraRef = useRef(false);
   const hasShownTrimWarningRef = useRef(false);
+  const videoPreviewRef = useRef<any>(null);
 
   const [loading, setLoading] = useState(false);
   const [isPreparingVideo, setIsPreparingVideo] = useState(false);
@@ -181,10 +182,11 @@ export default function VideoPost({ navigation, route }: Props) {
   const [isMuted, setIsMuted] = useState(false);
   const [caption, setCaption] = useState('');
   const [originalVideoUri, setOriginalVideoUri] = useState('');
-  const [trimmedVideoUri, setTrimmedVideoUri] = useState('');
   const [editableVideoUri, setEditableVideoUri] = useState('');
   const [videoDuration, setVideoDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [trimStartMs, setTrimStartMs] = useState(0);
+  const [trimEndMs, setTrimEndMs] = useState(0);
   const [videoNaturalSize, setVideoNaturalSize] = useState<VideoDimensions>({
     width: 0,
     height: 0,
@@ -195,8 +197,21 @@ export default function VideoPost({ navigation, route }: Props) {
   const [cropConfirmed, setCropConfirmed] = useState(false);
 
   const hasVideo = Boolean(editableVideoUri);
-  const currentDurationSeconds = Math.max(0, videoDuration || 0);
-  const requiresTrim = currentDurationSeconds > 60.05;
+  const sourceDurationMs = Math.max(0, Math.round((videoDuration || 0) * 1000));
+  const hasTrimSelection = trimEndMs > trimStartMs;
+  const resolvedTrimStartMs = hasTrimSelection ? trimStartMs : 0;
+  const resolvedTrimEndMs = hasTrimSelection ? trimEndMs : sourceDurationMs;
+  const selectedDurationMs = Math.max(
+    0,
+    resolvedTrimEndMs > resolvedTrimStartMs
+      ? resolvedTrimEndMs - resolvedTrimStartMs
+      : sourceDurationMs
+  );
+  const selectedDurationSeconds = selectedDurationMs / 1000;
+  const displayCurrentTime = hasTrimSelection
+    ? Math.max(0, Math.min(selectedDurationSeconds, currentTime - resolvedTrimStartMs / 1000))
+    : currentTime;
+  const requiresTrim = selectedDurationMs > 60_050;
   const ratioConfig = VIDEO_RATIO_CONFIG[selectedRatio];
   const cropFrame = useMemo(
     () => resolveEditorCropRect(previewStageSize.width, previewStageSize.height, selectedRatio),
@@ -225,6 +240,11 @@ export default function VideoPost({ navigation, route }: Props) {
     setCropConfirmed(false);
   }, []);
 
+  const resetTrimState = useCallback(() => {
+    setTrimStartMs(0);
+    setTrimEndMs(0);
+  }, []);
+
   const applySelectedVideo = useCallback(
     (nextPath: string, nextOriginalPath?: string) => {
       if (nextOriginalPath) {
@@ -233,12 +253,13 @@ export default function VideoPost({ navigation, route }: Props) {
       setEditableVideoUri(nextPath);
       setCurrentTime(0);
       setVideoDuration(0);
+      resetTrimState();
       setVideoNaturalSize({ width: 0, height: 0 });
       setIsPlaying(true);
       hasShownTrimWarningRef.current = false;
       resetCropState();
     },
-    [resetCropState]
+    [resetCropState, resetTrimState]
   );
 
   const resolveVideoUri = useCallback(async (asset?: Asset, explicitUri?: string) => {
@@ -305,12 +326,46 @@ export default function VideoPost({ navigation, route }: Props) {
         setVideoNaturalSize({ width: rawWidth, height: rawHeight });
       }
 
-      if (nextDuration > 60 && !hasShownTrimWarningRef.current) {
+      if (hasTrimSelection) {
+        requestAnimationFrame(() => {
+          videoPreviewRef.current?.seek?.(resolvedTrimStartMs / 1000);
+          setCurrentTime(resolvedTrimStartMs / 1000);
+        });
+      }
+
+      if (nextDuration > 60 && !hasShownTrimWarningRef.current && !hasTrimSelection) {
         hasShownTrimWarningRef.current = true;
         toast.show('Trim this video to 60 seconds or less before posting.', { type: 'warning' });
       }
     },
-    [toast]
+    [hasTrimSelection, resolvedTrimStartMs, toast]
+  );
+
+  const handleVideoProgress = useCallback(
+    (data: any) => {
+      const nextTime = Number(data?.currentTime || 0);
+      if (!Number.isFinite(nextTime)) {
+        return;
+      }
+
+      if (hasTrimSelection) {
+        const trimStartSeconds = resolvedTrimStartMs / 1000;
+        const trimEndSeconds = resolvedTrimEndMs / 1000;
+        if (nextTime >= trimEndSeconds - 0.05) {
+          setCurrentTime(trimStartSeconds);
+          videoPreviewRef.current?.seek?.(trimStartSeconds);
+          return;
+        }
+
+        if (nextTime < trimStartSeconds - 0.05) {
+          setCurrentTime(trimStartSeconds);
+          return;
+        }
+      }
+
+      setCurrentTime(nextTime);
+    },
+    [hasTrimSelection, resolvedTrimEndMs, resolvedTrimStartMs]
   );
 
   const applyVideoFromPickerResponse = useCallback(
@@ -338,7 +393,6 @@ export default function VideoPost({ navigation, route }: Props) {
           return;
         }
 
-        setTrimmedVideoUri('');
         setSelectedRatio('9:16');
         applySelectedVideo(nextPath, nextPath);
       } catch {
@@ -393,7 +447,6 @@ export default function VideoPost({ navigation, route }: Props) {
             toast.show('Unable to load selected video.', { type: 'danger' });
             return;
           }
-          setTrimmedVideoUri('');
           setSelectedRatio('9:16');
           applySelectedVideo(preparedPath, preparedPath);
         } catch {
@@ -438,7 +491,7 @@ export default function VideoPost({ navigation, route }: Props) {
       return;
     }
 
-    const editorPath = getTrimEditorPath(editableVideoUri);
+    const editorPath = getTrimEditorPath(originalVideoUri || editableVideoUri);
     if (!editorPath) {
       toast.show('Unable to open trim editor.', { type: 'danger' });
       return;
@@ -447,6 +500,7 @@ export default function VideoPost({ navigation, route }: Props) {
     try {
       showEditor(editorPath, {
         saveToPhoto: false,
+        emitTrimSelectionOnly: true,
         enableSaveDialog: false,
         alertOnFailToLoad: true,
         alertOnFailMessage: 'Failed to load video',
@@ -454,17 +508,17 @@ export default function VideoPost({ navigation, route }: Props) {
         maxDuration: 60,
         cancelDialogMessage: 'Discard your trim changes?',
         cancelDialogConfirmText: 'Discard',
+        trimmingText: 'Preparing trim selection...',
       });
     } catch {
       toast.show('Unable to open trim editor.', { type: 'danger' });
     }
-  }, [editableVideoUri, getTrimEditorPath, toast]);
+  }, [editableVideoUri, getTrimEditorPath, originalVideoUri, toast]);
 
-  const handleUseOriginalVideo = useCallback(() => {
+  const handleClearTrim = useCallback(() => {
     if (!originalVideoUri) {
       return;
     }
-    setTrimmedVideoUri('');
     applySelectedVideo(originalVideoUri);
   }, [applySelectedVideo, originalVideoUri]);
 
@@ -486,13 +540,13 @@ export default function VideoPost({ navigation, route }: Props) {
     }
 
     setCropConfirmed(true);
-    toast.show('Crop confirmed. You can post this in the background now.', {
+    toast.show('Crop confirmed locally. Background processing starts after you tap Done.', {
       type: 'success',
     });
   }, [hasVideo, toast, videoNaturalSize.height, videoNaturalSize.width]);
 
   const handleDonePress = useCallback(async () => {
-    if (!editableVideoUri) {
+    if (!originalVideoUri) {
       toast.show('Please select or record a video first.', { type: 'danger' });
       return;
     }
@@ -516,8 +570,11 @@ export default function VideoPost({ navigation, route }: Props) {
     try {
       const sourceCrop = resolveSourceCrop(videoNaturalSize, cropFrame, clampedTransform);
       await enqueuePendingVideoUpload({
-        sourceUri: editableVideoUri,
+        sourceUri: originalVideoUri,
         caption,
+        trimStartMs: resolvedTrimStartMs,
+        trimEndMs: resolvedTrimEndMs,
+        trimDurationMs: selectedDurationMs,
         ratioId: selectedRatio,
         cropRect: sourceCrop,
         transform: clampedTransform,
@@ -563,13 +620,16 @@ export default function VideoPost({ navigation, route }: Props) {
     clampedTransform,
     cropConfirmed,
     cropFrame,
-    editableVideoUri,
+    originalVideoUri,
     navigation,
     ratioConfig.outputHeight,
     ratioConfig.outputWidth,
     ratioConfig.videoBitrate,
     requiresTrim,
+    resolvedTrimEndMs,
+    resolvedTrimStartMs,
     selectedRatio,
+    selectedDurationMs,
     toast,
     videoNaturalSize,
   ]);
@@ -647,7 +707,6 @@ export default function VideoPost({ navigation, route }: Props) {
       try {
         const resolvedPath = await resolveVideoUri(undefined, incomingVideoPath);
         if (!cancelled && resolvedPath) {
-          setTrimmedVideoUri('');
           setSelectedRatio('9:16');
           applySelectedVideo(resolvedPath, resolvedPath);
         }
@@ -670,21 +729,21 @@ export default function VideoPost({ navigation, route }: Props) {
 
   useEffect(() => {
     listenerSubscription.current.onFinishTrimming = VideoTrim.onFinishTrimming(
-      async ({ outputPath }) => {
-        if (!outputPath) {
+      ({ startTime, endTime }) => {
+        const nextTrimStartMs = Math.max(0, Math.round(Number(startTime || 0)));
+        const nextTrimEndMs = Math.max(nextTrimStartMs, Math.round(Number(endTime || 0)));
+        if (nextTrimEndMs <= nextTrimStartMs) {
+          toast.show('Unable to save trim selection.', { type: 'danger' });
           return;
         }
 
-        try {
-          const resolvedPath = await resolveVideoUri(undefined, outputPath);
-          if (resolvedPath) {
-            setTrimmedVideoUri(resolvedPath);
-            applySelectedVideo(resolvedPath);
-            toast.show('Trim saved. Confirm your crop to continue.', { type: 'success' });
-          }
-        } catch {
-          toast.show('Unable to load trimmed video.', { type: 'danger' });
-        }
+        setTrimStartMs(nextTrimStartMs);
+        setTrimEndMs(nextTrimEndMs);
+        setCurrentTime(nextTrimStartMs / 1000);
+        requestAnimationFrame(() => {
+          videoPreviewRef.current?.seek?.(nextTrimStartMs / 1000);
+        });
+        toast.show('Trim selection saved. Confirm your crop to continue.', { type: 'success' });
       }
     );
 
@@ -697,7 +756,19 @@ export default function VideoPost({ navigation, route }: Props) {
       listenerSubscription.current.onError?.remove();
       listenerSubscription.current = {};
     };
-  }, [applySelectedVideo, resolveVideoUri, toast]);
+  }, [toast]);
+
+  useEffect(() => {
+    if (!hasVideo || !hasTrimSelection) {
+      return;
+    }
+
+    const trimStartSeconds = resolvedTrimStartMs / 1000;
+    setCurrentTime(trimStartSeconds);
+    requestAnimationFrame(() => {
+      videoPreviewRef.current?.seek?.(trimStartSeconds);
+    });
+  }, [hasTrimSelection, hasVideo, resolvedTrimStartMs]);
 
   useEffect(() => {
     if (!route.params?.openCameraOnMount || hasAutoOpenedCameraRef.current) {
@@ -778,13 +849,14 @@ export default function VideoPost({ navigation, route }: Props) {
                   ]}
                 >
                   <CustomVideo
+                    ref={videoPreviewRef}
                     source={{ uri: editableVideoUri }}
                     resizeMode="cover"
                     paused={!isPlaying}
                     muted={isMuted}
                     onLoad={handleVideoLoad}
-                    onProgress={(data: any) => setCurrentTime(data.currentTime)}
-                    repeat
+                    onProgress={handleVideoProgress}
+                    repeat={!hasTrimSelection}
                     style={[
                       styles.videoSurface,
                       {
@@ -870,7 +942,7 @@ export default function VideoPost({ navigation, route }: Props) {
 
                 <View style={styles.timeBadge}>
                   <Text style={[styles.timeText, { color: '#f6f6f7' }]}>
-                    {formatTime(currentTime)} / {formatTime(videoDuration)}
+                    {formatTime(displayCurrentTime)} / {formatTime(selectedDurationSeconds)}
                   </Text>
                 </View>
               </>
@@ -932,14 +1004,18 @@ export default function VideoPost({ navigation, route }: Props) {
           <Text style={[styles.statusBody, { color: palette.textSecondary }]}>
             {requiresTrim
               ? 'This clip is longer than 60 seconds. Trim it before posting.'
-              : `Current source length: ${formatTime(currentDurationSeconds)}. ${cropStatusLabel}.`}
+              : `Selected clip length: ${formatTime(selectedDurationSeconds)}. ${cropStatusLabel}.`}
           </Text>
           <Text style={[styles.statusMeta, { color: cropStatusColor }]}>
             Ratio {selectedRatio} • Output {ratioConfig.outputWidth}x{ratioConfig.outputHeight}
           </Text>
-          {trimmedVideoUri ? (
+          <Text style={[styles.statusMeta, { color: palette.textMuted }]}>
+            Full source: {formatTime(videoDuration)}.
+          </Text>
+          {hasTrimSelection ? (
             <Text style={[styles.statusMeta, { color: palette.textMuted }]}>
-              Using trimmed source. You can switch back to the original clip.
+              Trim range: {formatTime(resolvedTrimStartMs / 1000)} -{' '}
+              {formatTime(resolvedTrimEndMs / 1000)}. Upload starts only after Done.
             </Text>
           ) : null}
         </View>
@@ -1022,11 +1098,11 @@ export default function VideoPost({ navigation, route }: Props) {
             palette={palette}
             disabled={!hasVideo}
           />
-          {trimmedVideoUri ? (
+          {hasTrimSelection ? (
             <ActionButton
               icon="history"
-              label="Original"
-              onPress={handleUseOriginalVideo}
+              label="Full Clip"
+              onPress={handleClearTrim}
               styles={styles}
               palette={palette}
             />

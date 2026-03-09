@@ -1,5 +1,5 @@
 import * as Keychain from 'react-native-keychain';
-import sodium from 'react-native-libsodium';
+import { base64_variants, crypto_box_keypair, ready, to_base64 } from 'react-native-libsodium';
 import DeviceInfo from 'react-native-device-info';
 import { fetchUserChatPublicKey, registerChatPublicKey } from './api';
 
@@ -21,7 +21,16 @@ const peerKeyCache = new Map<
   { publicKey: string; keyVersion: number; expiresAt: number }
 >();
 
-const toBase64 = (bytes: Uint8Array) => sodium.to_base64(bytes, sodium.base64_variants.ORIGINAL);
+const KEY_INIT_ERROR =
+  'Secure messaging key setup is unavailable right now. Please restart the app and try again.';
+
+const ensureKeyBindings = () => {
+  if (typeof crypto_box_keypair !== 'function' || typeof to_base64 !== 'function') {
+    throw new Error(KEY_INIT_ERROR);
+  }
+};
+
+const toBase64 = (bytes: Uint8Array) => to_base64(bytes, base64_variants.ORIGINAL);
 
 const normalizeDeviceId = (deviceId?: string) => {
   const fallback = DeviceInfo.getUniqueIdSync();
@@ -60,8 +69,9 @@ const saveStoredChatKeypair = async (value: StoredChatKeypair) => {
 };
 
 const generateNewKeypair = async (deviceId?: string): Promise<StoredChatKeypair> => {
-  await sodium.ready;
-  const pair = sodium.crypto_box_keypair();
+  await ready;
+  ensureKeyBindings();
+  const pair = crypto_box_keypair();
 
   return {
     algorithm: 'x25519',

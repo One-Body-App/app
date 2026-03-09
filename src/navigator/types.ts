@@ -206,6 +206,7 @@ export type MessagesStackParamsList = {
         conversationType: 'direct';
         peerUserId: string;
         peerName: string;
+        peerUsername?: string;
         peerAvatarUri?: string;
       }
     | {

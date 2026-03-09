@@ -33,6 +33,7 @@ import {
   getInitialNotification,
   onNotificationOpenedApp,
 } from '@react-native-firebase/messaging';
+import notifee, { EventType } from '@notifee/react-native';
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
@@ -70,6 +71,7 @@ import { headerOptions } from './global'; // Adjust path
 import { PostType } from '@/utils/types';
 import {
   clearCachedPushToken,
+  displayAndroidLocalNotificationIfNeeded,
   disablePushNotifications,
   enablePushNotifications,
   subscribeToForegroundPushMessages,
@@ -77,9 +79,8 @@ import {
 } from '@/src/services/notification/pushNotificationService';
 import { queueRemoteNotificationPayload } from '@/src/services/notification/pushNotificationStorage';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
+import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import { resumePendingVideoUploads } from '@/src/services/videoProcessing/videoUploadQueue';
-
-const closeIcon = require('../assets/images/close.png'); // Adjust path
 
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
 // This fixes Android crash: "Cannot read property 'DocumentDir' of null"
@@ -732,7 +733,7 @@ function AppContent() {
     }
   };
 
-  const normalizeLink = (rawUrl?: string | null) => {
+  const normalizeLink = useCallback((rawUrl?: string | null) => {
     if (!rawUrl) {
       return rawUrl ?? null;
     }
@@ -773,7 +774,7 @@ function AppContent() {
       }
       return rawUrl;
     }
-  };
+  }, []);
 
   // Deep link deduplication to prevent iOS from processing the same link twice
   const lastProcessedUrl = useRef<{ url: string; timestamp: number } | null>(null);
@@ -798,7 +799,7 @@ function AppContent() {
     return true;
   };
 
-  const shouldIgnoreAuthLink = (url?: string | null) => {
+  const shouldIgnoreAuthLink = useCallback((url?: string | null) => {
     if (!url) return false;
     if (!ignoreAuthLinksRef.current) return false;
     return (
@@ -807,7 +808,7 @@ function AppContent() {
       url.includes('/verify/') ||
       url.includes('/verify-email')
     );
-  };
+  }, []);
 
   const openNotificationsCenter = useCallback(() => {
     navigationRef.dispatch(
@@ -826,8 +827,28 @@ function AppContent() {
     );
   }, [navigationRef]);
 
+  const handleLocalNotificationOpen = useCallback(
+    (data?: Record<string, string> | null) => {
+      const url = normalizeLink(data?.url || data?.deepLink || data?.link || null);
+      if (shouldIgnoreAuthLink(url)) {
+        return;
+      }
+
+      if (url) {
+        Linking.openURL(url).catch(() => {
+          openNotificationsCenter();
+        });
+        return;
+      }
+
+      openNotificationsCenter();
+    },
+    [normalizeLink, openNotificationsCenter, shouldIgnoreAuthLink]
+  );
+
   useEffect(() => {
     if (!token) {
+      disconnectChatSocket();
       clearCachedPushToken().catch(() => undefined);
       return undefined;
     }
@@ -854,17 +875,27 @@ function AppContent() {
     bootstrapPush().catch(() => undefined);
 
     const unsubscribeTokenRefresh = subscribeToPushTokenRefresh(() => token, shouldKeepSyncing);
-    const unsubscribeForeground = subscribeToForegroundPushMessages(async (payload) => {
-      if (!isMounted) {
-        return;
-      }
+    const unsubscribeForeground = subscribeToForegroundPushMessages(
+      async (payload, remoteMessage) => {
+        if (!isMounted) {
+          return;
+        }
 
-      const toastMessage = payload.body ? `${payload.title}\n${payload.body}` : payload.title;
-      toast.show(toastMessage, {
-        placement: 'top',
-        type: 'normal',
-      });
-    });
+        if (Platform.OS === 'android') {
+          await displayAndroidLocalNotificationIfNeeded(remoteMessage, {
+            isForeground: true,
+            payload,
+          });
+          return;
+        }
+
+        const toastMessage = payload.body ? `${payload.title}\n${payload.body}` : payload.title;
+        toast.show(toastMessage, {
+          placement: 'top',
+          type: 'normal',
+        });
+      }
+    );
 
     return () => {
       isMounted = false;
@@ -872,6 +903,37 @@ function AppContent() {
       unsubscribeForeground();
     };
   }, [authState.getProfileData, authState.getProfileData?.pushNotificationsEnabled, token, toast]);
+
+  useEffect(() => {
+    const unsubscribeForegroundNotificationEvent = notifee.onForegroundEvent(
+      async ({ type, detail }) => {
+        if (type !== EventType.PRESS) {
+          return;
+        }
+
+        handleLocalNotificationOpen(
+          detail.notification?.data as Record<string, string> | undefined
+        );
+      }
+    );
+
+    notifee
+      .getInitialNotification()
+      .then((initialNotification) => {
+        if (!initialNotification?.notification?.data) {
+          return;
+        }
+
+        handleLocalNotificationOpen(
+          initialNotification.notification.data as Record<string, string> | undefined
+        );
+      })
+      .catch(() => undefined);
+
+    return () => {
+      unsubscribeForegroundNotificationEvent();
+    };
+  }, [handleLocalNotificationOpen]);
 
   const resolvePostLinkState = (path: string) => {
     const pathWithoutQuery = path.split('?')[0];

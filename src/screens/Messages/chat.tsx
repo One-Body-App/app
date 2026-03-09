@@ -18,6 +18,7 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import ChatIcon from '@/assets/icons/chat.svg';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
+import { getActiveDirectConversationPeerId } from '@/src/services/chat/activeConversation';
 import { ConversationListItem } from '@/src/services/chat/types';
 import { connectChatSocket, onChatMessage } from '@/src/services/chat/socketClient';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
@@ -75,12 +76,19 @@ function ChatListScreen({ navigation }: Props) {
         }
 
         unsubscribeMessage = await onChatMessage((payload: any) => {
-          if (!isMounted || !payload?.senderId) {
+          if (!isMounted || !payload?.senderId || !payload?.receiverId) {
             return;
           }
 
           setConversations((prev) => {
             const senderId = String(payload.senderId);
+            const receiverId = String(payload.receiverId);
+            if (receiverId !== String(currentUser?._id || '')) {
+              return prev;
+            }
+
+            const activePeerUserId = getActiveDirectConversationPeerId();
+            const shouldIncrementUnread = activePeerUserId !== senderId;
             const preview = '[Encrypted message]';
             const nowIso = payload?.createdAt
               ? new Date(payload.createdAt).toISOString()
@@ -93,9 +101,9 @@ function ChatListScreen({ navigation }: Props) {
                 ...existing,
                 lastMessagePreview: preview,
                 updatedAt: nowIso,
-                unreadCount: existing.unreadCount + 1,
+                unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
                 lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
-                lastMessageStatus: 'delivered',
+                lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
               };
               const clone = [...prev];
               clone.splice(existingIndex, 1);
@@ -108,11 +116,13 @@ function ChatListScreen({ navigation }: Props) {
                 conversationType: 'direct',
                 peerUserId: senderId,
                 peerName: payload.senderName || 'OneBody user',
+                peerUsername:
+                  typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
                 lastMessagePreview: preview,
                 updatedAt: nowIso,
-                unreadCount: 1,
+                unreadCount: shouldIncrementUnread ? 1 : 0,
                 lastMessageId: payload?._id ? String(payload._id) : '',
-                lastMessageStatus: 'delivered',
+                lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
               },
               ...prev,
             ];
@@ -135,7 +145,7 @@ function ChatListScreen({ navigation }: Props) {
         unsubscribeMessage();
       }
     };
-  }, [refreshConversations, token]);
+  }, [currentUser?._id, refreshConversations, token]);
 
   useFocusEffect(
     useCallback(() => {
@@ -155,7 +165,13 @@ function ChatListScreen({ navigation }: Props) {
         item.conversationType === 'group'
           ? item.groupName || item.peerName || 'Group chat'
           : item.peerName;
-      return rowTitle.toLowerCase().includes(value);
+      const rowUsername =
+        item.conversationType === 'direct' ? (item.peerUsername?.toLowerCase() ?? '') : '';
+      return (
+        rowTitle.toLowerCase().includes(value) ||
+        rowUsername.includes(value) ||
+        `@${rowUsername}`.includes(value)
+      );
     });
   }, [conversations, query]);
 
@@ -235,12 +251,6 @@ function ChatListScreen({ navigation }: Props) {
           style={[styles.searchInput, { color: colors.text }]}
         />
       </View>
-      {!hasQuery ? (
-        <View style={styles.sectionHeaderWrap}>
-          <Text style={styles.sectionHeaderText}>RECENT CHATS</Text>
-        </View>
-      ) : null}
-
       {loading ? (
         <View style={styles.loaderWrap}>
           <ActivityIndicator color="#12d2d9" />
@@ -260,6 +270,10 @@ function ChatListScreen({ navigation }: Props) {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => {
+                setConversations((prev) =>
+                  prev.map((c) => (c.id === item.id ? { ...c, unreadCount: 0 } : c))
+                );
+
                 const isGroupConversation =
                   item.conversationType === 'group' || Boolean(item.groupId);
                 if (isGroupConversation) {
@@ -279,6 +293,7 @@ function ChatListScreen({ navigation }: Props) {
                   conversationType: 'direct',
                   peerUserId: item.peerUserId,
                   peerName: item.peerName,
+                  peerUsername: item.peerUsername,
                   peerAvatarUri: item.peerAvatarUri,
                 });
               }}
@@ -288,18 +303,24 @@ function ChatListScreen({ navigation }: Props) {
 
               <View style={styles.body}>
                 <View style={styles.nameRow}>
-                  <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
-                    {item.conversationType === 'group'
-                      ? item.groupName || item.peerName || 'Group chat'
-                      : item.peerName}
-                  </Text>
+                  <View style={styles.nameBlock}>
+                    <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                      {item.conversationType === 'group'
+                        ? item.groupName || item.peerName || 'Group chat'
+                        : item.peerName}
+                    </Text>
+                  </View>
                   <Text style={[styles.time, { color: colors.text }]}>
                     {formatTimeLabel(item.updatedAt)}
                   </Text>
                 </View>
                 <View style={styles.previewRow}>
                   <Text style={[styles.preview, { color: colors.text }]} numberOfLines={1}>
-                    {item.lastMessagePreview}
+                    {item.conversationType === 'group'
+                      ? item.lastMessagePreview
+                      : item.peerUsername
+                        ? `@${item.peerUsername}`
+                        : ''}
                   </Text>
                   {item.unreadCount > 0 ? (
                     <View style={styles.unreadPill}>
@@ -401,25 +422,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 18,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   encryptedText: {
     color: 'rgba(18, 107, 135, 0.72)',
-    marginLeft: 6,
-    fontSize: 11,
+    marginLeft: 4,
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 1.1,
-  },
-  sectionHeaderWrap: {
-    paddingTop: 6,
-    paddingBottom: 10,
-  },
-  sectionHeaderText: {
-    color: '#6f9fb2',
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 3,
+    letterSpacing: 0.6,
   },
   listContent: {
     paddingBottom: 126,
@@ -466,16 +477,19 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 10,
   },
-  name: {
+  nameBlock: {
     flex: 1,
+    minWidth: 0,
+  },
+  name: {
     fontSize: 21,
     fontWeight: '600',
   },
   previewRow: {
-    marginTop: 3,
+    marginTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,

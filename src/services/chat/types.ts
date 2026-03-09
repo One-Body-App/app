@@ -8,7 +8,7 @@ export type ChatEnvelope = {
   nonce: string;
   authTag: string;
   aad?: string;
-  messageType: 'text';
+  messageType: 'text' | 'image' | 'gif';
   status: ChatMessageStatus;
   createdAt?: string;
   updatedAt?: string;
@@ -45,10 +45,47 @@ export type SendE2EEMessagePayload = {
   nonce: string;
   authTag: string;
   aad?: string;
-  messageType?: 'text';
+  messageType?: 'text' | 'image' | 'gif';
   clientMessageId?: string;
   senderPublicKeyVersion?: number;
 };
+
+export type ChatTransportErrorCode =
+  | 'unauthorized-socket'
+  | 'sid-mismatch'
+  | 'receiver-not-found'
+  | 'dms-disabled'
+  | 'invalid-payload'
+  | 'send-failed'
+  | 'transport-timeout'
+  | 'connect-error';
+
+export type ChatSendAckSuccess<TMessage = ChatEnvelope> = {
+  ok: true;
+  message?: TMessage;
+};
+
+export type ChatSendAckFailure = {
+  ok: false;
+  error: string;
+  code: ChatTransportErrorCode;
+};
+
+export type ChatSendAck<TMessage = ChatEnvelope> =
+  | ChatSendAckSuccess<TMessage>
+  | ChatSendAckFailure;
+
+export type ChatConversationReadResult = {
+  peerUserId: string;
+  updatedCount: number;
+  messageIds: string[];
+};
+
+export type ChatConversationReadAckSuccess = {
+  ok: true;
+} & ChatConversationReadResult;
+
+export type ChatConversationReadAck = ChatConversationReadAckSuccess | ChatSendAckFailure;
 
 export type CreateChatGroupPayload = {
   name: string;
@@ -60,6 +97,7 @@ export type ConversationListItem = {
   conversationType?: 'direct' | 'group';
   peerUserId: string;
   peerName: string;
+  peerUsername?: string;
   peerAvatarUri?: string;
   groupId?: string;
   groupName?: string;
