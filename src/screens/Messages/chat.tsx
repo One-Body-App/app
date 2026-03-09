@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -22,11 +23,20 @@ import { getActiveDirectConversationPeerId } from '@/src/services/chat/activeCon
 import { ConversationListItem } from '@/src/services/chat/types';
 import { connectChatSocket, onChatMessage } from '@/src/services/chat/socketClient';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
-import { fetchChatConversations } from '@/src/services/chat/api';
+import {
+  deleteChatGroup,
+  fetchChatConversations,
+  hideChatConversation,
+  leaveChatGroup,
+  updateChatConversationMuteState,
+  updateChatConversationReadState,
+} from '@/src/services/chat/api';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
+import { SwipeableChatItem } from '@/src/components/chat/SwipeableChatItem';
 import ChatEmptyState from './chatempty';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'MessagesList'>;
+type ChatSectionFilter = 'active' | 'groups' | 'archived';
 
 const formatTimeLabel = (iso: string) => {
   const date = new Date(iso);
@@ -34,6 +44,37 @@ const formatTimeLabel = (iso: string) => {
     return '';
   }
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
+
+const getConversationTitle = (item: ConversationListItem) =>
+  item.conversationType === 'group'
+    ? item.groupName || item.peerName || 'Group chat'
+    : item.peerName;
+
+const getConversationPreview = (item: ConversationListItem) => {
+  if (item.conversationType === 'group') {
+    return item.lastMessagePreview;
+  }
+
+  if (item.peerUsername) {
+    return `@${item.peerUsername}`;
+  }
+
+  return '';
+};
+
+const getDestructiveActionConfig = (item: ConversationListItem) => {
+  const isGroupConversation = item.conversationType === 'group' || Boolean(item.groupId);
+
+  if (!isGroupConversation) {
+    return { label: 'Archive', iconName: 'archive' as const };
+  }
+
+  if (item.canDeleteGroup) {
+    return { label: 'Delete', iconName: 'delete' as const };
+  }
+
+  return { label: 'Leave', iconName: 'logout' as const };
 };
 
 function ChatListScreen({ navigation }: Props) {
@@ -44,6 +85,7 @@ function ChatListScreen({ navigation }: Props) {
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<ChatSectionFilter>('active');
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const searchInputRef = useRef<TextInput>(null);
 
@@ -52,6 +94,7 @@ function ChatListScreen({ navigation }: Props) {
       token: token || undefined,
       limit: 100,
       includeGroups: true,
+      includeArchived: true,
     });
 
     if (
@@ -104,6 +147,7 @@ function ChatListScreen({ navigation }: Props) {
                 unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
                 lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
                 lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
+                isArchived: false,
               };
               const clone = [...prev];
               clone.splice(existingIndex, 1);
@@ -121,6 +165,7 @@ function ChatListScreen({ navigation }: Props) {
                 lastMessagePreview: preview,
                 updatedAt: nowIso,
                 unreadCount: shouldIncrementUnread ? 1 : 0,
+                isArchived: false,
                 lastMessageId: payload?._id ? String(payload._id) : '',
                 lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
               },
@@ -155,12 +200,27 @@ function ChatListScreen({ navigation }: Props) {
   );
 
   const filteredConversations = useMemo(() => {
+    const sectionFiltered = conversations.filter((item) => {
+      const isGroupConversation = item.conversationType === 'group' || Boolean(item.groupId);
+      const isArchived = Boolean(item.isArchived);
+
+      if (selectedFilter === 'groups') {
+        return isGroupConversation && !isArchived;
+      }
+
+      if (selectedFilter === 'archived') {
+        return isArchived;
+      }
+
+      return !isGroupConversation && !isArchived;
+    });
+
     const value = query.trim().toLowerCase();
     if (!value) {
-      return conversations;
+      return sectionFiltered;
     }
 
-    return conversations.filter((item) => {
+    return sectionFiltered.filter((item) => {
       const rowTitle =
         item.conversationType === 'group'
           ? item.groupName || item.peerName || 'Group chat'
@@ -173,7 +233,7 @@ function ChatListScreen({ navigation }: Props) {
         `@${rowUsername}`.includes(value)
       );
     });
-  }, [conversations, query]);
+  }, [conversations, query, selectedFilter]);
 
   const hasQuery = query.trim().length > 0;
   const hasFilteredConversations = filteredConversations.length > 0;
@@ -213,6 +273,141 @@ function ChatListScreen({ navigation }: Props) {
     );
   };
 
+  const buildConversationTargetPayload = useCallback(
+    (item: ConversationListItem) =>
+      item.conversationType === 'group' || Boolean(item.groupId)
+        ? {
+            conversationType: 'group' as const,
+            groupId: item.groupId || item.id.replace(/^group:/, ''),
+          }
+        : {
+            conversationType: 'direct' as const,
+            peerUserId: item.peerUserId,
+          },
+    []
+  );
+
+  const handleDeleteConversation = useCallback(
+    async (item: ConversationListItem) => {
+      const previousConversations = conversations;
+      const isGroupConversation = item.conversationType === 'group' || Boolean(item.groupId);
+      const canDeleteGroup = isGroupConversation && Boolean(item.canDeleteGroup);
+      const fallbackGroupId =
+        typeof item.id === 'string' && item.id.startsWith('group:')
+          ? item.id.replace(/^group:/, '')
+          : item.id;
+      const resolvedGroupId = item.groupId || fallbackGroupId;
+
+      if (isGroupConversation && !canDeleteGroup) {
+        setConversations((prev) => prev.filter((conversation) => conversation.id !== item.id));
+      } else {
+        setConversations((prev) =>
+          prev.map((conversation) =>
+            conversation.id === item.id ? { ...conversation, isArchived: true } : conversation
+          )
+        );
+      }
+
+      let response;
+      if (isGroupConversation && resolvedGroupId) {
+        response = canDeleteGroup
+          ? await deleteChatGroup(resolvedGroupId, token || undefined)
+          : await leaveChatGroup(resolvedGroupId, token || undefined);
+      } else {
+        response = await hideChatConversation(
+          buildConversationTargetPayload(item),
+          token || undefined
+        );
+      }
+
+      if (response.status !== 200) {
+        setConversations(previousConversations);
+        refreshConversations().catch(() => undefined);
+      }
+    },
+    [buildConversationTargetPayload, conversations, refreshConversations, token]
+  );
+
+  const renderFilters = () => {
+    const filters: { label: string; value: ChatSectionFilter }[] = [
+      { label: 'Active', value: 'active' },
+      { label: 'Groups', value: 'groups' },
+      { label: 'Archived', value: 'archived' },
+    ];
+
+    return (
+      <View style={styles.filterContainer}>
+        {filters.map((filter) => {
+          const isActive = selectedFilter === filter.value;
+          return (
+            <TouchableOpacity
+              key={filter.value}
+              style={[styles.filterItem, isActive && styles.filterItemSelected]}
+              onPress={() => setSelectedFilter(filter.value)}
+            >
+              <View style={[styles.filterUnderline, isActive && styles.filterUnderlineSelected]}>
+                <Text style={[styles.filterText, isActive && styles.filterTextSelected]}>
+                  {filter.label}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const handleMuteConversation = useCallback(
+    async (item: ConversationListItem, nextMuted: boolean) => {
+      setConversations((prev) =>
+        prev.map((conversation) =>
+          conversation.id === item.id ? { ...conversation, isMuted: nextMuted } : conversation
+        )
+      );
+
+      const response = await updateChatConversationMuteState(
+        {
+          ...buildConversationTargetPayload(item),
+          isMuted: nextMuted,
+        },
+        token || undefined
+      );
+
+      if (response.status !== 200) {
+        refreshConversations().catch(() => undefined);
+      }
+    },
+    [buildConversationTargetPayload, refreshConversations, token]
+  );
+
+  const handleToggleConversationRead = useCallback(
+    async (item: ConversationListItem, nextRead: boolean) => {
+      setConversations((prev) =>
+        prev.map((conversation) =>
+          conversation.id === item.id
+            ? {
+                ...conversation,
+                unreadCount: nextRead ? 0 : Math.max(conversation.unreadCount, 1),
+              }
+            : conversation
+        )
+      );
+
+      const response = await updateChatConversationReadState(
+        {
+          ...buildConversationTargetPayload(item),
+          isRead: nextRead,
+        },
+        token || undefined
+      );
+
+      if (response.status !== 200) {
+        refreshConversations().catch(() => undefined);
+      }
+    },
+    [buildConversationTargetPayload, refreshConversations, token]
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.headerRow, { marginTop: insets.top + (isIOS ? 6 : 12) }]}>
@@ -251,6 +446,7 @@ function ChatListScreen({ navigation }: Props) {
           style={[styles.searchInput, { color: colors.text }]}
         />
       </View>
+      {renderFilters()}
       {loading ? (
         <View style={styles.loaderWrap}>
           <ActivityIndicator color="#12d2d9" />
@@ -267,71 +463,101 @@ function ChatListScreen({ navigation }: Props) {
               <ChatEmptyState variant={isSearchEmpty ? 'search' : 'default'} query={query} />
             ) : null
           }
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => {
-                setConversations((prev) =>
-                  prev.map((c) => (c.id === item.id ? { ...c, unreadCount: 0 } : c))
-                );
+          renderItem={({ item }) => {
+            const destructiveAction = getDestructiveActionConfig(item);
 
-                const isGroupConversation =
-                  item.conversationType === 'group' || Boolean(item.groupId);
-                if (isGroupConversation) {
-                  const fallbackGroupId =
-                    typeof item.id === 'string' && item.id.startsWith('group:')
-                      ? item.id.replace(/^group:/, '')
-                      : item.id;
+            return (
+              <SwipeableChatItem
+                item={{
+                  id: item.id,
+                  name: getConversationTitle(item),
+                  message: getConversationPreview(item),
+                  isRead: item.unreadCount === 0,
+                  isMuted: Boolean(item.isMuted),
+                }}
+                destructiveLabel={destructiveAction.label}
+                destructiveIconName={destructiveAction.iconName}
+                enableDestructiveAction={!item.isArchived}
+                enableUtilityActions={!item.isArchived}
+                onDelete={() => {
+                  handleDeleteConversation(item).catch(() => undefined);
+                }}
+                onMute={(_, nextMuted) => {
+                  handleMuteConversation(item, nextMuted).catch(() => undefined);
+                }}
+                onToggleRead={(_, nextRead) => {
+                  handleToggleConversationRead(item, nextRead).catch(() => undefined);
+                }}
+                onPress={() => {
+                  if (item.unreadCount > 0) {
+                    handleToggleConversationRead(item, true).catch(() => undefined);
+                  }
+
+                  const isGroupConversation =
+                    item.conversationType === 'group' || Boolean(item.groupId);
+                  if (isGroupConversation) {
+                    const fallbackGroupId =
+                      typeof item.id === 'string' && item.id.startsWith('group:')
+                        ? item.id.replace(/^group:/, '')
+                        : item.id;
+                    navigation.navigate('ChatDetail', {
+                      conversationType: 'group',
+                      groupId: item.groupId || fallbackGroupId,
+                      groupName: item.groupName || item.peerName || 'Group chat',
+                    });
+                    return;
+                  }
+
                   navigation.navigate('ChatDetail', {
-                    conversationType: 'group',
-                    groupId: item.groupId || fallbackGroupId,
-                    groupName: item.groupName || item.peerName || 'Group chat',
+                    conversationType: 'direct',
+                    peerUserId: item.peerUserId,
+                    peerName: item.peerName,
+                    peerUsername: item.peerUsername,
+                    peerAvatarUri: item.peerAvatarUri,
                   });
-                  return;
-                }
+                }}
+              >
+                <View style={[styles.row, { borderBottomColor: colors.border }]}>
+                  {renderConversationAvatar(item)}
 
-                navigation.navigate('ChatDetail', {
-                  conversationType: 'direct',
-                  peerUserId: item.peerUserId,
-                  peerName: item.peerName,
-                  peerUsername: item.peerUsername,
-                  peerAvatarUri: item.peerAvatarUri,
-                });
-              }}
-              style={[styles.row, { borderBottomColor: colors.border }]}
-            >
-              {renderConversationAvatar(item)}
-
-              <View style={styles.body}>
-                <View style={styles.nameRow}>
-                  <View style={styles.nameBlock}>
-                    <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
-                      {item.conversationType === 'group'
-                        ? item.groupName || item.peerName || 'Group chat'
-                        : item.peerName}
-                    </Text>
-                  </View>
-                  <Text style={[styles.time, { color: colors.text }]}>
-                    {formatTimeLabel(item.updatedAt)}
-                  </Text>
-                </View>
-                <View style={styles.previewRow}>
-                  <Text style={[styles.preview, { color: colors.text }]} numberOfLines={1}>
-                    {item.conversationType === 'group'
-                      ? item.lastMessagePreview
-                      : item.peerUsername
-                        ? `@${item.peerUsername}`
-                        : ''}
-                  </Text>
-                  {item.unreadCount > 0 ? (
-                    <View style={styles.unreadPill}>
-                      <Text style={styles.unreadPillText}>{item.unreadCount}</Text>
+                  <View style={styles.body}>
+                    <View style={styles.nameRow}>
+                      <View style={styles.nameBlock}>
+                        <View style={styles.nameInlineRow}>
+                          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                            {getConversationTitle(item)}
+                          </Text>
+                          {item.unreadCount > 0 && item.conversationType !== 'group' ? (
+                            <View style={styles.inlineUnreadDot} />
+                          ) : null}
+                          {item.isMuted ? (
+                            <MaterialIcons
+                              name="notifications-off"
+                              size={16}
+                              color="rgba(18, 107, 135, 0.72)"
+                            />
+                          ) : null}
+                        </View>
+                      </View>
+                      <Text style={[styles.time, { color: colors.text }]}>
+                        {formatTimeLabel(item.updatedAt)}
+                      </Text>
                     </View>
-                  ) : null}
+                    <View style={styles.previewRow}>
+                      <Text style={[styles.preview, { color: colors.text }]} numberOfLines={1}>
+                        {getConversationPreview(item)}
+                      </Text>
+                      {item.unreadCount > 0 ? (
+                        <View style={styles.unreadPill}>
+                          <Text style={styles.unreadPillText}>{item.unreadCount}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
                 </View>
-                {item.unreadCount > 0 ? <View style={styles.onlineDot} /> : null}
-              </View>
-            </Pressable>
-          )}
+              </SwipeableChatItem>
+            );
+          }}
         />
       )}
       <View style={[styles.encryptedWrap, { bottom: encryptedBottom }]}>
@@ -406,6 +632,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     alignItems: 'center',
     flexDirection: 'row',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 6,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e6eaec',
+    backgroundColor: '#ffffff',
+  },
+  filterItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  filterItemSelected: {},
+  filterUnderline: {
+    paddingBottom: 8,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  filterUnderlineSelected: {
+    borderBottomColor: '#126b87',
+  },
+  filterText: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+    color: '#9aacb1',
+  },
+  filterTextSelected: {
+    color: '#126b87',
+    fontWeight: '700',
   },
   searchInput: {
     marginLeft: 8,
@@ -484,15 +745,22 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  nameInlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
+  },
   name: {
+    flexShrink: 1,
     fontSize: 21,
     fontWeight: '600',
   },
   previewRow: {
-    marginTop: 4,
+    marginTop: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   preview: {
     flex: 1,
@@ -518,16 +786,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  onlineDot: {
-    position: 'absolute',
-    left: -8,
-    bottom: 2,
+  inlineUnreadDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
     backgroundColor: '#22c55e',
     borderWidth: 1.5,
-    borderColor: '#f6f7f8',
+    borderColor: '#ffffff',
   },
   loaderWrap: {
     flex: 1,

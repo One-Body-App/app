@@ -81,6 +81,22 @@ export type ChatConversationReadResult = {
   messageIds: string[];
 };
 
+export type ChatConversationType = 'direct' | 'group';
+
+export type ChatConversationTargetPayload = {
+  conversationType: ChatConversationType;
+  peerUserId?: string;
+  groupId?: string;
+};
+
+export type UpdateChatConversationMutePayload = ChatConversationTargetPayload & {
+  isMuted: boolean;
+};
+
+export type UpdateChatConversationReadStatePayload = ChatConversationTargetPayload & {
+  isRead: boolean;
+};
+
 export type ChatConversationReadAckSuccess = {
   ok: true;
 } & ChatConversationReadResult;
@@ -105,6 +121,10 @@ export type ConversationListItem = {
   lastMessagePreview: string;
   updatedAt: string;
   unreadCount: number;
+  isMuted?: boolean;
+  isHidden?: boolean;
+  isArchived?: boolean;
+  canDeleteGroup?: boolean;
   lastMessageId?: string;
   lastMessageStatus?: ChatMessageStatus;
 };

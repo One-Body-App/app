@@ -2,11 +2,14 @@ import { ApiCall } from '@/src/services/api';
 import {
   ChatEnvelope,
   ChatConversationReadResult,
+  ChatConversationTargetPayload,
   ConversationListItem,
   CreateChatGroupPayload,
   ChatUserKey,
   RegisterChatDeviceTokenPayload,
   RegisterChatKeyPayload,
+  UpdateChatConversationMutePayload,
+  UpdateChatConversationReadStatePayload,
 } from './types';
 
 type ApiEnvelope<T> = {
@@ -57,6 +60,7 @@ export const fetchConversationMessages = async (
 export const fetchChatConversations = async (options?: {
   limit?: number;
   includeGroups?: boolean;
+  includeArchived?: boolean;
   token?: string;
 }) => {
   const query = new URLSearchParams();
@@ -65,6 +69,9 @@ export const fetchChatConversations = async (options?: {
   }
   if (options?.includeGroups) {
     query.set('includeGroups', 'true');
+  }
+  if (options?.includeArchived) {
+    query.set('includeArchived', 'true');
   }
 
   const suffix = query.toString();
@@ -102,6 +109,66 @@ export const markChatConversationRead = async (peerUserId: string, token?: strin
   return ApiCall<ApiEnvelope<ChatConversationReadResult>>({
     route: `chat/conversations/${peerUserId}/read`,
     verb: 'patch',
+    token: withToken(token),
+  });
+};
+
+export const updateChatConversationMuteState = async (
+  payload: UpdateChatConversationMutePayload,
+  token?: string
+) => {
+  return ApiCall<ApiEnvelope<{ isMuted: boolean; peerUserId?: string; groupId?: string }>>({
+    route: 'chat/conversations/state',
+    verb: 'patch',
+    params: payload,
+    token: withToken(token),
+  });
+};
+
+export const updateChatConversationReadState = async (
+  payload: UpdateChatConversationReadStatePayload,
+  token?: string
+) => {
+  return ApiCall<
+    ApiEnvelope<{
+      isRead: boolean;
+      peerUserId?: string;
+      groupId?: string;
+      updatedCount: number;
+      messageIds: string[];
+    }>
+  >({
+    route: 'chat/conversations/state/read',
+    verb: 'patch',
+    params: payload,
+    token: withToken(token),
+  });
+};
+
+export const hideChatConversation = async (
+  payload: ChatConversationTargetPayload,
+  token?: string
+) => {
+  return ApiCall<ApiEnvelope<{ isArchived: boolean; peerUserId?: string; groupId?: string }>>({
+    route: 'chat/conversations/state',
+    verb: 'delete',
+    params: payload,
+    token: withToken(token),
+  });
+};
+
+export const deleteChatGroup = async (groupId: string, token?: string) => {
+  return ApiCall<ApiEnvelope<{ groupId: string; isArchived: boolean }>>({
+    route: `chat/groups/${groupId}`,
+    verb: 'delete',
+    token: withToken(token),
+  });
+};
+
+export const leaveChatGroup = async (groupId: string, token?: string) => {
+  return ApiCall<ApiEnvelope<{ groupId: string; left: boolean; isArchived: boolean }>>({
+    route: `chat/groups/${groupId}/leave`,
+    verb: 'post',
     token: withToken(token),
   });
 };

@@ -5,6 +5,7 @@ import {
   FlatList,
   Image,
   Keyboard,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -20,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import notifee from '@notifee/react-native';
+import ImageView from 'react-native-image-viewing';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {
   GiphyDialog,
@@ -61,6 +63,15 @@ type LocalMessage = {
   createdAt: string;
   mediaType?: 'image' | 'gif';
   mediaUrl?: string;
+};
+
+type PendingMedia = {
+  type: 'image' | 'gif';
+  previewUrl: string;
+  uploadUri?: string;
+  fileName?: string;
+  mimeType?: string;
+  giphyId?: string;
 };
 
 const sortMessages = (messages: LocalMessage[]) =>
@@ -180,6 +191,9 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const [isUploading, setIsUploading] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
+  const [pendingMediaCaption, setPendingMediaCaption] = useState('');
+  const [fullscreenMediaUrl, setFullscreenMediaUrl] = useState<string | null>(null);
   const flatListRef = useRef<FlatList<LocalMessage>>(null);
   const lastReadSyncSignatureRef = useRef('');
   const hasScrolledToLatestRef = useRef(false);
@@ -564,21 +578,33 @@ function ChatDetailScreen({ navigation, route }: Props) {
     isPeerKeyMissing ||
     isDMsDisabled;
 
+  const resetPendingMediaComposer = useCallback(() => {
+    setPendingMedia(null);
+    setPendingMediaCaption('');
+  }, []);
+
   const sendMediaMessage = useCallback(
-    async (mediaType: 'image' | 'gif', mediaUrl: string, giphyId?: string) => {
+    async (args: {
+      mediaType: 'image' | 'gif';
+      mediaUrl: string;
+      giphyId?: string;
+      text?: string;
+    }) => {
       if (!peerUserId || isGroupConversation) {
         return;
       }
+
+      const normalizedCaption = normalizeMessageText(args.text || '');
 
       const optimisticMessage: LocalMessage = {
         id: `local-${Date.now()}`,
         senderId: currentUserId || 'me',
         receiverId: peerUserId,
-        text: '',
+        text: normalizedCaption,
         status: 'sent',
         createdAt: new Date().toISOString(),
-        mediaType,
-        mediaUrl,
+        mediaType: args.mediaType,
+        mediaUrl: args.mediaUrl,
       };
 
       setMessages((prev) => sortMessages([...prev, optimisticMessage]));
@@ -586,9 +612,10 @@ function ChatDetailScreen({ navigation, route }: Props) {
       try {
         const response = await sendEncryptedMediaMessage({
           receiverId: peerUserId,
-          mediaType,
-          mediaUrl: mediaType === 'image' ? mediaUrl : undefined,
-          giphyId: mediaType === 'gif' ? giphyId : undefined,
+          mediaType: args.mediaType,
+          mediaUrl: args.mediaType === 'image' ? args.mediaUrl : undefined,
+          giphyId: args.mediaType === 'gif' ? args.giphyId : undefined,
+          text: normalizedCaption,
           token: token || undefined,
         });
 
@@ -625,21 +652,15 @@ function ChatDetailScreen({ navigation, route }: Props) {
       return;
     }
 
-    setIsUploading(true);
-    try {
-      const mediaUrl = await uploadChatMediaFile(
-        asset.uri,
-        asset.fileName || `chat_${Date.now()}.jpg`,
-        asset.type || 'image/jpeg',
-        token || undefined
-      );
-      await sendMediaMessage('image', mediaUrl);
-    } catch (error) {
-      Alert.alert('Upload failed', getSendFailureMessage(error));
-    } finally {
-      setIsUploading(false);
-    }
-  }, [isMediaDisabled, sendMediaMessage, token]);
+    setPendingMedia({
+      type: 'image',
+      previewUrl: asset.uri,
+      uploadUri: asset.uri,
+      fileName: asset.fileName || `chat_${Date.now()}.jpg`,
+      mimeType: asset.type || 'image/jpeg',
+    });
+    setPendingMediaCaption('');
+  }, [isMediaDisabled]);
 
   const handlePickGif = useCallback(() => {
     if (isMediaDisabled || !isGiphyInitialized) {
@@ -651,12 +672,97 @@ function ChatDetailScreen({ navigation, route }: Props) {
       GiphyDialog.hide();
       const giphyId = media.id;
       const mediaUrl = `https://media.giphy.com/media/${giphyId}/giphy.gif`;
-      sendMediaMessage('gif', mediaUrl, giphyId);
+      setPendingMedia({
+        type: 'gif',
+        previewUrl: mediaUrl,
+        giphyId,
+      });
+      setPendingMediaCaption('');
     };
 
     GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, onSelect);
     GiphyDialog.show();
-  }, [isGiphyInitialized, isMediaDisabled, sendMediaMessage]);
+  }, [isGiphyInitialized, isMediaDisabled]);
+
+  const submitPendingMedia = useCallback(async () => {
+    if (!pendingMedia || !peerUserId || isGroupConversation || isSending || isUploading) {
+      return;
+    }
+
+    if (isPeerKeyMissing) {
+      Alert.alert(
+        'Secure Chat Unavailable',
+        `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
+      );
+      return;
+    }
+
+    if (isDMsDisabled) {
+      Alert.alert('Direct Messages Disabled', `${peerLabel} has turned off direct messages.`);
+      return;
+    }
+
+    try {
+      await getPeerPublicKey(peerUserId, token || undefined);
+    } catch (error) {
+      if (isMissingPeerKeyError(error)) {
+        setIsPeerKeyMissing(true);
+        Alert.alert(
+          'Secure Chat Unavailable',
+          `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
+        );
+        return;
+      }
+      Alert.alert('Unable to send media', getSendFailureMessage(error));
+      return;
+    }
+
+    const caption = normalizeMessageText(pendingMediaCaption);
+    let mediaUrl = pendingMedia.previewUrl;
+
+    setIsSending(true);
+
+    try {
+      if (pendingMedia.type === 'image') {
+        if (!pendingMedia.uploadUri) {
+          throw new Error('Selected image is unavailable');
+        }
+        setIsUploading(true);
+        mediaUrl = await uploadChatMediaFile(
+          pendingMedia.uploadUri,
+          pendingMedia.fileName || `chat_${Date.now()}.jpg`,
+          pendingMedia.mimeType || 'image/jpeg',
+          token || undefined
+        );
+      }
+
+      await sendMediaMessage({
+        mediaType: pendingMedia.type,
+        mediaUrl,
+        giphyId: pendingMedia.giphyId,
+        text: caption,
+      });
+      resetPendingMediaComposer();
+    } catch (error) {
+      Alert.alert('Unable to send media', getSendFailureMessage(error));
+    } finally {
+      setIsUploading(false);
+      setIsSending(false);
+    }
+  }, [
+    isDMsDisabled,
+    isGroupConversation,
+    isPeerKeyMissing,
+    isSending,
+    isUploading,
+    peerLabel,
+    peerUserId,
+    pendingMedia,
+    pendingMediaCaption,
+    resetPendingMediaComposer,
+    sendMediaMessage,
+    token,
+  ]);
 
   const headerTitle = useMemo(
     () => (isGroupConversation ? groupName || 'Group Chat' : peerName || 'Secure Chat'),
@@ -686,6 +792,39 @@ function ChatDetailScreen({ navigation, route }: Props) {
   } else if (isDMsDisabled) {
     composerPlaceholder = 'This user has turned off direct messages';
   }
+
+  const renderMediaMessage = useCallback(
+    (item: LocalMessage, isMine: boolean) => {
+      if (!item.mediaType || !item.mediaUrl) {
+        return null;
+      }
+
+      const hasCaption = normalizeMessageText(item.text).length > 0;
+
+      return (
+        <View style={styles.mediaMessageContent}>
+          <Pressable
+            onPress={() => setFullscreenMediaUrl(item.mediaUrl || null)}
+            style={styles.mediaImageFrame}
+          >
+            <Image
+              source={{ uri: item.mediaUrl }}
+              style={styles.mediaBubbleImage}
+              resizeMode="cover"
+            />
+          </Pressable>
+          {hasCaption ? (
+            <Text
+              style={[styles.mediaCaptionText, isMine ? styles.mineText : { color: colors.text }]}
+            >
+              {normalizeMessageText(item.text)}
+            </Text>
+          ) : null}
+        </View>
+      );
+    },
+    [colors.text]
+  );
 
   const renderMainContent = () => {
     let emptyStateMessage = 'No messages yet. Send the first message.';
@@ -759,11 +898,14 @@ function ChatDetailScreen({ navigation, route }: Props) {
         renderItem={({ item }) => {
           const isMine = item.senderId === currentUserId;
           const isRead = item.status === 'read';
+          const hasMediaCaption = item.mediaType && normalizeMessageText(item.text).length > 0;
           let bubbleColor: { backgroundColor: string; padding?: number } = isMine
             ? { backgroundColor: '#126b87' }
             : { backgroundColor: 'rgba(18, 210, 217, 0.15)' };
           if (item.mediaType) {
-            bubbleColor = { backgroundColor: 'transparent', padding: 0 };
+            bubbleColor = hasMediaCaption
+              ? bubbleColor
+              : { backgroundColor: 'transparent', padding: 0 };
           }
           return (
             <View style={[styles.messageWrap, isMine ? styles.mineWrap : styles.theirsWrap]}>
@@ -771,11 +913,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
                 <>
                   <View style={[styles.messageBubble, styles.mineBubble, bubbleColor]}>
                     {item.mediaType && item.mediaUrl ? (
-                      <Image
-                        source={{ uri: item.mediaUrl }}
-                        style={styles.mediaBubbleImage}
-                        resizeMode="contain"
-                      />
+                      renderMediaMessage(item, true)
                     ) : (
                       <Text style={[styles.messageText, styles.mineText]}>
                         {normalizeMessageText(item.text)}
@@ -796,11 +934,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
                   <View style={styles.incomingBody}>
                     <View style={[styles.messageBubble, styles.theirsBubble, bubbleColor]}>
                       {item.mediaType && item.mediaUrl ? (
-                        <Image
-                          source={{ uri: item.mediaUrl }}
-                          style={styles.mediaBubbleImage}
-                          resizeMode="contain"
-                        />
+                        renderMediaMessage(item, false)
                       ) : (
                         <Text style={[styles.messageText, { color: colors.text }]}>
                           {normalizeMessageText(item.text)}
@@ -930,6 +1064,80 @@ function ChatDetailScreen({ navigation, route }: Props) {
           <MaterialIcons name="send" size={20} color="#ffffff" />
         </Pressable>
       </View>
+
+      <Modal
+        visible={Boolean(pendingMedia)}
+        transparent
+        animationType="slide"
+        onRequestClose={resetPendingMediaComposer}
+      >
+        <View style={styles.pendingMediaBackdrop}>
+          <Pressable style={styles.pendingMediaDismissZone} onPress={resetPendingMediaComposer} />
+          <View
+            style={[styles.pendingMediaSheet, { backgroundColor: isDark ? '#032f3c' : '#ffffff' }]}
+          >
+            <View style={styles.pendingMediaHandle} />
+            {pendingMedia ? (
+              <>
+                <View style={styles.pendingMediaPreviewFrame}>
+                  <Image
+                    source={{ uri: pendingMedia.previewUrl }}
+                    style={styles.pendingMediaPreview}
+                    resizeMode="cover"
+                  />
+                </View>
+                <TextInput
+                  value={pendingMediaCaption}
+                  onChangeText={setPendingMediaCaption}
+                  placeholder="Add a message"
+                  placeholderTextColor="#68828a"
+                  style={[
+                    styles.pendingMediaInput,
+                    {
+                      color: colors.text,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f2f4',
+                    },
+                  ]}
+                  multiline
+                />
+                <View style={styles.pendingMediaActions}>
+                  <Pressable
+                    onPress={resetPendingMediaComposer}
+                    style={[styles.pendingMediaActionButton, styles.pendingMediaCancelButton]}
+                  >
+                    <Text style={styles.pendingMediaCancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={submitPendingMedia}
+                    disabled={isSending || isUploading}
+                    style={[
+                      styles.pendingMediaActionButton,
+                      styles.pendingMediaSendButton,
+                      isSending || isUploading ? styles.pendingMediaActionDisabled : null,
+                    ]}
+                  >
+                    {isUploading || isSending ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={styles.pendingMediaSendText}>Send</Text>
+                    )}
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      {fullscreenMediaUrl ? (
+        <ImageView
+          images={[{ uri: fullscreenMediaUrl }]}
+          imageIndex={0}
+          visible
+          presentationStyle="overFullScreen"
+          onRequestClose={() => setFullscreenMediaUrl(null)}
+        />
+      ) : null}
     </KeyboardControllerAvoidingView>
   );
 }
@@ -1162,11 +1370,93 @@ const styles = StyleSheet.create({
   utilityButtonDisabled: {
     opacity: 0.45,
   },
+  mediaMessageContent: {
+    gap: 8,
+  },
+  mediaImageFrame: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
   mediaBubbleImage: {
     width: 220,
     aspectRatio: 1.5,
     borderRadius: 16,
+  },
+  mediaCaptionText: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  pendingMediaBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  pendingMediaDismissZone: {
+    flex: 1,
+  },
+  pendingMediaSheet: {
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 18,
+    gap: 14,
+  },
+  pendingMediaHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(104, 130, 138, 0.5)',
+    marginBottom: 2,
+  },
+  pendingMediaPreviewFrame: {
+    borderRadius: 18,
     overflow: 'hidden',
+  },
+  pendingMediaPreview: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 18,
+  },
+  pendingMediaInput: {
+    minHeight: 52,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    textAlignVertical: 'top',
+    maxHeight: 140,
+  },
+  pendingMediaActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  pendingMediaActionButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingMediaCancelButton: {
+    backgroundColor: 'rgba(104, 130, 138, 0.15)',
+  },
+  pendingMediaSendButton: {
+    backgroundColor: '#126b87',
+  },
+  pendingMediaActionDisabled: {
+    opacity: 0.65,
+  },
+  pendingMediaCancelText: {
+    color: '#68828a',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  pendingMediaSendText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
   },
   sendButton: {
     width: 46,

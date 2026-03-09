@@ -129,12 +129,16 @@ export const parseChatMessagePayload = (
     const parsed = JSON.parse(plaintext);
     if (parsed && typeof parsed === 'object' && parsed.type) {
       if (parsed.type === 'image' && parsed.url) {
-        return { type: 'image', text: '', mediaUrl: String(parsed.url) };
+        return {
+          type: 'image',
+          text: typeof parsed.text === 'string' ? parsed.text : '',
+          mediaUrl: String(parsed.url),
+        };
       }
       if (parsed.type === 'gif' && parsed.giphyId) {
         return {
           type: 'gif',
-          text: '',
+          text: typeof parsed.text === 'string' ? parsed.text : '',
           mediaUrl: `https://media.giphy.com/media/${parsed.giphyId}/giphy.gif`,
         };
       }
@@ -150,6 +154,7 @@ export const sendEncryptedMediaMessage = async (args: {
   mediaType: 'image' | 'gif';
   mediaUrl?: string;
   giphyId?: string;
+  text?: string;
   token?: string;
 }) => {
   const [myKeys, peerKey] = await Promise.all([
@@ -157,10 +162,20 @@ export const sendEncryptedMediaMessage = async (args: {
     getPeerPublicKey(args.receiverId, args.token),
   ]);
 
+  const normalizedText = typeof args.text === 'string' ? args.text.trim() : '';
+
   const plaintext =
     args.mediaType === 'gif'
-      ? JSON.stringify({ type: 'gif', giphyId: args.giphyId })
-      : JSON.stringify({ type: 'image', url: args.mediaUrl });
+      ? JSON.stringify({
+          type: 'gif',
+          giphyId: args.giphyId,
+          ...(normalizedText ? { text: normalizedText } : {}),
+        })
+      : JSON.stringify({
+          type: 'image',
+          url: args.mediaUrl,
+          ...(normalizedText ? { text: normalizedText } : {}),
+        });
 
   const encrypted = await encryptE2EEMessage({
     plaintext,
