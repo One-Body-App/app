@@ -32,7 +32,7 @@ index 671aa69..4917a5b 100644
          if(path == nil)
          {
 diff --git a/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.h b/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.h
-index 5141201..82b18b7 100644
+index 5141201..76b1773 100644
 --- a/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.h
 +++ b/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.h
 @@ -20,6 +20,8 @@
@@ -64,7 +64,7 @@ index 5141201..82b18b7 100644
  @property (nonatomic) BOOL appendData;
  
  // get dirs
-@@ -56,9 +58,9 @@
+@@ -56,23 +58,23 @@
  + (NSString *) getPictureDir;
  + (NSString *) getTempPath;
  + (NSString *) getTempPath:(NSString*)taskId withExtension:(NSString *)ext;
@@ -76,8 +76,11 @@ index 5141201..82b18b7 100644
 ++ (void) getPathFromUri:(NSString *)uri completionHandler:(void (^ _Nonnull)(NSString * _Nullable path, id _Nullable asset))onComplete;
  
  // fs methods
- + (RNFetchBlobFS *) getFileStreams;
-@@ -68,11 +70,11 @@
+-+ (RNFetchBlobFS *) getFileStreams;
+++ (NSMutableDictionary *) getFileStreams;
+ + (BOOL) mkdir:(NSString *) path;
+ + (void) mkdir:(NSString *) path resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+ + (void) hash:(NSString *)path
      algorithm:(NSString *)algorithm
       resolver:(RCTPromiseResolveBlock)resolve
       rejecter:(RCTPromiseRejectBlock)reject;
@@ -87,7 +90,7 @@ index 5141201..82b18b7 100644
  + (void) writeFileArray:(NSString *)path data:(NSArray *)data append:(BOOL)append resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
  + (void) writeFile:(NSString *)path encoding:(NSString *)encoding data:(NSString *)data append:(BOOL)append resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
 -+ (void) readFile:(NSString *)path encoding:(NSString *)encoding onComplete:(void (^)(NSData * content, NSString* code, NSString * errMsg))onComplete;
-++ (void) readFile:(NSString *)path encoding:(NSString *)encoding onComplete:(void (^ _Nonnull)(NSData * _Nullable content, NSString * _Nullable code, NSString * _Nullable errMsg))onComplete;
+++ (void) readFile:(NSString *)path encoding:(NSString *)encoding onComplete:(void (^ _Nonnull)(id _Nullable content, NSString * _Nullable code, NSString * _Nullable errMsg))onComplete;
  + (void) readAssetFile:(NSData *)assetUrl completionBlock:(void(^)(NSData * content))completionBlock failBlock:(void(^)(NSError * err))failBlock;
  + (void) slice:(NSString *)path
           dest:(NSString *)dest
@@ -118,7 +121,7 @@ index 5141201..82b18b7 100644
 +
  #endif /* RNFetchBlobFS_h */
 diff --git a/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.m b/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.m
-index e597ee5..317dd5c 100644
+index e597ee5..545dd81 100644
 --- a/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.m
 +++ b/node_modules/rn-fetch-blob/ios/RNFetchBlobFS.m
 @@ -14,18 +14,82 @@
@@ -206,7 +209,31 @@ index e597ee5..317dd5c 100644
  ////////////////////////////////////////
  //
  //  File system access methods
-@@ -158,12 +222,10 @@ NSMutableDictionary *fileStreams = nil;
+@@ -40,12 +104,14 @@ NSMutableDictionary *fileStreams = nil;
+ 
+ @synthesize outStream;
+ @synthesize inStream;
++@synthesize bridge = bridge;
+ @synthesize encoding;
+ @synthesize callback;
+ @synthesize taskId;
+ @synthesize path;
+ @synthesize appendData;
+ @synthesize bufferSize;
++@synthesize streamId = streamId;
+ 
+ - (id)init {
+     self = [super init];
+@@ -65,7 +131,7 @@ NSMutableDictionary *fileStreams = nil;
+ }
+ 
+ // static member getter
+-+ (NSArray *) getFileStreams {
+++ (NSMutableDictionary *) getFileStreams {
+ 
+     if(fileStreams == nil)
+         fileStreams = [[NSMutableDictionary alloc] init];
+@@ -158,12 +224,10 @@ NSMutableDictionary *fileStreams = nil;
             streamId:(NSString *)streamId
            bridgeRef:(RCTBridge *)bridgeRef
  {
@@ -220,7 +247,7 @@ index e597ee5..317dd5c 100644
          // allocate buffer in heap instead of stack
          uint8_t * buffer;
          @try
-@@ -175,7 +237,7 @@ NSMutableDictionary *fileStreams = nil;
+@@ -175,7 +239,7 @@ NSMutableDictionary *fileStreams = nil;
                  {
                      NSString * message = [NSString stringWithFormat:@"File does not exist at path %@", path];
                      NSDictionary * payload = @{ @"event": FS_EVENT_ERROR, @"code": @"ENOENT", @"detail": message };
@@ -229,7 +256,7 @@ index e597ee5..317dd5c 100644
                      free(buffer);
                      return ;
                  }
-@@ -183,7 +245,7 @@ NSMutableDictionary *fileStreams = nil;
+@@ -183,7 +247,7 @@ NSMutableDictionary *fileStreams = nil;
                  [stream open];
                  while((read = [stream read:buffer maxLength:bufferSize]) > 0)
                  {
@@ -238,7 +265,7 @@ index e597ee5..317dd5c 100644
                      if(tick > 0)
                      {
                          usleep(backoff);
-@@ -195,10 +257,10 @@ NSMutableDictionary *fileStreams = nil;
+@@ -195,10 +259,10 @@ NSMutableDictionary *fileStreams = nil;
              {
                  int cursor = 0;
                  NSError * err;
@@ -251,7 +278,7 @@ index e597ee5..317dd5c 100644
                      if(tick > 0)
                      {
                          usleep(backoff);
-@@ -208,7 +270,7 @@ NSMutableDictionary *fileStreams = nil;
+@@ -208,7 +272,7 @@ NSMutableDictionary *fileStreams = nil;
              else
              {
                  NSDictionary * payload = @{ @"event": FS_EVENT_ERROR, @"code": @"EINVAL", @"detail": @"Unable to resolve URI" };
@@ -260,7 +287,7 @@ index e597ee5..317dd5c 100644
              }
              // release buffer
              if(buffer != nil)
-@@ -218,12 +280,12 @@ NSMutableDictionary *fileStreams = nil;
+@@ -218,12 +282,12 @@ NSMutableDictionary *fileStreams = nil;
          @catch (NSError * err)
          {
              NSDictionary * payload = @{ @"event": FS_EVENT_ERROR, @"code": @"EUNSPECIFIED", @"detail": [err description] };
@@ -275,7 +302,7 @@ index e597ee5..317dd5c 100644
          }
  
      }];
-@@ -232,7 +294,7 @@ NSMutableDictionary *fileStreams = nil;
+@@ -232,7 +296,7 @@ NSMutableDictionary *fileStreams = nil;
  }
  
  // send read stream chunks via native event emitter
@@ -284,7 +311,7 @@ index e597ee5..317dd5c 100644
  {
      @try
      {
-@@ -243,12 +305,12 @@ NSMutableDictionary *fileStreams = nil;
+@@ -243,12 +307,12 @@ NSMutableDictionary *fileStreams = nil;
                                         @"event": FS_EVENT_DATA,
                                         @"detail" : [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
                                         };
@@ -299,7 +326,7 @@ index e597ee5..317dd5c 100644
          }
          else if([[encoding lowercaseString] isEqualToString:@"ascii"])
          {
-@@ -266,25 +328,21 @@ NSMutableDictionary *fileStreams = nil;
+@@ -266,25 +330,21 @@ NSMutableDictionary *fileStreams = nil;
              }
  
              NSDictionary * payload = @{ @"event": FS_EVENT_DATA,  @"detail" : asciiArray };
@@ -334,7 +361,7 @@ index e597ee5..317dd5c 100644
      }
  }
  
-@@ -292,7 +350,7 @@ NSMutableDictionary *fileStreams = nil;
+@@ -292,7 +352,7 @@ NSMutableDictionary *fileStreams = nil;
  
  + (NSNumber *) writeFileFromFile:(NSString *)src toFile:(NSString *)dest append:(BOOL)append callback:(void(^)(NSString * errMsg, NSNumber *size))callback
  {
@@ -343,7 +370,7 @@ index e597ee5..317dd5c 100644
          if(path != nil)
          {
              __block NSInputStream * is = [[NSInputStream alloc] initWithFileAtPath:path];
-@@ -322,7 +380,7 @@ NSMutableDictionary *fileStreams = nil;
+@@ -322,7 +382,7 @@ NSMutableDictionary *fileStreams = nil;
              __block long written = 0;
              uint8_t buffer[10240];
              [os open];
@@ -352,9 +379,12 @@ index e597ee5..317dd5c 100644
              {
                  cursor += read;
                  [os write:buffer maxLength:read];
-@@ -479,14 +537,15 @@ NSMutableDictionary *fileStreams = nil;
+@@ -477,23 +537,24 @@ NSMutableDictionary *fileStreams = nil;
+ 
+ + (void) readFile:(NSString *)path
           encoding:(NSString *)encoding
-        onComplete:(void (^)(NSData * content, NSString * codeStr, NSString * errMsg))onComplete
+-       onComplete:(void (^)(NSData * content, NSString * codeStr, NSString * errMsg))onComplete
++       onComplete:(void (^)(id content, NSString * codeStr, NSString * errMsg))onComplete
  {
 -    [[self class] getPathFromUri:path completionHandler:^(NSString *path, ALAssetRepresentation *asset) {
 +    [[self class] getPathFromUri:path completionHandler:^(NSString *path, id asset) {
@@ -371,7 +401,24 @@ index e597ee5..317dd5c 100644
              if(err != nil)
              {
                  onComplete(nil, @"EUNSPECIFIED", [err description]);
-@@ -597,7 +656,12 @@ NSMutableDictionary *fileStreams = nil;
+                 free(buffer);
+                 return;
+             }
+-            fileContent = [NSData dataWithBytes:buffer length:asset.size];
++            fileContent = [NSData dataWithBytes:buffer length:assetSize];
+             free(buffer);
+         }
+         else
+@@ -526,7 +587,7 @@ NSMutableDictionary *fileStreams = nil;
+             }
+             else if ([[encoding lowercaseString] isEqualToString:@"ascii"]) {
+                 NSMutableArray * resultArray = [NSMutableArray array];
+-                char * bytes = [fileContent bytes];
++                const char * bytes = [fileContent bytes];
+                 for(int i=0;i<[fileContent length];i++) {
+                     [resultArray addObject:[NSNumber numberWithChar:bytes[i]]];
+                 }
+@@ -597,7 +658,12 @@ NSMutableDictionary *fileStreams = nil;
      unsigned char buffer[digestLength];
  
      if ([algorithm isEqualToString:@"md5"]) {
@@ -385,7 +432,22 @@ index e597ee5..317dd5c 100644
      } else if ([algorithm isEqualToString:@"sha1"]) {
          CC_SHA1(content.bytes, (CC_LONG)content.length, buffer);
      } else if ([algorithm isEqualToString:@"sha224"]) {
-@@ -670,7 +734,7 @@ NSMutableDictionary *fileStreams = nil;
+@@ -651,11 +717,11 @@ NSMutableDictionary *fileStreams = nil;
+     if([fm fileExistsAtPath:path isDirectory:&isDir] == NO) {
+         return nil;
+     }
+-    NSDictionary * info = [fm attributesOfItemAtPath:path error:&error];
+-    NSString * size = [NSString stringWithFormat:@"%d", [info fileSize]];
++    NSDictionary * info = [fm attributesOfItemAtPath:path error:error];
++    NSString * size = [NSString stringWithFormat:@"%llu", [info fileSize]];
+     NSString * filename = [path lastPathComponent];
+     NSDate * lastModified;
+-    [[NSURL fileURLWithPath:path] getResourceValue:&lastModified forKey:NSURLContentModificationDateKey error:&error];
++    [[NSURL fileURLWithPath:path] getResourceValue:&lastModified forKey:NSURLContentModificationDateKey error:error];
+     return @{
+              @"size" : size,
+              @"filename" : filename,
+@@ -670,7 +736,7 @@ NSMutableDictionary *fileStreams = nil;
  
  + (void) exists:(NSString *) path callback:(RCTResponseSenderBlock)callback
  {
@@ -394,7 +456,7 @@ index e597ee5..317dd5c 100644
          if(path != nil)
          {
              BOOL isDir = NO;
-@@ -761,7 +825,7 @@ NSMutableDictionary *fileStreams = nil;
+@@ -761,7 +827,7 @@ NSMutableDictionary *fileStreams = nil;
       resolver:(RCTPromiseResolveBlock)resolve
       rejecter:(RCTPromiseRejectBlock)reject
  {
@@ -403,7 +465,63 @@ index e597ee5..317dd5c 100644
      {
          if(path != nil)
          {
-@@ -875,20 +939,17 @@ NSMutableDictionary *fileStreams = nil;
+@@ -787,7 +853,7 @@ NSMutableDictionary *fileStreams = nil;
+             long max = MIN(size, [end longValue]);
+ 
+             if(![fm fileExistsAtPath:dest]) {
+-                if(![fm createFileAtPath:dest contents:@"" attributes:nil]) {
++                if(![fm createFileAtPath:dest contents:nil attributes:nil]) {
+                     return reject(@"ENOENT", [NSString stringWithFormat:@"File '%@' does not exist and could not be created", path], nil);
+                 }
+             }
+@@ -825,29 +891,41 @@ NSMutableDictionary *fileStreams = nil;
+             long chunkRead = 0;
+             NSOutputStream * os = [[NSOutputStream alloc] initToFileAtPath:dest append:NO];
+             [os open];
+-            long size = asset.size;
++            long size = (long)RNFetchBlobAssetSize(asset);
+             long max = MIN(size, [end longValue]);
+ 
+             while(read < expected) {
+-                uint8_t * chunk[10240];
++                uint8_t chunk[10240];
+                 long chunkSize = 0;
+                 if([start longValue] + read + 10240 > max)
+                 {
+                     NSLog(@"read chunk %lu", max - read - [start longValue]);
+                     chunkSize = max - read - [start longValue];
+-                    chunkRead = [asset getBytes:chunk fromOffset:[start longValue] + read length:chunkSize error:nil];
++                    chunkRead = (long)RNFetchBlobAssetGetBytes(
++                        asset,
++                        chunk,
++                        [start longValue] + read,
++                        (NSUInteger)chunkSize,
++                        nil
++                    );
+                 }
+                 else
+                 {
+                     NSLog(@"read chunk %lu", 10240);
+                     chunkSize = 10240;
+-                    chunkRead = [asset getBytes:chunk fromOffset:[start longValue] + read length:chunkSize error:nil];
++                    chunkRead = (long)RNFetchBlobAssetGetBytes(
++                        asset,
++                        chunk,
++                        [start longValue] + read,
++                        (NSUInteger)chunkSize,
++                        nil
++                    );
+                 }
+                 if( chunkRead <= 0)
+                     break;
+                 long remain = expected - read;
+ 
+-                [os write:chunk maxLength:chunkSize];
++                [os write:chunk maxLength:(NSUInteger)chunkSize];
+                 read += chunkRead;
+             }
+             [os close];
+@@ -875,20 +953,17 @@ NSMutableDictionary *fileStreams = nil;
  
  # pragma mark - get absolute path of resource
  
@@ -431,7 +549,7 @@ index e597ee5..317dd5c 100644
      }
      else
      {
-@@ -918,14 +979,14 @@ NSMutableDictionary *fileStreams = nil;
+@@ -918,14 +993,14 @@ NSMutableDictionary *fileStreams = nil;
  
  }
  
@@ -660,16 +778,3 @@ index cdbe6b1..9d96d25 100644
      }
  }
  
-diff --git a/node_modules/rn-fetch-blob/react-native.config.js b/node_modules/rn-fetch-blob/react-native.config.js
-index 03c61b6..f053ebf 100644
---- a/node_modules/rn-fetch-blob/react-native.config.js
-+++ b/node_modules/rn-fetch-blob/react-native.config.js
-@@ -1,7 +1 @@
--module.exports = {
--  dependency: {
--    hooks: {
--      prelink: 'node ./node_modules/rn-fetch-blob/scripts/prelink.js',
--    },
--  },
--};
-+module.exports = {};

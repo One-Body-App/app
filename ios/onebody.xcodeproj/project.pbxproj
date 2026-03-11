@@ -33,6 +33,8 @@
 		728E61962B1FFDB80013DA59 /* logoAnimation.json in Resources */ = {isa = PBXBuildFile; fileRef = 728E61952B1FFDB80013DA59 /* logoAnimation.json */; };
 		728E61982B1FFDB80013DA59 /* splash.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 728E61972B1FFDB80013DA59 /* splash.mp4 */; };
 		72A09FE12E1CDE2B00D614D5 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */; };
+		A1B2C3D4E5F6012345678901 /* MessagesConversationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678903 /* MessagesConversationListView.swift */; };
+		A1B2C3D4E5F6012345678902 /* MessagesConversationListViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678904 /* MessagesConversationListViewManager.m */; };
 		72F05C49289CEB68004C3A5F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */; };
 		76D9A2FE6C4D4C769086867B /* OpenSans_Condensed-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ABA070994F3D498A8F8D1519 /* OpenSans_Condensed-Italic.ttf */; };
 		849A218F7B364F0F89720058 /* OpenSans_Condensed-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 08B5E8DB14964BEEA703163E /* OpenSans_Condensed-MediumItalic.ttf */; };
@@ -133,6 +135,8 @@
 		728E61952B1FFDB80013DA59 /* logoAnimation.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = logoAnimation.json; sourceTree = "<group>"; };
 		728E61972B1FFDB80013DA59 /* splash.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = splash.mp4; sourceTree = "<group>"; };
 		72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678903 /* MessagesConversationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = onebody/MessagesConversationListView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678904 /* MessagesConversationListViewManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = onebody/MessagesConversationListViewManager.m; sourceTree = "<group>"; };
 		72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		75315A586E0038FD62E6797E /* Pods_OneBodyNotificationServiceExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_OneBodyNotificationServiceExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A33052A304E4AF1B4A20B1E /* OpenSans_Condensed-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-SemiBold.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -219,6 +223,8 @@
 			isa = PBXGroup;
 			children = (
 				72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */,
+				A1B2C3D4E5F6012345678903 /* MessagesConversationListView.swift */,
+				A1B2C3D4E5F6012345678904 /* MessagesConversationListViewManager.m */,
 				728343DF28A1F5A90048A31B /* onebody.entitlements */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -736,6 +742,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				72A09FE12E1CDE2B00D614D5 /* AppDelegate.swift in Sources */,
+				A1B2C3D4E5F6012345678901 /* MessagesConversationListView.swift in Sources */,
+				A1B2C3D4E5F6012345678902 /* MessagesConversationListViewManager.m in Sources */,
 				728E61942B1FFB5B0013DA59 /* Dynamic.swift in Sources */,
 				7283441F28AF46100048A31B /* DONOTDELETE.swift in Sources */,
 				4CF5837DA7A0A201A54B31BA /* ExpoModulesProvider.swift in Sources */,

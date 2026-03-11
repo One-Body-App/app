@@ -1,0 +1,13 @@
+#import <React/RCTViewManager.h>
+
+@interface RCT_EXTERN_REMAP_MODULE(MessagesConversationListView, OBDMessagesConversationListViewManager, RCTViewManager)
+
+RCT_EXPORT_VIEW_PROPERTY(conversations, NSArray)
+RCT_EXPORT_VIEW_PROPERTY(bottomInset, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(onPressConversation, RCTBubblingEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onMuteConversation, RCTBubblingEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onToggleReadConversation, RCTBubblingEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onArchiveConversation, RCTBubblingEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onDestructiveConversation, RCTBubblingEventBlock)
+
+@end

@@ -33,24 +33,43 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
 import {
   connectChatSocket,
+  onChatGroupMessage,
   onChatMessage,
   onChatMessageStatus,
 } from '@/src/services/chat/socketClient';
 import {
   loadAndDecryptConversation,
+  loadGroupConversation,
   ensureChatReady,
+  markGroupConversationRead,
   markConversationRead,
+  sendGroupMediaMessage,
+  sendGroupTextMessage,
   sendEncryptedTextMessage,
   sendEncryptedMediaMessage,
   parseChatMessagePayload,
 } from '@/src/services/chat/chatClient';
 import {
   clearActiveDirectConversationPeerId,
+  clearActiveGroupConversationId,
+  setActiveGroupConversationId,
   setActiveDirectConversationPeerId,
 } from '@/src/services/chat/activeConversation';
 import { getPeerPublicKey } from '@/src/services/chat/keyManager';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
-import { uploadChatMediaFile } from '@/src/services/chat/api';
+import { ApiCall } from '@/src/services/api';
+import {
+  updateChatConversationArchiveState,
+  updateChatConversationMuteState,
+  uploadChatMediaFile,
+} from '@/src/services/chat/api';
+import {
+  getDirectConversationUnreadKey,
+  getGroupConversationUnreadKey,
+  setChatConversationUnread,
+} from '@/src/services/chat/unreadIndicator';
+import GifIcon from '@/components/GifIcon';
+import ChatOptions from './chatoptions';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'ChatDetail'>;
 
@@ -63,6 +82,11 @@ type LocalMessage = {
   createdAt: string;
   mediaType?: 'image' | 'gif';
   mediaUrl?: string;
+  senderName?: string;
+  senderUsername?: string;
+  senderAvatarUri?: string;
+  conversationType?: 'direct' | 'group';
+  groupId?: string;
 };
 
 type PendingMedia = {
@@ -73,6 +97,9 @@ type PendingMedia = {
   mimeType?: string;
   giphyId?: string;
 };
+
+const MONGO_OBJECT_ID_REGEX = /^[a-f0-9]{24}$/i;
+const isValidMongoObjectId = (value: string) => MONGO_OBJECT_ID_REGEX.test(value.trim());
 
 const sortMessages = (messages: LocalMessage[]) =>
   [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -160,6 +187,24 @@ const formatMessageTime = (iso: string) => {
 
 const normalizeMessageText = (text: string) => text.trimEnd();
 
+const isSameLocalCalendarDay = (leftIso?: string, rightIso?: string) => {
+  if (!leftIso || !rightIso) {
+    return false;
+  }
+
+  const leftDate = new Date(leftIso);
+  const rightDate = new Date(rightIso);
+  if (Number.isNaN(leftDate.getTime()) || Number.isNaN(rightDate.getTime())) {
+    return false;
+  }
+
+  return (
+    leftDate.getDate() === rightDate.getDate() &&
+    leftDate.getMonth() === rightDate.getMonth() &&
+    leftDate.getFullYear() === rightDate.getFullYear()
+  );
+};
+
 function ChatDetailScreen({ navigation, route }: Props) {
   const { colors } = useTheme();
   const isDark = useColorScheme() === 'dark';
@@ -176,8 +221,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
     routeParams?.conversationType === 'direct'
       ? String(routeParams.peerAvatarUri || NO_PROFILE_IMAGE)
       : NO_PROFILE_IMAGE;
+  const initialMutedState = Boolean(routeParams?.isMuted);
+  const initialArchivedState = Boolean(routeParams?.isArchived);
   const groupName =
     routeParams?.conversationType === 'group' ? String(routeParams.groupName || '') : '';
+  const groupId =
+    routeParams?.conversationType === 'group' ? String(routeParams.groupId || '') : '';
   const token = useSelector((state: RootState) => state.auth.userToken);
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [messages, setMessages] = useState<LocalMessage[]>([]);
@@ -191,6 +240,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const [isUploading, setIsUploading] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+  const [isConversationMuted, setIsConversationMuted] = useState(initialMutedState);
+  const [isConversationArchived, setIsConversationArchived] = useState(initialArchivedState);
+  const [optionsActionLoading, setOptionsActionLoading] = useState<
+    'archive' | 'mute' | 'block' | 'report' | null
+  >(null);
   const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
   const [pendingMediaCaption, setPendingMediaCaption] = useState('');
   const [fullscreenMediaUrl, setFullscreenMediaUrl] = useState<string | null>(null);
@@ -200,16 +255,37 @@ function ChatDetailScreen({ navigation, route }: Props) {
 
   const currentUserId = currentUser?._id ? String(currentUser._id) : '';
   const hasPeerAvatarImage = Boolean(peerAvatarUri && peerAvatarUri !== NO_PROFILE_IMAGE);
-  const peerInitial = (peerName || 'U').slice(0, 1).toUpperCase();
+  const canShowBlockAndReport = !isGroupConversation && Boolean(peerUserId);
+  const currentConversationUnreadKey = isGroupConversation
+    ? getGroupConversationUnreadKey(groupId)
+    : getDirectConversationUnreadKey(peerUserId);
 
-  const renderIncomingAvatar = () => {
-    if (hasPeerAvatarImage) {
-      return <Image source={{ uri: peerAvatarUri }} style={styles.incomingAvatar} />;
+  useEffect(() => {
+    setIsConversationMuted(initialMutedState);
+  }, [initialMutedState]);
+
+  useEffect(() => {
+    setIsConversationArchived(initialArchivedState);
+  }, [initialArchivedState]);
+
+  const renderIncomingAvatar = (message?: LocalMessage) => {
+    const avatarUri = isGroupConversation
+      ? String(message?.senderAvatarUri || '')
+      : hasPeerAvatarImage
+        ? peerAvatarUri
+        : '';
+    const senderInitialSource = isGroupConversation
+      ? message?.senderName || message?.senderUsername || 'U'
+      : peerName || 'U';
+    const senderInitial = senderInitialSource.slice(0, 1).toUpperCase();
+
+    if (avatarUri && avatarUri !== NO_PROFILE_IMAGE) {
+      return <Image source={{ uri: avatarUri }} style={styles.incomingAvatar} />;
     }
 
     return (
       <View style={styles.incomingAvatarFallback}>
-        <Text style={styles.incomingAvatarInitial}>{peerInitial}</Text>
+        <Text style={styles.incomingAvatarInitial}>{senderInitial}</Text>
       </View>
     );
   };
@@ -220,14 +296,21 @@ function ChatDetailScreen({ navigation, route }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!isGroupConversation && peerUserId) {
+      if (isGroupConversation && groupId) {
+        setActiveGroupConversationId(groupId);
+      } else if (peerUserId) {
         setActiveDirectConversationPeerId(peerUserId);
       }
 
       return () => {
+        if (isGroupConversation) {
+          clearActiveGroupConversationId(groupId);
+          return;
+        }
+
         clearActiveDirectConversationPeerId(peerUserId);
       };
-    }, [isGroupConversation, peerUserId])
+    }, [groupId, isGroupConversation, peerUserId])
   );
 
   useEffect(() => {
@@ -256,6 +339,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
   useEffect(() => {
     let isMounted = true;
     let offMessage: (() => void) | undefined;
+    let offGroupMessage: (() => void) | undefined;
     let offStatus: (() => void) | undefined;
 
     const bootstrap = async () => {
@@ -266,8 +350,107 @@ function ChatDetailScreen({ navigation, route }: Props) {
       hasScrolledToLatestRef.current = false;
 
       if (isGroupConversation) {
-        setMessages([]);
-        setIsBootstrapping(false);
+        if (!groupId) {
+          setMessages([]);
+          setLoadError('Unable to open this group right now.');
+          setIsBootstrapping(false);
+          return;
+        }
+
+        try {
+          await connectChatSocket();
+
+          const history = await loadGroupConversation({
+            groupId,
+            token: token || undefined,
+            limit: 50,
+          });
+
+          if (!isMounted) {
+            return;
+          }
+
+          setMessages(
+            sortMessages(
+              history.map((entry) => {
+                const parsed = parseChatMessagePayload(String(entry.plaintextPayload || ''));
+                return {
+                  id: entry._id,
+                  senderId: String(entry.senderId || ''),
+                  receiverId: '',
+                  text: parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text,
+                  status: 'sent',
+                  createdAt: entry.createdAt || new Date().toISOString(),
+                  mediaType: parsed.type !== 'text' ? parsed.type : undefined,
+                  mediaUrl: parsed.mediaUrl,
+                  senderName: typeof entry.senderName === 'string' ? entry.senderName : '',
+                  senderUsername:
+                    typeof entry.senderUsername === 'string' ? entry.senderUsername : '',
+                  senderAvatarUri:
+                    typeof entry.senderAvatarUri === 'string' ? entry.senderAvatarUri : '',
+                  conversationType: 'group',
+                  groupId,
+                };
+              })
+            )
+          );
+
+          offGroupMessage = await onChatGroupMessage((payload: any) => {
+            if (!isMounted) {
+              return;
+            }
+
+            const payloadGroupId = String(payload?.groupId || '');
+            const senderId = String(payload?.senderId || '');
+            if (!payload?._id || !payloadGroupId || payloadGroupId !== groupId || !senderId) {
+              return;
+            }
+
+            if (senderId === currentUserId) {
+              return;
+            }
+
+            const parsed = parseChatMessagePayload(String(payload?.plaintextPayload || ''));
+            setMessages((prev) => {
+              if (prev.some((message) => message.id === String(payload._id))) {
+                return prev;
+              }
+
+              return sortMessages([
+                ...prev,
+                {
+                  id: String(payload._id),
+                  senderId,
+                  receiverId: '',
+                  text: parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text,
+                  status: 'sent',
+                  createdAt: payload.createdAt || new Date().toISOString(),
+                  mediaType: parsed.type !== 'text' ? parsed.type : undefined,
+                  mediaUrl: parsed.mediaUrl,
+                  senderName: typeof payload.senderName === 'string' ? payload.senderName : '',
+                  senderUsername:
+                    typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
+                  senderAvatarUri:
+                    typeof payload.senderAvatarUri === 'string' ? payload.senderAvatarUri : '',
+                  conversationType: 'group',
+                  groupId,
+                },
+              ]);
+            });
+          });
+        } catch (error) {
+          if (__DEV__) {
+            console.log('[ChatDetail] group bootstrap failed', error);
+          }
+          if (isMounted) {
+            setMessages([]);
+            setLoadError('Unable to load messages right now.');
+          }
+        } finally {
+          if (isMounted) {
+            setIsBootstrapping(false);
+          }
+        }
         return;
       }
 
@@ -408,11 +591,14 @@ function ChatDetailScreen({ navigation, route }: Props) {
       if (offMessage) {
         offMessage();
       }
+      if (offGroupMessage) {
+        offGroupMessage();
+      }
       if (offStatus) {
         offStatus();
       }
     };
-  }, [currentUserId, isGroupConversation, peerUserId, token]);
+  }, [currentUserId, groupId, isGroupConversation, peerUserId, token]);
 
   useEffect(() => {
     if (!messages.length) {
@@ -427,7 +613,43 @@ function ChatDetailScreen({ navigation, route }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (isGroupConversation || !peerUserId || !currentUserId || messages.length < 1) {
+      if (!currentUserId || messages.length < 1) {
+        return undefined;
+      }
+
+      if (isGroupConversation) {
+        if (!groupId) {
+          return undefined;
+        }
+
+        const incomingGroupIds = messages
+          .filter((message) => message.senderId && message.senderId !== currentUserId)
+          .map((message) => message.id);
+
+        if (incomingGroupIds.length < 1) {
+          setChatConversationUnread(currentConversationUnreadKey, false);
+          lastReadSyncSignatureRef.current = '';
+          return undefined;
+        }
+
+        const signature = incomingGroupIds.join(',');
+        if (lastReadSyncSignatureRef.current === signature) {
+          return undefined;
+        }
+
+        lastReadSyncSignatureRef.current = signature;
+        markGroupConversationRead(groupId, token || undefined)
+          .then(() => {
+            setChatConversationUnread(currentConversationUnreadKey, false);
+          })
+          .catch(() => {
+            lastReadSyncSignatureRef.current = '';
+          });
+
+        return undefined;
+      }
+
+      if (!peerUserId || !isValidMongoObjectId(peerUserId)) {
         return undefined;
       }
 
@@ -441,6 +663,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
         .map((message) => message.id);
 
       if (unreadIncomingIds.length < 1) {
+        setChatConversationUnread(currentConversationUnreadKey, false);
         lastReadSyncSignatureRef.current = '';
         return undefined;
       }
@@ -453,34 +676,193 @@ function ChatDetailScreen({ navigation, route }: Props) {
       lastReadSyncSignatureRef.current = signature;
       markConversationRead(peerUserId, token || undefined)
         .then((result) => {
-          if (!result.ok || result.messageIds.length < 1) {
-            return;
+          if (result.ok && result.messageIds.length > 0) {
+            const readMessageIds = new Set(result.messageIds.map(String));
+            setMessages((prev) =>
+              prev.map((message) =>
+                readMessageIds.has(message.id) ? { ...message, status: 'read' } : message
+              )
+            );
           }
-
-          const readMessageIds = new Set(result.messageIds.map(String));
-          setMessages((prev) =>
-            prev.map((message) =>
-              readMessageIds.has(message.id) ? { ...message, status: 'read' } : message
-            )
-          );
+          setChatConversationUnread(currentConversationUnreadKey, false);
         })
         .catch(() => {
           lastReadSyncSignatureRef.current = '';
         });
 
       return undefined;
-    }, [currentUserId, isGroupConversation, messages, peerUserId, token])
+    }, [
+      currentConversationUnreadKey,
+      currentUserId,
+      groupId,
+      isGroupConversation,
+      messages,
+      peerUserId,
+      token,
+    ])
   );
 
   const peerLabel = peerName || 'This user';
 
-  const sendMessage = useCallback(async () => {
-    const content = draft.trim();
-    if (!content || isSending || !peerUserId || isGroupConversation) {
+  const buildConversationTargetPayload = useCallback(() => {
+    if (isGroupConversation) {
+      return {
+        conversationType: 'group' as const,
+        groupId: String(routeParams?.conversationType === 'group' ? routeParams.groupId || '' : ''),
+      };
+    }
+
+    return {
+      conversationType: 'direct' as const,
+      peerUserId: isValidMongoObjectId(peerUserId) ? peerUserId : '',
+    };
+  }, [isGroupConversation, peerUserId, routeParams]);
+
+  const handleArchiveChat = useCallback(async () => {
+    const targetPayload = buildConversationTargetPayload();
+    const targetId =
+      targetPayload.conversationType === 'group' ? targetPayload.groupId : targetPayload.peerUserId;
+    const nextArchived = !isConversationArchived;
+
+    if (!targetId || optionsActionLoading) {
       return;
     }
 
-    if (isPeerKeyMissing) {
+    setOptionsActionLoading('archive');
+    try {
+      const response = await updateChatConversationArchiveState(
+        {
+          ...targetPayload,
+          isArchived: nextArchived,
+        },
+        token || undefined
+      );
+
+      if (response.status !== 200) {
+        const message = (response.response as { message?: string })?.message;
+        throw new Error(message || 'Unable to archive chat right now.');
+      }
+
+      setIsConversationArchived(nextArchived);
+      navigation.setParams({ ...(routeParams as object), isArchived: nextArchived } as never);
+      setIsOptionsVisible(false);
+      if (nextArchived) {
+        navigation.goBack();
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : nextArchived
+            ? 'Unable to archive chat right now.'
+            : 'Unable to unarchive chat right now.';
+      Alert.alert(nextArchived ? 'Archive Failed' : 'Unarchive Failed', message);
+    } finally {
+      setOptionsActionLoading(null);
+    }
+  }, [
+    buildConversationTargetPayload,
+    isConversationArchived,
+    navigation,
+    optionsActionLoading,
+    routeParams,
+    token,
+  ]);
+
+  const handleToggleMuteChat = useCallback(async () => {
+    const targetPayload = buildConversationTargetPayload();
+    const targetId =
+      targetPayload.conversationType === 'group' ? targetPayload.groupId : targetPayload.peerUserId;
+
+    if (!targetId || optionsActionLoading) {
+      return;
+    }
+
+    const nextMuted = !isConversationMuted;
+    setOptionsActionLoading('mute');
+    try {
+      const response = await updateChatConversationMuteState(
+        {
+          ...targetPayload,
+          isMuted: nextMuted,
+        },
+        token || undefined
+      );
+
+      if (response.status !== 200) {
+        const message = (response.response as { message?: string })?.message;
+        throw new Error(message || 'Unable to update notification settings right now.');
+      }
+
+      setIsConversationMuted(nextMuted);
+      navigation.setParams({ ...(routeParams as object), isMuted: nextMuted } as never);
+      setIsOptionsVisible(false);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to update notification settings right now.';
+      Alert.alert('Update Failed', message);
+    } finally {
+      setOptionsActionLoading(null);
+    }
+  }, [
+    buildConversationTargetPayload,
+    isConversationMuted,
+    navigation,
+    optionsActionLoading,
+    routeParams,
+    token,
+  ]);
+
+  const handleBlockUser = useCallback(async () => {
+    if (!peerUserId || optionsActionLoading) {
+      return;
+    }
+
+    setOptionsActionLoading('block');
+    try {
+      const response = await ApiCall<{ message?: string }>({
+        route: `user/unsubscribe/${peerUserId}`,
+        verb: 'patch',
+        token: token || undefined,
+      });
+
+      if (response.status !== 200) {
+        const message = (response.response as { message?: string })?.message;
+        throw new Error(message || 'Unable to block user right now.');
+      }
+
+      setIsOptionsVisible(false);
+      navigation.goBack();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to block user right now.';
+      Alert.alert('Block Failed', message);
+    } finally {
+      setOptionsActionLoading(null);
+    }
+  }, [navigation, optionsActionLoading, peerUserId, token]);
+
+  const handleReportConversation = useCallback(() => {
+    if (optionsActionLoading) {
+      return;
+    }
+
+    Alert.alert('Coming Soon', 'Conversation reporting is coming soon.');
+  }, [optionsActionLoading]);
+
+  const sendMessage = useCallback(async () => {
+    const content = draft.trim();
+    if (
+      !content ||
+      isSending ||
+      (!isGroupConversation && !peerUserId) ||
+      (isGroupConversation && !groupId)
+    ) {
+      return;
+    }
+
+    if (!isGroupConversation && isPeerKeyMissing) {
       Alert.alert(
         'Secure Chat Unavailable',
         `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
@@ -488,24 +870,26 @@ function ChatDetailScreen({ navigation, route }: Props) {
       return;
     }
 
-    if (isDMsDisabled) {
+    if (!isGroupConversation && isDMsDisabled) {
       Alert.alert('Direct Messages Disabled', `${peerLabel} has turned off direct messages.`);
       return;
     }
 
-    try {
-      await getPeerPublicKey(peerUserId, token || undefined);
-    } catch (error) {
-      if (isMissingPeerKeyError(error)) {
-        setIsPeerKeyMissing(true);
-        Alert.alert(
-          'Secure Chat Unavailable',
-          `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
-        );
+    if (!isGroupConversation) {
+      try {
+        await getPeerPublicKey(peerUserId, token || undefined);
+      } catch (error) {
+        if (isMissingPeerKeyError(error)) {
+          setIsPeerKeyMissing(true);
+          Alert.alert(
+            'Secure Chat Unavailable',
+            `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
+          );
+          return;
+        }
+        Alert.alert('Unable to send message', getSendFailureMessage(error));
         return;
       }
-      Alert.alert('Unable to send message', getSendFailureMessage(error));
-      return;
     }
 
     setIsSending(true);
@@ -514,20 +898,31 @@ function ChatDetailScreen({ navigation, route }: Props) {
     const optimisticMessage: LocalMessage = {
       id: `local-${Date.now()}`,
       senderId: currentUserId || 'me',
-      receiverId: peerUserId,
+      receiverId: isGroupConversation ? '' : peerUserId,
       text: content,
       status: 'sent',
       createdAt: new Date().toISOString(),
+      senderName: currentUser?.name || currentUser?.username || 'Me',
+      senderUsername: currentUser?.username || '',
+      senderAvatarUri:
+        typeof currentUser?.profileImage === 'string' ? currentUser.profileImage : '',
+      conversationType: isGroupConversation ? 'group' : 'direct',
+      groupId: isGroupConversation ? groupId : undefined,
     };
 
     setMessages((prev) => sortMessages([...prev, optimisticMessage]));
 
     try {
-      const response = await sendEncryptedTextMessage({
-        receiverId: peerUserId,
-        text: content,
-        token: token || undefined,
-      });
+      const response = isGroupConversation
+        ? await sendGroupTextMessage({
+            groupId,
+            text: content,
+          })
+        : await sendEncryptedTextMessage({
+            receiverId: peerUserId,
+            text: content,
+            token: token || undefined,
+          });
 
       const ackMessage = response?.ok ? response.message : undefined;
       if (ackMessage?._id) {
@@ -538,6 +933,18 @@ function ChatDetailScreen({ navigation, route }: Props) {
                   ...item,
                   id: String(ackMessage._id),
                   status: ackMessage.status || 'sent',
+                  senderName:
+                    typeof ackMessage.senderName === 'string'
+                      ? ackMessage.senderName
+                      : optimisticMessage.senderName,
+                  senderUsername:
+                    typeof ackMessage.senderUsername === 'string'
+                      ? ackMessage.senderUsername
+                      : optimisticMessage.senderUsername,
+                  senderAvatarUri:
+                    typeof ackMessage.senderAvatarUri === 'string'
+                      ? ackMessage.senderAvatarUri
+                      : optimisticMessage.senderAvatarUri,
                 }
               : item
           )
@@ -559,8 +966,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
       setIsSending(false);
     }
   }, [
+    currentUser?.name,
+    currentUser?.profileImage,
+    currentUser?.username,
     currentUserId,
     draft,
+    groupId,
     isDMsDisabled,
     isGroupConversation,
     isPeerKeyMissing,
@@ -573,10 +984,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const isMediaDisabled =
     isSending ||
     isUploading ||
-    isGroupConversation ||
-    !peerUserId ||
-    isPeerKeyMissing ||
-    isDMsDisabled;
+    (isGroupConversation ? !groupId : !peerUserId || isPeerKeyMissing || isDMsDisabled);
 
   const resetPendingMediaComposer = useCallback(() => {
     setPendingMedia(null);
@@ -590,7 +998,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
       giphyId?: string;
       text?: string;
     }) => {
-      if (!peerUserId || isGroupConversation) {
+      if ((!isGroupConversation && !peerUserId) || (isGroupConversation && !groupId)) {
         return;
       }
 
@@ -599,25 +1007,39 @@ function ChatDetailScreen({ navigation, route }: Props) {
       const optimisticMessage: LocalMessage = {
         id: `local-${Date.now()}`,
         senderId: currentUserId || 'me',
-        receiverId: peerUserId,
+        receiverId: isGroupConversation ? '' : peerUserId,
         text: normalizedCaption,
         status: 'sent',
         createdAt: new Date().toISOString(),
         mediaType: args.mediaType,
         mediaUrl: args.mediaUrl,
+        senderName: currentUser?.name || currentUser?.username || 'Me',
+        senderUsername: currentUser?.username || '',
+        senderAvatarUri:
+          typeof currentUser?.profileImage === 'string' ? currentUser.profileImage : '',
+        conversationType: isGroupConversation ? 'group' : 'direct',
+        groupId: isGroupConversation ? groupId : undefined,
       };
 
       setMessages((prev) => sortMessages([...prev, optimisticMessage]));
 
       try {
-        const response = await sendEncryptedMediaMessage({
-          receiverId: peerUserId,
-          mediaType: args.mediaType,
-          mediaUrl: args.mediaType === 'image' ? args.mediaUrl : undefined,
-          giphyId: args.mediaType === 'gif' ? args.giphyId : undefined,
-          text: normalizedCaption,
-          token: token || undefined,
-        });
+        const response = isGroupConversation
+          ? await sendGroupMediaMessage({
+              groupId,
+              mediaType: args.mediaType,
+              mediaUrl: args.mediaType === 'image' ? args.mediaUrl : undefined,
+              giphyId: args.mediaType === 'gif' ? args.giphyId : undefined,
+              text: normalizedCaption,
+            })
+          : await sendEncryptedMediaMessage({
+              receiverId: peerUserId,
+              mediaType: args.mediaType,
+              mediaUrl: args.mediaType === 'image' ? args.mediaUrl : undefined,
+              giphyId: args.mediaType === 'gif' ? args.giphyId : undefined,
+              text: normalizedCaption,
+              token: token || undefined,
+            });
 
         const ackMessage = response?.ok ? response.message : undefined;
         if (ackMessage?._id) {
@@ -634,7 +1056,16 @@ function ChatDetailScreen({ navigation, route }: Props) {
         setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
       }
     },
-    [currentUserId, isGroupConversation, peerUserId, token]
+    [
+      currentUser?.name,
+      currentUser?.profileImage,
+      currentUser?.username,
+      currentUserId,
+      groupId,
+      isGroupConversation,
+      peerUserId,
+      token,
+    ]
   );
 
   const handlePickImage = useCallback(async () => {
@@ -685,11 +1116,17 @@ function ChatDetailScreen({ navigation, route }: Props) {
   }, [isGiphyInitialized, isMediaDisabled]);
 
   const submitPendingMedia = useCallback(async () => {
-    if (!pendingMedia || !peerUserId || isGroupConversation || isSending || isUploading) {
+    if (
+      !pendingMedia ||
+      (!isGroupConversation && !peerUserId) ||
+      (isGroupConversation && !groupId) ||
+      isSending ||
+      isUploading
+    ) {
       return;
     }
 
-    if (isPeerKeyMissing) {
+    if (!isGroupConversation && isPeerKeyMissing) {
       Alert.alert(
         'Secure Chat Unavailable',
         `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
@@ -697,24 +1134,26 @@ function ChatDetailScreen({ navigation, route }: Props) {
       return;
     }
 
-    if (isDMsDisabled) {
+    if (!isGroupConversation && isDMsDisabled) {
       Alert.alert('Direct Messages Disabled', `${peerLabel} has turned off direct messages.`);
       return;
     }
 
-    try {
-      await getPeerPublicKey(peerUserId, token || undefined);
-    } catch (error) {
-      if (isMissingPeerKeyError(error)) {
-        setIsPeerKeyMissing(true);
-        Alert.alert(
-          'Secure Chat Unavailable',
-          `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
-        );
+    if (!isGroupConversation) {
+      try {
+        await getPeerPublicKey(peerUserId, token || undefined);
+      } catch (error) {
+        if (isMissingPeerKeyError(error)) {
+          setIsPeerKeyMissing(true);
+          Alert.alert(
+            'Secure Chat Unavailable',
+            `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
+          );
+          return;
+        }
+        Alert.alert('Unable to send media', getSendFailureMessage(error));
         return;
       }
-      Alert.alert('Unable to send media', getSendFailureMessage(error));
-      return;
     }
 
     const caption = normalizeMessageText(pendingMediaCaption);
@@ -757,6 +1196,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
     isUploading,
     peerLabel,
     peerUserId,
+    groupId,
     pendingMedia,
     pendingMediaCaption,
     resetPendingMediaComposer,
@@ -768,28 +1208,17 @@ function ChatDetailScreen({ navigation, route }: Props) {
     () => (isGroupConversation ? groupName || 'Group Chat' : peerName || 'Secure Chat'),
     [groupName, isGroupConversation, peerName]
   );
-  const timeLabel = useMemo(
-    () => formatConversationTimestamp(messages[messages.length - 1]?.createdAt),
-    [messages]
-  );
-  const shouldShowGroupInfo = isGroupConversation;
-  const shouldShowLoader = !shouldShowGroupInfo && isBootstrapping;
-  const shouldShowErrorState = !shouldShowGroupInfo && !isBootstrapping && Boolean(loadError);
-  const shouldShowConversationList =
-    !shouldShowGroupInfo && !shouldShowLoader && !shouldShowErrorState;
+  const shouldShowLoader = isBootstrapping;
+  const shouldShowErrorState = !isBootstrapping && Boolean(loadError);
+  const shouldShowConversationList = !shouldShowLoader && !shouldShowErrorState;
   const isComposerDisabled =
     isSending ||
     isUploading ||
-    isGroupConversation ||
-    !peerUserId ||
-    isPeerKeyMissing ||
-    isDMsDisabled;
+    (isGroupConversation ? !groupId : !peerUserId || isPeerKeyMissing || isDMsDisabled);
   let composerPlaceholder = 'Write your message';
-  if (isGroupConversation) {
-    composerPlaceholder = 'Group messaging coming soon';
-  } else if (isPeerKeyMissing) {
+  if (!isGroupConversation && isPeerKeyMissing) {
     composerPlaceholder = 'Secure chat unavailable for this user';
-  } else if (isDMsDisabled) {
+  } else if (!isGroupConversation && isDMsDisabled) {
     composerPlaceholder = 'This user has turned off direct messages';
   }
 
@@ -828,22 +1257,10 @@ function ChatDetailScreen({ navigation, route }: Props) {
 
   const renderMainContent = () => {
     let emptyStateMessage = 'No messages yet. Send the first message.';
-    if (isPeerKeyMissing) {
+    if (!isGroupConversation && isPeerKeyMissing) {
       emptyStateMessage = 'This user has not enabled secure messaging yet.';
-    } else if (isDMsDisabled) {
+    } else if (!isGroupConversation && isDMsDisabled) {
       emptyStateMessage = 'This user has turned off direct messages.';
-    }
-
-    if (shouldShowGroupInfo) {
-      return (
-        <View style={styles.groupInfoWrap}>
-          <MaterialIcons name="groups" size={42} color="#126b87" />
-          <Text style={[styles.groupInfoTitle, { color: colors.text }]}>Group created</Text>
-          <Text style={styles.groupInfoBody}>
-            Group messaging is coming soon. You can still create and manage groups right now.
-          </Text>
-        </View>
-      );
     }
 
     if (shouldShowLoader) {
@@ -881,13 +1298,6 @@ function ChatDetailScreen({ navigation, route }: Props) {
             hasScrolledToLatestRef.current = true;
           });
         }}
-        ListHeaderComponent={
-          timeLabel ? (
-            <Text style={[styles.timeLabel, { color: isDark ? '#9ca3af' : '#8a9098' }]}>
-              {timeLabel}
-            </Text>
-          ) : null
-        }
         ListEmptyComponent={
           <View style={styles.emptyConversationWrap}>
             <Text style={[styles.emptyConversationText, { color: colors.text }]}>
@@ -895,10 +1305,13 @@ function ChatDetailScreen({ navigation, route }: Props) {
             </Text>
           </View>
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const isMine = item.senderId === currentUserId;
           const isRead = item.status === 'read';
           const hasMediaCaption = item.mediaType && normalizeMessageText(item.text).length > 0;
+          const previousMessage = index > 0 ? messages[index - 1] : undefined;
+          const shouldShowDateSeparator =
+            !previousMessage || !isSameLocalCalendarDay(item.createdAt, previousMessage.createdAt);
           let bubbleColor: { backgroundColor: string; padding?: number } = isMine
             ? { backgroundColor: '#126b87' }
             : { backgroundColor: 'rgba(18, 210, 217, 0.15)' };
@@ -908,45 +1321,63 @@ function ChatDetailScreen({ navigation, route }: Props) {
               : { backgroundColor: 'transparent', padding: 0 };
           }
           return (
-            <View style={[styles.messageWrap, isMine ? styles.mineWrap : styles.theirsWrap]}>
-              {isMine ? (
-                <>
-                  <View style={[styles.messageBubble, styles.mineBubble, bubbleColor]}>
-                    {item.mediaType && item.mediaUrl ? (
-                      renderMediaMessage(item, true)
-                    ) : (
-                      <Text style={[styles.messageText, styles.mineText]}>
-                        {normalizeMessageText(item.text)}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.statusWrap}>
-                    <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
-                    {isRead ? (
-                      <Image source={{ uri: peerAvatarUri }} style={styles.statusAvatar} />
-                    ) : null}
-                    <Text style={styles.statusText}>{isRead ? 'Seen' : item.status}</Text>
-                  </View>
-                </>
-              ) : (
-                <View style={styles.incomingRow}>
-                  {renderIncomingAvatar()}
-                  <View style={styles.incomingBody}>
-                    <View style={[styles.messageBubble, styles.theirsBubble, bubbleColor]}>
+            <View>
+              {shouldShowDateSeparator ? (
+                <Text style={[styles.timeLabel, { color: isDark ? '#9ca3af' : '#8a9098' }]}>
+                  {formatConversationTimestamp(item.createdAt)}
+                </Text>
+              ) : null}
+              <View style={[styles.messageWrap, isMine ? styles.mineWrap : styles.theirsWrap]}>
+                {isMine ? (
+                  <>
+                    <View style={[styles.messageBubble, styles.mineBubble, bubbleColor]}>
                       {item.mediaType && item.mediaUrl ? (
-                        renderMediaMessage(item, false)
+                        renderMediaMessage(item, true)
                       ) : (
-                        <Text style={[styles.messageText, { color: colors.text }]}>
+                        <Text style={[styles.messageText, styles.mineText]}>
                           {normalizeMessageText(item.text)}
                         </Text>
                       )}
                     </View>
-                    <View style={styles.incomingTimeWrap}>
-                      <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
+                    {isGroupConversation ? (
+                      <View style={styles.statusWrap}>
+                        <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.statusWrap}>
+                        <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
+                        {isRead ? (
+                          <Image source={{ uri: peerAvatarUri }} style={styles.statusAvatar} />
+                        ) : null}
+                        <Text style={styles.statusText}>{isRead ? 'Seen' : item.status}</Text>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <View style={styles.incomingRow}>
+                    {renderIncomingAvatar(item)}
+                    <View style={styles.incomingBody}>
+                      {isGroupConversation && (item.senderName || item.senderUsername) ? (
+                        <Text style={styles.groupSenderLabel}>
+                          {item.senderName || `@${item.senderUsername}`}
+                        </Text>
+                      ) : null}
+                      <View style={[styles.messageBubble, styles.theirsBubble, bubbleColor]}>
+                        {item.mediaType && item.mediaUrl ? (
+                          renderMediaMessage(item, false)
+                        ) : (
+                          <Text style={[styles.messageText, { color: colors.text }]}>
+                            {normalizeMessageText(item.text)}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.incomingTimeWrap}>
+                        <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              )}
+                )}
+              </View>
             </View>
           );
         }}
@@ -997,7 +1428,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
             </Text>
           )}
         </View>
-        <Pressable style={styles.iconButton}>
+        <Pressable style={styles.iconButton} onPress={() => setIsOptionsVisible(true)}>
           <MaterialIcons name="more-vert" size={24} color="#126b87" />
         </Pressable>
       </View>
@@ -1028,6 +1459,8 @@ function ChatDetailScreen({ navigation, route }: Props) {
             editable={!isGroupConversation && !isPeerKeyMissing && !isDMsDisabled}
             placeholder={isComposerFocused ? '' : composerPlaceholder}
             placeholderTextColor="#68707a"
+            selectionColor="#126b87"
+            cursorColor="#126b87"
             style={[styles.input, { color: colors.text }]}
             multiline
           />
@@ -1048,7 +1481,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
           disabled={isMediaDisabled || !isGiphyInitialized}
           style={[styles.utilityButton, isMediaDisabled ? styles.utilityButtonDisabled : null]}
         >
-          <MaterialIcons name="gif" size={24} color="#126b87" />
+          <GifIcon size={24} color="#126b87" />
         </Pressable>
         <Pressable
           onPress={sendMessage}
@@ -1064,6 +1497,27 @@ function ChatDetailScreen({ navigation, route }: Props) {
           <MaterialIcons name="send" size={20} color="#ffffff" />
         </Pressable>
       </View>
+
+      <ChatOptions
+        visible={isOptionsVisible}
+        onClose={() => {
+          if (!optionsActionLoading) {
+            setIsOptionsVisible(false);
+          }
+        }}
+        isMuted={isConversationMuted}
+        isArchived={isConversationArchived}
+        onArchive={handleArchiveChat}
+        onToggleMute={handleToggleMuteChat}
+        onBlock={handleBlockUser}
+        onReport={handleReportConversation}
+        canBlock={canShowBlockAndReport}
+        canReport={canShowBlockAndReport}
+        isArchiveLoading={optionsActionLoading === 'archive'}
+        isMuteLoading={optionsActionLoading === 'mute'}
+        isBlockLoading={optionsActionLoading === 'block'}
+        isReportLoading={optionsActionLoading === 'report'}
+      />
 
       <Modal
         visible={Boolean(pendingMedia)}
@@ -1091,6 +1545,8 @@ function ChatDetailScreen({ navigation, route }: Props) {
                   onChangeText={setPendingMediaCaption}
                   placeholder="Add a message"
                   placeholderTextColor="#68828a"
+                  selectionColor="#126b87"
+                  cursorColor="#126b87"
                   style={[
                     styles.pendingMediaInput,
                     {
@@ -1237,24 +1693,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.72,
   },
-  groupInfoWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-  },
-  groupInfoTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 14,
-  },
-  groupInfoBody: {
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
-    color: '#68828a',
-    marginTop: 8,
-  },
   messageWrap: {
     marginVertical: 6,
     maxWidth: '86%',
@@ -1272,6 +1710,13 @@ const styles = StyleSheet.create({
   },
   incomingBody: {
     flexShrink: 1,
+  },
+  groupSenderLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#126b87',
+    marginBottom: 4,
+    marginLeft: 2,
   },
   incomingAvatar: {
     width: 28,

@@ -167,7 +167,9 @@ function Prayer({ navigation }: Props) {
           useNativeDriver: true,
         }),
       ]),
-    ]).start();
+    ]).start(() => {
+      HapticService.trigger('selection');
+    });
   }, [index, liquidStretch, liquidTranslate, tabWidth]);
 
   return (
@@ -224,7 +226,6 @@ function Prayer({ navigation }: Props) {
                       style={styles.tabItem}
                       onPress={() => {
                         setIndex(i);
-                        setTimeout(() => HapticService.trigger('selection'), 40);
                       }}
                     >
                       {props?.navigationState?.index === i ? (

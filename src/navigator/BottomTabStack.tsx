@@ -25,6 +25,7 @@ import ConnectIcon from '@/assets/icons/connect.svg';
 import Home2Icon from '@/assets/icons/home2.svg';
 import MessagesIcon from '@/assets/icons/messages.svg';
 import MessagesStack from './MessagesStack';
+import { useChatUnreadIndicator } from '@/src/services/chat/unreadIndicator';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -248,9 +249,25 @@ ConnectTabIcon.propTypes = {
 
 function ChatTabIcon({ focused, color }: { focused: boolean; color: string }) {
   const size = focused ? 22 : 22;
+  const hasUnreadMessages = useChatUnreadIndicator();
   return (
-    <View style={{ width: size, height: size }}>
+    <View style={{ width: size, height: size, position: 'relative' }}>
       <MessagesIcon width={size} height={size} color={color} />
+      {hasUnreadMessages ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: -2,
+            right: -3,
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: '#12d2d9',
+            borderWidth: 2,
+            borderColor: '#032f3c',
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -334,7 +351,12 @@ function BottomStack() {
                 colors={tabBarGradientColors}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundColor: dark ? '#0D0D0D' : colors.background,
+                  },
+                ]}
               />
               <View
                 style={[

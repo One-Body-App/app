@@ -2,13 +2,16 @@ import { ensureChatKeypair, getMyChatKeypair, getPeerPublicKey } from './keyMana
 import { decryptE2EEMessage, encryptE2EEMessage } from './crypto';
 import {
   fetchConversationMessages,
+  fetchGroupConversationMessages,
   markChatConversationRead,
+  updateChatConversationReadState,
   updateChatMessageStatus,
 } from './api';
 import {
   emitChatConversationRead,
   emitChatDelivered,
   emitChatRead,
+  sendChatGroupMessage,
   sendChatE2EEMessage,
   ChatTransportError,
 } from './socketClient';
@@ -122,6 +125,34 @@ export const loadAndDecryptConversation = async (args: {
   return decryptedMessages;
 };
 
+export const loadGroupConversation = async (args: {
+  groupId: string;
+  token?: string;
+  limit?: number;
+  before?: string;
+}) => {
+  const response = await fetchGroupConversationMessages(args.groupId, {
+    token: args.token,
+    limit: args.limit,
+    before: args.before,
+  });
+
+  if (
+    (response.status === 404 || response.status === 400) &&
+    !Array.isArray(response.response?.data)
+  ) {
+    return [];
+  }
+
+  if (response.status !== 200 || !Array.isArray(response.response?.data)) {
+    throw new Error(
+      (response.response as { message?: string })?.message || 'Unable to load group conversation'
+    );
+  }
+
+  return response.response.data;
+};
+
 export const parseChatMessagePayload = (
   plaintext: string
 ): { type: 'text' | 'image' | 'gif'; text: string; mediaUrl?: string } => {
@@ -195,6 +226,44 @@ export const sendEncryptedMediaMessage = async (args: {
   });
 };
 
+export const sendGroupTextMessage = async (args: { groupId: string; text: string }) => {
+  return sendChatGroupMessage({
+    groupId: args.groupId,
+    plaintextPayload: args.text,
+    messageType: 'text',
+    clientMessageId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+  });
+};
+
+export const sendGroupMediaMessage = async (args: {
+  groupId: string;
+  mediaType: 'image' | 'gif';
+  mediaUrl?: string;
+  giphyId?: string;
+  text?: string;
+}) => {
+  const normalizedText = typeof args.text === 'string' ? args.text.trim() : '';
+  const plaintextPayload =
+    args.mediaType === 'gif'
+      ? JSON.stringify({
+          type: 'gif',
+          giphyId: args.giphyId,
+          ...(normalizedText ? { text: normalizedText } : {}),
+        })
+      : JSON.stringify({
+          type: 'image',
+          url: args.mediaUrl,
+          ...(normalizedText ? { text: normalizedText } : {}),
+        });
+
+  return sendChatGroupMessage({
+    groupId: args.groupId,
+    plaintextPayload,
+    messageType: args.mediaType,
+    clientMessageId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+  });
+};
+
 export const markMessageDelivered = async (messageId: string, token?: string) => {
   await emitChatDelivered(messageId);
   await updateChatMessageStatus(messageId, 'delivered', token);
@@ -224,6 +293,29 @@ export const markConversationRead = async (peerUserId: string, token?: string) =
   if (response.status !== 200 || !response.response?.data) {
     throw new Error(
       (response.response as { message?: string })?.message || 'Unable to mark conversation as read'
+    );
+  }
+
+  return {
+    ok: true as const,
+    ...response.response.data,
+  };
+};
+
+export const markGroupConversationRead = async (groupId: string, token?: string) => {
+  const response = await updateChatConversationReadState(
+    {
+      conversationType: 'group',
+      groupId,
+      isRead: true,
+    },
+    token
+  );
+
+  if (response.status !== 200 || !response.response?.data) {
+    throw new Error(
+      (response.response as { message?: string })?.message ||
+        'Unable to mark group conversation as read'
     );
   }
 

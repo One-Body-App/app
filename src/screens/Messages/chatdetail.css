@@ -108,9 +108,9 @@
 }
 
 .message-bubble {
-  padding: 12px 16px;
+  padding: 14px 16px;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 2.5;
   word-wrap: break-word;
 }
 

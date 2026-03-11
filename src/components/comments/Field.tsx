@@ -24,6 +24,7 @@ import { spacing } from '@/src/styles/spacing';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { MainStackParamList } from '@/src/navigator/types';
+import GifIcon from '@/components/GifIcon';
 import {
   createUploadImageRequestId,
   waitForUploadImageResult,
@@ -452,7 +453,7 @@ function CommentField({
                     }
                   }}
                 >
-                  <MaterialCommunityIcons name="file-gif-box" size={20} color={textSecondary} />
+                  <GifIcon size={20} color={textSecondary} />
                 </TouchableOpacity>
               ) : null}
             </View>

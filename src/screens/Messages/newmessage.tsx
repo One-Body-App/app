@@ -228,6 +228,8 @@ function NewMessageScreen({ navigation }: Props) {
       peerName: contact.name,
       peerUsername: contact.username,
       peerAvatarUri: contact.avatarUri,
+      isMuted: false,
+      isArchived: false,
     });
   };
 

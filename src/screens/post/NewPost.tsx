@@ -36,6 +36,7 @@ import RNFS from 'react-native-fs';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
+import GifIcon from '@/components/GifIcon';
 import MapBox, { MapSuggestion } from '@/components/MapBox';
 import StyledText from '@/components/styled/Text';
 import StyledTextInput from '@/components/styled/TextInput';
@@ -1266,11 +1267,7 @@ function NewPost({ navigation, route }: Props) {
                       }
                     }}
                   >
-                    <MaterialCommunityIcons
-                      name="file-gif-box"
-                      size={ACTION_BAR_ICON_SIZE}
-                      color={Colors.primary.brand}
-                    />
+                    <GifIcon size={ACTION_BAR_ICON_SIZE} color={Colors.primary.brand} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {

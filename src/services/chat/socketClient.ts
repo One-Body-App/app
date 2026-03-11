@@ -7,6 +7,7 @@ import {
   ChatSendAck,
   ChatTransportErrorCode,
   SendE2EEMessagePayload,
+  SendGroupMessagePayload,
 } from './types';
 
 type ChatSocketErrorPayload = {
@@ -317,6 +318,69 @@ export const onChatMessage = async (listener: (payload: any) => void) => {
 
   return () => {
     socket.off('chat:new_message', listener);
+  };
+};
+
+export const sendChatGroupMessage = async (payload: SendGroupMessagePayload) => {
+  const socket = await connectChatSocket();
+
+  return new Promise<ChatSendAck>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new ChatTransportError('Chat send timed out', 'transport-timeout'));
+    }, SOCKET_TIMEOUT_MS);
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off('chat:error', handleChatError);
+      socket.off('exception', handleException);
+      socket.off('connect_error', handleConnectError);
+      socket.off('disconnect', handleDisconnect);
+    };
+
+    const fail = (error: unknown, fallbackCode: ChatTransportErrorCode) => {
+      cleanup();
+      reject(resolveSocketError(error, fallbackCode));
+    };
+
+    const handleChatError = (error: unknown) => fail(error, 'unauthorized-socket');
+    const handleException = (error: unknown) => fail(error, 'send-failed');
+    const handleConnectError = (error: unknown) => fail(error, 'connect-error');
+    const handleDisconnect = (reason: unknown) =>
+      fail(
+        typeof reason === 'string' ? `Chat disconnected: ${reason}` : 'Chat disconnected',
+        'send-failed'
+      );
+
+    socket.once('chat:error', handleChatError);
+    socket.once('exception', handleException);
+    socket.once('connect_error', handleConnectError);
+    socket.once('disconnect', handleDisconnect);
+
+    socket.emit('chat:send_group_message', payload, (response?: ChatSendAck | null) => {
+      if (!response) {
+        cleanup();
+        resolve({ ok: true });
+        return;
+      }
+
+      if (response.ok === false) {
+        fail(response, response.code || 'send-failed');
+        return;
+      }
+
+      cleanup();
+      resolve(response);
+    });
+  });
+};
+
+export const onChatGroupMessage = async (listener: (payload: any) => void) => {
+  const socket = await connectChatSocket();
+  socket.on('chat:new_group_message', listener);
+
+  return () => {
+    socket.off('chat:new_group_message', listener);
   };
 };
 

@@ -3,17 +3,24 @@ export type ChatMessageStatus = 'sent' | 'delivered' | 'read';
 export type ChatEnvelope = {
   _id: string;
   senderId: string;
-  receiverId: string;
+  receiverId?: string;
+  groupId?: string;
+  conversationType?: 'direct' | 'group';
   encryptedPayload: string;
   nonce: string;
   authTag: string;
   aad?: string;
   messageType: 'text' | 'image' | 'gif';
   status: ChatMessageStatus;
+  plaintextPayload?: string;
   createdAt?: string;
   updatedAt?: string;
   clientMessageId?: string;
   senderPublicKeyVersion?: number;
+  senderName?: string;
+  senderUsername?: string;
+  senderAvatarUri?: string;
+  groupName?: string;
 };
 
 export type ChatUserKey = {
@@ -48,6 +55,13 @@ export type SendE2EEMessagePayload = {
   messageType?: 'text' | 'image' | 'gif';
   clientMessageId?: string;
   senderPublicKeyVersion?: number;
+};
+
+export type SendGroupMessagePayload = {
+  groupId: string;
+  plaintextPayload: string;
+  messageType?: 'text' | 'image' | 'gif';
+  clientMessageId?: string;
 };
 
 export type ChatTransportErrorCode =
@@ -95,6 +109,10 @@ export type UpdateChatConversationMutePayload = ChatConversationTargetPayload & 
 
 export type UpdateChatConversationReadStatePayload = ChatConversationTargetPayload & {
   isRead: boolean;
+};
+
+export type UpdateChatConversationArchiveStatePayload = ChatConversationTargetPayload & {
+  isArchived: boolean;
 };
 
 export type ChatConversationReadAckSuccess = {

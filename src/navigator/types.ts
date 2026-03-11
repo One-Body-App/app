@@ -208,11 +208,15 @@ export type MessagesStackParamsList = {
         peerName: string;
         peerUsername?: string;
         peerAvatarUri?: string;
+        isMuted?: boolean;
+        isArchived?: boolean;
       }
     | {
         conversationType: 'group';
         groupId: string;
         groupName: string;
+        isMuted?: boolean;
+        isArchived?: boolean;
       };
 };
 

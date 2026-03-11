@@ -181,6 +181,7 @@ function CreateGroupScreen({ navigation }: Props) {
         conversationType: 'group',
         groupId: data.groupId || data.id.replace(/^group:/, ''),
         groupName: data.groupName || groupName.trim(),
+        isMuted: false,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create group';

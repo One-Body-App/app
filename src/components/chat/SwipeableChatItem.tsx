@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useRef, useState } from 'react';
+import React, { memo, useCallback, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import Swipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -11,9 +11,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { HapticService } from '@/src/services/haptic';
 
-const UTILITY_ACTION_WIDTH = 70;
-const UTILITY_ACTIONS_WIDTH = UTILITY_ACTION_WIDTH * 2;
-const DELETE_SWIPE_THRESHOLD_RATIO = 0.8;
+const UTILITY_ACTION_SIZE = 74;
+const ACTION_SEPARATOR_WIDTH = 1;
+const UTILITY_OPEN_THRESHOLD_RATIO = 0.58;
+const DESTRUCTIVE_CELL_SIZE = 88;
+const DESTRUCTIVE_TRAY_HORIZONTAL_INSET = 8;
+const ACTION_CONTENT_GAP = 12;
+const DESTRUCTIVE_TRAY_WIDTH = DESTRUCTIVE_CELL_SIZE + DESTRUCTIVE_TRAY_HORIZONTAL_INSET * 2;
+const DESTRUCTIVE_ACTION_WIDTH = DESTRUCTIVE_TRAY_WIDTH + ACTION_CONTENT_GAP;
+const DESTRUCTIVE_OPEN_THRESHOLD_RATIO = 0.62;
 const ACTION_PANEL_INSET = 4;
 
 type SwipeableChatListItem = {
@@ -22,14 +28,16 @@ type SwipeableChatListItem = {
   message: string;
   isRead: boolean;
   isMuted: boolean;
+  isArchived: boolean;
 };
 
 type Props = {
   item: SwipeableChatListItem;
   onPress: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => void | Promise<void>;
   onMute: (id: string, nextMuted: boolean) => void;
   onToggleRead: (id: string, nextRead: boolean) => void;
+  onArchive: (id: string) => void;
   destructiveLabel?: string;
   destructiveIconName?: string;
   enableDestructiveAction?: boolean;
@@ -79,6 +87,7 @@ function SwipeableChatItemComponent({
   onDelete,
   onMute,
   onToggleRead,
+  onArchive,
   destructiveLabel = 'Archive',
   destructiveIconName = 'archive',
   enableDestructiveAction = true,
@@ -86,22 +95,18 @@ function SwipeableChatItemComponent({
   children,
 }: Props) {
   const swipeableRef = useRef<SwipeableMethods | null>(null);
-  const [rowWidth, setRowWidth] = useState(0);
   const hasTriggeredDeleteThresholdRef = useRef(false);
   const hasTriggeredUtilityThresholdRef = useRef(false);
-
-  const deleteThreshold =
-    enableDestructiveAction && rowWidth > 0 ? rowWidth * DELETE_SWIPE_THRESHOLD_RATIO : 0;
-
-  const handleLayout = useCallback(
-    (event: any) => {
-      const nextWidth = Number(event?.nativeEvent?.layout?.width || 0);
-      if (nextWidth > 0 && nextWidth !== rowWidth) {
-        setRowWidth(nextWidth);
-      }
-    },
-    [rowWidth]
-  );
+  const utilityActionCount = item.isArchived ? 1 : 3;
+  const utilityTrayWidth =
+    UTILITY_ACTION_SIZE * utilityActionCount +
+    ACTION_SEPARATOR_WIDTH * Math.max(utilityActionCount - 1, 0);
+  const utilityActionsWidth = utilityTrayWidth + ACTION_CONTENT_GAP;
+  const utilityOpenThreshold = enableUtilityActions
+    ? Math.max(UTILITY_ACTION_SIZE * 0.8, utilityTrayWidth * UTILITY_OPEN_THRESHOLD_RATIO)
+    : 0;
+  const destructiveActionsWidth = enableDestructiveAction ? DESTRUCTIVE_ACTION_WIDTH : 0;
+  const deleteThreshold = destructiveActionsWidth * DESTRUCTIVE_OPEN_THRESHOLD_RATIO;
 
   const resetThresholdHaptics = useCallback(() => {
     hasTriggeredDeleteThresholdRef.current = false;
@@ -142,38 +147,61 @@ function SwipeableChatItemComponent({
         <>
           <ThresholdHapticObserver
             translation={translation}
-            threshold={UTILITY_ACTIONS_WIDTH}
+            threshold={utilityOpenThreshold}
             enabled={enableUtilityActions}
             direction="positive"
             onCrossThreshold={handleUtilityThresholdCross}
           />
-          <View style={styles.leftActionsWrap}>
-            <Pressable
-              style={[styles.utilityAction, styles.muteAction]}
-              onPress={() => handleUtilityPress(() => onMute(item.id, !item.isMuted), methods)}
-            >
-              <View style={styles.actionIconBadge}>
-                <MaterialIcons
-                  name={item.isMuted ? 'notifications' : 'notifications-off'}
-                  size={18}
-                  color="#ffffff"
-                />
+          <View style={[styles.leftActionsWrap, { width: utilityActionsWidth }]}>
+            {item.isArchived ? (
+              <View style={[styles.utilityTray, { width: utilityTrayWidth }]}>
+                <Pressable
+                  style={[styles.utilityCell, styles.archiveAction]}
+                  onPress={() => handleUtilityPress(() => onArchive(item.id), methods)}
+                >
+                  <MaterialIcons name="unarchive" size={22} color="#ffffff" />
+                  <Text style={styles.utilityActionText}>Unarchive</Text>
+                </Pressable>
               </View>
-              <Text style={styles.utilityActionText}>{item.isMuted ? 'Unmute' : 'Silence'}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.utilityAction, styles.readAction]}
-              onPress={() => handleUtilityPress(() => onToggleRead(item.id, !item.isRead), methods)}
-            >
-              <View style={[styles.actionIconBadge, styles.readActionIconBadge]}>
-                <MaterialIcons
-                  name={item.isRead ? 'mark-email-unread' : 'mark-email-read'}
-                  size={18}
-                  color="#ffffff"
-                />
+            ) : (
+              <View style={[styles.utilityTray, { width: utilityTrayWidth }]}>
+                <Pressable
+                  style={[styles.utilityCell, styles.muteAction]}
+                  onPress={() => handleUtilityPress(() => onMute(item.id, !item.isMuted), methods)}
+                >
+                  <MaterialIcons
+                    name={item.isMuted ? 'notifications' : 'notifications-off'}
+                    size={22}
+                    color="#ffffff"
+                  />
+                  <Text style={styles.utilityActionText}>
+                    {item.isMuted ? 'Unmute' : 'Silence'}
+                  </Text>
+                </Pressable>
+                <View style={styles.utilitySeparator} />
+                <Pressable
+                  style={[styles.utilityCell, styles.archiveAction]}
+                  onPress={() => handleUtilityPress(() => onArchive(item.id), methods)}
+                >
+                  <MaterialIcons name="archive" size={22} color="#ffffff" />
+                  <Text style={styles.utilityActionText}>Archive</Text>
+                </Pressable>
+                <View style={styles.utilitySeparator} />
+                <Pressable
+                  style={[styles.utilityCell, styles.readAction]}
+                  onPress={() =>
+                    handleUtilityPress(() => onToggleRead(item.id, !item.isRead), methods)
+                  }
+                >
+                  <MaterialIcons
+                    name={item.isRead ? 'mark-email-unread' : 'mark-email-read'}
+                    size={22}
+                    color="#ffffff"
+                  />
+                  <Text style={styles.utilityActionText}>{item.isRead ? 'Unread' : 'Read'}</Text>
+                </Pressable>
               </View>
-              <Text style={styles.utilityActionText}>{item.isRead ? 'Unread' : 'Read'}</Text>
-            </Pressable>
+            )}
           </View>
         </>
       );
@@ -182,16 +210,34 @@ function SwipeableChatItemComponent({
       enableUtilityActions,
       handleUtilityPress,
       handleUtilityThresholdCross,
+      item.isArchived,
       item.id,
       item.isMuted,
       item.isRead,
+      onArchive,
       onMute,
       onToggleRead,
+      utilityOpenThreshold,
+      utilityTrayWidth,
+      utilityActionsWidth,
     ]
   );
 
+  const handleDestructivePress = useCallback(
+    (methods: SwipeableMethods) => {
+      HapticService.trigger('selection');
+      onDelete(item.id);
+      methods.close();
+    },
+    [item.id, onDelete]
+  );
+
   const renderRightActions = useCallback(
-    (_progress: SharedValue<number>, translation: SharedValue<number>) => {
+    (
+      _progress: SharedValue<number>,
+      translation: SharedValue<number>,
+      methods: SwipeableMethods
+    ) => {
       return (
         <>
           <ThresholdHapticObserver
@@ -201,12 +247,15 @@ function SwipeableChatItemComponent({
             direction="negative"
             onCrossThreshold={handleDeleteThresholdCross}
           />
-          <View style={[styles.rightActionsWrap, rowWidth > 0 ? { width: rowWidth } : null]}>
-            <View style={styles.rightActionSurface}>
-              <View style={[styles.actionIconBadge, styles.destructiveIconBadge]}>
-                <MaterialIcons name={destructiveIconName} size={18} color="#ffffff" />
-              </View>
-              <Text style={styles.leftActionText}>{destructiveLabel}</Text>
+          <View style={[styles.rightActionsWrap, { width: destructiveActionsWidth }]}>
+            <View style={[styles.destructiveTray, { width: DESTRUCTIVE_TRAY_WIDTH }]}>
+              <Pressable
+                style={styles.destructiveCell}
+                onPress={() => handleDestructivePress(methods)}
+              >
+                <MaterialIcons name={destructiveIconName} size={24} color="#ffffff" />
+                <Text style={styles.leftActionText}>{destructiveLabel}</Text>
+              </Pressable>
             </View>
           </View>
         </>
@@ -217,39 +266,29 @@ function SwipeableChatItemComponent({
       destructiveIconName,
       destructiveLabel,
       enableDestructiveAction,
+      handleDestructivePress,
       handleDeleteThresholdCross,
-      rowWidth,
+      destructiveActionsWidth,
     ]
   );
 
-  const handleOpen = useCallback(
-    (direction: 'left' | 'right') => {
-      if (direction === 'left' && enableDestructiveAction) {
-        onDelete(item.id);
-      }
-    },
-    [enableDestructiveAction, item.id, onDelete]
-  );
-
   return (
-    <Animated.View
-      layout={LinearTransition.duration(180)}
-      exiting={FadeOutLeft.duration(160)}
-      onLayout={handleLayout}
-    >
+    <Animated.View layout={LinearTransition.duration(180)} exiting={FadeOutLeft.duration(160)}>
       <Swipeable
         ref={swipeableRef}
-        friction={1.5}
+        friction={1.1}
         overshootLeft={false}
         overshootRight={false}
-        leftThreshold={enableUtilityActions ? UTILITY_ACTIONS_WIDTH : 10_000}
+        leftThreshold={enableUtilityActions ? utilityOpenThreshold : 10_000}
         rightThreshold={enableDestructiveAction ? deleteThreshold || 10_000 : 10_000}
+        dragOffsetFromLeftEdge={16}
+        dragOffsetFromRightEdge={16}
         renderLeftActions={enableUtilityActions ? renderLeftActions : undefined}
         renderRightActions={enableDestructiveAction ? renderRightActions : undefined}
         onSwipeableOpenStartDrag={resetThresholdHaptics}
         onSwipeableCloseStartDrag={resetThresholdHaptics}
         onSwipeableClose={resetThresholdHaptics}
-        onSwipeableOpen={handleOpen}
+        childrenContainerStyle={styles.childrenContainer}
       >
         <Pressable onPress={onPress} style={styles.contentPressable}>
           {children ?? (
@@ -272,6 +311,9 @@ const styles = StyleSheet.create({
   contentPressable: {
     backgroundColor: 'transparent',
   },
+  childrenContainer: {
+    flex: 1,
+  },
   fallbackContent: {
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -287,74 +329,73 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   leftActionsWrap: {
-    width: UTILITY_ACTIONS_WIDTH,
-    flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'stretch',
     paddingVertical: ACTION_PANEL_INSET,
-    gap: 2,
+    paddingRight: ACTION_CONTENT_GAP,
   },
   rightActionsWrap: {
-    flex: 1,
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
     paddingVertical: ACTION_PANEL_INSET,
+    paddingLeft: ACTION_CONTENT_GAP,
   },
-  rightActionSurface: {
-    flex: 1,
-    alignSelf: 'stretch',
-    backgroundColor: '#d92d20',
-    borderRadius: 24,
-    overflow: 'hidden',
-    paddingLeft: 18,
-    paddingRight: 20,
+  utilityTray: {
+    width: '100%',
     flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: '#d8e3e8',
+  },
+  utilityCell: {
+    width: UTILITY_ACTION_SIZE,
+    height: UTILITY_ACTION_SIZE,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    gap: 6,
   },
-  leftActionText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  utilitySeparator: {
+    width: ACTION_SEPARATOR_WIDTH,
+    backgroundColor: 'rgba(255,255,255,0.28)',
   },
-  utilityAction: {
-    width: UTILITY_ACTION_WIDTH,
+  destructiveTray: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: '#d92d20',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: DESTRUCTIVE_TRAY_HORIZONTAL_INSET,
+  },
+  destructiveCell: {
+    width: DESTRUCTIVE_CELL_SIZE,
+    height: DESTRUCTIVE_CELL_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: 24,
-    paddingTop: 12,
-    paddingBottom: 10,
   },
-  actionIconBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-  },
-  readActionIconBadge: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  destructiveIconBadge: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderColor: 'rgba(255,255,255,0.18)',
+  leftActionText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
   muteAction: {
     backgroundColor: '#6b7d96',
+  },
+  archiveAction: {
+    backgroundColor: '#4f8596',
   },
   readAction: {
     backgroundColor: '#126b87',
   },
   utilityActionText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.15,
+    textAlign: 'center',
   },
 });
 

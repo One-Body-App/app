@@ -9,6 +9,7 @@ import {
   RegisterChatDeviceTokenPayload,
   RegisterChatKeyPayload,
   UpdateChatConversationMutePayload,
+  UpdateChatConversationArchiveStatePayload,
   UpdateChatConversationReadStatePayload,
 } from './types';
 
@@ -54,6 +55,28 @@ export const fetchConversationMessages = async (
     route: `chat/conversations/${peerUserId}/messages${suffix ? `?${suffix}` : ''}`,
     verb: 'get',
     token: withToken(options?.token),
+  });
+};
+
+export const fetchGroupConversationMessages = async (
+  groupId: string,
+  options?: { limit?: number; before?: string; token?: string }
+) => {
+  const query = new URLSearchParams();
+  if (options?.limit) {
+    query.set('limit', String(options.limit));
+  }
+  if (options?.before) {
+    query.set('before', options.before);
+  }
+
+  const suffix = query.toString();
+
+  return ApiCall<ApiEnvelope<ChatEnvelope[]>>({
+    route: `chat/groups/${groupId}/messages${suffix ? `?${suffix}` : ''}`,
+    verb: 'get',
+    token: withToken(options?.token),
+    suppressErrorLog: true,
   });
 };
 
@@ -118,7 +141,7 @@ export const updateChatConversationMuteState = async (
   token?: string
 ) => {
   return ApiCall<ApiEnvelope<{ isMuted: boolean; peerUserId?: string; groupId?: string }>>({
-    route: 'chat/conversations/state',
+    route: 'chat/conversations/state/mute',
     verb: 'patch',
     params: payload,
     token: withToken(token),
@@ -153,6 +176,26 @@ export const hideChatConversation = async (
     route: 'chat/conversations/state',
     verb: 'delete',
     params: payload,
+    token: withToken(token),
+  });
+};
+
+export const updateChatConversationArchiveState = async (
+  payload: UpdateChatConversationArchiveStatePayload,
+  token?: string
+) => {
+  return ApiCall<ApiEnvelope<{ isArchived: boolean; peerUserId?: string; groupId?: string }>>({
+    route: 'chat/conversations/state/archive',
+    verb: 'patch',
+    params: payload,
+    token: withToken(token),
+  });
+};
+
+export const deleteDirectChatConversation = async (peerUserId: string, token?: string) => {
+  return ApiCall<ApiEnvelope<{ peerUserId: string; deleted: boolean; historyClearedAt: string }>>({
+    route: `chat/conversations/direct/${peerUserId}`,
+    verb: 'delete',
     token: withToken(token),
   });
 };
