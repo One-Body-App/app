@@ -4,8 +4,11 @@ import { BASE_URL } from '@/src/services/constants';
 import { getValidAccessToken } from '@/src/services/authTokens';
 import {
   ChatConversationReadAck,
+  ChatMessageReactionAck,
+  ChatMessageReactionUpdate,
   ChatSendAck,
   ChatTransportErrorCode,
+  ReactChatMessagePayload,
   SendE2EEMessagePayload,
   SendGroupMessagePayload,
 } from './types';
@@ -14,6 +17,7 @@ type ChatSocketErrorPayload = {
   message?: string;
   error?: string;
   code?: string;
+  retryAfterMs?: number;
 };
 
 type ChatSocket = Socket & {
@@ -29,10 +33,13 @@ const SOCKET_TIMEOUT_MS = 12_000;
 export class ChatTransportError extends Error {
   public readonly code: ChatTransportErrorCode;
 
-  public constructor(message: string, code: ChatTransportErrorCode) {
+  public readonly retryAfterMs?: number;
+
+  public constructor(message: string, code: ChatTransportErrorCode, retryAfterMs?: number) {
     super(message);
     this.name = 'ChatTransportError';
     this.code = code;
+    this.retryAfterMs = retryAfterMs;
   }
 }
 
@@ -70,6 +77,8 @@ const normalizeErrorCode = (value?: string): ChatTransportErrorCode => {
       return 'receiver-not-found';
     case 'dms-disabled':
       return 'dms-disabled';
+    case 'rate-limited':
+      return 'rate-limited';
     case 'invalid-payload':
       return 'invalid-payload';
     case 'transport-timeout':
@@ -101,7 +110,8 @@ const resolveSocketError = (
   const message = String(value?.error || value?.message || 'Unable to send message').trim();
   return new ChatTransportError(
     message || 'Unable to send message',
-    normalizeErrorCode(value?.code || fallbackCode)
+    normalizeErrorCode(value?.code || fallbackCode),
+    typeof value?.retryAfterMs === 'number' ? value.retryAfterMs : undefined
   );
 };
 
@@ -390,6 +400,75 @@ export const onChatMessageStatus = async (listener: (payload: any) => void) => {
 
   return () => {
     socket.off('chat:message_status', listener);
+  };
+};
+
+export const reactToChatMessage = async (payload: ReactChatMessagePayload) => {
+  const socket = await connectChatSocket();
+
+  return new Promise<ChatMessageReactionAck>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new ChatTransportError('Chat reaction timed out', 'transport-timeout'));
+    }, SOCKET_TIMEOUT_MS);
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off('chat:error', handleChatError);
+      socket.off('exception', handleException);
+      socket.off('connect_error', handleConnectError);
+      socket.off('disconnect', handleDisconnect);
+    };
+
+    const fail = (error: unknown, fallbackCode: ChatTransportErrorCode) => {
+      cleanup();
+      reject(resolveSocketError(error, fallbackCode));
+    };
+
+    const handleChatError = (error: unknown) => fail(error, 'unauthorized-socket');
+    const handleException = (error: unknown) => fail(error, 'send-failed');
+    const handleConnectError = (error: unknown) => fail(error, 'connect-error');
+    const handleDisconnect = (reason: unknown) =>
+      fail(
+        typeof reason === 'string' ? `Chat disconnected: ${reason}` : 'Chat disconnected',
+        'send-failed'
+      );
+
+    socket.once('chat:error', handleChatError);
+    socket.once('exception', handleException);
+    socket.once('connect_error', handleConnectError);
+    socket.once('disconnect', handleDisconnect);
+
+    socket.emit('chat:react_message', payload, (response?: ChatMessageReactionAck | null) => {
+      if (!response) {
+        cleanup();
+        resolve({
+          ok: true,
+          messageId: payload.messageId,
+          reactions: [],
+        });
+        return;
+      }
+
+      if (response.ok === false) {
+        fail(response, response.code || 'send-failed');
+        return;
+      }
+
+      cleanup();
+      resolve(response);
+    });
+  });
+};
+
+export const onChatMessageReaction = async (
+  listener: (payload: ChatMessageReactionUpdate) => void
+) => {
+  const socket = await connectChatSocket();
+  socket.on('chat:message_reaction', listener);
+
+  return () => {
+    socket.off('chat:message_reaction', listener);
   };
 };
 

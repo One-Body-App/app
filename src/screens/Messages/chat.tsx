@@ -26,6 +26,13 @@ import {
 } from '@/src/services/chat/activeConversation';
 import { ConversationListItem } from '@/src/services/chat/types';
 import {
+  isGroupConversationItem,
+  resolveConversationTargetPayload,
+  resolveDirectPeerUserId,
+  resolveGroupId,
+} from '@/src/services/chat/conversationTarget';
+import { subscribeToChatConversationRead } from '@/src/services/chat/conversationReadSync';
+import {
   connectChatSocket,
   onChatGroupMessage,
   onChatMessage,
@@ -50,8 +57,7 @@ import { SwipeableChatItem } from '@/src/components/chat/SwipeableChatItem';
 import ChatEmptyState from './chatempty';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'MessagesList'>;
-type ChatSectionFilter = 'active' | 'groups' | 'archived';
-const MONGO_OBJECT_ID_REGEX = /^[a-f0-9]{24}$/i;
+type ChatSectionFilter = 'inbox' | 'groups' | 'archived';
 
 const formatTimeLabel = (iso: string) => {
   const date = new Date(iso);
@@ -81,31 +87,8 @@ const getConversationPreview = (item: ConversationListItem) => {
 const getConversationAvatarFallback = (item: ConversationListItem) =>
   (item.peerName || item.groupName || 'G').slice(0, 1).toUpperCase();
 
-const isValidMongoObjectId = (value: string) => MONGO_OBJECT_ID_REGEX.test(value.trim());
-
-const resolveDirectPeerUserId = (item: Pick<ConversationListItem, 'peerUserId' | 'id'>) => {
-  const directPeerUserId = typeof item.peerUserId === 'string' ? item.peerUserId.trim() : '';
-  if (directPeerUserId.length > 0 && isValidMongoObjectId(directPeerUserId)) {
-    return directPeerUserId;
-  }
-
-  const fallbackId = typeof item.id === 'string' ? item.id.trim() : '';
-  if (fallbackId.startsWith('c-')) {
-    const socketPeerId = fallbackId.replace(/^c-/, '').trim();
-    if (isValidMongoObjectId(socketPeerId)) {
-      return socketPeerId;
-    }
-  }
-
-  if (isValidMongoObjectId(fallbackId)) {
-    return fallbackId;
-  }
-
-  return '';
-};
-
 const getDestructiveActionConfig = (item: ConversationListItem) => {
-  const isGroupConversation = item.conversationType === 'group' || Boolean(item.groupId);
+  const isGroupConversation = isGroupConversationItem(item);
 
   if (!isGroupConversation) {
     return { label: 'Delete', iconName: 'delete' as const };
@@ -136,7 +119,7 @@ function ChatListScreen({ navigation }: Props) {
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<ChatSectionFilter>('active');
+  const [selectedFilter, setSelectedFilter] = useState<ChatSectionFilter>('inbox');
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const searchInputRef = useRef<TextInput>(null);
 
@@ -333,6 +316,52 @@ function ChatListScreen({ navigation }: Props) {
     }, [refreshConversations])
   );
 
+  useEffect(() => {
+    return subscribeToChatConversationRead((event) => {
+      setConversations((prev) => {
+        let didUpdate = false;
+        const next = prev.map((conversation) => {
+          if (event.conversationType === 'group') {
+            const conversationGroupId = resolveGroupId(conversation);
+            if (
+              !event.groupId ||
+              conversationGroupId !== event.groupId ||
+              conversation.unreadCount < 1
+            ) {
+              return conversation;
+            }
+
+            didUpdate = true;
+            return {
+              ...conversation,
+              unreadCount: 0,
+            };
+          }
+
+          const conversationPeerUserId = resolveDirectPeerUserId(conversation);
+          if (
+            !event.peerUserId ||
+            conversationPeerUserId !== event.peerUserId ||
+            conversation.unreadCount < 1
+          ) {
+            return conversation;
+          }
+
+          didUpdate = true;
+          return {
+            ...conversation,
+            unreadCount: 0,
+            lastMessageStatus: 'read',
+          };
+        });
+
+        return didUpdate ? next : prev;
+      });
+
+      refreshConversations().catch(() => undefined);
+    });
+  }, [refreshConversations]);
+
   const filteredConversations = useMemo(() => {
     const sectionFiltered = conversations.filter((item) => {
       const isGroupConversation = item.conversationType === 'group' || Boolean(item.groupId);
@@ -379,8 +408,7 @@ function ChatListScreen({ navigation }: Props) {
 
       return {
         id: item.id,
-        conversationType:
-          item.conversationType === 'group' || Boolean(item.groupId) ? 'group' : 'direct',
+        conversationType: isGroupConversationItem(item) ? 'group' : 'direct',
         title: getConversationTitle(item),
         subtitle: getConversationPreview(item),
         avatarUri: item.peerAvatarUri,
@@ -414,7 +442,7 @@ function ChatListScreen({ navigation }: Props) {
   };
 
   const renderConversationAvatar = (item: ConversationListItem) => {
-    if (item.conversationType === 'group' || item.groupId) {
+    if (isGroupConversationItem(item)) {
       return (
         <View style={styles.groupAvatarWrap}>
           <MaterialIcons name="groups" size={18} color="#ffffff" />
@@ -435,22 +463,18 @@ function ChatListScreen({ navigation }: Props) {
     );
   };
 
-  const buildConversationTargetPayload = useCallback(
-    (item: ConversationListItem) =>
-      item.conversationType === 'group' || Boolean(item.groupId)
-        ? {
-            conversationType: 'group' as const,
-            groupId: item.groupId || item.id.replace(/^group:/, ''),
-          }
-        : {
-            conversationType: 'direct' as const,
-            peerUserId: resolveDirectPeerUserId(item),
-          },
-    []
-  );
+  const buildConversationTargetPayload = useCallback((item: ConversationListItem) => {
+    return resolveConversationTargetPayload(item);
+  }, []);
 
   const handleArchiveConversation = useCallback(
     async (item: ConversationListItem, nextArchived: boolean) => {
+      const targetPayload = buildConversationTargetPayload(item);
+      if (!targetPayload) {
+        refreshConversations().catch(() => undefined);
+        return;
+      }
+
       const previousConversations = conversations;
       setConversations((prev) =>
         prev.map((conversation) =>
@@ -460,7 +484,7 @@ function ChatListScreen({ navigation }: Props) {
 
       const response = await updateChatConversationArchiveState(
         {
-          ...buildConversationTargetPayload(item),
+          ...targetPayload,
           isArchived: nextArchived,
         },
         token || undefined
@@ -477,12 +501,8 @@ function ChatListScreen({ navigation }: Props) {
   const handleDestructiveConversation = useCallback(
     async (item: ConversationListItem) => {
       const previousConversations = conversations;
-      const isGroupConversation = item.conversationType === 'group' || Boolean(item.groupId);
-      const fallbackGroupId =
-        typeof item.id === 'string' && item.id.startsWith('group:')
-          ? item.id.replace(/^group:/, '')
-          : item.id;
-      const resolvedGroupId = item.groupId || fallbackGroupId;
+      const isGroupConversation = isGroupConversationItem(item);
+      const resolvedGroupId = resolveGroupId(item);
 
       if (isGroupConversation && !item.canDeleteGroup) {
         setConversations((prev) => prev.filter((conversation) => conversation.id !== item.id));
@@ -529,7 +549,7 @@ function ChatListScreen({ navigation }: Props) {
         return;
       }
 
-      const isGroupConversation = item.conversationType === 'group' || Boolean(item.groupId);
+      const isGroupConversation = isGroupConversationItem(item);
       const targetLabel = isGroupConversation ? 'group thread' : 'thread';
 
       Alert.alert('Delete thread?', `Are you sure you want to delete this ${targetLabel}?`, [
@@ -551,7 +571,7 @@ function ChatListScreen({ navigation }: Props) {
 
   const renderFilters = () => {
     const filters: { label: string; value: ChatSectionFilter }[] = [
-      { label: 'Active', value: 'active' },
+      { label: 'Inbox', value: 'inbox' },
       { label: 'Groups', value: 'groups' },
       { label: 'Archived', value: 'archived' },
     ];
@@ -594,6 +614,12 @@ function ChatListScreen({ navigation }: Props) {
 
   const handleMuteConversation = useCallback(
     async (item: ConversationListItem, nextMuted: boolean) => {
+      const targetPayload = buildConversationTargetPayload(item);
+      if (!targetPayload) {
+        refreshConversations().catch(() => undefined);
+        return;
+      }
+
       setConversations((prev) =>
         prev.map((conversation) =>
           conversation.id === item.id ? { ...conversation, isMuted: nextMuted } : conversation
@@ -602,7 +628,7 @@ function ChatListScreen({ navigation }: Props) {
 
       const response = await updateChatConversationMuteState(
         {
-          ...buildConversationTargetPayload(item),
+          ...targetPayload,
           isMuted: nextMuted,
         },
         token || undefined
@@ -617,24 +643,33 @@ function ChatListScreen({ navigation }: Props) {
 
   const handleToggleConversationRead = useCallback(
     async (item: ConversationListItem, nextRead: boolean) => {
-      setConversations((prev) =>
-        prev.map((conversation) =>
-          conversation.id === item.id
-            ? {
-                ...conversation,
-                unreadCount: nextRead ? 0 : Math.max(conversation.unreadCount, 1),
-              }
-            : conversation
-        )
-      );
+      const targetPayload = buildConversationTargetPayload(item);
+      if (!targetPayload) {
+        refreshConversations().catch(() => undefined);
+        return;
+      }
 
       const response = await updateChatConversationReadState(
         {
-          ...buildConversationTargetPayload(item),
+          ...targetPayload,
           isRead: nextRead,
         },
         token || undefined
       );
+
+      if (response.status === 200) {
+        setConversations((prev) =>
+          prev.map((conversation) =>
+            conversation.id === item.id
+              ? {
+                  ...conversation,
+                  unreadCount: nextRead ? 0 : Math.max(conversation.unreadCount, 1),
+                }
+              : conversation
+          )
+        );
+        return;
+      }
 
       if (response.status !== 200) {
         refreshConversations().catch(() => undefined);
@@ -645,33 +680,21 @@ function ChatListScreen({ navigation }: Props) {
 
   const openConversation = useCallback(
     (item: ConversationListItem) => {
-      const directPeerUserId =
-        item.conversationType === 'group' || Boolean(item.groupId)
-          ? ''
-          : resolveDirectPeerUserId(item);
-
-      if (
-        item.conversationType !== 'group' &&
-        !item.groupId &&
-        (!directPeerUserId || !isValidMongoObjectId(directPeerUserId))
-      ) {
+      const targetPayload = buildConversationTargetPayload(item);
+      if (!targetPayload) {
         refreshConversations().catch(() => undefined);
         return;
       }
 
-      if (item.unreadCount > 0) {
+      const isGroupConversation = targetPayload.conversationType === 'group';
+      if (item.unreadCount > 0 && !isGroupConversation) {
         handleToggleConversationRead(item, true).catch(() => undefined);
       }
 
-      const isGroupConversation = item.conversationType === 'group' || Boolean(item.groupId);
       if (isGroupConversation) {
-        const fallbackGroupId =
-          typeof item.id === 'string' && item.id.startsWith('group:')
-            ? item.id.replace(/^group:/, '')
-            : item.id;
         navigation.navigate('ChatDetail', {
           conversationType: 'group',
-          groupId: item.groupId || fallbackGroupId,
+          groupId: targetPayload.groupId || '',
           groupName: item.groupName || item.peerName || 'Group chat',
           isMuted: Boolean(item.isMuted),
           isArchived: Boolean(item.isArchived),
@@ -681,7 +704,7 @@ function ChatListScreen({ navigation }: Props) {
 
       navigation.navigate('ChatDetail', {
         conversationType: 'direct',
-        peerUserId: directPeerUserId,
+        peerUserId: targetPayload.peerUserId || '',
         peerName: item.peerName,
         peerUsername: item.peerUsername,
         peerAvatarUri: item.peerAvatarUri,
@@ -689,7 +712,7 @@ function ChatListScreen({ navigation }: Props) {
         isArchived: Boolean(item.isArchived),
       });
     },
-    [handleToggleConversationRead, navigation, refreshConversations]
+    [buildConversationTargetPayload, handleToggleConversationRead, navigation, refreshConversations]
   );
 
   const handleNativePressConversation = useCallback(
@@ -877,11 +900,11 @@ function ChatListScreen({ navigation }: Props) {
 
         {isIOS ? (
           <View style={styles.headerCenterWrap} pointerEvents="none">
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
           </View>
         ) : (
           <View style={styles.headerAndroidTitleWrap}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
           </View>
         )}
 

@@ -38,6 +38,7 @@ import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
 import GifIcon from '@/components/GifIcon';
 import MapBox, { MapSuggestion } from '@/components/MapBox';
+import { sanitizeComposerText } from '@/components/composer/composerText';
 import StyledText from '@/components/styled/Text';
 import StyledTextInput from '@/components/styled/TextInput';
 import { MainStackParamList } from '@/src/navigator/types';
@@ -643,7 +644,7 @@ function NewPost({ navigation, route }: Props) {
   };
 
   const appendEmoji = (emoji: EmojiType) => {
-    setContent((previous) => `${previous}${emoji.emoji}`);
+    setContent((previous) => sanitizeComposerText(`${previous}${emoji.emoji}`, MAX_CONTENT_LENGHT));
     setIsEmojiPickerOpen(false);
   };
 
@@ -905,7 +906,7 @@ function NewPost({ navigation, route }: Props) {
                 placeholderTextColor={Colors.neutral[300]}
                 // onSubmitEditing={() => inputRefs.password?.current.focus()}
                 onChangeText={(value) => {
-                  setContent(value);
+                  setContent(sanitizeComposerText(value, MAX_CONTENT_LENGHT));
                 }}
               />
               {attachmentMode ? (

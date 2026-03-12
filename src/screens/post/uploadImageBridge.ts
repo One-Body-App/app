@@ -1,4 +1,4 @@
-export type UploadImageUsageContext = 'feed' | 'comment';
+export type UploadImageUsageContext = 'feed' | 'comment' | 'chat';
 
 export type UploadImageResult =
   | {

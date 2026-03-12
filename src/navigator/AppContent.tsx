@@ -977,6 +977,102 @@ function AppContent() {
     return null;
   };
 
+  const resolveChatLinkState = (path: string) => {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const [pathWithoutQuery, rawQuery] = normalizedPath.split('?');
+    const directMatch = pathWithoutQuery.match(/^\/chat\/direct\/([^/?#]+)$/i);
+    const groupMatch = pathWithoutQuery.match(/^\/chat\/group\/([^/?#]+)$/i);
+    const query = new URLSearchParams(rawQuery || '');
+
+    if (directMatch) {
+      const peerUserId = decodeURIComponent(directMatch[1] ?? '');
+      if (!peerUserId) {
+        return null;
+      }
+
+      return {
+        routes: [
+          {
+            name: 'MainRoot',
+            state: {
+              routes: [
+                {
+                  name: 'Main',
+                  state: {
+                    routes: [
+                      {
+                        name: 'Messages',
+                        state: {
+                          routes: [
+                            {
+                              name: 'ChatDetail',
+                              params: {
+                                conversationType: 'direct',
+                                peerUserId,
+                                peerName: query.get('peerName') || 'Secure Chat',
+                                peerUsername: query.get('peerUsername') || undefined,
+                                peerAvatarUri: query.get('peerAvatarUri') || undefined,
+                                messageId: query.get('messageId') || undefined,
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+    }
+
+    if (groupMatch) {
+      const groupId = decodeURIComponent(groupMatch[1] ?? '');
+      if (!groupId) {
+        return null;
+      }
+
+      return {
+        routes: [
+          {
+            name: 'MainRoot',
+            state: {
+              routes: [
+                {
+                  name: 'Main',
+                  state: {
+                    routes: [
+                      {
+                        name: 'Messages',
+                        state: {
+                          routes: [
+                            {
+                              name: 'ChatDetail',
+                              params: {
+                                conversationType: 'group',
+                                groupId,
+                                groupName: query.get('groupName') || 'Group Chat',
+                                messageId: query.get('messageId') || undefined,
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+    }
+
+    return null;
+  };
+
   const linking: LinkingOptions<MainStackParamList> = {
     prefixes: [
       'https://app.onebodyapp.com',
@@ -1029,6 +1125,14 @@ function AppContent() {
           console.log('[Deep Link getStateFromPath] Resolved post link:', adjustedPath, postState);
         }
         return postState as any;
+      }
+
+      const chatState = resolveChatLinkState(adjustedPath);
+      if (chatState) {
+        if (__DEV__) {
+          console.log('[Deep Link getStateFromPath] Resolved chat link:', adjustedPath, chatState);
+        }
+        return chatState as any;
       }
 
       const state = getStateFromPathDefault(adjustedPath, (options ?? linkingConfig) as any);

@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { NotificationBing } from 'iconsax-react-native';
@@ -327,9 +327,18 @@ function NotificationScreen({ navigation }: Props) {
   const [failedRemoteIcons, setFailedRemoteIcons] = useState<Record<string, true>>({});
   const [approvedCreatorFollowingIds, setApprovedCreatorFollowingIds] = useState<string[]>([]);
 
+  const logNotificationDebug = useCallback((event: string, details: Record<string, unknown>) => {
+    if (!__DEV__) {
+      return;
+    }
+
+    console.log(`[NotificationsDebug] ${event}`, details);
+  }, []);
+
   const loadNotifications = useCallback(
     async (showLoader = false) => {
       if (!token) {
+        logNotificationDebug('load_skipped_missing_token', {});
         setNotifications([]);
         setLoading(false);
         setRefreshing(false);
@@ -356,12 +365,20 @@ function NotificationScreen({ navigation }: Props) {
         ]);
 
         const queuedPush = queuedPushResult.status === 'fulfilled' ? queuedPushResult.value : [];
+        logNotificationDebug('queue_loaded', {
+          queuedCount: queuedPush.length,
+          queuedStatus: queuedPushResult.status,
+        });
 
         let serverNotifications: InboxNotification[] = [];
         let didServerFetchFail = false;
 
         if (serverResult.status === 'fulfilled') {
           const serverResponse = serverResult.value;
+          logNotificationDebug('server_fetch_result', {
+            status: serverResponse?.status,
+            hasDataArray: Array.isArray(serverResponse?.response?.data),
+          });
           if (serverResponse?.status === 200 && Array.isArray(serverResponse?.response?.data)) {
             serverNotifications = serverResponse.response.data
               .map(toServerNotification)
@@ -371,6 +388,12 @@ function NotificationScreen({ navigation }: Props) {
           }
         } else {
           didServerFetchFail = true;
+          logNotificationDebug('server_fetch_rejected', {
+            reason:
+              serverResult.reason instanceof Error
+                ? serverResult.reason.message
+                : String(serverResult.reason || ''),
+          });
         }
 
         if (didServerFetchFail) {
@@ -395,6 +418,11 @@ function NotificationScreen({ navigation }: Props) {
             (parseIsoOrNull(second.createdAt)?.getTime() || 0) -
             (parseIsoOrNull(first.createdAt)?.getTime() || 0)
         );
+        logNotificationDebug('merge_complete', {
+          serverCount: serverNotifications.length,
+          pushCount: pushNotifications.length,
+          mergedCount: merged.length,
+        });
 
         const nextApprovedCreatorIds =
           followingResult.status === 'fulfilled' &&
@@ -441,12 +469,19 @@ function NotificationScreen({ navigation }: Props) {
         setRefreshing(false);
       }
     },
-    [token, toast]
+    [logNotificationDebug, token, toast]
   );
 
   useEffect(() => {
     loadNotifications(true);
   }, [loadNotifications]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadNotifications(false);
+      return undefined;
+    }, [loadNotifications])
+  );
 
   useEffect(() => {
     const parent = navigation.getParent();

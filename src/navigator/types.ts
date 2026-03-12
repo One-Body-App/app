@@ -210,6 +210,7 @@ export type MessagesStackParamsList = {
         peerAvatarUri?: string;
         isMuted?: boolean;
         isArchived?: boolean;
+        messageId?: string;
       }
     | {
         conversationType: 'group';
@@ -217,6 +218,7 @@ export type MessagesStackParamsList = {
         groupName: string;
         isMuted?: boolean;
         isArchived?: boolean;
+        messageId?: string;
       };
 };
 
@@ -348,7 +350,7 @@ export type MainStackParamList = {
     fileName?: string;
     fileSize?: number;
     type?: string;
-    usageContext?: 'feed' | 'comment';
+    usageContext?: 'feed' | 'comment' | 'chat';
   };
   ReportPost: {
     targetId: string;

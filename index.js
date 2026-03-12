@@ -19,11 +19,11 @@ if (typeof process !== 'undefined') {
 const App = require('./App').default;
 
 setBackgroundMessageHandler(getMessaging(), async (remoteMessage) => {
+  const payload = await queueRemoteNotificationPayload(remoteMessage);
   const handledByChat = await handleBackgroundChatPush(remoteMessage).catch(() => false);
   if (handledByChat) {
     return;
   }
-  const payload = await queueRemoteNotificationPayload(remoteMessage);
   await displayAndroidLocalNotificationIfNeeded(remoteMessage, {
     isForeground: false,
     payload,

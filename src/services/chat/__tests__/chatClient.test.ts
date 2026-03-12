@@ -1,5 +1,6 @@
 const mockEmitChatConversationRead = jest.fn();
 const mockMarkChatConversationRead = jest.fn();
+const mockUpdateChatConversationReadState = jest.fn();
 
 class MockChatTransportError extends Error {
   public readonly code: string;
@@ -21,6 +22,7 @@ jest.mock('../socketClient', () => ({
 jest.mock('../api', () => ({
   fetchConversationMessages: jest.fn(),
   markChatConversationRead: (...args: any[]) => mockMarkChatConversationRead(...args),
+  updateChatConversationReadState: (...args: any[]) => mockUpdateChatConversationReadState(...args),
   updateChatMessageStatus: jest.fn(),
 }));
 
@@ -35,6 +37,10 @@ jest.mock('../crypto', () => ({
   encryptE2EEMessage: jest.fn(),
 }));
 
+jest.mock('../contentHash', () => ({
+  buildChatContentHash: jest.fn(() => 'a'.repeat(64)),
+}));
+
 describe('chatClient markConversationRead', () => {
   let chatClient: typeof import('../chatClient');
 
@@ -42,6 +48,7 @@ describe('chatClient markConversationRead', () => {
     jest.resetModules();
     mockEmitChatConversationRead.mockReset();
     mockMarkChatConversationRead.mockReset();
+    mockUpdateChatConversationReadState.mockReset();
     // eslint-disable-next-line global-require
     chatClient = require('../chatClient') as typeof import('../chatClient');
   });
@@ -85,5 +92,34 @@ describe('chatClient markConversationRead', () => {
       messageIds: ['m1'],
     });
     expect(mockMarkChatConversationRead).toHaveBeenCalledWith('peer-1', 'token');
+  });
+
+  it('marks a group conversation read with the group target payload', async () => {
+    mockUpdateChatConversationReadState.mockResolvedValue({
+      status: 200,
+      response: {
+        data: {
+          groupId: 'group-1',
+          updatedCount: 0,
+          messageIds: [],
+        },
+      },
+    });
+
+    await expect(chatClient.markGroupConversationRead('group-1', 'token')).resolves.toEqual({
+      ok: true,
+      groupId: 'group-1',
+      updatedCount: 0,
+      messageIds: [],
+    });
+
+    expect(mockUpdateChatConversationReadState).toHaveBeenCalledWith(
+      {
+        conversationType: 'group',
+        groupId: 'group-1',
+        isRead: true,
+      },
+      'token'
+    );
   });
 });

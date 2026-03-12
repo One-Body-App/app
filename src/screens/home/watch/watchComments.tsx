@@ -34,6 +34,7 @@ import {
   updateCommentInTree,
 } from '@/components/comments/commentListUtils';
 import { CommentPost, PostType, SocialPostReactionType } from '@/utils/types';
+import { sanitizeComposerText } from '@/components/composer/composerText';
 import { COLORS, styles as watchStyles } from './commentstyles';
 import { MainStackParamList } from '@/src/navigator/types';
 import WatchCommentRow from './WatchCommentRow';
@@ -671,7 +672,9 @@ function WatchComments({
 
           <BottomSheetTextInput
             value={composerText}
-            onChangeText={setComposerText}
+            onChangeText={(value) => {
+              setComposerText(sanitizeComposerText(value, 2000));
+            }}
             style={watchStyles.input}
             placeholder={composerPlaceholder}
             placeholderTextColor={COLORS.slate500}
@@ -698,7 +701,7 @@ function WatchComments({
             <TouchableOpacity
               key={emoji}
               onPress={() => {
-                setComposerText((previous) => `${previous}${emoji}`);
+                setComposerText((previous) => sanitizeComposerText(`${previous}${emoji}`, 2000));
               }}
             >
               <Text style={watchStyles.emoji}>{emoji}</Text>

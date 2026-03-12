@@ -2,15 +2,16 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   FlatList,
   Image,
   Keyboard,
+  LayoutChangeEvent,
   Modal,
   Platform,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   useColorScheme,
   View,
 } from 'react-native';
@@ -22,19 +23,14 @@ import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import notifee from '@notifee/react-native';
 import ImageView from 'react-native-image-viewing';
-import { launchImageLibrary } from 'react-native-image-picker';
-import {
-  GiphyDialog,
-  GiphyDialogEvent,
-  GiphyThemePreset,
-  type GiphyDialogMediaSelectEventHandler,
-} from '@giphy/react-native-sdk';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
 import {
+  ChatTransportError,
   connectChatSocket,
   onChatGroupMessage,
   onChatMessage,
+  onChatMessageReaction,
   onChatMessageStatus,
 } from '@/src/services/chat/socketClient';
 import {
@@ -43,12 +39,19 @@ import {
   ensureChatReady,
   markGroupConversationRead,
   markConversationRead,
+  reactToMessage,
   sendGroupMediaMessage,
   sendGroupTextMessage,
   sendEncryptedTextMessage,
   sendEncryptedMediaMessage,
   parseChatMessagePayload,
 } from '@/src/services/chat/chatClient';
+import {
+  ChatMessageReaction,
+  ChatMessageReactionUpdate,
+  ChatReactionType,
+} from '@/src/services/chat/types';
+import ChatInput, { ChatInputAttachment, ChatInputSendPayload } from '@/components/chat/ChatInput';
 import {
   clearActiveDirectConversationPeerId,
   clearActiveGroupConversationId,
@@ -68,7 +71,8 @@ import {
   getGroupConversationUnreadKey,
   setChatConversationUnread,
 } from '@/src/services/chat/unreadIndicator';
-import GifIcon from '@/components/GifIcon';
+import { isValidMongoObjectId } from '@/src/services/chat/conversationTarget';
+import { publishChatConversationRead } from '@/src/services/chat/conversationReadSync';
 import ChatOptions from './chatoptions';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'ChatDetail'>;
@@ -80,26 +84,49 @@ type LocalMessage = {
   text: string;
   status: 'sent' | 'delivered' | 'read';
   createdAt: string;
-  mediaType?: 'image' | 'gif';
+  mediaType?: 'image' | 'gif' | 'images';
   mediaUrl?: string;
+  mediaUrls?: string[];
   senderName?: string;
   senderUsername?: string;
   senderAvatarUri?: string;
   conversationType?: 'direct' | 'group';
   groupId?: string;
+  reactions?: ChatMessageReaction[];
 };
 
-type PendingMedia = {
-  type: 'image' | 'gif';
-  previewUrl: string;
-  uploadUri?: string;
-  fileName?: string;
-  mimeType?: string;
-  giphyId?: string;
+const REACTION_ORDER: ChatReactionType[] = [
+  'like',
+  'love',
+  'praying',
+  'praise',
+  'haha',
+  'wow',
+  'sad',
+  'angry',
+];
+const REACTION_EMOJI_MAP: Record<ChatReactionType, string> = {
+  like: '👍',
+  love: '❤️',
+  praying: '🙏',
+  praise: '🙌',
+  haha: '😂',
+  wow: '😮',
+  sad: '😢',
+  angry: '😡',
 };
 
-const MONGO_OBJECT_ID_REGEX = /^[a-f0-9]{24}$/i;
-const isValidMongoObjectId = (value: string) => MONGO_OBJECT_ID_REGEX.test(value.trim());
+type ReactionPickerState = {
+  messageId: string;
+  top: number;
+  left: number;
+};
+
+type ReactionBadgeSummary = {
+  emojis: string[];
+  count: number;
+  currentUserReaction?: ChatReactionType;
+};
 
 const sortMessages = (messages: LocalMessage[]) =>
   [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -187,6 +214,107 @@ const formatMessageTime = (iso: string) => {
 
 const normalizeMessageText = (text: string) => text.trimEnd();
 
+const normalizeReactionType = (value?: string): ChatReactionType | undefined => {
+  switch (
+    String(value || '')
+      .trim()
+      .toLowerCase()
+  ) {
+    case 'like':
+      return 'like';
+    case 'love':
+      return 'love';
+    case 'praying':
+      return 'praying';
+    case 'praise':
+    case 'happy':
+      return 'praise';
+    case 'haha':
+      return 'haha';
+    case 'wow':
+      return 'wow';
+    case 'sad':
+      return 'sad';
+    case 'angry':
+      return 'angry';
+    default:
+      return undefined;
+  }
+};
+
+const normalizeChatReactions = (value: unknown): ChatMessageReaction[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.reduce<ChatMessageReaction[]>((accumulator, item) => {
+    if (!item || typeof item !== 'object') {
+      return accumulator;
+    }
+
+    const record = item as Record<string, unknown>;
+    const type = normalizeReactionType(typeof record.type === 'string' ? record.type : '');
+    const userId = typeof record.userId === 'string' ? record.userId.trim() : '';
+    if (!type || !userId) {
+      return accumulator;
+    }
+
+    accumulator.push({
+      type,
+      userId,
+      createdAt: typeof record.createdAt === 'string' ? record.createdAt : undefined,
+      updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : undefined,
+    });
+    return accumulator;
+  }, []);
+};
+
+const applyReactionUpdateToMessages = (
+  previousMessages: LocalMessage[],
+  messageId: string,
+  reactions: ChatMessageReaction[]
+) =>
+  previousMessages.map((message) =>
+    message.id === messageId
+      ? { ...message, reactions: normalizeChatReactions(reactions) }
+      : message
+  );
+
+const getCurrentUserReaction = (
+  reactions: ChatMessageReaction[] | undefined,
+  userId: string
+): ChatReactionType | undefined => {
+  if (!userId) {
+    return undefined;
+  }
+
+  return reactions?.find((reaction) => reaction.userId === userId)?.type;
+};
+
+const getReactionBadgeSummary = (
+  reactions: ChatMessageReaction[] | undefined,
+  userId: string
+): ReactionBadgeSummary | null => {
+  const normalizedReactions = normalizeChatReactions(reactions);
+  if (!normalizedReactions.length) {
+    return null;
+  }
+
+  const distinctEmojis: string[] = [];
+  normalizedReactions.forEach((reaction) => {
+    const emoji = REACTION_EMOJI_MAP[reaction.type];
+    if (emoji && !distinctEmojis.includes(emoji) && distinctEmojis.length < 2) {
+      distinctEmojis.push(emoji);
+    }
+  });
+
+  return {
+    emojis: distinctEmojis,
+    count: normalizedReactions.length,
+    currentUserReaction: getCurrentUserReaction(normalizedReactions, userId),
+  };
+};
+
 const isSameLocalCalendarDay = (leftIso?: string, rightIso?: string) => {
   if (!leftIso || !rightIso) {
     return false;
@@ -227,6 +355,8 @@ function ChatDetailScreen({ navigation, route }: Props) {
     routeParams?.conversationType === 'group' ? String(routeParams.groupName || '') : '';
   const groupId =
     routeParams?.conversationType === 'group' ? String(routeParams.groupId || '') : '';
+  const targetMessageId =
+    typeof routeParams?.messageId === 'string' ? routeParams.messageId.trim() : '';
   const token = useSelector((state: RootState) => state.auth.userToken);
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [messages, setMessages] = useState<LocalMessage[]>([]);
@@ -236,22 +366,30 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const [loadError, setLoadError] = useState('');
   const [isPeerKeyMissing, setIsPeerKeyMissing] = useState(false);
   const [isDMsDisabled, setIsDMsDisabled] = useState(false);
-  const [isGiphyInitialized, setIsGiphyInitialized] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isConversationMuted, setIsConversationMuted] = useState(initialMutedState);
   const [isConversationArchived, setIsConversationArchived] = useState(initialArchivedState);
   const [optionsActionLoading, setOptionsActionLoading] = useState<
     'archive' | 'mute' | 'block' | 'report' | null
   >(null);
-  const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
-  const [pendingMediaCaption, setPendingMediaCaption] = useState('');
-  const [fullscreenMediaUrl, setFullscreenMediaUrl] = useState<string | null>(null);
+  const [composerAttachments, setComposerAttachments] = useState<ChatInputAttachment[]>([]);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [fullscreenMediaUrls, setFullscreenMediaUrls] = useState<string[]>([]);
+  const [fullscreenMediaIndex, setFullscreenMediaIndex] = useState(0);
+  const [reactionPickerState, setReactionPickerState] = useState<ReactionPickerState | null>(null);
+  const [reactingMessageId, setReactingMessageId] = useState('');
+  const [highlightedMessageId, setHighlightedMessageId] = useState('');
   const flatListRef = useRef<FlatList<LocalMessage>>(null);
+  const messageAnchorRefs = useRef<Record<string, View | null>>({});
+  const messageLayoutMapRef = useRef<Record<string, { y: number; height: number }>>({});
   const lastReadSyncSignatureRef = useRef('');
   const hasScrolledToLatestRef = useRef(false);
+  const hasHandledInitialMessageFocusRef = useRef(false);
+  const lastTargetMessageIdRef = useRef('');
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rateLimitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentUserId = currentUser?._id ? String(currentUser._id) : '';
   const hasPeerAvatarImage = Boolean(peerAvatarUri && peerAvatarUri !== NO_PROFILE_IMAGE);
@@ -269,11 +407,13 @@ function ChatDetailScreen({ navigation, route }: Props) {
   }, [initialArchivedState]);
 
   const renderIncomingAvatar = (message?: LocalMessage) => {
-    const avatarUri = isGroupConversation
-      ? String(message?.senderAvatarUri || '')
-      : hasPeerAvatarImage
-        ? peerAvatarUri
-        : '';
+    let avatarUri = '';
+    if (isGroupConversation) {
+      avatarUri = String(message?.senderAvatarUri || '');
+    } else if (hasPeerAvatarImage) {
+      avatarUri = peerAvatarUri;
+    }
+
     const senderInitialSource = isGroupConversation
       ? message?.senderName || message?.senderUsername || 'U'
       : peerName || 'U';
@@ -293,6 +433,141 @@ function ChatDetailScreen({ navigation, route }: Props) {
   useEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+      if (rateLimitTimeoutRef.current) {
+        clearTimeout(rateLimitTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const registerMessageAnchor = useCallback((messageId: string, node: View | null) => {
+    if (!messageId) {
+      return;
+    }
+
+    if (node) {
+      messageAnchorRefs.current[messageId] = node;
+      return;
+    }
+
+    delete messageAnchorRefs.current[messageId];
+  }, []);
+
+  const handleMessageLayout = useCallback((messageId: string, event: LayoutChangeEvent) => {
+    if (!messageId) {
+      return;
+    }
+
+    messageLayoutMapRef.current[messageId] = {
+      y: event.nativeEvent.layout.y,
+      height: event.nativeEvent.layout.height,
+    };
+  }, []);
+
+  const focusTargetMessage = useCallback(
+    (messageId: string) => {
+      if (!messageId) {
+        return;
+      }
+
+      const messageIndex = messages.findIndex((message) => message.id === messageId);
+      if (messageIndex < 0) {
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToIndex({
+          index: messageIndex,
+          animated: true,
+          viewPosition: 0.5,
+        });
+      });
+
+      setHighlightedMessageId(messageId);
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+      highlightTimeoutRef.current = setTimeout(() => {
+        setHighlightedMessageId((currentValue) => (currentValue === messageId ? '' : currentValue));
+      }, 2200);
+    },
+    [messages]
+  );
+
+  const handleOpenReactionPicker = useCallback(
+    (message: LocalMessage) => {
+      if (!message.id || message.id.startsWith('local-')) {
+        return;
+      }
+
+      const anchor = messageAnchorRefs.current[message.id];
+      if (!anchor || typeof anchor.measureInWindow !== 'function') {
+        return;
+      }
+
+      anchor.measureInWindow((x, y, width) => {
+        const windowWidth = Dimensions.get('window').width;
+        const pickerWidth = Math.min(windowWidth - 24, 336);
+        const left = Math.min(
+          Math.max(12, x + width / 2 - pickerWidth / 2),
+          Math.max(12, windowWidth - pickerWidth - 12)
+        );
+        const top = Math.max(insets.top + 8, y - 58);
+
+        setReactionPickerState({
+          messageId: message.id,
+          top,
+          left,
+        });
+      });
+    },
+    [insets.top]
+  );
+
+  const applyReactionUpdate = useCallback(
+    (payload: Pick<ChatMessageReactionUpdate, 'messageId' | 'reactions'>) => {
+      if (!payload?.messageId) {
+        return;
+      }
+
+      setMessages((previousMessages) =>
+        applyReactionUpdateToMessages(
+          previousMessages,
+          String(payload.messageId),
+          normalizeChatReactions(payload.reactions)
+        )
+      );
+    },
+    []
+  );
+
+  const openFullscreenMedia = useCallback((urls: string[], index = 0) => {
+    const normalizedUrls = urls.map((item) => String(item || '').trim()).filter(Boolean);
+    if (normalizedUrls.length < 1) {
+      return;
+    }
+
+    setFullscreenMediaUrls(normalizedUrls);
+    setFullscreenMediaIndex(Math.max(0, Math.min(index, normalizedUrls.length - 1)));
+  }, []);
+
+  const activateRateLimit = useCallback((retryAfterMs?: number) => {
+    setIsRateLimited(true);
+    if (rateLimitTimeoutRef.current) {
+      clearTimeout(rateLimitTimeoutRef.current);
+    }
+    rateLimitTimeoutRef.current = setTimeout(
+      () => {
+        setIsRateLimited(false);
+      },
+      Math.max(1500, Number(retryAfterMs || 0))
+    );
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -328,19 +603,11 @@ function ChatDetailScreen({ navigation, route }: Props) {
   }, []);
 
   useEffect(() => {
-    try {
-      GiphyDialog.configure({ theme: GiphyThemePreset.Dark });
-    } catch {
-      // ignore config failure
-    }
-    setIsGiphyInitialized(true);
-  }, []);
-
-  useEffect(() => {
     let isMounted = true;
     let offMessage: (() => void) | undefined;
     let offGroupMessage: (() => void) | undefined;
     let offStatus: (() => void) | undefined;
+    let offReaction: (() => void) | undefined;
 
     const bootstrap = async () => {
       setIsBootstrapping(true);
@@ -383,6 +650,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
                   createdAt: entry.createdAt || new Date().toISOString(),
                   mediaType: parsed.type !== 'text' ? parsed.type : undefined,
                   mediaUrl: parsed.mediaUrl,
+                  mediaUrls: parsed.mediaUrls,
                   senderName: typeof entry.senderName === 'string' ? entry.senderName : '',
                   senderUsername:
                     typeof entry.senderUsername === 'string' ? entry.senderUsername : '',
@@ -390,6 +658,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
                     typeof entry.senderAvatarUri === 'string' ? entry.senderAvatarUri : '',
                   conversationType: 'group',
                   groupId,
+                  reactions: normalizeChatReactions(entry.reactions),
                 };
               })
             )
@@ -427,6 +696,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
                   createdAt: payload.createdAt || new Date().toISOString(),
                   mediaType: parsed.type !== 'text' ? parsed.type : undefined,
                   mediaUrl: parsed.mediaUrl,
+                  mediaUrls: parsed.mediaUrls,
                   senderName: typeof payload.senderName === 'string' ? payload.senderName : '',
                   senderUsername:
                     typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
@@ -434,9 +704,23 @@ function ChatDetailScreen({ navigation, route }: Props) {
                     typeof payload.senderAvatarUri === 'string' ? payload.senderAvatarUri : '',
                   conversationType: 'group',
                   groupId,
+                  reactions: normalizeChatReactions(payload.reactions),
                 },
               ]);
             });
+          });
+
+          offReaction = await onChatMessageReaction((payload) => {
+            if (!isMounted || !payload?.messageId) {
+              return;
+            }
+
+            const payloadGroupId = String(payload.groupId || '');
+            if (payload.conversationType !== 'group' || payloadGroupId !== groupId) {
+              return;
+            }
+
+            applyReactionUpdate(payload);
           });
         } catch (error) {
           if (__DEV__) {
@@ -504,6 +788,8 @@ function ChatDetailScreen({ navigation, route }: Props) {
                 createdAt: entry.createdAt || new Date().toISOString(),
                 mediaType: parsed.type !== 'text' ? parsed.type : undefined,
                 mediaUrl: parsed.mediaUrl,
+                mediaUrls: parsed.mediaUrls,
+                reactions: normalizeChatReactions(entry.reactions),
               };
             })
           )
@@ -538,6 +824,13 @@ function ChatDetailScreen({ navigation, route }: Props) {
                   text: normalizeMessageText('[Encrypted message]'),
                   status: payload.status || 'sent',
                   createdAt: payload.createdAt || new Date().toISOString(),
+                  mediaType:
+                    payload.messageType === 'image' ||
+                    payload.messageType === 'gif' ||
+                    payload.messageType === 'images'
+                      ? payload.messageType
+                      : undefined,
+                  reactions: normalizeChatReactions(payload.reactions),
                 },
               ])
             );
@@ -563,6 +856,29 @@ function ChatDetailScreen({ navigation, route }: Props) {
                   : message
               )
             );
+          });
+
+          offReaction = await onChatMessageReaction((payload) => {
+            if (!isMounted || !payload?.messageId) {
+              return;
+            }
+
+            if (payload.conversationType === 'group') {
+              return;
+            }
+
+            const senderId = String(payload.senderId || '');
+            const receiverId = String(payload.receiverId || '');
+            if (
+              !senderId ||
+              !receiverId ||
+              ![peerUserId, currentUserId].includes(senderId) ||
+              ![peerUserId, currentUserId].includes(receiverId)
+            ) {
+              return;
+            }
+
+            applyReactionUpdate(payload);
           });
         } catch (error) {
           if (__DEV__) {
@@ -597,8 +913,11 @@ function ChatDetailScreen({ navigation, route }: Props) {
       if (offStatus) {
         offStatus();
       }
+      if (offReaction) {
+        offReaction();
+      }
     };
-  }, [currentUserId, groupId, isGroupConversation, peerUserId, token]);
+  }, [applyReactionUpdate, currentUserId, groupId, isGroupConversation, peerUserId, token]);
 
   useEffect(() => {
     if (!messages.length) {
@@ -610,6 +929,29 @@ function ChatDetailScreen({ navigation, route }: Props) {
       hasScrolledToLatestRef.current = true;
     });
   }, [messages]);
+
+  useEffect(() => {
+    if (targetMessageId !== lastTargetMessageIdRef.current) {
+      hasHandledInitialMessageFocusRef.current = false;
+      lastTargetMessageIdRef.current = targetMessageId;
+    }
+
+    if (!targetMessageId) {
+      setHighlightedMessageId('');
+      return;
+    }
+
+    if (hasHandledInitialMessageFocusRef.current) {
+      return;
+    }
+
+    if (!messages.some((message) => message.id === targetMessageId)) {
+      return;
+    }
+
+    hasHandledInitialMessageFocusRef.current = true;
+    focusTargetMessage(targetMessageId);
+  }, [focusTargetMessage, messages, targetMessageId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -641,6 +983,10 @@ function ChatDetailScreen({ navigation, route }: Props) {
         markGroupConversationRead(groupId, token || undefined)
           .then(() => {
             setChatConversationUnread(currentConversationUnreadKey, false);
+            publishChatConversationRead({
+              conversationType: 'group',
+              groupId,
+            });
           })
           .catch(() => {
             lastReadSyncSignatureRef.current = '';
@@ -685,6 +1031,10 @@ function ChatDetailScreen({ navigation, route }: Props) {
             );
           }
           setChatConversationUnread(currentConversationUnreadKey, false);
+          publishChatConversationRead({
+            conversationType: 'direct',
+            peerUserId,
+          });
         })
         .catch(() => {
           lastReadSyncSignatureRef.current = '';
@@ -750,12 +1100,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
         navigation.goBack();
       }
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : nextArchived
-            ? 'Unable to archive chat right now.'
-            : 'Unable to unarchive chat right now.';
+      let message = nextArchived
+        ? 'Unable to archive chat right now.'
+        : 'Unable to unarchive chat right now.';
+      if (error instanceof Error) {
+        message = error.message;
+      }
       Alert.alert(nextArchived ? 'Archive Failed' : 'Unarchive Failed', message);
     } finally {
       setOptionsActionLoading(null);
@@ -851,15 +1201,9 @@ function ChatDetailScreen({ navigation, route }: Props) {
     Alert.alert('Coming Soon', 'Conversation reporting is coming soon.');
   }, [optionsActionLoading]);
 
-  const sendMessage = useCallback(async () => {
-    const content = draft.trim();
-    if (
-      !content ||
-      isSending ||
-      (!isGroupConversation && !peerUserId) ||
-      (isGroupConversation && !groupId)
-    ) {
-      return;
+  const ensureConversationCanSend = useCallback(async () => {
+    if ((!isGroupConversation && !peerUserId) || (isGroupConversation && !groupId)) {
+      return false;
     }
 
     if (!isGroupConversation && isPeerKeyMissing) {
@@ -867,12 +1211,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
         'Secure Chat Unavailable',
         `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
       );
-      return;
+      return false;
     }
 
     if (!isGroupConversation && isDMsDisabled) {
       Alert.alert('Direct Messages Disabled', `${peerLabel} has turned off direct messages.`);
-      return;
+      return false;
     }
 
     if (!isGroupConversation) {
@@ -885,324 +1229,239 @@ function ChatDetailScreen({ navigation, route }: Props) {
             'Secure Chat Unavailable',
             `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
           );
-          return;
+          return false;
         }
         Alert.alert('Unable to send message', getSendFailureMessage(error));
-        return;
+        return false;
       }
     }
 
-    setIsSending(true);
-    setDraft('');
+    return true;
+  }, [groupId, isDMsDisabled, isGroupConversation, isPeerKeyMissing, peerLabel, peerUserId, token]);
 
-    const optimisticMessage: LocalMessage = {
-      id: `local-${Date.now()}`,
-      senderId: currentUserId || 'me',
-      receiverId: isGroupConversation ? '' : peerUserId,
-      text: content,
-      status: 'sent',
-      createdAt: new Date().toISOString(),
-      senderName: currentUser?.name || currentUser?.username || 'Me',
-      senderUsername: currentUser?.username || '',
-      senderAvatarUri:
-        typeof currentUser?.profileImage === 'string' ? currentUser.profileImage : '',
-      conversationType: isGroupConversation ? 'group' : 'direct',
-      groupId: isGroupConversation ? groupId : undefined,
-    };
-
-    setMessages((prev) => sortMessages([...prev, optimisticMessage]));
-
-    try {
-      const response = isGroupConversation
-        ? await sendGroupTextMessage({
-            groupId,
-            text: content,
-          })
-        : await sendEncryptedTextMessage({
-            receiverId: peerUserId,
-            text: content,
-            token: token || undefined,
-          });
-
-      const ackMessage = response?.ok ? response.message : undefined;
-      if (ackMessage?._id) {
-        setMessages((prev) =>
-          prev.map((item) =>
-            item.id === optimisticMessage.id
-              ? {
-                  ...item,
-                  id: String(ackMessage._id),
-                  status: ackMessage.status || 'sent',
-                  senderName:
-                    typeof ackMessage.senderName === 'string'
-                      ? ackMessage.senderName
-                      : optimisticMessage.senderName,
-                  senderUsername:
-                    typeof ackMessage.senderUsername === 'string'
-                      ? ackMessage.senderUsername
-                      : optimisticMessage.senderUsername,
-                  senderAvatarUri:
-                    typeof ackMessage.senderAvatarUri === 'string'
-                      ? ackMessage.senderAvatarUri
-                      : optimisticMessage.senderAvatarUri,
-                }
-              : item
-          )
-        );
-      }
-    } catch (error) {
-      if (isMissingPeerKeyError(error)) {
-        setIsPeerKeyMissing(true);
-        Alert.alert(
-          'Secure Chat Unavailable',
-          `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
-        );
-      } else {
-        Alert.alert('Unable to send message', getSendFailureMessage(error));
-      }
-      setDraft(content);
-      setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
-    } finally {
-      setIsSending(false);
-    }
-  }, [
-    currentUser?.name,
-    currentUser?.profileImage,
-    currentUser?.username,
-    currentUserId,
-    draft,
-    groupId,
-    isDMsDisabled,
-    isGroupConversation,
-    isPeerKeyMissing,
-    isSending,
-    peerLabel,
-    peerUserId,
-    token,
-  ]);
-
-  const isMediaDisabled =
-    isSending ||
-    isUploading ||
-    (isGroupConversation ? !groupId : !peerUserId || isPeerKeyMissing || isDMsDisabled);
-
-  const resetPendingMediaComposer = useCallback(() => {
-    setPendingMedia(null);
-    setPendingMediaCaption('');
-  }, []);
-
-  const sendMediaMessage = useCallback(
-    async (args: {
-      mediaType: 'image' | 'gif';
-      mediaUrl: string;
-      giphyId?: string;
-      text?: string;
-    }) => {
-      if ((!isGroupConversation && !peerUserId) || (isGroupConversation && !groupId)) {
+  const handleComposerSend = useCallback(
+    async (payload: ChatInputSendPayload) => {
+      const normalizedText = normalizeMessageText(payload.text || '');
+      const attachments = [...payload.attachments];
+      if (
+        isSending ||
+        isUploading ||
+        (!normalizedText && attachments.length < 1) ||
+        !(await ensureConversationCanSend())
+      ) {
         return;
       }
 
-      const normalizedCaption = normalizeMessageText(args.text || '');
+      const gifAttachment = attachments.find((attachment) => attachment.type === 'gif');
+      const imageAttachments = attachments.filter((attachment) => attachment.type === 'image');
+      let mediaType: LocalMessage['mediaType'];
+      if (gifAttachment) {
+        mediaType = 'gif';
+      } else if (imageAttachments.length > 1) {
+        mediaType = 'images';
+      } else if (imageAttachments.length === 1) {
+        mediaType = 'image';
+      }
 
+      const optimisticMediaUrls = imageAttachments.map((attachment) => attachment.previewUrl);
       const optimisticMessage: LocalMessage = {
         id: `local-${Date.now()}`,
         senderId: currentUserId || 'me',
         receiverId: isGroupConversation ? '' : peerUserId,
-        text: normalizedCaption,
+        text: normalizedText,
         status: 'sent',
         createdAt: new Date().toISOString(),
-        mediaType: args.mediaType,
-        mediaUrl: args.mediaUrl,
+        mediaType,
+        mediaUrl: gifAttachment?.previewUrl || optimisticMediaUrls[0],
+        mediaUrls: mediaType === 'images' ? optimisticMediaUrls : undefined,
         senderName: currentUser?.name || currentUser?.username || 'Me',
         senderUsername: currentUser?.username || '',
         senderAvatarUri:
           typeof currentUser?.profileImage === 'string' ? currentUser.profileImage : '',
         conversationType: isGroupConversation ? 'group' : 'direct',
         groupId: isGroupConversation ? groupId : undefined,
+        reactions: [],
       };
 
+      setIsSending(true);
+      setDraft('');
+      setComposerAttachments([]);
       setMessages((prev) => sortMessages([...prev, optimisticMessage]));
 
       try {
-        const response = isGroupConversation
-          ? await sendGroupMediaMessage({
-              groupId,
-              mediaType: args.mediaType,
-              mediaUrl: args.mediaType === 'image' ? args.mediaUrl : undefined,
-              giphyId: args.mediaType === 'gif' ? args.giphyId : undefined,
-              text: normalizedCaption,
+        let uploadedImageUrls: string[] = [];
+        if (imageAttachments.length > 0) {
+          setIsUploading(true);
+          uploadedImageUrls = await Promise.all(
+            imageAttachments.map((attachment, index) => {
+              if (!attachment.uploadUri) {
+                throw new Error('Selected image is unavailable');
+              }
+
+              return uploadChatMediaFile(
+                attachment.uploadUri,
+                attachment.fileName || `chat_${Date.now()}_${index}.jpg`,
+                attachment.mimeType || 'image/jpeg',
+                token || undefined
+              );
             })
-          : await sendEncryptedMediaMessage({
-              receiverId: peerUserId,
-              mediaType: args.mediaType,
-              mediaUrl: args.mediaType === 'image' ? args.mediaUrl : undefined,
-              giphyId: args.mediaType === 'gif' ? args.giphyId : undefined,
-              text: normalizedCaption,
-              token: token || undefined,
-            });
+          );
+        }
+
+        let response;
+        if (mediaType === 'gif') {
+          response = isGroupConversation
+            ? await sendGroupMediaMessage({
+                groupId,
+                mediaType: 'gif',
+                giphyId: gifAttachment?.giphyId,
+                text: normalizedText,
+              })
+            : await sendEncryptedMediaMessage({
+                receiverId: peerUserId,
+                mediaType: 'gif',
+                giphyId: gifAttachment?.giphyId,
+                text: normalizedText,
+                token: token || undefined,
+              });
+        } else if (mediaType === 'images') {
+          response = isGroupConversation
+            ? await sendGroupMediaMessage({
+                groupId,
+                mediaType: 'images',
+                mediaUrls: uploadedImageUrls,
+                text: normalizedText,
+              })
+            : await sendEncryptedMediaMessage({
+                receiverId: peerUserId,
+                mediaType: 'images',
+                mediaUrls: uploadedImageUrls,
+                text: normalizedText,
+                token: token || undefined,
+              });
+        } else if (mediaType === 'image') {
+          response = isGroupConversation
+            ? await sendGroupMediaMessage({
+                groupId,
+                mediaType: 'image',
+                mediaUrl: uploadedImageUrls[0],
+                text: normalizedText,
+              })
+            : await sendEncryptedMediaMessage({
+                receiverId: peerUserId,
+                mediaType: 'image',
+                mediaUrl: uploadedImageUrls[0],
+                text: normalizedText,
+                token: token || undefined,
+              });
+        } else {
+          response = isGroupConversation
+            ? await sendGroupTextMessage({
+                groupId,
+                text: normalizedText,
+              })
+            : await sendEncryptedTextMessage({
+                receiverId: peerUserId,
+                text: normalizedText,
+                token: token || undefined,
+              });
+        }
 
         const ackMessage = response?.ok ? response.message : undefined;
         if (ackMessage?._id) {
           setMessages((prev) =>
             prev.map((item) =>
               item.id === optimisticMessage.id
-                ? { ...item, id: String(ackMessage._id), status: ackMessage.status || 'sent' }
+                ? {
+                    ...item,
+                    id: String(ackMessage._id),
+                    status: ackMessage.status || 'sent',
+                    senderName:
+                      typeof ackMessage.senderName === 'string'
+                        ? ackMessage.senderName
+                        : optimisticMessage.senderName,
+                    senderUsername:
+                      typeof ackMessage.senderUsername === 'string'
+                        ? ackMessage.senderUsername
+                        : optimisticMessage.senderUsername,
+                    senderAvatarUri:
+                      typeof ackMessage.senderAvatarUri === 'string'
+                        ? ackMessage.senderAvatarUri
+                        : optimisticMessage.senderAvatarUri,
+                    reactions: normalizeChatReactions(ackMessage.reactions),
+                  }
                 : item
             )
           );
         }
       } catch (error) {
-        Alert.alert('Unable to send media', getSendFailureMessage(error));
-        setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
-      }
-    },
-    [
-      currentUser?.name,
-      currentUser?.profileImage,
-      currentUser?.username,
-      currentUserId,
-      groupId,
-      isGroupConversation,
-      peerUserId,
-      token,
-    ]
-  );
-
-  const handlePickImage = useCallback(async () => {
-    if (isMediaDisabled) {
-      return;
-    }
-
-    const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
-    if (result.didCancel || !result.assets?.length) {
-      return;
-    }
-
-    const asset = result.assets[0];
-    if (!asset.uri) {
-      return;
-    }
-
-    setPendingMedia({
-      type: 'image',
-      previewUrl: asset.uri,
-      uploadUri: asset.uri,
-      fileName: asset.fileName || `chat_${Date.now()}.jpg`,
-      mimeType: asset.type || 'image/jpeg',
-    });
-    setPendingMediaCaption('');
-  }, [isMediaDisabled]);
-
-  const handlePickGif = useCallback(() => {
-    if (isMediaDisabled || !isGiphyInitialized) {
-      return;
-    }
-
-    const onSelect: GiphyDialogMediaSelectEventHandler = ({ media }) => {
-      GiphyDialog.removeAllListeners(GiphyDialogEvent.MediaSelected);
-      GiphyDialog.hide();
-      const giphyId = media.id;
-      const mediaUrl = `https://media.giphy.com/media/${giphyId}/giphy.gif`;
-      setPendingMedia({
-        type: 'gif',
-        previewUrl: mediaUrl,
-        giphyId,
-      });
-      setPendingMediaCaption('');
-    };
-
-    GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, onSelect);
-    GiphyDialog.show();
-  }, [isGiphyInitialized, isMediaDisabled]);
-
-  const submitPendingMedia = useCallback(async () => {
-    if (
-      !pendingMedia ||
-      (!isGroupConversation && !peerUserId) ||
-      (isGroupConversation && !groupId) ||
-      isSending ||
-      isUploading
-    ) {
-      return;
-    }
-
-    if (!isGroupConversation && isPeerKeyMissing) {
-      Alert.alert(
-        'Secure Chat Unavailable',
-        `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
-      );
-      return;
-    }
-
-    if (!isGroupConversation && isDMsDisabled) {
-      Alert.alert('Direct Messages Disabled', `${peerLabel} has turned off direct messages.`);
-      return;
-    }
-
-    if (!isGroupConversation) {
-      try {
-        await getPeerPublicKey(peerUserId, token || undefined);
-      } catch (error) {
-        if (isMissingPeerKeyError(error)) {
+        if (error instanceof ChatTransportError && error.code === 'rate-limited') {
+          activateRateLimit(error.retryAfterMs);
+        } else if (isMissingPeerKeyError(error)) {
           setIsPeerKeyMissing(true);
           Alert.alert(
             'Secure Chat Unavailable',
             `${peerLabel} has not enabled secure messaging yet. Ask them to open Messages in OneBody first.`
           );
-          return;
+        } else {
+          Alert.alert('Unable to send message', getSendFailureMessage(error));
         }
-        Alert.alert('Unable to send media', getSendFailureMessage(error));
+
+        setDraft(normalizedText);
+        setComposerAttachments(attachments);
+        setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
+      } finally {
+        setIsUploading(false);
+        setIsSending(false);
+      }
+    },
+    [
+      activateRateLimit,
+      currentUser?.name,
+      currentUser?.profileImage,
+      currentUser?.username,
+      currentUserId,
+      ensureConversationCanSend,
+      groupId,
+      isGroupConversation,
+      isSending,
+      isUploading,
+      peerLabel,
+      peerUserId,
+      token,
+    ]
+  );
+
+  const handleSelectReaction = useCallback(
+    async (reactionType: ChatReactionType) => {
+      const messageId = reactionPickerState?.messageId || '';
+      if (!messageId || reactingMessageId) {
         return;
       }
-    }
 
-    const caption = normalizeMessageText(pendingMediaCaption);
-    let mediaUrl = pendingMedia.previewUrl;
+      setReactingMessageId(messageId);
+      setReactionPickerState(null);
 
-    setIsSending(true);
+      try {
+        const response = await reactToMessage({
+          messageId,
+          reactionType,
+        });
 
-    try {
-      if (pendingMedia.type === 'image') {
-        if (!pendingMedia.uploadUri) {
-          throw new Error('Selected image is unavailable');
+        if (response.ok) {
+          applyReactionUpdate({
+            messageId: response.messageId,
+            reactions: response.reactions,
+          });
         }
-        setIsUploading(true);
-        mediaUrl = await uploadChatMediaFile(
-          pendingMedia.uploadUri,
-          pendingMedia.fileName || `chat_${Date.now()}.jpg`,
-          pendingMedia.mimeType || 'image/jpeg',
-          token || undefined
-        );
+      } catch (error) {
+        Alert.alert('Unable to react', getSendFailureMessage(error));
+      } finally {
+        setReactingMessageId('');
       }
-
-      await sendMediaMessage({
-        mediaType: pendingMedia.type,
-        mediaUrl,
-        giphyId: pendingMedia.giphyId,
-        text: caption,
-      });
-      resetPendingMediaComposer();
-    } catch (error) {
-      Alert.alert('Unable to send media', getSendFailureMessage(error));
-    } finally {
-      setIsUploading(false);
-      setIsSending(false);
-    }
-  }, [
-    isDMsDisabled,
-    isGroupConversation,
-    isPeerKeyMissing,
-    isSending,
-    isUploading,
-    peerLabel,
-    peerUserId,
-    groupId,
-    pendingMedia,
-    pendingMediaCaption,
-    resetPendingMediaComposer,
-    sendMediaMessage,
-    token,
-  ]);
+    },
+    [applyReactionUpdate, reactingMessageId, reactionPickerState]
+  );
 
   const headerTitle = useMemo(
     () => (isGroupConversation ? groupName || 'Group Chat' : peerName || 'Secure Chat'),
@@ -1221,19 +1480,51 @@ function ChatDetailScreen({ navigation, route }: Props) {
   } else if (!isGroupConversation && isDMsDisabled) {
     composerPlaceholder = 'This user has turned off direct messages';
   }
+  const selectedReactionMessage = reactionPickerState
+    ? messages.find((message) => message.id === reactionPickerState.messageId)
+    : undefined;
+  const selectedReactionType = getCurrentUserReaction(
+    selectedReactionMessage?.reactions,
+    currentUserId
+  );
 
   const renderMediaMessage = useCallback(
     (item: LocalMessage, isMine: boolean) => {
-      if (!item.mediaType || !item.mediaUrl) {
+      if (!item.mediaType) {
         return null;
       }
 
       const hasCaption = normalizeMessageText(item.text).length > 0;
+      let imageUrls: string[] = [];
+      if (item.mediaType === 'images') {
+        imageUrls = (item.mediaUrls || []).filter(Boolean);
+      } else if (item.mediaUrl) {
+        imageUrls = [item.mediaUrl];
+      }
 
-      return (
-        <View style={styles.mediaMessageContent}>
+      let mediaNode: React.ReactNode = null;
+      if (item.mediaType === 'images') {
+        mediaNode = (
+          <View style={styles.mediaGrid}>
+            {imageUrls.map((imageUrl, index) => (
+              <Pressable
+                key={`${item.id}-${imageUrl}`}
+                onPress={() => openFullscreenMedia(imageUrls, index)}
+                style={styles.mediaGridItem}
+              >
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={styles.mediaGridImage}
+                  resizeMode="cover"
+                />
+              </Pressable>
+            ))}
+          </View>
+        );
+      } else if (item.mediaUrl) {
+        mediaNode = (
           <Pressable
-            onPress={() => setFullscreenMediaUrl(item.mediaUrl || null)}
+            onPress={() => openFullscreenMedia([item.mediaUrl || ''])}
             style={styles.mediaImageFrame}
           >
             <Image
@@ -1242,6 +1533,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
               resizeMode="cover"
             />
           </Pressable>
+        );
+      }
+
+      return (
+        <View style={styles.mediaMessageContent}>
+          {mediaNode}
           {hasCaption ? (
             <Text
               style={[styles.mediaCaptionText, isMine ? styles.mineText : { color: colors.text }]}
@@ -1252,7 +1549,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
         </View>
       );
     },
-    [colors.text]
+    [colors.text, openFullscreenMedia]
   );
 
   const renderMainContent = () => {
@@ -1289,6 +1586,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
         data={messages}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesContent}
+        onScrollToIndexFailed={({ index, averageItemLength }) => {
+          flatListRef.current?.scrollToOffset({
+            offset: Math.max(0, index * averageItemLength - 120),
+            animated: true,
+          });
+        }}
         onContentSizeChange={() => {
           if (!messages.length) {
             return;
@@ -1309,6 +1612,12 @@ function ChatDetailScreen({ navigation, route }: Props) {
           const isMine = item.senderId === currentUserId;
           const isRead = item.status === 'read';
           const hasMediaCaption = item.mediaType && normalizeMessageText(item.text).length > 0;
+          const isMediaMessage = Boolean(
+            item.mediaType && ((item.mediaUrls && item.mediaUrls.length > 0) || item.mediaUrl)
+          );
+          const singleMediaUrl = item.mediaType !== 'images' ? item.mediaUrl : undefined;
+          const reactionBadge = getReactionBadgeSummary(item.reactions, currentUserId);
+          const isHighlighted = highlightedMessageId === item.id;
           const previousMessage = index > 0 ? messages[index - 1] : undefined;
           const shouldShowDateSeparator =
             !previousMessage || !isSameLocalCalendarDay(item.createdAt, previousMessage.createdAt);
@@ -1320,6 +1629,74 @@ function ChatDetailScreen({ navigation, route }: Props) {
               ? bubbleColor
               : { backgroundColor: 'transparent', padding: 0 };
           }
+
+          const bubbleNode = (
+            <View
+              ref={(node) => registerMessageAnchor(item.id, node)}
+              collapsable={false}
+              onLayout={(event) => handleMessageLayout(item.id, event)}
+              style={[
+                styles.messageAnchor,
+                reactionBadge ? styles.messageAnchorWithReaction : null,
+              ]}
+            >
+              <Pressable
+                onLongPress={() => handleOpenReactionPicker(item)}
+                delayLongPress={220}
+                disabled={item.id.startsWith('local-')}
+                onPress={singleMediaUrl ? () => openFullscreenMedia([singleMediaUrl]) : undefined}
+                style={[
+                  styles.messageBubble,
+                  isMine ? styles.mineBubble : styles.theirsBubble,
+                  bubbleColor,
+                  isHighlighted ? styles.highlightedBubble : null,
+                ]}
+              >
+                {isMediaMessage ? (
+                  renderMediaMessage(item, isMine)
+                ) : (
+                  <Text
+                    style={[styles.messageText, isMine ? styles.mineText : { color: colors.text }]}
+                  >
+                    {normalizeMessageText(item.text)}
+                  </Text>
+                )}
+              </Pressable>
+              {reactionBadge ? (
+                <View
+                  style={[
+                    styles.reactionBadge,
+                    isMine ? styles.reactionBadgeMine : styles.reactionBadgeTheirs,
+                    reactionBadge.currentUserReaction ? styles.reactionBadgeActive : null,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.reactionBadgeEmojiText,
+                      reactionBadge.currentUserReaction
+                        ? styles.reactionBadgeEmojiTextActive
+                        : null,
+                    ]}
+                  >
+                    {reactionBadge.emojis.join(' ')}
+                  </Text>
+                  {reactionBadge.count > 1 ? (
+                    <Text
+                      style={[
+                        styles.reactionBadgeCountText,
+                        reactionBadge.currentUserReaction
+                          ? styles.reactionBadgeEmojiTextActive
+                          : null,
+                      ]}
+                    >
+                      {reactionBadge.count}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          );
+
           return (
             <View>
               {shouldShowDateSeparator ? (
@@ -1330,15 +1707,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
               <View style={[styles.messageWrap, isMine ? styles.mineWrap : styles.theirsWrap]}>
                 {isMine ? (
                   <>
-                    <View style={[styles.messageBubble, styles.mineBubble, bubbleColor]}>
-                      {item.mediaType && item.mediaUrl ? (
-                        renderMediaMessage(item, true)
-                      ) : (
-                        <Text style={[styles.messageText, styles.mineText]}>
-                          {normalizeMessageText(item.text)}
-                        </Text>
-                      )}
-                    </View>
+                    {bubbleNode}
                     {isGroupConversation ? (
                       <View style={styles.statusWrap}>
                         <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
@@ -1362,15 +1731,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
                           {item.senderName || `@${item.senderUsername}`}
                         </Text>
                       ) : null}
-                      <View style={[styles.messageBubble, styles.theirsBubble, bubbleColor]}>
-                        {item.mediaType && item.mediaUrl ? (
-                          renderMediaMessage(item, false)
-                        ) : (
-                          <Text style={[styles.messageText, { color: colors.text }]}>
-                            {normalizeMessageText(item.text)}
-                          </Text>
-                        )}
-                      </View>
+                      {bubbleNode}
                       <View style={styles.incomingTimeWrap}>
                         <Text style={styles.timeText}>{formatMessageTime(item.createdAt)}</Text>
                       </View>
@@ -1439,63 +1800,68 @@ function ChatDetailScreen({ navigation, route }: Props) {
         {renderMainContent()}
       </View>
 
+      <Modal
+        visible={Boolean(reactionPickerState)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReactionPickerState(null)}
+      >
+        <View style={styles.reactionPickerBackdrop}>
+          <Pressable
+            style={styles.reactionPickerDismissArea}
+            onPress={() => setReactionPickerState(null)}
+          />
+          <View
+            style={[
+              styles.reactionPicker,
+              {
+                top: reactionPickerState?.top || insets.top + 8,
+                left: reactionPickerState?.left || 12,
+                backgroundColor: isDark ? '#0f2027' : '#ffffff',
+              },
+            ]}
+          >
+            {REACTION_ORDER.map((reactionType) => {
+              const isSelected = reactionType === selectedReactionType;
+              return (
+                <Pressable
+                  key={reactionType}
+                  onPress={() => handleSelectReaction(reactionType)}
+                  style={[
+                    styles.reactionPickerButton,
+                    isSelected ? styles.reactionPickerButtonSelected : null,
+                  ]}
+                >
+                  <Text style={styles.reactionPickerEmoji}>{REACTION_EMOJI_MAP[reactionType]}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
+
       <View
         style={[
           styles.inputRow,
           {
-            borderTopColor: isDark ? '#1b1b1b' : '#ececee',
             paddingBottom:
               Platform.OS === 'ios' && keyboardVisible ? 8 : Math.max(insets.bottom, 8),
             backgroundColor: isDark ? colors.background : '#ffffff',
           },
         ]}
       >
-        <View style={[styles.inputWrap, { backgroundColor: isDark ? colors.card : '#f1f2f4' }]}>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            onFocus={() => setIsComposerFocused(true)}
-            onBlur={() => setIsComposerFocused(false)}
-            editable={!isGroupConversation && !isPeerKeyMissing && !isDMsDisabled}
-            placeholder={isComposerFocused ? '' : composerPlaceholder}
-            placeholderTextColor="#68707a"
-            selectionColor="#126b87"
-            cursorColor="#126b87"
-            style={[styles.input, { color: colors.text }]}
-            multiline
-          />
-        </View>
-        <Pressable
-          onPress={handlePickImage}
-          disabled={isMediaDisabled}
-          style={[styles.utilityButton, isMediaDisabled ? styles.utilityButtonDisabled : null]}
-        >
-          {isUploading ? (
-            <ActivityIndicator size="small" color="#126b87" />
-          ) : (
-            <MaterialIcons name="image" size={20} color="#126b87" />
-          )}
-        </Pressable>
-        <Pressable
-          onPress={handlePickGif}
-          disabled={isMediaDisabled || !isGiphyInitialized}
-          style={[styles.utilityButton, isMediaDisabled ? styles.utilityButtonDisabled : null]}
-        >
-          <GifIcon size={24} color="#126b87" />
-        </Pressable>
-        <Pressable
-          onPress={sendMessage}
-          style={({ pressed }) => [
-            styles.sendButton,
-            {
-              backgroundColor: isComposerDisabled ? '#68828a' : '#126b87',
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
+        <ChatInput
+          value={draft}
+          onChangeText={setDraft}
+          onSend={handleComposerSend}
+          attachments={composerAttachments}
+          onAttachmentsChange={setComposerAttachments}
+          isSending={isSending}
+          isUploading={isUploading}
+          isRateLimited={isRateLimited}
           disabled={isComposerDisabled}
-        >
-          <MaterialIcons name="send" size={20} color="#ffffff" />
-        </Pressable>
+          placeholder={composerPlaceholder}
+        />
       </View>
 
       <ChatOptions
@@ -1519,79 +1885,16 @@ function ChatDetailScreen({ navigation, route }: Props) {
         isReportLoading={optionsActionLoading === 'report'}
       />
 
-      <Modal
-        visible={Boolean(pendingMedia)}
-        transparent
-        animationType="slide"
-        onRequestClose={resetPendingMediaComposer}
-      >
-        <View style={styles.pendingMediaBackdrop}>
-          <Pressable style={styles.pendingMediaDismissZone} onPress={resetPendingMediaComposer} />
-          <View
-            style={[styles.pendingMediaSheet, { backgroundColor: isDark ? '#032f3c' : '#ffffff' }]}
-          >
-            <View style={styles.pendingMediaHandle} />
-            {pendingMedia ? (
-              <>
-                <View style={styles.pendingMediaPreviewFrame}>
-                  <Image
-                    source={{ uri: pendingMedia.previewUrl }}
-                    style={styles.pendingMediaPreview}
-                    resizeMode="cover"
-                  />
-                </View>
-                <TextInput
-                  value={pendingMediaCaption}
-                  onChangeText={setPendingMediaCaption}
-                  placeholder="Add a message"
-                  placeholderTextColor="#68828a"
-                  selectionColor="#126b87"
-                  cursorColor="#126b87"
-                  style={[
-                    styles.pendingMediaInput,
-                    {
-                      color: colors.text,
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f2f4',
-                    },
-                  ]}
-                  multiline
-                />
-                <View style={styles.pendingMediaActions}>
-                  <Pressable
-                    onPress={resetPendingMediaComposer}
-                    style={[styles.pendingMediaActionButton, styles.pendingMediaCancelButton]}
-                  >
-                    <Text style={styles.pendingMediaCancelText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={submitPendingMedia}
-                    disabled={isSending || isUploading}
-                    style={[
-                      styles.pendingMediaActionButton,
-                      styles.pendingMediaSendButton,
-                      isSending || isUploading ? styles.pendingMediaActionDisabled : null,
-                    ]}
-                  >
-                    {isUploading || isSending ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
-                    ) : (
-                      <Text style={styles.pendingMediaSendText}>Send</Text>
-                    )}
-                  </Pressable>
-                </View>
-              </>
-            ) : null}
-          </View>
-        </View>
-      </Modal>
-
-      {fullscreenMediaUrl ? (
+      {fullscreenMediaUrls.length > 0 ? (
         <ImageView
-          images={[{ uri: fullscreenMediaUrl }]}
-          imageIndex={0}
+          images={fullscreenMediaUrls.map((uri) => ({ uri }))}
+          imageIndex={fullscreenMediaIndex}
           visible
           presentationStyle="overFullScreen"
-          onRequestClose={() => setFullscreenMediaUrl(null)}
+          onRequestClose={() => {
+            setFullscreenMediaUrls([]);
+            setFullscreenMediaIndex(0);
+          }}
         />
       ) : null}
     </KeyboardControllerAvoidingView>
@@ -1697,6 +2000,12 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     maxWidth: '86%',
   },
+  messageAnchor: {
+    position: 'relative',
+  },
+  messageAnchorWithReaction: {
+    paddingBottom: 14,
+  },
   mineWrap: {
     alignSelf: 'flex-end',
   },
@@ -1749,9 +2058,54 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   theirsBubble: {},
+  highlightedBubble: {
+    shadowColor: '#12d2d9',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    borderWidth: 1,
+    borderColor: 'rgba(18, 210, 217, 0.55)',
+  },
   messageText: {
     fontSize: 16,
     lineHeight: 18,
+  },
+  reactionBadge: {
+    position: 'absolute',
+    bottom: 0,
+    minHeight: 22,
+    borderRadius: 11,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderColor: 'rgba(18, 107, 135, 0.18)',
+  },
+  reactionBadgeMine: {
+    right: 10,
+  },
+  reactionBadgeTheirs: {
+    right: 10,
+  },
+  reactionBadgeActive: {
+    backgroundColor: '#126b87',
+    borderColor: '#126b87',
+  },
+  reactionBadgeEmojiText: {
+    fontSize: 11,
+    color: '#126b87',
+    fontWeight: '700',
+  },
+  reactionBadgeEmojiTextActive: {
+    color: '#ffffff',
+  },
+  reactionBadgeCountText: {
+    fontSize: 10,
+    color: '#126b87',
+    fontWeight: '700',
   },
   mineText: {
     color: '#fff',
@@ -1781,42 +2135,62 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignSelf: 'flex-start',
   },
-  inputRow: {
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    gap: 8,
-  },
-  inputWrap: {
+  reactionPickerBackdrop: {
     flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
-  input: {
-    flex: 1,
-    paddingHorizontal: 8,
+  reactionPickerDismissArea: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  reactionPicker: {
+    position: 'absolute',
+    width: 336,
+    maxWidth: '94%',
+    borderRadius: 28,
+    paddingHorizontal: 10,
     paddingVertical: 8,
-    maxHeight: 120,
-    fontSize: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
   },
-  utilityButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#d9ecf1',
+  reactionPickerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  utilityButtonDisabled: {
-    opacity: 0.45,
+  reactionPickerButtonSelected: {
+    backgroundColor: 'rgba(18, 107, 135, 0.12)',
+  },
+  reactionPickerEmoji: {
+    fontSize: 20,
+  },
+  inputRow: {
+    width: '100%',
   },
   mediaMessageContent: {
     gap: 8,
+  },
+  mediaGrid: {
+    width: 220,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  mediaGridItem: {
+    width: 107,
+    height: 107,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  mediaGridImage: {
+    width: '100%',
+    height: '100%',
   },
   mediaImageFrame: {
     borderRadius: 16,
@@ -1830,85 +2204,6 @@ const styles = StyleSheet.create({
   mediaCaptionText: {
     fontSize: 15,
     lineHeight: 20,
-  },
-  pendingMediaBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  pendingMediaDismissZone: {
-    flex: 1,
-  },
-  pendingMediaSheet: {
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 18,
-    gap: 14,
-  },
-  pendingMediaHandle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(104, 130, 138, 0.5)',
-    marginBottom: 2,
-  },
-  pendingMediaPreviewFrame: {
-    borderRadius: 18,
-    overflow: 'hidden',
-  },
-  pendingMediaPreview: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 18,
-  },
-  pendingMediaInput: {
-    minHeight: 52,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    textAlignVertical: 'top',
-    maxHeight: 140,
-  },
-  pendingMediaActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  pendingMediaActionButton: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pendingMediaCancelButton: {
-    backgroundColor: 'rgba(104, 130, 138, 0.15)',
-  },
-  pendingMediaSendButton: {
-    backgroundColor: '#126b87',
-  },
-  pendingMediaActionDisabled: {
-    opacity: 0.65,
-  },
-  pendingMediaCancelText: {
-    color: '#68828a',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  pendingMediaSendText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  sendButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
 

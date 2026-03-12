@@ -3,6 +3,8 @@ import { ConversationListItem } from './types';
 
 const listeners = new Set<() => void>();
 let unreadConversationKeys = new Set<string>();
+let totalUnreadCount = 0;
+const unreadCountByKey = new Map<string, number>();
 
 const emitChange = () => {
   listeners.forEach((listener) => listener());
@@ -14,6 +16,10 @@ const setUnreadConversationKeys = (nextKeys: Set<string>) => {
     [...unreadConversationKeys].every((key) => nextKeys.has(key))
   ) {
     return;
+  }
+
+  if (nextKeys.size === 0) {
+    totalUnreadCount = 0;
   }
 
   unreadConversationKeys = nextKeys;
@@ -56,6 +62,9 @@ const getSnapshot = () => unreadConversationKeys.size > 0;
 
 export const publishChatUnreadFromConversations = (conversations: ConversationListItem[]) => {
   const nextKeys = new Set<string>();
+  let total = 0;
+
+  unreadCountByKey.clear();
 
   conversations.forEach((conversation) => {
     if (conversation.isArchived || conversation.unreadCount < 1) {
@@ -65,9 +74,12 @@ export const publishChatUnreadFromConversations = (conversations: ConversationLi
     const conversationKey = buildConversationUnreadKey(conversation);
     if (conversationKey !== 'direct:unknown') {
       nextKeys.add(conversationKey);
+      unreadCountByKey.set(conversationKey, conversation.unreadCount);
+      total += conversation.unreadCount;
     }
   });
 
+  totalUnreadCount = total;
   setUnreadConversationKeys(nextKeys);
 };
 
@@ -80,6 +92,9 @@ export const setChatConversationUnread = (conversationKey: string, hasUnread: bo
   if (hasUnread) {
     nextKeys.add(conversationKey);
   } else {
+    const subtracted = unreadCountByKey.get(conversationKey) ?? 0;
+    totalUnreadCount = Math.max(0, totalUnreadCount - subtracted);
+    unreadCountByKey.delete(conversationKey);
     nextKeys.delete(conversationKey);
   }
   setUnreadConversationKeys(nextKeys);
@@ -94,3 +109,8 @@ export const resetChatUnreadIndicator = () => {
 
 export const useChatUnreadIndicator = () =>
   useSyncExternalStore(subscribeToChatUnread, getSnapshot, getSnapshot);
+
+const getCountSnapshot = () => totalUnreadCount;
+
+export const useChatUnreadCount = () =>
+  useSyncExternalStore(subscribeToChatUnread, getCountSnapshot, getCountSnapshot);

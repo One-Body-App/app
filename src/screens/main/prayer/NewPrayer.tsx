@@ -20,6 +20,7 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
 import { MapSuggestion } from '@/components/MapBox';
+import { sanitizeComposerText } from '@/components/composer/composerText';
 import StyledText from '@/components/styled/Text';
 import StyledTextInput from '@/components/styled/TextInput';
 import { PrayerWallStackParamsList } from '@/src/navigator/types';
@@ -357,7 +358,7 @@ function NewPrayer({ navigation, route }: Props) {
                 placeholderTextColor={Colors.neutral[300]}
                 // onSubmitEditing={() => inputRefs.password?.current.focus()}
                 onChangeText={(value) => {
-                  setContent(value);
+                  setContent(sanitizeComposerText(value, MAX_CONTENT_LENGHT));
                 }}
               />
             </View>

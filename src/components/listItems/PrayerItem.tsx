@@ -35,6 +35,7 @@ import { Colors } from '@/src/styles';
 import BaseItem from './BaseItem';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import getPrayerWallWebClassName from './prayerWallWebClassName';
+import { sanitizeComposerText } from '@/components/composer/composerText';
 
 import { ApiCall } from '@/services/api';
 import Anonymous from '@/assets/svg/anonymous.svg';
@@ -517,7 +518,7 @@ function PrayerItem({
               }}
               wrapperStyle={{ marginVertical: spacing.x10 }}
               onChangeText={(content) => {
-                setTestinomyContent(content);
+                setTestinomyContent(sanitizeComposerText(content, 150));
               }}
               counterContainerStyle={{
                 position: 'absolute',

@@ -10,6 +10,7 @@ import { getAllPrayer, getMyPrayer, getTestimonies } from '@/src/redux/actions/P
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import Button from '../Button';
+import { sanitizeComposerText } from '@/components/composer/composerText';
 import StyledText from '../styled/Text';
 import styles from './styles';
 
@@ -164,9 +165,7 @@ function PrayerInputType({ color }: PrayerInputTypeProps) {
           // onPressIn={() => setPrayerTypeShow(true)}
           onFocus={() => setPrayerTypeShow(true)}
           onChangeText={(e) => {
-            if (e.length < 150) {
-              setPrayer(e);
-            }
+            setPrayer(sanitizeComposerText(e, 150));
             setError(null);
           }}
           multiline

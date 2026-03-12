@@ -1,5 +1,6 @@
 import { ensureChatKeypair, getMyChatKeypair, getPeerPublicKey } from './keyManager';
 import { decryptE2EEMessage, encryptE2EEMessage } from './crypto';
+import { buildChatContentHash } from './contentHash';
 import {
   fetchConversationMessages,
   fetchGroupConversationMessages,
@@ -11,10 +12,13 @@ import {
   emitChatConversationRead,
   emitChatDelivered,
   emitChatRead,
+  onChatMessageReaction,
+  reactToChatMessage,
   sendChatGroupMessage,
   sendChatE2EEMessage,
   ChatTransportError,
 } from './socketClient';
+import { ReactChatMessagePayload } from './types';
 
 export const ensureChatReady = async (token?: string) => {
   return ensureChatKeypair({ token });
@@ -45,6 +49,10 @@ export const sendEncryptedTextMessage = async (args: {
     messageType: 'text',
     senderPublicKeyVersion: myKeys.keyVersion,
     clientMessageId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    contentHash: buildChatContentHash({
+      text: args.text,
+      messageType: 'text',
+    }),
   });
 };
 
@@ -155,7 +163,12 @@ export const loadGroupConversation = async (args: {
 
 export const parseChatMessagePayload = (
   plaintext: string
-): { type: 'text' | 'image' | 'gif'; text: string; mediaUrl?: string } => {
+): {
+  type: 'text' | 'image' | 'gif' | 'images';
+  text: string;
+  mediaUrl?: string;
+  mediaUrls?: string[];
+} => {
   try {
     const parsed = JSON.parse(plaintext);
     if (parsed && typeof parsed === 'object' && parsed.type) {
@@ -173,6 +186,13 @@ export const parseChatMessagePayload = (
           mediaUrl: `https://media.giphy.com/media/${parsed.giphyId}/giphy.gif`,
         };
       }
+      if (parsed.type === 'images' && Array.isArray(parsed.urls)) {
+        return {
+          type: 'images',
+          text: typeof parsed.text === 'string' ? parsed.text : '',
+          mediaUrls: parsed.urls.map((item: unknown) => String(item || '').trim()).filter(Boolean),
+        };
+      }
     }
   } catch {
     // fall through to plain text
@@ -182,8 +202,9 @@ export const parseChatMessagePayload = (
 
 export const sendEncryptedMediaMessage = async (args: {
   receiverId: string;
-  mediaType: 'image' | 'gif';
+  mediaType: 'image' | 'gif' | 'images';
   mediaUrl?: string;
+  mediaUrls?: string[];
   giphyId?: string;
   text?: string;
   token?: string;
@@ -202,11 +223,17 @@ export const sendEncryptedMediaMessage = async (args: {
           giphyId: args.giphyId,
           ...(normalizedText ? { text: normalizedText } : {}),
         })
-      : JSON.stringify({
-          type: 'image',
-          url: args.mediaUrl,
-          ...(normalizedText ? { text: normalizedText } : {}),
-        });
+      : args.mediaType === 'images'
+        ? JSON.stringify({
+            type: 'images',
+            urls: args.mediaUrls || [],
+            ...(normalizedText ? { text: normalizedText } : {}),
+          })
+        : JSON.stringify({
+            type: 'image',
+            url: args.mediaUrl,
+            ...(normalizedText ? { text: normalizedText } : {}),
+          });
 
   const encrypted = await encryptE2EEMessage({
     plaintext,
@@ -223,6 +250,13 @@ export const sendEncryptedMediaMessage = async (args: {
     messageType: args.mediaType,
     senderPublicKeyVersion: myKeys.keyVersion,
     clientMessageId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    contentHash: buildChatContentHash({
+      text: normalizedText,
+      messageType: args.mediaType,
+      mediaUrl: args.mediaUrl,
+      mediaUrls: args.mediaUrls,
+      giphyId: args.giphyId,
+    }),
   });
 };
 
@@ -232,13 +266,18 @@ export const sendGroupTextMessage = async (args: { groupId: string; text: string
     plaintextPayload: args.text,
     messageType: 'text',
     clientMessageId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    contentHash: buildChatContentHash({
+      text: args.text,
+      messageType: 'text',
+    }),
   });
 };
 
 export const sendGroupMediaMessage = async (args: {
   groupId: string;
-  mediaType: 'image' | 'gif';
+  mediaType: 'image' | 'gif' | 'images';
   mediaUrl?: string;
+  mediaUrls?: string[];
   giphyId?: string;
   text?: string;
 }) => {
@@ -250,17 +289,30 @@ export const sendGroupMediaMessage = async (args: {
           giphyId: args.giphyId,
           ...(normalizedText ? { text: normalizedText } : {}),
         })
-      : JSON.stringify({
-          type: 'image',
-          url: args.mediaUrl,
-          ...(normalizedText ? { text: normalizedText } : {}),
-        });
+      : args.mediaType === 'images'
+        ? JSON.stringify({
+            type: 'images',
+            urls: args.mediaUrls || [],
+            ...(normalizedText ? { text: normalizedText } : {}),
+          })
+        : JSON.stringify({
+            type: 'image',
+            url: args.mediaUrl,
+            ...(normalizedText ? { text: normalizedText } : {}),
+          });
 
   return sendChatGroupMessage({
     groupId: args.groupId,
     plaintextPayload,
     messageType: args.mediaType,
     clientMessageId: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    contentHash: buildChatContentHash({
+      text: normalizedText,
+      messageType: args.mediaType,
+      mediaUrl: args.mediaUrl,
+      mediaUrls: args.mediaUrls,
+      giphyId: args.giphyId,
+    }),
   });
 };
 
@@ -324,3 +376,9 @@ export const markGroupConversationRead = async (groupId: string, token?: string)
     ...response.response.data,
   };
 };
+
+export const reactToMessage = async (payload: ReactChatMessagePayload) => {
+  return reactToChatMessage(payload);
+};
+
+export { onChatMessageReaction };

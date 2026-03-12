@@ -1,5 +1,22 @@
 export type ChatMessageStatus = 'sent' | 'delivered' | 'read';
 
+export type ChatReactionType =
+  | 'like'
+  | 'love'
+  | 'praying'
+  | 'praise'
+  | 'haha'
+  | 'wow'
+  | 'sad'
+  | 'angry';
+
+export type ChatMessageReaction = {
+  type: ChatReactionType;
+  userId: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type ChatEnvelope = {
   _id: string;
   senderId: string;
@@ -10,7 +27,7 @@ export type ChatEnvelope = {
   nonce: string;
   authTag: string;
   aad?: string;
-  messageType: 'text' | 'image' | 'gif';
+  messageType: 'text' | 'image' | 'gif' | 'images';
   status: ChatMessageStatus;
   plaintextPayload?: string;
   createdAt?: string;
@@ -21,6 +38,7 @@ export type ChatEnvelope = {
   senderUsername?: string;
   senderAvatarUri?: string;
   groupName?: string;
+  reactions?: ChatMessageReaction[];
 };
 
 export type ChatUserKey = {
@@ -52,16 +70,18 @@ export type SendE2EEMessagePayload = {
   nonce: string;
   authTag: string;
   aad?: string;
-  messageType?: 'text' | 'image' | 'gif';
+  messageType?: 'text' | 'image' | 'gif' | 'images';
   clientMessageId?: string;
   senderPublicKeyVersion?: number;
+  contentHash?: string;
 };
 
 export type SendGroupMessagePayload = {
   groupId: string;
   plaintextPayload: string;
-  messageType?: 'text' | 'image' | 'gif';
+  messageType?: 'text' | 'image' | 'gif' | 'images';
   clientMessageId?: string;
+  contentHash?: string;
 };
 
 export type ChatTransportErrorCode =
@@ -69,6 +89,7 @@ export type ChatTransportErrorCode =
   | 'sid-mismatch'
   | 'receiver-not-found'
   | 'dms-disabled'
+  | 'rate-limited'
   | 'invalid-payload'
   | 'send-failed'
   | 'transport-timeout'
@@ -83,6 +104,7 @@ export type ChatSendAckFailure = {
   ok: false;
   error: string;
   code: ChatTransportErrorCode;
+  retryAfterMs?: number;
 };
 
 export type ChatSendAck<TMessage = ChatEnvelope> =
@@ -120,6 +142,31 @@ export type ChatConversationReadAckSuccess = {
 } & ChatConversationReadResult;
 
 export type ChatConversationReadAck = ChatConversationReadAckSuccess | ChatSendAckFailure;
+
+export type ReactChatMessagePayload = {
+  messageId: string;
+  reactionType: ChatReactionType;
+};
+
+export type ChatReactionAckSuccess = {
+  ok: true;
+  messageId: string;
+  reactions: ChatMessageReaction[];
+};
+
+export type ChatReactionAck = ChatReactionAckSuccess | ChatSendAckFailure;
+export type ChatMessageReactionAck = ChatReactionAck;
+
+export type ChatMessageReactionUpdate = {
+  messageId: string;
+  conversationType?: ChatConversationType;
+  senderId?: string;
+  receiverId?: string;
+  groupId?: string;
+  groupName?: string;
+  reactions: ChatMessageReaction[];
+  updatedAt?: string;
+};
 
 export type CreateChatGroupPayload = {
   name: string;

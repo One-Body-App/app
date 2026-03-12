@@ -85,9 +85,12 @@ const ratioOptions: { id: RatioId; label: string; ratio: number | null }[] = [
   { id: '1:1', label: '1:1', ratio: 1 },
 ];
 
-const defaultRatioForContext = (usageContext?: 'feed' | 'comment'): RatioId => {
+const defaultRatioForContext = (usageContext?: 'feed' | 'comment' | 'chat'): RatioId => {
   if (usageContext === 'comment') {
     return '1:1';
+  }
+  if (usageContext === 'chat') {
+    return 'free';
   }
   return '3:4';
 };

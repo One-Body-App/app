@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unstable-nested-components */
 import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
-import { Animated, Dimensions, Easing, Platform, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
 import React, { useCallback, useRef } from 'react';
@@ -25,7 +25,7 @@ import ConnectIcon from '@/assets/icons/connect.svg';
 import Home2Icon from '@/assets/icons/home2.svg';
 import MessagesIcon from '@/assets/icons/messages.svg';
 import MessagesStack from './MessagesStack';
-import { useChatUnreadIndicator } from '@/src/services/chat/unreadIndicator';
+import { useChatUnreadCount } from '@/src/services/chat/unreadIndicator';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -248,12 +248,22 @@ ConnectTabIcon.propTypes = {
 };
 
 function ChatTabIcon({ focused, color }: { focused: boolean; color: string }) {
-  const size = focused ? 22 : 22;
-  const hasUnreadMessages = useChatUnreadIndicator();
+  const size = 22;
+  const unreadCount = useChatUnreadCount();
+
+  const badgeLabel =
+    unreadCount < 2
+      ? null
+      : unreadCount < 20
+        ? String(unreadCount)
+        : unreadCount < 100
+          ? '20+'
+          : '100+';
+
   return (
     <View style={{ width: size, height: size, position: 'relative' }}>
       <MessagesIcon width={size} height={size} color={color} />
-      {hasUnreadMessages ? (
+      {unreadCount === 1 ? (
         <View
           style={{
             position: 'absolute',
@@ -263,10 +273,34 @@ function ChatTabIcon({ focused, color }: { focused: boolean; color: string }) {
             height: 10,
             borderRadius: 5,
             backgroundColor: '#12d2d9',
-            borderWidth: 2,
-            borderColor: '#032f3c',
           }}
         />
+      ) : badgeLabel ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: -5,
+            right: -8,
+            minWidth: 16,
+            height: 14,
+            borderRadius: 7,
+            backgroundColor: '#12d2d9',
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 3,
+          }}
+        >
+          <Text
+            style={{
+              color: '#032f3c',
+              fontSize: 8,
+              fontWeight: 'bold',
+              lineHeight: 14,
+            }}
+          >
+            {badgeLabel}
+          </Text>
+        </View>
       ) : null}
     </View>
   );

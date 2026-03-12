@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -51,13 +51,7 @@ function RemoveAccount({ navigation }: Props) {
     },
   ];
 
-  useEffect(() => {
-    if (loginSuccess) {
-      accountDeactivate();
-    }
-  }, [loginSuccess]);
-
-  const accountDeactivate = async () => {
+  const accountDeactivate = useCallback(async () => {
     dispatch(setLoader(true));
     try {
       const res = await ApiCall({
@@ -67,7 +61,7 @@ function RemoveAccount({ navigation }: Props) {
         verb: 'delete',
       });
 
-      if (res?.status == 200) {
+      if (res?.status === 200) {
         toast.show('Account Removed Successfully', {
           placement: 'top',
           type: 'success',
@@ -83,7 +77,13 @@ function RemoveAccount({ navigation }: Props) {
     } catch (e) {
       console.log('saga change pasword err --- ', e);
     }
-  };
+  }, [comments, dispatch, reason, toast, token]);
+
+  useEffect(() => {
+    if (loginSuccess) {
+      accountDeactivate();
+    }
+  }, [accountDeactivate, loginSuccess]);
 
   return (
     <View style={{ flex: 1, margin: spacing.x24 }}>
@@ -114,44 +114,46 @@ function RemoveAccount({ navigation }: Props) {
             <View style={{ marginVertical: spacing.x24, flex: 1 }}>
               <View
                 style={{
-                  borderWidth: Platform.OS == 'ios' ? borderWidth.thin : 0,
+                  borderWidth: Platform.OS === 'ios' ? borderWidth.thin : 0,
                   borderColor: Colors.neutral[600],
                   borderRadius: borderRadius.base,
                   overflow: 'hidden',
                 }}
               >
                 {options.map((item, index) => {
+                  let leftIcon = null;
+                  if (Platform.OS === 'android') {
+                    leftIcon =
+                      reason === item.reason ? (
+                        <Icon
+                          name="radio-button-on"
+                          size={20}
+                          color={Colors.errorFeedback.background}
+                          style={{ marginRight: spacing.x10 }}
+                        />
+                      ) : (
+                        <Icon
+                          name="radio-button-off"
+                          size={20}
+                          color={Colors.neutral[200]}
+                          style={{ marginRight: spacing.x10 }}
+                        />
+                      );
+                  }
+
                   return (
                     <Button
                       key={index}
                       text={item.reason}
                       onPress={() => setReason(item.reason)}
-                      leftIcon={
-                        Platform.OS == 'android' ? (
-                          reason == item.reason ? (
-                            <Icon
-                              name="radio-button-on"
-                              size={20}
-                              color={Colors.errorFeedback.background}
-                              style={{ marginRight: spacing.x10 }}
-                            />
-                          ) : (
-                            <Icon
-                              name="radio-button-off"
-                              size={20}
-                              color={Colors.neutral[200]}
-                              style={{ marginRight: spacing.x10 }}
-                            />
-                          )
-                        ) : null
-                      }
+                      leftIcon={leftIcon}
                       rightIcon={
-                        Platform.OS == 'ios' ? (
+                        Platform.OS === 'ios' ? (
                           <Icon
                             name="check"
                             color={Colors.errorFeedback.background}
                             style={{
-                              opacity: reason == item.reason ? 1 : 0,
+                              opacity: reason === item.reason ? 1 : 0,
                             }}
                             size={20}
                           />
@@ -161,7 +163,7 @@ function RemoveAccount({ navigation }: Props) {
                         styles.btn,
                         {
                           borderBottomWidth:
-                            index < options.length - 1 && Platform.OS == 'ios'
+                            index < options.length - 1 && Platform.OS === 'ios'
                               ? borderWidth.thin
                               : 0,
                         },
@@ -169,7 +171,7 @@ function RemoveAccount({ navigation }: Props) {
                       btnTextStyle={[
                         styles.btnText,
                         {
-                          fontWeight: reason == item.reason ? 'bold' : 'normal',
+                          fontWeight: reason === item.reason ? 'bold' : 'normal',
                           color: !reason
                             ? colors.text
                             : reason == item.reason

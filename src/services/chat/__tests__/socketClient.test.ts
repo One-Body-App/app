@@ -205,6 +205,34 @@ describe('socketClient', () => {
     });
   });
 
+  it('propagates retryAfterMs when the send ack is rate-limited', async () => {
+    const payload = {
+      receiverId: 'receiver-1',
+      encryptedPayload: 'payload',
+      nonce: 'nonce',
+      authTag: 'tag',
+      messageType: 'text' as const,
+    };
+
+    await socketClient.connectChatSocket();
+    const socket = createdSockets[0]!;
+    const sendPromise = socketClient.sendChatE2EEMessage(payload);
+    socket.emitHandler = (_event, _body, ack) => {
+      ack?.({
+        ok: false,
+        error: 'You are sending too fast.',
+        code: 'rate-limited',
+        retryAfterMs: 2500,
+      });
+    };
+
+    await expect(sendPromise).rejects.toMatchObject({
+      message: 'You are sending too fast.',
+      code: 'rate-limited',
+      retryAfterMs: 2500,
+    });
+  });
+
   it('recreates the cached socket when the managed token changes', async () => {
     await socketClient.connectChatSocket();
     const firstSocket = createdSockets[0]!;
@@ -215,5 +243,27 @@ describe('socketClient', () => {
 
     expect(mockIo).toHaveBeenCalledTimes(2);
     expect(firstSocket.disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves a reaction ack from the chat socket', async () => {
+    await socketClient.connectChatSocket();
+    const socket = createdSockets[0]!;
+    const reactionPromise = socketClient.reactToChatMessage({
+      messageId: 'message-1',
+      reactionType: 'love',
+    });
+    socket.emitHandler = (_event, _body, ack) => {
+      ack?.({
+        ok: true,
+        messageId: 'message-1',
+        reactions: [{ type: 'love', userId: 'user-1' }],
+      });
+    };
+
+    await expect(reactionPromise).resolves.toEqual({
+      ok: true,
+      messageId: 'message-1',
+      reactions: [{ type: 'love', userId: 'user-1' }],
+    });
   });
 });

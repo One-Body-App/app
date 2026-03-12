@@ -25,6 +25,7 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { MainStackParamList } from '@/src/navigator/types';
 import GifIcon from '@/components/GifIcon';
+import { sanitizeComposerText } from '@/components/composer/composerText';
 import {
   createUploadImageRequestId,
   waitForUploadImageResult,
@@ -395,7 +396,7 @@ function CommentField({
               multiline
               value={content}
               onChangeText={(value: string) => {
-                setContent(value);
+                setContent(sanitizeComposerText(value, 2000));
               }}
               placeholderTextColor={textSecondary}
               selectionColor={primary}
