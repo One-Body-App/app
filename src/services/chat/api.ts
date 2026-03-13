@@ -12,6 +12,7 @@ import {
   UpdateChatConversationArchiveStatePayload,
   UpdateChatConversationReadStatePayload,
 } from './types';
+import { isValidMongoObjectId } from './conversationTarget';
 
 type ApiEnvelope<T> = {
   message?: string;
@@ -19,6 +20,28 @@ type ApiEnvelope<T> = {
 };
 
 const withToken = (token?: string) => (token && token.length > 0 ? token : true);
+
+const normalizeConversationReadStatePayload = (payload: UpdateChatConversationReadStatePayload) => {
+  if (payload.conversationType === 'group') {
+    const groupId = typeof payload.groupId === 'string' ? payload.groupId.trim() : '';
+    return groupId && isValidMongoObjectId(groupId)
+      ? {
+          conversationType: 'group' as const,
+          groupId,
+          isRead: payload.isRead,
+        }
+      : null;
+  }
+
+  const peerUserId = typeof payload.peerUserId === 'string' ? payload.peerUserId.trim() : '';
+  return peerUserId && isValidMongoObjectId(peerUserId)
+    ? {
+        conversationType: 'direct' as const,
+        peerUserId,
+        isRead: payload.isRead,
+      }
+    : null;
+};
 
 export const registerChatPublicKey = async (payload: RegisterChatKeyPayload, token?: string) => {
   return ApiCall<ApiEnvelope<ChatUserKey>>({
@@ -152,6 +175,29 @@ export const updateChatConversationReadState = async (
   payload: UpdateChatConversationReadStatePayload,
   token?: string
 ) => {
+  const normalizedPayload = normalizeConversationReadStatePayload(payload);
+  if (__DEV__) {
+    console.log('[ChatReadDebug] state_read_payload', {
+      payload,
+      normalizedPayload,
+    });
+  }
+  if (!normalizedPayload) {
+    return {
+      status: 400,
+      response: {
+        message:
+          payload.conversationType === 'group' ? 'groupId is invalid' : 'peerUserId is invalid',
+      } as ApiEnvelope<{
+        isRead: boolean;
+        peerUserId?: string;
+        groupId?: string;
+        updatedCount: number;
+        messageIds: string[];
+      }>,
+    };
+  }
+
   return ApiCall<
     ApiEnvelope<{
       isRead: boolean;
@@ -163,7 +209,7 @@ export const updateChatConversationReadState = async (
   >({
     route: 'chat/conversations/state/read',
     verb: 'patch',
-    params: payload,
+    params: normalizedPayload,
     token: withToken(token),
   });
 };

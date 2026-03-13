@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView as KeyboardControllerAvoidingView } from 'react-native-keyboard-controller';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -37,14 +37,13 @@ import {
   loadAndDecryptConversation,
   loadGroupConversation,
   ensureChatReady,
-  markGroupConversationRead,
-  markConversationRead,
   reactToMessage,
   sendGroupMediaMessage,
   sendGroupTextMessage,
   sendEncryptedTextMessage,
   sendEncryptedMediaMessage,
   parseChatMessagePayload,
+  setConversationReadState,
 } from '@/src/services/chat/chatClient';
 import {
   ChatMessageReaction,
@@ -67,12 +66,10 @@ import {
   uploadChatMediaFile,
 } from '@/src/services/chat/api';
 import {
-  getDirectConversationUnreadKey,
-  getGroupConversationUnreadKey,
-  setChatConversationUnread,
-} from '@/src/services/chat/unreadIndicator';
+  setConversationUnreadStateLocally,
+  syncConversationReadMutationLocally,
+} from '@/src/services/chat/conversationReadState';
 import { isValidMongoObjectId } from '@/src/services/chat/conversationTarget';
-import { publishChatConversationRead } from '@/src/services/chat/conversationReadSync';
 import ChatOptions from './chatoptions';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'ChatDetail'>;
@@ -392,11 +389,22 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const rateLimitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentUserId = currentUser?._id ? String(currentUser._id) : '';
+  const isScreenFocused = useIsFocused();
   const hasPeerAvatarImage = Boolean(peerAvatarUri && peerAvatarUri !== NO_PROFILE_IMAGE);
   const canShowBlockAndReport = !isGroupConversation && Boolean(peerUserId);
-  const currentConversationUnreadKey = isGroupConversation
-    ? getGroupConversationUnreadKey(groupId)
-    : getDirectConversationUnreadKey(peerUserId);
+  const currentConversationTarget = useMemo(
+    () =>
+      isGroupConversation
+        ? {
+            conversationType: 'group' as const,
+            groupId,
+          }
+        : {
+            conversationType: 'direct' as const,
+            peerUserId,
+          },
+    [groupId, isGroupConversation, peerUserId]
+  );
 
   useEffect(() => {
     setIsConversationMuted(initialMutedState);
@@ -953,104 +961,97 @@ function ChatDetailScreen({ navigation, route }: Props) {
     focusTargetMessage(targetMessageId);
   }, [focusTargetMessage, messages, targetMessageId]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!currentUserId || messages.length < 1) {
-        return undefined;
+  useEffect(() => {
+    if (!isScreenFocused) {
+      lastReadSyncSignatureRef.current = '';
+      return;
+    }
+
+    if (!currentUserId || messages.length < 1) {
+      return;
+    }
+
+    if (isGroupConversation) {
+      if (!groupId) {
+        return;
       }
 
-      if (isGroupConversation) {
-        if (!groupId) {
-          return undefined;
-        }
-
-        const incomingGroupIds = messages
-          .filter((message) => message.senderId && message.senderId !== currentUserId)
-          .map((message) => message.id);
-
-        if (incomingGroupIds.length < 1) {
-          setChatConversationUnread(currentConversationUnreadKey, false);
-          lastReadSyncSignatureRef.current = '';
-          return undefined;
-        }
-
-        const signature = incomingGroupIds.join(',');
-        if (lastReadSyncSignatureRef.current === signature) {
-          return undefined;
-        }
-
-        lastReadSyncSignatureRef.current = signature;
-        markGroupConversationRead(groupId, token || undefined)
-          .then(() => {
-            setChatConversationUnread(currentConversationUnreadKey, false);
-            publishChatConversationRead({
-              conversationType: 'group',
-              groupId,
-            });
-          })
-          .catch(() => {
-            lastReadSyncSignatureRef.current = '';
-          });
-
-        return undefined;
-      }
-
-      if (!peerUserId || !isValidMongoObjectId(peerUserId)) {
-        return undefined;
-      }
-
-      const unreadIncomingIds = messages
-        .filter(
-          (message) =>
-            message.senderId === peerUserId &&
-            message.receiverId === currentUserId &&
-            message.status !== 'read'
-        )
+      const incomingGroupIds = messages
+        .filter((message) => message.senderId && message.senderId !== currentUserId)
         .map((message) => message.id);
 
-      if (unreadIncomingIds.length < 1) {
-        setChatConversationUnread(currentConversationUnreadKey, false);
+      if (incomingGroupIds.length < 1) {
+        setConversationUnreadStateLocally(currentConversationTarget, true);
         lastReadSyncSignatureRef.current = '';
-        return undefined;
+        return;
       }
 
-      const signature = unreadIncomingIds.join(',');
+      const signature = incomingGroupIds.join(',');
       if (lastReadSyncSignatureRef.current === signature) {
-        return undefined;
+        return;
       }
 
       lastReadSyncSignatureRef.current = signature;
-      markConversationRead(peerUserId, token || undefined)
-        .then((result) => {
-          if (result.ok && result.messageIds.length > 0) {
-            const readMessageIds = new Set(result.messageIds.map(String));
-            setMessages((prev) =>
-              prev.map((message) =>
-                readMessageIds.has(message.id) ? { ...message, status: 'read' } : message
-              )
-            );
-          }
-          setChatConversationUnread(currentConversationUnreadKey, false);
-          publishChatConversationRead({
-            conversationType: 'direct',
-            peerUserId,
-          });
+      setConversationReadState(currentConversationTarget, true, token || undefined)
+        .then(() => {
+          syncConversationReadMutationLocally(currentConversationTarget, true);
         })
         .catch(() => {
           lastReadSyncSignatureRef.current = '';
         });
+      return;
+    }
 
-      return undefined;
-    }, [
-      currentConversationUnreadKey,
-      currentUserId,
-      groupId,
-      isGroupConversation,
-      messages,
-      peerUserId,
-      token,
-    ])
-  );
+    if (!peerUserId || !isValidMongoObjectId(peerUserId)) {
+      return;
+    }
+
+    const unreadIncomingIds = messages
+      .filter(
+        (message) =>
+          message.senderId === peerUserId &&
+          message.receiverId === currentUserId &&
+          message.status !== 'read'
+      )
+      .map((message) => message.id);
+
+    if (unreadIncomingIds.length < 1) {
+      setConversationUnreadStateLocally(currentConversationTarget, true);
+      lastReadSyncSignatureRef.current = '';
+      return;
+    }
+
+    const signature = unreadIncomingIds.join(',');
+    if (lastReadSyncSignatureRef.current === signature) {
+      return;
+    }
+
+    lastReadSyncSignatureRef.current = signature;
+    setConversationReadState(currentConversationTarget, true, token || undefined)
+      .then((result) => {
+        if (result.conversationType === 'direct' && result.messageIds.length > 0) {
+          const readMessageIds = new Set(result.messageIds.map(String));
+          setMessages((prev) =>
+            prev.map((message) =>
+              readMessageIds.has(message.id) ? { ...message, status: 'read' } : message
+            )
+          );
+        }
+        syncConversationReadMutationLocally(currentConversationTarget, true);
+      })
+      .catch(() => {
+        lastReadSyncSignatureRef.current = '';
+      });
+  }, [
+    currentConversationTarget,
+    currentUserId,
+    groupId,
+    isGroupConversation,
+    isScreenFocused,
+    messages,
+    peerUserId,
+    token,
+  ]);
 
   const peerLabel = peerName || 'This user';
 

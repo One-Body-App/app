@@ -5,25 +5,49 @@ const listeners = new Set<() => void>();
 let unreadConversationKeys = new Set<string>();
 let totalUnreadCount = 0;
 const unreadCountByKey = new Map<string, number>();
+const locallyReadAtByKey = new Map<string, number>();
 
 const emitChange = () => {
   listeners.forEach((listener) => listener());
 };
 
-const setUnreadConversationKeys = (nextKeys: Set<string>) => {
-  if (
-    unreadConversationKeys.size === nextKeys.size &&
-    [...unreadConversationKeys].every((key) => nextKeys.has(key))
-  ) {
-    return;
+const areSetsEqual = (left: Set<string>, right: Set<string>) =>
+  left.size === right.size && [...left].every((key) => right.has(key));
+
+const computeTotalUnreadCount = () =>
+  [...unreadCountByKey.values()].reduce((sum, count) => sum + count, 0);
+
+const toTimestamp = (value?: string) => {
+  const parsed = value ? new Date(value).getTime() : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const shouldApplyLocalReadOverride = (conversationKey: string, updatedAt?: string) => {
+  const locallyReadAt = locallyReadAtByKey.get(conversationKey);
+  if (!locallyReadAt) {
+    return false;
   }
 
-  if (nextKeys.size === 0) {
-    totalUnreadCount = 0;
+  const updatedAtTimestamp = toTimestamp(updatedAt);
+  if (updatedAtTimestamp > locallyReadAt) {
+    locallyReadAtByKey.delete(conversationKey);
+    return false;
   }
+
+  return true;
+};
+
+const syncUnreadState = (nextKeys: Set<string>) => {
+  const nextTotalUnreadCount = computeTotalUnreadCount();
+  const didKeysChange = !areSetsEqual(unreadConversationKeys, nextKeys);
+  const didTotalChange = totalUnreadCount !== nextTotalUnreadCount;
 
   unreadConversationKeys = nextKeys;
-  emitChange();
+  totalUnreadCount = nextTotalUnreadCount;
+
+  if (didKeysChange || didTotalChange) {
+    emitChange();
+  }
 };
 
 const buildConversationUnreadKey = (
@@ -62,55 +86,92 @@ const getSnapshot = () => unreadConversationKeys.size > 0;
 
 export const publishChatUnreadFromConversations = (conversations: ConversationListItem[]) => {
   const nextKeys = new Set<string>();
-  let total = 0;
 
   unreadCountByKey.clear();
 
   conversations.forEach((conversation) => {
-    if (conversation.isArchived || conversation.unreadCount < 1) {
+    const conversationKey = buildConversationUnreadKey(conversation);
+    const hasLocalReadOverride =
+      conversationKey !== 'direct:unknown' &&
+      shouldApplyLocalReadOverride(conversationKey, conversation.updatedAt);
+
+    if (conversation.isArchived || conversation.unreadCount < 1 || hasLocalReadOverride) {
+      if (conversation.unreadCount < 1 && conversationKey !== 'direct:unknown') {
+        locallyReadAtByKey.delete(conversationKey);
+      }
       return;
     }
 
-    const conversationKey = buildConversationUnreadKey(conversation);
     if (conversationKey !== 'direct:unknown') {
       nextKeys.add(conversationKey);
       unreadCountByKey.set(conversationKey, conversation.unreadCount);
-      total += conversation.unreadCount;
     }
   });
 
-  totalUnreadCount = total;
-  setUnreadConversationKeys(nextKeys);
+  syncUnreadState(nextKeys);
 };
 
 export const setChatUnreadFlag = (hasUnread: boolean) => {
-  setUnreadConversationKeys(hasUnread ? new Set(['__global__']) : new Set());
+  unreadCountByKey.clear();
+  if (hasUnread) {
+    unreadCountByKey.set('__global__', 1);
+  }
+  syncUnreadState(hasUnread ? new Set(['__global__']) : new Set());
 };
 
-export const setChatConversationUnread = (conversationKey: string, hasUnread: boolean) => {
+export const setChatConversationUnread = (
+  conversationKey: string,
+  hasUnread: boolean,
+  unreadCount = 1
+) => {
   const nextKeys = new Set(unreadConversationKeys);
   if (hasUnread) {
     nextKeys.add(conversationKey);
+    locallyReadAtByKey.delete(conversationKey);
+    unreadCountByKey.set(conversationKey, Math.max(1, unreadCount));
   } else {
-    const subtracted = unreadCountByKey.get(conversationKey) ?? 0;
-    totalUnreadCount = Math.max(0, totalUnreadCount - subtracted);
+    locallyReadAtByKey.set(conversationKey, Date.now());
     unreadCountByKey.delete(conversationKey);
     nextKeys.delete(conversationKey);
   }
-  setUnreadConversationKeys(nextKeys);
+  syncUnreadState(nextKeys);
 };
 
 export const getDirectConversationUnreadKey = (peerUserId: string) => `direct:${peerUserId}`;
 export const getGroupConversationUnreadKey = (groupId: string) => `group:${groupId}`;
 
 export const resetChatUnreadIndicator = () => {
-  setUnreadConversationKeys(new Set());
+  unreadCountByKey.clear();
+  locallyReadAtByKey.clear();
+  syncUnreadState(new Set());
 };
+
+export const applyLocalConversationReadOverrides = (conversations: ConversationListItem[]) =>
+  conversations.map((conversation) => {
+    const conversationKey = buildConversationUnreadKey(conversation);
+    if (
+      conversationKey === 'direct:unknown' ||
+      !shouldApplyLocalReadOverride(conversationKey, conversation.updatedAt) ||
+      conversation.unreadCount < 1
+    ) {
+      return conversation;
+    }
+
+    return {
+      ...conversation,
+      unreadCount: 0,
+      ...(conversation.conversationType === 'direct' ? { lastMessageStatus: 'read' as const } : {}),
+    };
+  });
 
 export const useChatUnreadIndicator = () =>
   useSyncExternalStore(subscribeToChatUnread, getSnapshot, getSnapshot);
 
-const getCountSnapshot = () => totalUnreadCount;
+export const getChatUnreadCountSnapshot = () => totalUnreadCount;
 
 export const useChatUnreadCount = () =>
-  useSyncExternalStore(subscribeToChatUnread, getCountSnapshot, getCountSnapshot);
+  useSyncExternalStore(
+    subscribeToChatUnread,
+    getChatUnreadCountSnapshot,
+    getChatUnreadCountSnapshot
+  );

@@ -18,7 +18,8 @@ import {
   sendChatE2EEMessage,
   ChatTransportError,
 } from './socketClient';
-import { ReactChatMessagePayload } from './types';
+import { isValidMongoObjectId } from './conversationTarget';
+import { ChatConversationTargetPayload, ReactChatMessagePayload } from './types';
 
 export const ensureChatReady = async (token?: string) => {
   return ensureChatKeypair({ token });
@@ -327,6 +328,10 @@ export const markMessageRead = async (messageId: string, token?: string) => {
 };
 
 export const markConversationRead = async (peerUserId: string, token?: string) => {
+  if (!isValidMongoObjectId(peerUserId)) {
+    throw new Error('Invalid direct conversation target');
+  }
+
   try {
     const response = await emitChatConversationRead(peerUserId);
     if (response.ok) {
@@ -354,12 +359,59 @@ export const markConversationRead = async (peerUserId: string, token?: string) =
   };
 };
 
-export const markGroupConversationRead = async (groupId: string, token?: string) => {
+const normalizeConversationReadStateMutationTarget = (
+  target: ChatConversationTargetPayload | null | undefined
+) => {
+  if (!target) {
+    return null;
+  }
+
+  if (target.conversationType === 'group') {
+    const groupId = typeof target.groupId === 'string' ? target.groupId.trim() : '';
+    return groupId && isValidMongoObjectId(groupId)
+      ? {
+          conversationType: 'group' as const,
+          groupId,
+        }
+      : null;
+  }
+
+  const peerUserId = typeof target.peerUserId === 'string' ? target.peerUserId.trim() : '';
+  return peerUserId && isValidMongoObjectId(peerUserId)
+    ? {
+        conversationType: 'direct' as const,
+        peerUserId,
+      }
+    : null;
+};
+
+export const setConversationReadState = async (
+  target: ChatConversationTargetPayload | null | undefined,
+  isRead: boolean,
+  token?: string
+) => {
+  const normalizedTarget = normalizeConversationReadStateMutationTarget(target);
+  if (!normalizedTarget) {
+    throw new Error('Invalid conversation target');
+  }
+
+  if (normalizedTarget.conversationType === 'direct' && isRead) {
+    const response = await markConversationRead(normalizedTarget.peerUserId, token);
+    return {
+      ok: true as const,
+      conversationType: 'direct' as const,
+      isRead: true,
+      peerUserId: response.peerUserId,
+      groupId: '',
+      updatedCount: response.updatedCount,
+      messageIds: response.messageIds,
+    };
+  }
+
   const response = await updateChatConversationReadState(
     {
-      conversationType: 'group',
-      groupId,
-      isRead: true,
+      ...normalizedTarget,
+      isRead,
     },
     token
   );
@@ -367,14 +419,27 @@ export const markGroupConversationRead = async (groupId: string, token?: string)
   if (response.status !== 200 || !response.response?.data) {
     throw new Error(
       (response.response as { message?: string })?.message ||
-        'Unable to mark group conversation as read'
+        'Unable to update conversation read state'
     );
   }
 
   return {
     ok: true as const,
+    conversationType: normalizedTarget.conversationType,
+    isRead,
     ...response.response.data,
   };
+};
+
+export const markGroupConversationRead = async (groupId: string, token?: string) => {
+  return setConversationReadState(
+    {
+      conversationType: 'group',
+      groupId,
+    },
+    true,
+    token
+  );
 };
 
 export const reactToMessage = async (payload: ReactChatMessagePayload) => {

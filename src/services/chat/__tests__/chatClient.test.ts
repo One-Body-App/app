@@ -56,14 +56,16 @@ describe('chatClient markConversationRead', () => {
   it('returns the socket response when realtime read sync succeeds', async () => {
     mockEmitChatConversationRead.mockResolvedValue({
       ok: true,
-      peerUserId: 'peer-1',
+      peerUserId: '65f000000000000000000010',
       updatedCount: 2,
       messageIds: ['m1', 'm2'],
     });
 
-    await expect(chatClient.markConversationRead('peer-1', 'token')).resolves.toEqual({
+    await expect(
+      chatClient.markConversationRead('65f000000000000000000010', 'token')
+    ).resolves.toEqual({
       ok: true,
-      peerUserId: 'peer-1',
+      peerUserId: '65f000000000000000000010',
       updatedCount: 2,
       messageIds: ['m1', 'm2'],
     });
@@ -78,46 +80,104 @@ describe('chatClient markConversationRead', () => {
       status: 200,
       response: {
         data: {
-          peerUserId: 'peer-1',
+          peerUserId: '65f000000000000000000010',
           updatedCount: 1,
           messageIds: ['m1'],
         },
       },
     });
 
-    await expect(chatClient.markConversationRead('peer-1', 'token')).resolves.toEqual({
+    await expect(
+      chatClient.markConversationRead('65f000000000000000000010', 'token')
+    ).resolves.toEqual({
       ok: true,
-      peerUserId: 'peer-1',
+      peerUserId: '65f000000000000000000010',
       updatedCount: 1,
       messageIds: ['m1'],
     });
-    expect(mockMarkChatConversationRead).toHaveBeenCalledWith('peer-1', 'token');
+    expect(mockMarkChatConversationRead).toHaveBeenCalledWith('65f000000000000000000010', 'token');
   });
 
-  it('marks a group conversation read with the group target payload', async () => {
+  it('routes a group read through the shared state endpoint', async () => {
     mockUpdateChatConversationReadState.mockResolvedValue({
       status: 200,
       response: {
         data: {
-          groupId: 'group-1',
+          groupId: '65f000000000000000000011',
           updatedCount: 0,
           messageIds: [],
         },
       },
     });
 
-    await expect(chatClient.markGroupConversationRead('group-1', 'token')).resolves.toEqual({
+    await expect(
+      chatClient.setConversationReadState(
+        {
+          conversationType: 'group',
+          groupId: '65f000000000000000000011',
+          peerUserId: '65f000000000000000000099',
+        },
+        true,
+        'token'
+      )
+    ).resolves.toEqual({
       ok: true,
-      groupId: 'group-1',
+      conversationType: 'group',
+      isRead: true,
+      groupId: '65f000000000000000000011',
       updatedCount: 0,
       messageIds: [],
     });
 
+    expect(mockEmitChatConversationRead).not.toHaveBeenCalled();
+    expect(mockMarkChatConversationRead).not.toHaveBeenCalled();
     expect(mockUpdateChatConversationReadState).toHaveBeenCalledWith(
       {
         conversationType: 'group',
-        groupId: 'group-1',
+        groupId: '65f000000000000000000011',
         isRead: true,
+      },
+      'token'
+    );
+  });
+
+  it('routes a direct unread toggle through the conversation state endpoint', async () => {
+    mockUpdateChatConversationReadState.mockResolvedValue({
+      status: 200,
+      response: {
+        data: {
+          peerUserId: '65f000000000000000000010',
+          updatedCount: 0,
+          messageIds: [],
+        },
+      },
+    });
+
+    await expect(
+      chatClient.setConversationReadState(
+        {
+          conversationType: 'direct',
+          peerUserId: '65f000000000000000000010',
+        },
+        false,
+        'token'
+      )
+    ).resolves.toEqual({
+      ok: true,
+      conversationType: 'direct',
+      isRead: false,
+      peerUserId: '65f000000000000000000010',
+      updatedCount: 0,
+      messageIds: [],
+    });
+
+    expect(mockEmitChatConversationRead).not.toHaveBeenCalled();
+    expect(mockMarkChatConversationRead).not.toHaveBeenCalled();
+    expect(mockUpdateChatConversationReadState).toHaveBeenCalledWith(
+      {
+        conversationType: 'direct',
+        peerUserId: '65f000000000000000000010',
+        isRead: false,
       },
       'token'
     );

@@ -9,7 +9,7 @@ import { ApiCall } from '@/services/api';
 import StyledText from '@/components/styled/Text';
 import Header from '@/components/Header';
 import GoBackIcon from '@/components/GoBackIcon';
-import { PrayerWallStackParamsList } from '@/src/navigator/types';
+import { HomeStackParamsList, PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
@@ -30,6 +30,7 @@ function SinglePrayer({ navigation, route }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const { colors, dark } = useTheme();
   const postId = route.params?.postId;
+  const returnTo = route.params?.returnTo;
 
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const resetToPrayerWallIndex = useCallback(() => {
@@ -51,9 +52,40 @@ function SinglePrayer({ navigation, route }: Props) {
     );
   }, [navigation]);
 
+  const resetToHomePrayerFeed = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainRoot',
+            params: {
+              screen: 'Main',
+              params: {
+                screen: 'HomeTab',
+                params: {
+                  screen: 'Home',
+                  params: {
+                    selectedTab: 'pray' as HomeStackParamsList['Home']['selectedTab'],
+                    refreshToken: Date.now(),
+                  },
+                },
+              },
+            },
+          },
+        ],
+      })
+    );
+  }, [navigation]);
+
   const handleBackPress = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
+      return;
+    }
+
+    if (returnTo === 'home_pray') {
+      resetToHomePrayerFeed();
       return;
     }
 
@@ -100,7 +132,7 @@ function SinglePrayer({ navigation, route }: Props) {
   };
 
   const editPost = async (id: string) => {
-    navigation.navigate('Prayer', { postId: id });
+    navigation.navigate('Prayer', { postId: id, returnTo });
     // setIsEditing(true);
   };
 
@@ -115,9 +147,10 @@ function SinglePrayer({ navigation, route }: Props) {
         postId,
         threadRootCommentId: commentId,
         threadRootCommentSnapshot: toSerializableCommentSnapshot(comment),
+        returnTo,
       });
     },
-    [navigation, postId]
+    [navigation, postId, returnTo]
   );
 
   useEffect(() => {

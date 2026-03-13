@@ -244,10 +244,13 @@ export type MainDrawerParamsList = {
 
 export type PostStackParamsList = {};
 
+export type PrayerWallReturnTarget = 'home_pray';
+
 export type PrayerWallStackParamsList = {
   index: undefined;
   Prayer?: {
     postId?: string;
+    returnTo?: PrayerWallReturnTarget;
   };
   UserProfile: {
     id: string;
@@ -256,6 +259,7 @@ export type PrayerWallStackParamsList = {
     postId: string;
     threadRootCommentId?: string;
     threadRootCommentSnapshot?: SerializableCommentSnapshot;
+    returnTo?: PrayerWallReturnTarget;
   };
 };
 

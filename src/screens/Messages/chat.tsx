@@ -31,14 +31,20 @@ import {
   resolveDirectPeerUserId,
   resolveGroupId,
 } from '@/src/services/chat/conversationTarget';
-import { subscribeToChatConversationRead } from '@/src/services/chat/conversationReadSync';
+import { syncConversationReadMutationLocally } from '@/src/services/chat/conversationReadState';
+import { subscribeToConversationListReadEvents } from '@/src/services/chat/conversationListReadEvent';
 import {
   connectChatSocket,
   onChatGroupMessage,
   onChatMessage,
 } from '@/src/services/chat/socketClient';
-import { ensureChatReady, parseChatMessagePayload } from '@/src/services/chat/chatClient';
 import {
+  ensureChatReady,
+  parseChatMessagePayload,
+  setConversationReadState,
+} from '@/src/services/chat/chatClient';
+import {
+  applyLocalConversationReadOverrides,
   publishChatUnreadFromConversations,
   resetChatUnreadIndicator,
 } from '@/src/services/chat/unreadIndicator';
@@ -49,7 +55,6 @@ import {
   leaveChatGroup,
   updateChatConversationArchiveState,
   updateChatConversationMuteState,
-  updateChatConversationReadState,
 } from '@/src/services/chat/api';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 import { MessagesConversationListView } from '@/src/components/chat/MessagesConversationListView';
@@ -145,7 +150,7 @@ function ChatListScreen({ navigation }: Props) {
       conversationsResponse.status === 200 &&
       Array.isArray(conversationsResponse.response?.data)
     ) {
-      setConversations(conversationsResponse.response.data);
+      setConversations(applyLocalConversationReadOverrides(conversationsResponse.response.data));
     }
   }, [token]);
 
@@ -317,50 +322,8 @@ function ChatListScreen({ navigation }: Props) {
   );
 
   useEffect(() => {
-    return subscribeToChatConversationRead((event) => {
-      setConversations((prev) => {
-        let didUpdate = false;
-        const next = prev.map((conversation) => {
-          if (event.conversationType === 'group') {
-            const conversationGroupId = resolveGroupId(conversation);
-            if (
-              !event.groupId ||
-              conversationGroupId !== event.groupId ||
-              conversation.unreadCount < 1
-            ) {
-              return conversation;
-            }
-
-            didUpdate = true;
-            return {
-              ...conversation,
-              unreadCount: 0,
-            };
-          }
-
-          const conversationPeerUserId = resolveDirectPeerUserId(conversation);
-          if (
-            !event.peerUserId ||
-            conversationPeerUserId !== event.peerUserId ||
-            conversation.unreadCount < 1
-          ) {
-            return conversation;
-          }
-
-          didUpdate = true;
-          return {
-            ...conversation,
-            unreadCount: 0,
-            lastMessageStatus: 'read',
-          };
-        });
-
-        return didUpdate ? next : prev;
-      });
-
-      refreshConversations().catch(() => undefined);
-    });
-  }, [refreshConversations]);
+    return subscribeToConversationListReadEvents(setConversations);
+  }, []);
 
   const filteredConversations = useMemo(() => {
     const sectionFiltered = conversations.filter((item) => {
@@ -642,36 +605,41 @@ function ChatListScreen({ navigation }: Props) {
   );
 
   const handleToggleConversationRead = useCallback(
-    async (item: ConversationListItem, nextRead: boolean) => {
+    async (item: ConversationListItem, nextRead: boolean, options?: { optimistic?: boolean }) => {
       const targetPayload = buildConversationTargetPayload(item);
       if (!targetPayload) {
         refreshConversations().catch(() => undefined);
         return;
       }
 
-      const response = await updateChatConversationReadState(
-        {
-          ...targetPayload,
-          isRead: nextRead,
-        },
-        token || undefined
-      );
-
-      if (response.status === 200) {
+      const nextUnreadCount = nextRead ? 0 : Math.max(item.unreadCount, 1);
+      const applyLocalState = () => {
         setConversations((prev) =>
           prev.map((conversation) =>
             conversation.id === item.id
               ? {
                   ...conversation,
-                  unreadCount: nextRead ? 0 : Math.max(conversation.unreadCount, 1),
+                  unreadCount: nextUnreadCount,
+                  ...(nextRead && targetPayload.conversationType === 'direct'
+                    ? { lastMessageStatus: 'read' as const }
+                    : {}),
                 }
               : conversation
           )
         );
-        return;
+        syncConversationReadMutationLocally(targetPayload, nextRead, nextUnreadCount);
+      };
+
+      if (options?.optimistic) {
+        applyLocalState();
       }
 
-      if (response.status !== 200) {
+      try {
+        await setConversationReadState(targetPayload, nextRead, token || undefined);
+        if (!options?.optimistic) {
+          applyLocalState();
+        }
+      } catch {
         refreshConversations().catch(() => undefined);
       }
     },
@@ -687,8 +655,8 @@ function ChatListScreen({ navigation }: Props) {
       }
 
       const isGroupConversation = targetPayload.conversationType === 'group';
-      if (item.unreadCount > 0 && !isGroupConversation) {
-        handleToggleConversationRead(item, true).catch(() => undefined);
+      if (item.unreadCount > 0) {
+        handleToggleConversationRead(item, true, { optimistic: true }).catch(() => undefined);
       }
 
       if (isGroupConversation) {
@@ -928,12 +896,14 @@ function ChatListScreen({ navigation }: Props) {
       </View>
       {renderFilters()}
       {conversationsContent}
-      <View style={[styles.encryptedWrap, { bottom: encryptedBottom }]}>
-        <View style={[styles.encryptedBadge, { backgroundColor: colors.card }]}>
-          <MaterialIcons name="lock" size={14} color="rgba(18, 107, 135, 0.72)" />
-          <Text style={styles.encryptedText}>END-TO-END ENCRYPTED</Text>
+      {selectedFilter !== 'groups' ? (
+        <View style={[styles.encryptedWrap, { bottom: encryptedBottom }]}>
+          <View style={[styles.encryptedBadge, { backgroundColor: colors.card }]}>
+            <MaterialIcons name="lock" size={14} color="rgba(18, 107, 135, 0.72)" />
+            <Text style={styles.encryptedText}>END-TO-END ENCRYPTED</Text>
+          </View>
         </View>
-      </View>
+      ) : null}
       <Pressable
         onPress={() => {
           navigation.navigate('NewMessage');

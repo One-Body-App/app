@@ -1382,19 +1382,28 @@ function Home({ navigation, route }: Props) {
   }, [userProfile?.following]);
 
   const handleNewPrayerPress = useCallback(() => {
-    navigation.navigate('PrayerWall', { screen: 'Prayer' } as any);
+    navigation.navigate('PrayerWall', {
+      screen: 'Prayer',
+      params: { returnTo: 'home_pray' },
+    } as any);
   }, [navigation]);
 
   const handleOpenPrayerPost = useCallback(
     (postId: string) => {
-      navigation.navigate('PrayerWall', { screen: 'Single', params: { postId } } as any);
+      navigation.navigate('PrayerWall', {
+        screen: 'Single',
+        params: { postId, returnTo: 'home_pray' },
+      } as any);
     },
     [navigation]
   );
 
   const handleEditPrayerPost = useCallback(
     (postId: string) => {
-      navigation.navigate('PrayerWall', { screen: 'Prayer', params: { postId } } as any);
+      navigation.navigate('PrayerWall', {
+        screen: 'Prayer',
+        params: { postId, returnTo: 'home_pray' },
+      } as any);
     },
     [navigation]
   );

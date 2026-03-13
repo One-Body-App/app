@@ -919,7 +919,7 @@ function SocialItem({
                 onPress={handleRepostSourceOpen}
                 style={{
                   borderRadius: FEED_MEDIA_RADIUS,
-                  borderColor: 'rgba(3, 47, 60, 0.3)',
+                  borderColor: 'rgba(3, 47, 60, 0.15)',
                   borderWidth: borderWidth.thin,
                   backgroundColor: 'transparent',
                   overflow: 'hidden',

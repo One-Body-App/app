@@ -72,6 +72,12 @@ const MEDIA_RADIUS = 12;
 const REACTION_BAR_SCALE = 1;
 const REACTION_BAR_OFFSET_X = 0;
 const REACTION_BAR_OFFSET_Y = 44;
+const REACTION_BAR_SCALE_FACTOR = 4 / 3;
+const REACTION_BAR_WIDTH = Math.round(280 * REACTION_BAR_SCALE_FACTOR);
+const REACTION_BAR_ICON_SIZE = Math.round(22 * REACTION_BAR_SCALE_FACTOR);
+const REACTION_BAR_HORIZONTAL_MARGIN = Math.round(spacing.x5 * REACTION_BAR_SCALE_FACTOR);
+const REACTION_BAR_VERTICAL_PADDING = Math.round(spacing.x8 * REACTION_BAR_SCALE_FACTOR);
+const REACTION_BAR_HORIZONTAL_PADDING = Math.round(spacing.x10 * REACTION_BAR_SCALE_FACTOR);
 
 type AnimatedReaction = {
   id: string;
@@ -170,9 +176,9 @@ const InlineReactionBar = forwardRef<
         justifyContent: 'space-between',
         backgroundColor: '#ffffff',
         borderRadius: borderRadius.max,
-        paddingVertical: spacing.x8,
-        paddingHorizontal: spacing.x10,
-        minWidth: 280,
+        paddingVertical: REACTION_BAR_VERTICAL_PADDING,
+        paddingHorizontal: REACTION_BAR_HORIZONTAL_PADDING,
+        minWidth: REACTION_BAR_WIDTH,
         transform: [{ scale }],
         opacity,
         shadowColor: '#000000',
@@ -190,9 +196,12 @@ const InlineReactionBar = forwardRef<
             dismissReactions();
           }}
           activeOpacity={0.8}
-          style={{ marginHorizontal: spacing.x5 }}
+          style={{ marginHorizontal: REACTION_BAR_HORIZONTAL_MARGIN }}
         >
-          <Image source={{ uri: reaction.iconUrl }} style={{ width: 22, height: 22 }} />
+          <Image
+            source={{ uri: reaction.iconUrl }}
+            style={{ width: REACTION_BAR_ICON_SIZE, height: REACTION_BAR_ICON_SIZE }}
+          />
         </TouchableOpacity>
       ))}
     </Animated.View>

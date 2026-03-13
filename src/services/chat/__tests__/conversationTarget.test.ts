@@ -43,19 +43,39 @@ describe('conversationTarget', () => {
 
   it('resolves valid group conversation targets', () => {
     expect(
-      isGroupConversationItem({ conversationType: 'group', id: 'row-1', groupId: 'group-1' })
+      isGroupConversationItem({
+        conversationType: 'group',
+        id: 'row-1',
+        groupId: '65f000000000000000000012',
+      })
     ).toBe(true);
-    expect(resolveGroupId({ id: 'group:group-2', groupId: '' })).toBe('group-2');
+    expect(resolveGroupId({ id: 'group:65f000000000000000000013', groupId: '' })).toBe(
+      '65f000000000000000000013'
+    );
     expect(
       resolveConversationTargetPayload({
         conversationType: 'group',
-        id: 'group:group-2',
+        id: 'group:65f000000000000000000013',
         groupId: '',
         peerUserId: '',
       })
     ).toEqual({
       conversationType: 'group',
-      groupId: 'group-2',
+      groupId: '65f000000000000000000013',
+    });
+  });
+
+  it('prefers a group target over a direct peer when a row is group-shaped', () => {
+    expect(
+      resolveConversationTargetPayload({
+        conversationType: 'group',
+        id: 'group:65f000000000000000000014',
+        groupId: '',
+        peerUserId: '65f000000000000000000010',
+      })
+    ).toEqual({
+      conversationType: 'group',
+      groupId: '65f000000000000000000014',
     });
   });
 });

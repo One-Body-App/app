@@ -231,7 +231,12 @@ function ArticleItem({
               <StyledText
                 numberOfLines={2}
                 style={[
-                  { color: dark ? Colors.neutral.brand : '#032F3C', fontWeight: '700' },
+                  {
+                    color: dark ? Colors.neutral.brand : '#032F3C',
+                    fontFamily: 'Rubik',
+                    fontWeight: '700',
+                    fontSize: 16,
+                  },
                   blogPostTitleStyle,
                 ]}
               >

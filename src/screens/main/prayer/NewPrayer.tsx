@@ -23,7 +23,7 @@ import { MapSuggestion } from '@/components/MapBox';
 import { sanitizeComposerText } from '@/components/composer/composerText';
 import StyledText from '@/components/styled/Text';
 import StyledTextInput from '@/components/styled/TextInput';
-import { PrayerWallStackParamsList } from '@/src/navigator/types';
+import { HomeStackParamsList, PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
@@ -51,35 +51,76 @@ function NewPrayer({ navigation, route }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const toast = useToast();
 
+  const resetToPrayerWallIndex = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainRoot',
+            params: {
+              screen: 'PrayerWall',
+              params: {
+                screen: 'index',
+              },
+            },
+          },
+        ],
+      })
+    );
+  }, [navigation]);
+
+  const resetToHomePrayerFeed = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainRoot',
+            params: {
+              screen: 'Main',
+              params: {
+                screen: 'HomeTab',
+                params: {
+                  screen: 'Home',
+                  params: {
+                    selectedTab: 'pray' as HomeStackParamsList['Home']['selectedTab'],
+                    refreshToken: Date.now(),
+                  },
+                },
+              },
+            },
+          },
+        ],
+      })
+    );
+  }, [navigation]);
+
   const navigateAfterSubmit = useCallback(
     (reason: 'create' | 'edit') => {
       const currentRoute = navigation.getState().routes[navigation.getState().index]?.name;
+      const returnTo = route.params?.returnTo;
       if (__DEV__) {
         console.log('[NewPrayer] submit success navigation', {
           reason,
           canGoBack: navigation.canGoBack(),
           currentRoute,
-          destination: 'MainRoot > PrayerWall > index',
+          returnTo,
         });
       }
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'MainRoot',
-              params: {
-                screen: 'PrayerWall',
-                params: {
-                  screen: 'index',
-                },
-              },
-            },
-          ],
-        })
-      );
+      if (returnTo === 'home_pray') {
+        resetToHomePrayerFeed();
+        return;
+      }
+
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+        return;
+      }
+
+      resetToPrayerWallIndex();
     },
-    [navigation]
+    [navigation, resetToHomePrayerFeed, resetToPrayerWallIndex, route.params?.returnTo]
   );
 
   const editPrayer = async () => {

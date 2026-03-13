@@ -312,7 +312,7 @@ function Watch({ navigation, route }: any) {
 
   return (
     <View
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: '#0D0D0D' }}
       onLayout={(event) => {
         const { height } = event.nativeEvent.layout;
         setViewHeight(height);
@@ -334,9 +334,9 @@ function Watch({ navigation, route }: any) {
           zIndex: 40,
         }}
       >
-        <MaterialIcons name="arrow-back" size={26} color="#FFFFFF" />
+        <MaterialIcons name="chevron-left" size={40} color="#FFFFFF" />
       </TouchableOpacity>
-      {shouldShowEmptyState ? <View style={{ flex: 1, backgroundColor: '#000000' }} /> : null}
+      {shouldShowEmptyState ? <View style={{ flex: 1, backgroundColor: '#0D0D0D' }} /> : null}
       {shouldShowInitialLoader ? (
         <View style={{ marginTop: 10 }}>
           <ActivityIndicator size="small" />
