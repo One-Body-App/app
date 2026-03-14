@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SearchIcon from '@/assets/icons/search.svg';
@@ -19,6 +19,8 @@ import {
   type ConnectTab,
   type Coordinate,
 } from './data';
+import { trackConnectPortalEventTelemetry } from '@/src/services/connectPortal';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectMap'>;
 
@@ -71,17 +73,45 @@ function getMarkerIcon(itemType: ConnectPortalMapItem['type']) {
   return 'location-city';
 }
 
-function MapViewScreen({ navigation }: Props): React.JSX.Element {
+function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
   const { dark } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(dark), [dark]);
   const mapbox = useMemo(() => resolveMapboxModule(), []);
+  const { snapshot, refresh } = useConnectPortalData();
 
-  const [activeTab, setActiveTab] = useState<ConnectTab>('Places');
+  const [activeTab, setActiveTab] = useState<ConnectTab>(route.params?.initialTab ?? 'Places');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  const activeItems = useMemo(() => CONNECT_PORTAL_MAP_DATA[activeTab] ?? [], [activeTab]);
+  useEffect(() => {
+    if (route.params?.initialTab) {
+      setActiveTab(route.params.initialTab);
+    }
+  }, [route.params?.initialTab]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (activeTab === 'Go!') {
+        refresh();
+      }
+    }, [activeTab, refresh])
+  );
+
+  const activeItems = useMemo(
+    () =>
+      activeTab === 'Go!'
+        ? snapshot.publicPublished.map((eventRecord) => ({
+            id: eventRecord.id,
+            title: eventRecord.title,
+            subtitle: `${eventRecord.startDate || 'Date TBD'}${eventRecord.startTime ? ` • ${eventRecord.startTime}` : ''}`,
+            address: eventRecord.address || eventRecord.venueName || 'Location TBD',
+            coordinate: eventRecord.coordinate || DEFAULT_CENTER,
+            type: 'event' as const,
+          }))
+        : (CONNECT_PORTAL_MAP_DATA[activeTab] ?? []),
+    [activeTab, snapshot.publicPublished]
+  );
 
   const filteredItems = useMemo(() => {
     const normalized = searchTerm.trim().toLowerCase();
@@ -114,11 +144,7 @@ function MapViewScreen({ navigation }: Props): React.JSX.Element {
 
   const centerCoordinate: Coordinate = selectedItem?.coordinate ?? DEFAULT_CENTER;
   const handleBackToList = () => {
-    if (navigation.canGoBack()) {
-      navigation.popToTop();
-      return;
-    }
-    navigation.navigate('ConnectPortal');
+    navigation.navigate('ConnectPortal', { initialTab: activeTab });
   };
 
   return (
@@ -145,7 +171,15 @@ function MapViewScreen({ navigation }: Props): React.JSX.Element {
               const markerContent = (
                 <TouchableOpacity
                   activeOpacity={0.9}
-                  onPress={() => setSelectedItemId(item.id)}
+                  onPress={() => {
+                    setSelectedItemId(item.id);
+                    if (activeTab === 'Go!') {
+                      trackConnectPortalEventTelemetry(item.id, 'detail_open', {
+                        source: 'connect_map_marker',
+                      }).catch(() => {});
+                      navigation.navigate('ConnectGoEventView', { eventId: item.id });
+                    }
+                  }}
                   style={[styles.marker, isSelected ? styles.markerActive : null]}
                 >
                   <MaterialIcons
@@ -250,11 +284,21 @@ function MapViewScreen({ navigation }: Props): React.JSX.Element {
         </View>
 
         {selectedItem ? (
-          <View style={styles.floatingBottomCard}>
+          <TouchableOpacity
+            style={styles.floatingBottomCard}
+            activeOpacity={activeTab === 'Go!' ? 0.88 : 1}
+            disabled={activeTab !== 'Go!'}
+            onPress={() => {
+              trackConnectPortalEventTelemetry(selectedItem.id, 'detail_open', {
+                source: 'connect_map_card',
+              }).catch(() => {});
+              navigation.navigate('ConnectGoEventView', { eventId: selectedItem.id });
+            }}
+          >
             <StyledText style={styles.selectedTitle}>{selectedItem.title}</StyledText>
             <StyledText style={styles.selectedSubtitle}>{selectedItem.subtitle}</StyledText>
             <StyledText style={styles.selectedAddress}>{selectedItem.address}</StyledText>
-          </View>
+          </TouchableOpacity>
         ) : null}
       </View>
     </SafeAreaView>

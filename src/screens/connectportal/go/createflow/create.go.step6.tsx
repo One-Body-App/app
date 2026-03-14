@@ -1,437 +1,187 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import type { StackScreenProps } from '@react-navigation/stack';
+import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  useColorScheme,
-  Image,
-} from 'react-native';
+  formatConnectPortalDate,
+  getConnectPortalEventById,
+  getEventCapacityLabel,
+  publishConnectPortalDraft,
+} from '@/src/services/connectPortal';
+import type { ConnectPortalEventDraft } from '@/src/services/connectPortal';
+import { CreateFlowLayout, ensureExistingDraftRecord, getReviewBackRouteName } from './shared';
 
-export default function ReviewAndConfirmScreen() {
-  const isDarkMode = useColorScheme() === 'dark';
-  const styles = getStyles(isDarkMode);
+type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Review'>;
+
+function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element {
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft] = useState<ConnectPortalEventDraft | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+
+    (async () => {
+      const nextDraft = await ensureExistingDraftRecord(navigation, route.params?.draftId);
+      if (!isActive) {
+        return;
+      }
+
+      if (!nextDraft) {
+        return;
+      }
+
+      setDraft(nextDraft);
+      setLoading(false);
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [navigation, route.params?.draftId]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Text style={styles.iconText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Review & Confirm</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+    <CreateFlowLayout
+      title="Review & Confirm"
+      step={6}
+      loading={loading}
+      onBack={() => {
+        if (!draft) {
+          navigation.navigate('ConnectGoCreateStep5', { draftId: route.params.draftId });
+          return;
+        }
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Progress Section */}
-          <View style={styles.progressHeader}>
-            <Text style={styles.stepText}>Step 6 of 7</Text>
-            <Text style={styles.percentageText}>85%</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
-          </View>
+        navigation.navigate(getReviewBackRouteName(draft), { draftId: draft.id });
+      }}
+      onNext={async () => {
+        if (!draft) {
+          return;
+        }
 
-          {/* Section: Title & Description */}
-          <View style={styles.sectionHeaderContainer}>
-            <Text style={styles.sectionTitle}>Review your event details</Text>
-            <Text style={styles.sectionSubtitle}>
-              Almost there! Double check everything before we make it official.
+        const publishedEvent = await publishConnectPortalDraft(draft.id);
+        if (publishedEvent) {
+          navigation.navigate('ConnectGoCreateStep7Success', { draftId: publishedEvent.id });
+        } else {
+          const latestDraft = await getConnectPortalEventById(route.params.draftId);
+          if (latestDraft?.status === 'published') {
+            navigation.navigate('ConnectGoCreateStep7Success', { draftId: latestDraft.id });
+          }
+        }
+      }}
+      nextLabel="Publish Event"
+      nextDisabled={!draft}
+    >
+      {draft ? (
+        <>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Review your event details.</Text>
+            <Text style={styles.sectionBody}>
+              This summary becomes the source of truth for organizer screens and the public `Go!`
+              event surfaces.
             </Text>
           </View>
 
-          {/* Event Summary Card */}
           <View style={styles.summaryCard}>
-            {/* Image Placeholder */}
-            <View style={styles.imagePlaceholder}>
-              <Text style={styles.imagePlaceholderText}>Image</Text>
-            </View>
-
-            <View style={styles.summaryContent}>
-              <Text style={styles.summaryLabel}>EVENT SUMMARY</Text>
-              <Text style={styles.summaryTitle}>Summer Community Mixer</Text>
-
-              <View style={styles.summaryTagsRow}>
-                <View style={styles.freeBadge}>
-                  <Text style={styles.freeBadgeText}>Free Event</Text>
-                </View>
-
-                <TouchableOpacity style={styles.editButton}>
-                  <Text style={styles.editIcon}>✏️</Text>
-                  <Text style={styles.editButtonText}>Edit</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <Text style={styles.cardEyebrow}>{draft.category || 'EVENT'}</Text>
+            <Text style={styles.cardTitle}>{draft.title || 'Untitled Event'}</Text>
+            <Text style={styles.cardBody}>{draft.description || 'No description yet.'}</Text>
           </View>
 
-          {/* General Info Card */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoHeaderRow}>
-              <View style={styles.infoIconCircleDark}>
-                <Text style={styles.infoIconWhite}>ℹ️</Text>
-              </View>
-              <Text style={styles.infoHeaderTitle}>General Info</Text>
-            </View>
-
-            {/* Date & Time */}
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconCircleLight}>
-                <Text style={styles.infoIconBlue}>📅</Text>
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>DATE & TIME</Text>
-                <Text style={styles.infoValue}>Saturday, August 24 • 2:00 PM - 6:00 PM</Text>
-              </View>
-            </View>
-
-            {/* Location */}
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconCircleLight}>
-                <Text style={styles.infoIconBlue}>📍</Text>
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>LOCATION</Text>
-                <Text style={styles.infoValue}>Central Park North Pavilion</Text>
-                <Text style={styles.infoSubValue}>123 Park Lane, New York, NY</Text>
-              </View>
-            </View>
-
-            {/* Capacity */}
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconCircleLight}>
-                <Text style={styles.infoIconBlue}>👥</Text>
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>CAPACITY</Text>
-                <Text style={styles.infoValue}>150 People Max</Text>
-              </View>
-            </View>
+          <View style={styles.detailCard}>
+            <Text style={styles.detailTitle}>Schedule</Text>
+            <Text style={styles.detailValue}>
+              {formatConnectPortalDate(draft.startDate)}
+              {draft.startTime ? ` • ${draft.startTime}` : ''}
+            </Text>
+            {draft.endTime ? <Text style={styles.detailValue}>Ends {draft.endTime}</Text> : null}
           </View>
 
-          {/* Free Registration Banner */}
-          <View style={styles.registrationBanner}>
-            <View style={styles.registrationIconCircle}>
-              <Text style={styles.registrationIcon}>✔️</Text>
-            </View>
-            <View style={styles.registrationTextContainer}>
-              <Text style={styles.registrationTitle}>Free Registration</Text>
-              <Text style={styles.registrationSubtitle}>
-                No payment processing needed for this event.
-              </Text>
-            </View>
+          <View style={styles.detailCard}>
+            <Text style={styles.detailTitle}>Location</Text>
+            <Text style={styles.detailValue}>
+              {draft.isOnline ? 'Online Event' : draft.venueName || 'Location TBD'}
+            </Text>
+            <Text style={styles.detailSubvalue}>
+              {draft.address || draft.locationQuery || 'TBD'}
+            </Text>
           </View>
-        </ScrollView>
 
-        {/* Fixed Bottom Navigation */}
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.backButton}>
-            <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.nextButton}>
-            <Text style={styles.nextButtonText}>Publish Event</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </SafeAreaView>
+          <View style={styles.detailCard}>
+            <Text style={styles.detailTitle}>Tickets</Text>
+            <Text style={styles.detailValue}>
+              {draft.ticketType === 'free' ? 'Free event' : 'Paid event'}
+            </Text>
+            <Text style={styles.detailSubvalue}>{getEventCapacityLabel(draft)}</Text>
+            <Text style={styles.detailSubvalue}>
+              {draft.ticketTiers.length} ticket tier{draft.ticketTiers.length === 1 ? '' : 's'}
+            </Text>
+          </View>
+        </>
+      ) : null}
+    </CreateFlowLayout>
   );
 }
 
-const getStyles = (isDarkMode: boolean) =>
-  StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: isDarkMode ? '#111d21' : '#f8f9fa',
-    },
-    container: {
-      flex: 1,
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-      backgroundColor: isDarkMode ? '#111d21' : '#f8f9fa',
-    },
-    iconButton: {
-      padding: 8,
-      marginLeft: -8,
-    },
-    iconText: {
-      fontSize: 24,
-      color: '#126b87',
-    },
-    headerTitle: {
-      fontSize: 20,
-      fontWeight: '800',
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-    },
-    headerSpacer: {
-      width: 40,
-    },
-    scrollContent: {
-      paddingHorizontal: 16,
-      paddingBottom: 120, // Space for the absolute footer
-    },
-    progressHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-      marginBottom: 8,
-      marginTop: 8,
-    },
-    stepText: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: isDarkMode ? '#b3c1c5' : '#032f3c',
-    },
-    percentageText: {
-      fontSize: 14,
-      fontWeight: '700',
-      color: '#126b87',
-    },
-    progressTrack: {
-      height: 8,
-      backgroundColor: isDarkMode ? '#1e333a' : '#cdd5d8',
-      borderRadius: 4,
-      marginBottom: 32,
-      overflow: 'hidden',
-    },
-    progressFill: {
-      width: '85%',
-      height: '100%',
-      backgroundColor: '#126b87',
-      borderRadius: 4,
-    },
-    sectionHeaderContainer: {
-      marginBottom: 24,
-    },
-    sectionTitle: {
-      fontSize: 26,
-      fontWeight: '800',
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-      marginBottom: 8,
-    },
-    sectionSubtitle: {
-      fontSize: 15,
-      color: isDarkMode ? '#9aacb1' : '#68828a',
-    },
-    summaryCard: {
-      backgroundColor: isDarkMode ? '#1e333a' : '#ffffff',
-      borderRadius: 16,
-      overflow: 'hidden',
-      marginBottom: 24,
-      borderWidth: 1,
-      borderColor: isDarkMode ? '#355963' : '#e6eaec',
-    },
-    imagePlaceholder: {
-      height: 160,
-      backgroundColor: '#a0c4cf',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    imagePlaceholderText: {
-      color: '#ffffff',
-      fontWeight: 'bold',
-    },
-    summaryContent: {
-      padding: 16,
-    },
-    summaryLabel: {
-      fontSize: 11,
-      fontWeight: '800',
-      color: '#126b87',
-      letterSpacing: 1,
-      marginBottom: 8,
-    },
-    summaryTitle: {
-      fontSize: 22,
-      fontWeight: '800',
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-      marginBottom: 16,
-    },
-    summaryTagsRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    freeBadge: {
-      backgroundColor: isDarkMode ? 'rgba(18, 210, 217, 0.2)' : '#e6f8ea',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-    },
-    freeBadgeText: {
-      color: isDarkMode ? '#12d2d9' : '#0e8a3a',
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    editButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: isDarkMode ? '#355963' : '#f2f8fa',
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 8,
-    },
-    editIcon: {
-      fontSize: 14,
-      marginRight: 6,
-    },
-    editButtonText: {
-      color: isDarkMode ? '#ffffff' : '#126b87',
-      fontSize: 14,
-      fontWeight: '700',
-    },
-    infoCard: {
-      backgroundColor: isDarkMode ? '#1e333a' : '#ffffff',
-      borderRadius: 16,
-      padding: 20,
-      marginBottom: 16,
-    },
-    infoHeaderRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 24,
-    },
-    infoIconCircleDark: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: '#126b87',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 12,
-    },
-    infoIconWhite: {
-      fontSize: 12,
-      color: '#ffffff',
-    },
-    infoHeaderTitle: {
-      fontSize: 18,
-      fontWeight: '800',
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-    },
-    infoRow: {
-      flexDirection: 'row',
-      marginBottom: 24,
-    },
-    infoIconCircleLight: {
-      width: 40,
-      height: 40,
-      borderRadius: 8,
-      backgroundColor: isDarkMode ? '#111d21' : '#f8f9fa',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 16,
-    },
-    infoIconBlue: {
-      fontSize: 18,
-      color: '#126b87',
-    },
-    infoTextContainer: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    infoLabel: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: isDarkMode ? '#9aacb1' : '#68828a',
-      marginBottom: 4,
-      letterSpacing: 0.5,
-    },
-    infoValue: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-    },
-    infoSubValue: {
-      fontSize: 14,
-      color: isDarkMode ? '#9aacb1' : '#4f6d77',
-      marginTop: 2,
-    },
-    registrationBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: isDarkMode ? 'rgba(18, 107, 135, 0.15)' : '#eef2f5',
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: isDarkMode ? 'rgba(18, 107, 135, 0.3)' : '#e6eaec',
-    },
-    registrationIconCircle: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: '#126b87',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 16,
-    },
-    registrationIcon: {
-      fontSize: 16,
-      color: '#ffffff',
-    },
-    registrationTextContainer: {
-      flex: 1,
-    },
-    registrationTitle: {
-      fontSize: 15,
-      fontWeight: '800',
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-      marginBottom: 2,
-    },
-    registrationSubtitle: {
-      fontSize: 13,
-      color: isDarkMode ? '#9aacb1' : '#4f6d77',
-    },
-    footer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: isDarkMode ? '#111d21' : '#ffffff',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-      borderTopWidth: 1,
-      borderTopColor: isDarkMode ? '#1e333a' : '#e6eaec',
-    },
-    backButton: {
-      flex: 1,
-      height: 56,
-      borderRadius: 12,
-      backgroundColor: isDarkMode ? '#1e333a' : '#e6eaec',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 16,
-    },
-    backButtonText: {
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-      fontSize: 16,
-      fontWeight: '800',
-    },
-    nextButton: {
-      flex: 2,
-      backgroundColor: '#126b87',
-      height: 56,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    nextButtonText: {
-      color: '#ffffff',
-      fontSize: 16,
-      fontWeight: '800',
-    },
-  });
+const styles = StyleSheet.create({
+  section: {
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#032f3c',
+  },
+  sectionBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#4F6D77',
+  },
+  summaryCard: {
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D7E1E5',
+    padding: 20,
+    gap: 8,
+  },
+  cardEyebrow: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#126b87',
+  },
+  cardTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#032f3c',
+  },
+  cardBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#4F6D77',
+  },
+  detailCard: {
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D7E1E5',
+    padding: 18,
+    gap: 6,
+  },
+  detailTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#126b87',
+    textTransform: 'uppercase',
+  },
+  detailValue: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#032f3c',
+  },
+  detailSubvalue: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#4F6D77',
+  },
+});
+
+export default ReviewAndConfirmScreen;

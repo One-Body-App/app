@@ -46,6 +46,8 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 import { Animated, StyleProp, TextProps, TextStyle } from 'react-native';
 import { AccountType, PostType, SerializableCommentSnapshot, WatchPost } from '@/utils/types';
 import { FeedTypes } from '../screens/home';
+import type { ConnectTab } from '../screens/connectportal/data';
+import type { ConnectPortalMyEventsFilter } from '../services/connectPortal';
 
 //   RemoveAccount: undefined;
 //   DeactivateAccountConfirm: { reason: string };
@@ -180,10 +182,56 @@ export type SearchStackParamsList = {
 export type ConnectStackParamsList = {
   ConnectPortal:
     | {
-        initialTab?: 'Places' | 'Go!' | 'Serve';
+        initialTab?: ConnectTab;
       }
     | undefined;
-  ConnectMap: undefined;
+  ConnectMap:
+    | {
+        initialTab?: ConnectTab;
+      }
+    | undefined;
+  ConnectGoEventDash: undefined;
+  ConnectGoMyEvents:
+    | {
+        initialFilter?: ConnectPortalMyEventsFilter;
+        resumeError?: string;
+      }
+    | undefined;
+  ConnectGoEventView: {
+    eventId: string;
+  };
+  ConnectGoEventAnalytics: {
+    eventId: string;
+  };
+  ConnectGoCreateStep1:
+    | {
+        draftId?: string;
+      }
+    | undefined;
+  ConnectGoCreateStep2: {
+    draftId: string;
+  };
+  ConnectGoCreateStep3: {
+    draftId: string;
+  };
+  ConnectGoCreateStep4: {
+    draftId: string;
+  };
+  ConnectGoCreateStep5: {
+    draftId: string;
+  };
+  ConnectGoCreateStep6Payout: {
+    draftId: string;
+  };
+  ConnectGoCreateStep6Review: {
+    draftId: string;
+  };
+  ConnectGoCreateStep7Success: {
+    draftId: string;
+  };
+  ConnectIntro: undefined;
+  ConnectPlacesHome: undefined;
+  ConnectServeHome: undefined;
   UserProfile: {
     id: string;
   };

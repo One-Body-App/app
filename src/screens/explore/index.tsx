@@ -808,7 +808,7 @@ function Explore({ navigation }: Props) {
       navigation.navigate('Main', {
         screen: 'ConnectTab',
         params: {
-          screen: 'ConnectPortal',
+          screen: 'ConnectMap',
           params: {
             initialTab: tab,
           },

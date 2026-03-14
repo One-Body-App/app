@@ -483,8 +483,9 @@ function BottomStack() {
           name="ConnectTab"
           component={ConnectTabWrapper}
           options={({ route }) => {
-            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectPortal';
-            const shouldShowTabBar = focusedRouteName === 'ConnectPortal';
+            const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectMap';
+            const shouldShowTabBar =
+              focusedRouteName === 'ConnectPortal' || focusedRouteName === 'ConnectMap';
 
             return {
               tabBarLabel: 'Connect',

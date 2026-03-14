@@ -1,421 +1,390 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  useColorScheme,
-  Platform,
+  View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import type { StackScreenProps } from '@react-navigation/stack';
+import type { ConnectStackParamsList } from '@/src/navigator/types';
+import {
+  createConnectPortalDraft,
+  deleteConnectPortalDraft,
+  formatConnectPortalDateTime,
+  getDraftResumeRouteName,
+  getEventLifecycleState,
+} from '@/src/services/connectPortal';
+import type {
+  ConnectPortalEventRecord,
+  ConnectPortalMyEventsFilter,
+} from '@/src/services/connectPortal';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 
-export default function MyEventsScreen() {
-  const isDarkMode = useColorScheme() === 'dark';
-  const styles = getStyles(isDarkMode);
+type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoMyEvents'>;
 
+const FILTERS: ConnectPortalMyEventsFilter[] = ['All', 'Active', 'Draft', 'Past'];
+
+function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
+  const [activeFilter, setActiveFilter] = useState<ConnectPortalMyEventsFilter>(
+    route.params?.initialFilter ?? 'All'
+  );
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('All');
+  const [refreshing, setRefreshing] = useState(false);
+  const { snapshot, refresh } = useConnectPortalData();
 
-  const tabs = ['All', 'Active', 'Draft', 'Past'];
+  const events = useMemo<ConnectPortalEventRecord[]>(() => {
+    const allEvents = [...snapshot.organizerPublished, ...snapshot.drafts].sort((left, right) =>
+      right.updatedAt.localeCompare(left.updatedAt)
+    );
+    if (activeFilter === 'All') {
+      return allEvents;
+    }
+    return allEvents.filter((eventRecord) => getEventLifecycleState(eventRecord) === activeFilter);
+  }, [activeFilter, snapshot.drafts, snapshot.organizerPublished]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.initialFilter) {
+        setActiveFilter(route.params.initialFilter);
+      }
+    }, [route.params?.initialFilter])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
+
+  const filteredEvents = useMemo(() => {
+    const term = searchQuery.trim().toLowerCase();
+    if (!term) {
+      return events;
+    }
+
+    return events.filter((eventRecord) => {
+      const haystack = [eventRecord.title, eventRecord.venueName, eventRecord.address]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [events, searchQuery]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerIcon}>📅</Text>
+          <View>
             <Text style={styles.headerTitle}>My Events</Text>
+            <Text style={styles.headerSubtitle}>Drafts, active events, and event history</Text>
           </View>
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={async () => {
+              const draft = await createConnectPortalDraft();
+              navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+            }}
+          >
             <Text style={styles.addButtonText}>+</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputWrapper}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search your events..."
-              placeholderTextColor={isDarkMode ? '#68828a' : '#9aacb1'}
-            />
-          </View>
+        <View style={styles.searchWrap}>
+          {route.params?.resumeError ? (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{route.params.resumeError}</Text>
+            </View>
+          ) : null}
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search your events..."
+            placeholderTextColor="#8AA0A8"
+          />
         </View>
 
-        {/* Filter Pills */}
-        <View style={styles.filterContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScroll}
-          >
-            {tabs.map((tab) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {FILTERS.map((filterName) => {
+            const isActive = activeFilter === filterName;
+            return (
               <TouchableOpacity
-                key={tab}
-                style={[styles.filterPill, activeTab === tab && styles.filterPillActive]}
-                onPress={() => setActiveTab(tab)}
+                key={filterName}
+                style={[styles.filterChip, isActive ? styles.filterChipActive : null]}
+                onPress={() => setActiveFilter(filterName)}
               >
-                <Text style={[styles.filterText, activeTab === tab && styles.filterTextActive]}>
-                  {tab}
+                <Text
+                  style={[styles.filterChipText, isActive ? styles.filterChipTextActive : null]}
+                >
+                  {filterName}
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+            );
+          })}
+        </ScrollView>
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setRefreshing(true);
+                await refresh(true);
+                setRefreshing(false);
+              }}
+            />
+          }
         >
-          {/* Card 1: Active Event */}
-          <View style={styles.eventCard}>
-            <View style={styles.imageContainer}>
-              {/* Placeholder for Event Image */}
-              <View style={[styles.imagePlaceholder, { backgroundColor: '#126b87' }]} />
-              <View style={[styles.badge, styles.badgeActive]}>
-                <Text style={styles.badgeText}>ACTIVE</Text>
-              </View>
-            </View>
-            <View style={styles.cardContent}>
-              <Text style={styles.eventTitle}>Global AI Summit 2024</Text>
-              <Text style={styles.eventDate}>📅 Nov 12, 2024 • 09:00 AM</Text>
+          {filteredEvents.map((eventRecord) => {
+            const lifecycle = getEventLifecycleState(eventRecord);
+            const isDraft = eventRecord.status === 'draft';
+            return (
+              <View key={eventRecord.id} style={styles.card}>
+                <View style={styles.badgeRow}>
+                  <View style={[styles.badge, isDraft ? styles.badgeDraft : styles.badgeActive]}>
+                    <Text style={styles.badgeText}>{lifecycle.toUpperCase()}</Text>
+                  </View>
+                </View>
 
-              <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.actionButton, styles.primaryButton, { flex: 1 }]}>
-                  <Text style={styles.primaryButtonText}>⚙️ Manage</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
-                >
-                  <Text style={styles.secondaryButtonText}>📊 Analytics</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.secondaryButton, { width: 44 }]}
-                >
-                  <Text style={styles.secondaryButtonText}>✏️</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+                <Text style={styles.cardTitle}>{eventRecord.title || 'Untitled Event'}</Text>
+                <Text style={styles.cardMeta}>{formatConnectPortalDateTime(eventRecord)}</Text>
+                <Text style={styles.cardMeta}>
+                  {eventRecord.isOnline
+                    ? 'Online Event'
+                    : eventRecord.venueName || eventRecord.address}
+                </Text>
 
-          {/* Card 2: Draft Event */}
-          <View style={styles.eventCard}>
-            <View style={styles.imageContainer}>
-              <View style={[styles.imagePlaceholder, { backgroundColor: '#d9a05b' }]} />
-              <View style={[styles.badge, styles.badgeDraft]}>
-                <Text style={styles.badgeText}>DRAFT</Text>
+                <View style={styles.actionRow}>
+                  {isDraft ? (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.actionButton, styles.primaryButton]}
+                        onPress={() =>
+                          navigation.navigate(getDraftResumeRouteName(eventRecord), {
+                            draftId: eventRecord.id,
+                          })
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>Resume Draft</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.actionButton, styles.secondaryButton]}
+                        onPress={async () => {
+                          await deleteConnectPortalDraft(eventRecord.id);
+                          await refresh(true);
+                        }}
+                      >
+                        <Text style={styles.secondaryButtonText}>Delete</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.actionButton, styles.primaryButton]}
+                        onPress={() =>
+                          navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>Manage</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.actionButton, styles.secondaryButton]}
+                        onPress={() =>
+                          navigation.navigate('ConnectGoEventAnalytics', {
+                            eventId: eventRecord.id,
+                          })
+                        }
+                      >
+                        <Text style={styles.secondaryButtonText}>Analytics</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
               </View>
-            </View>
-            <View style={styles.cardContent}>
-              <Text style={styles.eventTitle}>Summer Beats Festival</Text>
-              <Text style={styles.eventDate}>📅 Jul 22, 2025 • TBD</Text>
-
-              <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.actionButton, styles.primaryButton, { flex: 1 }]}>
-                  <Text style={styles.primaryButtonText}>⇪ Publish</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
-                >
-                  <Text style={styles.secondaryButtonText}>✏️ Edit Draft</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionButton, styles.dangerButton, { width: 44 }]}>
-                  <Text style={styles.dangerButtonText}>🗑️</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          {/* Card 3: Past Event */}
-          <View style={[styles.eventCard, isDarkMode ? { opacity: 0.7 } : { opacity: 0.8 }]}>
-            <View style={styles.imageContainer}>
-              <View style={[styles.imagePlaceholder, { backgroundColor: '#81979e' }]} />
-              <View style={[styles.badge, styles.badgePast]}>
-                <Text style={styles.badgeText}>PAST</Text>
-              </View>
-            </View>
-            <View style={styles.cardContent}>
-              <Text style={styles.eventTitle}>Design Thinking Workshop</Text>
-              <Text style={styles.eventDate}>📅 Ended Sep 15, 2024</Text>
-
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
-                >
-                  <Text style={styles.secondaryButtonText}>📊 Report</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
-                >
-                  <Text style={styles.secondaryButtonText}>🔄 Duplicate</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+            );
+          })}
         </ScrollView>
-
-        {/* Bottom Navigation */}
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navIcon}>🏠</Text>
-            <Text style={styles.navText}>HOME</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={[styles.navIcon, styles.navIconActive]}>📅</Text>
-            <Text style={[styles.navText, styles.navTextActive]}>MY EVENTS</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navIcon}>📈</Text>
-            <Text style={styles.navText}>STATS</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navIcon}>👤</Text>
-            <Text style={styles.navText}>PROFILE</Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </SafeAreaView>
   );
 }
 
-const getStyles = (isDarkMode: boolean) =>
-  StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: isDarkMode ? '#111d21' : '#f7f7f7',
-    },
-    container: {
-      flex: 1,
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-      backgroundColor: isDarkMode ? '#111d21' : '#f7f7f7',
-    },
-    headerLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    headerIcon: {
-      fontSize: 24,
-      color: '#126b87',
-      marginRight: 8,
-    },
-    headerTitle: {
-      fontSize: 22,
-      fontWeight: '800',
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-    },
-    addButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: '#126b87',
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#126b87',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 6,
-      elevation: 4,
-    },
-    addButtonText: {
-      color: '#ffffff',
-      fontSize: 24,
-      fontWeight: '400',
-      marginTop: -2,
-    },
-    searchContainer: {
-      paddingHorizontal: 16,
-      paddingBottom: 16,
-    },
-    searchInputWrapper: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: isDarkMode ? '#1e333a' : '#ffffff',
-      borderWidth: 1,
-      borderColor: isDarkMode ? '#355963' : '#e6eaec',
-      borderRadius: 12,
-      paddingHorizontal: 12,
-      height: 48,
-    },
-    searchIcon: {
-      fontSize: 16,
-      color: '#68828a',
-      marginRight: 8,
-    },
-    searchInput: {
-      flex: 1,
-      fontSize: 15,
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-    },
-    filterContainer: {
-      paddingBottom: 16,
-    },
-    filterScroll: {
-      paddingHorizontal: 16,
-      gap: 8,
-    },
-    filterPill: {
-      paddingHorizontal: 20,
-      paddingVertical: 8,
-      borderRadius: 20,
-      backgroundColor: isDarkMode ? '#1e333a' : '#eef6f8',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    filterPillActive: {
-      backgroundColor: '#126b87',
-    },
-    filterText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: isDarkMode ? '#9aacb1' : '#126b87',
-    },
-    filterTextActive: {
-      color: '#ffffff',
-    },
-    scrollContent: {
-      paddingHorizontal: 16,
-      paddingBottom: 100,
-    },
-    eventCard: {
-      backgroundColor: isDarkMode ? '#1e333a' : '#ffffff',
-      borderRadius: 16,
-      marginBottom: 20,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: isDarkMode ? '#355963' : '#e6eaec',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDarkMode ? 0 : 0.05,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-    imageContainer: {
-      height: 140,
-      width: '100%',
-      position: 'relative',
-    },
-    imagePlaceholder: {
-      width: '100%',
-      height: '100%',
-    },
-    badge: {
-      position: 'absolute',
-      top: 12,
-      right: 12,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 4,
-    },
-    badgeActive: {
-      backgroundColor: '#10b981', // Green
-    },
-    badgeDraft: {
-      backgroundColor: '#f59e0b', // Orange
-    },
-    badgePast: {
-      backgroundColor: '#68828a', // Gray
-    },
-    badgeText: {
-      color: '#ffffff',
-      fontSize: 10,
-      fontWeight: '800',
-      letterSpacing: 0.5,
-    },
-    cardContent: {
-      padding: 16,
-    },
-    eventTitle: {
-      fontSize: 18,
-      fontWeight: '800',
-      color: isDarkMode ? '#ffffff' : '#032f3c',
-      marginBottom: 4,
-    },
-    eventDate: {
-      fontSize: 13,
-      color: isDarkMode ? '#9aacb1' : '#68828a',
-      marginBottom: 16,
-      fontWeight: '500',
-    },
-    actionRow: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    actionButton: {
-      height: 40,
-      borderRadius: 8,
-      justifyContent: 'center',
-      alignItems: 'center',
-      flexDirection: 'row',
-    },
-    primaryButton: {
-      backgroundColor: '#126b87',
-    },
-    primaryButtonText: {
-      color: '#ffffff',
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    secondaryButton: {
-      backgroundColor: isDarkMode ? 'rgba(18, 107, 135, 0.15)' : '#eef6f8',
-    },
-    secondaryButtonText: {
-      color: '#126b87',
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    dangerButton: {
-      backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
-    },
-    dangerButtonText: {
-      color: '#ef4444',
-      fontSize: 14,
-    },
-    bottomNav: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 80,
-      backgroundColor: isDarkMode ? '#111d21' : '#ffffff',
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      alignItems: 'center',
-      borderTopWidth: 1,
-      borderTopColor: isDarkMode ? '#1e333a' : '#e6eaec',
-      paddingBottom: Platform.OS === 'ios' ? 20 : 0,
-    },
-    navItem: {
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    navIcon: {
-      fontSize: 22,
-      color: '#9aacb1',
-      marginBottom: 4,
-    },
-    navIconActive: {
-      color: '#126b87',
-    },
-    navText: {
-      fontSize: 10,
-      fontWeight: '700',
-      color: '#9aacb1',
-      letterSpacing: 0.5,
-    },
-    navTextActive: {
-      color: '#126b87',
-      fontWeight: '800',
-    },
-  });
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F6F7F8',
+  },
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#032f3c',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#4F6D77',
+  },
+  addButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#126b87',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 26,
+    fontWeight: '400',
+    marginTop: -2,
+  },
+  searchWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 10,
+  },
+  errorBanner: {
+    borderRadius: 12,
+    backgroundColor: '#FFF1F0',
+    borderWidth: 1,
+    borderColor: '#F5B6B2',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  errorBannerText: {
+    color: '#8E3025',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  searchInput: {
+    minHeight: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#D7E1E5',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: '#032f3c',
+  },
+  filterRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 10,
+  },
+  filterChip: {
+    minHeight: 38,
+    paddingHorizontal: 14,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D7E1E5',
+  },
+  filterChipActive: {
+    backgroundColor: '#126b87',
+    borderColor: '#126b87',
+  },
+  filterChipText: {
+    color: '#032f3c',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    gap: 14,
+  },
+  card: {
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D7E1E5',
+    padding: 18,
+    gap: 8,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  badgeActive: {
+    backgroundColor: '#EAF5F7',
+  },
+  badgeDraft: {
+    backgroundColor: '#F5EEE6',
+  },
+  badgeText: {
+    color: '#126b87',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#032f3c',
+  },
+  cardMeta: {
+    fontSize: 14,
+    color: '#4F6D77',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  actionButton: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+  },
+  primaryButton: {
+    backgroundColor: '#126b87',
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D7E1E5',
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  secondaryButtonText: {
+    color: '#032f3c',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+});
+
+export default MyEventsScreen;

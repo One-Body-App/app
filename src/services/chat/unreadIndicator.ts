@@ -96,9 +96,6 @@ export const publishChatUnreadFromConversations = (conversations: ConversationLi
       shouldApplyLocalReadOverride(conversationKey, conversation.updatedAt);
 
     if (conversation.isArchived || conversation.unreadCount < 1 || hasLocalReadOverride) {
-      if (conversation.unreadCount < 1 && conversationKey !== 'direct:unknown') {
-        locallyReadAtByKey.delete(conversationKey);
-      }
       return;
     }
 

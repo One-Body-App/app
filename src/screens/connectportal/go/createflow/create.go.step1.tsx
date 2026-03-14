@@ -1,285 +1,180 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import type { StackScreenProps } from '@react-navigation/stack';
+import type { ConnectStackParamsList } from '@/src/navigator/types';
+import { saveConnectPortalDraft } from '@/src/services/connectPortal';
+import { CreateFlowLayout, ensureStepOneDraftRecord } from './shared';
 
-export default function BasicInfoScreen() {
+type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep1'>;
+
+function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
+  const [draftId, setDraftId] = useState(route.params?.draftId);
+  const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
+  const [eventType, setEventType] = useState('');
+
+  useEffect(() => {
+    let isActive = true;
+
+    (async () => {
+      const draft = await ensureStepOneDraftRecord(route.params?.draftId);
+      if (!isActive) {
+        return;
+      }
+
+      if (!draft) {
+        navigation.navigate('ConnectGoMyEvents', {
+          initialFilter: 'Draft',
+          resumeError:
+            'This draft is no longer available. Open a saved draft from My Events or start again.',
+        });
+        return;
+      }
+
+      setDraftId(draft.id);
+      setTitle(draft.title);
+      setEventType(draft.eventType);
+      setLoading(false);
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [navigation, route.params?.draftId]);
+
+  const persistDraft = async (completedStep?: 0 | 1) => {
+    if (!draftId) {
+      return null;
+    }
+
+    return saveConnectPortalDraft(
+      draftId,
+      {
+        title,
+        eventType,
+        category: (eventType || 'EVENT').toUpperCase(),
+      },
+      completedStep !== undefined ? { completedStep } : undefined
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        {/* Top Header Navigation */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
-            <Text style={styles.iconText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Basic Info</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+    <CreateFlowLayout
+      title="Basic Info"
+      step={1}
+      loading={loading}
+      onBack={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+          return;
+        }
+        navigation.navigate('ConnectGoEventDash');
+      }}
+      onSave={async () => {
+        await persistDraft(0);
+        navigation.navigate('ConnectGoMyEvents', { initialFilter: 'Draft' });
+      }}
+      saveLabel="Save Draft"
+      onNext={async () => {
+        const draft = await persistDraft(1);
+        if (draft) {
+          navigation.navigate('ConnectGoCreateStep2', { draftId: draft.id });
+        }
+      }}
+      nextLabel="Next Step"
+      nextDisabled={!draftId}
+    >
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Tell people what this event is.</Text>
+        <Text style={styles.sectionBody}>
+          Start with a clear title and a simple event type so your draft has a strong summary.
+        </Text>
+      </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Progress Section */}
-          <View style={styles.progressHeader}>
-            <Text style={styles.stepText}>Step 1 of 7</Text>
-            <Text style={styles.percentageText}>14%</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
-          </View>
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Event Title</Text>
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Enter the name of your event"
+          placeholderTextColor="#8AA0A8"
+        />
+      </View>
 
-          {/* Event Title */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>EVENT TITLE</Text>
-            <TextInput
-              style={styles.textInput}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter the name of your event"
-              placeholderTextColor="#9aacb1"
-            />
-          </View>
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Event Type</Text>
+        <TextInput
+          style={styles.input}
+          value={eventType}
+          onChangeText={setEventType}
+          placeholder="Worship night, workshop, mixer..."
+          placeholderTextColor="#8AA0A8"
+        />
+      </View>
 
-          {/* Event Type */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>EVENT TYPE</Text>
-            <TouchableOpacity style={styles.dropdownInput}>
-              <Text style={styles.placeholderText}>Select type (e.g., Worship, Conference)</Text>
-              <Text style={styles.dropdownIcon}>▼</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Event Photo Upload */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>EVENT PHOTO</Text>
-            <TouchableOpacity style={styles.uploadBox} activeOpacity={0.7}>
-              <View style={styles.uploadIconContainer}>
-                {/* Replace with an actual SVG cloud icon */}
-                <Text style={styles.cloudIcon}>☁️</Text>
-              </View>
-              <Text style={styles.uploadPrimaryText}>Click to upload or drag and drop</Text>
-              <Text style={styles.uploadSecondaryText}>PNG, JPG or WEBP (max. 5MB)</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-
-        {/* Fixed Bottom Navigation */}
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.draftButton}>
-            <Text style={styles.draftButtonText}>Save</Text>
-            <Text style={styles.draftButtonText}>Draft</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.nextButton}>
-            <Text style={styles.nextButtonText}>Next Step</Text>
-            <Text style={styles.arrowIcon}>→</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <TouchableOpacity style={styles.photoCard} activeOpacity={0.85}>
+        <Text style={styles.photoCardTitle}>Event Photo</Text>
+        <Text style={styles.photoCardBody}>
+          Image upload is reserved for a later pass. The draft will keep a placeholder hero for now.
+        </Text>
+      </TouchableOpacity>
+    </CreateFlowLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f6f7f8', // background-light
+  section: {
+    gap: 8,
   },
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#f6f7f8',
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  iconText: {
+  sectionTitle: {
     fontSize: 24,
-    color: '#126b87',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#032f3c',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 100, // Space for the absolute footer
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  stepText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#032f3c',
-  },
-  percentageText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#126b87', // Primary
-  },
-  progressTrack: {
-    height: 6,
-    backgroundColor: '#e6eaec', // Light gray track
-    borderRadius: 4,
-    marginBottom: 32,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    width: '14%',
-    height: '100%',
-    backgroundColor: '#12d2d9', // Accent
-    borderRadius: 4,
-  },
-  inputGroup: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 12,
     fontWeight: '800',
     color: '#032f3c',
-    marginBottom: 8,
-    letterSpacing: 0.5,
   },
-  textInput: {
-    backgroundColor: '#ffffff',
+  sectionBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#4F6D77',
+  },
+  fieldGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#032f3c',
+    textTransform: 'uppercase',
+  },
+  input: {
+    minHeight: 54,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e6eaec',
-    borderRadius: 12,
+    borderColor: '#D7E1E5',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    height: 56,
     fontSize: 16,
     color: '#032f3c',
   },
-  dropdownInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
+  photoCard: {
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#e6eaec',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 56,
-  },
-  dropdownIcon: {
-    fontSize: 12,
-    color: '#68828a',
-  },
-  placeholderText: {
-    color: '#032f3c',
-    fontSize: 16,
-  },
-  uploadBox: {
-    borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: '#b3c1c5',
-    backgroundColor: 'transparent',
-    borderRadius: 16,
-    paddingVertical: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: '#9FB6BE',
+    backgroundColor: '#FBFDFD',
+    padding: 20,
+    gap: 8,
   },
-  uploadIconContainer: {
-    width: 56,
-    height: 56,
-    backgroundColor: '#ffffff',
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    marginBottom: 16,
-  },
-  cloudIcon: {
-    fontSize: 24,
-  },
-  uploadPrimaryText: {
+  photoCardTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#032f3c',
-    marginBottom: 4,
   },
-  uploadSecondaryText: {
+  photoCardBody: {
     fontSize: 14,
-    color: '#68828a',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f6f7f8',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e6eaec',
-  },
-  draftButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  draftButtonText: {
-    color: '#126b87',
-    fontSize: 16,
-    fontWeight: '700',
     lineHeight: 20,
-  },
-  nextButton: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#126b87',
-    height: 56,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 32,
-  },
-  nextButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-    marginRight: 8,
-  },
-  arrowIcon: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '700',
+    color: '#4F6D77',
   },
 });
+
+export default BasicInfoScreen;

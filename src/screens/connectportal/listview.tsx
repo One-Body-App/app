@@ -25,6 +25,11 @@ import { spacing } from '@/src/styles/spacing';
 import { getHeight } from '@/utils/ResponsiveFun';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
+import {
+  formatConnectPortalDateTime,
+  trackConnectPortalEventTelemetry,
+} from '@/src/services/connectPortal';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import { CONNECT_PORTAL_LIST_DATA, type ConnectPortalListItem, type ConnectTab } from './data';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectPortal'>;
@@ -155,6 +160,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   const screenEnterTranslateX = useRef(new Animated.Value(120)).current;
   const screenEnterOpacity = useRef(new Animated.Value(0)).current;
   const initialRouteTab = route.params?.initialTab;
+  const { snapshot, refresh } = useConnectPortalData();
 
   const [activeTab, setActiveTab] = useState<ConnectTab>(initialRouteTab ?? 'Places');
   const [searchText, setSearchText] = useState('');
@@ -192,9 +198,28 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     }, [screenEnterOpacity, screenEnterTranslateX])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (activeTab === 'Go!') {
+        refresh();
+      }
+    }, [activeTab, refresh])
+  );
+
   const items = useMemo<ConnectPortalListItem[]>(
-    () => CONNECT_PORTAL_LIST_DATA[activeTab] ?? [],
-    [activeTab]
+    () =>
+      activeTab === 'Go!'
+        ? snapshot.publicPublished.map((eventRecord) => ({
+            id: eventRecord.id,
+            title: eventRecord.title,
+            location: `${
+              eventRecord.venueName || eventRecord.address || 'Location TBD'
+            } • ${formatConnectPortalDateTime(eventRecord)}`,
+            tags: eventRecord.tags.length > 0 ? eventRecord.tags : ['Event'],
+            icon: 'event',
+          }))
+        : (CONNECT_PORTAL_LIST_DATA[activeTab] ?? []),
+    [activeTab, snapshot.publicPublished]
   );
 
   const filteredItems = useMemo(() => {
@@ -205,6 +230,13 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
         item.title.toLowerCase().includes(term) || item.location.toLowerCase().includes(term)
     );
   }, [items, searchText]);
+
+  let heroTitle = 'Find Ways to Serve';
+  if (activeTab === 'Places') {
+    heroTitle = 'Find Organizations Near You';
+  } else if (activeTab === 'Go!') {
+    heroTitle = 'Discover Local Events';
+  }
 
   return (
     <Animated.View
@@ -244,7 +276,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.toggleBtn}
-              onPress={() => navigation.navigate('ConnectMap')}
+              onPress={() => navigation.navigate('ConnectMap', { initialTab: activeTab })}
               activeOpacity={0.9}
             >
               <MaterialIcons name="map" size={16} color={Colors.primarySapphire.brand} />
@@ -253,6 +285,24 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           </View>
         </View>
 
+        {activeTab === 'Go!' ? (
+          <TouchableOpacity
+            style={styles.createEventButton}
+            onPress={() => navigation.navigate('ConnectGoEventDash')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.createEventIconWrap}>
+              <MaterialIcons name="add-circle-outline" size={20} color={Colors.main.white} />
+            </View>
+            <View style={styles.createEventCopy}>
+              <StyledText style={styles.createEventTitle}>Create Event</StyledText>
+              <StyledText style={styles.createEventBody}>
+                Open the organizer dashboard and start a new `Go!` event.
+              </StyledText>
+            </View>
+          </TouchableOpacity>
+        ) : null}
+
         <View style={styles.heroWrapper}>
           <ImageBackground
             source={{ uri: 'https://images.unsplash.com/photo-1465220183275-07cd0c2cc7a3' }}
@@ -260,10 +310,10 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
             imageStyle={styles.heroImage}
           >
             <View style={styles.heroOverlay}>
-              <StyledText style={styles.heroTitle}>Find Organizations Near You</StyledText>
+              <StyledText style={styles.heroTitle}>{heroTitle}</StyledText>
               <TouchableOpacity
                 style={styles.exploreBtn}
-                onPress={() => navigation.navigate('ConnectMap')}
+                onPress={() => navigation.navigate('ConnectMap', { initialTab: activeTab })}
                 activeOpacity={0.9}
               >
                 <MaterialIcons name="public" size={16} color={Colors.primary.brand} />
@@ -282,7 +332,19 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           </View>
 
           {filteredItems.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.cardContainer} activeOpacity={0.86}>
+            <TouchableOpacity
+              key={item.id}
+              style={styles.cardContainer}
+              activeOpacity={0.86}
+              onPress={() => {
+                if (activeTab === 'Go!') {
+                  trackConnectPortalEventTelemetry(item.id, 'detail_open', {
+                    source: 'connect_list',
+                  }).catch(() => {});
+                  navigation.navigate('ConnectGoEventView', { eventId: item.id });
+                }
+              }}
+            >
               <View style={styles.cardIconWrap}>
                 <MaterialIcons name={item.icon} size={30} color={Colors.primarySapphire.brand} />
               </View>
@@ -388,6 +450,38 @@ const createStyles = (dark: boolean) =>
     searchSection: {
       padding: spacing.x20,
       gap: spacing.x10,
+    },
+    createEventButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginHorizontal: spacing.x20,
+      marginBottom: spacing.x16,
+      paddingHorizontal: spacing.x16,
+      paddingVertical: spacing.x13,
+      borderRadius: borderRadius.large,
+      backgroundColor: Colors.primary.brand,
+      gap: spacing.x13,
+    },
+    createEventIconWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.14)',
+    },
+    createEventCopy: {
+      flex: 1,
+      gap: spacing.x5,
+    },
+    createEventTitle: {
+      ...Typography.body.x2M,
+      color: Colors.main.white,
+      fontWeight: '700',
+    },
+    createEventBody: {
+      ...Typography.body.x1,
+      color: 'rgba(255,255,255,0.88)',
     },
     searchInputContainer: {
       flexDirection: 'row',
