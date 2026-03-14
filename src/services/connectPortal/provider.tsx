@@ -3,10 +3,17 @@ import type { PropsWithChildren } from 'react';
 import { getConnectPortalCacheSnapshot, refreshConnectPortalPublishedEvents } from './index';
 import type { ConnectPortalCacheSnapshot } from './types';
 
+export type ConnectPortalErrorCode = 'network' | 'auth' | 'parse' | 'unknown';
+
+export type ConnectPortalError = {
+  code: ConnectPortalErrorCode;
+  message: string;
+} | null;
+
 type ConnectPortalContextValue = {
   snapshot: ConnectPortalCacheSnapshot;
   loading: boolean;
-  error: string;
+  error: ConnectPortalError;
   refresh: (force?: boolean) => Promise<void>;
 };
 
@@ -22,18 +29,20 @@ const ConnectPortalContext = createContext<ConnectPortalContextValue | null>(nul
 export function ConnectPortalProvider({ children }: PropsWithChildren): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<ConnectPortalCacheSnapshot>(EMPTY_SNAPSHOT);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<ConnectPortalError>(null);
 
   const refresh = useCallback(async (force = false) => {
-    setError('');
+    setError(null);
     try {
       if (force) {
         await refreshConnectPortalPublishedEvents(true);
       }
       const nextSnapshot = await getConnectPortalCacheSnapshot();
       setSnapshot(nextSnapshot);
-    } catch {
-      setError('Unable to load Connect portal data right now.');
+    } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message : 'Unable to load Connect portal data right now.';
+      setError({ code: 'network', message });
     } finally {
       setLoading(false);
     }

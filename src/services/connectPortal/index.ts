@@ -7,6 +7,7 @@ import type {
   Coordinate,
 } from '@/src/screens/connectportal/data';
 import type {
+  ConnectPortalAnalyticsResponse,
   ConnectPortalCacheSnapshot,
   ConnectPortalCreateStep,
   ConnectPortalEventDraft,
@@ -29,7 +30,7 @@ type ConnectPortalApiClient = {
   listPublicEvents: () => Promise<ConnectPortalPublishedEvent[]>;
   listOrganizerEvents: () => Promise<ConnectPortalPublishedEvent[]>;
   getEvent: (eventId: string) => Promise<ConnectPortalPublishedEvent | null>;
-  getEventAnalytics: (eventId: string) => Promise<any>;
+  getEventAnalytics: (eventId: string) => Promise<ConnectPortalAnalyticsResponse>;
   publishEvent: (payload: Record<string, unknown>) => Promise<ConnectPortalPublishedEvent | null>;
   trackEventTelemetry: (
     eventId: string,
@@ -56,7 +57,7 @@ const createSeededPublishedEvent = (
   overrides: Partial<ConnectPortalPublishedEvent> &
     Pick<ConnectPortalPublishedEvent, 'id' | 'title'>
 ): ConnectPortalPublishedEvent => {
-  const now = '2026-03-14T12:00:00.000Z';
+  const now = new Date().toISOString();
   return {
     id: overrides.id,
     status: 'published',
@@ -98,6 +99,12 @@ const createSeededPublishedEvent = (
   };
 };
 
+const getFutureDate = (daysFromNow: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+};
+
 const SEEDED_GO_EVENTS: ConnectPortalPublishedEvent[] = [
   createSeededPublishedEvent({
     id: 'seed-go-summer-mixer',
@@ -106,8 +113,8 @@ const SEEDED_GO_EVENTS: ConnectPortalPublishedEvent[] = [
     category: 'COMMUNITY',
     organizerName: 'Sarah Jenkins',
     organizerRole: 'Community Health Lead',
-    startDate: '2026-08-24',
-    endDate: '2026-08-24',
+    startDate: getFutureDate(163),
+    endDate: getFutureDate(163),
     startTime: '2:00 PM',
     endTime: '6:00 PM',
     venueName: 'Central Park North Pavilion',
@@ -130,8 +137,8 @@ const SEEDED_GO_EVENTS: ConnectPortalPublishedEvent[] = [
     category: 'LEADERSHIP',
     organizerName: 'Felix Carter',
     organizerRole: 'Leadership Coach',
-    startDate: '2026-09-12',
-    endDate: '2026-09-12',
+    startDate: getFutureDate(182),
+    endDate: getFutureDate(182),
     startTime: '10:00 AM',
     endTime: '1:00 PM',
     venueName: 'Downtown Learning Hub',
@@ -163,6 +170,9 @@ const clampStep = (value: unknown): ConnectPortalCreateStep => {
   return 0;
 };
 
+// NOTE: Coordinate validation is intentionally duplicated here and in the API service.
+// The client normalizes before display and draft storage; the API validates before persistence.
+// Both must agree on the format: [longitude, latitude] tuple of finite numbers.
 const normalizeCoordinate = (value: unknown): Coordinate | undefined => {
   if (!Array.isArray(value) || value.length < 2) {
     return undefined;
@@ -185,7 +195,7 @@ const normalizePaymentOption = (value: unknown): ConnectPortalPaymentOption =>
 
 const normalizeTicketTiers = (value: unknown): TicketTier[] => {
   if (!Array.isArray(value)) {
-    return [createTicketTier()];
+    return [];
   }
 
   const items = value
@@ -207,7 +217,7 @@ const normalizeTicketTiers = (value: unknown): TicketTier[] => {
     })
     .filter(Boolean) as TicketTier[];
 
-  return items.length > 0 ? items : [createTicketTier()];
+  return items;
 };
 
 const normalizeDraft = (value: unknown): ConnectPortalEventDraft | null => {
@@ -775,7 +785,6 @@ export const createConnectPortalStorage = (
       })),
       businessName: draft.businessName,
       ein: draft.ein,
-      registrationCount: draft.registrationCount || 0,
       tags: ['Event', 'Live'],
     };
 
@@ -808,7 +817,6 @@ export const createConnectPortalStorage = (
     metadata?: Record<string, unknown>
   ) => {
     await apiClient.trackEventTelemetry(eventId, eventType, metadata);
-    invalidatePublishedCache();
   };
 
   const getCacheSnapshot = async () => {
@@ -907,6 +915,8 @@ export const formatConnectPortalDate = formatDateLabel;
 export const formatConnectPortalDateTime = formatDateTimeLabel;
 
 export type {
+  ConnectPortalAnalyticsResponse,
+  ConnectPortalAnalyticsSummary,
   ConnectPortalCacheSnapshot,
   ConnectPortalCreateStep,
   ConnectPortalEventDraft,
@@ -917,5 +927,6 @@ export type {
   ConnectPortalPublishedEvent,
   ConnectPortalResumeResolution,
   ConnectPortalTicketType,
+  ConnectPortalTelemetryActivityItem,
   TicketTier,
 } from './types';

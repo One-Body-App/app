@@ -90,3 +90,25 @@ export type ConnectPortalResumeResolution =
       kind: 'missing';
       message: string;
     };
+
+export type ConnectPortalTelemetryActivityItem = {
+  id: string;
+  eventType: 'publish' | 'detail_open' | 'detail_view' | 'manage_view';
+  timestamp: string;
+  metadata: Record<string, unknown> | null;
+};
+
+export type ConnectPortalAnalyticsSummary = {
+  totalEvents: number;
+  openCount: number;
+  viewCount: number;
+  manageViewCount: number;
+  registrationCount: number;
+  conversionRate: number;
+};
+
+export type ConnectPortalAnalyticsResponse = {
+  event: ConnectPortalPublishedEvent;
+  summary: ConnectPortalAnalyticsSummary;
+  recentActivity: ConnectPortalTelemetryActivityItem[];
+};
