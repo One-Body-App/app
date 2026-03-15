@@ -1,4 +1,5 @@
 import type { Coordinate } from '@/src/screens/connectportal/data';
+import type { OrganizationSize } from '@/utils/types';
 
 export type ConnectPortalCreateStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -7,6 +8,53 @@ export type ConnectPortalTicketType = 'free' | 'paid';
 export type ConnectPortalPaymentOption = 'external' | 'internal';
 
 export type ConnectPortalMyEventsFilter = 'All' | 'Active' | 'Draft' | 'Past';
+
+export type ConnectViewMode = 'list' | 'map';
+
+export type ConnectPlaceSort = 'nearby' | 'alphabetical' | 'recently_active';
+
+export type ConnectPlacesQuickChip = 'Nearby' | 'Non-Profits' | 'Churches' | 'Mega-Church';
+
+export type ConnectPlaceFilters = {
+  organizationTypeIds: string[];
+  churchType: string;
+  organizationSize?: OrganizationSize;
+  locationAddress: string;
+  lat?: number;
+  lon?: number;
+  radiusMiles: number;
+  sort: ConnectPlaceSort;
+};
+
+export type ConnectPlaceRecord = {
+  id: string;
+  title: string;
+  avatarUri?: string;
+  organizationTypeLabel: string;
+  churchTypeLabel: string;
+  organizationSize?: OrganizationSize;
+  address: string;
+  coordinate?: Coordinate;
+  distanceMiles?: number;
+  distanceLabel: string;
+  metadataTags: string[];
+  isActive: boolean;
+  isOpen?: boolean;
+  followerCount?: number;
+};
+
+export type ConnectPlacesResponse = {
+  data: ConnectPlaceRecord[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+};
+
+export type ConnectPlaceFilterOption = {
+  label: string;
+  value: string;
+};
 
 export type TicketTier = {
   id: string;

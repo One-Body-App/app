@@ -8,6 +8,10 @@ import type {
 } from '@/src/screens/connectportal/data';
 import type {
   ConnectPortalAnalyticsResponse,
+  ConnectPlaceFilterOption,
+  ConnectPlaceFilters,
+  ConnectPlaceRecord,
+  ConnectPlacesResponse,
   ConnectPortalCacheSnapshot,
   ConnectPortalCreateStep,
   ConnectPortalEventDraft,
@@ -19,6 +23,7 @@ import type {
   ConnectPortalPublishedEvent,
   ConnectPortalResumeResolution,
   ConnectPortalTicketType,
+  ConnectViewMode,
   TicketTier,
 } from './types';
 
@@ -160,6 +165,60 @@ const SEEDED_GO_EVENTS: ConnectPortalPublishedEvent[] = [
     viewCount: 3200,
     openCount: 640,
   }),
+];
+
+const SEEDED_CONNECT_PLACES: ConnectPlaceRecord[] = [
+  {
+    id: 'seed-place-grace-community-center',
+    title: 'Grace Community Center',
+    avatarUri:
+      'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=400&q=80',
+    organizationTypeLabel: 'Non-Profit',
+    churchTypeLabel: '',
+    organizationSize: 'large',
+    address: 'Downtown, Chicago, IL',
+    coordinate: [-87.6298, 41.8781],
+    distanceMiles: 1.2,
+    distanceLabel: '1.2 mi away',
+    metadataTags: ['ACTIVE', 'LARGE'],
+    isActive: true,
+    isOpen: true,
+    followerCount: 248,
+  },
+  {
+    id: 'seed-place-hope-fellowship',
+    title: 'Hope Fellowship',
+    avatarUri:
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=400&q=80',
+    organizationTypeLabel: 'Church',
+    churchTypeLabel: 'Non-Denominational',
+    organizationSize: 'mega',
+    address: 'North Side, Chicago, IL',
+    coordinate: [-87.6553, 41.95],
+    distanceMiles: 2.5,
+    distanceLabel: '2.5 mi away',
+    metadataTags: ['ACTIVE', 'MEGA'],
+    isActive: true,
+    isOpen: true,
+    followerCount: 1040,
+  },
+  {
+    id: 'seed-place-st-pauls',
+    title: "St. Paul's Cathedral",
+    avatarUri:
+      'https://images.unsplash.com/photo-1548625149-fc4a29cf7092?auto=format&fit=crop&w=400&q=80',
+    organizationTypeLabel: 'Church',
+    churchTypeLabel: 'Catholic',
+    organizationSize: 'medium',
+    address: 'West Loop, Chicago, IL',
+    coordinate: [-87.6477, 41.8827],
+    distanceMiles: 0.8,
+    distanceLabel: '0.8 mi away',
+    metadataTags: ['ACTIVE', 'MEDIUM'],
+    isActive: true,
+    isOpen: true,
+    followerCount: 382,
+  },
 ];
 
 const clampStep = (value: unknown): ConnectPortalCreateStep => {
@@ -876,6 +935,198 @@ export const {
   getCacheSnapshot: getConnectPortalCacheSnapshot,
 } = connectPortalStorage;
 
+const normalizePlaceRecord = (value: unknown): ConnectPlaceRecord | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const item = value as Partial<ConnectPlaceRecord> & {
+    coordinate?: Coordinate;
+  };
+  const id =
+    typeof item.id === 'string'
+      ? item.id
+      : typeof (item as any)._id === 'string'
+        ? (item as any)._id
+        : '';
+
+  if (!id) {
+    return null;
+  }
+
+  return {
+    id,
+    title: String(item.title || ''),
+    avatarUri: typeof item.avatarUri === 'string' ? item.avatarUri : undefined,
+    organizationTypeLabel: String(item.organizationTypeLabel || ''),
+    churchTypeLabel: String(item.churchTypeLabel || ''),
+    organizationSize:
+      typeof item.organizationSize === 'string'
+        ? (item.organizationSize as ConnectPlaceRecord['organizationSize'])
+        : undefined,
+    address: String(item.address || ''),
+    coordinate: normalizeCoordinate(item.coordinate),
+    distanceMiles: typeof item.distanceMiles === 'number' ? item.distanceMiles : undefined,
+    distanceLabel: String(item.distanceLabel || ''),
+    metadataTags: Array.isArray(item.metadataTags)
+      ? item.metadataTags.map((tag) => String(tag))
+      : [],
+    isActive: item.isActive !== false,
+    isOpen: item.isOpen !== false,
+    followerCount: typeof item.followerCount === 'number' ? item.followerCount : undefined,
+  };
+};
+
+const normalizePlacesResponse = (value: unknown): ConnectPlacesResponse | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const item = value as Partial<ConnectPlacesResponse> & { data?: unknown[] };
+  const data = Array.isArray(item.data)
+    ? (item.data.map(normalizePlaceRecord).filter(Boolean) as ConnectPlaceRecord[])
+    : [];
+
+  return {
+    data,
+    total: Number(item.total || data.length || 0),
+    page: Number(item.page || 1),
+    limit: Number(item.limit || data.length || 0),
+    hasMore: item.hasMore === true,
+  };
+};
+
+const buildPlacesQueryString = (params: Record<string, string | number | undefined>) => {
+  const query = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&');
+
+  return query ? `?${query}` : '';
+};
+
+export const getDefaultConnectPlaceFilters = (
+  overrides: Partial<ConnectPlaceFilters> = {}
+): ConnectPlaceFilters => ({
+  organizationTypeIds: [],
+  churchType: '',
+  organizationSize: undefined,
+  locationAddress: '',
+  lat: undefined,
+  lon: undefined,
+  radiusMiles: 50,
+  sort: 'nearby',
+  ...overrides,
+});
+
+export const listConnectPortalPlaces = async (
+  filters: ConnectPlaceFilters,
+  options?: {
+    text?: string;
+    page?: number;
+    limit?: number;
+    view?: ConnectViewMode;
+  }
+): Promise<ConnectPlacesResponse> => {
+  const query = buildPlacesQueryString({
+    text: options?.text,
+    page: options?.page ?? 1,
+    limit: options?.limit ?? 50,
+    view: options?.view,
+    sort: filters.sort,
+    organizationTypeIds:
+      filters.organizationTypeIds.length > 0 ? filters.organizationTypeIds.join(',') : undefined,
+    churchType: filters.churchType || undefined,
+    organizationSize: filters.organizationSize || undefined,
+    locationAddress: filters.locationAddress || undefined,
+    lat: filters.lat,
+    lon: filters.lon,
+    radiusMiles: filters.radiusMiles,
+  });
+
+  try {
+    const result = await ApiCall<any>({
+      route: `connect/organizations/public${query}`,
+      verb: 'get',
+      token: true,
+      suppressErrorLog: true,
+    });
+
+    if (result.status >= 400) {
+      throw new Error('Unable to load Connect places');
+    }
+
+    return (
+      normalizePlacesResponse(result.response) || {
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 0,
+        hasMore: false,
+      }
+    );
+  } catch {
+    return {
+      data: SEEDED_CONNECT_PLACES,
+      total: SEEDED_CONNECT_PLACES.length,
+      page: 1,
+      limit: SEEDED_CONNECT_PLACES.length,
+      hasMore: false,
+    };
+  }
+};
+
+export const getConnectPortalPlaceFilterOptions = async (): Promise<{
+  organizationTypes: ConnectPlaceFilterOption[];
+  churchTypes: ConnectPlaceFilterOption[];
+  sortOptions: ConnectPlaceFilterOption[];
+}> => {
+  const sortOptions: ConnectPlaceFilterOption[] = [
+    { label: 'Nearby', value: 'nearby' },
+    { label: 'Alphabetical', value: 'alphabetical' },
+    { label: 'Recently Active', value: 'recently_active' },
+  ];
+
+  try {
+    const [organizationTypeResult, churchTypeResult] = await Promise.all([
+      ApiCall<any[]>({
+        route: 'global/organization-type',
+        verb: 'get',
+        token: true,
+        suppressErrorLog: true,
+      }),
+      ApiCall<any[]>({
+        route: 'global/church-type',
+        verb: 'get',
+        token: true,
+        suppressErrorLog: true,
+      }),
+    ]);
+
+    const organizationTypes = Array.isArray(organizationTypeResult.response)
+      ? organizationTypeResult.response
+          .map((item) => ({
+            label: String(item?.organizationType || item?.name || '').trim(),
+            value: String(item?._id || ''),
+          }))
+          .filter((item) => item.label.length > 0 && item.value.length > 0)
+      : [];
+
+    const churchTypes = Array.isArray(churchTypeResult.response)
+      ? churchTypeResult.response
+          .map((item) => ({
+            label: String(item?.churchType || '').trim(),
+            value: String(item?.churchType || '').trim(),
+          }))
+          .filter((item) => item.label.length > 0)
+      : [];
+
+    return { organizationTypes, churchTypes, sortOptions };
+  } catch {
+    return { organizationTypes: [], churchTypes: [], sortOptions };
+  }
+};
+
 export const getEventCapacityLabel = (record: ConnectPortalEventRecordBase) => {
   const capacityValue = getCapacityValue(record);
   if (!capacityValue) {
@@ -915,6 +1166,12 @@ export const formatConnectPortalDate = formatDateLabel;
 export const formatConnectPortalDateTime = formatDateTimeLabel;
 
 export type {
+  ConnectPlaceFilterOption,
+  ConnectPlaceFilters,
+  ConnectPlaceRecord,
+  ConnectPlacesQuickChip,
+  ConnectPlacesResponse,
+  ConnectPlaceSort,
   ConnectPortalAnalyticsResponse,
   ConnectPortalAnalyticsSummary,
   ConnectPortalCacheSnapshot,
@@ -928,5 +1185,6 @@ export type {
   ConnectPortalResumeResolution,
   ConnectPortalTicketType,
   ConnectPortalTelemetryActivityItem,
+  ConnectViewMode,
   TicketTier,
 } from './types';

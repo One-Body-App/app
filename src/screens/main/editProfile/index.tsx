@@ -27,7 +27,14 @@ import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { ApiCall } from '@/src/services/api';
 
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { AccountType, ChurchType, Interest, OrganizationType, Tag } from '@/utils/types';
+import {
+  AccountType,
+  ChurchType,
+  Interest,
+  OrganizationSize,
+  OrganizationType,
+  Tag,
+} from '@/utils/types';
 
 import MapBox, { MapSuggestion } from '@/components/MapBox';
 import { spacing } from '@/src/styles/spacing';
@@ -68,6 +75,7 @@ type EditProfileDTO = {
   contactEmail?: string;
   contactName?: string;
   contactPhoneNumber?: string;
+  organizationSize?: OrganizationSize;
 
   gender?: string;
   whatIDo?: string;
@@ -136,6 +144,9 @@ function EditProfile({ navigation }: Props) {
   const [organizationContactPhone, setOrganizationContactPhone] = useState<string>(
     user?.profile.contactPhoneNumber ?? ''
   );
+  const [organizationSize, setOrganizationSize] = useState<OrganizationSize | ''>(
+    user?.profile.organizationSize ?? ''
+  );
 
   const [whatIDoList, setWhatIDoList] = useState<Tag[]>([]);
   const [organizationTypes, setOrganizationTypes] = useState<OrganizationType[]>([]);
@@ -175,6 +186,12 @@ function EditProfile({ navigation }: Props) {
   );
 
   const oftenChurchOptions = ['Weekly', 'Bi-Weekly', 'Once a month', 'I only watch at home'];
+  const organizationSizeOptions: { text: string; value: OrganizationSize }[] = [
+    { text: 'Small', value: 'small' },
+    { text: 'Medium', value: 'medium' },
+    { text: 'Large', value: 'large' },
+    { text: 'Mega', value: 'mega' },
+  ];
 
   const { colors } = useTheme();
 
@@ -1014,6 +1031,26 @@ function EditProfile({ navigation }: Props) {
                   label="Phone Number"
                   placeholder="Contact phone number"
                 />
+
+                <StyledSelect
+                  wrapperStyle={{ marginTop: spacing.x24 }}
+                  items={organizationSizeOptions.map((item) => ({
+                    text: item.text,
+                    value: item.value,
+                  }))}
+                  label="Organization Size"
+                  btnText={
+                    organizationSize
+                      ? organizationSizeOptions.find((item) => item.value === organizationSize)
+                          ?.text || 'Select'
+                      : 'Select'
+                  }
+                  selectedItem={organizationSize}
+                  onChange={(item) => setOrganizationSize(item)}
+                  modalTitle="Select Organization Size"
+                  hideSearch
+                  showAllWithoutSearch
+                />
               </View>
             ) : null}
 
@@ -1158,6 +1195,8 @@ function EditProfile({ navigation }: Props) {
                     data.contactName = organizationContactName;
                   if (organizationContactPhone && user?.accountType === 'organization')
                     data.contactPhoneNumber = organizationContactPhone;
+                  if (organizationSize && user?.accountType === 'organization')
+                    data.organizationSize = organizationSize;
 
                   if (gender) data.gender = gender;
                   if (whatIDo) data.whatIDo = whatIDo;

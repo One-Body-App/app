@@ -330,8 +330,8 @@ function BottomStack() {
     height: getHeight(7) + insets.bottom,
     paddingBottom: insets.bottom,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: Platform.OS === 'android' ? colors.background : 'transparent',
+    borderTopColor: 'rgba(230,234,236,0.08)',
+    backgroundColor: '#032f3c',
     zIndex: 20,
     elevation: 20,
     overflow: 'visible' as const,
@@ -463,7 +463,7 @@ function BottomStack() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: brandColors.primaryBase,
+                  backgroundColor: brandColors.accentDark,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -491,8 +491,8 @@ function BottomStack() {
               tabBarLabel: 'Connect',
               tabBarIcon: ConnectTabIcon,
               tabBarStyle: shouldShowTabBar
-                ? connectVisibleTabBarStyle
-                : { ...connectVisibleTabBarStyle, display: 'none', height: 0, opacity: 0 },
+                ? exploreTabBarStyle
+                : { ...exploreTabBarStyle, display: 'none', height: 0, opacity: 0 },
             };
           }}
         />

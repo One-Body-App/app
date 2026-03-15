@@ -17,6 +17,7 @@ export type OrganizationType = {
   organizationType: string;
   name?: string;
 };
+export type OrganizationSize = 'small' | 'medium' | 'large' | 'mega';
 export type Tag = {
   _id: string;
   deleteFlag: boolean;
@@ -62,6 +63,7 @@ type Profile = {
   contactName?: string;
   contactEmail?: string;
   contactPhoneNumber?: string;
+  organizationSize?: OrganizationSize;
   whatIDo?: Tag;
   typeOfOrganization?: OrganizationType;
   isLocationPublic?: boolean;
