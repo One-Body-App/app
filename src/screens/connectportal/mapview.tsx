@@ -1,35 +1,37 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Image,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { DrawerActions, useTheme } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import StyledText from '@/components/styled/Text';
 import { RootState } from '@/src/redux/reducers/rootReducer';
-import { MAPBOX_PUBLIC_TOKEN, NO_PROFILE_IMAGE } from '@/services/constants';
+import { MAPBOX_PUBLIC_TOKEN } from '@/services/constants';
 import { ConnectStackParamsList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
-import { borderRadius } from '@/src/styles/outlines';
-import { trackConnectPortalEventTelemetry } from '@/src/services/connectPortal';
+import getDeviceLocation from '@/src/services/deviceLocation';
+import {
+  formatConnectPortalDateTime,
+  trackConnectPortalEventTelemetry,
+} from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import { CONNECT_PORTAL_MAP_DATA, type ConnectPortalMapItem, type Coordinate } from './data';
 import {
   CONNECT_BRAND,
-  CONNECT_TABS,
-  ConnectPlaceDetailSheet,
+  CONNECT_BOTTOM_CHIP_RAIL_HEIGHT,
+  CONNECT_BOTTOM_NAV_BASE_OFFSET,
+  CONNECT_BOTTOM_SEARCH_ROW_HEIGHT,
+  CONNECT_BOTTOM_STACK_GAP,
+  ConnectMapFloatingCard,
+  ConnectMapMarker,
+  ConnectPortalChrome,
+  ConnectRetractableSearchBar,
   ConnectPlacesFilterSheet,
   ConnectPlacesQuickChips,
+  useConnectKeyboardMetrics,
 } from './shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectMap'>;
@@ -46,6 +48,7 @@ type MapboxModule = {
   MarkerView?: React.ComponentType<any>;
   StyleURL?: {
     Street?: string;
+    Dark?: string;
   };
   setAccessToken?: (token: string) => void;
 };
@@ -77,13 +80,183 @@ function resolveMapboxModule(): MapboxModule | null {
 const DEFAULT_CENTER: Coordinate = [-84.388, 33.749];
 
 function getMarkerIcon(itemType: ConnectPortalMapItem['type']) {
-  if (itemType === 'event') return 'event';
-  if (itemType === 'job') return 'work';
-  return 'location-city';
+  if (itemType === 'event') return 'calendar-star';
+  if (itemType === 'job') return 'hand-heart';
+  return 'home-city-outline';
 }
 
+function createConnectMapStyle(darkMode: boolean) {
+  const labelColor = darkMode ? '#e3ecee' : '#53676d';
+  const labelHalo = darkMode ? 'rgba(74,88,94,0.94)' : 'rgba(245,249,250,0.98)';
+  const subduedLabelColor = darkMode ? '#c5d2d6' : '#687d84';
+  const subduedLabelHalo = darkMode ? 'rgba(86,99,104,0.92)' : 'rgba(248,251,252,0.98)';
+
+  return JSON.stringify({
+    version: 8,
+    name: darkMode ? 'ConnectPortalDark' : 'ConnectPortalLight',
+    glyphs: 'mapbox://fonts/mapbox/{fontstack}/{range}.pbf',
+    sources: {
+      composite: {
+        type: 'vector',
+        url: 'mapbox://mapbox.mapbox-streets-v8',
+      },
+    },
+    layers: [
+      {
+        id: 'background',
+        type: 'background',
+        paint: {
+          'background-color': darkMode ? '#5a6971' : '#edf3f4',
+        },
+      },
+      {
+        id: 'landuse',
+        type: 'fill',
+        source: 'composite',
+        'source-layer': 'landuse',
+        paint: {
+          'fill-color': darkMode ? '#66767c' : '#dfe7ea',
+          'fill-opacity': darkMode ? 0.28 : 0.34,
+        },
+      },
+      {
+        id: 'water',
+        type: 'fill',
+        source: 'composite',
+        'source-layer': 'water',
+        paint: {
+          'fill-color': darkMode ? '#51616a' : '#d7e3e8',
+          'fill-opacity': 0.92,
+        },
+      },
+      {
+        id: 'admin',
+        type: 'line',
+        source: 'composite',
+        'source-layer': 'admin',
+        paint: {
+          'line-color': darkMode ? '#8a989d' : '#bfcad0',
+          'line-opacity': darkMode ? 0.14 : 0.18,
+          'line-width': 1,
+        },
+      },
+      {
+        id: 'roads',
+        type: 'line',
+        source: 'composite',
+        'source-layer': 'road',
+        paint: {
+          'line-color': darkMode ? '#97a5aa' : '#b5c3c8',
+          'line-opacity': darkMode ? 0.2 : 0.28,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.6, 13, 1.1, 16, 2.1],
+        },
+      },
+      {
+        id: 'roads-major',
+        type: 'line',
+        source: 'composite',
+        'source-layer': 'road',
+        filter: ['match', ['get', 'class'], ['motorway', 'trunk', 'primary'], true, false],
+        paint: {
+          'line-color': darkMode ? '#b0bcc0' : '#9dadb4',
+          'line-opacity': darkMode ? 0.24 : 0.32,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1, 13, 1.8, 16, 3],
+        },
+      },
+      {
+        id: 'building',
+        type: 'fill',
+        source: 'composite',
+        'source-layer': 'building',
+        minzoom: 13,
+        paint: {
+          'fill-color': darkMode ? '#758489' : '#c9d4d8',
+          'fill-opacity': darkMode ? 0.14 : 0.18,
+        },
+      },
+      {
+        id: 'poi-dots',
+        type: 'circle',
+        source: 'composite',
+        'source-layer': 'poi_label',
+        minzoom: 11,
+        paint: {
+          'circle-color': darkMode ? '#53d7df' : '#65ccd4',
+          'circle-opacity': darkMode ? 0.4 : 0.22,
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 0.8, 14, 1.4],
+        },
+      },
+      {
+        id: 'road-labels',
+        type: 'symbol',
+        source: 'composite',
+        'source-layer': 'road',
+        minzoom: 12,
+        filter: ['all', ['has', 'name']],
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': ['coalesce', ['get', 'name_en'], ['get', 'name']],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 14],
+          'symbol-spacing': 280,
+        },
+        paint: {
+          'text-color': subduedLabelColor,
+          'text-halo-color': subduedLabelHalo,
+          'text-halo-width': 1.4,
+          'text-opacity': 0.88,
+        },
+      },
+      {
+        id: 'settlement-labels',
+        type: 'symbol',
+        source: 'composite',
+        'source-layer': 'place_label',
+        minzoom: 5,
+        filter: ['match', ['get', 'class'], ['settlement'], true, false],
+        layout: {
+          'text-field': ['coalesce', ['get', 'name_en'], ['get', 'name']],
+          'text-font': ['DIN Pro Bold', 'Arial Unicode MS Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 5, 12, 10, 18],
+          'text-letter-spacing': 0.02,
+        },
+        paint: {
+          'text-color': labelColor,
+          'text-halo-color': labelHalo,
+          'text-halo-width': 1.8,
+          'text-opacity': 0.96,
+        },
+      },
+      {
+        id: 'state-labels',
+        type: 'symbol',
+        source: 'composite',
+        'source-layer': 'place_label',
+        minzoom: 4,
+        filter: ['match', ['get', 'class'], ['state', 'province'], true, false],
+        layout: {
+          'text-field': ['coalesce', ['get', 'name_en'], ['get', 'name']],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 8, 14],
+          'text-transform': 'uppercase',
+          'text-letter-spacing': 0.18,
+        },
+        paint: {
+          'text-color': subduedLabelColor,
+          'text-halo-color': subduedLabelHalo,
+          'text-halo-width': 1.5,
+          'text-opacity': 0.84,
+        },
+      },
+    ],
+  });
+}
+
+const CONNECT_MAP_STYLE_DARK = createConnectMapStyle(true);
+const CONNECT_MAP_STYLE_LIGHT = createConnectMapStyle(false);
+
 function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   const mapbox = useMemo(() => resolveMapboxModule(), []);
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
@@ -92,13 +265,18 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     refresh,
     activeTab,
     setActiveTab,
-    viewModes,
     setViewMode,
     searchByTab,
     setSearchText,
     places,
   } = useConnectPortalData();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [initialCameraTarget, setInitialCameraTarget] = useState<Coordinate>(DEFAULT_CENTER);
+  const { keyboardHeight, keyboardVisible } = useConnectKeyboardMetrics();
+  const mapStyleJSON = useMemo(
+    () => (dark ? CONNECT_MAP_STYLE_DARK : CONNECT_MAP_STYLE_LIGHT),
+    [dark]
+  );
 
   useEffect(() => {
     if (route.params?.initialTab) {
@@ -111,6 +289,24 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       refresh();
     }
   }, [activeTab, refresh]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getDeviceLocation()
+      .then((location) => {
+        if (!isMounted || !location) {
+          return;
+        }
+
+        setInitialCameraTarget([location.longitude, location.latitude]);
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const activeItems = useMemo(() => {
     if (activeTab === 'Places') {
@@ -141,29 +337,28 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
   }, [activeTab, places.visibleRecords, snapshot.publicPublished]);
 
   useEffect(() => {
-    if (activeTab !== 'Places') {
-      if (!activeItems.length) {
-        setSelectedItemId(null);
-        return;
-      }
-
-      if (!selectedItemId || !activeItems.some((item) => item.id === selectedItemId)) {
-        setSelectedItemId(activeItems[0].id);
-      }
+    if (selectedItemId && !activeItems.some((item) => item.id === selectedItemId)) {
+      setSelectedItemId(null);
     }
-  }, [activeItems, activeTab, selectedItemId]);
+  }, [activeItems, selectedItemId]);
+
+  const clearSelection = useCallback(() => {
+    places.selectPlace(null);
+    setSelectedItemId(null);
+  }, [places]);
 
   const selectedPlace =
     activeTab === 'Places'
       ? places.visibleRecords.find((place) => place.id === places.selectedPlaceId)
       : null;
-  const selectedNonPlaceItem =
-    activeTab === 'Places' ? null : activeItems.find((item) => item.id === selectedItemId);
-
-  const centerCoordinate: Coordinate =
-    activeTab === 'Places'
-      ? selectedPlace?.coordinate || places.visibleRecords[0]?.coordinate || DEFAULT_CENTER
-      : selectedNonPlaceItem?.coordinate || DEFAULT_CENTER;
+  const selectedEvent =
+    activeTab === 'Go!'
+      ? snapshot.publicPublished.find((eventRecord) => eventRecord.id === selectedItemId) || null
+      : null;
+  const selectedServeItem =
+    activeTab === 'Serve'
+      ? CONNECT_PORTAL_MAP_DATA.Serve.find((item) => item.id === selectedItemId) || null
+      : null;
 
   const onChangeViewMode = (viewMode: 'list' | 'map') => {
     setViewMode(activeTab, viewMode);
@@ -172,222 +367,259 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
   };
 
+  const onOpenLanding = useCallback(() => {
+    if (activeTab === 'Places') {
+      navigation.navigate('ConnectPlacesHome');
+      return;
+    }
+
+    if (activeTab === 'Go!') {
+      navigation.navigate('ConnectGoLanding');
+      return;
+    }
+
+    navigation.navigate('ConnectServeHome');
+  }, [activeTab, navigation]);
+
+  const onChangeTab = (tab: typeof activeTab) => {
+    clearSelection();
+    setActiveTab(tab);
+  };
+
+  const handleMarkerPress = (item: (typeof activeItems)[number]) => {
+    if (activeTab === 'Places') {
+      places.selectPlace(item.id);
+      return;
+    }
+
+    setSelectedItemId(item.id);
+
+    if (activeTab === 'Go!') {
+      trackConnectPortalEventTelemetry(item.id, 'detail_open', {
+        source: 'connect_map_marker',
+      }).catch(() => {});
+    }
+  };
+
+  const showPlacesChips = activeTab === 'Places' && !keyboardVisible;
+  const chipRailBottom = insets.bottom + CONNECT_BOTTOM_NAV_BASE_OFFSET;
+  const searchRowBottom = keyboardVisible
+    ? keyboardHeight + CONNECT_BOTTOM_STACK_GAP
+    : chipRailBottom +
+      (showPlacesChips ? CONNECT_BOTTOM_CHIP_RAIL_HEIGHT + CONNECT_BOTTOM_STACK_GAP : 0);
+  const previewRailBottom =
+    searchRowBottom + CONNECT_BOTTOM_SEARCH_ROW_HEIGHT + CONNECT_BOTTOM_STACK_GAP;
+
+  const floatingCard = useMemo(() => {
+    if (selectedPlace) {
+      return (
+        <ConnectMapFloatingCard
+          eyebrow="Featured Organization"
+          title={selectedPlace.title}
+          meta={selectedPlace.distanceLabel ? `${selectedPlace.distanceLabel} away` : 'Nearby'}
+          supportingCopy={selectedPlace.isOpen ? 'Open now' : 'Active now'}
+          imageUri={selectedPlace.avatarUri}
+          fallbackIcon="home-city-outline"
+          trailingIconName={places.isFollowing(selectedPlace.id) ? 'favorite' : 'favorite-border'}
+          primaryAction={{
+            label: places.isFollowing(selectedPlace.id) ? 'Following' : 'Follow',
+            onPress: () => {
+              places.toggleFollow(selectedPlace.id);
+            },
+          }}
+          secondaryAction={{
+            label: 'Details',
+            onPress: onOpenLanding,
+            variant: 'secondary',
+          }}
+          onDismiss={clearSelection}
+        />
+      );
+    }
+
+    if (selectedEvent) {
+      return (
+        <ConnectMapFloatingCard
+          eyebrow="Upcoming Event"
+          title={selectedEvent.title}
+          meta={selectedEvent.address || selectedEvent.venueName || 'Location TBD'}
+          supportingCopy={formatConnectPortalDateTime(selectedEvent) || 'Upcoming event'}
+          imageUri={selectedEvent.photoUri || selectedEvent.heroImageUri}
+          fallbackIcon="calendar-star"
+          trailingIconName="event"
+          primaryAction={{
+            label: 'Details',
+            onPress: () => {
+              trackConnectPortalEventTelemetry(selectedEvent.id, 'detail_open', {
+                source: 'connect_map_card',
+              }).catch(() => {});
+              navigation.navigate('ConnectGoEventView', { eventId: selectedEvent.id });
+            },
+          }}
+          onDismiss={clearSelection}
+        />
+      );
+    }
+
+    if (selectedServeItem) {
+      return (
+        <ConnectMapFloatingCard
+          eyebrow="Serve Opportunity"
+          title={selectedServeItem.title}
+          meta={selectedServeItem.address}
+          supportingCopy={selectedServeItem.subtitle}
+          fallbackIcon="hand-heart"
+          trailingIconName="volunteer-activism"
+          primaryAction={{
+            label: 'Explore',
+            onPress: onOpenLanding,
+          }}
+          onDismiss={clearSelection}
+        />
+      );
+    }
+
+    return null;
+  }, [
+    clearSelection,
+    navigation,
+    onOpenLanding,
+    places,
+    selectedEvent,
+    selectedPlace,
+    selectedServeItem,
+  ]);
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {mapbox ? (
-          <mapbox.MapView
-            style={styles.map}
-            styleURL={mapbox.StyleURL?.Street}
-            logoEnabled={false}
-            attributionEnabled={false}
-            scaleBarEnabled={false}
-            compassEnabled={false}
-            rotateEnabled={false}
-          >
-            <mapbox.Camera
-              zoomLevel={10.3}
-              centerCoordinate={centerCoordinate}
-              animationDuration={300}
-            />
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: Platform.OS === 'android' ? 'transparent' : colors.background },
+      ]}
+    >
+      {mapbox ? (
+        <mapbox.MapView
+          style={styles.map}
+          styleJSON={mapStyleJSON}
+          logoEnabled={false}
+          attributionEnabled={false}
+          scaleBarEnabled={false}
+          compassEnabled={false}
+          rotateEnabled={false}
+        >
+          <mapbox.Camera
+            zoomLevel={10.3}
+            centerCoordinate={initialCameraTarget}
+            animationDuration={300}
+          />
 
-            {activeItems.map((item) => {
-              const isSelected =
-                activeTab === 'Places'
-                  ? item.id === places.selectedPlaceId
-                  : item.id === selectedItemId;
-              const markerContent = (
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() => {
-                    if (activeTab === 'Places') {
-                      places.selectPlace(item.id);
-                    } else {
-                      setSelectedItemId(item.id);
-                      if (activeTab === 'Go!') {
-                        trackConnectPortalEventTelemetry(item.id, 'detail_open', {
-                          source: 'connect_map_marker',
-                        }).catch(() => {});
-                      }
-                    }
-                  }}
-                  style={[styles.marker, isSelected ? styles.markerActive : null]}
-                >
-                  <MaterialIcons
-                    name={getMarkerIcon(item.type)}
-                    size={14}
-                    color={isSelected ? CONNECT_BRAND.backgroundDark : CONNECT_BRAND.infoBase}
-                  />
-                </TouchableOpacity>
-              );
+          {activeItems.map((item) => {
+            const isSelected =
+              activeTab === 'Places'
+                ? item.id === places.selectedPlaceId
+                : item.id === selectedItemId;
+            const markerContent = (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => handleMarkerPress(item)}
+                style={styles.markerTapTarget}
+              >
+                <ConnectMapMarker iconName={getMarkerIcon(item.type)} active={isSelected} />
+              </TouchableOpacity>
+            );
 
-              if (mapbox.MarkerView) {
-                return (
-                  <mapbox.MarkerView
-                    key={item.id}
-                    id={item.id}
-                    coordinate={item.coordinate}
-                    anchor={{ x: 0.5, y: 0.5 }}
-                  >
-                    {markerContent}
-                  </mapbox.MarkerView>
-                );
-              }
-
-              if (!mapbox.PointAnnotation) {
-                return null;
-              }
-
+            if (mapbox.MarkerView) {
               return (
-                <mapbox.PointAnnotation
+                <mapbox.MarkerView
                   key={item.id}
                   id={item.id}
                   coordinate={item.coordinate}
-                  onSelected={() => {
-                    if (activeTab === 'Places') {
-                      places.selectPlace(item.id);
-                    } else {
-                      setSelectedItemId(item.id);
-                    }
-                  }}
+                  anchor={{ x: 0.5, y: 0.9 }}
                 >
                   {markerContent}
-                </mapbox.PointAnnotation>
+                </mapbox.MarkerView>
               );
-            })}
-          </mapbox.MapView>
-        ) : (
-          <View style={[styles.mapFallback, { backgroundColor: colors.card }]}>
-            <MaterialIcons name="map" size={28} color={CONNECT_BRAND.infoBase} />
-            <StyledText style={styles.mapFallbackTitle}>Map view unavailable</StyledText>
-            <StyledText style={styles.mapFallbackBody}>
-              Rebuild the app to finish linking Mapbox native modules.
-            </StyledText>
-          </View>
-        )}
+            }
 
-        <View style={[styles.overlayTop, { paddingTop: insets.top + spacing.x10 }]}>
-          {/* Floating header: avatar + title, no background */}
-          <View style={styles.floatingHeaderRow}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-            >
-              <Image
-                source={{ uri: currentUser?.profileImage || NO_PROFILE_IMAGE }}
-                style={styles.floatingAvatar}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
+            if (!mapbox.PointAnnotation) {
+              return null;
+            }
 
-            {Platform.OS === 'ios' ? (
-              <View style={styles.floatingTitleCenter} pointerEvents="none">
-                <StyledText style={styles.floatingTitleText}>Connect</StyledText>
-              </View>
-            ) : (
-              <StyledText style={[styles.floatingTitleText, styles.floatingTitleAndroid]}>
-                Connect
-              </StyledText>
-            )}
-          </View>
-
-          {/* Floating tabs: no background */}
-          <View style={styles.floatingTabsRow}>
-            {CONNECT_TABS.map((tab) => {
-              const isActive = tab === activeTab;
-              return (
-                <TouchableOpacity
-                  key={tab}
-                  onPress={() => {
-                    setActiveTab(tab);
-                    setSelectedItemId(null);
-                  }}
-                  activeOpacity={0.9}
-                  style={styles.floatingTabButton}
-                >
-                  <StyledText
-                    style={[styles.floatingTabText, isActive ? styles.floatingTabTextActive : null]}
-                  >
-                    {tab}
-                  </StyledText>
-                  <View
-                    style={[
-                      styles.floatingTabIndicator,
-                      isActive ? styles.floatingTabIndicatorActive : null,
-                    ]}
-                  />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Floating search + filter bar */}
-          <View style={styles.floatingSearchRow}>
-            <MaterialIcons name="search" size={20} color={CONNECT_BRAND.infoBase} />
-            <TextInput
-              value={searchByTab[activeTab]}
-              onChangeText={(text) => setSearchText(activeTab, text)}
-              placeholder={`Search ${activeTab.toLowerCase()}...`}
-              placeholderTextColor={CONNECT_BRAND.gray400}
-              style={styles.floatingSearchInput}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                if (activeTab === 'Places') {
-                  places.setFilterSheetOpen(true);
-                }
-              }}
-              style={styles.floatingActionIcon}
-            >
-              <MaterialCommunityIcons name="tune-variant" size={20} color={CONNECT_BRAND.gray100} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => onChangeViewMode('list')}
-              style={styles.floatingActionIcon}
-            >
-              <MaterialIcons name="view-list" size={20} color={CONNECT_BRAND.gray100} />
-            </TouchableOpacity>
-          </View>
-
-          {activeTab === 'Places' ? (
-            <ConnectPlacesQuickChips
-              selectedChip={places.quickChip}
-              onSelect={places.setQuickChip}
-            />
-          ) : null}
-        </View>
-
-        {activeTab === 'Places' && selectedPlace ? (
-          <View style={[styles.bottomSheetWrap, { bottom: insets.bottom + spacing.x72 }]}>
-            <ConnectPlaceDetailSheet
-              place={selectedPlace}
-              isFollowing={places.isFollowing(selectedPlace.id)}
-              onToggleFollow={() => places.toggleFollow(selectedPlace.id)}
-            />
-          </View>
-        ) : null}
-
-        {activeTab !== 'Places' && selectedNonPlaceItem ? (
-          <TouchableOpacity
-            style={[styles.floatingCard, { bottom: insets.bottom + spacing.x72 }]}
-            activeOpacity={activeTab === 'Go!' ? 0.88 : 1}
-            disabled={activeTab !== 'Go!'}
-            onPress={() => {
-              if (activeTab !== 'Go!') {
-                return;
-              }
-              trackConnectPortalEventTelemetry(selectedNonPlaceItem.id, 'detail_open', {
-                source: 'connect_map_card',
-              }).catch(() => {});
-              navigation.navigate('ConnectGoEventView', { eventId: selectedNonPlaceItem.id });
-            }}
+            return (
+              <mapbox.PointAnnotation
+                key={item.id}
+                id={item.id}
+                coordinate={item.coordinate}
+                onSelected={() => handleMarkerPress(item)}
+              >
+                {markerContent}
+              </mapbox.PointAnnotation>
+            );
+          })}
+        </mapbox.MapView>
+      ) : (
+        <View style={[styles.mapFallback, { backgroundColor: colors.card }]}>
+          <MaterialIcons name="map" size={28} color={CONNECT_BRAND.infoBase} />
+          <StyledText
+            style={[styles.mapFallbackTitle, { color: dark ? CONNECT_BRAND.gray100 : '#032f3c' }]}
           >
-            <StyledText style={styles.floatingTitle}>{selectedNonPlaceItem.title}</StyledText>
-            <StyledText style={styles.floatingSubtitle}>{selectedNonPlaceItem.subtitle}</StyledText>
-            <StyledText style={styles.floatingAddress}>{selectedNonPlaceItem.address}</StyledText>
-          </TouchableOpacity>
-        ) : null}
+            Map view unavailable
+          </StyledText>
+          <StyledText
+            style={[styles.mapFallbackBody, { color: dark ? Colors.neutral[500] : '#4f6d77' }]}
+          >
+            Rebuild the app to finish linking Mapbox native modules.
+          </StyledText>
+        </View>
+      )}
+
+      <View style={styles.overlayTop}>
+        <LinearGradient
+          colors={
+            dark
+              ? ['rgba(14,19,26,0.92)', 'rgba(14,19,26,0.5)', 'transparent']
+              : ['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.6)', 'transparent']
+          }
+          locations={[0, 0.6, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <ConnectPortalChrome
+          activeTab={activeTab}
+          onTabChange={onChangeTab}
+          userAvatarUri={currentUser?.profileImage}
+          overlay
+          headerActionIconName="view-list"
+          headerActionAccessibilityLabel="Switch to list view"
+          onHeaderActionPress={() => onChangeViewMode('list')}
+        />
       </View>
+
+      {showPlacesChips ? (
+        <View style={[styles.bottomChipRail, { bottom: chipRailBottom }]}>
+          <ConnectPlacesQuickChips
+            selectedChip={places.quickChip}
+            onSelect={places.setQuickChip}
+            variant="bottomOverlay"
+          />
+        </View>
+      ) : null}
+
+      <View pointerEvents="box-none" style={[styles.bottomSearchDock, { bottom: searchRowBottom }]}>
+        <ConnectRetractableSearchBar
+          key={`connect-map-${activeTab}`}
+          searchText={searchByTab[activeTab]}
+          onSearchChange={(text) => setSearchText(activeTab, text)}
+          searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
+          onOpenFilters={
+            activeTab === 'Places' ? () => places.setFilterSheetOpen(true) : onOpenLanding
+          }
+        />
+      </View>
+
+      {floatingCard ? (
+        <View style={[styles.previewRail, { bottom: previewRailBottom }]}>{floatingCard}</View>
+      ) : null}
 
       <ConnectPlacesFilterSheet
         visible={places.filterSheetOpen}
@@ -399,15 +631,11 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
         onApply={places.setFilters}
         onReset={places.resetFilters}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: CONNECT_BRAND.backgroundDark,
-  },
   container: {
     flex: 1,
   },
@@ -436,151 +664,30 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     zIndex: 12,
-    gap: spacing.x8,
   },
-  floatingHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.x16,
-    height: 48,
-  },
-  floatingAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 2,
-    borderColor: CONNECT_BRAND.infoBase,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.4,
-        shadowRadius: 4,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  floatingTitleCenter: {
+  bottomChipRail: {
     position: 'absolute',
     left: 0,
     right: 0,
-    alignItems: 'center',
+    zIndex: 12,
   },
-  floatingTitleText: {
-    ...Typography.header.h3,
-    color: '#FFFFFF',
-    fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  floatingTitleAndroid: {
-    marginLeft: spacing.x13,
-  },
-  floatingTabsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.x24,
-    paddingHorizontal: spacing.x16,
-  },
-  floatingTabButton: {
-    alignItems: 'center',
-    gap: spacing.x5,
-  },
-  floatingTabText: {
-    ...Typography.body.x2M,
-    color: 'rgba(255,255,255,0.65)',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  floatingTabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  floatingTabIndicator: {
-    alignSelf: 'stretch',
-    height: 3,
-    borderRadius: 999,
-    backgroundColor: 'transparent',
-  },
-  floatingTabIndicatorActive: {
-    backgroundColor: CONNECT_BRAND.infoBase,
-  },
-  floatingSearchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: spacing.x16,
-    paddingHorizontal: spacing.x13,
-    height: 48,
-    gap: spacing.x10,
-    backgroundColor: 'rgba(3,47,60,0.88)',
-    borderRadius: borderRadius.large,
-    borderWidth: 1,
-    borderColor: 'rgba(79,109,119,0.5)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  floatingSearchInput: {
-    flex: 1,
-    color: CONNECT_BRAND.gray100,
-    fontSize: 16,
-  },
-  floatingActionIcon: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  marker: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(3,47,60,0.9)',
-    borderWidth: 1,
-    borderColor: CONNECT_BRAND.primaryBase,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markerActive: {
-    backgroundColor: CONNECT_BRAND.infoBase,
-    borderColor: CONNECT_BRAND.infoBase,
-  },
-  bottomSheetWrap: {
+  previewRail: {
     position: 'absolute',
     left: spacing.x16,
     right: spacing.x16,
+    zIndex: 13,
   },
-  floatingCard: {
+  bottomSearchDock: {
     position: 'absolute',
     left: spacing.x16,
     right: spacing.x16,
-    borderRadius: borderRadius.large,
-    padding: spacing.x16,
-    backgroundColor: 'rgba(3,47,60,0.94)',
-    borderWidth: 1,
-    borderColor: 'rgba(79,109,119,0.7)',
-    gap: spacing.x5,
+    zIndex: 14,
   },
-  floatingTitle: {
-    ...Typography.body.x2M,
-    color: CONNECT_BRAND.gray100,
-    fontWeight: '700',
-  },
-  floatingSubtitle: {
-    ...Typography.body.x1,
-    color: CONNECT_BRAND.infoBase,
-  },
-  floatingAddress: {
-    ...Typography.body.x1,
-    color: CONNECT_BRAND.gray400,
+  markerTapTarget: {
+    width: 64,
+    height: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

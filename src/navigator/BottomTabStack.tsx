@@ -4,7 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PropTypes from 'prop-types';
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 
 import {
   BottomTabBar,
@@ -12,7 +12,12 @@ import {
   createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { getFocusedRouteNameFromRoute, useFocusEffect, useTheme } from '@react-navigation/native';
+import {
+  getFocusedRouteNameFromRoute,
+  useFocusEffect,
+  useNavigation,
+  useTheme,
+} from '@react-navigation/native';
 import HomeStack from './HomeStack';
 import ExploreStack from './ExploreStack';
 import ProfileStack from './ProfileStack';
@@ -70,14 +75,33 @@ const getActiveNestedRouteName = (route: any): string | undefined => {
   return getActiveNestedRouteName(childRoute) ?? childRoute.name;
 };
 
-function SlideInOnFocus({ children }: { children: React.ReactNode }) {
+function SlideInOnFocus({
+  children,
+  direction = 'right',
+}: {
+  children: React.ReactNode;
+  direction?: 'left' | 'right';
+}) {
   const translateX = useRef(new Animated.Value(0)).current;
   const hasFocusedOnce = useRef(false);
   const runningAnimation = useRef<Animated.CompositeAnimation | null>(null);
+  const shouldAnimateRef = useRef(false);
+  const navigation = useNavigation();
+  const initialOffset = direction === 'left' ? -SCREEN_WIDTH : SCREEN_WIDTH;
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', () => {
+      if (!navigation.isFocused()) {
+        shouldAnimateRef.current = true;
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS === 'android') {
+        shouldAnimateRef.current = false;
         translateX.setValue(0);
         return () => {
           runningAnimation.current?.stop();
@@ -88,6 +112,7 @@ function SlideInOnFocus({ children }: { children: React.ReactNode }) {
 
       if (!hasFocusedOnce.current) {
         hasFocusedOnce.current = true;
+        shouldAnimateRef.current = false;
         translateX.setValue(0);
         return () => {
           runningAnimation.current?.stop();
@@ -96,8 +121,18 @@ function SlideInOnFocus({ children }: { children: React.ReactNode }) {
         };
       }
 
+      if (!shouldAnimateRef.current) {
+        translateX.setValue(0);
+        return () => {
+          runningAnimation.current?.stop();
+          runningAnimation.current = null;
+          translateX.setValue(0);
+        };
+      }
+
+      shouldAnimateRef.current = false;
       runningAnimation.current?.stop();
-      translateX.setValue(SCREEN_WIDTH);
+      translateX.setValue(initialOffset);
       runningAnimation.current = Animated.timing(translateX, {
         toValue: 0,
         duration: 350,
@@ -113,7 +148,7 @@ function SlideInOnFocus({ children }: { children: React.ReactNode }) {
         runningAnimation.current = null;
         translateX.setValue(0);
       };
-    }, [translateX])
+    }, [initialOffset, translateX])
   );
 
   if (Platform.OS === 'android') {
@@ -125,7 +160,7 @@ function SlideInOnFocus({ children }: { children: React.ReactNode }) {
 
 function HomeTabWrapper() {
   return (
-    <SlideInOnFocus>
+    <SlideInOnFocus direction="left">
       <HomeStack />
     </SlideInOnFocus>
   );
@@ -314,7 +349,7 @@ ChatTabIcon.propTypes = {
 function BottomStack() {
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const tabBarTotalHeight = getHeight(5) + insets.bottom;
+  const tabBarTotalHeight = getHeight(7) + insets.bottom;
   const defaultTabBarStyle = {
     height: tabBarTotalHeight,
     borderTopWidth: 0,
@@ -331,7 +366,6 @@ function BottomStack() {
     paddingBottom: insets.bottom,
     borderTopWidth: 1,
     borderTopColor: 'rgba(230,234,236,0.08)',
-    backgroundColor: '#032f3c',
     zIndex: 20,
     elevation: 20,
     overflow: 'visible' as const,
@@ -360,6 +394,9 @@ function BottomStack() {
     <TabBarAnimationProvider>
       <Tab.Navigator
         tabBar={TabBarWrapper}
+        sceneContainerStyle={
+          Platform.OS === 'android' ? { backgroundColor: 'transparent' } : undefined
+        }
         screenOptions={{
           headerStatusBarHeight: 0,
           headerShown: false,
@@ -463,7 +500,7 @@ function BottomStack() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: brandColors.accentDark,
+                  backgroundColor: brandColors.primaryDark,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -485,7 +522,11 @@ function BottomStack() {
           options={({ route }) => {
             const focusedRouteName = getFocusedRouteNameFromRoute(route) ?? 'ConnectMap';
             const shouldShowTabBar =
-              focusedRouteName === 'ConnectPortal' || focusedRouteName === 'ConnectMap';
+              focusedRouteName === 'ConnectPortal' ||
+              focusedRouteName === 'ConnectMap' ||
+              focusedRouteName === 'ConnectGoLanding' ||
+              focusedRouteName === 'ConnectPlacesHome' ||
+              focusedRouteName === 'ConnectServeHome';
 
             return {
               tabBarLabel: 'Connect',

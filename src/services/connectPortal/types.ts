@@ -15,6 +15,16 @@ export type ConnectPlaceSort = 'nearby' | 'alphabetical' | 'recently_active';
 
 export type ConnectPlacesQuickChip = 'Nearby' | 'Non-Profits' | 'Churches' | 'Mega-Church';
 
+export type ConnectGoSort = 'upcoming' | 'alphabetical' | 'recently_updated';
+
+export type ConnectGoQuickChip = 'Upcoming' | 'Online' | 'In Person' | 'Live';
+
+export type ConnectServeSort = 'alphabetical' | 'role_type' | 'nearest_match';
+
+export type ConnectServeQuickChip = 'Hiring' | 'Part-time' | 'Full-time' | 'Serve';
+
+export type ConnectQuickChip = ConnectPlacesQuickChip | ConnectGoQuickChip | ConnectServeQuickChip;
+
 export type ConnectPlaceFilters = {
   organizationTypeIds: string[];
   churchType: string;
@@ -24,6 +34,19 @@ export type ConnectPlaceFilters = {
   lon?: number;
   radiusMiles: number;
   sort: ConnectPlaceSort;
+};
+
+export type ConnectGoFilters = {
+  sort: ConnectGoSort;
+  eventType: string;
+  category: string;
+  mode: '' | 'online' | 'in_person';
+};
+
+export type ConnectServeFilters = {
+  sort: ConnectServeSort;
+  roleType: string;
+  tag: string;
 };
 
 export type ConnectPlaceRecord = {

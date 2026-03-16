@@ -190,6 +190,7 @@ export type ConnectStackParamsList = {
         initialTab?: ConnectTab;
       }
     | undefined;
+  ConnectGoLanding: undefined;
   ConnectGoEventDash: undefined;
   ConnectGoMyEvents:
     | {
@@ -229,7 +230,6 @@ export type ConnectStackParamsList = {
   ConnectGoCreateStep7Success: {
     draftId: string;
   };
-  ConnectIntro: undefined;
   ConnectPlacesHome: undefined;
   ConnectServeHome: undefined;
   UserProfile: {

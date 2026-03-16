@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import ApiCall from '@/src/services/api';
-import type { ConnectTab } from '@/src/screens/connectportal/data';
+import { CONNECT_PORTAL_LIST_DATA, type ConnectTab } from '@/src/screens/connectportal/data';
 import {
   getConnectPortalPlaceFilterOptions,
   getConnectPortalCacheSnapshot,
@@ -13,11 +13,15 @@ import {
   refreshConnectPortalPublishedEvents,
 } from './index';
 import type {
+  ConnectGoFilters,
+  ConnectGoQuickChip,
   ConnectPlaceFilterOption,
   ConnectPlaceFilters,
   ConnectPlaceRecord,
   ConnectPlacesQuickChip,
   ConnectPortalCacheSnapshot,
+  ConnectServeFilters,
+  ConnectServeQuickChip,
   ConnectViewMode,
 } from './types';
 
@@ -60,6 +64,31 @@ type ConnectPortalContextValue = {
     toggleFollow: (placeId: string) => Promise<void>;
     isFollowing: (placeId: string) => boolean;
   };
+  go: {
+    filters: ConnectGoFilters;
+    quickChip: ConnectGoQuickChip;
+    filterSheetOpen: boolean;
+    sortOptions: ConnectPlaceFilterOption[];
+    eventTypeOptions: ConnectPlaceFilterOption[];
+    categoryOptions: ConnectPlaceFilterOption[];
+    modeOptions: ConnectPlaceFilterOption[];
+    setQuickChip: (chip: ConnectGoQuickChip) => void;
+    setFilterSheetOpen: (value: boolean) => void;
+    setFilters: (updater: Partial<ConnectGoFilters>) => void;
+    resetFilters: () => void;
+  };
+  serve: {
+    filters: ConnectServeFilters;
+    quickChip: ConnectServeQuickChip;
+    filterSheetOpen: boolean;
+    sortOptions: ConnectPlaceFilterOption[];
+    roleTypeOptions: ConnectPlaceFilterOption[];
+    tagOptions: ConnectPlaceFilterOption[];
+    setQuickChip: (chip: ConnectServeQuickChip) => void;
+    setFilterSheetOpen: (value: boolean) => void;
+    setFilters: (updater: Partial<ConnectServeFilters>) => void;
+    resetFilters: () => void;
+  };
 };
 
 const EMPTY_SNAPSHOT: ConnectPortalCacheSnapshot = {
@@ -80,6 +109,56 @@ const DEFAULT_SEARCH: Record<ConnectTab, string> = {
   'Go!': '',
   Serve: '',
 };
+
+const DEFAULT_GO_FILTERS: ConnectGoFilters = {
+  sort: 'upcoming',
+  eventType: '',
+  category: '',
+  mode: '',
+};
+
+const DEFAULT_SERVE_FILTERS: ConnectServeFilters = {
+  sort: 'alphabetical',
+  roleType: '',
+  tag: '',
+};
+
+const GO_SORT_OPTIONS: ConnectPlaceFilterOption[] = [
+  { label: 'Upcoming', value: 'upcoming' },
+  { label: 'Alphabetical', value: 'alphabetical' },
+  { label: 'Recently updated', value: 'recently_updated' },
+];
+
+const GO_MODE_OPTIONS: ConnectPlaceFilterOption[] = [
+  { label: 'Online', value: 'online' },
+  { label: 'In Person', value: 'in_person' },
+];
+
+const SERVE_SORT_OPTIONS: ConnectPlaceFilterOption[] = [
+  { label: 'Alphabetical', value: 'alphabetical' },
+  { label: 'Role type', value: 'role_type' },
+  { label: 'Nearest match', value: 'nearest_match' },
+];
+
+const toTitleCase = (value: string) =>
+  value
+    .toLowerCase()
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(' ');
+
+const uniqueOptions = (values: string[]) =>
+  Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).map((value) => ({
+    label: toTitleCase(value),
+    value,
+  }));
+
+const getServeRoleType = (location: string) =>
+  location
+    .split('•')
+    .map((part) => part.trim())
+    .filter(Boolean)[1] || location;
 
 const ConnectPortalContext = createContext<ConnectPortalContextValue | null>(null);
 
@@ -134,8 +213,14 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
   const [churchTypes, setChurchTypes] = useState<ConnectPlaceFilterOption[]>([]);
   const [sortOptions, setSortOptions] = useState<ConnectPlaceFilterOption[]>([]);
   const [followOverrides, setFollowOverrides] = useState<Record<string, boolean>>({});
+  const [goFilters, setGoFilters] = useState<ConnectGoFilters>(DEFAULT_GO_FILTERS);
+  const [goQuickChip, setGoQuickChip] = useState<ConnectGoQuickChip>('Upcoming');
+  const [goFilterSheetOpen, setGoFilterSheetOpen] = useState(false);
+  const [serveFilters, setServeFilters] = useState<ConnectServeFilters>(DEFAULT_SERVE_FILTERS);
+  const [serveQuickChip, setServeQuickChip] = useState<ConnectServeQuickChip>('Hiring');
+  const [serveFilterSheetOpen, setServeFilterSheetOpen] = useState(false);
 
-  const refresh = async (force = false) => {
+  const refresh = useCallback(async (force = false) => {
     setError(null);
     try {
       if (force) {
@@ -150,9 +235,9 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const refreshPlaces = async () => {
+  const refreshPlaces = useCallback(async () => {
     setPlacesLoading(true);
     setPlacesError(null);
     try {
@@ -171,7 +256,15 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
     } finally {
       setPlacesLoading(false);
     }
-  };
+  }, [placeFilters, searchByTab.Places, viewModes.Places]);
+
+  const updateViewMode = useCallback((tab: ConnectTab, viewMode: ConnectViewMode) => {
+    setViewModes((previous) => ({ ...previous, [tab]: viewMode }));
+  }, []);
+
+  const updateSearchText = useCallback((tab: ConnectTab, text: string) => {
+    setSearchByTab((previous) => ({ ...previous, [tab]: text }));
+  }, []);
 
   useEffect(() => {
     refresh();
@@ -180,7 +273,7 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       setChurchTypes(result.churchTypes);
       setSortOptions(result.sortOptions);
     });
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     const profileLocation = currentUser?.profile?.location;
@@ -208,7 +301,7 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
 
   useEffect(() => {
     refreshPlaces();
-  }, [placeFilters, searchByTab.Places, viewModes.Places]);
+  }, [refreshPlaces]);
 
   const visiblePlaceRecords = useMemo(
     () => applyQuickChip(placeRecords, placesQuickChip),
@@ -221,44 +314,72 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       return;
     }
 
-    if (!selectedPlaceId || !visiblePlaceRecords.some((place) => place.id === selectedPlaceId)) {
-      setSelectedPlaceId(visiblePlaceRecords[0].id);
+    if (selectedPlaceId && !visiblePlaceRecords.some((place) => place.id === selectedPlaceId)) {
+      setSelectedPlaceId(null);
     }
   }, [selectedPlaceId, visiblePlaceRecords]);
 
-  const isFollowing = (placeId: string) => {
-    if (Object.prototype.hasOwnProperty.call(followOverrides, placeId)) {
-      return followOverrides[placeId];
-    }
-
-    return Boolean(currentUser?.following?.includes(placeId));
-  };
-
-  const toggleFollow = async (placeId: string) => {
-    if (!token) {
-      return;
-    }
-
-    const nextValue = !isFollowing(placeId);
-    setFollowOverrides((previous) => ({ ...previous, [placeId]: nextValue }));
-
-    try {
-      const result = await ApiCall({
-        route: `${nextValue ? 'user/subscribe' : 'user/unsubscribe'}/${placeId}`,
-        verb: 'patch',
-        token,
-        suppressErrorLog: true,
-      });
-
-      if (result.status >= 400) {
-        throw new Error('Unable to update follow status');
+  const isFollowing = useCallback(
+    (placeId: string) => {
+      if (Object.prototype.hasOwnProperty.call(followOverrides, placeId)) {
+        return followOverrides[placeId];
       }
 
-      dispatch(getProfile.Request({ token }));
-    } catch {
-      setFollowOverrides((previous) => ({ ...previous, [placeId]: !nextValue }));
-    }
-  };
+      return Boolean(currentUser?.following?.includes(placeId));
+    },
+    [currentUser?.following, followOverrides]
+  );
+
+  const toggleFollow = useCallback(
+    async (placeId: string) => {
+      if (!token) {
+        return;
+      }
+
+      const nextValue = !isFollowing(placeId);
+      setFollowOverrides((previous) => ({ ...previous, [placeId]: nextValue }));
+
+      try {
+        const result = await ApiCall({
+          route: `${nextValue ? 'user/subscribe' : 'user/unsubscribe'}/${placeId}`,
+          verb: 'patch',
+          token,
+          suppressErrorLog: true,
+        });
+
+        if (result.status >= 400) {
+          throw new Error('Unable to update follow status');
+        }
+
+        dispatch(getProfile.Request({ token }));
+      } catch {
+        setFollowOverrides((previous) => ({ ...previous, [placeId]: !nextValue }));
+      }
+    },
+    [dispatch, isFollowing, token]
+  );
+
+  const goEventTypeOptions = useMemo(
+    () => uniqueOptions(snapshot.publicPublished.map((record) => record.eventType)),
+    [snapshot.publicPublished]
+  );
+
+  const goCategoryOptions = useMemo(
+    () => uniqueOptions(snapshot.publicPublished.map((record) => record.category)),
+    [snapshot.publicPublished]
+  );
+
+  const serveRoleTypeOptions = useMemo(
+    () =>
+      uniqueOptions(CONNECT_PORTAL_LIST_DATA.Serve.map((item) => getServeRoleType(item.location))),
+    []
+  );
+
+  const serveTagOptions = useMemo(
+    () =>
+      uniqueOptions(CONNECT_PORTAL_LIST_DATA.Serve.flatMap((item) => item.tags.map((tag) => tag))),
+    []
+  );
 
   const value = useMemo(
     () => ({
@@ -269,13 +390,9 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       activeTab,
       setActiveTab,
       viewModes,
-      setViewMode: (tab: ConnectTab, viewMode: ConnectViewMode) => {
-        setViewModes((previous) => ({ ...previous, [tab]: viewMode }));
-      },
+      setViewMode: updateViewMode,
       searchByTab,
-      setSearchText: (tab: ConnectTab, text: string) => {
-        setSearchByTab((previous) => ({ ...previous, [tab]: text }));
-      },
+      setSearchText: updateSearchText,
       places: {
         records: placeRecords,
         visibleRecords: visiblePlaceRecords,
@@ -308,6 +425,41 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
         toggleFollow,
         isFollowing,
       },
+      go: {
+        filters: goFilters,
+        quickChip: goQuickChip,
+        filterSheetOpen: goFilterSheetOpen,
+        sortOptions: GO_SORT_OPTIONS,
+        eventTypeOptions: goEventTypeOptions,
+        categoryOptions: goCategoryOptions,
+        modeOptions: GO_MODE_OPTIONS,
+        setQuickChip: setGoQuickChip,
+        setFilterSheetOpen: setGoFilterSheetOpen,
+        setFilters: (updater: Partial<ConnectGoFilters>) => {
+          setGoFilters((previous) => ({ ...previous, ...updater }));
+        },
+        resetFilters: () => {
+          setGoFilters(DEFAULT_GO_FILTERS);
+          setGoQuickChip('Upcoming');
+        },
+      },
+      serve: {
+        filters: serveFilters,
+        quickChip: serveQuickChip,
+        filterSheetOpen: serveFilterSheetOpen,
+        sortOptions: SERVE_SORT_OPTIONS,
+        roleTypeOptions: serveRoleTypeOptions,
+        tagOptions: serveTagOptions,
+        setQuickChip: setServeQuickChip,
+        setFilterSheetOpen: setServeFilterSheetOpen,
+        setFilters: (updater: Partial<ConnectServeFilters>) => {
+          setServeFilters((previous) => ({ ...previous, ...updater }));
+        },
+        resetFilters: () => {
+          setServeFilters(DEFAULT_SERVE_FILTERS);
+          setServeQuickChip('Hiring');
+        },
+      },
     }),
     [
       snapshot,
@@ -327,11 +479,25 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       organizationTypes,
       churchTypes,
       sortOptions,
+      goFilters,
+      goQuickChip,
+      goFilterSheetOpen,
+      goEventTypeOptions,
+      goCategoryOptions,
+      serveFilters,
+      serveQuickChip,
+      serveFilterSheetOpen,
+      serveRoleTypeOptions,
+      serveTagOptions,
       currentUser?.profile?.location?.address,
       currentUser?.profile?.location?.coordinates?.lat,
       currentUser?.profile?.location?.coordinates?.lon,
-      currentUser?.following,
-      token,
+      isFollowing,
+      refresh,
+      refreshPlaces,
+      toggleFollow,
+      updateSearchText,
+      updateViewMode,
     ]
   );
 

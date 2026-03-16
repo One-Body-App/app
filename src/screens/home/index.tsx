@@ -2893,6 +2893,8 @@ function Home({ navigation, route }: Props) {
   }, [feedDataWithSuggestions.length, feedOptions.type, isEndOfList, isLoading, isLoadingMore]);
 
   const tabBarAnimation = useTabBarAnimation();
+  const tabBarAnimationRef = useRef(tabBarAnimation);
+  tabBarAnimationRef.current = tabBarAnimation;
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerVisibility = useRef(new Animated.Value(1)).current;
   const footerVisibility = useRef(new Animated.Value(1)).current;
@@ -3306,7 +3308,7 @@ function Home({ navigation, route }: Props) {
       const parent = navigation.getParent?.();
       if (!parent) return undefined;
 
-      tabBarAnimation?.setTabBarTranslateY(footerTranslateY);
+      tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY);
 
       const shouldShowTabBar = feedOptions.type !== FeedTypes.Pray;
       const baseTabStyle = {
@@ -3330,7 +3332,7 @@ function Home({ navigation, route }: Props) {
       });
 
       return () => {
-        tabBarAnimation?.resetTabBar();
+        tabBarAnimationRef.current?.resetTabBar();
         parent.setOptions({
           tabBarStyle: undefined,
         });
@@ -3343,7 +3345,6 @@ function Home({ navigation, route }: Props) {
       feedOptions.type,
       insets.bottom,
       navigation,
-      tabBarAnimation,
     ])
   );
 

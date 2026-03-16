@@ -1166,6 +1166,9 @@ export const formatConnectPortalDate = formatDateLabel;
 export const formatConnectPortalDateTime = formatDateTimeLabel;
 
 export type {
+  ConnectGoFilters,
+  ConnectGoQuickChip,
+  ConnectGoSort,
   ConnectPlaceFilterOption,
   ConnectPlaceFilters,
   ConnectPlaceRecord,
@@ -1185,6 +1188,10 @@ export type {
   ConnectPortalResumeResolution,
   ConnectPortalTicketType,
   ConnectPortalTelemetryActivityItem,
+  ConnectQuickChip,
+  ConnectServeFilters,
+  ConnectServeQuickChip,
+  ConnectServeSort,
   ConnectViewMode,
   TicketTier,
 } from './types';

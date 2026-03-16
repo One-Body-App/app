@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { Platform } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { Colors } from '../styles';
 import { ConnectStackParamsList } from './types';
@@ -7,6 +8,7 @@ import ListViewScreen from '../screens/connectportal/listview';
 import MapViewScreen from '../screens/connectportal/mapview';
 import UserProfile from '../screens/main/userProfile';
 import ConnectPortalPlaceholderScreen from '../screens/connectportal/placeholder';
+import GoLandingScreen from '../screens/connectportal/go/landing';
 import EventDashboardScreen from '../screens/connectportal/go/eventdash';
 import MyEventsScreen from '../screens/connectportal/go/myevents';
 import EventViewScreen from '../screens/connectportal/go/eventview';
@@ -52,7 +54,17 @@ function ConnectStack() {
           component={MapViewScreen}
           options={{
             headerShown: false,
+            statusBarStyle: dark ? 'light' : 'dark',
+            statusBarColor: Platform.OS === 'android' ? 'transparent' : undefined,
+            statusBarTranslucent: true,
+            contentStyle:
+              Platform.OS === 'android' ? { backgroundColor: 'transparent' } : undefined,
           }}
+        />
+        <Stack.Screen
+          name="ConnectGoLanding"
+          component={GoLandingScreen}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="ConnectGoEventDash"
@@ -112,11 +124,6 @@ function ConnectStack() {
         <Stack.Screen
           name="ConnectGoCreateStep7Success"
           component={EventSuccessScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="ConnectIntro"
-          component={ConnectPortalPlaceholderScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

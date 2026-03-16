@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   ActivityIndicator,
   FlatList,
   Image,
@@ -7,10 +8,12 @@ import {
   type ListRenderItemInfo,
   RefreshControl,
   ScrollView,
+  Share,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
+  type ViewToken,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -23,6 +26,8 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Notification } from 'iconsax-react-native';
 
+import { differenceInHours, format, parseISO } from 'date-fns';
+import Video from 'react-native-video';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { getUserProfile } from '@/src/redux/actions/UserAction';
 import { ApiCall } from '@/src/services/api';
@@ -56,6 +61,9 @@ import {
   User,
   WatchPost,
 } from '@/utils/types';
+import { refreshConnectPortalPublishedEvents } from '@/src/services/connectPortal';
+import getDeviceLocation from '@/src/services/deviceLocation';
+import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal/types';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'Explore'>,
@@ -166,6 +174,10 @@ interface TrendingNowItem {
   isLive: boolean;
   metaIcon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
   metaText: string;
+  aspectRatio: '16:9' | '4:3' | '1:1';
+  playBackId?: string;
+  mediaUrl?: string;
+  watchPost: WatchPost;
 }
 
 interface NewCreatorItem {
@@ -173,6 +185,8 @@ interface NewCreatorItem {
   avatarUri: string;
   name: string;
   isFollowing: boolean;
+  badge?: string;
+  badgeIcon?: string;
 }
 
 interface ServeOpportunityItem {
@@ -193,12 +207,19 @@ interface GoEventItem {
 
 interface PopularTopicItem {
   id: string;
-  backgroundImageUri: string;
   title: string;
+}
+
+interface CommunityPrayerItem {
+  post: PrayerPost;
+  reactionCount: number;
 }
 
 const SEARCH_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 350;
+const EXPLORE_HEADER_COLOR = '#032f3c';
+const EXPLORE_HEADER_FONT_FAMILY = 'Rubik-Bold';
+const EXPLORE_SUBHEADER_FONT_FAMILY = 'OpenSans-Regular';
 
 const isKnownSubtype = (value?: string): value is SearchPostSubtype =>
   value === 'social' || value === 'rss' || value === 'prayer' || value === 'watch';
@@ -311,6 +332,8 @@ function Explore({ navigation }: Props) {
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(dark), [dark]);
+  const headerTextColor = dark ? colors.text : EXPLORE_HEADER_COLOR;
+  const subheaderTextColor = dark ? Colors.neutral[300] : EXPLORE_HEADER_COLOR;
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData as User | null);
@@ -318,85 +341,28 @@ function Explore({ navigation }: Props) {
   const [activeFilter, setActiveFilter] = useState<SearchFeedFilter>(SearchFeedFilter.top);
   const [searchText, setSearchText] = useState('');
 
-  const [trendingNowItems] = useState<TrendingNowItem[]>([
-    {
-      id: 'trending-1',
-      backgroundImageUri: 'https://images.unsplash.com/photo-1543616991-75a2c125ff5b',
-      title: 'Global Worship Night 2024',
-      isLive: true,
-      metaIcon: 'eye-outline',
-      metaText: '12.4K watching',
-    },
-    {
-      id: 'trending-2',
-      backgroundImageUri: 'https://images.unsplash.com/photo-1556761175-5973dc0f32d7',
-      title: 'Faith in Business Summit',
-      isLive: false,
-      metaIcon: 'clock-outline',
-      metaText: '2 days ago',
-    },
-  ]);
-  const [newCreatorsItems, setNewCreatorsItems] = useState<NewCreatorItem[]>([
-    {
-      id: 'creator-1',
-      avatarUri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
-      name: 'Mark J.',
-      isFollowing: false,
-    },
-    {
-      id: 'creator-2',
-      avatarUri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-      name: 'Naomi A.',
-      isFollowing: true,
-    },
-    {
-      id: 'creator-3',
-      avatarUri: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-      name: 'Daniel P.',
-      isFollowing: false,
-    },
-  ]);
-  const [serveOpportunityItems] = useState<ServeOpportunityItem[]>([
-    {
-      id: 'serve-1',
-      imageUri: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c',
-      title: 'Local Food Drive Assistance',
-      organization: 'Central Community Hub',
-      distance: '1.2 miles away',
-    },
-  ]);
-  const [goEventItems] = useState<GoEventItem[]>([
-    {
-      id: 'go-1',
-      backgroundImageUri: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b',
-      dateString: 'COMING JULY 12-15',
-      title: 'Unleash Leadership 2024',
-      buttonText: 'Register Now',
-    },
-  ]);
-  const [popularTopicItems] = useState<PopularTopicItem[]>([
-    {
-      id: 'topic-1',
-      backgroundImageUri: 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6',
-      title: 'Theology & Life',
-    },
-    {
-      id: 'topic-2',
-      backgroundImageUri: 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0',
-      title: 'Tech & Ethics',
-    },
-    {
-      id: 'topic-3',
-      backgroundImageUri: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18',
-      title: 'Prayer Habits',
-    },
-    {
-      id: 'topic-4',
-      backgroundImageUri: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c',
-      title: 'Church Leadership',
-    },
+  const [trendingVideos, setTrendingVideos] = useState<WatchPost[]>([]);
+  const [isTrendingLoading, setIsTrendingLoading] = useState(true);
+  const [newCreatorsItems, setNewCreatorsItems] = useState<NewCreatorItem[]>([]);
+  const [isVoicesLoading, setIsVoicesLoading] = useState(true);
+  const [communityPrayers, setCommunityPrayers] = useState<CommunityPrayerItem[]>([]);
+  const [isPrayerLoading, setIsPrayerLoading] = useState(true);
+  const [serveOpportunityItems, setServeOpportunityItems] = useState<ServeOpportunityItem[]>([]);
+  const [isServeLoading, setIsServeLoading] = useState(true);
+  const [goEvents, setGoEvents] = useState<ConnectPortalPublishedEvent[]>([]);
+  const [isEventsLoading, setIsEventsLoading] = useState(true);
+  const [popularTopicItems, setPopularTopicItems] = useState<PopularTopicItem[]>([
+    { id: 'topic-1', title: 'Theology & Life' },
+    { id: 'topic-2', title: 'Tech & Ethics' },
+    { id: 'topic-3', title: 'Prayer Habits' },
+    { id: 'topic-4', title: 'Church Leadership' },
   ]);
   const [isRefreshingBrowse, setIsRefreshingBrowse] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
+    null
+  );
+  const [visibleVideoId, setVisibleVideoId] = useState<string | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const [searchResults, setSearchResults] = useState<ExploreSearchResult[]>([]);
   const [searchPage, setSearchPage] = useState(1);
@@ -750,17 +716,275 @@ function Explore({ navigation }: Props) {
     };
   }, [isSearchMode, runSearch, trimmedSearchText]);
 
+  const fetchTrending = useCallback(async () => {
+    setIsTrendingLoading(true);
+    try {
+      const res = await ApiCall({
+        route: 'user/search',
+        token,
+        verb: 'post',
+        params: { text: '', type: 'posts', limit: 40, skip: 0 },
+      });
+      if (res?.status === 200 && Array.isArray(res.response)) {
+        const watchPosts = res.response
+          .filter(
+            (item: any) => item.playBackId || item.sourceIndex?.toLowerCase().includes('watch')
+          )
+          .filter((item: any) => {
+            if (item.aspect_ratio === '9:16') return false;
+            const h = Number(item.videoHeight ?? 0);
+            const w = Number(item.videoWidth ?? 1);
+            return !(h > w * 1.4);
+          })
+          .sort((a: any, b: any) => (b.reactions?.length ?? 0) - (a.reactions?.length ?? 0))
+          .slice(0, 20)
+          .map(
+            (raw: any) =>
+              ({
+                ...raw,
+                id: raw.id ?? raw._id ?? raw.postId,
+                postId: String(raw.postId ?? raw.id ?? raw._id ?? ''),
+                playBackId: raw.playBackId,
+                content: raw.content ?? raw.body ?? '',
+                title: resolveTitle(raw.title),
+                reactions: Array.isArray(raw.reactions) ? raw.reactions : [],
+                comments: Array.isArray(raw.comments) ? raw.comments : [],
+                userData: {
+                  _id: String(raw.userData?._id ?? ''),
+                  name: raw.userData?.name ?? 'Unknown',
+                  username: raw.userData?.username ?? 'unknown',
+                  profileImage: raw.userData?.profileImage ?? NO_PROFILE_IMAGE,
+                  accountType: raw.userData?.accountType ?? AccountType.individual,
+                },
+                created: toDate(raw.created),
+                updated: toDate(raw.updated),
+              }) as WatchPost
+          );
+        setTrendingVideos(watchPosts);
+      }
+    } catch {
+      // Network failure — section stays empty
+    }
+    setIsTrendingLoading(false);
+  }, [token]);
+
+  const fetchNewVoices = useCallback(async () => {
+    setIsVoicesLoading(true);
+    try {
+      const res = await ApiCall({
+        route: 'user/get-users-to-subscribe/1',
+        token,
+        verb: 'get',
+        params: { itemsPerPage: 12 },
+      });
+      let users: any[] = [];
+      const resData = res?.response?.data ?? res?.response;
+      if (res?.status === 200 && Array.isArray(resData)) {
+        users = resData;
+      } else {
+        const fallbackRes = await ApiCall({
+          route: 'user/search',
+          token,
+          verb: 'post',
+          params: { text: '', type: 'users', limit: 30, skip: 0 },
+        });
+        if (fallbackRes?.status === 200 && Array.isArray(fallbackRes.response)) {
+          const ninetyDaysAgo = Date.now() - 90 * 24 * 3600 * 1000;
+          users = fallbackRes.response
+            .filter(
+              (u: any) =>
+                u.isInfluencer === true &&
+                (u.followerCount ?? u.following?.length ?? 0) >= 100 &&
+                new Date(u.influencerProfile?.createdAt ?? u.created ?? 0).getTime() >=
+                  ninetyDaysAgo
+            )
+            .slice(0, 12);
+        }
+      }
+      setNewCreatorsItems(
+        users.map((u: any) => ({
+          id: u._id ?? u.id ?? String(Math.random()),
+          avatarUri: u.profileImage ?? u.profile?.profileImage ?? NO_PROFILE_IMAGE,
+          name: u.name ?? u.username ?? 'Unknown',
+          isFollowing: false,
+          badge: u.badgesData?.[0]?.title,
+          badgeIcon: u.badgesData?.[0]?.icon,
+        }))
+      );
+    } catch {
+      // Network failure — section stays empty
+    }
+    setIsVoicesLoading(false);
+  }, [token]);
+
+  const fetchCommunityPrayer = useCallback(async () => {
+    setIsPrayerLoading(true);
+    try {
+      const res = await ApiCall({
+        route: 'prayer/',
+        token,
+        verb: 'get',
+        params: { page: 1, itemsPerPage: 10 },
+      });
+      if (res?.status === 200 && Array.isArray(res.response)) {
+        const filtered = res.response
+          .filter(
+            (p: any) =>
+              p.category === PrayerWallCategory.Exhortation ||
+              p.category === PrayerWallCategory.Testimony
+          )
+          .sort((a: any, b: any) => (b.reactions?.length ?? 0) - (a.reactions?.length ?? 0))
+          .slice(0, 3)
+          .map((raw: any) => ({
+            post: {
+              id: raw.id ?? raw._id ?? raw.postId,
+              postId: String(raw.postId ?? raw.id ?? raw._id ?? ''),
+              content: raw.content ?? raw.body ?? '',
+              date: String(raw.created ?? new Date().toISOString()),
+              private: Boolean(raw.private),
+              category: normalizePrayerCategory(raw.category),
+              userData: {
+                _id: String(raw.userData?._id ?? ''),
+                name: raw.userData?.name ?? 'Unknown',
+                username: raw.userData?.username ?? 'unknown',
+                accountType: raw.userData?.accountType ?? AccountType.individual,
+                profileImage: raw.userData?.profileImage ?? NO_PROFILE_IMAGE,
+              },
+              answered: Boolean(raw.answered),
+              images: resolveImageList(raw),
+              comments: Array.isArray(raw.comments) ? raw.comments : [],
+              commentNumber: Number(raw.commentNumber ?? 0),
+              repostCount: Number(raw.repostCount ?? 0),
+              reactions: Array.isArray(raw.reactions) ? raw.reactions : [],
+              created: toDate(raw.created),
+              updated: toDate(raw.updated),
+            } as PrayerPost,
+            reactionCount: raw.reactions?.length ?? 0,
+          }));
+        setCommunityPrayers(filtered);
+      }
+    } catch {
+      // Network failure — section stays empty
+    }
+    setIsPrayerLoading(false);
+  }, [token]);
+
+  const fetchServeOpportunities = useCallback(
+    async (_location: { latitude: number; longitude: number } | null) => {
+      setIsServeLoading(true);
+      try {
+        const res = await ApiCall({
+          route: 'user/search',
+          token,
+          verb: 'post',
+          params: { text: 'serve', type: 'posts', limit: 10, skip: 0 },
+        });
+        let items: any[] = [];
+        if (res?.status === 200 && Array.isArray(res.response)) {
+          items = res.response.slice(0, 5);
+        }
+        setServeOpportunityItems(
+          items.map((item: any, idx: number) => ({
+            id: item._id ?? item.id ?? `serve-${idx}`,
+            imageUri: resolveImageUrl(item) || NO_PROFILE_IMAGE,
+            title: resolveTitle(item.title) || item.content?.slice(0, 50) || 'Serve Opportunity',
+            organization: item.userData?.name ?? item.organization ?? 'Community',
+            distance: item.distance ? `${item.distance} miles` : 'Nearby',
+          }))
+        );
+      } catch {
+        // Network failure — section stays empty
+      }
+      setIsServeLoading(false);
+    },
+    [token]
+  );
+
+  const fetchGoEvents = useCallback(async () => {
+    setIsEventsLoading(true);
+    try {
+      const cache = await refreshConnectPortalPublishedEvents();
+      const eventList = cache?.publicPublished ?? cache?.organizerPublished ?? [];
+      const allEvents = Array.isArray(eventList) ? eventList : [];
+      const today = new Date();
+      const upcoming = allEvents
+        .filter((e: any) => e.status === 'published' && new Date(e.startDate) >= today)
+        .sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+        .slice(0, 7);
+      setGoEvents(upcoming as ConnectPortalPublishedEvent[]);
+    } catch {
+      // Network failure — section stays empty
+    }
+    setIsEventsLoading(false);
+  }, []);
+
+  const fetchTrendingTopics = useCallback(async () => {
+    try {
+      const res = await ApiCall({ route: 'tags/interest', token, verb: 'get' });
+      const tags = Array.isArray(res?.response) ? res.response : res?.response?.data;
+      if (res?.status === 200 && Array.isArray(tags) && tags.length > 0) {
+        setPopularTopicItems(
+          tags.map((t: any, idx: number) => ({
+            id: t._id ?? t.id ?? `topic-${idx}`,
+            title: t.title ?? t.name ?? 'Topic',
+          }))
+        );
+      }
+    } catch {
+      // Network failure — section stays empty
+    }
+  }, [token]);
+
+  const fetchAllSections = useCallback(async () => {
+    setIsRefreshingBrowse(true);
+    const location = await getDeviceLocation().catch(() => null);
+    setUserCoords(location);
+    await Promise.allSettled([
+      fetchTrending(),
+      fetchNewVoices(),
+      fetchCommunityPrayer(),
+      fetchServeOpportunities(location),
+      fetchGoEvents(),
+      fetchTrendingTopics(),
+    ]);
+    setIsRefreshingBrowse(false);
+  }, [
+    fetchTrending,
+    fetchNewVoices,
+    fetchCommunityPrayer,
+    fetchServeOpportunities,
+    fetchGoEvents,
+    fetchTrendingTopics,
+  ]);
+
+  useEffect(() => {
+    fetchAllSections();
+  }, [fetchAllSections]);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [pulseAnim]);
+
   const handleRefresh = useCallback(() => {
     if (isSearchMode) {
       runSearch(trimmedSearchText, 1, true);
       return;
     }
-
-    setIsRefreshingBrowse(true);
-    setTimeout(() => {
-      setIsRefreshingBrowse(false);
-    }, 350);
-  }, [isSearchMode, runSearch, trimmedSearchText]);
+    fetchAllSections();
+  }, [isSearchMode, runSearch, trimmedSearchText, fetchAllSections]);
 
   const handleEndReached = useCallback(() => {
     if (!isSearchMode || isSearchLoading || isSearchLoadingMore || !searchHasMore) {
@@ -993,6 +1217,101 @@ function Explore({ navigation }: Props) {
     });
   }, [activeFilter, searchResults]);
 
+  const getMuxThumbnail = (playBackId?: string, mediaUrl?: string) => {
+    if (playBackId) return `https://image.mux.com/${playBackId}/thumbnail.png?time=3`;
+    return mediaUrl || NO_PROFILE_IMAGE;
+  };
+
+  const getAspectRatio = (item: WatchPost): number => {
+    const h = Number((item as any).videoHeight ?? 0);
+    const w = Number((item as any).videoWidth ?? 1);
+    if (w <= 0) return 16 / 9;
+    const ratio = w / h;
+    if (ratio >= 1.5) return 16 / 9;
+    if (ratio >= 1.1) return 4 / 3;
+    return 1;
+  };
+
+  const renderMasonryColumns = () => {
+    const leftCol: WatchPost[] = [];
+    const rightCol: WatchPost[] = [];
+    let leftHeight = 0;
+    let rightHeight = 0;
+
+    trendingVideos.forEach((item) => {
+      const ar = getAspectRatio(item);
+      const cardHeight = 1 / ar;
+      if (leftHeight <= rightHeight) {
+        leftCol.push(item);
+        leftHeight += cardHeight;
+      } else {
+        rightCol.push(item);
+        rightHeight += cardHeight;
+      }
+    });
+
+    const renderCol = (col: WatchPost[]) =>
+      col.map((item) => {
+        const ar = getAspectRatio(item);
+        const itemId = String(item.postId ?? item.id ?? '');
+        const isVisible = visibleVideoId === itemId;
+        const thumbnail = getMuxThumbnail(item.playBackId, item.mediaUrl);
+        return (
+          <TouchableOpacity
+            key={itemId}
+            activeOpacity={0.88}
+            onPress={() => handleOpenWatchPost(item)}
+            style={styles.masonryCard}
+          >
+            <View style={[styles.masonryImageWrap, { aspectRatio: ar }]}>
+              {isVisible && item.playBackId ? (
+                <Video
+                  source={{ uri: `https://stream.mux.com/${item.playBackId}.m3u8` }}
+                  style={styles.masonryVideo}
+                  resizeMode="cover"
+                  muted
+                  repeat
+                  paused={!isVisible}
+                />
+              ) : (
+                <FastImage
+                  source={{ uri: thumbnail }}
+                  style={styles.masonryVideo}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              )}
+            </View>
+            <StyledText
+              numberOfLines={2}
+              style={[styles.trendingTitle, { color: colors.text, fontSize: 14 }]}
+            >
+              {item.title || item.content || 'Watch'}
+            </StyledText>
+            <View style={styles.trendingMetaRow}>
+              <MaterialCommunityIcons
+                name="heart-outline"
+                size={14}
+                color={Colors.neutral[300]}
+                style={styles.trendingMetaIcon}
+              />
+              <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
+                {item.reactions?.length ?? 0}
+              </StyledText>
+            </View>
+          </TouchableOpacity>
+        );
+      });
+
+    return (
+      <View style={styles.masonryContainer}>
+        <View style={styles.masonryColumn}>{renderCol(leftCol)}</View>
+        <View style={styles.masonryColumn}>{renderCol(rightCol)}</View>
+      </View>
+    );
+  };
+
+  const featuredVoice = newCreatorsItems.length > 0 ? newCreatorsItems[0] : null;
+
   const browseContent = (
     <ScrollView
       style={{ flex: 1 }}
@@ -1006,239 +1325,395 @@ function Explore({ navigation }: Props) {
         />
       }
     >
+      {/* Featured Voice Banner */}
+      {featuredVoice ? (
+        <View style={styles.featuredBanner}>
+          <View style={styles.featuredGradient}>
+            <FastImage
+              source={{ uri: featuredVoice.avatarUri || NO_PROFILE_IMAGE }}
+              style={styles.featuredAvatar}
+              resizeMode={FastImage.resizeMode.cover}
+            />
+            <View style={styles.featuredTextWrap}>
+              <StyledText style={styles.featuredLabel}>FEATURED VOICE</StyledText>
+              <StyledText style={styles.featuredName}>{featuredVoice.name}</StyledText>
+              {featuredVoice.badge ? (
+                <StyledText style={styles.featuredBadge}>{featuredVoice.badge}</StyledText>
+              ) : null}
+            </View>
+            <TouchableOpacity
+              style={styles.featuredFollowBtn}
+              onPress={() => {
+                setNewCreatorsItems((prev) =>
+                  prev.map((item) =>
+                    item.id === featuredVoice.id
+                      ? { ...item, isFollowing: !item.isFollowing }
+                      : item
+                  )
+                );
+              }}
+            >
+              <StyledText style={styles.featuredFollowText}>
+                {featuredVoice.isFollowing ? 'Following' : 'Follow'}
+              </StyledText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Section A: Trending */}
       <View style={styles.sectionBlock}>
         <View style={styles.sectionHeaderRow}>
-          <StyledText style={[styles.sectionTitle, { color: colors.text }]}>
-            Trending Now
+          <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
+            Trending
           </StyledText>
-          <TouchableOpacity>
-            <StyledText style={styles.sectionActionText}>View All</StyledText>
+          <TouchableOpacity
+            onPress={() => {
+              if (trendingVideos.length > 0) handleOpenWatchPost(trendingVideos[0]);
+            }}
+          >
+            <StyledText style={styles.sectionActionText}>See All</StyledText>
           </TouchableOpacity>
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontalContent}
-        >
-          {trendingNowItems.length > 0 ? (
-            trendingNowItems.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.trendingCard}>
-                <ImageBackground
-                  source={{ uri: item.backgroundImageUri }}
-                  style={styles.trendingImage}
-                  imageStyle={{ borderRadius: 12 }}
-                >
-                  {item.isLive ? (
-                    <View style={styles.liveBadge}>
-                      <StyledText style={styles.liveBadgeText}>LIVE</StyledText>
-                    </View>
-                  ) : null}
-                </ImageBackground>
-                <StyledText
-                  style={[styles.trendingTitle, { color: colors.text }]}
-                  numberOfLines={2}
-                >
-                  {item.title}
-                </StyledText>
-                <View style={styles.trendingMetaRow}>
-                  <MaterialCommunityIcons
-                    name={item.metaIcon}
-                    size={16}
-                    color={Colors.neutral[300]}
-                    style={styles.trendingMetaIcon}
-                  />
-                  <StyledText style={{ color: Colors.neutral[300] }}>{item.metaText}</StyledText>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <ActivityIndicator
-              color={Colors.primarySapphire.brand}
-              style={styles.sectionInlineSpinner}
-            />
-          )}
-        </ScrollView>
+        {isTrendingLoading && (
+          <ActivityIndicator
+            color={Colors.primarySapphire.brand}
+            style={styles.sectionInlineSpinner}
+          />
+        )}
+        {!isTrendingLoading && trendingVideos.length > 0 && (
+          <View style={{ paddingHorizontal: spacing.x16 }}>{renderMasonryColumns()}</View>
+        )}
+        {!isTrendingLoading && trendingVideos.length === 0 && (
+          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+            No trending content right now
+          </StyledText>
+        )}
       </View>
 
+      {/* Section B: New Voices */}
       <View style={[styles.sectionBlock, styles.creatorsWrapper]}>
         <View style={styles.sectionHeaderColumn}>
-          <StyledText style={[styles.sectionTitle, { color: colors.text }]}>
-            New Creators
+          <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
+            New Voices
           </StyledText>
-          <StyledText style={{ color: Colors.neutral[300] }}>
-            People you might find inspiring
+          <StyledText style={[styles.sectionSubheader, { color: subheaderTextColor }]}>
+            Voices rising in the community
           </StyledText>
         </View>
 
-        {newCreatorsItems.length > 0 ? (
+        {isVoicesLoading && (
+          <ActivityIndicator
+            color={Colors.primarySapphire.brand}
+            style={styles.sectionInlineSpinner}
+          />
+        )}
+        {!isVoicesLoading && newCreatorsItems.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalContent}
+            snapToInterval={148}
+            decelerationRate="fast"
+          >
+            {newCreatorsItems.map((creator) => (
+              <TouchableOpacity
+                key={creator.id}
+                style={[
+                  styles.creatorCard,
+                  { borderColor: colors.border, backgroundColor: colors.card },
+                ]}
+                activeOpacity={0.9}
+              >
+                <View style={styles.creatorAvatarFrame}>
+                  <FastImage
+                    source={{ uri: creator.avatarUri || NO_PROFILE_IMAGE }}
+                    style={styles.creatorAvatar}
+                    resizeMode={FastImage.resizeMode.contain}
+                  />
+                  {creator.badge ? (
+                    <View style={styles.badgeChip}>
+                      <StyledText style={styles.badgeChipText}>{creator.badge}</StyledText>
+                    </View>
+                  ) : null}
+                </View>
+                <StyledText numberOfLines={1} style={[styles.creatorName, { color: colors.text }]}>
+                  {creator.name}
+                </StyledText>
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => {
+                    setNewCreatorsItems((previous) =>
+                      previous.map((item) =>
+                        item.id === creator.id ? { ...item, isFollowing: !item.isFollowing } : item
+                      )
+                    );
+                  }}
+                  style={[
+                    styles.creatorActionButton,
+                    creator.isFollowing && styles.creatorActionButtonConnected,
+                  ]}
+                >
+                  <StyledText
+                    style={[
+                      styles.creatorActionButtonText,
+                      creator.isFollowing && { color: Colors.primarySapphire.brand },
+                    ]}
+                  >
+                    {creator.isFollowing ? 'Following' : 'Follow'}
+                  </StyledText>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+        {!isVoicesLoading && newCreatorsItems.length === 0 && (
+          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+            No new voices yet
+          </StyledText>
+        )}
+      </View>
+
+      {/* Section C: Community Prayer (NEW) */}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <MaterialCommunityIcons
+              name="hands-pray"
+              size={22}
+              color={dark ? Colors.neutral[200] : '#032f3c'}
+            />
+            <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
+              Community Prayer
+            </StyledText>
+          </View>
+        </View>
+        {isPrayerLoading && (
+          <ActivityIndicator
+            color={Colors.primarySapphire.brand}
+            style={styles.sectionInlineSpinner}
+          />
+        )}
+        {!isPrayerLoading && communityPrayers.length > 0 && (
+          <View style={{ gap: spacing.x5 }}>
+            {communityPrayers.map((cp) => (
+              <PrayerItem
+                key={cp.post.id ?? cp.post.postId}
+                item={cp.post}
+                originFeedType="forYou"
+              />
+            ))}
+          </View>
+        )}
+        {!isPrayerLoading && communityPrayers.length === 0 && (
+          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+            No community prayers right now
+          </StyledText>
+        )}
+      </View>
+
+      {/* Section D: Serve Opportunities */}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
+          <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
+            Serve Opportunities
+          </StyledText>
+          <TouchableOpacity onPress={() => handleOpenConnectPortal('Serve' as ConnectTab)}>
+            <StyledText style={styles.sectionActionText}>See All</StyledText>
+          </TouchableOpacity>
+        </View>
+        {isServeLoading && (
+          <ActivityIndicator
+            color={Colors.primarySapphire.brand}
+            style={styles.sectionInlineSpinner}
+          />
+        )}
+        {!isServeLoading && serveOpportunityItems.length > 0 && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalContent}
           >
-            {newCreatorsItems.map((creator) => {
-              return (
-                <TouchableOpacity
-                  key={creator.id}
-                  style={[
-                    styles.creatorCard,
-                    { borderColor: colors.border, backgroundColor: colors.card },
-                  ]}
-                  activeOpacity={0.9}
-                >
-                  <View style={styles.creatorAvatarFrame}>
-                    <FastImage
-                      source={{ uri: creator.avatarUri || NO_PROFILE_IMAGE }}
-                      style={styles.creatorAvatar}
-                      resizeMode={FastImage.resizeMode.contain}
-                    />
-                  </View>
+            {serveOpportunityItems.map((item) => (
+              <View
+                key={item.id}
+                style={[
+                  styles.serveCardHorizontal,
+                  { borderColor: colors.border, backgroundColor: colors.card },
+                ]}
+              >
+                <FastImage source={{ uri: item.imageUri }} style={styles.serveImageHorizontal} />
+                <View style={styles.serveContentHorizontal}>
                   <StyledText
-                    numberOfLines={1}
-                    style={[styles.creatorName, { color: colors.text }]}
+                    numberOfLines={2}
+                    style={[Typography.body.x2M, { color: colors.text }]}
                   >
-                    {creator.name}
-                  </StyledText>
-                  <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => {
-                      setNewCreatorsItems((previous) =>
-                        previous.map((item) =>
-                          item.id === creator.id
-                            ? { ...item, isFollowing: !item.isFollowing }
-                            : item
-                        )
-                      );
-                    }}
-                    style={[
-                      styles.creatorActionButton,
-                      creator.isFollowing && styles.creatorActionButtonConnected,
-                    ]}
-                  >
-                    <StyledText
-                      style={[
-                        styles.creatorActionButtonText,
-                        creator.isFollowing && { color: Colors.primarySapphire.brand },
-                      ]}
-                    >
-                      {creator.isFollowing ? 'Following' : 'Follow'}
-                    </StyledText>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        ) : (
-          <ActivityIndicator
-            color={Colors.primarySapphire.brand}
-            style={styles.sectionInlineSpinner}
-          />
-        )}
-      </View>
-
-      <View style={styles.sectionBlock}>
-        <View style={styles.sectionHeaderRow}>
-          <StyledText style={[styles.sectionTitle, { color: colors.text }]}>
-            Serve Opportunities
-          </StyledText>
-          <MaterialCommunityIcons name="hand-heart" size={22} color={Colors.neutral[300]} />
-        </View>
-        {serveOpportunityItems.length > 0 ? (
-          serveOpportunityItems.map((item) => (
-            <View
-              key={item.id}
-              style={[
-                styles.serveCard,
-                { borderColor: colors.border, backgroundColor: colors.card },
-              ]}
-            >
-              <FastImage source={{ uri: item.imageUri }} style={styles.serveImage} />
-              <View style={styles.serveContent}>
-                <View>
-                  <StyledText style={[Typography.body.x2M, { color: colors.text }]}>
                     {item.title}
                   </StyledText>
-                  <StyledText style={{ color: Colors.neutral[300] }}>
+                  <StyledText
+                    numberOfLines={1}
+                    style={{ color: Colors.neutral[300], fontSize: 12 }}
+                  >
                     {item.organization}
                   </StyledText>
-                </View>
-                <View style={styles.serveFooterRow}>
-                  <StyledText style={{ color: Colors.primarySapphire.brand }}>
+                  <StyledText
+                    style={{ color: Colors.primarySapphire.brand, fontSize: 12, marginTop: 4 }}
+                  >
                     {item.distance}
                   </StyledText>
-                  <TouchableOpacity style={styles.joinButton}>
-                    <StyledText style={styles.joinButtonText}>JOIN</StyledText>
-                  </TouchableOpacity>
                 </View>
+                <TouchableOpacity
+                  style={styles.shareButton}
+                  onPress={() => {
+                    Share.share({
+                      message: `${item.title} -- ${item.organization}`,
+                    });
+                  }}
+                >
+                  <MaterialCommunityIcons name="share-variant" size={14} color="#032f3c" />
+                </TouchableOpacity>
               </View>
-            </View>
-          ))
-        ) : (
-          <ActivityIndicator
-            color={Colors.primarySapphire.brand}
-            style={styles.sectionInlineSpinner}
-          />
+            ))}
+          </ScrollView>
+        )}
+        {!isServeLoading && serveOpportunityItems.length === 0 && (
+          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+            No serve opportunities nearby
+          </StyledText>
         )}
       </View>
 
+      {/* Section E: Go! Events */}
       <View style={styles.sectionBlock}>
         <View style={styles.sectionHeaderRow}>
-          <StyledText style={[styles.sectionTitle, { color: colors.text }]}>Go! Events</StyledText>
-          <MaterialCommunityIcons name="calendar" size={22} color={Colors.neutral[300]} />
+          <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
+            Go! Events
+          </StyledText>
+          <TouchableOpacity onPress={() => handleOpenConnectPortal('Go!' as ConnectTab)}>
+            <StyledText style={styles.sectionActionText}>See All</StyledText>
+          </TouchableOpacity>
         </View>
-        {goEventItems.length > 0 ? (
-          goEventItems.map((item) => (
-            <TouchableOpacity key={item.id} activeOpacity={0.9} style={styles.goEventCard}>
-              <ImageBackground
-                source={{ uri: item.backgroundImageUri }}
-                style={styles.goEventImage}
-                imageStyle={{ borderRadius: 12 }}
-              >
-                <View style={styles.goEventOverlay}>
-                  <StyledText style={styles.goEventDate}>{item.dateString}</StyledText>
-                  <StyledText style={styles.goEventTitle}>{item.title}</StyledText>
-                  <TouchableOpacity style={styles.goEventCta}>
-                    <StyledText style={styles.goEventCtaText}>{item.buttonText}</StyledText>
-                  </TouchableOpacity>
-                </View>
-              </ImageBackground>
-            </TouchableOpacity>
-          ))
-        ) : (
+        {isEventsLoading && (
           <ActivityIndicator
             color={Colors.primarySapphire.brand}
             style={styles.sectionInlineSpinner}
           />
         )}
+        {!isEventsLoading && goEvents.length > 0 && (
+          <View>
+            {/* Featured event image cards */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalContent}
+            >
+              {goEvents.slice(0, 4).map((event: any) => {
+                const imageUri = event.heroImageUri ?? event.photoUri ?? '';
+                return (
+                  <TouchableOpacity
+                    key={event._id ?? event.id}
+                    activeOpacity={0.9}
+                    style={styles.goEventCard}
+                    onPress={() => {
+                      navigation.push(
+                        'ConnectGoEventView' as never,
+                        { eventId: event._id ?? event.id } as never
+                      );
+                    }}
+                  >
+                    <ImageBackground
+                      source={{ uri: imageUri }}
+                      style={styles.goEventImage}
+                      imageStyle={{ borderRadius: 12 }}
+                    >
+                      <View style={styles.goEventOverlay}>
+                        <StyledText style={styles.goEventDate}>
+                          {event.startDate
+                            ? format(parseISO(String(event.startDate)), 'MMM d, yyyy')
+                            : ''}
+                        </StyledText>
+                        <StyledText style={styles.goEventTitle} numberOfLines={2}>
+                          {event.title ?? event.name ?? 'Event'}
+                        </StyledText>
+                      </View>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            {/* Text list of all events */}
+            <View style={{ paddingHorizontal: spacing.x16, marginTop: spacing.x16 }}>
+              {goEvents.map((event: any) => {
+                const eventStart = new Date(event.startDate);
+                const hoursUntil = differenceInHours(eventStart, new Date());
+                const isImminent = hoursUntil >= 0 && hoursUntil < 72;
+                return (
+                  <TouchableOpacity
+                    key={`list-${event._id ?? event.id}`}
+                    style={styles.goEventRow}
+                    onPress={() => {
+                      navigation.push(
+                        'ConnectGoEventView' as never,
+                        { eventId: event._id ?? event.id } as never
+                      );
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      {isImminent ? (
+                        <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
+                      ) : (
+                        <View style={{ width: 16 }} />
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
+                          {event.startDate
+                            ? format(parseISO(String(event.startDate)), 'MMM d, yyyy')
+                            : ''}
+                        </StyledText>
+                        <StyledText
+                          numberOfLines={1}
+                          style={[Typography.body.x2M, { color: colors.text }]}
+                        >
+                          {event.title ?? event.name ?? 'Event'}
+                        </StyledText>
+                      </View>
+                    </View>
+                    <MaterialCommunityIcons
+                      name="chevron-right"
+                      size={20}
+                      color={Colors.neutral[300]}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+        {!isEventsLoading && goEvents.length === 0 && (
+          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+            No upcoming events
+          </StyledText>
+        )}
       </View>
 
+      {/* Section F: Trending Topics */}
       <View style={styles.sectionBlock}>
         <StyledText
-          style={[styles.sectionTitle, { color: colors.text, paddingHorizontal: spacing.x16 }]}
+          style={[styles.sectionTitle, { color: headerTextColor, paddingHorizontal: spacing.x16 }]}
         >
-          Popular Topics
+          Trending Topics
         </StyledText>
-        <View style={styles.topicsGrid}>
-          {popularTopicItems.length > 0 ? (
-            popularTopicItems.map((topic) => (
-              <TouchableOpacity key={topic.id} style={styles.topicCard} activeOpacity={0.88}>
-                <ImageBackground
-                  source={{ uri: topic.backgroundImageUri }}
-                  style={styles.topicImage}
-                  imageStyle={{ borderRadius: 12 }}
-                >
-                  <View style={styles.topicOverlay}>
-                    <StyledText style={styles.topicText}>{topic.title}</StyledText>
-                  </View>
-                </ImageBackground>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <ActivityIndicator
-              color={Colors.primarySapphire.brand}
-              style={styles.sectionInlineSpinner}
-            />
-          )}
+        <View style={styles.topicsPillWrap}>
+          {popularTopicItems.map((topic) => (
+            <TouchableOpacity
+              key={topic.id}
+              style={styles.topicPill}
+              activeOpacity={0.8}
+              onPress={() => setSearchText(topic.title)}
+            >
+              <StyledText style={styles.topicPillText}>{topic.title}</StyledText>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     </ScrollView>
@@ -1250,7 +1725,7 @@ function Explore({ navigation }: Props) {
         style={[
           styles.headerWrap,
           {
-            paddingTop: insets.top,
+            paddingTop: insets.top + spacing.x8,
             borderBottomColor: colors.border,
             backgroundColor: dark ? 'rgba(13,13,13,0.92)' : 'rgba(255,255,255,0.92)',
           },
@@ -1292,7 +1767,7 @@ function Explore({ navigation }: Props) {
           </View>
 
           <View style={styles.headerCenterWrap} pointerEvents="none">
-            <StyledText style={[styles.headerTitle, { color: colors.text }]}>Explore</StyledText>
+            <StyledText style={styles.headerTitle}>Explore</StyledText>
           </View>
 
           <View style={styles.headerSideSlot}>
@@ -1303,7 +1778,7 @@ function Explore({ navigation }: Props) {
             >
               <Notification
                 size={24}
-                color={dark ? Colors.neutral[200] : Colors.primarySapphire.brand}
+                color={dark ? Colors.neutral[200] : EXPLORE_HEADER_COLOR}
                 strokeWidth={0.2}
               />
             </TouchableOpacity>
@@ -1427,11 +1902,10 @@ const createStyles = (dark: boolean) =>
     },
     headerWrap: {
       borderBottomWidth: 1,
-      overflow: 'hidden',
       zIndex: 8,
     },
     headerRow: {
-      height: 52,
+      minHeight: 52,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -1443,15 +1917,17 @@ const createStyles = (dark: boolean) =>
       justifyContent: 'center',
     },
     headerCenterWrap: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
     },
     headerTitle: {
       fontSize: 24,
+      lineHeight: 28,
+      fontFamily: EXPLORE_HEADER_FONT_FAMILY,
       fontWeight: '700',
+      color: EXPLORE_HEADER_COLOR,
+      textAlign: 'center',
     },
     headerAvatar: {
       width: 30,
@@ -1498,7 +1974,7 @@ const createStyles = (dark: boolean) =>
       paddingBottom: 40,
     },
     sectionBlock: {
-      paddingTop: spacing.x20,
+      paddingTop: spacing.x32,
     },
     sectionHeaderRow: {
       flexDirection: 'row',
@@ -1513,7 +1989,12 @@ const createStyles = (dark: boolean) =>
     },
     sectionTitle: {
       fontSize: 20,
+      fontFamily: EXPLORE_HEADER_FONT_FAMILY,
       fontWeight: '700',
+    },
+    sectionSubheader: {
+      ...Typography.subheader.R,
+      fontFamily: EXPLORE_SUBHEADER_FONT_FAMILY,
     },
     sectionActionText: {
       color: Colors.primarySapphire.brand,
@@ -1607,47 +2088,80 @@ const createStyles = (dark: boolean) =>
       fontSize: 11,
       textTransform: 'uppercase',
     },
-    serveCard: {
-      marginHorizontal: spacing.x16,
+    masonryContainer: {
+      flexDirection: 'row',
+      gap: spacing.x10,
+    },
+    masonryColumn: {
+      flex: 1,
+      gap: spacing.x10,
+    },
+    masonryCard: {
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    masonryImageWrap: {
+      borderRadius: 12,
+      overflow: 'hidden',
+      backgroundColor: dark ? '#0f172a' : '#e5edf4',
+    },
+    masonryVideo: {
+      width: '100%',
+      height: '100%',
+    },
+    badgeChip: {
+      position: 'absolute',
+      bottom: -8,
+      alignSelf: 'center',
+      backgroundColor: '#41dbe1',
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    badgeChipText: {
+      color: '#032f3c',
+      fontSize: 9,
+      fontWeight: '700',
+    },
+    prayerCard: {
+      borderRadius: 12,
+      borderLeftWidth: 3,
+      borderLeftColor: '#41dbe1',
+      padding: spacing.x10,
+      overflow: 'hidden',
+    },
+    serveCardHorizontal: {
+      width: 220,
       borderRadius: 12,
       borderWidth: 1,
-      flexDirection: 'row',
       padding: spacing.x10,
     },
-    serveImage: {
-      width: 80,
-      height: 80,
+    serveImageHorizontal: {
+      width: '100%',
+      height: 100,
       borderRadius: 8,
       backgroundColor: Colors.neutral[600],
+      marginBottom: spacing.x8,
     },
-    serveContent: {
+    serveContentHorizontal: {
       flex: 1,
-      marginLeft: 12,
-      justifyContent: 'space-between',
     },
-    serveFooterRow: {
-      marginTop: spacing.x8,
-      flexDirection: 'row',
+    shareButton: {
+      position: 'absolute',
+      top: spacing.x10,
+      right: spacing.x10,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: '#41dbe1',
       alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    joinButton: {
-      borderWidth: 1,
-      borderColor: Colors.primarySapphire.brand,
-      borderRadius: 16,
-      paddingHorizontal: 12,
-      paddingVertical: 4,
-    },
-    joinButtonText: {
-      color: Colors.primarySapphire.brand,
-      fontWeight: '700',
-      fontSize: 11,
+      justifyContent: 'center',
     },
     goEventCard: {
-      marginHorizontal: spacing.x16,
+      width: 260,
     },
     goEventImage: {
-      height: 200,
+      height: 160,
       borderRadius: 12,
       backgroundColor: dark ? '#0f172a' : '#e5edf4',
     },
@@ -1668,47 +2182,90 @@ const createStyles = (dark: boolean) =>
     goEventTitle: {
       color: '#fff',
       fontWeight: '700',
-      fontSize: 24,
+      fontSize: 18,
       marginBottom: spacing.x10,
     },
-    goEventCta: {
-      alignSelf: 'flex-start',
-      backgroundColor: Colors.primarySapphire.brand,
-      paddingHorizontal: 12,
-      paddingVertical: spacing.x8,
-      borderRadius: borderRadius.base,
+    goEventRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.x10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
     },
-    goEventCtaText: {
-      color: '#fff',
-      fontWeight: '700',
+    pulsingDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#41dbe1',
+      marginRight: spacing.x8,
     },
-    topicsGrid: {
+    topicsPillWrap: {
       paddingHorizontal: spacing.x16,
       marginTop: 12,
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      gap: spacing.x10,
+      gap: 8,
     },
-    topicCard: {
-      width: '48%',
-      height: 96,
-      marginBottom: spacing.x10,
+    topicPill: {
+      backgroundColor: '#e6eaec',
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
     },
-    topicImage: {
-      width: '100%',
-      height: '100%',
+    topicPillText: {
+      color: '#032f3c',
+      fontWeight: '600',
     },
-    topicOverlay: {
+    featuredBanner: {
+      marginHorizontal: spacing.x16,
+      marginTop: spacing.x16,
+      borderRadius: 16,
+      overflow: 'hidden',
+      backgroundColor: '#032f3c',
+    },
+    featuredGradient: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing.x16,
+      gap: 12,
+    },
+    featuredAvatar: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      borderWidth: 2,
+      borderColor: '#41dbe1',
+    },
+    featuredTextWrap: {
       flex: 1,
-      borderRadius: 12,
-      backgroundColor: 'rgba(3,47,60,0.4)',
-      justifyContent: 'flex-end',
-      padding: spacing.x10,
     },
-    topicText: {
-      color: '#fff',
+    featuredLabel: {
+      color: '#41dbe1',
+      fontSize: 10,
       fontWeight: '700',
+      letterSpacing: 1,
+      marginBottom: 2,
+    },
+    featuredName: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    featuredBadge: {
+      color: Colors.neutral[300],
+      fontSize: 12,
+      marginTop: 2,
+    },
+    featuredFollowBtn: {
+      backgroundColor: '#41dbe1',
+      borderRadius: 20,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    featuredFollowText: {
+      color: '#032f3c',
+      fontWeight: '700',
+      fontSize: 12,
     },
     searchContentContainer: {
       paddingHorizontal: spacing.x16,

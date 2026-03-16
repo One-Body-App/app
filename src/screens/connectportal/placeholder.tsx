@@ -10,15 +10,13 @@ import { spacing } from '@/src/styles/spacing';
 
 type Props = NativeStackScreenProps<
   ConnectStackParamsList,
-  'ConnectIntro' | 'ConnectPlacesHome' | 'ConnectServeHome'
+  'ConnectPlacesHome' | 'ConnectServeHome'
 >;
 
 function ConnectPortalPlaceholderScreen({ navigation, route }: Props): React.JSX.Element {
   const { dark } = useTheme();
   let title = 'Serve';
-  if (route.name === 'ConnectIntro') {
-    title = 'Connect Intro';
-  } else if (route.name === 'ConnectPlacesHome') {
+  if (route.name === 'ConnectPlacesHome') {
     title = 'Places';
   }
 
