@@ -18,6 +18,8 @@ declare module 'react-native-config' {
     GIPHY_KEY_IOS: string;
     GIPHY_KEY_ANDROID: string;
     MAPBOX_PUBLIC_TOKEN: string;
+    METRO_HOST?: string;
+    METRO_PORT?: string;
     ENABLE_NATIVE_CHAT?: string;
     CHAT_SOCKET_NAMESPACE?: string;
 

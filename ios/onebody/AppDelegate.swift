@@ -108,9 +108,53 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
  
   override func bundleURL() -> URL? {
 #if DEBUG
-    RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    let provider = RCTBundleURLProvider.sharedSettings()
+
+    if let explicitHostPort = explicitMetroHostPort() {
+      provider.jsLocation = explicitHostPort
+      print("[Metro][iOS] Using explicit Metro host: \(explicitHostPort)")
+    } else if let bundledHost = bundledMetroHost() {
+      print("[Metro][iOS] Bundled Metro host from ip.txt: \(bundledHost)")
+    } else {
+      print("[Metro][iOS] No explicit or bundled Metro host found; falling back to automatic resolution")
+    }
+
+    let resolvedHost = provider.packagerServerHostPort()
+    if let resolvedHost {
+      print("[Metro][iOS] Resolved Metro host: \(resolvedHost)")
+    } else {
+      print("[Metro][iOS] Metro host resolution failed; app will use the embedded debug bundle")
+    }
+
+    return provider.jsBundleURL(forBundleRoot: "index")
 #else
-    Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
+  }
+
+  private func explicitMetroHostPort() -> String? {
+    let rawHost = RNCConfig.env(for: "METRO_HOST")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard !rawHost.isEmpty else {
+      return nil
+    }
+
+    if rawHost.contains(":") {
+      return rawHost
+    }
+
+    let rawPort = RNCConfig.env(for: "METRO_PORT")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    let port = rawPort.isEmpty ? "8081" : rawPort
+    return "\(rawHost):\(port)"
+  }
+
+  private func bundledMetroHost() -> String? {
+    guard let ipPath = Bundle.main.path(forResource: "ip", ofType: "txt"),
+          let ip = try? String(contentsOfFile: ipPath, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+          !ip.isEmpty else {
+      return nil
+    }
+
+    return ip
   }
 }
