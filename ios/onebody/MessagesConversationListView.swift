@@ -1,3 +1,4 @@
+#if canImport(UIKit) && canImport(SwiftUI)
 import Foundation
 import SwiftUI
 import UIKit
@@ -520,7 +521,6 @@ private struct MessagesSwipeActionsModifier: ViewModifier {
     }
   }
 }
-
 private struct HiddenListBackgroundModifier: ViewModifier {
   func body(content: Content) -> some View {
     if #available(iOS 16.0, *) {
@@ -530,3 +530,4 @@ private struct HiddenListBackgroundModifier: ViewModifier {
     }
   }
 }
+#endif

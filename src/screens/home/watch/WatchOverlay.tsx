@@ -63,7 +63,7 @@ type ReactionBarRef = {
   dismissReactions: () => void;
 };
 
-const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72';
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.0.2/assets/72x72';
 const ONEBODY_APP_BASE_URL = 'https://app.onebodyapp.com';
 const BRAND_ACCENT = '#12d2d9';
 const BUTTON_BG = 'rgba(3, 47, 60, 0.72)';

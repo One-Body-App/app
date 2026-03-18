@@ -18,7 +18,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   untext: { color: 'black', marginTop: 10 },
-  moretweet: { marginBottom: 30, textAlign: 'center', color: 'gray' },
   empview: {
     backgroundColor: 'gray',
     height: 0.3,

@@ -65,10 +65,6 @@ function UserProfile({ navigation, route }: Props) {
   useEffect(() => {
     if (user?.influencerProfile) {
       const routes = [];
-      if (user?.influencerProfile?.twitterId) {
-        routes.push({ key: 'Twitter', title: 'Twitter' });
-      }
-
       if (user?.influencerProfile?.rssUrl) {
         routes.push({ key: 'Blog', title: 'Blog/News' });
       }

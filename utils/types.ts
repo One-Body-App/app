@@ -135,12 +135,6 @@ export type User = {
 type InfluencerProfile = {
   _id: string;
   userID?: string;
-  twitterId?: string;
-  twitterHandler?: string;
-
-  twitterTokenExpirationReal?: number;
-  twitterTokenExpiration?: number;
-
   instagramId?: string;
   instagramHandler?: string;
   instagramTokenExpirationReal?: number;
@@ -172,7 +166,6 @@ export type ArticleType = {
 
     website?: string;
     instagramHandler?: string;
-    twitterHandler?: string;
     isApprovedInfluencer?: boolean;
     interests?: Interest[];
   };
@@ -267,7 +260,7 @@ export interface SocialPost {
   postId?: string;
   content: string;
   date: string;
-  source: 'twitter' | 'instagram';
+  source: 'instagram';
   handler: string;
   link: string;
   title: string;
@@ -300,7 +293,6 @@ export interface SocialPost {
     username: string;
     accountType: AccountType;
     profileImage: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
     interests?: Interest[];
@@ -374,7 +366,6 @@ export interface WatchPost {
     username: string;
     accountType: AccountType;
     profileImage: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
   };
@@ -412,7 +403,6 @@ export interface PrayerPost {
     username?: string;
     accountType?: AccountType;
     profileImage?: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
   };
@@ -441,7 +431,6 @@ export interface PrayerPost {
 }
 
 export interface PostUserData {
-  twitterHandler?: string;
   instagramHandler?: string;
   name: string;
   username?: string;
@@ -470,7 +459,6 @@ export interface CommentPost {
     username?: string;
     accountType?: AccountType;
     profileImage?: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
   };
@@ -503,7 +491,6 @@ export interface SerializableCommentSnapshot {
     username?: string;
     accountType?: AccountType;
     profileImage?: string;
-    twitterHandler?: string;
     instagramHandler?: string;
     isApprovedInfluencer?: boolean;
   };

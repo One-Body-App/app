@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import UIKit
 import AVFoundation
 import React
@@ -272,3 +273,4 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
 #endif
   }
 }
+#endif

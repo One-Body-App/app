@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import UIKit
 import Foundation
 import Lottie
@@ -28,3 +29,4 @@ import react_native_lottie_splash_screen
           animationView.play(completion: completion) // Pass the completion to Lottie's play method
       }
 }
+#endif

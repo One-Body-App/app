@@ -134,29 +134,14 @@ export const enValidation = {
       message: '^Your Re-enter Password must be at least 6 characters',
     },
   },
-  twitterUsername: {
-    presence: {
-      message: '^Please Enter a Twitter Username',
-    },
-  },
   instagramUsername: {
     presence: {
       message: '^Please Enter a Instagram Username',
     },
   },
-  twitterHandler: {
-    presence: {
-      message: '^Please enter your twitter Handler',
-    },
-  },
   instagramHandler: {
     presence: {
       message: '^Please enter your Instagram Handler',
-    },
-  },
-  twitterTitle: {
-    presence: {
-      message: '^Please enter your twitter Title',
     },
   },
   instagramTitle: {

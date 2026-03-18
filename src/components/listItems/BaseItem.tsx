@@ -30,7 +30,6 @@ import Toast from 'react-native-simple-toast';
 import { getHeight, timeSince } from '@/utils/ResponsiveFun';
 import styles from './style';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
-import Twitter from '@/assets/svg/Twitter.svg';
 import Instagram from '@/assets/svg/Instagram.svg';
 import SendIcon from '@/assets/icons/send.svg';
 import RepeatIcon from '@/assets/icons/repeat.svg';
@@ -140,7 +139,7 @@ const REACTION_BAR_VERTICAL_PADDING = Math.round(spacing.x8 * REACTION_BAR_SCALE
 const REACTION_BAR_HORIZONTAL_PADDING = Math.round(spacing.x10 * REACTION_BAR_SCALE_FACTOR);
 const REACTION_BAR_OFFSET_X = 0;
 const REACTION_BAR_OFFSET_Y = 44;
-const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72';
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.0.2/assets/72x72';
 
 const REACTION_ICON_URLS: Record<string, string> = {
   pray: `${TWEMOJI_BASE}/1f64f.png`,
@@ -679,9 +678,6 @@ function BaseItem({
       : undefined;
 
   const getUserHandle = () => {
-    if (source === 'twitter' && userData?.twitterHandler) {
-      return userData.twitterHandler;
-    }
     if (source === 'instagram' && userData?.instagramHandler) {
       return userData.instagramHandler;
     }
@@ -1750,10 +1746,6 @@ function BaseItem({
             <View style={{ borderRadius: borderRadius.max, padding: spacing.x5 }}>
               {source === 'instagram' ? (
                 <Instagram height={getHeight(2.5)} fill={brandColors.primaryDark} />
-              ) : null}
-
-              {source === 'twitter' ? (
-                <Twitter height={getHeight(2.5)} fill={brandColors.primaryDark} />
               ) : null}
             </View>
 

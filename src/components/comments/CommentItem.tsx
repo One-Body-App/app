@@ -89,7 +89,7 @@ type ReactionBarRef = {
   dismissReactions: () => void;
 };
 
-const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72';
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.0.2/assets/72x72';
 const REACTION_ICON_URLS: Record<string, string> = {
   pray: `${TWEMOJI_BASE}/1f64f.png`,
   praise: `${TWEMOJI_BASE}/1f64c.png`,
@@ -340,9 +340,7 @@ function CommentItem({
   }
   const actionColor = textSecondary;
   let handleValue: string | undefined;
-  if (source === 'twitter' && safeUserData?.twitterHandler) {
-    handleValue = safeUserData.twitterHandler;
-  } else if (source === 'instagram' && safeUserData?.instagramHandler) {
+  if (source === 'instagram' && safeUserData?.instagramHandler) {
     handleValue = safeUserData.instagramHandler;
   } else if (safeUserData?.username) {
     handleValue = safeUserData.username;

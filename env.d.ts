@@ -14,7 +14,6 @@ declare module 'react-native-config' {
     NO_PROFILE_IMAGE: string;
     NO_POST_IMAGE_URL: string;
 
-    TWITTER_CLIENT_ID: string;
     GIPHY_KEY_IOS: string;
     GIPHY_KEY_ANDROID: string;
     MAPBOX_PUBLIC_TOKEN: string;

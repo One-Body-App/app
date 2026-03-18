@@ -78,8 +78,8 @@ function InfluencerStepFour({ navigation, route }: Props) {
               content begin to be displayed shortly (usually in less than 1 hour).
             </Text>
             <Text style={styles.paragraph}>
-              From time to time we will ask you to re-certify your authentication to Instagram and
-              Twitter. This will help us ensure that your account is secure.
+              From time to time we will ask you to re-certify your Instagram connection. This will
+              help us ensure that your account is secure.
             </Text>
             <Text style={styles.paragraph}>
               Any posted content that goes against the One Body Ethos will be filtered and either

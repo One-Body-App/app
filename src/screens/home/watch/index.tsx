@@ -172,7 +172,7 @@ function Watch({ navigation, route }: any) {
       setIsRefreshing(false);
     } catch (e: any) {
       setFeedData([]);
-      // console.log(`saga get twitter timline  error -- `, e.toString());
+      // console.log('watch feed error -- ', e.toString());
     }
   }, [initialPlaybackId, initialPostId, initialWatchPost, page, token]);
 

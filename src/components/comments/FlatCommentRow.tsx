@@ -15,7 +15,7 @@ type ReactionPickerItem = {
   type: SocialPostReactionType;
 };
 
-const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72';
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.0.2/assets/72x72';
 const REACTION_PICKER_ITEMS: ReactionPickerItem[] = [
   { id: 'pray', iconUrl: `${TWEMOJI_BASE}/1f64f.png`, type: SocialPostReactionType.praying },
   { id: 'praise', iconUrl: `${TWEMOJI_BASE}/1f64c.png`, type: SocialPostReactionType.praise },

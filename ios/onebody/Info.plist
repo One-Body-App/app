@@ -29,12 +29,11 @@
 			<string></string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.420515523880-1gfl6ab00f23tq0pqdpls7j6lboj7g8u</string>
-				<string>fb1977514759116109</string>
-			</array>
-		</dict>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.420515523880-1gfl6ab00f23tq0pqdpls7j6lboj7g8u</string>
+				</array>
+			</dict>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
@@ -58,12 +57,6 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>102</string>
-	<key>FacebookAppID</key>
-	<string>1977514759116109</string>
-	<key>FacebookClientToken</key>
-	<string>871a04e1e70813d7517dff1a75dc8a14</string>
-	<key>FacebookDisplayName</key>
-	<string>One Body</string>
 	<key>FirebaseCrashlyticsCollectionEnabled</key>
 	<false/>
 	<key>FirebaseDynamicLinksCustomDomains</key>
@@ -76,10 +69,6 @@
 	<string>YES</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>twitter</string>
-		<string>twitterauth</string>
-		<string>fbapi</string>
-		<string>fb-messenger-share-api</string>
 		<string>mailto</string>
 		<string>readdle-spark</string>
 		<string>airmail</string>

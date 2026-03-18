@@ -1159,7 +1159,6 @@ function EditProfile({ navigation }: Props) {
                 <View style={styles.socialIcon}>
                   <Instagram />
                   <Blog />
-                  <Twitter />
                 </View>
               </View>
             ) : null} */}

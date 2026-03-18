@@ -14725,7 +14725,6 @@ __metadata:
     react-native-element-dropdown: "npm:^2.10.0"
     react-native-email-link: "npm:^1.14.6"
     react-native-fast-image: "npm:^8.6.3"
-    react-native-fbsdk-next: "npm:^12.1.2"
     react-native-fiesta: "npm:^0.7.0"
     react-native-fs: "npm:^2.20.0"
     react-native-gesture-handler: "npm:^2.26.0"
@@ -15963,19 +15962,6 @@ __metadata:
     react: ^17 || ^18
     react-native: ">=0.60.0"
   checksum: 10/ed340c2b6c2e76658fa0a899a45132871017018bec0a03423b7456610810e79b2844dfa16063c05d98b89a7613eeb0de2fdf3ad978cdfa4d488a4e01228a7349
-  languageName: node
-  linkType: hard
-
-"react-native-fbsdk-next@npm:^12.1.2":
-  version: 12.2.0
-  resolution: "react-native-fbsdk-next@npm:12.2.0"
-  peerDependencies:
-    expo: ">=47.0.0"
-    react-native: ">=0.63.3"
-  peerDependenciesMeta:
-    expo:
-      optional: true
-  checksum: 10/c47c9c78770c74abc684e12faac919f7b18459eeae382e40ddbfbcb480caab654544d6540175629afee5be7e1e1aa2e8a2432bce8d51125d2923c7b5c4e305ff
   languageName: node
   linkType: hard
 

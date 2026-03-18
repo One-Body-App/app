@@ -232,15 +232,6 @@ function Settings({ navigation }: Props) {
       userProfile?.influencerProfile?.instagramTokenExpirationReal < time;
   }
 
-  if (
-    userProfile?.influencerProfile?.twitterId &&
-    userProfile?.influencerProfile?.twitterTokenExpirationReal &&
-    userProfile?.influencerProfile?.twitterTokenExpirationReal < time &&
-    !showInfluencerNotification
-  ) {
-    showInfluencerNotification = userProfile?.influencerProfile?.twitterTokenExpirationReal < time;
-  }
-
   const { colors, dark } = useTheme();
 
   return (

@@ -235,7 +235,6 @@ const SocialFlatlist = forwardRef<
     //         {item?.content}
     //       </Text>
     //       <View style={{ flexDirection: 'row', padding: 5 }}>
-    //         {item?.source == 'twitter' ? <Twitter fill="#00acee" /> : null}
     //         <Text
     //           style={{
     //             marginLeft: 5,

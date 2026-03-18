@@ -256,36 +256,3 @@ export const processLogin = async (accessToken: string) => {
 
   return undefined;
 };
-
-export const getTwitterLoginToken = async (
-  signup?: boolean,
-  confirmation?: boolean,
-  influencer?: boolean
-) => {
-  let params = '';
-
-  if (signup) {
-    params = '?signup=1';
-  }
-
-  if (confirmation) {
-    params = '?confirmation=1';
-  }
-
-  if (influencer) {
-    params = '?influencer=1';
-  }
-
-  const options = {
-    method: 'GET',
-    url: `${BASE_URL}/auth/twitter-token${params ?? ''}`,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
-  const result = await axios.request(options);
-  const token = result.data?.oAuthToken;
-
-  return token;
-};

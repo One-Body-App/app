@@ -112,7 +112,6 @@ export const toSerializableCommentSnapshot = (
           username: comment.userData.username,
           accountType: comment.userData.accountType,
           profileImage: comment.userData.profileImage,
-          twitterHandler: comment.userData.twitterHandler,
           instagramHandler: comment.userData.instagramHandler,
           isApprovedInfluencer: comment.userData.isApprovedInfluencer,
         }
@@ -168,7 +167,6 @@ export const fromSerializableCommentSnapshot = (
       username: snapshot.userData?.username,
       accountType: snapshot.userData?.accountType,
       profileImage: snapshot.userData?.profileImage,
-      twitterHandler: snapshot.userData?.twitterHandler,
       instagramHandler: snapshot.userData?.instagramHandler,
       isApprovedInfluencer: snapshot.userData?.isApprovedInfluencer,
     },

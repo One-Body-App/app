@@ -154,16 +154,11 @@ const resolveUrl = (baseUrl: string, relative?: string) => {
 };
 
 const buildLinkPreview = (url: string, html: string): LinkPreview => {
-  const title =
-    getMetaTagContent(html, 'og:title') ||
-    getMetaTagContent(html, 'twitter:title', 'name') ||
-    getTitleTag(html) ||
-    url;
+  const title = getMetaTagContent(html, 'og:title') || getTitleTag(html) || url;
   const description =
     getMetaTagContent(html, 'og:description') || getMetaTagContent(html, 'description', 'name');
   const siteName = getMetaTagContent(html, 'og:site_name');
-  const image =
-    getMetaTagContent(html, 'og:image') || getMetaTagContent(html, 'twitter:image', 'name');
+  const image = getMetaTagContent(html, 'og:image');
 
   const absoluteImage = resolveUrl(url, image);
 
@@ -310,11 +305,7 @@ function SocialItem({
     originFeedType === 'connected' || originFeedType === 'forYou' || originFeedType === 'foryou';
 
   let profileUrl = '';
-  if (itemData?.source === 'twitter') {
-    profileUrl = `https://twitter.com/${itemData?.handler}/status/${itemData?.id}`;
-  } else {
-    profileUrl = itemData?.permalink || '';
-  }
+  profileUrl = itemData?.permalink || '';
 
   useEffect(() => {
     setIsPlaying(visible ?? false);
