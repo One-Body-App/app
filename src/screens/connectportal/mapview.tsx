@@ -36,10 +36,7 @@ import {
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectMap'>;
 
-const FALLBACK_MAPBOX_PUBLIC_TOKEN =
-  'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
-
-const mapboxAccessToken = MAPBOX_PUBLIC_TOKEN ?? FALLBACK_MAPBOX_PUBLIC_TOKEN;
+const mapboxAccessToken = String(MAPBOX_PUBLIC_TOKEN ?? '').trim();
 
 type MapboxModule = {
   Camera: React.ComponentType<any>;
@@ -67,7 +64,7 @@ function resolveMapboxModule(): MapboxModule | null {
       return null;
     }
 
-    if (candidate?.setAccessToken) {
+    if (candidate?.setAccessToken && mapboxAccessToken) {
       candidate.setAccessToken(mapboxAccessToken);
     }
 

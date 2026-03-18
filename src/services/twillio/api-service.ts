@@ -1,12 +1,13 @@
 import axios from 'axios';
+import { BASE_URL } from '@/src/services/constants';
 
-export const getToken = (token: string) =>
+const getToken = (token: string) =>
   axios
-    .get(`https://one-body.herokuapp.com/api/chat/chat-token`, {
+    .get(`${BASE_URL}/chat/chat-token`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-    .then((twilioUser) => {
-      twilioUser.data.jwt;
-    });
+    .then((twilioUser) => twilioUser.data?.jwt);
+
+export default getToken;

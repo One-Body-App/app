@@ -22,8 +22,6 @@ import {
   Pressable,
   type ViewStyle,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 
@@ -34,18 +32,14 @@ import {
   onNotificationOpenedApp,
 } from '@react-native-firebase/messaging';
 import notifee, { EventType } from '@notifee/react-native';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { ReactionProvider } from 'react-native-reactions';
 import { GiphySDK } from '@giphy/react-native-sdk';
 import LottieSplashScreen from 'react-native-lottie-splash-screen';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import { serialize } from 'object-to-formdata';
 import { RootState } from '../redux/reducers/rootReducer'; // Adjust path relative to AppContent.tsx
 import { setLoginData, getProfile, logout } from '../redux/actions/AuthActions'; // Adjust path
 import { clearAuthTokens, getValidAccessToken } from '../services/authTokens';
-import { ApiCall } from '../services/api';
 import { beginAuthenticatedMfaOnboarding } from '../services/login';
-import getDeviceLocation from '../services/deviceLocation';
 
 import ForgotPassword from '../screens/forgotPassword'; // Adjust path
 import Login from '../screens/login'; // Adjust path
@@ -110,7 +104,6 @@ function AppContent() {
   const [navigationReady, setNavigationReady] = useState<boolean>(false);
   const screenHeight = useRef(Dimensions.get('window').height).current;
   const firebaseMessaging = getMessaging();
-  const firebaseAnalytics = getAnalytics();
   const navigationRef = useNavigationContainerRef<MainStackParamList>();
   const routeNameRef = useRef<string | undefined>(undefined);
   const lastNavigationRef = useRef<{ route: string; timestamp: number } | null>(null);
@@ -119,16 +112,7 @@ function AppContent() {
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const appStateRef = useRef(AppState.currentState);
   const token = authState.userToken;
-  const hasMfaTrustedToken = useMemo(() => {
-    const profileData = authState.getProfileData;
-    if (!profileData?.emailVerified) {
-      return false;
-    }
-
-    return profileData?.mfaConfig?.isMfaActive === true;
-  }, [authState.getProfileData]);
   const hasFetchedProfileRef = useRef(false);
-  const locationAutofillUserRef = useRef<string | null>(null);
   const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
   const mfaOnboardingInFlightRef = useRef(false);
   const scheme = useColorScheme();
@@ -171,16 +155,6 @@ function AppContent() {
     ),
     [confirmBackStyle, handleConfirmBackPress]
   );
-  const logScreenViewEvent = useCallback(
-    (screenName: string) => {
-      logEvent(firebaseAnalytics, 'screen_view', {
-        firebase_screen: screenName,
-        firebase_screen_class: screenName,
-      });
-    },
-    [firebaseAnalytics]
-  );
-
   const beginMandatoryMfaGate = useCallback(
     async (profileData: any) => {
       if (!token) {
@@ -360,7 +334,6 @@ function AppContent() {
   useEffect(() => {
     if (!token) {
       hasFetchedProfileRef.current = false;
-      locationAutofillUserRef.current = null;
       mfaOnboardingRequestedUserRef.current = null;
       mfaOnboardingInFlightRef.current = false;
       return;
@@ -373,70 +346,6 @@ function AppContent() {
     hasFetchedProfileRef.current = true;
     dispatch(getProfile.Request({ token }));
   }, [dispatch, token]);
-
-  useEffect(() => {
-    if (!token || !authState.getProfileData) return undefined;
-    if (!hasMfaTrustedToken) return undefined;
-
-    const userId = authState.getProfileData?._id || authState.getProfileData?.id;
-    if (!userId || locationAutofillUserRef.current === userId) return undefined;
-
-    const profileLocation = authState.getProfileData?.profile?.location;
-    const hasLocation =
-      !!profileLocation?.address ||
-      Number.isFinite(profileLocation?.coordinates?.lat) ||
-      Number.isFinite(profileLocation?.coordinates?.lon);
-
-    if (hasLocation) {
-      locationAutofillUserRef.current = userId;
-      return undefined;
-    }
-
-    let isActive = true;
-    const attemptAutofill = async () => {
-      try {
-        const attemptKey = `location_autofill_attempted_${userId}`;
-        const attempted = await AsyncStorage.getItem(attemptKey);
-        if (attempted === '1' || !isActive) {
-          locationAutofillUserRef.current = userId;
-          return;
-        }
-        await AsyncStorage.setItem(attemptKey, '1');
-        const deviceLocation = await getDeviceLocation();
-        if (!deviceLocation || !isActive) {
-          locationAutofillUserRef.current = userId;
-          return;
-        }
-
-        const locationPayload: Record<string, any> = {
-          longitude: deviceLocation.longitude,
-          latitude: deviceLocation.latitude,
-        };
-        if (deviceLocation.address) {
-          locationPayload.address = deviceLocation.address;
-        }
-
-        const result = await ApiCall({
-          route: 'user/update-profile',
-          token,
-          verb: 'patch',
-          params: serialize({ location: locationPayload }),
-          isFormUrlEncode: true,
-        });
-
-        if (result?.status === 200 && isActive) {
-          dispatch(getProfile.Request({ token }));
-        }
-      } finally {
-        locationAutofillUserRef.current = userId;
-      }
-    };
-
-    attemptAutofill();
-    return () => {
-      isActive = false;
-    };
-  }, [authState.getProfileData, dispatch, hasMfaTrustedToken, token]);
 
   useEffect(() => {
     if (authChecked) {
@@ -1074,12 +983,7 @@ function AppContent() {
   };
 
   const linking: LinkingOptions<MainStackParamList> = {
-    prefixes: [
-      'https://app.onebodyapp.com',
-      'https://auth.onebodyapp.com',
-      'https://stagingauth.onebodyapp.com',
-      'onebodyapp://',
-    ],
+    prefixes: ['https://app.onebodyapp.com', 'https://auth.onebodyapp.com', 'onebodyapp://'],
     config: linkingConfig,
     getStateFromPath(path, options) {
       if (__DEV__) {
@@ -1277,20 +1181,11 @@ function AppContent() {
       linking={linking}
       theme={scheme === 'dark' ? darkTheme : theme}
       onReady={() => {
-        const routeName = navigationRef.getCurrentRoute()?.name;
-        routeNameRef.current = routeName;
+        routeNameRef.current = navigationRef.getCurrentRoute()?.name;
         setNavigationReady(true);
-        if (routeName) {
-          logScreenViewEvent(routeName);
-        }
       }}
       onStateChange={() => {
-        const previousRouteName = routeNameRef.current;
-        const currentRouteName = navigationRef.getCurrentRoute()?.name;
-        if (currentRouteName && previousRouteName !== currentRouteName) {
-          logScreenViewEvent(currentRouteName);
-        }
-        routeNameRef.current = currentRouteName;
+        routeNameRef.current = navigationRef.getCurrentRoute()?.name;
       }}
     >
       <ReactionProvider>

@@ -102,18 +102,14 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app uses the location services to personalize the user content shown to the user</string>
-	<key>NSLocationUsageDescription</key>
-	<string>This app uses the location services to personalize the user content shown to the user</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app uses the location services to personalize the user content shown to the user</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app requires access to the photo library to allow the user to update their profile or attach it to a social post</string>
+		<key>NSCameraUsageDescription</key>
+		<string>One Body uses the camera so you can capture photos and videos for your profile, posts, and messages.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>One Body uses your location while you use location-based features like finding nearby content, events, and communities.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>One Body uses the microphone so you can record audio with videos and other camera features.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>One Body uses your photo library so you can choose photos and videos for your profile, posts, and messages.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>

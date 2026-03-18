@@ -125,7 +125,6 @@ const ONEBODY_WEB_HOSTS = new Set([
   'www.onebodyapp.com',
   'onebodyapp.com',
   'auth.onebodyapp.com',
-  'stagingauth.onebodyapp.com',
 ]);
 
 const normalizeOptionalString = (value: unknown) => {

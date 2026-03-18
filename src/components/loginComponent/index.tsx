@@ -15,10 +15,10 @@ import { useDispatch } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LottieView from 'lottie-react-native';
+import { noop } from 'lodash';
 import QRCode from 'react-native-qrcode-svg';
 import { MainStackParamList } from '@/src/navigator/types';
 import { setLoader } from '@/src/redux/actions/GeneralActions';
@@ -252,24 +252,7 @@ function LoginComponent({
   const navigation = useNavigation<Nav>();
   const { dark } = useTheme();
   const styles = useMemo(() => createLoginStyles(dark), [dark]);
-  const firebaseAnalytics = useMemo(() => {
-    try {
-      return getAnalytics();
-    } catch (_error) {
-      return null;
-    }
-  }, []);
-
-  const trackMfaEvent = useCallback(
-    (eventName: string, params: Record<string, any>) => {
-      if (!firebaseAnalytics) {
-        return;
-      }
-
-      logEvent(firebaseAnalytics, eventName as any, params).catch(() => undefined);
-    },
-    [firebaseAnalytics]
-  );
+  const trackMfaEvent = noop as (eventName: string, params: Record<string, any>) => undefined;
 
   const [form, setForm] = useState({
     email: currentUserEmail ?? '',

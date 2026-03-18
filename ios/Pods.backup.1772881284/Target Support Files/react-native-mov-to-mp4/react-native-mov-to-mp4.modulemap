@@ -1,6 +1,0 @@
-framework module react_native_mov_to_mp4 {
-  umbrella header "react-native-mov-to-mp4-umbrella.h"
-
-  export *
-  module * { export * }
-}

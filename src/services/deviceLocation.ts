@@ -3,10 +3,6 @@ import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MAPBOX_PUBLIC_TOKEN } from './constants';
 
-const MAPBOX_ACCESS_TOKEN =
-  MAPBOX_PUBLIC_TOKEN ??
-  'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
-
 type Coordinates = {
   longitude: number;
   latitude: number;
@@ -67,9 +63,13 @@ const getCurrentCoordinates = async (): Promise<Coordinates | null> => {
 };
 
 const reverseGeocode = async (longitude: number, latitude: number): Promise<string | undefined> => {
+  if (!MAPBOX_PUBLIC_TOKEN) {
+    return undefined;
+  }
+
   try {
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_ACCESS_TOKEN}&types=place`
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_PUBLIC_TOKEN}&types=place`
     );
     const data = await response.json();
     const first = data?.features?.[0];

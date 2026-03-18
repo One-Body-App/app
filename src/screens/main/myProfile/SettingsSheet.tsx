@@ -32,7 +32,7 @@ const options = {
   preferredAndroidMarket: AndroidMarket.Google,
   preferInApp: true,
   openAppStoreIfInAppFails: true,
-  fallbackPlatformURL: 'http://www.onebodyapp.com',
+  fallbackPlatformURL: 'https://www.onebodyapp.com',
 };
 
 type Props = {

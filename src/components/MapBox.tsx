@@ -62,9 +62,7 @@ export type MapSuggestion = {
 };
 
 let timer: NodeJS.Timeout | null = null;
-const accessToken =
-  MAPBOX_PUBLIC_TOKEN ??
-  'pk.eyJ1Ijoib25lYm9keWRldiIsImEiOiJjbGJ4a2Z4ZDQwYjkzM3ZtZHFib3Noa21jIn0.focAWV7VQewXQeUykG8LVA';
+const accessToken = String(MAPBOX_PUBLIC_TOKEN ?? '').trim();
 function MapBox({
   types,
   countries,

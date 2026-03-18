@@ -1,6 +1,0 @@
-framework module RNNotifee {
-  umbrella header "RNNotifee-umbrella.h"
-
-  export *
-  module * { export * }
-}

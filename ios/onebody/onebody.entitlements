@@ -8,14 +8,12 @@
 	<array>
 		<string>Default</string>
 	</array>
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:app.onebodyapp.com</string>
-		<string>applinks:auth.onebodyapp.com</string>
-		<string>applinks:stagingauth.onebodyapp.com</string>
-		<string>applinks:stagingapi.onebodyapp.com</string>
-		<string>webcredentials:app.onebodyapp.com</string>
-	</array>
+		<key>com.apple.developer.associated-domains</key>
+		<array>
+			<string>applinks:app.onebodyapp.com</string>
+			<string>applinks:auth.onebodyapp.com</string>
+			<string>webcredentials:app.onebodyapp.com</string>
+		</array>
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)com.onebodyapp</string>

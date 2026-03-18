@@ -1009,7 +1009,7 @@ function SignupForm({ navigation, route }: Props) {
         <Recaptcha
           ref={recaptcha}
           siteKey="6Ld3BoolAAAAAIZJUxipD6Xdv1mOXZfXnW71A0o_"
-          baseUrl="http://www.onebodyapp.com"
+          baseUrl="https://www.onebodyapp.com"
           onVerify={onVerify}
           size="invisible"
         />
