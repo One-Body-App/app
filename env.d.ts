@@ -22,6 +22,7 @@ declare module 'react-native-config' {
     METRO_PORT?: string;
     ENABLE_NATIVE_CHAT?: string;
     CHAT_SOCKET_NAMESPACE?: string;
+    ZOE_CHAT_URL?: string;
 
     MUX_TOKEN_ID: string;
     MUX_SECRET_KEY: string;
