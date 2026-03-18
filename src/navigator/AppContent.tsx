@@ -75,6 +75,7 @@ import { queueRemoteNotificationPayload } from '@/src/services/notification/push
 import { ensureChatReady } from '@/src/services/chat/chatClient';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
 import { resumePendingVideoUploads } from '@/src/services/videoProcessing/videoUploadQueue';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
 // This fixes Android crash: "Cannot read property 'DocumentDir' of null"
@@ -220,7 +221,7 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loader]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     let cancelled = false;
 
     (async () => {
@@ -248,7 +249,7 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch]);
+  });
 
   const refreshTokenOnResume = useCallback(async () => {
     try {
@@ -265,13 +266,15 @@ function AppContent() {
       }
     }
   }, [dispatch, token]);
+  const refreshTokenOnResumeRef = useRef(refreshTokenOnResume);
+  refreshTokenOnResumeRef.current = refreshTokenOnResume;
 
-  useEffect(() => {
+  useMountEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       const wasBackground = appStateRef.current.match(/inactive|background/);
       appStateRef.current = nextAppState;
       if (wasBackground && nextAppState === 'active') {
-        refreshTokenOnResume().catch(() => undefined);
+        refreshTokenOnResumeRef.current().catch(() => undefined);
         resumePendingVideoUploads().catch(() => undefined);
       }
     });
@@ -279,15 +282,13 @@ function AppContent() {
     return () => {
       subscription.remove();
     };
-  }, [refreshTokenOnResume]);
+  });
 
-  useEffect(() => {
+  useMountEffect(() => {
     resumePendingVideoUploads().catch(() => undefined);
-  }, []);
+  });
 
-  useEffect(() => {
-    ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;
-  }, [authState.getProfileData?.emailVerified]);
+  ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;
 
   useEffect(() => {
     if (Platform.OS !== 'android') {
@@ -754,6 +755,8 @@ function AppContent() {
     },
     [normalizeLink, openNotificationsCenter, shouldIgnoreAuthLink]
   );
+  const handleLocalNotificationOpenRef = useRef(handleLocalNotificationOpen);
+  handleLocalNotificationOpenRef.current = handleLocalNotificationOpen;
 
   useEffect(() => {
     if (!token) {
@@ -813,14 +816,14 @@ function AppContent() {
     };
   }, [authState.getProfileData, authState.getProfileData?.pushNotificationsEnabled, token, toast]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     const unsubscribeForegroundNotificationEvent = notifee.onForegroundEvent(
       async ({ type, detail }) => {
         if (type !== EventType.PRESS) {
           return;
         }
 
-        handleLocalNotificationOpen(
+        handleLocalNotificationOpenRef.current(
           detail.notification?.data as Record<string, string> | undefined
         );
       }
@@ -833,7 +836,7 @@ function AppContent() {
           return;
         }
 
-        handleLocalNotificationOpen(
+        handleLocalNotificationOpenRef.current(
           initialNotification.notification.data as Record<string, string> | undefined
         );
       })
@@ -842,7 +845,7 @@ function AppContent() {
     return () => {
       unsubscribeForegroundNotificationEvent();
     };
-  }, [handleLocalNotificationOpen]);
+  });
 
   const resolvePostLinkState = (path: string) => {
     const pathWithoutQuery = path.split('?')[0];

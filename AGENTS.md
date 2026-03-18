@@ -14,6 +14,9 @@
 
 - Follow existing component structure in `src/`.
 - Keep hook usage unconditional and ordered; avoid conditional hooks.
+- Do not import or call `useEffect` / `React.useEffect` directly in frontend code.
+- Prefer derived state, event handlers, Redux/saga flows, `useFocusEffect`, and keyed remounts before reaching for lifecycle synchronization.
+- Use `useMountEffect` only for true mount/unmount external sync such as listeners, subscriptions, and third-party integrations.
 - Prefer TypeScript where present; use ASCII-only text for edits and comments.
 - Keep changes minimal and focused on the requested scope.
 

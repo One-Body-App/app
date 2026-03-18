@@ -1,7 +1,7 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-devsettings/withAsyncStorage';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import LottieSplashScreen from 'react-native-lottie-splash-screen'; // Note: LottieSplashScreen.hide() is now in AppContent
@@ -28,6 +28,7 @@ import { persistor, store } from './src/redux/store'; // Make sure this path is 
 import AppContent from './src/navigator/AppContent'; // Import the new component
 import { getFirebaseApp } from './src/services/firebaseApp';
 import VideoModerationBridge from './src/components/post/VideoModerationBridge';
+import useMountEffect from './src/hooks/useMountEffect';
 
 Sentry.init({
   dsn: 'https://5a54913b45c44079b31e038fc1e7b4aa@o4504958486642688.ingest.sentry.io/4504958800560128',
@@ -42,26 +43,27 @@ function App() {
     // Deep linking is handled by AppContent.tsx
   };
 
-  useEffect(() => {
+  useMountEffect(() => {
     const event = Linking.addEventListener('url', () => handleDynamicLink());
     const unsubscribe = onLink(links, () => handleDynamicLink());
-    return () => {
-      event.remove();
-      unsubscribe();
-    };
-  }, [links]);
 
-  useEffect(() => {
     Linking.getInitialURL().then((url) => {
       if (url) {
         handleDynamicLink();
       }
     });
-  }, []);
+
+    return () => {
+      event.remove();
+      unsubscribe();
+    };
+  });
 
   const [appIsReady, setAppIsReady] = useState(false);
 
-  useEffect(() => {
+  useMountEffect(() => {
+    let isMounted = true;
+
     async function prepareApp() {
       try {
         // Define the MINIMUM time you want the splash screen to be visible.
@@ -85,18 +87,19 @@ function App() {
         // Handle error: perhaps show an error screen after a delay
       } finally {
         // Once all prep work and the minimum display time are met, mark app as ready
-        setAppIsReady(true);
+        if (isMounted) {
+          setAppIsReady(true);
+          LottieSplashScreen.hide();
+        }
       }
     }
 
     prepareApp();
-  }, []); // Run once when the component mounts
 
-  useEffect(() => {
-    if (appIsReady) {
-      LottieSplashScreen.hide();
-    }
-  }, [appIsReady]); // Run this effect when `appIsReady` changes
+    return () => {
+      isMounted = false;
+    };
+  });
 
   // While the app is not ready, return null or a simple loading indicator
   // The native splash screen will remain visible during this time.
