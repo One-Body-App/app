@@ -872,6 +872,31 @@ function AppContent() {
       };
     }
 
+    if (rawType === PostType.prayer) {
+      return {
+        routes: [
+          {
+            name: 'MainRoot',
+            state: {
+              routes: [
+                {
+                  name: 'PrayerWall',
+                  state: {
+                    routes: [
+                      {
+                        name: 'Single',
+                        params: { postId },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
+    }
+
     if (rawType === PostType.rss || rawType === PostType.watch) {
       return {
         routes: [

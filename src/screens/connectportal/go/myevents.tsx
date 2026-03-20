@@ -79,7 +79,19 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                  return;
+                }
+                navigation.navigate('ConnectGoEventDash');
+              }}
+            >
+              <Text style={styles.backButtonText}>Back</Text>
+            </TouchableOpacity>
             <Text style={styles.headerTitle}>My Events</Text>
             <Text style={styles.headerSubtitle}>Drafts, active events, and event history</Text>
           </View>
@@ -234,6 +246,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 16,
+  },
+  headerLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  backButtonText: {
+    color: '#126b87',
+    fontSize: 15,
+    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 28,

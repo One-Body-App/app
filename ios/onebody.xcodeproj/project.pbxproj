@@ -33,8 +33,6 @@
 		728E61962B1FFDB80013DA59 /* logoAnimation.json in Resources */ = {isa = PBXBuildFile; fileRef = 728E61952B1FFDB80013DA59 /* logoAnimation.json */; };
 		728E61982B1FFDB80013DA59 /* splash.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 728E61972B1FFDB80013DA59 /* splash.mp4 */; };
 		72A09FE12E1CDE2B00D614D5 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */; };
-		A1B2C3D4E5F6012345678901 /* MessagesConversationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678903 /* MessagesConversationListView.swift */; };
-		A1B2C3D4E5F6012345678902 /* MessagesConversationListViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678904 /* MessagesConversationListViewManager.m */; };
 		72F05C49289CEB68004C3A5F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */; };
 		76D9A2FE6C4D4C769086867B /* OpenSans_Condensed-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ABA070994F3D498A8F8D1519 /* OpenSans_Condensed-Italic.ttf */; };
 		849A218F7B364F0F89720058 /* OpenSans_Condensed-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 08B5E8DB14964BEEA703163E /* OpenSans_Condensed-MediumItalic.ttf */; };
@@ -43,6 +41,8 @@
 		8C22BCE244B24786883BE8DC /* OpenSans_Condensed-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 671FBBE6754D4490AF34BC09 /* OpenSans_Condensed-LightItalic.ttf */; };
 		97C87A2F16C04547AC1440D1 /* OpenSans-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C23AEC5E40384299911BA201 /* OpenSans-ExtraBoldItalic.ttf */; };
 		9E7B796E54344907A39EA0AA /* OpenSans_SemiCondensed-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4AD548BFD8C147A5A3768825 /* OpenSans_SemiCondensed-Light.ttf */; };
+		A1B2C3D4E5F6012345678901 /* MessagesConversationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678903 /* MessagesConversationListView.swift */; };
+		A1B2C3D4E5F6012345678902 /* MessagesConversationListViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6012345678904 /* MessagesConversationListViewManager.m */; };
 		BC63E9790B59DF51F8397F02 /* Pods_onebody.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 158542D8825809DC65F10471 /* Pods_onebody.framework */; };
 		C0D3F7A32F0DF12000652AC4 /* RNReactNativeHapticFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C0D3F7A22F0DF12000652AC4 /* RNReactNativeHapticFeedback.framework */; };
 		C2A9C5AEBB974156838C0712 /* OpenSans_SemiCondensed-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 50B80CAF15D94FC181E1D2BD /* OpenSans_SemiCondensed-Bold.ttf */; };
@@ -134,8 +134,6 @@
 		728E61952B1FFDB80013DA59 /* logoAnimation.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = logoAnimation.json; sourceTree = "<group>"; };
 		728E61972B1FFDB80013DA59 /* splash.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = splash.mp4; sourceTree = "<group>"; };
 		72A09FE02E1CDE2B00D614D5 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6012345678903 /* MessagesConversationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = onebody/MessagesConversationListView.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6012345678904 /* MessagesConversationListViewManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = onebody/MessagesConversationListViewManager.m; sourceTree = "<group>"; };
 		72F05C48289CEB68004C3A5F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		75315A586E0038FD62E6797E /* Pods_OneBodyNotificationServiceExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_OneBodyNotificationServiceExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A33052A304E4AF1B4A20B1E /* OpenSans_Condensed-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-SemiBold.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -149,6 +147,8 @@
 		9675D4F89B6E499787990203 /* OpenSans_SemiCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-ExtraBold.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-ExtraBold.ttf"; sourceTree = "<group>"; };
 		967AD7B40C4A481585BE3032 /* OpenSans_SemiCondensed-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_SemiCondensed-Italic.ttf"; path = "../src/assets/fonts/OpenSans_SemiCondensed-Italic.ttf"; sourceTree = "<group>"; };
 		9AF47B614ED740FC812E7C7A /* OpenSans_Condensed-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-Regular.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-Regular.ttf"; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678903 /* MessagesConversationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = onebody/MessagesConversationListView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6012345678904 /* MessagesConversationListViewManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = onebody/MessagesConversationListViewManager.m; sourceTree = "<group>"; };
 		A91F16DD5215F81E3F6EE2CA /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-onebody/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		ABA070994F3D498A8F8D1519 /* OpenSans_Condensed-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans_Condensed-Italic.ttf"; path = "../src/assets/fonts/OpenSans_Condensed-Italic.ttf"; sourceTree = "<group>"; };
 		ABB5AA1D3BBE4F9A9B558AF0 /* OpenSans-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "OpenSans-Italic.ttf"; path = "../src/assets/fonts/OpenSans-Italic.ttf"; sourceTree = "<group>"; };

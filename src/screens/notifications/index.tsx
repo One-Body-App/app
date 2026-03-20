@@ -35,6 +35,11 @@ import {
   removeQueuedNotification,
 } from '@/src/services/notification/pushNotificationStorage';
 import { formatRelativeTime, nowUtcIso, parseIsoOrNull } from '@/src/utils/time';
+import {
+  isOneBodyDeepLinkCandidate,
+  normalizeNotificationTapUrl,
+  resolveNotificationTargetUrl,
+} from './notificationLinking';
 
 type Props = StackScreenProps<HomeStackParamsList, 'Notifications'>;
 
@@ -120,12 +125,6 @@ const MATCHERS: Record<Exclude<CategoryKey, 'all'>, RegExp> = {
 };
 
 const ACTIVITY_SIGNAL_REGEX = /\bcomment|reaction|reacted|message|messaged|reply|replied|like\b/i;
-const ONEBODY_WEB_HOSTS = new Set([
-  'app.onebodyapp.com',
-  'www.onebodyapp.com',
-  'onebodyapp.com',
-  'auth.onebodyapp.com',
-]);
 
 const normalizeOptionalString = (value: unknown) => {
   if (typeof value !== 'string') {
@@ -133,52 +132,6 @@ const normalizeOptionalString = (value: unknown) => {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
-};
-
-const tryParseUrl = (value?: string | null) => {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    return new URL(value);
-  } catch {
-    return null;
-  }
-};
-
-const isOneBodyDeepLinkCandidate = (value?: string | null) => {
-  const parsed = tryParseUrl(value);
-  if (!parsed) {
-    return false;
-  }
-
-  const protocol = parsed.protocol.toLowerCase();
-  if (protocol === 'onebodyapp:') {
-    return true;
-  }
-
-  return (protocol === 'https:' || protocol === 'http:') && ONEBODY_WEB_HOSTS.has(parsed.host);
-};
-
-const normalizeNotificationTapUrl = (rawUrl?: string | null) => {
-  const parsed = tryParseUrl(rawUrl);
-  if (!parsed || !rawUrl) {
-    return rawUrl || '';
-  }
-
-  if (parsed.protocol.toLowerCase() === 'onebodyapp:') {
-    return rawUrl;
-  }
-
-  if (!ONEBODY_WEB_HOSTS.has(parsed.host)) {
-    return rawUrl;
-  }
-
-  const normalizedPath = parsed.pathname.replace(/^\/+/, '');
-  const query = parsed.search || '';
-  const hash = parsed.hash || '';
-  return `onebodyapp://${normalizedPath}${query}${hash}`;
 };
 
 const normalizeNotificationIconUrl = (value: unknown) => {
@@ -203,7 +156,11 @@ const toServerNotification = (item: any): InboxNotification | null => {
     body: String(item?.description || ''),
     createdAt: String(item?.createdAt || nowUtcIso()),
     read: Boolean(item?.read),
-    url: typeof item?.url === 'string' ? item.url : undefined,
+    url:
+      normalizeOptionalString(item?.url) ||
+      normalizeOptionalString(data?.url) ||
+      normalizeOptionalString(data?.deepLink) ||
+      normalizeOptionalString(data?.link),
     iconUrl: normalizeNotificationIconUrl(
       item?.iconUrl || item?.notificationIconUrl || item?.icon || item?.imageUrl || item?.image
     ),
@@ -556,12 +513,13 @@ function NotificationScreen({ navigation }: Props) {
     async (item: InboxNotification) => {
       await markAsRead(item);
 
-      if (!item.url) {
+      const targetUrl = resolveNotificationTargetUrl(item);
+      if (!targetUrl) {
         return;
       }
 
-      const normalizedUrl = normalizeNotificationTapUrl(item.url);
-      const shouldTryInApp = isOneBodyDeepLinkCandidate(item.url) || normalizedUrl !== item.url;
+      const normalizedUrl = normalizeNotificationTapUrl(targetUrl);
+      const shouldTryInApp = isOneBodyDeepLinkCandidate(targetUrl) || normalizedUrl !== targetUrl;
 
       if (shouldTryInApp) {
         try {
@@ -573,7 +531,7 @@ function NotificationScreen({ navigation }: Props) {
       }
 
       try {
-        await Linking.openURL(item.url);
+        await Linking.openURL(targetUrl);
       } catch (_error) {
         Alert.alert('Unable to open link', 'This notification link is invalid.');
       }
@@ -1128,12 +1086,12 @@ const createStyles = (dark: boolean, colors: any) =>
     },
     cardTitle: {
       ...Typography.body.x2M,
-      color: dark ? Colors.neutral[300] : '#7E8288',
+      color: dark ? '#F6F6F7' : '#7E8288',
       flex: 1,
       paddingRight: spacing.x5,
     },
     cardTitleUnread: {
-      color: colors.text,
+      color: dark ? '#F6F6F7' : colors.text,
     },
     cardHeaderRight: {
       flexDirection: 'row',
@@ -1149,7 +1107,7 @@ const createStyles = (dark: boolean, colors: any) =>
     },
     cardTime: {
       ...Typography.body.x1,
-      color: dark ? Colors.neutral[400] : '#9A9DA3',
+      color: dark ? '#F6F6F7' : '#9A9DA3',
     },
     menuButton: {
       width: 26,
@@ -1160,11 +1118,11 @@ const createStyles = (dark: boolean, colors: any) =>
     },
     cardBody: {
       ...Typography.body.x2,
-      color: dark ? Colors.neutral[400] : '#8A8E95',
+      color: dark ? '#F6F6F7' : '#8A8E95',
     },
     cardBodyUnread: {
       ...Typography.body.x2M,
-      color: colors.text,
+      color: dark ? '#F6F6F7' : colors.text,
     },
     emptyContainer: {
       alignItems: 'center',

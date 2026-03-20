@@ -1720,14 +1720,14 @@ function Explore({ navigation }: Props) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: dark ? '#111827' : '#f8fafc' }]}>
+    <View style={[styles.container, { backgroundColor: dark ? Colors.neutral[900] : '#f8fafc' }]}>
       <View
         style={[
           styles.headerWrap,
           {
             paddingTop: insets.top + spacing.x8,
             borderBottomColor: colors.border,
-            backgroundColor: dark ? 'rgba(13,13,13,0.92)' : 'rgba(255,255,255,0.92)',
+            backgroundColor: dark ? 'rgba(13,13,13,0.96)' : 'rgba(255,255,255,0.92)',
           },
         ]}
       >
@@ -1767,7 +1767,9 @@ function Explore({ navigation }: Props) {
           </View>
 
           <View style={styles.headerCenterWrap} pointerEvents="none">
-            <StyledText style={styles.headerTitle}>Explore</StyledText>
+            <StyledText style={[styles.headerTitle, { color: headerTextColor }]}>
+              Explore
+            </StyledText>
           </View>
 
           <View style={styles.headerSideSlot}>
@@ -1786,7 +1788,12 @@ function Explore({ navigation }: Props) {
         </View>
 
         <View style={styles.searchContainer}>
-          <View style={[styles.searchInputWrap, { backgroundColor: dark ? '#1e293b' : '#f1f5f9' }]}>
+          <View
+            style={[
+              styles.searchInputWrap,
+              { backgroundColor: dark ? Colors.neutral[800] : '#f1f5f9' },
+            ]}
+          >
             <SearchIcon
               style={{ height: 20, width: 20, marginRight: spacing.x8 }}
               stroke={dark ? Colors.neutral[400] : Colors.neutral[300]}
@@ -2014,7 +2021,7 @@ const createStyles = (dark: boolean) =>
       marginBottom: spacing.x10,
       justifyContent: 'flex-end',
       padding: spacing.x10,
-      backgroundColor: dark ? '#0f172a' : '#e5edf4',
+      backgroundColor: dark ? Colors.neutral[800] : '#e5edf4',
     },
     liveBadge: {
       alignSelf: 'flex-start',
@@ -2042,7 +2049,7 @@ const createStyles = (dark: boolean) =>
     },
     creatorsWrapper: {
       paddingVertical: spacing.x20,
-      backgroundColor: dark ? 'rgba(15, 23, 42, 0.5)' : '#f1f5f9',
+      backgroundColor: dark ? Colors.neutral[900] : '#f1f5f9',
     },
     creatorCard: {
       width: 132,
@@ -2080,7 +2087,7 @@ const createStyles = (dark: boolean) =>
       paddingVertical: 6,
     },
     creatorActionButtonConnected: {
-      backgroundColor: dark ? '#1f2937' : '#dce5ed',
+      backgroundColor: dark ? Colors.neutral[700] : '#dce5ed',
     },
     creatorActionButtonText: {
       color: '#fff',
@@ -2103,7 +2110,7 @@ const createStyles = (dark: boolean) =>
     masonryImageWrap: {
       borderRadius: 12,
       overflow: 'hidden',
-      backgroundColor: dark ? '#0f172a' : '#e5edf4',
+      backgroundColor: dark ? Colors.neutral[800] : '#e5edf4',
     },
     masonryVideo: {
       width: '100%',
@@ -2163,7 +2170,7 @@ const createStyles = (dark: boolean) =>
     goEventImage: {
       height: 160,
       borderRadius: 12,
-      backgroundColor: dark ? '#0f172a' : '#e5edf4',
+      backgroundColor: dark ? Colors.neutral[800] : '#e5edf4',
     },
     goEventOverlay: {
       flex: 1,
@@ -2207,13 +2214,13 @@ const createStyles = (dark: boolean) =>
       gap: 8,
     },
     topicPill: {
-      backgroundColor: '#e6eaec',
+      backgroundColor: dark ? Colors.neutral[800] : '#e6eaec',
       borderRadius: 20,
       paddingHorizontal: 14,
       paddingVertical: 7,
     },
     topicPillText: {
-      color: '#032f3c',
+      color: dark ? Colors.neutral[200] : '#032f3c',
       fontWeight: '600',
     },
     featuredBanner: {

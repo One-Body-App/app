@@ -3,11 +3,12 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
-import { CreateFlowLayout, ensureExistingDraftRecord } from './shared';
+import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep3'>;
 
 function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Element {
+  const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
   const [draftId, setDraftId] = useState(route.params?.draftId);
   const [description, setDescription] = useState('');
@@ -71,36 +72,54 @@ function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Eleme
       nextLabel="Continue"
     >
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>What should people expect?</Text>
-        <Text style={styles.sectionBody}>
+        <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+          What should people expect?
+        </Text>
+        <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
           Add the narrative that will also power the public event view and organizer summary cards.
         </Text>
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Event Description</Text>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Event Description</Text>
         <TextInput
-          style={styles.textArea}
+          style={[
+            styles.textArea,
+            {
+              backgroundColor: palette.inputBg,
+              borderColor: palette.inputBorder,
+              color: palette.inputText,
+            },
+          ]}
           value={description}
           onChangeText={setDescription}
           placeholder="Describe the event, agenda, what to bring, and who this is for."
-          placeholderTextColor="#8AA0A8"
+          placeholderTextColor={palette.inputPlaceholder}
           multiline
           textAlignVertical="top"
         />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Capacity</Text>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Capacity</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            {
+              backgroundColor: palette.inputBg,
+              borderColor: palette.inputBorder,
+              color: palette.inputText,
+            },
+          ]}
           value={capacity}
           onChangeText={setCapacity}
           placeholder="150"
-          placeholderTextColor="#8AA0A8"
+          placeholderTextColor={palette.inputPlaceholder}
           keyboardType="number-pad"
         />
-        <Text style={styles.helperText}>Leave blank if registration should stay open-ended.</Text>
+        <Text style={[styles.helperText, { color: palette.textMuted }]}>
+          Leave blank if registration should stay open-ended.
+        </Text>
       </View>
     </CreateFlowLayout>
   );
@@ -113,12 +132,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#032f3c',
   },
   sectionBody: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#4F6D77',
   },
   fieldGroup: {
     gap: 8,
@@ -126,35 +143,27 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#032f3c',
     textTransform: 'uppercase',
   },
   input: {
     minHeight: 54,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#032f3c',
   },
   textArea: {
     minHeight: 170,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 16,
     fontSize: 16,
     lineHeight: 22,
-    color: '#032f3c',
   },
   helperText: {
     fontSize: 13,
-    color: '#4F6D77',
   },
 });
 

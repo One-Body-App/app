@@ -128,8 +128,9 @@ function DrawerNav() {
           name="ZoeAI"
           component={ZoeChat}
           options={{
-            headerShown: true,
+            headerShown: false,
             title: 'ZoeAI',
+            drawerLabel: 'ZoeAI',
             drawerIcon: ({ color, size }) => <ZoeIcon width={size} height={size} color={color} />,
           }}
         />

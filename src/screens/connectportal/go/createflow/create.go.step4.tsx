@@ -7,11 +7,12 @@ import type {
   ConnectPortalTicketType,
 } from '@/src/services/connectPortal';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
-import { CreateFlowLayout, ensureExistingDraftRecord } from './shared';
+import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep4'>;
 
 function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
+  const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
   const [draftId, setDraftId] = useState(route.params?.draftId);
   const [ticketType, setTicketType] = useState<ConnectPortalTicketType>('free');
@@ -75,8 +76,10 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
       nextDisabled={!draftId}
     >
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>How will people register?</Text>
-        <Text style={styles.sectionBody}>
+        <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+          How will people register?
+        </Text>
+        <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
           Choose the ticket type first, then decide whether a paid event should use internal or
           external payments.
         </Text>
@@ -88,7 +91,13 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
           return (
             <TouchableOpacity
               key={option}
-              style={[styles.toggleCard, isActive ? styles.toggleCardActive : null]}
+              style={[
+                styles.toggleCard,
+                {
+                  backgroundColor: isActive ? palette.cardActiveBg : palette.cardBg,
+                  borderColor: isActive ? palette.cardActiveBorder : palette.cardBorder,
+                },
+              ]}
               onPress={() => {
                 setTicketType(option);
                 if (option === 'free') {
@@ -96,10 +105,20 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
                 }
               }}
             >
-              <Text style={[styles.toggleTitle, isActive ? styles.toggleTitleActive : null]}>
+              <Text
+                style={[
+                  styles.toggleTitle,
+                  { color: isActive ? palette.accent : palette.textPrimary },
+                ]}
+              >
                 {option === 'free' ? 'Free Event' : 'Paid Event'}
               </Text>
-              <Text style={[styles.toggleBody, isActive ? styles.toggleBodyActive : null]}>
+              <Text
+                style={[
+                  styles.toggleBody,
+                  { color: isActive ? palette.textSecondary : palette.textSecondary },
+                ]}
+              >
                 {option === 'free'
                   ? 'Attendees register without payment.'
                   : 'Collect payment for one or more ticket tiers.'}
@@ -111,26 +130,40 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
 
       {ticketType === 'paid' ? (
         <View style={styles.paymentSection}>
-          <Text style={styles.label}>Payment Option</Text>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Payment Option</Text>
           {(['external', 'internal'] as ConnectPortalPaymentOption[]).map((option) => {
             const isActive = paymentOption === option;
             return (
               <TouchableOpacity
                 key={option}
-                style={[styles.paymentCard, isActive ? styles.paymentCardActive : null]}
+                style={[
+                  styles.paymentCard,
+                  {
+                    backgroundColor: isActive ? palette.cardActiveBg : palette.cardBg,
+                    borderColor: isActive ? palette.cardActiveBorder : palette.cardBorder,
+                  },
+                ]}
                 onPress={() => setPaymentOption(option)}
               >
                 <View style={styles.paymentCopy}>
-                  <Text style={styles.paymentTitle}>
+                  <Text style={[styles.paymentTitle, { color: palette.textPrimary }]}>
                     {option === 'external' ? 'External payment link' : 'OneBody internal payouts'}
                   </Text>
-                  <Text style={styles.paymentBody}>
+                  <Text style={[styles.paymentBody, { color: palette.textSecondary }]}>
                     {option === 'external'
                       ? 'Keep payments on Eventbrite, Stripe, or another external checkout.'
                       : 'Complete the local payout setup step before review.'}
                   </Text>
                 </View>
-                <View style={[styles.radio, isActive ? styles.radioActive : null]} />
+                <View
+                  style={[
+                    styles.radio,
+                    {
+                      borderColor: isActive ? palette.radioActiveBorder : palette.radioBorder,
+                      backgroundColor: isActive ? palette.radioActiveBg : palette.cardBg,
+                    },
+                  ]}
+                />
               </TouchableOpacity>
             );
           })}
@@ -147,12 +180,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#032f3c',
   },
   sectionBody: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#4F6D77',
+    fontSize: 14,
+    lineHeight: 20,
   },
   toggleRow: {
     gap: 12,
@@ -160,30 +191,16 @@ const styles = StyleSheet.create({
   toggleCard: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     padding: 18,
     gap: 6,
-  },
-  toggleCardActive: {
-    borderColor: '#126b87',
-    backgroundColor: '#EEF6F8',
   },
   toggleTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#032f3c',
-  },
-  toggleTitleActive: {
-    color: '#126b87',
   },
   toggleBody: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#4F6D77',
-  },
-  toggleBodyActive: {
-    color: '#355963',
   },
   paymentSection: {
     gap: 10,
@@ -191,7 +208,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#032f3c',
     textTransform: 'uppercase',
   },
   paymentCard: {
@@ -200,13 +216,7 @@ const styles = StyleSheet.create({
     gap: 16,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     padding: 18,
-  },
-  paymentCardActive: {
-    borderColor: '#126b87',
-    backgroundColor: '#EEF6F8',
   },
   paymentCopy: {
     flex: 1,
@@ -215,24 +225,16 @@ const styles = StyleSheet.create({
   paymentTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#032f3c',
   },
   paymentBody: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#4F6D77',
   },
   radio: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#C4D4D9',
-    backgroundColor: '#FFFFFF',
-  },
-  radioActive: {
-    borderColor: '#126b87',
-    backgroundColor: '#126b87',
   },
 });
 

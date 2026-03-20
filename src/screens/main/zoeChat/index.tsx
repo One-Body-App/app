@@ -1,12 +1,28 @@
 import React, { useCallback } from 'react';
-import { ActivityIndicator, Platform, StatusBar, Text, View } from 'react-native';
-import { useFocusEffect, useIsFocused, useTheme } from '@react-navigation/native';
+import {
+  ActivityIndicator,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { CommonActions, useFocusEffect, useIsFocused, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import type { DrawerScreenProps } from '@react-navigation/drawer';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import Config from 'react-native-config';
-import { getHeight } from '@/utils/ResponsiveFun';
+import StyledText from '@/components/styled/Text';
+import { FeedTypes } from '@/src/screens/home';
+import type { MainDrawerParamsList } from '@/src/navigator/types';
+import { Colors, Typography } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
 
 const ZOE_CHAT_URL = String(Config.ZOE_CHAT_URL ?? '').trim();
+
+type Props = DrawerScreenProps<MainDrawerParamsList, 'ZoeAI'>;
 
 function getAllowedChatOrigin() {
   try {
@@ -20,14 +36,53 @@ function getAllowedChatOrigin() {
   }
 }
 
-function ZoeChat() {
+function isAllowedTopLevelNavigation(url: string, allowedOrigin: string | null) {
+  if (!allowedOrigin) {
+    return false;
+  }
+
+  if (url === 'about:blank') {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && parsed.origin === allowedOrigin;
+  } catch {
+    return false;
+  }
+}
+
+function ZoeChat({ navigation }: Props) {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
-  const bottomTabHeight = getHeight(7) + insets.bottom;
   const statusBarStyle = dark ? 'light-content' : 'dark-content';
-  const statusBarBackgroundColor = dark ? '#032f3c' : '#f6f6f7';
+  const statusBarBackgroundColor = dark ? '#0D0D0D' : '#FFFFFF';
   const allowedOrigin = getAllowedChatOrigin();
+  const headerBorderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(3,47,60,0.08)';
+  const handleBackPress = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'Main',
+            params: {
+              screen: 'HomeTab',
+              params: {
+                screen: 'Home',
+                params: {
+                  selectedTab: FeedTypes.ForYou,
+                  refreshToken: Date.now(),
+                },
+              },
+            },
+          },
+        ],
+      })
+    );
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -56,8 +111,6 @@ function ZoeChat() {
       style={{
         flex: 1,
         backgroundColor: colors.background,
-        paddingTop: insets.top,
-        paddingBottom: bottomTabHeight,
       }}
     >
       {Platform.OS === 'android' && isFocused ? (
@@ -67,6 +120,35 @@ function ZoeChat() {
           translucent={false}
         />
       ) : null}
+      <View
+        style={[
+          styles.headerWrap,
+          {
+            paddingTop: insets.top,
+            backgroundColor: colors.background,
+            borderBottomColor: headerBorderColor,
+          },
+        ]}
+      >
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Back to Home"
+            onPress={handleBackPress}
+            style={styles.headerButton}
+          >
+            <MaterialIcons
+              name="arrow-back-ios-new"
+              size={20}
+              color={dark ? colors.text : Colors.primary.brand}
+            />
+          </TouchableOpacity>
+
+          <StyledText style={[styles.headerTitle, { color: colors.text }]}>Chatbot</StyledText>
+
+          <View style={styles.headerSpacer} />
+        </View>
+      </View>
       {!allowedOrigin ? (
         <View
           style={{
@@ -87,20 +169,27 @@ function ZoeChat() {
           style={{ flex: 1, backgroundColor: colors.background }}
           automaticallyAdjustContentInsets={false}
           contentInsetAdjustmentBehavior="never"
-          originWhitelist={[allowedOrigin]}
           javaScriptEnabled
           domStorageEnabled
+          sharedCookiesEnabled
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
           allowsFullscreenVideo
+          keyboardDisplayRequiresUserAction={false}
+          javaScriptCanOpenWindowsAutomatically={false}
+          allowFileAccess={false}
+          allowFileAccessFromFileURLs={false}
+          allowUniversalAccessFromFileURLs={false}
+          mixedContentMode="never"
           setSupportMultipleWindows={false}
+          thirdPartyCookiesEnabled={false}
           mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
           onShouldStartLoadWithRequest={(request) => {
-            try {
-              return new URL(request.url).origin === allowedOrigin;
-            } catch {
-              return false;
+            if (request.isTopFrame === false) {
+              return true;
             }
+
+            return isAllowedTopLevelNavigation(request.url, allowedOrigin);
           }}
           startInLoadingState
           renderLoading={() => (
@@ -120,5 +209,33 @@ function ZoeChat() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  headerWrap: {
+    borderBottomWidth: 1,
+  },
+  headerRow: {
+    minHeight: 56,
+    paddingHorizontal: spacing.x12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+    height: 40,
+  },
+  headerTitle: {
+    ...Typography.body.x2M,
+    fontWeight: '700',
+  },
+});
 
 export default ZoeChat;

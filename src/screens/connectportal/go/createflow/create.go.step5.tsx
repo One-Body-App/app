@@ -9,11 +9,13 @@ import {
   createDraftTicketTier,
   ensureExistingDraftRecord,
   getStepFiveNextRouteName,
+  useCreateFlowPalette,
 } from './shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep5'>;
 
 function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element {
+  const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<ConnectPortalEventDraft | null>(null);
   const [ticketTiers, setTicketTiers] = useState<TicketTier[]>([createDraftTicketTier()]);
@@ -103,45 +105,75 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
       nextDisabled={!draft}
     >
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Set up your ticket tiers.</Text>
-        <Text style={styles.sectionBody}>
+        <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+          Set up your ticket tiers.
+        </Text>
+        <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
           Free events keep price at zero. Paid events can define multiple tiers before review.
         </Text>
       </View>
 
       {ticketTiers.map((tier) => (
-        <View key={tier.id} style={styles.ticketCard}>
+        <View
+          key={tier.id}
+          style={[
+            styles.ticketCard,
+            { backgroundColor: palette.cardBg, borderColor: palette.cardBorder },
+          ]}
+        >
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Ticket Name</Text>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>Ticket Name</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: palette.inputBg,
+                  borderColor: palette.inputBorder,
+                  color: palette.inputText,
+                },
+              ]}
               value={tier.name}
               onChangeText={(value) => updateTier(tier.id, 'name', value)}
               placeholder="General Admission"
-              placeholderTextColor="#8AA0A8"
+              placeholderTextColor={palette.inputPlaceholder}
             />
           </View>
 
           <View style={styles.row}>
             <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Quantity</Text>
+              <Text style={[styles.label, { color: palette.textPrimary }]}>Quantity</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: palette.inputBg,
+                    borderColor: palette.inputBorder,
+                    color: palette.inputText,
+                  },
+                ]}
                 value={tier.quantity}
                 onChangeText={(value) => updateTier(tier.id, 'quantity', value)}
                 placeholder="100"
-                placeholderTextColor="#8AA0A8"
+                placeholderTextColor={palette.inputPlaceholder}
                 keyboardType="number-pad"
               />
             </View>
             <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Price</Text>
+              <Text style={[styles.label, { color: palette.textPrimary }]}>Price</Text>
               <TextInput
-                style={[styles.input, draft?.ticketType === 'free' ? styles.inputDisabled : null]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor:
+                      draft?.ticketType === 'free' ? palette.disabledInputBg : palette.inputBg,
+                    borderColor: palette.inputBorder,
+                    color: draft?.ticketType === 'free' ? palette.textSecondary : palette.inputText,
+                  },
+                ]}
                 value={draft?.ticketType === 'free' ? '0.00' : tier.price}
                 onChangeText={(value) => updateTier(tier.id, 'price', value)}
                 placeholder="25.00"
-                placeholderTextColor="#8AA0A8"
+                placeholderTextColor={palette.inputPlaceholder}
                 keyboardType="decimal-pad"
                 editable={draft?.ticketType !== 'free'}
               />
@@ -151,10 +183,18 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
       ))}
 
       <TouchableOpacity
-        style={styles.addButton}
+        style={[
+          styles.addButton,
+          {
+            borderColor: palette.accent,
+            backgroundColor: palette.dashedBg,
+          },
+        ]}
         onPress={() => setTicketTiers((current) => [...current, createDraftTicketTier()])}
       >
-        <Text style={styles.addButtonText}>Add another ticket type</Text>
+        <Text style={[styles.addButtonText, { color: palette.accent }]}>
+          Add another ticket type
+        </Text>
       </TouchableOpacity>
     </CreateFlowLayout>
   );
@@ -167,18 +207,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#032f3c',
   },
   sectionBody: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#4F6D77',
   },
   ticketCard: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     padding: 18,
     gap: 14,
   },
@@ -196,35 +232,24 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#032f3c',
     textTransform: 'uppercase',
   },
   input: {
     minHeight: 54,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#032f3c',
-  },
-  inputDisabled: {
-    color: '#4F6D77',
-    backgroundColor: '#F1F6F8',
   },
   addButton: {
     minHeight: 52,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#126b87',
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FBFDFD',
   },
   addButtonText: {
-    color: '#126b87',
     fontSize: 15,
     fontWeight: '800',
   },

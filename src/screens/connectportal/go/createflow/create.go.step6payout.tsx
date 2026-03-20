@@ -3,11 +3,12 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
-import { CreateFlowLayout, ensureExistingDraftRecord } from './shared';
+import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Payout'>;
 
 function PayoutMethodScreen({ navigation, route }: Props): React.JSX.Element {
+  const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
   const [draftId, setDraftId] = useState(route.params?.draftId);
   const [businessName, setBusinessName] = useState('');
@@ -71,32 +72,48 @@ function PayoutMethodScreen({ navigation, route }: Props): React.JSX.Element {
       nextDisabled={!draftId}
     >
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Confirm payout details.</Text>
-        <Text style={styles.sectionBody}>
+        <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+          Confirm payout details.
+        </Text>
+        <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
           This is a local-only implementation. We store the payout draft data so review and resume
           routing behave correctly, but no external payouts are created.
         </Text>
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Legal Business Name</Text>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Legal Business Name</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            {
+              backgroundColor: palette.inputBg,
+              borderColor: palette.inputBorder,
+              color: palette.inputText,
+            },
+          ]}
           value={businessName}
           onChangeText={setBusinessName}
           placeholder="Acme Events LLC"
-          placeholderTextColor="#8AA0A8"
+          placeholderTextColor={palette.inputPlaceholder}
         />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>EIN</Text>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>EIN</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            {
+              backgroundColor: palette.inputBg,
+              borderColor: palette.inputBorder,
+              color: palette.inputText,
+            },
+          ]}
           value={ein}
           onChangeText={setEin}
           placeholder="12-3456789"
-          placeholderTextColor="#8AA0A8"
+          placeholderTextColor={palette.inputPlaceholder}
         />
       </View>
     </CreateFlowLayout>
@@ -110,12 +127,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#032f3c',
   },
   sectionBody: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#4F6D77',
   },
   fieldGroup: {
     gap: 8,
@@ -123,18 +138,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#032f3c',
     textTransform: 'uppercase',
   },
   input: {
     minHeight: 54,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#032f3c',
   },
 });
 

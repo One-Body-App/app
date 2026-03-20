@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useTheme } from '@react-navigation/native';
@@ -14,6 +14,7 @@ import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import getDeviceLocation from '@/src/services/deviceLocation';
 import {
+  createConnectPortalDraft,
   formatConnectPortalDateTime,
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
@@ -364,6 +365,18 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
   };
 
+  const handleAddPress = useCallback(() => {
+    if (activeTab === 'Go!') {
+      createConnectPortalDraft().then((draft) => {
+        navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+      });
+      return;
+    }
+    if (activeTab === 'Serve') {
+      Alert.alert('Coming Soon', 'Serve opportunity creation is coming soon.');
+    }
+  }, [activeTab, navigation]);
+
   const onOpenLanding = useCallback(() => {
     if (activeTab === 'Places') {
       navigation.navigate('ConnectPlacesHome');
@@ -608,6 +621,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           searchText={searchByTab[activeTab]}
           onSearchChange={(text) => setSearchText(activeTab, text)}
           searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
+          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
           onOpenFilters={
             activeTab === 'Places' ? () => places.setFilterSheetOpen(true) : onOpenLanding
           }

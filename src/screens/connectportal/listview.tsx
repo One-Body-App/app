@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
+  Alert,
   Animated,
+  FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -13,13 +14,15 @@ import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
 import StyledText from '@/components/styled/Text';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ConnectStackParamsList } from '@/src/navigator/types';
-import { Colors, Typography } from '@/src/styles';
+import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import {
+  createConnectPortalDraft,
   type ConnectQuickChip,
   formatConnectPortalDateTime,
   trackConnectPortalEventTelemetry,
@@ -39,10 +42,15 @@ import {
   ConnectPortalChrome,
   ConnectPortalFilterSheet,
   ConnectRetractableSearchBar,
+  useConnectPalette,
   useConnectKeyboardMetrics,
 } from './shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectPortal'>;
+
+function ListItemSeparator() {
+  return <View style={{ height: spacing.x13 }} />;
+}
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
@@ -69,6 +77,7 @@ const getServeRoleType = (location: string) =>
 
 function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   const { colors, dark } = useTheme();
+  const palette = useConnectPalette();
   const insets = useSafeAreaInsets();
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const {
@@ -268,6 +277,24 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     sectionTitle = 'Upcoming Events';
   }
 
+  const listData: { id: string }[] = useMemo(() => {
+    if (activeTab === 'Places') return places.visibleRecords;
+    if (activeTab === 'Go!') return eventRecords;
+    return serveItems;
+  }, [activeTab, places.visibleRecords, eventRecords, serveItems]);
+
+  const handleAddPress = useCallback(() => {
+    if (activeTab === 'Go!') {
+      createConnectPortalDraft().then((draft) => {
+        navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+      });
+      return;
+    }
+    if (activeTab === 'Serve') {
+      Alert.alert('Coming Soon', 'Serve opportunity creation is coming soon.');
+    }
+  }, [activeTab, navigation]);
+
   const onChangeViewMode = (viewMode: 'list' | 'map') => {
     setViewMode(activeTab, viewMode);
     if (viewMode === 'map') {
@@ -377,42 +404,57 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           />
         </Animated.View>
 
-        <ScrollView
+        <FlatList
+          key={activeTab}
+          data={listData}
+          keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           onScroll={handleListScroll}
+          onEndReachedThreshold={0.5}
           contentContainerStyle={[
             styles.contentBody,
             { paddingTop: CHIP_ROW_HEIGHT, paddingBottom: bottomSearchClearance },
           ]}
-        >
-          <View style={styles.sectionHeader}>
-            <StyledText
-              style={[styles.sectionTitle, { color: dark ? CONNECT_BRAND.gray100 : '#032f3c' }]}
-            >
-              {sectionTitle}
-            </StyledText>
-            <TouchableOpacity activeOpacity={0.8}>
-              <StyledText style={styles.viewAllText}>View All</StyledText>
-            </TouchableOpacity>
-          </View>
-
-          {activeTab === 'Places'
-            ? places.visibleRecords.map((place) => (
+          ListHeaderComponent={
+            <View style={styles.sectionHeader}>
+              <StyledText
+                style={[styles.sectionTitle, { color: dark ? CONNECT_BRAND.gray100 : '#032f3c' }]}
+              >
+                {sectionTitle}
+              </StyledText>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={openFilterSheet}
+                style={[
+                  styles.filterIconButton,
+                  {
+                    backgroundColor: palette.mapActionBg,
+                    borderColor: palette.mapActionBorder,
+                  },
+                ]}
+              >
+                <FilterSortIcon width={20} height={20} color={palette.activeText} />
+              </TouchableOpacity>
+            </View>
+          }
+          renderItem={({ item }) => {
+            if (activeTab === 'Places') {
+              const place = item as (typeof places.visibleRecords)[number];
+              return (
                 <ConnectPlaceCard
-                  key={place.id}
                   place={place}
                   isFollowing={places.isFollowing(place.id)}
                   onToggleFollow={() => places.toggleFollow(place.id)}
                 />
-              ))
-            : null}
+              );
+            }
 
-          {activeTab === 'Go!'
-            ? eventRecords.map((eventRecord) => (
+            if (activeTab === 'Go!') {
+              const eventRecord = item as (typeof eventRecords)[number];
+              return (
                 <TouchableOpacity
-                  key={eventRecord.id}
-                  style={[styles.genericCard, { backgroundColor: colors.card }]}
+                  style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
                   onPress={() => {
                     trackConnectPortalEventTelemetry(eventRecord.id, 'detail_open', {
                       source: 'connect_list',
@@ -420,47 +462,66 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                     navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id });
                   }}
                 >
-                  <MaterialIcons name="event" size={28} color={CONNECT_BRAND.infoBase} />
+                  <MaterialIcons name="event" size={28} color={palette.activeText} />
                   <View style={styles.genericCardCopy}>
-                    <StyledText style={styles.genericCardTitle}>{eventRecord.title}</StyledText>
-                    <StyledText style={styles.genericCardSubtitle}>
+                    <StyledText style={[styles.genericCardTitle, { color: palette.textPrimary }]}>
+                      {eventRecord.title}
+                    </StyledText>
+                    <StyledText
+                      style={[styles.genericCardSubtitle, { color: palette.textSecondary }]}
+                    >
                       {`${eventRecord.venueName || eventRecord.address || 'Location TBD'} • ${formatConnectPortalDateTime(eventRecord)}`}
                     </StyledText>
                     <View style={styles.genericTagsRow}>
                       {(eventRecord.tags.length > 0 ? eventRecord.tags : ['Event']).map((tag) => (
-                        <View key={`${eventRecord.id}-${tag}`} style={styles.genericTag}>
-                          <StyledText style={styles.genericTagText}>{tag.toUpperCase()}</StyledText>
+                        <View
+                          key={`${eventRecord.id}-${tag}`}
+                          style={[styles.genericTag, { backgroundColor: palette.tagBg }]}
+                        >
+                          <StyledText
+                            style={[styles.genericTagText, { color: palette.activeText }]}
+                          >
+                            {tag.toUpperCase()}
+                          </StyledText>
                         </View>
                       ))}
                     </View>
                   </View>
                 </TouchableOpacity>
-              ))
-            : null}
+              );
+            }
 
-          {activeTab === 'Serve'
-            ? serveItems.map((item) => (
-                <View key={item.id} style={[styles.genericCard, { backgroundColor: colors.card }]}>
-                  <MaterialIcons
-                    name="volunteer-activism"
-                    size={28}
-                    color={CONNECT_BRAND.infoBase}
-                  />
-                  <View style={styles.genericCardCopy}>
-                    <StyledText style={styles.genericCardTitle}>{item.title}</StyledText>
-                    <StyledText style={styles.genericCardSubtitle}>{item.location}</StyledText>
-                    <View style={styles.genericTagsRow}>
-                      {item.tags.map((tag) => (
-                        <View key={`${item.id}-${tag}`} style={styles.genericTag}>
-                          <StyledText style={styles.genericTagText}>{tag.toUpperCase()}</StyledText>
-                        </View>
-                      ))}
-                    </View>
+            const serveItem = item as (typeof serveItems)[number];
+            return (
+              <View style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}>
+                <MaterialIcons name="volunteer-activism" size={28} color={palette.activeText} />
+                <View style={styles.genericCardCopy}>
+                  <StyledText style={[styles.genericCardTitle, { color: palette.textPrimary }]}>
+                    {serveItem.title}
+                  </StyledText>
+                  <StyledText
+                    style={[styles.genericCardSubtitle, { color: palette.textSecondary }]}
+                  >
+                    {serveItem.location}
+                  </StyledText>
+                  <View style={styles.genericTagsRow}>
+                    {serveItem.tags.map((tag) => (
+                      <View
+                        key={`${serveItem.id}-${tag}`}
+                        style={[styles.genericTag, { backgroundColor: palette.tagBg }]}
+                      >
+                        <StyledText style={[styles.genericTagText, { color: palette.activeText }]}>
+                          {tag.toUpperCase()}
+                        </StyledText>
+                      </View>
+                    ))}
                   </View>
                 </View>
-              ))
-            : null}
-        </ScrollView>
+              </View>
+            );
+          }}
+          ItemSeparatorComponent={ListItemSeparator}
+        />
       </View>
 
       <View pointerEvents="box-none" style={[styles.bottomSearchDock, { bottom: searchRowBottom }]}>
@@ -469,7 +530,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           searchText={searchByTab[activeTab]}
           onSearchChange={(text) => setSearchText(activeTab, text)}
           searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
-          onOpenFilters={openFilterSheet}
+          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
         />
       </View>
 
@@ -537,9 +598,13 @@ const styles = StyleSheet.create({
     ...Typography.header.h3,
     color: CONNECT_BRAND.gray100,
   },
-  viewAllText: {
-    ...Typography.body.x1M,
-    color: CONNECT_BRAND.infoBase,
+  filterIconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderWidth: 1,
   },
   genericCard: {
     borderRadius: borderRadius.large,
@@ -554,12 +619,10 @@ const styles = StyleSheet.create({
   },
   genericCardTitle: {
     ...Typography.body.x2M,
-    color: Colors.neutral.brand,
     fontWeight: '700',
   },
   genericCardSubtitle: {
     ...Typography.body.x1,
-    color: Colors.neutral[500],
   },
   genericTagsRow: {
     flexDirection: 'row',
@@ -570,10 +633,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.x10,
     paddingVertical: spacing.x5,
     borderRadius: borderRadius.button,
-    backgroundColor: 'rgba(65,137,159,0.2)',
   },
   genericTagText: {
-    color: CONNECT_BRAND.infoBase,
     fontSize: 11,
     fontWeight: '700',
   },

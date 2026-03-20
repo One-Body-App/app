@@ -3,11 +3,12 @@ import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
-import { CreateFlowLayout, ensureExistingDraftRecord } from './shared';
+import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep2'>;
 
 function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
+  const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
   const [draftId, setDraftId] = useState(route.params?.draftId);
   const [startDate, setStartDate] = useState('');
@@ -86,69 +87,104 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
       nextDisabled={!draftId}
     >
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Schedule the event.</Text>
-        <Text style={styles.sectionBody}>
+        <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+          Schedule the event.
+        </Text>
+        <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
           Use plain text for now. A later pass can replace these inputs with pickers and geocoding.
         </Text>
       </View>
 
       <View style={styles.row}>
         <View style={styles.fieldHalf}>
-          <Text style={styles.label}>Start Date</Text>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Start Date</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.inputBorder,
+                color: palette.inputText,
+              },
+            ]}
             value={startDate}
             onChangeText={setStartDate}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor="#8AA0A8"
+            placeholderTextColor={palette.inputPlaceholder}
           />
         </View>
         <View style={styles.fieldHalf}>
-          <Text style={styles.label}>End Date</Text>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>End Date</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.inputBorder,
+                color: palette.inputText,
+              },
+            ]}
             value={endDate}
             onChangeText={setEndDate}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor="#8AA0A8"
+            placeholderTextColor={palette.inputPlaceholder}
           />
         </View>
       </View>
 
       <View style={styles.row}>
         <View style={styles.fieldHalf}>
-          <Text style={styles.label}>Start Time</Text>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Start Time</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.inputBorder,
+                color: palette.inputText,
+              },
+            ]}
             value={startTime}
             onChangeText={setStartTime}
             placeholder="7:00 PM"
-            placeholderTextColor="#8AA0A8"
+            placeholderTextColor={palette.inputPlaceholder}
           />
         </View>
         <View style={styles.fieldHalf}>
-          <Text style={styles.label}>End Time</Text>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>End Time</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.inputBorder,
+                color: palette.inputText,
+              },
+            ]}
             value={endTime}
             onChangeText={setEndTime}
             placeholder="9:00 PM"
-            placeholderTextColor="#8AA0A8"
+            placeholderTextColor={palette.inputPlaceholder}
           />
         </View>
       </View>
 
-      <View style={styles.toggleRow}>
+      <View
+        style={[
+          styles.toggleRow,
+          { backgroundColor: palette.cardBg, borderColor: palette.cardBorder },
+        ]}
+      >
         <View style={styles.toggleCopy}>
-          <Text style={styles.toggleTitle}>Online Event</Text>
-          <Text style={styles.toggleBody}>
+          <Text style={[styles.toggleTitle, { color: palette.textPrimary }]}>Online Event</Text>
+          <Text style={[styles.toggleBody, { color: palette.textSecondary }]}>
             Toggle this on to hide the physical venue fields and store the event as online-only.
           </Text>
         </View>
         <Switch
           value={isOnline}
           onValueChange={setIsOnline}
-          trackColor={{ false: '#D7E1E5', true: '#126b87' }}
+          trackColor={{ false: palette.inputBorder, true: palette.accent }}
           thumbColor="#FFFFFF"
         />
       </View>
@@ -156,23 +192,37 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
       {!isOnline ? (
         <>
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Venue Name</Text>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>Venue Name</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: palette.inputBg,
+                  borderColor: palette.inputBorder,
+                  color: palette.inputText,
+                },
+              ]}
               value={venueName}
               onChangeText={setVenueName}
               placeholder="Central Park North Pavilion"
-              placeholderTextColor="#8AA0A8"
+              placeholderTextColor={palette.inputPlaceholder}
             />
           </View>
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Address</Text>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>Address</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: palette.inputBg,
+                  borderColor: palette.inputBorder,
+                  color: palette.inputText,
+                },
+              ]}
               value={address}
               onChangeText={setAddress}
               placeholder="123 Park Lane, New York, NY"
-              placeholderTextColor="#8AA0A8"
+              placeholderTextColor={palette.inputPlaceholder}
             />
           </View>
         </>
@@ -188,12 +238,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#032f3c',
   },
   sectionBody: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#4F6D77',
   },
   row: {
     flexDirection: 'row',
@@ -209,18 +257,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#032f3c',
     textTransform: 'uppercase',
   },
   input: {
     minHeight: 54,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#032f3c',
   },
   toggleRow: {
     flexDirection: 'row',
@@ -228,9 +272,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D7E1E5',
     padding: 16,
   },
   toggleCopy: {
@@ -240,12 +282,10 @@ const styles = StyleSheet.create({
   toggleTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#032f3c',
   },
   toggleBody: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#4F6D77',
   },
 });
 

@@ -9,11 +9,17 @@ import {
   publishConnectPortalDraft,
 } from '@/src/services/connectPortal';
 import type { ConnectPortalEventDraft } from '@/src/services/connectPortal';
-import { CreateFlowLayout, ensureExistingDraftRecord, getReviewBackRouteName } from './shared';
+import {
+  CreateFlowLayout,
+  ensureExistingDraftRecord,
+  getReviewBackRouteName,
+  useCreateFlowPalette,
+} from './shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Review'>;
 
 function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element {
+  const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<ConnectPortalEventDraft | null>(null);
 
@@ -73,45 +79,79 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
       {draft ? (
         <>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Review your event details.</Text>
-            <Text style={styles.sectionBody}>
+            <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+              Review your event details.
+            </Text>
+            <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
               This summary becomes the source of truth for organizer screens and the public `Go!`
               event surfaces.
             </Text>
           </View>
 
-          <View style={styles.summaryCard}>
-            <Text style={styles.cardEyebrow}>{draft.category || 'EVENT'}</Text>
-            <Text style={styles.cardTitle}>{draft.title || 'Untitled Event'}</Text>
-            <Text style={styles.cardBody}>{draft.description || 'No description yet.'}</Text>
+          <View
+            style={[
+              styles.summaryCard,
+              { backgroundColor: palette.cardBg, borderColor: palette.cardBorder },
+            ]}
+          >
+            <Text style={[styles.cardEyebrow, { color: palette.accent }]}>
+              {draft.category || 'EVENT'}
+            </Text>
+            <Text style={[styles.cardTitle, { color: palette.textPrimary }]}>
+              {draft.title || 'Untitled Event'}
+            </Text>
+            <Text style={[styles.cardBody, { color: palette.textSecondary }]}>
+              {draft.description || 'No description yet.'}
+            </Text>
           </View>
 
-          <View style={styles.detailCard}>
-            <Text style={styles.detailTitle}>Schedule</Text>
-            <Text style={styles.detailValue}>
+          <View
+            style={[
+              styles.detailCard,
+              { backgroundColor: palette.cardBg, borderColor: palette.cardBorder },
+            ]}
+          >
+            <Text style={[styles.detailTitle, { color: palette.accent }]}>Schedule</Text>
+            <Text style={[styles.detailValue, { color: palette.textPrimary }]}>
               {formatConnectPortalDate(draft.startDate)}
               {draft.startTime ? ` • ${draft.startTime}` : ''}
             </Text>
-            {draft.endTime ? <Text style={styles.detailValue}>Ends {draft.endTime}</Text> : null}
+            {draft.endTime ? (
+              <Text style={[styles.detailValue, { color: palette.textPrimary }]}>
+                Ends {draft.endTime}
+              </Text>
+            ) : null}
           </View>
 
-          <View style={styles.detailCard}>
-            <Text style={styles.detailTitle}>Location</Text>
-            <Text style={styles.detailValue}>
+          <View
+            style={[
+              styles.detailCard,
+              { backgroundColor: palette.cardBg, borderColor: palette.cardBorder },
+            ]}
+          >
+            <Text style={[styles.detailTitle, { color: palette.accent }]}>Location</Text>
+            <Text style={[styles.detailValue, { color: palette.textPrimary }]}>
               {draft.isOnline ? 'Online Event' : draft.venueName || 'Location TBD'}
             </Text>
-            <Text style={styles.detailSubvalue}>
+            <Text style={[styles.detailSubvalue, { color: palette.textSecondary }]}>
               {draft.address || draft.locationQuery || 'TBD'}
             </Text>
           </View>
 
-          <View style={styles.detailCard}>
-            <Text style={styles.detailTitle}>Tickets</Text>
-            <Text style={styles.detailValue}>
+          <View
+            style={[
+              styles.detailCard,
+              { backgroundColor: palette.cardBg, borderColor: palette.cardBorder },
+            ]}
+          >
+            <Text style={[styles.detailTitle, { color: palette.accent }]}>Tickets</Text>
+            <Text style={[styles.detailValue, { color: palette.textPrimary }]}>
               {draft.ticketType === 'free' ? 'Free event' : 'Paid event'}
             </Text>
-            <Text style={styles.detailSubvalue}>{getEventCapacityLabel(draft)}</Text>
-            <Text style={styles.detailSubvalue}>
+            <Text style={[styles.detailSubvalue, { color: palette.textSecondary }]}>
+              {getEventCapacityLabel(draft)}
+            </Text>
+            <Text style={[styles.detailSubvalue, { color: palette.textSecondary }]}>
               {draft.ticketTiers.length} ticket tier{draft.ticketTiers.length === 1 ? '' : 's'}
             </Text>
           </View>
@@ -128,59 +168,47 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#032f3c',
   },
   sectionBody: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#4F6D77',
   },
   summaryCard: {
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D7E1E5',
     padding: 20,
     gap: 8,
   },
   cardEyebrow: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#126b87',
   },
   cardTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#032f3c',
   },
   cardBody: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#4F6D77',
   },
   detailCard: {
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D7E1E5',
     padding: 18,
     gap: 6,
   },
   detailTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#126b87',
     textTransform: 'uppercase',
   },
   detailValue: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#032f3c',
   },
   detailSubvalue: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#4F6D77',
   },
 });
 

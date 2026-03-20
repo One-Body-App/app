@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import LinearGradient from 'react-native-linear-gradient';
+import NetworkPinIcon from '@/assets/svg/Network-Pin--Streamline-Ultimate.svg';
+import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
@@ -104,7 +106,8 @@ type RetractableSearchBarProps = {
   searchText: string;
   onSearchChange: (text: string) => void;
   searchPlaceholder?: string;
-  onOpenFilters: () => void;
+  onOpenFilters?: () => void;
+  onAddPress?: () => void;
   onExpandedChange?: (expanded: boolean) => void;
 };
 
@@ -241,30 +244,30 @@ export function useConnectPalette() {
     overlayStrong: dark ? 'rgba(18,18,18,0.94)' : 'rgba(255,255,255,0.96)',
     overlayScrim: dark ? 'rgba(13,13,13,0.82)' : 'rgba(230,234,236,0.82)',
     card: colors.card,
-    cardMuted: dark ? '#181a1c' : '#d8e2e6',
-    chip: dark ? 'rgba(230,234,236,0.16)' : '#d1dee3',
+    cardMuted: dark ? '#181a1c' : '#ebf3f6',
+    chip: dark ? 'rgba(230,234,236,0.16)' : '#d8e5ea',
     chipOverlay: dark ? 'rgba(18,18,18,0.72)' : 'rgba(220,229,233,0.94)',
-    chipActive: dark ? CONNECT_BRAND.primaryBase : '#71a6b7',
+    chipActive: dark ? CONNECT_BRAND.primaryBase : '#7eaab8',
     pill: dark ? 'rgba(65,137,159,0.26)' : 'rgba(65,137,159,0.18)',
-    liquidShellOuter: dark ? 'rgba(6,11,17,0.22)' : 'rgba(255,255,255,0.18)',
-    liquidShell: dark ? 'rgba(10,15,21,0.58)' : 'rgba(244,249,251,0.34)',
-    liquidBorder: dark ? 'rgba(230,234,236,0.14)' : 'rgba(196,216,224,0.8)',
-    liquidInnerBorder: dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.62)',
+    liquidShellOuter: dark ? 'rgba(6,11,17,0.22)' : 'rgba(224,236,241,0.58)',
+    liquidShell: dark ? 'rgba(10,15,21,0.58)' : 'rgba(239,246,248,0.9)',
+    liquidBorder: dark ? 'rgba(230,234,236,0.14)' : 'rgba(184,207,215,0.88)',
+    liquidInnerBorder: dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.76)',
     liquidShadow: dark ? '#000000' : '#032f3c',
-    liquidShadowOpacity: dark ? 0.24 : 0.12,
+    liquidShadowOpacity: dark ? 0.24 : 0.11,
     liquidTopHighlightStart: dark ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.72)',
     liquidTopHighlightEnd: dark ? 'rgba(255,255,255,0.015)' : 'rgba(255,255,255,0)',
     liquidBottomCausticStart: dark ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0)',
-    liquidBottomCausticEnd: dark ? 'rgba(150,197,212,0.08)' : 'rgba(177,208,220,0.24)',
-    liquidShellTint: dark ? 'rgba(128,170,185,0.04)' : 'rgba(214,228,234,0.12)',
-    liquidPillFill: dark ? 'rgba(122,144,156,0.34)' : 'rgba(255,255,255,0.78)',
-    liquidPillToneStart: dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.3)',
-    liquidPillToneEnd: dark ? 'rgba(150,192,205,0.05)' : 'rgba(201,225,233,0.18)',
-    liquidPillBorder: dark ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.82)',
+    liquidBottomCausticEnd: dark ? 'rgba(150,197,212,0.08)' : 'rgba(165,197,208,0.16)',
+    liquidShellTint: dark ? 'rgba(128,170,185,0.04)' : 'rgba(210,226,232,0.11)',
+    liquidPillFill: dark ? 'rgba(122,144,156,0.34)' : 'rgba(255,255,255,0.92)',
+    liquidPillToneStart: dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.46)',
+    liquidPillToneEnd: dark ? 'rgba(150,192,205,0.05)' : 'rgba(204,222,229,0.22)',
+    liquidPillBorder: dark ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.96)',
     liquidPillShadow: dark ? '#000000' : '#032f3c',
-    liquidPillShadowOpacity: dark ? 0.18 : 0.08,
-    liquidPillHighlightStart: dark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.92)',
-    liquidPillHighlightEnd: dark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.12)',
+    liquidPillShadowOpacity: dark ? 0.18 : 0.1,
+    liquidPillHighlightStart: dark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.96)',
+    liquidPillHighlightEnd: dark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.16)',
     border: dark ? 'rgba(255,255,255,0.1)' : 'rgba(3,47,60,0.12)',
     borderStrong: dark ? 'rgba(230,234,236,0.14)' : 'rgba(3,47,60,0.1)',
     divider: dark ? 'rgba(230,234,236,0.15)' : 'rgba(3,47,60,0.12)',
@@ -276,8 +279,8 @@ export function useConnectPalette() {
     inputBg: dark ? 'rgba(14,19,26,0.72)' : 'rgba(255,255,255,0.9)',
     inputPlaceholder: dark ? CONNECT_BRAND.gray400 : '#68828a',
     activeChipText: '#032f3c',
-    tagBg: dark ? '#71a6b7' : '#a9cad5',
-    statBg: dark ? 'rgba(79,109,119,0.22)' : 'rgba(65,137,159,0.08)',
+    tagBg: dark ? '#71a6b7' : '#d6e7ec',
+    statBg: dark ? 'rgba(79,109,119,0.22)' : 'rgba(65,137,159,0.1)',
     sheetBackground: colors.card,
     doneButtonText: dark ? CONNECT_BRAND.backgroundDark : '#032f3c',
     glassFallback: dark ? 'rgba(14,19,26,0.9)' : 'rgba(248,251,252,0.96)',
@@ -290,7 +293,7 @@ export function useConnectPalette() {
     mapActionBorder: dark ? 'rgba(255,255,255,0.1)' : 'rgba(92,132,146,0.14)',
     chipGlassBg: dark ? 'rgba(20,20,20,0.92)' : 'rgba(239,246,248,0.94)',
     chipGlassBorder: dark ? 'rgba(255,255,255,0.12)' : 'rgba(104,140,152,0.14)',
-    chipGlassActive: dark ? CONNECT_BRAND.infoBase : '#39c9d5',
+    chipGlassActive: dark ? CONNECT_BRAND.infoBase : '#88b8c4',
     chipGlassText: dark ? 'rgba(230,234,236,0.92)' : '#0a4356',
     chipGlassMutedText: dark ? 'rgba(230,234,236,0.86)' : 'rgba(10,67,86,0.82)',
     markerBg: dark ? '#1f87aa' : '#1d8fb4',
@@ -513,7 +516,7 @@ export function ConnectRetractableSearchBar({
   searchText,
   onSearchChange,
   searchPlaceholder,
-  onOpenFilters,
+  onAddPress,
   onExpandedChange,
 }: RetractableSearchBarProps) {
   const palette = useConnectPalette();
@@ -523,7 +526,7 @@ export function ConnectRetractableSearchBar({
   const [containerWidth, setContainerWidth] = useState(0);
   const expandAnim = useRef(new Animated.Value(searchText ? 1 : 0)).current;
   const inputRef = useRef<TextInput>(null);
-  const collapsedWidth = 106;
+  const collapsedWidth = onAddPress ? 106 : 64;
   const expandedWidth = Math.max(collapsedWidth, containerWidth);
   const collapseSlotWidth = 46;
   const actionRowWidth = 82;
@@ -586,7 +589,7 @@ export function ConnectRetractableSearchBar({
 
   const barHeight = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [56, CONNECT_BOTTOM_SEARCH_ROW_HEIGHT],
+    outputRange: [CONNECT_BOTTOM_SEARCH_ROW_HEIGHT, CONNECT_BOTTOM_SEARCH_ROW_HEIGHT],
   });
 
   const inputWidth = expandAnim.interpolate({
@@ -709,18 +712,20 @@ export function ConnectRetractableSearchBar({
             <MaterialIcons name="search" size={20} color={palette.mapSearchIcon} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={onOpenFilters}
-            style={[
-              styles.retractableIconButton,
-              {
-                backgroundColor: palette.mapActionBg,
-                borderColor: palette.mapActionBorder,
-              },
-            ]}
-          >
-            <MaterialCommunityIcons name="tune-variant" size={20} color={palette.mapSearchIcon} />
-          </TouchableOpacity>
+          {onAddPress ? (
+            <TouchableOpacity
+              onPress={onAddPress}
+              style={[
+                styles.retractableIconButton,
+                {
+                  backgroundColor: palette.mapActionBg,
+                  borderColor: palette.mapActionBorder,
+                },
+              ]}
+            >
+              <MaterialIcons name="add" size={22} color={palette.mapSearchIcon} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </Animated.View>
     </View>
@@ -779,7 +784,9 @@ export function ConnectPortalChrome({
         </TouchableOpacity>
 
         <View style={styles.titleWrap}>
-          <StyledText style={styles.titleText}>Connect</StyledText>
+          <StyledText style={[styles.titleText, { color: palette.textPrimary }]}>
+            Connect
+          </StyledText>
         </View>
 
         {headerActionIconName && onHeaderActionPress ? (
@@ -795,7 +802,11 @@ export function ConnectPortalChrome({
               },
             ]}
           >
-            <MaterialIcons name={headerActionIconName} size={22} color={palette.mapSearchIcon} />
+            {headerActionIconName === 'map' ? (
+              <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />
+            ) : (
+              <MaterialIcons name={headerActionIconName} size={22} color={palette.mapSearchIcon} />
+            )}
           </TouchableOpacity>
         ) : (
           <View style={styles.chromeHeaderActionSpacer} />
@@ -855,11 +866,15 @@ export function ConnectMapSearchRow({
             },
           ]}
         >
-          <MaterialCommunityIcons
-            name={secondaryIconName}
-            size={20}
-            color={palette.mapSearchIcon}
-          />
+          {secondaryIconName === 'tune-variant' ? (
+            <FilterSortIcon width={20} height={20} color={palette.mapSearchIcon} />
+          ) : (
+            <MaterialCommunityIcons
+              name={secondaryIconName}
+              size={20}
+              color={palette.mapSearchIcon}
+            />
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           onPress={onSwitchToList}
@@ -2083,6 +2098,7 @@ const styles = StyleSheet.create({
   placeTitle: {
     ...Typography.body.x2M,
     color: CONNECT_BRAND.gray100,
+    fontFamily: 'Rubik-Bold',
     fontWeight: '700',
   },
   placeSubtitle: {
@@ -2387,13 +2403,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   retractableBar: {
-    minHeight: 52,
-    borderRadius: 26,
+    minHeight: CONNECT_BOTTOM_SEARCH_ROW_HEIGHT,
+    borderRadius: CONNECT_BOTTOM_SEARCH_ROW_HEIGHT / 2,
     borderWidth: 1,
     paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.18,
     shadowRadius: 12,

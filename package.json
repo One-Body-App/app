@@ -97,6 +97,7 @@
     "react-native-element-dropdown": "^2.10.0",
     "react-native-email-link": "^1.14.6",
     "react-native-fast-image": "^8.6.3",
+    "react-native-fbsdk-next": "12.2.0",
     "react-native-fiesta": "^0.7.0",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.26.0",
