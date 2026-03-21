@@ -1127,6 +1127,41 @@ export const getConnectPortalPlaceFilterOptions = async (): Promise<{
   }
 };
 
+export const getConnectEventTypeOptions = async (): Promise<ConnectPlaceFilterOption[]> => {
+  try {
+    const result = await ApiCall<any[]>({
+      route: 'global/connect-event-type',
+      verb: 'get',
+      token: true,
+      suppressErrorLog: true,
+    });
+    return Array.isArray(result.response)
+      ? result.response
+          .map((item) => ({
+            label: String(item?.name || '').trim(),
+            value: String(item?.name || '').trim(),
+          }))
+          .filter((item) => item.label.length > 0)
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+export const submitConnectEventTypeSuggestion = async (name: string): Promise<void> => {
+  try {
+    await ApiCall({
+      route: 'global/connect-event-type/suggest',
+      verb: 'post',
+      token: true,
+      params: { name },
+      suppressErrorLog: true,
+    });
+  } catch {
+    // Fire-and-forget; suggestion tracking is best-effort
+  }
+};
+
 export const getEventCapacityLabel = (record: ConnectPortalEventRecordBase) => {
   const capacityValue = getCapacityValue(record);
   if (!capacityValue) {

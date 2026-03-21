@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ImageBackground,
   SafeAreaView,
@@ -17,13 +17,14 @@ import {
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
 import type { ConnectPortalEventRecord } from '@/src/services/connectPortal';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventView'>;
 
 function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
   const [eventRecord, setEventRecord] = useState<ConnectPortalEventRecord | null>(null);
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -41,7 +42,7 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
     return () => {
       isActive = false;
     };
-  }, [route.params.eventId]);
+  });
 
   const heroImageUri =
     eventRecord?.heroImageUri ||

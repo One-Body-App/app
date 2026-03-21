@@ -2,7 +2,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { Platform } from 'react-native';
 import { useTheme } from '@react-navigation/native';
-import { Colors } from '../styles';
 import { ConnectStackParamsList } from './types';
 import ListViewScreen from '../screens/connectportal/listview';
 import MapViewScreen from '../screens/connectportal/mapview';
@@ -141,9 +140,11 @@ function ConnectStack() {
           component={UserProfile}
           options={{
             headerBackTitleVisible: false,
+            headerTransparent: false,
+            headerShadowVisible: false,
             headerStyle: { backgroundColor: colors.background },
             title: '',
-            contentStyle: { backgroundColor: Colors.neutral[700] },
+            contentStyle: { backgroundColor: colors.background },
           }}
         />
       </Stack.Navigator>

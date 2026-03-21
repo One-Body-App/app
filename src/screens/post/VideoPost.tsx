@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -229,11 +229,11 @@ export default function VideoPost({ navigation, route }: Props) {
     return resolveDisplayedVideoFrame(videoNaturalSize, cropFrame, clampedTransform);
   }, [clampedTransform, cropFrame, hasVideo, videoNaturalSize]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (!sameTransform(transform, clampedTransform)) {
       setTransform(clampedTransform);
     }
-  }, [clampedTransform, transform]);
+  });
 
   const resetCropState = useCallback(() => {
     setTransform(createDefaultVideoTransform());
@@ -692,7 +692,7 @@ export default function VideoPost({ navigation, route }: Props) {
     videoNaturalSize,
   ]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     const incomingVideoPath = route.params?.videoPath;
     let cancelled = false;
 
@@ -725,9 +725,9 @@ export default function VideoPost({ navigation, route }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [applySelectedVideo, navigation, resolveVideoUri, route.params?.videoPath, toast]);
+  });
 
-  useEffect(() => {
+  useMountEffect(() => {
     listenerSubscription.current.onFinishTrimming = VideoTrim.onFinishTrimming(
       ({ startTime, endTime }) => {
         const nextTrimStartMs = Math.max(0, Math.round(Number(startTime || 0)));
@@ -756,28 +756,16 @@ export default function VideoPost({ navigation, route }: Props) {
       listenerSubscription.current.onError?.remove();
       listenerSubscription.current = {};
     };
-  }, [toast]);
+  });
 
-  useEffect(() => {
-    if (!hasVideo || !hasTrimSelection) {
-      return;
-    }
-
-    const trimStartSeconds = resolvedTrimStartMs / 1000;
-    setCurrentTime(trimStartSeconds);
-    requestAnimationFrame(() => {
-      videoPreviewRef.current?.seek?.(trimStartSeconds);
-    });
-  }, [hasTrimSelection, hasVideo, resolvedTrimStartMs]);
-
-  useEffect(() => {
+  useMountEffect(() => {
     if (!route.params?.openCameraOnMount || hasAutoOpenedCameraRef.current) {
       return;
     }
     hasAutoOpenedCameraRef.current = true;
     setIsLiveCameraVisible(true);
     navigation.setParams({ openCameraOnMount: undefined });
-  }, [navigation, route.params?.openCameraOnMount]);
+  });
 
   if (isLiveCameraVisible) {
     return (

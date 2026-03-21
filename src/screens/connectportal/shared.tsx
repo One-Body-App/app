@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import {
   Animated,
@@ -23,10 +23,13 @@ import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamlin
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
+import { HapticService } from '@/src/services/haptic';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { Typography } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import type { ConnectTab } from './data';
+import { getConnectGlassTabTransition, type ConnectGlassTabLayout } from './glassTabBarMotion';
 import type {
   ConnectGoFilters,
   ConnectGoQuickChip,
@@ -38,6 +41,8 @@ import type {
   ConnectServeFilters,
   ConnectServeQuickChip,
 } from '@/src/services/connectPortal';
+
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 export const CONNECT_BRAND = {
   backgroundBase: '#3c4b64',
@@ -249,25 +254,37 @@ export function useConnectPalette() {
     chipOverlay: dark ? 'rgba(18,18,18,0.72)' : 'rgba(220,229,233,0.94)',
     chipActive: dark ? CONNECT_BRAND.primaryBase : '#7eaab8',
     pill: dark ? 'rgba(65,137,159,0.26)' : 'rgba(65,137,159,0.18)',
-    liquidShellOuter: dark ? 'rgba(6,11,17,0.22)' : 'rgba(224,236,241,0.58)',
-    liquidShell: dark ? 'rgba(10,15,21,0.58)' : 'rgba(239,246,248,0.9)',
-    liquidBorder: dark ? 'rgba(230,234,236,0.14)' : 'rgba(184,207,215,0.88)',
-    liquidInnerBorder: dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.76)',
+    liquidShellOuter: dark ? 'rgba(16,22,30,0.38)' : 'rgba(246,249,251,0.96)',
+    liquidShell: dark ? 'rgba(20,27,35,0.78)' : 'rgba(255,255,255,0.94)',
+    liquidBorder: dark ? 'rgba(255,255,255,0.12)' : 'rgba(220,227,232,0.98)',
+    liquidInnerBorder: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.88)',
     liquidShadow: dark ? '#000000' : '#032f3c',
-    liquidShadowOpacity: dark ? 0.24 : 0.11,
-    liquidTopHighlightStart: dark ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.72)',
+    liquidShadowOpacity: dark ? 0.18 : 0.14,
+    liquidTopHighlightStart: dark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.94)',
     liquidTopHighlightEnd: dark ? 'rgba(255,255,255,0.015)' : 'rgba(255,255,255,0)',
     liquidBottomCausticStart: dark ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0)',
-    liquidBottomCausticEnd: dark ? 'rgba(150,197,212,0.08)' : 'rgba(165,197,208,0.16)',
-    liquidShellTint: dark ? 'rgba(128,170,185,0.04)' : 'rgba(210,226,232,0.11)',
-    liquidPillFill: dark ? 'rgba(122,144,156,0.34)' : 'rgba(255,255,255,0.92)',
-    liquidPillToneStart: dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.46)',
-    liquidPillToneEnd: dark ? 'rgba(150,192,205,0.05)' : 'rgba(204,222,229,0.22)',
-    liquidPillBorder: dark ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.96)',
+    liquidBottomCausticEnd: dark ? 'rgba(153,192,205,0.06)' : 'rgba(236,240,243,0.32)',
+    liquidShellTint: dark ? 'rgba(192,220,232,0.035)' : 'rgba(255,255,255,0.14)',
+    liquidPillFill: dark ? 'rgba(235,243,247,0.12)' : 'rgba(255,255,255,0.98)',
+    liquidPillMovingFill: dark ? 'rgba(246,252,255,0.16)' : 'rgba(255,255,255,1)',
+    liquidPillToneStart: dark ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.84)',
+    liquidPillToneEnd: dark ? 'rgba(170,196,207,0.06)' : 'rgba(236,241,244,0.42)',
+    liquidPillBorder: dark ? 'rgba(255,255,255,0.18)' : 'rgba(230,235,239,0.98)',
     liquidPillShadow: dark ? '#000000' : '#032f3c',
-    liquidPillShadowOpacity: dark ? 0.18 : 0.1,
+    liquidPillShadowOpacity: dark ? 0.16 : 0.14,
     liquidPillHighlightStart: dark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.96)',
-    liquidPillHighlightEnd: dark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.16)',
+    liquidPillHighlightEnd: dark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.3)',
+    liquidTabText: dark ? 'rgba(245,249,251,0.96)' : 'rgba(24,35,43,0.96)',
+    liquidTabTextMuted: dark ? 'rgba(230,234,236,0.46)' : 'rgba(24,35,43,0.62)',
+    liquidMotionGlow: dark ? 'rgba(245,252,255,0.12)' : 'rgba(255,255,255,0.72)',
+    liquidDropletHead: dark ? 'rgba(246,252,255,0.24)' : 'rgba(255,255,255,0.98)',
+    liquidDropletTail: dark ? 'rgba(220,235,242,0.12)' : 'rgba(255,255,255,0.68)',
+    liquidDropletCore: dark ? 'rgba(228,243,249,0.1)' : 'rgba(255,255,255,0.92)',
+    liquidEdgeSweepStart: dark ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0)',
+    liquidEdgeSweepMid: dark ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.96)',
+    liquidEdgeSweepEnd: dark ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0)',
+    liquidEdgeRimStart: dark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.92)',
+    liquidEdgeRimEnd: dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)',
     border: dark ? 'rgba(255,255,255,0.1)' : 'rgba(3,47,60,0.12)',
     borderStrong: dark ? 'rgba(230,234,236,0.14)' : 'rgba(3,47,60,0.1)',
     divider: dark ? 'rgba(230,234,236,0.15)' : 'rgba(3,47,60,0.12)',
@@ -321,10 +338,9 @@ export function useConnectPalette() {
 }
 
 export function useConnectKeyboardMetrics() {
-  const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  useEffect(() => {
+  useMountEffect(() => {
     const updateKeyboardHeight = (event: {
       endCoordinates?: {
         height?: number;
@@ -350,7 +366,7 @@ export function useConnectKeyboardMetrics() {
       onFrameChange.remove();
       onHide.remove();
     };
-  }, [insets.bottom]);
+  });
 
   return {
     keyboardHeight,
@@ -361,37 +377,321 @@ export function useConnectKeyboardMetrics() {
 export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBarProps) {
   const palette = useConnectPalette();
   const tabOrder = useMemo(() => CONNECT_TABS, []);
-  const [tabLayouts, setTabLayouts] = useState<Record<ConnectTab, { x: number; width: number }>>({
+  const [tabLayouts, setTabLayouts] = useState<Record<ConnectTab, ConnectGlassTabLayout>>({
     'Go!': { x: 0, width: 0 },
     Serve: { x: 0, width: 0 },
     Places: { x: 0, width: 0 },
   });
   const translateX = useRef(new Animated.Value(0)).current;
   const pillWidth = useRef(new Animated.Value(0)).current;
+  const pillScaleY = useRef(new Animated.Value(1)).current;
+  const labelProgress = useRef(new Animated.Value(tabOrder.indexOf(activeTab))).current;
+  const liquidMotionProgress = useRef(new Animated.Value(0)).current;
+  const runningAnimation = useRef<Animated.CompositeAnimation | null>(null);
+  const animationToken = useRef(0);
+  const hasInitialized = useRef(false);
+  const [travelDirection, setTravelDirection] = useState<1 | -1>(1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  useEffect(() => {
-    const activeLayout = tabLayouts[activeTab];
-    if (!activeLayout || !activeLayout.width) {
-      return;
-    }
+  const activeIndex = tabOrder.indexOf(activeTab);
+  const allTabsMeasured = tabOrder.every((tab) => tabLayouts[tab].width > 0);
+  const rowWidth = tabOrder.reduce(
+    (max, tab) => Math.max(max, tabLayouts[tab].x + tabLayouts[tab].width),
+    0
+  );
 
-    Animated.parallel([
-      Animated.spring(translateX, {
-        toValue: activeLayout.x,
-        useNativeDriver: false,
-        damping: 18,
-        stiffness: 210,
-        mass: 0.9,
-      }),
-      Animated.spring(pillWidth, {
-        toValue: activeLayout.width,
-        useNativeDriver: false,
-        damping: 18,
-        stiffness: 210,
-        mass: 0.9,
-      }),
-    ]).start();
-  }, [activeTab, pillWidth, tabLayouts, translateX]);
+  const stopLiquidAnimations = useCallback(
+    (
+      callback: (state: {
+        x: number;
+        width: number;
+        scaleY: number;
+        labelValue: number;
+        motionValue: number;
+      }) => void
+    ) => {
+      runningAnimation.current?.stop();
+      runningAnimation.current = null;
+
+      let pending = 5;
+      const nextState = {
+        x: 0,
+        width: 0,
+        scaleY: 1,
+        labelValue: activeIndex,
+        motionValue: 0,
+      };
+      const resolve = () => {
+        pending -= 1;
+        if (pending === 0) {
+          callback(nextState);
+        }
+      };
+
+      translateX.stopAnimation((value) => {
+        nextState.x = value;
+        resolve();
+      });
+      pillWidth.stopAnimation((value) => {
+        nextState.width = value;
+        resolve();
+      });
+      pillScaleY.stopAnimation((value) => {
+        nextState.scaleY = value;
+        resolve();
+      });
+      labelProgress.stopAnimation((value) => {
+        nextState.labelValue = value;
+        resolve();
+      });
+      liquidMotionProgress.stopAnimation((value) => {
+        nextState.motionValue = value;
+        resolve();
+      });
+    },
+    [activeIndex, labelProgress, liquidMotionProgress, pillScaleY, pillWidth, translateX]
+  );
+
+  const lastAnimatedTabRef = useRef(activeTab);
+
+  const snapToTab = useCallback(
+    (tab: ConnectTab) => {
+      const layout = tabLayouts[tab];
+      if (!layout.width) {
+        return;
+      }
+      translateX.setValue(layout.x);
+      pillWidth.setValue(layout.width);
+      pillScaleY.setValue(1);
+      labelProgress.setValue(tabOrder.indexOf(tab));
+      liquidMotionProgress.setValue(0);
+    },
+    [labelProgress, liquidMotionProgress, pillScaleY, pillWidth, tabLayouts, tabOrder, translateX]
+  );
+
+  const animateToTab = useCallback(
+    (tab: ConnectTab) => {
+      const toLayout = tabLayouts[tab];
+      if (!toLayout.width) {
+        return;
+      }
+      const toIndex = tabOrder.indexOf(tab);
+
+      stopLiquidAnimations((currentState) => {
+        const fromLayout = {
+          x: currentState.x,
+          width: currentState.width || toLayout.width,
+        };
+        const transition = getConnectGlassTabTransition({
+          fromLayout,
+          toLayout,
+          shellWidth: rowWidth,
+        });
+
+        if (transition.isNoOp) {
+          translateX.setValue(transition.settleX);
+          pillWidth.setValue(transition.settleWidth);
+          pillScaleY.setValue(1);
+          labelProgress.setValue(toIndex);
+          liquidMotionProgress.setValue(0);
+          setIsTransitioning(false);
+          return;
+        }
+
+        const nextDirection = transition.movingRight ? 1 : -1;
+        const surgeWidth = transition.surgeWidth + 18;
+        const surgeX =
+          nextDirection === 1 ? transition.surgeX : Math.max(0, transition.surgeX - 12);
+        const runToken = animationToken.current + 1;
+        animationToken.current = runToken;
+        setTravelDirection(nextDirection);
+        setIsTransitioning(true);
+
+        translateX.setValue(transition.initialX);
+        pillWidth.setValue(transition.initialWidth);
+        pillScaleY.setValue(currentState.scaleY);
+        labelProgress.setValue(currentState.labelValue);
+        liquidMotionProgress.setValue(currentState.motionValue);
+
+        const surgePhase = Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: surgeX,
+            duration: 210,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillWidth, {
+            toValue: surgeWidth,
+            duration: 220,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillScaleY, {
+            toValue: 0.62,
+            duration: 190,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+          Animated.timing(liquidMotionProgress, {
+            toValue: 1,
+            duration: 170,
+            easing: Easing.out(Easing.exp),
+            useNativeDriver: false,
+          }),
+        ]);
+
+        const settlePhase = Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: transition.settleX,
+            duration: 240,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(pillWidth, {
+            toValue: transition.settleWidth,
+            duration: 240,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.spring(pillScaleY, {
+            toValue: 1,
+            tension: 130,
+            friction: 7,
+            useNativeDriver: false,
+          }),
+          Animated.timing(liquidMotionProgress, {
+            toValue: 0,
+            duration: 220,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+        ]);
+
+        runningAnimation.current = Animated.parallel([
+          Animated.sequence([surgePhase, settlePhase]),
+          Animated.timing(labelProgress, {
+            toValue: toIndex,
+            duration: 360,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+        ]);
+
+        runningAnimation.current.start(({ finished }) => {
+          if (animationToken.current !== runToken) {
+            return;
+          }
+          setIsTransitioning(false);
+          if (finished) {
+            HapticService.trigger('selection');
+          }
+          runningAnimation.current = null;
+        });
+      });
+    },
+    [
+      labelProgress,
+      liquidMotionProgress,
+      pillScaleY,
+      pillWidth,
+      rowWidth,
+      stopLiquidAnimations,
+      tabLayouts,
+      tabOrder,
+      translateX,
+    ]
+  );
+
+  const handleTabPress = useCallback(
+    (tab: ConnectTab) => {
+      if (tab === activeTab) {
+        return;
+      }
+      lastAnimatedTabRef.current = tab;
+      if (hasInitialized.current) {
+        animateToTab(tab);
+      }
+      onTabChange(tab);
+    },
+    [activeTab, animateToTab, onTabChange]
+  );
+
+  // Snap pill position for external activeTab changes (e.g. route params)
+  if (lastAnimatedTabRef.current !== activeTab && hasInitialized.current && allTabsMeasured) {
+    lastAnimatedTabRef.current = activeTab;
+    snapToTab(activeTab);
+  }
+
+  const motionGlowOpacity = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.25, 1],
+    outputRange: [0, 0.95, 0.22],
+    extrapolate: 'clamp',
+  });
+  const motionGlowScaleX = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.4, 1],
+    outputRange: [0.94, 1.38, 1.12],
+    extrapolate: 'clamp',
+  });
+  const dropletHeadScale = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.55, 1],
+    outputRange: [0.84, 1.68, 1.08],
+    extrapolate: 'clamp',
+  });
+  const dropletHeadOpacity = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.12, 0.9, 1],
+    outputRange: [0, 0.92, 0.92, 0.2],
+    extrapolate: 'clamp',
+  });
+  const dropletTailScaleX = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.28, 0.7, 1],
+    outputRange: [0.76, 1.95, 2.7, 1.14],
+    extrapolate: 'clamp',
+  });
+  const dropletTailScaleY = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.3, 1],
+    outputRange: [0.9, 0.68, 0.9],
+    extrapolate: 'clamp',
+  });
+  const dropletTailOpacity = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.18, 1],
+    outputRange: [0, 0.88, 0.28],
+    extrapolate: 'clamp',
+  });
+  const pillLift = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.25, 0.8, 1],
+    outputRange: [0, -2, -1, 0],
+    extrapolate: 'clamp',
+  });
+  const motionSheenTranslate = liquidMotionProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [travelDirection * -14, travelDirection * 14],
+    extrapolate: 'clamp',
+  });
+  const edgeSweepOpacity = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.14, 0.5, 1],
+    outputRange: [0, 0.96, 0.72, 0.08],
+    extrapolate: 'clamp',
+  });
+  const edgeSweepScaleX = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.4, 1],
+    outputRange: [0.84, 1.2, 1.05],
+    extrapolate: 'clamp',
+  });
+  const edgeSweepTranslate = liquidMotionProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [travelDirection * -20, travelDirection * 20],
+    extrapolate: 'clamp',
+  });
+  const rimOpacity = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.2, 1],
+    outputRange: [0.5, 0.92, 0.28],
+    extrapolate: 'clamp',
+  });
+  const innerBlurOpacity = liquidMotionProgress.interpolate({
+    inputRange: [0, 0.25, 1],
+    outputRange: [0.68, 0.94, 0.58],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View
@@ -418,7 +718,7 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
           pointerEvents="none"
           style={StyleSheet.absoluteFill}
           blurType={palette.isDark ? 'dark' : 'light'}
-          blurAmount={28}
+          blurAmount={26}
           reducedTransparencyFallbackColor={palette.glassFallback}
         />
         <LinearGradient
@@ -442,18 +742,33 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
           pointerEvents="none"
           style={[
             styles.mapTabActivePill,
+            isTransitioning ? styles.mapTabActivePillMoving : null,
             {
-              backgroundColor: palette.liquidPillFill,
+              backgroundColor: isTransitioning
+                ? palette.liquidPillMovingFill
+                : palette.liquidPillFill,
               borderColor: palette.liquidPillBorder,
               shadowColor: palette.liquidPillShadow,
               shadowOpacity: palette.liquidPillShadowOpacity,
             },
             {
               width: pillWidth,
-              transform: [{ translateX }],
+              transform: [{ translateX }, { translateY: pillLift }, { scaleY: pillScaleY }],
             },
           ]}
         >
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.mapTabActivePillInnerBlurWrap, { opacity: innerBlurOpacity }]}
+          >
+            <BlurView
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}
+              blurType={palette.isDark ? 'dark' : 'light'}
+              blurAmount={palette.isDark ? 18 : 26}
+              reducedTransparencyFallbackColor={palette.glassFallback}
+            />
+          </Animated.View>
           <LinearGradient
             pointerEvents="none"
             colors={[palette.liquidPillToneStart, palette.liquidPillToneEnd]}
@@ -466,15 +781,111 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
             locations={[0, 1]}
             style={styles.mapTabActivePillHighlight}
           />
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.mapTabActivePillEdgeRim, { opacity: rimOpacity }]}
+          >
+            <LinearGradient
+              pointerEvents="none"
+              colors={[palette.liquidEdgeRimStart, palette.liquidEdgeRimEnd]}
+              locations={[0, 1]}
+              style={StyleSheet.absoluteFill}
+              start={{ x: travelDirection === 1 ? 0 : 1, y: 0.1 }}
+              end={{ x: travelDirection === 1 ? 1 : 0, y: 0.9 }}
+            />
+          </Animated.View>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.mapTabActivePillEdgeSweepWrap,
+              {
+                opacity: edgeSweepOpacity,
+                transform: [{ translateX: edgeSweepTranslate }, { scaleX: edgeSweepScaleX }],
+              },
+            ]}
+          >
+            <AnimatedLinearGradient
+              pointerEvents="none"
+              colors={[
+                palette.liquidEdgeSweepStart,
+                palette.liquidEdgeSweepMid,
+                palette.liquidEdgeSweepEnd,
+              ]}
+              locations={[0, 0.5, 1]}
+              style={styles.mapTabActivePillEdgeSweep}
+              start={{ x: travelDirection === 1 ? 0 : 1, y: 0.15 }}
+              end={{ x: travelDirection === 1 ? 1 : 0, y: 0.85 }}
+            />
+          </Animated.View>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.mapTabActivePillMotionGlow,
+              {
+                backgroundColor: palette.liquidMotionGlow,
+                opacity: motionGlowOpacity,
+                transform: [{ scaleX: motionGlowScaleX }],
+              },
+            ]}
+          />
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.mapTabActivePillDropletTail,
+              travelDirection === 1
+                ? styles.mapTabActivePillDropletTailRight
+                : styles.mapTabActivePillDropletTailLeft,
+              {
+                backgroundColor: palette.liquidDropletTail,
+                opacity: dropletTailOpacity,
+                transform: [{ scaleX: dropletTailScaleX }, { scaleY: dropletTailScaleY }],
+              },
+            ]}
+          />
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.mapTabActivePillDropletHead,
+              travelDirection === 1
+                ? styles.mapTabActivePillDropletHeadRight
+                : styles.mapTabActivePillDropletHeadLeft,
+              {
+                backgroundColor: palette.liquidDropletHead,
+                opacity: dropletHeadOpacity,
+                transform: [{ scale: dropletHeadScale }],
+              },
+            ]}
+          />
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.mapTabActivePillDropletCore,
+              {
+                backgroundColor: palette.liquidDropletCore,
+                opacity: motionGlowOpacity,
+                transform: [{ translateX: motionSheenTranslate }],
+              },
+            ]}
+          />
         </Animated.View>
 
         <View style={styles.mapTabsRow}>
-          {tabOrder.map((tab) => {
-            const isActive = tab === activeTab;
+          {tabOrder.map((tab, index) => {
+            const activeOpacity = labelProgress.interpolate({
+              inputRange: [index - 0.8, index, index + 0.8],
+              outputRange: [0, 1, 0],
+              extrapolate: 'clamp',
+            });
+            const activeScale = labelProgress.interpolate({
+              inputRange: [index - 0.8, index, index + 0.8],
+              outputRange: [0.97, 1, 0.97],
+              extrapolate: 'clamp',
+            });
+
             return (
               <TouchableOpacity
                 key={tab}
-                onPress={() => onTabChange(tab)}
+                onPress={() => handleTabPress(tab)}
                 activeOpacity={0.9}
                 style={styles.mapTabButton}
                 onLayout={(event) => {
@@ -485,24 +896,51 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
                       return previous;
                     }
 
-                    return {
-                      ...previous,
-                      [tab]: { x, width },
-                    };
+                    const next = { ...previous, [tab]: { x, width } };
+                    const nowAllMeasured = tabOrder.every((t) => next[t].width > 0);
+                    if (nowAllMeasured && !hasInitialized.current) {
+                      hasInitialized.current = true;
+                      const layout = next[activeTab];
+                      translateX.setValue(layout.x);
+                      pillWidth.setValue(layout.width);
+                      pillScaleY.setValue(1);
+                      labelProgress.setValue(tabOrder.indexOf(activeTab));
+                      liquidMotionProgress.setValue(0);
+                    }
+
+                    return next;
                   });
                 }}
               >
-                <StyledText
-                  style={[
-                    styles.mapTabText,
-                    {
-                      color: palette.isDark ? 'rgba(230,234,236,0.54)' : 'rgba(3,47,60,0.48)',
-                    },
-                    isActive ? [styles.mapTabTextActive, { color: palette.activeText }] : null,
-                  ]}
-                >
-                  {tab}
-                </StyledText>
+                <View style={styles.mapTabLabelWrap}>
+                  <StyledText
+                    style={[styles.mapTabText, { color: palette.liquidTabTextMuted }]}
+                    numberOfLines={1}
+                  >
+                    {tab}
+                  </StyledText>
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.mapTabTextActiveLayer,
+                      {
+                        opacity: activeOpacity,
+                        transform: [{ scale: activeScale }],
+                      },
+                    ]}
+                  >
+                    <StyledText
+                      style={[
+                        styles.mapTabText,
+                        styles.mapTabTextActive,
+                        { color: palette.liquidTabText },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {tab}
+                    </StyledText>
+                  </Animated.View>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -529,25 +967,22 @@ export function ConnectRetractableSearchBar({
   const collapsedWidth = onAddPress ? 106 : 64;
   const expandedWidth = Math.max(collapsedWidth, containerWidth);
   const collapseSlotWidth = 46;
-  const actionRowWidth = 82;
+  const actionRowWidth = onAddPress ? 84 : 38;
   const expandedInputWidth = Math.max(0, expandedWidth - (collapseSlotWidth + actionRowWidth + 16));
 
-  useEffect(() => {
-    onExpandedChange?.(expanded);
-  }, [expanded, onExpandedChange]);
-
-  useEffect(() => {
-    if (searchText && !expanded) {
-      setExpanded(true);
-      expandAnim.setValue(1);
-    }
-  }, [expandAnim, expanded, searchText]);
+  // Sync expanded state when searchText is set externally
+  if (searchText && !expanded) {
+    setExpanded(true);
+    expandAnim.setValue(1);
+    onExpandedChange?.(true);
+  }
 
   const expand = useCallback(() => {
     if (animating) {
       return;
     }
     setExpanded(true);
+    onExpandedChange?.(true);
     setAnimating(true);
     Animated.timing(expandAnim, {
       toValue: 1,
@@ -560,7 +995,7 @@ export function ConnectRetractableSearchBar({
         inputRef.current?.focus();
       }
     });
-  }, [animating, expandAnim]);
+  }, [animating, expandAnim, onExpandedChange]);
 
   const collapse = useCallback(() => {
     if (animating) {
@@ -578,9 +1013,10 @@ export function ConnectRetractableSearchBar({
       if (finished) {
         onSearchChange('');
         setExpanded(false);
+        onExpandedChange?.(false);
       }
     });
-  }, [animating, expandAnim, onSearchChange]);
+  }, [animating, expandAnim, onExpandedChange, onSearchChange]);
 
   const barWidth = expandAnim.interpolate({
     inputRange: [0, 1],
@@ -1682,9 +2118,10 @@ const styles = StyleSheet.create({
   },
   titleWrap: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: Platform.OS === 'android' ? 'flex-start' : 'center',
     justifyContent: 'center',
     minHeight: 40,
+    ...(Platform.OS === 'android' ? { paddingLeft: 10 } : {}),
   },
   titleText: {
     ...Typography.header.h1,
@@ -1692,7 +2129,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik-Bold',
     fontWeight: '700',
     letterSpacing: 0.3,
-    textAlign: 'center',
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
   userAvatar: {
     width: 38,
@@ -1815,33 +2252,33 @@ const styles = StyleSheet.create({
   },
   mapTabsShell: {
     width: '100%',
-    borderRadius: 24,
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: 'rgba(202,222,230,0.92)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(232,240,244,0.92)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     shadowColor: '#032f3c',
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 5,
   },
   mapTabsShellInner: {
-    margin: 1.5,
-    borderRadius: 23,
+    margin: 1,
+    borderRadius: 25,
     overflow: 'hidden',
-    padding: 4,
+    padding: 5,
     borderWidth: 1,
   },
   mapTabsTopReflection: {
     position: 'absolute',
     top: 1,
-    left: 6,
-    right: 6,
-    height: '24%',
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
+    left: 8,
+    right: 8,
+    height: '26%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
     zIndex: 1,
   },
   mapTabsBottomCaustic: {
@@ -1858,7 +2295,7 @@ const styles = StyleSheet.create({
   },
   mapTabsOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3,47,60,0.28)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   mapTabsRow: {
     flexDirection: 'row',
@@ -1869,20 +2306,28 @@ const styles = StyleSheet.create({
   },
   mapTabActivePill: {
     position: 'absolute',
-    top: 3.5,
-    bottom: 3.5,
-    left: 4,
-    borderRadius: 17,
+    top: 4,
+    bottom: 4,
+    left: 5,
+    borderRadius: 18,
     backgroundColor: 'rgba(65,137,159,0.26)',
     borderWidth: 1.2,
     borderColor: 'rgba(255,255,255,0.98)',
     shadowColor: '#032f3c',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
     overflow: 'hidden',
   },
+  mapTabActivePillMoving: {
+    shadowOpacity: 0.2,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+  },
   mapTabActivePillTone: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  mapTabActivePillInnerBlurWrap: {
     ...StyleSheet.absoluteFillObject,
   },
   mapTabActivePillHighlight: {
@@ -1896,12 +2341,95 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
   },
+  mapTabActivePillEdgeRim: {
+    position: 'absolute',
+    top: 1,
+    bottom: 1,
+    left: 1,
+    right: 1,
+    borderRadius: 17,
+    overflow: 'hidden',
+  },
+  mapTabActivePillEdgeSweepWrap: {
+    position: 'absolute',
+    top: '10%',
+    bottom: '10%',
+    left: '2%',
+    right: '2%',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  mapTabActivePillEdgeSweep: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  mapTabActivePillMotionGlow: {
+    position: 'absolute',
+    top: '24%',
+    bottom: '24%',
+    left: '12%',
+    right: '12%',
+    borderRadius: 999,
+  },
+  mapTabActivePillDropletHead: {
+    position: 'absolute',
+    top: '12%',
+    bottom: '12%',
+    width: 22,
+    borderRadius: 999,
+    shadowColor: '#ffffff',
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  mapTabActivePillDropletHeadLeft: {
+    left: 6,
+  },
+  mapTabActivePillDropletHeadRight: {
+    right: 6,
+  },
+  mapTabActivePillDropletTail: {
+    position: 'absolute',
+    top: '26%',
+    bottom: '26%',
+    width: 16,
+    borderRadius: 999,
+  },
+  mapTabActivePillDropletTailLeft: {
+    right: 12,
+  },
+  mapTabActivePillDropletTailRight: {
+    left: 12,
+  },
+  mapTabActivePillDropletCore: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    width: '28%',
+    alignSelf: 'center',
+    borderRadius: 999,
+  },
   mapTabButton: {
     flex: 1,
-    minHeight: 38,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.x8,
+  },
+  mapTabLabelWrap: {
+    minHeight: 22,
+    minWidth: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  mapTabTextActiveLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mapTabText: {
     ...Typography.body.x2M,

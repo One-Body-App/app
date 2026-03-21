@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep2'>;
 
@@ -19,7 +20,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
   const [venueName, setVenueName] = useState('');
   const [address, setAddress] = useState('');
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -46,7 +47,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
     return () => {
       isActive = false;
     };
-  }, [navigation, route.params?.draftId]);
+  });
 
   const persistDraft = async (completedStep?: 1 | 2) => {
     if (!draftId) {
@@ -88,10 +89,11 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          Schedule the event.
+          When and where are we gathering?
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Use plain text for now. A later pass can replace these inputs with pickers and geocoding.
+          Let people know exactly when and where to join the fellowship. Whether it’s in person or
+          online, every detail helps believers connect.
         </Text>
       </View>
 
@@ -146,7 +148,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
             ]}
             value={startTime}
             onChangeText={setStartTime}
-            placeholder="7:00 PM"
+            placeholder="e.g., 7:00 PM"
             placeholderTextColor={palette.inputPlaceholder}
           />
         </View>
@@ -163,7 +165,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
             ]}
             value={endTime}
             onChangeText={setEndTime}
-            placeholder="9:00 PM"
+            placeholder="e.g., 9:00 PM"
             placeholderTextColor={palette.inputPlaceholder}
           />
         </View>
@@ -178,7 +180,8 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
         <View style={styles.toggleCopy}>
           <Text style={[styles.toggleTitle, { color: palette.textPrimary }]}>Online Event</Text>
           <Text style={[styles.toggleBody, { color: palette.textSecondary }]}>
-            Toggle this on to hide the physical venue fields and store the event as online-only.
+            Hosting a digital fellowship? Turn this on to let the community know they can join from
+            anywhere.
           </Text>
         </View>
         <Switch
@@ -204,7 +207,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               ]}
               value={venueName}
               onChangeText={setVenueName}
-              placeholder="Central Park North Pavilion"
+              placeholder="e.g., Grace Church Fellowship Hall"
               placeholderTextColor={palette.inputPlaceholder}
             />
           </View>
@@ -221,7 +224,7 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               ]}
               value={address}
               onChangeText={setAddress}
-              placeholder="123 Park Lane, New York, NY"
+              placeholder="e.g., 123 Main St, Atlanta, GA"
               placeholderTextColor={palette.inputPlaceholder}
             />
           </View>

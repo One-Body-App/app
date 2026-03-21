@@ -1,5 +1,5 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ActionSheetIOS,
@@ -33,6 +33,7 @@ import EmojiPicker, { EmojiType } from 'rn-emoji-keyboard';
 import { isArray } from 'lodash';
 import { useToast } from 'react-native-toast-notifications';
 import RNFS from 'react-native-fs';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
 import Button from '@/components/Button';
@@ -100,6 +101,7 @@ function NewPost({ navigation, route }: Props) {
   const [uploadImagesObject, setUploadImagesObject] =
     useState<{ uri: string; type: string; name?: string }[]>();
   const [isGiphyInitialized, setIsGiphyInitialized] = useState(false);
+  const giphyListenerRef = useRef<{ remove: () => void } | null>(null);
   const repostDraft = route.params?.repostDraft;
   const isQuoteMode = Boolean(repostDraft && !route.params?.postId);
   const quoteSourceTitle =
@@ -178,7 +180,7 @@ function NewPost({ navigation, route }: Props) {
     }, [colors.background, dark])
   );
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (!isQuoteMode) {
       return;
     }
@@ -188,7 +190,7 @@ function NewPost({ navigation, route }: Props) {
     setUploadImagesObject([]);
     setImagesObject([]);
     setGif(null);
-  }, [isQuoteMode, repostDraft?.sourceId]);
+  });
 
   const ensureGiphyInitialized = useCallback(() => {
     if (isGiphyInitialized) {
@@ -196,6 +198,17 @@ function NewPost({ navigation, route }: Props) {
     }
     try {
       GiphyDialog.configure({ theme: GiphyThemePreset.Automatic });
+
+      const handler: GiphyDialogMediaSelectEventHandler = (e) => {
+        setGif(e.media);
+        GiphyDialog.hide();
+      };
+      try {
+        giphyListenerRef.current = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
+      } catch (error) {
+        console.warn('GiphyDialog listener setup failed', error);
+      }
+
       setIsGiphyInitialized(true);
       return true;
     } catch (error) {
@@ -208,24 +221,11 @@ function NewPost({ navigation, route }: Props) {
     }
   }, [isGiphyInitialized, toast]);
 
-  useEffect(() => {
-    if (!isGiphyInitialized) {
-      return undefined;
-    }
-    const handler: GiphyDialogMediaSelectEventHandler = (e) => {
-      setGif(e.media);
-      GiphyDialog.hide();
-    };
-    let listener: { remove: () => void } | null = null;
-    try {
-      listener = GiphyDialog.addListener(GiphyDialogEvent.MediaSelected, handler);
-    } catch (error) {
-      console.warn('GiphyDialog listener setup failed', error);
-    }
+  useMountEffect(() => {
     return () => {
-      listener?.remove();
+      giphyListenerRef.current?.remove();
     };
-  }, [isGiphyInitialized]);
+  });
 
   const openUploadImageEditor = useCallback(
     async (asset: { uri: string; fileName?: string; fileSize?: number; type?: string }) => {

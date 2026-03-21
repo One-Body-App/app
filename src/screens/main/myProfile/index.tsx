@@ -1,28 +1,24 @@
 /* eslint-disable react/no-unstable-nested-components */
-import React, { createRef, useEffect, useState } from 'react';
-import { View, TouchableOpacity, Share, Platform, FlatList } from 'react-native';
-
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
+import { TouchableOpacity, View } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-
-import { Setting2 } from 'iconsax-react-native';
-import Ionicons from '@react-native-vector-icons/ionicons';
 import { useSelector } from 'react-redux';
-import { Colors } from '@/src/styles';
-
-import { spacing } from '@/src/styles/spacing';
 
 import Profile from '@/components/profile/Profile';
-
 import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
   MyProfileStackParamsList,
 } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
+import { Colors } from '@/src/styles';
+import { spacing } from '@/src/styles/spacing';
 import SettingsSheet from './SettingsSheet';
+import { getProfileDisplayName } from '@/components/profile/profileUtils';
 
 type Props = CompositeScreenProps<
   StackScreenProps<MyProfileStackParamsList, 'MyProfile'>,
@@ -34,82 +30,85 @@ type Props = CompositeScreenProps<
 
 function MyProfile({ navigation, route }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
-
-  const [showSettings, setShowSettings] = useState<boolean>(false);
   const { dark, colors } = useTheme();
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={{ flexDirection: 'row' }}>
+  const [showSettings, setShowSettings] = useState(Boolean(route.params?.openSettings));
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshToken((previous) => previous + 1);
+
+      if (route.params?.openSettings) {
+        setShowSettings(true);
+        navigation.setParams({ openSettings: undefined });
+      }
+    }, [navigation, route.params?.openSettings])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) {
+        return undefined;
+      }
+
+      navigation.setOptions({
+        headerBackTitleVisible: false,
+        headerShadowVisible: false,
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: dark ? colors.text : Colors.primary.brand,
+        headerTitleAlign: 'center',
+        title: getProfileDisplayName(user),
+        headerLeft: () => (
           <TouchableOpacity
-            style={{ marginRight: spacing.x16 }}
             onPress={() => {
-              Share.share({
-                title:
-                  // profileData?._id == currentUser._id ?
-                  `Check my profile on One Body App`,
-                // : 'Check this profile on One Body App`',
-                // message: `Check my profile in One Body App`,
-                url: `https://app.onebodyapp.com/profile/${user?.username}`,
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.getParent()?.navigate('HomeTab', {
+                screen: 'Home',
               });
             }}
+            style={{ marginLeft: spacing.x10, padding: spacing.x5 }}
           >
-            {Platform.OS === 'android' ? (
-              <Ionicons
-                name="share-social-outline"
-                size={24}
-                color={dark ? colors.text : Colors.primary.brand}
-              />
-            ) : (
-              <Ionicons
-                name="share-outline"
-                size={24}
-                color={dark ? colors.text : Colors.primary.brand}
-              />
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              setShowSettings(true);
-            }}
-          >
-            <Setting2
-              size={24}
-              style={{ height: 24, width: 24 }}
+            <Ionicons
+              name="chevron-back"
+              size={30}
               color={dark ? colors.text : Colors.primary.brand}
-              strokeWidth={0.2}
             />
           </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [colors.text, dark, navigation, user]);
+        ),
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => setShowSettings(true)}
+            style={{ marginRight: spacing.x10, padding: spacing.x5 }}
+          >
+            <Ionicons
+              name="ellipsis-vertical"
+              size={22}
+              color={dark ? colors.text : Colors.primary.brand}
+            />
+          </TouchableOpacity>
+        ),
+      });
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      setRefresh(true);
-    });
+      return undefined;
+    }, [colors.background, colors.text, dark, navigation, user])
+  );
 
-    return unsubscribe;
-  }, [navigation]);
-
-  const [refresh, setRefresh] = useState(false);
   if (!user) {
     return null;
   }
 
-  const socialList = createRef<FlatList>();
-
   return (
     <View style={{ flex: 1 }}>
-      <Profile
-        profileData={user}
-        currentUser={user}
-        refreshContent={refresh}
-        setRefreshContent={setRefresh}
-      />
+      <Profile profileData={user} currentUser={user} refreshToken={refreshToken} />
       <SettingsSheet userData={user} showModal={showSettings} setShowModal={setShowSettings} />
     </View>
   );
 }
+
 export default MyProfile;

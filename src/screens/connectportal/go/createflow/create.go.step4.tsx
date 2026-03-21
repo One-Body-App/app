@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
@@ -8,6 +8,7 @@ import type {
 } from '@/src/services/connectPortal';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep4'>;
 
@@ -18,7 +19,7 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
   const [ticketType, setTicketType] = useState<ConnectPortalTicketType>('free');
   const [paymentOption, setPaymentOption] = useState<ConnectPortalPaymentOption>('external');
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -40,7 +41,7 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
     return () => {
       isActive = false;
     };
-  }, [navigation, route.params?.draftId]);
+  });
 
   const persistDraft = async (completedStep?: 3 | 4) => {
     if (!draftId) {
@@ -77,11 +78,11 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          How will people register?
+          How will the community register?
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Choose the ticket type first, then decide whether a paid event should use internal or
-          external payments.
+          Let us know if your gathering is free and open to all, or if attendees need to purchase a
+          ticket to help cover costs.
         </Text>
       </View>
 
@@ -111,7 +112,7 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
                   { color: isActive ? palette.accent : palette.textPrimary },
                 ]}
               >
-                {option === 'free' ? 'Free Event' : 'Paid Event'}
+                {option === 'free' ? 'Free Gathering' : 'Ticketed Event'}
               </Text>
               <Text
                 style={[
@@ -120,8 +121,8 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
                 ]}
               >
                 {option === 'free'
-                  ? 'Attendees register without payment.'
-                  : 'Collect payment for one or more ticket tiers.'}
+                  ? 'No cost to attend. Simply invite believers to RSVP and join the fellowship.'
+                  : 'Set up paid registration to help support your ministry or event expenses.'}
               </Text>
             </TouchableOpacity>
           );
@@ -130,7 +131,7 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
 
       {ticketType === 'paid' ? (
         <View style={styles.paymentSection}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Payment Option</Text>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Payment Method</Text>
           {(['external', 'internal'] as ConnectPortalPaymentOption[]).map((option) => {
             const isActive = paymentOption === option;
             return (
@@ -147,12 +148,12 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
               >
                 <View style={styles.paymentCopy}>
                   <Text style={[styles.paymentTitle, { color: palette.textPrimary }]}>
-                    {option === 'external' ? 'External payment link' : 'OneBody internal payouts'}
+                    {option === 'external' ? 'External Link' : 'One Body Ticketing'}
                   </Text>
                   <Text style={[styles.paymentBody, { color: palette.textSecondary }]}>
                     {option === 'external'
-                      ? 'Keep payments on Eventbrite, Stripe, or another external checkout.'
-                      : 'Complete the local payout setup step before review.'}
+                      ? 'Direct attendees to your church website, Eventbrite, or preferred registration platform.'
+                      : 'Securely process payments right here in the app (requires setup before review).'}
                   </Text>
                 </View>
                 <View

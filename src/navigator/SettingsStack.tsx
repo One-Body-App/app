@@ -3,6 +3,8 @@ import {
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
 import React from 'react';
+import { TouchableOpacity, View } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 import { useTheme } from '@react-navigation/native';
 import { SettingsStackParamsList } from './types';
@@ -19,7 +21,7 @@ import InfluencerStepFour from '../screens/influencerApplication/InfluencerStepF
 import NewPassword from '../screens/newPassword/NewPassword';
 import { Colors } from '../styles';
 import InfluencerStepTwo from '../screens/influencerApplication/InfluencerStepTwo';
-import mainPageOptions from './global';
+import { spacing } from '../styles/spacing';
 
 const Stack = createNativeStackNavigator<SettingsStackParamsList>();
 
@@ -44,9 +46,53 @@ function SettingsStack() {
       <Stack.Screen
         name="SettingsMain"
         component={Settings}
-        options={({ navigation }) =>
-          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Settings')
-        }
+        options={({ navigation }) => ({
+          headerBackTitleVisible: false,
+          headerShadowVisible: false,
+          headerTransparent: false,
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: dark ? colors.text : Colors.primary.brand,
+          headerTitleAlign: 'center',
+          headerLeftContainerStyle: {
+            paddingLeft: spacing.x8,
+          },
+          headerRightContainerStyle: {
+            paddingRight: spacing.x8,
+          },
+          headerTitleStyle: {
+            color: dark ? colors.text : Colors.primary.brand,
+          },
+          title: 'Settings',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                  return;
+                }
+
+                navigation.getParent()?.navigate('HomeTab', {
+                  screen: 'Home',
+                });
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={28}
+                color={dark ? colors.text : Colors.primary.brand}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => <View style={{ width: 40, height: 40 }} />,
+        })}
       />
       {/* <Stack.Screen
         name="ConfirmLogin"

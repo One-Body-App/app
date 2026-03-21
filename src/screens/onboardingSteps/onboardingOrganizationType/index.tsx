@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -12,6 +12,7 @@ import { useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
 import { useToast } from 'react-native-toast-notifications';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
@@ -79,17 +80,17 @@ function OnboardingOrganizationType({ navigation }: Props) {
     }
   }, [selectedOrganizationType, token]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     preloadSoundEffect('pickerClick', pickerClickSound, 0.2).catch(() => {
       if (__DEV__) {
-        console.warn('🔇 Picker click sound failed to preload');
+        console.warn('Picker click sound failed to preload');
       }
     });
 
     if (token) {
       getOrganizationTypes();
     }
-  }, [token, getOrganizationTypes]);
+  });
 
   const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
     useNativeDriver: true,

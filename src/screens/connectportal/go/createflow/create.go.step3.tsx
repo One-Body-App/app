@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep3'>;
 
@@ -14,7 +15,7 @@ function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Eleme
   const [description, setDescription] = useState('');
   const [capacity, setCapacity] = useState('');
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -36,7 +37,7 @@ function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Eleme
     return () => {
       isActive = false;
     };
-  }, [navigation, route.params?.draftId]);
+  });
 
   const persistDraft = async (completedStep?: 2 | 3) => {
     if (!draftId) {
@@ -73,10 +74,11 @@ function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Eleme
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          What should people expect?
+          Share the heart of the event.
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Add the narrative that will also power the public event view and organizer summary cards.
+          Give believers a clear picture of what to expect. Share the purpose of the gathering, who
+          it’s for, and any important details.
         </Text>
       </View>
 
@@ -93,7 +95,7 @@ function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Eleme
           ]}
           value={description}
           onChangeText={setDescription}
-          placeholder="Describe the event, agenda, what to bring, and who this is for."
+          placeholder="Share the vision... Is there a specific topic, guest speaker, or something attendees should bring?"
           placeholderTextColor={palette.inputPlaceholder}
           multiline
           textAlignVertical="top"
@@ -101,7 +103,7 @@ function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Eleme
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.textPrimary }]}>Capacity</Text>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Attendee Capacity</Text>
         <TextInput
           style={[
             styles.input,
@@ -113,12 +115,12 @@ function DetailsAndCapacityScreen({ navigation, route }: Props): React.JSX.Eleme
           ]}
           value={capacity}
           onChangeText={setCapacity}
-          placeholder="150"
+          placeholder="e.g., 50"
           placeholderTextColor={palette.inputPlaceholder}
           keyboardType="number-pad"
         />
         <Text style={[styles.helperText, { color: palette.textMuted }]}>
-          Leave blank if registration should stay open-ended.
+          Leave this blank if you have plenty of room for fellowship and everyone is welcome.
         </Text>
       </View>
     </CreateFlowLayout>

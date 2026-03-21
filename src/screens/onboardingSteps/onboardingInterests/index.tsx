@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 
 import { StackScreenProps } from '@react-navigation/stack';
@@ -7,6 +7,7 @@ import { useToast } from 'react-native-toast-notifications';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { useTheme } from '@react-navigation/native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, Interest } from '@/utils/types';
@@ -84,11 +85,11 @@ function OnboardingInterests({ navigation, route }: Props) {
     }
   }, [dispatch, navigation, route.params, selectedInterest, toast, token]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (token) {
       getInterest();
     }
-  }, [token, getInterest]);
+  });
 
   return (
     <OnboardingStepsLayout

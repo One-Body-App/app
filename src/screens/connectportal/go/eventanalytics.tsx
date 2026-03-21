@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import type { StackScreenProps } from '@react-navigation/stack';
@@ -13,6 +13,7 @@ import {
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
 import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventAnalytics'>;
 
@@ -46,7 +47,7 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
     conversionRate: number;
   } | null>(null);
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -63,7 +64,7 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
     return () => {
       isActive = false;
     };
-  }, [route.params.eventId]);
+  });
 
   const progressPercent = useMemo(
     () => (eventRecord ? Math.round(getEventProgressRatio(eventRecord) * 100) : 0),

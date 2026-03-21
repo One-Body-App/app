@@ -1,10 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import PropTypes from 'prop-types';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import LottieView from 'lottie-react-native';
 import { useTheme } from '@react-navigation/native';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import type { OnboardingStackParamList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 // eslint-disable-next-line import/extensions
@@ -27,9 +28,9 @@ function OnboardingIntro({ navigation }: Props) {
   const animationRef = useRef<React.ElementRef<typeof LottieView>>(null);
   const { dark } = useTheme();
 
-  useEffect(() => {
+  useMountEffect(() => {
     animationRef.current?.play();
-  }, []);
+  });
 
   const handleGetStarted = () => {
     if (accountType === 'organization') {

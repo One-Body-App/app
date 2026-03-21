@@ -1,8 +1,9 @@
 import { StackScreenProps } from '@react-navigation/stack';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import StyledText from '@/components/styled/Text';
@@ -139,11 +140,11 @@ function SinglePost({ navigation, route }: Props) {
     [navigation, route.params?.postId]
   );
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (route.params?.postId) {
       getPost();
     }
-  }, [getPost, route.params?.postId]);
+  });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>

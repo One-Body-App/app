@@ -79,9 +79,11 @@ function PrayerWall() {
         options={() => {
           return {
             headerBackTitleVisible: false,
+            headerTransparent: false,
+            headerShadowVisible: false,
             headerStyle: { backgroundColor: colors.background },
             title: '',
-            contentStyle: { backgroundColor: Colors.neutral[700] },
+            contentStyle: { backgroundColor: colors.background },
           };
         }}
       />

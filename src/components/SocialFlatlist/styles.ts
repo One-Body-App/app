@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   socialpostfooter: {
     padding: 10,
     justifyContent: 'center',
@@ -22,3 +22,5 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
 });
+
+export default styles;

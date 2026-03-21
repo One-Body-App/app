@@ -1,7 +1,15 @@
-import React, { ComponentType, ReactElement, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
+import React, { ComponentType, ReactElement, useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  Text,
+  View,
+  ListRenderItem,
+} from 'react-native';
 import { useSelector } from 'react-redux';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { Tabs } from 'react-native-collapsible-tab-view';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/services/api';
@@ -9,13 +17,18 @@ import ArticleItem from '../listItems/ArticleItem';
 import OptionsModal, { PopupItem } from '../listItems/OptionsModal';
 import globalStyle from '@/components/listItems/style';
 import { spacing } from '@/src/styles/spacing';
+import { ArticleType } from '@/utils/types';
 
 function BlogFlatlist({
   userId,
   headerItem,
+  emptyText,
+  useTabsFlatList = false,
 }: {
   userId: string;
   headerItem?: ComponentType<any> | ReactElement | null | undefined;
+  emptyText?: string;
+  useTabsFlatList?: boolean;
 }) {
   // const offset = useRef(new Animated.Value(0)).current;
   const user = useSelector((state: RootState) => state.auth.getProfileData);
@@ -26,56 +39,69 @@ function BlogFlatlist({
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(true);
   const [isEndOfList, setIsEndOfList] = useState<boolean>(false);
-  const [currentPopupItem, setCurrentPopupItem] = useState<PopupItem>();
+  const [currentPopupItem] = useState<PopupItem>();
 
-  const getBlog = async (pageNumber: number) => {
-    try {
-      const res = await ApiCall({
-        route: `user/get-blog-feed/${userId}/${pageNumber}`,
-        verb: 'post',
-        token,
-      });
-
-      if (res?.status == 200) {
-        let blogData = [];
-
-        if (pageNumber == 1) {
-          blogData = res?.response ?? [];
-          setIsEndOfList(false);
-        } else {
-          blogData = [...blogs, ...(res?.response ?? [])];
-          if (res?.response.length < 1) {
-            setIsEndOfList(true);
-          }
-        }
-
-        setBlogs(blogData);
-      } else {
-        console.log('error', res?.response);
-      }
-      setLoadingMore(false);
-
-      setRefreshing(false);
-    } catch (e: any) {
-      setLoadingMore(false);
-      setRefreshing(false);
-    }
-    setPage(pageNumber);
-  };
-
-  useEffect(() => {
-    if (user) {
-      const getData = async () => {
-        await getBlog(page);
-      };
+  const getBlog = useCallback(
+    async (pageNumber: number) => {
       setLoadingMore(true);
-      getData();
-    }
-  }, [page, user]);
+
+      try {
+        const res = await ApiCall({
+          route: `user/get-blog-feed/${userId}/${pageNumber}`,
+          verb: 'post',
+          token,
+        });
+
+        if (res?.status === 200) {
+          if (pageNumber === 1) {
+            setIsEndOfList(false);
+            setBlogs(res?.response ?? []);
+          } else if (res?.response.length < 1) {
+            setIsEndOfList(true);
+          } else {
+            setBlogs((previousBlogs: ArticleType[]) => [
+              ...previousBlogs,
+              ...(res?.response ?? []),
+            ]);
+          }
+        } else {
+          console.log('error', res?.response);
+        }
+      } catch (e: any) {
+        console.log(e.toString());
+      } finally {
+        setLoadingMore(false);
+        setRefreshing(false);
+        setPage(pageNumber);
+      }
+    },
+    [token, userId]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        getBlog(1).then(() => undefined);
+      }
+    }, [getBlog, user])
+  );
   const { colors } = useTheme();
+  const ListComponent = useTabsFlatList ? Tabs.FlatList : FlatList;
+  const renderItem: ListRenderItem<ArticleType> = ({ item }) => (
+    <ArticleItem
+      key={`article_${item.id}`}
+      item={item}
+      imageSizeType="contain"
+      blogPostStyle={{
+        marginBottom: spacing.x24,
+        backgroundColor: colors.card,
+      }}
+      blogPostImageStyle={globalStyle.newspostimage}
+    />
+  );
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       {loadingMore ? (
         <ActivityIndicator
           animating={loadingMore}
@@ -90,10 +116,10 @@ function BlogFlatlist({
         currentPopupItem={currentPopupItem}
         height={getHeight(25)}
       />
-      <FlatList
+      <ListComponent
         nestedScrollEnabled
         data={blogs}
-        keyExtractor={(item, index) => String(item.id ?? item._id ?? index)}
+        keyExtractor={(item: ArticleType, index: number) => String(item.id ?? index)}
         removeClippedSubviews
         initialNumToRender={5}
         maxToRenderPerBatch={5}
@@ -114,25 +140,22 @@ function BlogFlatlist({
           <RefreshControl
             enabled
             refreshing={refreshing}
-            onRefresh={async () => {
+            onRefresh={() => {
               setIsEndOfList(false);
               setRefreshing(true);
-              setPage(1);
+              getBlog(1).then(() => undefined);
             }}
           />
         }
-        ListEmptyComponent={() => {
-          if (loadingMore) {
-            return null;
-          }
-          return (
+        ListEmptyComponent={
+          loadingMore ? null : (
             <View>
               <Text style={{ color: colors.text, textAlign: 'center' }}>
-                No content at the moment
+                {emptyText || 'No content at the moment'}
               </Text>
             </View>
-          );
-        }}
+          )
+        }
         // onScroll={Animated.event(
         //   [{nativeEvent: {contentOffset: {y: offset}}}],
         //   {
@@ -140,45 +163,12 @@ function BlogFlatlist({
         //   },
         // )}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }: any) => (
-          // <TouchableOpacity
-          //   onPress={() => {
-          //     OpenURLButton(item?.link);
-          //   }}
-          // >
-          //   <View style={styles.blogpostview}>
-          //     <Image
-          //       style={styles.blogpostimage}
-          //       resizeMode="contain"
-          //       source={{ uri: item?.image?.url }}
-          //     />
-          //     <Text numberOfLines={2} style={styles.blogpostpara}>
-          //       {isObject(item?.title) ? item?.title?.a.$text : item?.title}
-          //     </Text>
-
-          //     <Text style={styles.blogposthour}>{timeSince(item?.created)} ago</Text>
-          //   </View>
-          // </TouchableOpacity>
-
-          <ArticleItem
-            key={`article_${item.id}`}
-            item={item}
-            imageSizeType="contain"
-            blogPostStyle={{
-              marginBottom: spacing.x24,
-              backgroundColor: colors.card,
-            }}
-            blogPostImageStyle={globalStyle.newspostimage}
-            // blogPostTitleStyle={{
-            //   flexDirection: 'row',
-            //   justifyContent: 'space-between',
-            //   // marginTop: getHeight(1),
-            // }}
-          />
-        )}
+        renderItem={renderItem}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
-          if (!loadingMore && !refreshing && !isEndOfList) setPage(page + 1);
+          if (!loadingMore && !refreshing && !isEndOfList) {
+            getBlog(page + 1).then(() => undefined);
+          }
         }}
       />
     </View>

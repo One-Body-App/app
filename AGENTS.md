@@ -17,6 +17,9 @@
 - Do not import or call `useEffect` / `React.useEffect` directly in frontend code.
 - Prefer derived state, event handlers, Redux/saga flows, `useFocusEffect`, and keyed remounts before reaching for lifecycle synchronization.
 - Use `useMountEffect` only for true mount/unmount external sync such as listeners, subscriptions, and third-party integrations.
+- Do not change `UIViewControllerBasedStatusBarAppearance` in `ios/onebody/Info.plist`.
+- Do not add screen-level `StatusBar` usage for iOS. In this app it can conflict with the plist-based status bar configuration and trigger iOS runtime crashes.
+- If an Android screen needs status bar styling, gate that behavior to Android only and avoid changing shared iOS status bar behavior as part of the fix.
 - Prefer TypeScript where present; use ASCII-only text for edits and comments.
 - Keep changes minimal and focused on the requested scope.
 

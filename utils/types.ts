@@ -90,6 +90,7 @@ export type SavedPost = {
 
 export type User = {
   badges: string[];
+  allowDirectMessages?: boolean;
   createdAt: string;
   deactivated: { isDeactivated: boolean };
   email: string;
@@ -105,6 +106,7 @@ export type User = {
   updatedAt: string;
   username: string;
   bio?: string;
+  watchCount?: number;
   website: string;
 
   _id: string;

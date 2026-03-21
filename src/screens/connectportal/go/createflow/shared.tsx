@@ -5,7 +5,6 @@ import {
   Platform,
   SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -142,7 +141,6 @@ export function CreateFlowLayout({
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBg }]}>
-      <StatusBar barStyle={palette.isDark ? 'light-content' : 'dark-content'} />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

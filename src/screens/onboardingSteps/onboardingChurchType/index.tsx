@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
 import { useSelector } from 'react-redux';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
@@ -45,11 +46,11 @@ function OnboardingChurchType({ navigation }: Props) {
     }
   }, [token]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (token) {
       getChurchTypes();
     }
-  }, [token, getChurchTypes]);
+  });
 
   const selectedChurchTypeFiltered = churchTypes.filter((item) => {
     return item._id === selectedChurchType;

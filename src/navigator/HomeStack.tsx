@@ -27,8 +27,8 @@ function HomeStack() {
           statusBarColor: Platform.OS === 'android' && dark ? '#0D0D0D' : 'transparent',
           statusBarTranslucent: true,
           headerTintColor: dark ? colors.text : Colors.primary.brand,
-          headerTransparent: true,
-          headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
+          headerTransparent: false,
+          headerShadowVisible: false,
 
           drawerActiveBackgroundColor: Colors.neutral[600],
           drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
@@ -61,7 +61,7 @@ function HomeStack() {
           headerBackTitleVisible: false,
           headerStyle: { backgroundColor: colors.background },
           title: '',
-          contentStyle: { backgroundColor: Colors.neutral[700] },
+          contentStyle: { backgroundColor: colors.background },
         }}
       />
     </Stack.Navigator>

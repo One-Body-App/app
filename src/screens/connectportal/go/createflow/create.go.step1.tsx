@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
+  ActionSheetIOS,
+  Alert,
   Dimensions,
   Image,
   Platform,
@@ -10,13 +12,19 @@ import {
   View,
 } from 'react-native';
 import ImagePicker from 'react-native-image-crop-picker';
+import { launchImageLibrary, launchCamera as rnLaunchCamera } from 'react-native-image-picker';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
-import { saveConnectPortalDraft } from '@/src/services/connectPortal';
-import ImagePickerModal from '@/components/ImagePickerModal';
-import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
+import {
+  getConnectEventTypeOptions,
+  saveConnectPortalDraft,
+  submitConnectEventTypeSuggestion,
+} from '@/src/services/connectPortal';
+import type { ConnectPlaceFilterOption } from '@/src/services/connectPortal/types';
 import { CreateFlowLayout, ensureStepOneDraftRecord, useCreateFlowPalette } from './shared';
+import EventTypeDropdown, { OTHER_VALUE } from './EventTypeDropdown';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep1'>;
 
@@ -26,14 +34,18 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [eventType, setEventType] = useState('');
+  const [isOtherEventType, setIsOtherEventType] = useState(false);
+  const [eventTypeOptions, setEventTypeOptions] = useState<ConnectPlaceFilterOption[]>([]);
   const [heroImageUri, setHeroImageUri] = useState<string | undefined>();
-  const [pickerVisible, setPickerVisible] = useState(false);
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
-      const draft = await ensureStepOneDraftRecord(route.params?.draftId);
+      const [draft, options] = await Promise.all([
+        ensureStepOneDraftRecord(route.params?.draftId),
+        getConnectEventTypeOptions(),
+      ]);
       if (!isActive) {
         return;
       }
@@ -47,21 +59,35 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
         return;
       }
 
+      setEventTypeOptions(options);
       setDraftId(draft.id);
       setTitle(draft.title);
       setEventType(draft.eventType);
       setHeroImageUri(draft.heroImageUri);
+
+      if (
+        draft.eventType &&
+        options.length > 0 &&
+        !options.some((o) => o.value === draft.eventType)
+      ) {
+        setIsOtherEventType(true);
+      }
+
       setLoading(false);
     })();
 
     return () => {
       isActive = false;
     };
-  }, [navigation, route.params?.draftId]);
+  });
 
   const persistDraft = async (completedStep?: 0 | 1) => {
     if (!draftId) {
       return null;
+    }
+
+    if (isOtherEventType && eventType.trim()) {
+      submitConnectEventTypeSuggestion(eventType.trim());
     }
 
     return saveConnectPortalDraft(
@@ -94,39 +120,37 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
     } catch {
       // user cancelled cropper
     }
-    setPickerVisible(false);
   };
 
   const chooseFromGallery = async () => {
-    try {
-      const result = await ImagePicker.openPicker({
-        mediaType: 'photo',
-        compressImageQuality: 0.8,
-        forceJpg: true,
-      });
-      await handleImageSelected(result.path);
-    } catch {
-      setPickerVisible(false);
-    }
+    const response = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
+    if (response.didCancel || response.errorCode) return;
+    const uri = response.assets?.[0]?.uri;
+    if (uri) await handleImageSelected(uri);
   };
 
-  const openCamera = async () => {
-    if (Platform.OS === 'android') {
-      const permitted = await requestExternalWritePermission();
-      if (!permitted) {
-        setPickerVisible(false);
-        return;
-      }
-    }
-    try {
-      const result = await ImagePicker.openCamera({
-        mediaType: 'photo',
-        compressImageQuality: 0.8,
-        forceJpg: true,
-      });
-      await handleImageSelected(result.path);
-    } catch {
-      setPickerVisible(false);
+  const takePhoto = async () => {
+    const response = await rnLaunchCamera({ mediaType: 'photo', quality: 0.8 });
+    if (response.didCancel || response.errorCode) return;
+    const uri = response.assets?.[0]?.uri;
+    if (uri) await handleImageSelected(uri);
+  };
+
+  const showImageOptions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancel', 'Choose From Gallery', 'Open Camera'], cancelButtonIndex: 0 },
+        (index) => {
+          if (index === 1) chooseFromGallery();
+          else if (index === 2) takePhoto();
+        }
+      );
+    } else {
+      Alert.alert('Event Photo', 'Choose an option', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Choose From Gallery', onPress: chooseFromGallery },
+        { text: 'Open Camera', onPress: takePhoto },
+      ]);
     }
   };
 
@@ -158,10 +182,11 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          Tell people what this event is.
+          Let&apos;s build community together.
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Start with a clear title and a simple event type so your draft has a strong summary.
+          Start by sharing the basic details of your gathering to help believers in your area find
+          and connect with your event.
         </Text>
       </View>
 
@@ -178,26 +203,28 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
           ]}
           value={title}
           onChangeText={setTitle}
-          placeholder="Enter the name of your event"
+          placeholder="e.g., Young Adult Worship Night, Fall Retreat"
           placeholderTextColor={palette.inputPlaceholder}
         />
       </View>
 
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: palette.textPrimary }]}>Event Type</Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: palette.inputBg,
-              borderColor: palette.inputBorder,
-              color: palette.inputText,
-            },
-          ]}
-          value={eventType}
-          onChangeText={setEventType}
-          placeholder="Worship night, workshop, mixer..."
-          placeholderTextColor={palette.inputPlaceholder}
+        <EventTypeDropdown
+          items={eventTypeOptions.map((o) => ({ label: o.label, value: o.value }))}
+          selectedValue={isOtherEventType ? OTHER_VALUE : eventType}
+          customValue={isOtherEventType ? eventType : ''}
+          onSelect={(value) => {
+            if (value === OTHER_VALUE) {
+              setIsOtherEventType(true);
+              setEventType('');
+            } else {
+              setIsOtherEventType(false);
+              setEventType(value);
+            }
+          }}
+          onCustomChange={setEventType}
+          palette={palette}
         />
       </View>
 
@@ -213,7 +240,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
             },
           ]}
           activeOpacity={0.85}
-          onPress={() => setPickerVisible(true)}
+          onPress={showImageOptions}
         >
           {heroImageUri ? (
             <View style={styles.photoPreviewWrap}>
@@ -224,7 +251,7 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
               />
               <TouchableOpacity
                 style={[styles.photoChangeBtn, { backgroundColor: palette.primaryBtnBg }]}
-                onPress={() => setPickerVisible(true)}
+                onPress={showImageOptions}
               >
                 <MaterialIcons name="edit" size={16} color={palette.primaryBtnText} />
                 <Text style={[styles.photoChangeBtnText, { color: palette.primaryBtnText }]}>
@@ -236,22 +263,15 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
             <View style={styles.photoPlaceholder}>
               <MaterialIcons name="add-a-photo" size={28} color={palette.accent} />
               <Text style={[styles.photoCardTitle, { color: palette.textPrimary }]}>
-                Add a hero image
+                Add a featured photo
               </Text>
               <Text style={[styles.photoCardBody, { color: palette.textSecondary }]}>
-                Tap to choose a photo from your gallery or camera.
+                Tap to upload an image that captures the heart of your event.
               </Text>
             </View>
           )}
         </TouchableOpacity>
       </View>
-
-      <ImagePickerModal
-        visible={pickerVisible}
-        hideVisible={() => setPickerVisible(false)}
-        galleryImage={chooseFromGallery}
-        cameraImage={openCamera}
-      />
     </CreateFlowLayout>
   );
 }

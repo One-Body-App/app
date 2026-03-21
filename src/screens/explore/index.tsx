@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   ActivityIndicator,
@@ -6,6 +6,7 @@ import {
   Image,
   ImageBackground,
   type ListRenderItemInfo,
+  Platform,
   RefreshControl,
   ScrollView,
   Share,
@@ -19,12 +20,16 @@ import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { BlurView } from '@react-native-community/blur';
 import { useDispatch, useSelector } from 'react-redux';
-import { CompositeScreenProps, DrawerActions, useTheme } from '@react-navigation/native';
+import {
+  CompositeScreenProps,
+  DrawerActions,
+  useFocusEffect,
+  useTheme,
+} from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Notification } from 'iconsax-react-native';
 
 import { differenceInHours, format, parseISO } from 'date-fns';
 import Video from 'react-native-video';
@@ -64,6 +69,7 @@ import {
 import { refreshConnectPortalPublishedEvents } from '@/src/services/connectPortal';
 import getDeviceLocation from '@/src/services/deviceLocation';
 import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal/types';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'Explore'>,
@@ -332,8 +338,18 @@ function Explore({ navigation }: Props) {
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(dark), [dark]);
-  const headerTextColor = dark ? colors.text : EXPLORE_HEADER_COLOR;
-  const subheaderTextColor = dark ? Colors.neutral[300] : EXPLORE_HEADER_COLOR;
+  const headerTextColor = dark ? '#f8fafc' : EXPLORE_HEADER_COLOR;
+  const subheaderTextColor = dark ? '#d5dae1' : EXPLORE_HEADER_COLOR;
+  const primaryTextColor = dark ? '#f4f7fb' : colors.text;
+  const secondaryTextColor = dark ? '#c4ccd6' : Colors.neutral[300];
+  const tertiaryTextColor = dark ? '#9aa4b2' : Colors.neutral[300];
+  const screenBackgroundColor = dark ? '#0a0b0d' : '#f8fafc';
+  const headerBackgroundColor = dark ? '#0c0d10' : '#ffffff';
+  const headerDividerColor = dark ? 'rgba(255,255,255,0.06)' : colors.border;
+  const searchSurfaceColor = dark ? '#1c2024' : '#f1f5f9';
+  const surfaceCardColor = dark ? '#15191d' : colors.card;
+  const surfaceBorderColor = dark ? 'rgba(255,255,255,0.1)' : colors.border;
+  const shouldUseBlurHeader = Platform.OS === 'ios';
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData as User | null);
@@ -376,6 +392,19 @@ function Explore({ navigation }: Props) {
 
   const trimmedSearchText = searchText.trim();
   const isSearchMode = trimmedSearchText.length > 0;
+  const resetSearchState = useCallback(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+    setSearchResults([]);
+    setSearchError('');
+    setSearchPage(1);
+    setSearchHasMore(true);
+    setIsSearchLoading(false);
+    setIsSearchLoadingMore(false);
+    setActiveFilter(SearchFeedFilter.top);
+  }, []);
 
   const userAvatar = userProfile?.profileImage ?? '';
 
@@ -683,38 +712,27 @@ function Explore({ navigation }: Props) {
     [buildPostResult, buildUserResult, getLocalServeGoPage, token]
   );
 
-  useEffect(() => {
-    dispatch(getUserProfile({ token }));
-  }, [dispatch, token]);
+  const handleSearchTextChange = useCallback(
+    (nextText: string) => {
+      setSearchText(nextText);
 
-  useEffect(() => {
-    if (!isSearchMode) {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
       }
-      setSearchResults([]);
-      setSearchError('');
-      setSearchPage(1);
-      setSearchHasMore(true);
-      setIsSearchLoading(false);
-      setIsSearchLoadingMore(false);
-      setActiveFilter(SearchFeedFilter.top);
-    } else {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
+
+      const nextTrimmedText = nextText.trim();
+      if (!nextTrimmedText) {
+        resetSearchState();
+        return;
       }
 
       searchDebounceRef.current = setTimeout(() => {
-        runSearch(trimmedSearchText, 1, true);
+        runSearch(nextTrimmedText, 1, true);
       }, SEARCH_DEBOUNCE_MS);
-    }
-
-    return () => {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-    };
-  }, [isSearchMode, runSearch, trimmedSearchText]);
+    },
+    [resetSearchState, runSearch]
+  );
 
   const fetchTrending = useCallback(async () => {
     setIsTrendingLoading(true);
@@ -957,12 +975,29 @@ function Explore({ navigation }: Props) {
     fetchTrendingTopics,
   ]);
 
-  useEffect(() => {
-    fetchAllSections();
-  }, [fetchAllSections]);
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(getUserProfile({ token }));
+    }, [dispatch, token])
+  );
 
-  useEffect(() => {
-    Animated.loop(
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllSections();
+    }, [fetchAllSections])
+  );
+
+  useMountEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+    };
+  });
+
+  useMountEffect(() => {
+    const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 0.3,
@@ -975,8 +1010,13 @@ function Explore({ navigation }: Props) {
           useNativeDriver: true,
         }),
       ])
-    ).start();
-  }, [pulseAnim]);
+    );
+
+    pulseLoop.start();
+    return () => {
+      pulseLoop.stop();
+    };
+  });
 
   const handleRefresh = useCallback(() => {
     if (isSearchMode) {
@@ -1004,13 +1044,6 @@ function Explore({ navigation }: Props) {
 
   const handleOpenDrawer = useCallback(() => {
     navigation.dispatch(DrawerActions.toggleDrawer());
-  }, [navigation]);
-
-  const handleNotifications = useCallback(() => {
-    navigation.navigate('Main', {
-      screen: 'HomeTab',
-      params: { screen: 'Notifications' },
-    });
   }, [navigation]);
 
   const handleOpenWatchPost = useCallback(
@@ -1083,7 +1116,10 @@ function Explore({ navigation }: Props) {
           <TouchableOpacity
             activeOpacity={0.88}
             onPress={() => handleOpenWatchPost(result.item)}
-            style={[styles.watchCard, { borderColor: colors.border, backgroundColor: colors.card }]}
+            style={[
+              styles.watchCard,
+              { borderColor: surfaceBorderColor, backgroundColor: surfaceCardColor },
+            ]}
           >
             <View style={styles.watchHeader}>
               <Image
@@ -1091,10 +1127,13 @@ function Explore({ navigation }: Props) {
                 style={styles.watchAvatar}
               />
               <View style={{ flex: 1 }}>
-                <StyledText numberOfLines={1} style={[Typography.body.x2M, { color: colors.text }]}>
+                <StyledText
+                  numberOfLines={1}
+                  style={[Typography.body.x2M, { color: primaryTextColor }]}
+                >
                   {result.item.userData?.name ?? 'Unknown user'}
                 </StyledText>
-                <StyledText style={{ color: Colors.neutral[300] }}>Watch</StyledText>
+                <StyledText style={{ color: secondaryTextColor }}>Watch</StyledText>
               </View>
               <MaterialCommunityIcons
                 name="play-circle-outline"
@@ -1102,11 +1141,11 @@ function Explore({ navigation }: Props) {
                 color={dark ? Colors.neutral[200] : Colors.primarySapphire.brand}
               />
             </View>
-            <StyledText style={[styles.watchTitle, { color: colors.text }]} numberOfLines={2}>
+            <StyledText style={[styles.watchTitle, { color: primaryTextColor }]} numberOfLines={2}>
               {result.item.title || result.item.content || 'Watch post'}
             </StyledText>
             {result.item.content ? (
-              <StyledText style={{ color: Colors.neutral[300] }} numberOfLines={2}>
+              <StyledText style={{ color: secondaryTextColor }} numberOfLines={2}>
                 {result.item.content}
               </StyledText>
             ) : null}
@@ -1121,8 +1160,8 @@ function Explore({ navigation }: Props) {
           style={[
             styles.connectSearchCard,
             {
-              borderColor: colors.border,
-              backgroundColor: colors.card,
+              borderColor: surfaceBorderColor,
+              backgroundColor: surfaceCardColor,
             },
           ]}
         >
@@ -1134,10 +1173,13 @@ function Explore({ navigation }: Props) {
             />
           </View>
           <View style={{ flex: 1 }}>
-            <StyledText numberOfLines={1} style={[Typography.body.x2M, { color: colors.text }]}>
+            <StyledText
+              numberOfLines={1}
+              style={[Typography.body.x2M, { color: primaryTextColor }]}
+            >
               {result.item.title}
             </StyledText>
-            <StyledText numberOfLines={1} style={{ color: Colors.neutral[300], marginTop: 2 }}>
+            <StyledText numberOfLines={1} style={{ color: secondaryTextColor, marginTop: 2 }}>
               {result.item.location}
             </StyledText>
           </View>
@@ -1148,12 +1190,13 @@ function Explore({ navigation }: Props) {
       );
     },
     [
-      colors.border,
-      colors.card,
-      colors.text,
       dark,
       handleOpenConnectPortal,
       handleOpenWatchPost,
+      primaryTextColor,
+      secondaryTextColor,
+      surfaceBorderColor,
+      surfaceCardColor,
       styles,
     ]
   );
@@ -1283,7 +1326,7 @@ function Explore({ navigation }: Props) {
             </View>
             <StyledText
               numberOfLines={2}
-              style={[styles.trendingTitle, { color: colors.text, fontSize: 14 }]}
+              style={[styles.trendingTitle, { color: primaryTextColor, fontSize: 14 }]}
             >
               {item.title || item.content || 'Watch'}
             </StyledText>
@@ -1291,10 +1334,10 @@ function Explore({ navigation }: Props) {
               <MaterialCommunityIcons
                 name="heart-outline"
                 size={14}
-                color={Colors.neutral[300]}
+                color={tertiaryTextColor}
                 style={styles.trendingMetaIcon}
               />
-              <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
+              <StyledText style={{ color: tertiaryTextColor, fontSize: 12 }}>
                 {item.reactions?.length ?? 0}
               </StyledText>
             </View>
@@ -1385,7 +1428,7 @@ function Explore({ navigation }: Props) {
           <View style={{ paddingHorizontal: spacing.x16 }}>{renderMasonryColumns()}</View>
         )}
         {!isTrendingLoading && trendingVideos.length === 0 && (
-          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+          <StyledText style={{ color: secondaryTextColor, paddingHorizontal: spacing.x16 }}>
             No trending content right now
           </StyledText>
         )}
@@ -1421,7 +1464,7 @@ function Explore({ navigation }: Props) {
                 key={creator.id}
                 style={[
                   styles.creatorCard,
-                  { borderColor: colors.border, backgroundColor: colors.card },
+                  { borderColor: surfaceBorderColor, backgroundColor: surfaceCardColor },
                 ]}
                 activeOpacity={0.9}
               >
@@ -1437,7 +1480,10 @@ function Explore({ navigation }: Props) {
                     </View>
                   ) : null}
                 </View>
-                <StyledText numberOfLines={1} style={[styles.creatorName, { color: colors.text }]}>
+                <StyledText
+                  numberOfLines={1}
+                  style={[styles.creatorName, { color: primaryTextColor }]}
+                >
                   {creator.name}
                 </StyledText>
                 <TouchableOpacity
@@ -1468,7 +1514,7 @@ function Explore({ navigation }: Props) {
           </ScrollView>
         )}
         {!isVoicesLoading && newCreatorsItems.length === 0 && (
-          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+          <StyledText style={{ color: secondaryTextColor, paddingHorizontal: spacing.x16 }}>
             No new voices yet
           </StyledText>
         )}
@@ -1481,7 +1527,7 @@ function Explore({ navigation }: Props) {
             <MaterialCommunityIcons
               name="hands-pray"
               size={22}
-              color={dark ? Colors.neutral[200] : '#032f3c'}
+              color={dark ? primaryTextColor : '#032f3c'}
             />
             <StyledText style={[styles.sectionTitle, { color: headerTextColor }]}>
               Community Prayer
@@ -1506,7 +1552,7 @@ function Explore({ navigation }: Props) {
           </View>
         )}
         {!isPrayerLoading && communityPrayers.length === 0 && (
-          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+          <StyledText style={{ color: secondaryTextColor, paddingHorizontal: spacing.x16 }}>
             No community prayers right now
           </StyledText>
         )}
@@ -1539,21 +1585,18 @@ function Explore({ navigation }: Props) {
                 key={item.id}
                 style={[
                   styles.serveCardHorizontal,
-                  { borderColor: colors.border, backgroundColor: colors.card },
+                  { borderColor: surfaceBorderColor, backgroundColor: surfaceCardColor },
                 ]}
               >
                 <FastImage source={{ uri: item.imageUri }} style={styles.serveImageHorizontal} />
                 <View style={styles.serveContentHorizontal}>
                   <StyledText
                     numberOfLines={2}
-                    style={[Typography.body.x2M, { color: colors.text }]}
+                    style={[Typography.body.x2M, { color: primaryTextColor }]}
                   >
                     {item.title}
                   </StyledText>
-                  <StyledText
-                    numberOfLines={1}
-                    style={{ color: Colors.neutral[300], fontSize: 12 }}
-                  >
+                  <StyledText numberOfLines={1} style={{ color: secondaryTextColor, fontSize: 12 }}>
                     {item.organization}
                   </StyledText>
                   <StyledText
@@ -1577,7 +1620,7 @@ function Explore({ navigation }: Props) {
           </ScrollView>
         )}
         {!isServeLoading && serveOpportunityItems.length === 0 && (
-          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+          <StyledText style={{ color: secondaryTextColor, paddingHorizontal: spacing.x16 }}>
             No serve opportunities nearby
           </StyledText>
         )}
@@ -1665,14 +1708,14 @@ function Explore({ navigation }: Props) {
                         <View style={{ width: 16 }} />
                       )}
                       <View style={{ flex: 1 }}>
-                        <StyledText style={{ color: Colors.neutral[300], fontSize: 12 }}>
+                        <StyledText style={{ color: secondaryTextColor, fontSize: 12 }}>
                           {event.startDate
                             ? format(parseISO(String(event.startDate)), 'MMM d, yyyy')
                             : ''}
                         </StyledText>
                         <StyledText
                           numberOfLines={1}
-                          style={[Typography.body.x2M, { color: colors.text }]}
+                          style={[Typography.body.x2M, { color: primaryTextColor }]}
                         >
                           {event.title ?? event.name ?? 'Event'}
                         </StyledText>
@@ -1681,7 +1724,7 @@ function Explore({ navigation }: Props) {
                     <MaterialCommunityIcons
                       name="chevron-right"
                       size={20}
-                      color={Colors.neutral[300]}
+                      color={secondaryTextColor}
                     />
                   </TouchableOpacity>
                 );
@@ -1690,7 +1733,7 @@ function Explore({ navigation }: Props) {
           </View>
         )}
         {!isEventsLoading && goEvents.length === 0 && (
-          <StyledText style={{ color: Colors.neutral[300], paddingHorizontal: spacing.x16 }}>
+          <StyledText style={{ color: secondaryTextColor, paddingHorizontal: spacing.x16 }}>
             No upcoming events
           </StyledText>
         )}
@@ -1709,7 +1752,7 @@ function Explore({ navigation }: Props) {
               key={topic.id}
               style={styles.topicPill}
               activeOpacity={0.8}
-              onPress={() => setSearchText(topic.title)}
+              onPress={() => handleSearchTextChange(topic.title)}
             >
               <StyledText style={styles.topicPillText}>{topic.title}</StyledText>
             </TouchableOpacity>
@@ -1720,18 +1763,18 @@ function Explore({ navigation }: Props) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: dark ? Colors.neutral[900] : '#f8fafc' }]}>
+    <View style={[styles.container, { backgroundColor: screenBackgroundColor }]}>
       <View
         style={[
           styles.headerWrap,
           {
             paddingTop: insets.top + spacing.x8,
-            borderBottomColor: colors.border,
-            backgroundColor: dark ? 'rgba(13,13,13,0.96)' : 'rgba(255,255,255,0.92)',
+            borderBottomColor: headerDividerColor,
+            backgroundColor: headerBackgroundColor,
           },
         ]}
       >
-        {dark ? (
+        {shouldUseBlurHeader && dark ? (
           <BlurView
             pointerEvents="none"
             style={StyleSheet.absoluteFill}
@@ -1739,7 +1782,7 @@ function Explore({ navigation }: Props) {
             blurAmount={18}
             reducedTransparencyFallbackColor={colors.background}
           />
-        ) : (
+        ) : shouldUseBlurHeader ? (
           <BlurView
             pointerEvents="none"
             style={StyleSheet.absoluteFill}
@@ -1747,7 +1790,7 @@ function Explore({ navigation }: Props) {
             blurAmount={18}
             reducedTransparencyFallbackColor={colors.background}
           />
-        )}
+        ) : null}
 
         <View style={styles.headerRow}>
           <View style={styles.headerSideSlot}>
@@ -1772,42 +1815,38 @@ function Explore({ navigation }: Props) {
             </StyledText>
           </View>
 
-          <View style={styles.headerSideSlot}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={handleNotifications}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Notification
-                size={24}
-                color={dark ? Colors.neutral[200] : EXPLORE_HEADER_COLOR}
-                strokeWidth={0.2}
-              />
-            </TouchableOpacity>
-          </View>
+          <View style={styles.headerSideSlot} />
         </View>
 
         <View style={styles.searchContainer}>
-          <View
-            style={[
-              styles.searchInputWrap,
-              { backgroundColor: dark ? Colors.neutral[800] : '#f1f5f9' },
-            ]}
-          >
+          <View style={[styles.searchInputWrap, { backgroundColor: searchSurfaceColor }]}>
             <SearchIcon
               style={{ height: 20, width: 20, marginRight: spacing.x8 }}
-              stroke={dark ? Colors.neutral[400] : Colors.neutral[300]}
+              stroke={dark ? Colors.neutral[300] : Colors.neutral[300]}
             />
             <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
+              style={[styles.searchInput, { color: primaryTextColor }]}
               placeholder="Search posts, people, serve, go"
-              placeholderTextColor={dark ? Colors.neutral[500] : Colors.neutral[300]}
+              placeholderTextColor={dark ? Colors.neutral[300] : Colors.neutral[300]}
               value={searchText}
-              onChangeText={setSearchText}
+              onChangeText={handleSearchTextChange}
               returnKeyType="search"
               autoCorrect={false}
               autoCapitalize="none"
             />
+            {searchText.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => handleSearchTextChange('')}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={styles.searchClearButton}
+              >
+                <MaterialCommunityIcons
+                  name="close-circle"
+                  size={20}
+                  color={dark ? Colors.neutral[300] : Colors.neutral[300]}
+                />
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
 
@@ -1879,7 +1918,7 @@ function Explore({ navigation }: Props) {
           ListEmptyComponent={
             !isSearchLoading ? (
               <View style={styles.emptyStateWrap}>
-                <StyledText style={[Typography.body.x3, { color: colors.text }]}>
+                <StyledText style={[Typography.body.x3, { color: primaryTextColor }]}>
                   No results found
                 </StyledText>
                 {searchError ? (
@@ -1925,16 +1964,18 @@ const createStyles = (dark: boolean) =>
     },
     headerCenterWrap: {
       flex: 1,
-      alignItems: 'center',
+      alignItems: Platform.OS === 'android' ? 'flex-start' : 'center',
       justifyContent: 'center',
+      ...(Platform.OS === 'android' ? { paddingLeft: 14 } : {}),
     },
     headerTitle: {
       fontSize: 24,
       lineHeight: 28,
-      fontFamily: EXPLORE_HEADER_FONT_FAMILY,
+      fontFamily: 'Rubik-Bold',
       fontWeight: '700',
+      letterSpacing: 0.3,
       color: EXPLORE_HEADER_COLOR,
-      textAlign: 'center',
+      textAlign: Platform.OS === 'android' ? 'left' : 'center',
     },
     headerAvatar: {
       width: 30,
@@ -1957,6 +1998,8 @@ const createStyles = (dark: boolean) =>
     searchInputWrap: {
       height: 46,
       borderRadius: borderRadius.base,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: dark ? 'rgba(255,255,255,0.06)' : 'transparent',
       paddingHorizontal: spacing.x16,
       alignItems: 'center',
       flexDirection: 'row',
@@ -1964,6 +2007,11 @@ const createStyles = (dark: boolean) =>
     searchInput: {
       flex: 1,
       fontSize: 16,
+    },
+    searchClearButton: {
+      marginLeft: spacing.x8,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     chipsRow: {
       paddingHorizontal: spacing.x16,
@@ -2004,7 +2052,7 @@ const createStyles = (dark: boolean) =>
       fontFamily: EXPLORE_SUBHEADER_FONT_FAMILY,
     },
     sectionActionText: {
-      color: Colors.primarySapphire.brand,
+      color: dark ? Colors.secondary[200] : Colors.primarySapphire.brand,
       fontWeight: '600',
     },
     horizontalContent: {
@@ -2049,7 +2097,7 @@ const createStyles = (dark: boolean) =>
     },
     creatorsWrapper: {
       paddingVertical: spacing.x20,
-      backgroundColor: dark ? Colors.neutral[900] : '#f1f5f9',
+      backgroundColor: dark ? '#111418' : '#f1f5f9',
     },
     creatorCard: {
       width: 132,
@@ -2087,7 +2135,7 @@ const createStyles = (dark: boolean) =>
       paddingVertical: 6,
     },
     creatorActionButtonConnected: {
-      backgroundColor: dark ? Colors.neutral[700] : '#dce5ed',
+      backgroundColor: dark ? '#254955' : '#dce5ed',
     },
     creatorActionButtonText: {
       color: '#fff',
@@ -2214,7 +2262,7 @@ const createStyles = (dark: boolean) =>
       gap: 8,
     },
     topicPill: {
-      backgroundColor: dark ? Colors.neutral[800] : '#e6eaec',
+      backgroundColor: dark ? '#1a1e23' : '#e6eaec',
       borderRadius: 20,
       paddingHorizontal: 14,
       paddingVertical: 7,
@@ -2259,7 +2307,7 @@ const createStyles = (dark: boolean) =>
       fontWeight: '700',
     },
     featuredBadge: {
-      color: Colors.neutral[300],
+      color: dark ? Colors.neutral[200] : Colors.neutral[300],
       fontSize: 12,
       marginTop: 2,
     },

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -19,6 +19,7 @@ import {
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { CONNECT_PORTAL_MAP_DATA, type ConnectPortalMapItem, type Coordinate } from './data';
 import {
   CONNECT_BRAND,
@@ -276,19 +277,11 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     [dark]
   );
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (route.params?.initialTab) {
       setActiveTab(route.params.initialTab);
     }
-  }, [route.params?.initialTab, setActiveTab]);
 
-  useEffect(() => {
-    if (activeTab === 'Go!') {
-      refresh();
-    }
-  }, [activeTab, refresh]);
-
-  useEffect(() => {
     let isMounted = true;
 
     getDeviceLocation()
@@ -304,7 +297,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     return () => {
       isMounted = false;
     };
-  }, []);
+  });
 
   const activeItems = useMemo(() => {
     if (activeTab === 'Places') {
@@ -334,11 +327,10 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     return CONNECT_PORTAL_MAP_DATA.Serve;
   }, [activeTab, places.visibleRecords, snapshot.publicPublished]);
 
-  useEffect(() => {
-    if (selectedItemId && !activeItems.some((item) => item.id === selectedItemId)) {
-      setSelectedItemId(null);
-    }
-  }, [activeItems, selectedItemId]);
+  const validSelectedItemId =
+    selectedItemId && activeItems.some((item) => item.id === selectedItemId)
+      ? selectedItemId
+      : null;
 
   const clearSelection = useCallback(() => {
     places.selectPlace(null);
@@ -351,11 +343,12 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       : null;
   const selectedEvent =
     activeTab === 'Go!'
-      ? snapshot.publicPublished.find((eventRecord) => eventRecord.id === selectedItemId) || null
+      ? snapshot.publicPublished.find((eventRecord) => eventRecord.id === validSelectedItemId) ||
+        null
       : null;
   const selectedServeItem =
     activeTab === 'Serve'
-      ? CONNECT_PORTAL_MAP_DATA.Serve.find((item) => item.id === selectedItemId) || null
+      ? CONNECT_PORTAL_MAP_DATA.Serve.find((item) => item.id === validSelectedItemId) || null
       : null;
 
   const onChangeViewMode = (viewMode: 'list' | 'map') => {
@@ -394,6 +387,9 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
   const onChangeTab = (tab: typeof activeTab) => {
     clearSelection();
     setActiveTab(tab);
+    if (tab === 'Go!') {
+      refresh();
+    }
   };
 
   const handleMarkerPress = (item: (typeof activeItems)[number]) => {
@@ -527,7 +523,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
             const isSelected =
               activeTab === 'Places'
                 ? item.id === places.selectedPlaceId
-                : item.id === selectedItemId;
+                : item.id === validSelectedItemId;
             const markerContent = (
               <TouchableOpacity
                 activeOpacity={0.9}

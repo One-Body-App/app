@@ -7,7 +7,6 @@ import MyProfile from '../screens/main/myProfile';
 import { MyProfileStackParamsList } from './types';
 import { Colors } from '../styles';
 import InviteFriend from '../screens/main/inviteFriend';
-import mainPageOptions from './global';
 
 const Stack = createNativeStackNavigator<MyProfileStackParamsList>();
 
@@ -19,17 +18,11 @@ function ProfileStack() {
         gestureEnabled: false,
         fullScreenGestureEnabled: false,
         statusBarStyle: dark ? 'light' : 'dark',
-        headerTransparent: true,
-        headerBlurEffect: dark ? 'systemMaterialDark' : 'systemMaterialLight',
+        headerTransparent: false,
+        headerShadowVisible: false,
       }}
     >
-      <Stack.Screen
-        name="MyProfile"
-        component={MyProfile}
-        options={({ navigation }) =>
-          mainPageOptions(navigation, dark ? colors.text : Colors.primary.brand, 'Profile')
-        }
-      />
+      <Stack.Screen name="MyProfile" component={MyProfile} />
       <Stack.Screen
         name="EditProfile"
         component={EditProfile}

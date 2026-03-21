@@ -1,22 +1,17 @@
-import { StyleSheet, Platform, FlatList } from 'react-native';
-import { MaterialTabBar, TabBarProps, Tabs } from 'react-native-collapsible-tab-view';
-import { createRef, useCallback, useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
-import { Colors } from '../../styles';
-import { borderWidth } from '../../styles/outlines';
-import { spacing } from '../../styles/spacing';
 
-import { AccountType, Badge, RefreshListRef, User } from '@/utils/types';
-import BlogFlatlist from '../BlogFlatlist';
+import { Colors } from '@/src/styles';
+import { borderRadius, borderWidth } from '@/src/styles/outlines';
+import { spacing } from '@/src/styles/spacing';
+import StyledText from '@/components/styled/Text';
+import { User } from '@/utils/types';
 import SocialFlatlist from '../SocialFlatlist';
-
+import BlogFlatlist from '../BlogFlatlist';
+import WatchFlatlist from '../WatchFlatlist';
 import ProfileHeader from './ProfileHeader';
-import PrayerWallMyPrayersComponent from '../prayerWallMyPrayersComponent';
-
-type Route = {
-  key: string;
-  title: string;
-};
+import { getVisibleProfileTabs, ProfileTabKey } from './profileUtils';
 
 export interface ProfileProps {
   profileData: User;
@@ -24,119 +19,45 @@ export interface ProfileProps {
   relatedUsers?: User[];
   handleSubscribe?: Function;
   handleUnSubscribe?: Function;
-  refreshContent?: boolean;
-  setRefreshContent?: Function;
+  refreshToken?: number;
 }
 
-// export const profileImagesize = 80;
-// export const HEADER_EXPANDED_HEIGHT = 550;
-// export const HEADER_COLLAPSED_HEIGHT = 132;
+const TAB_LABELS: Record<ProfileTabKey, string> = {
+  post: 'Post',
+  social: 'Social',
+  blog: 'Blog',
+  watch: 'Watch',
+};
 
-// function Profile({
-//   profileData,
-//   currentUser,
-//   relatedUsers,
-//   handleSubscribe,
-//   handleUnSubscribe,
-//   refreshContent,
-//   setRefreshContent,
-// }: ProfileProps) {
-//   const socialList = createRef<RefreshListRef>();
+type ProfileTabBarProps = {
+  activeTab: ProfileTabKey;
+  visibleTabs: ProfileTabKey[];
+  onTabPress: (tab: ProfileTabKey) => void;
+};
 
-//   const onlyOneTab =
-//     profileData?.influencerProfile?.influencerStatus !== 'approved' ||
-//     !profileData?.influencerProfile?.rssUrl;
+function ProfileTabBar({ activeTab, onTabPress, visibleTabs }: ProfileTabBarProps) {
+  return (
+    <View style={styles.tabBarShell}>
+      <View style={styles.tabBarRow}>
+        {visibleTabs.map((tab) => {
+          const isActive = tab === activeTab;
 
-//   useEffect(() => {
-//     if (refreshContent && setRefreshContent) {
-//       setRefreshContent(false);
-//       socialList.current?.setRefreshing();
-//     }
-//   }, [refreshContent]);
-
-//   const { colors } = useTheme();
-
-//   const renderTabBar = useCallback(
-//     (props: TabBarProps) => {
-//       return (
-//         <MaterialTabBar
-//           {...props}
-//           indicatorStyle={{ backgroundColor: Colors.primary.brand }}
-//           tabStyle={{ flex: 1 }}
-//           activeColor={colors.text}
-//           contentContainerStyle={{ flex: 1 }}
-//           inactiveColor={Colors.neutral[200]}
-//           scrollEnabled
-//         />
-//       );
-//     },
-//     [colors.text]
-//   );
-
-//   return (
-//     <Tabs.Container
-//       lazy
-//       renderHeader={(props) => {
-//         return (
-//           <ProfileHeader
-//             profileData={profileData}
-//             currentUser={currentUser}
-//             relatedUsers={relatedUsers}
-//             handleSubscribe={handleSubscribe}
-//             handleUnSubscribe={handleUnSubscribe}
-//             {...props}
-//           />
-//         );
-//       }}
-//       minHeaderHeight={HEADER_COLLAPSED_HEIGHT}
-//       headerContainerStyle={{
-//         backgroundColor: colors.card,
-//         shadowOffset: {
-//           width: 0,
-//           height: Platform.OS === 'ios' || onlyOneTab ? 0 : 2,
-//         },
-//         shadowOpacity: Platform.OS === 'ios' || onlyOneTab ? 0 : 0.23,
-//         shadowRadius: 2.62,
-//         borderBottomWidth: Platform.OS === 'ios' || onlyOneTab ? borderWidth.thin : 0,
-//         borderBottomColor: Platform.OS === 'ios' || onlyOneTab ? Colors.neutral[800] : undefined,
-//         // paddingBottom: onlyOneTab ? spacing.x10 : undefined,
-//       }}
-//       renderTabBar={onlyOneTab ? () => null : renderTabBar}
-//     >
-//       <Tabs.Tab name="social" label="Social">
-//         <SocialFlatlist ref={socialList} userIdToPullData={profileData._id} />
-//       </Tabs.Tab>
-
-//       {/* <Tabs.Tab name="prayers" label="Prayers">
-//         <PrayerWallMyPrayersComponent />
-//       </Tabs.Tab> */}
-
-//       {profileData?.influencerProfile?.influencerStatus === 'approved' &&
-//       profileData?.influencerProfile?.rssUrl ? (
-//         <Tabs.Tab name="blog" label="Blog/News">
-//           <BlogFlatlist userId={profileData._id} />
-//         </Tabs.Tab>
-//       ) : null}
-//     </Tabs.Container>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   bottomView: {
-//     justifyContent: 'flex-end',
-//     margin: 0,
-//   },
-
-//   content2: {
-//     // backgroundColor: 'white',
-//     alignItems: 'center',
-//     padding: 13,
-//     borderTopRightRadius: 17,
-//     borderTopLeftRadius: 17,
-//     // height: getHeight(70),
-//     flex: 1,
-//   },
-// });
+          return (
+            <Pressable
+              key={tab}
+              onPress={() => onTabPress(tab)}
+              style={[styles.tabButton, isActive ? styles.activeTabButton : null]}
+            >
+              <StyledText style={[styles.tabLabel, isActive ? styles.activeTabLabel : null]}>
+                {TAB_LABELS[tab]}
+              </StyledText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
 
 function Profile({
   profileData,
@@ -144,57 +65,114 @@ function Profile({
   relatedUsers,
   handleSubscribe,
   handleUnSubscribe,
-  refreshContent,
-  setRefreshContent,
+  refreshToken = 0,
 }: ProfileProps) {
-  const [activeTab, setActiveTab] = useState('social');
-  const socialList = createRef<RefreshListRef>();
+  const { colors } = useTheme();
+  const visibleTabs = useMemo(() => getVisibleProfileTabs(profileData), [profileData]);
+  const initialTab = visibleTabs[0] ?? 'post';
+  const [requestedTab, setRequestedTab] = useState<ProfileTabKey>(initialTab);
+  const activeTab = visibleTabs.includes(requestedTab) ? requestedTab : initialTab;
+  const headerContent = (
+    <>
+      <ProfileHeader
+        key={`${profileData._id}-${(profileData.badgesData ?? []).map((badge) => badge._id).join(',')}`}
+        profileData={profileData}
+        currentUser={currentUser}
+        relatedUsers={relatedUsers}
+        handleSubscribe={handleSubscribe}
+        handleUnSubscribe={handleUnSubscribe}
+      />
+      <ProfileTabBar activeTab={activeTab} onTabPress={setRequestedTab} visibleTabs={visibleTabs} />
+    </>
+  );
+  const listKey = `${profileData._id}-${activeTab}-${refreshToken}`;
 
-  useEffect(() => {
-    if (refreshContent && setRefreshContent) {
-      setRefreshContent(false);
-      socialList.current?.setRefreshing();
-    }
-  }, [refreshContent]);
-
-  if (activeTab == 'social') {
+  if (activeTab === 'social' && visibleTabs.includes('social')) {
     return (
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
+        <SocialFlatlist
+          key={listKey}
+          headerItem={headerContent}
+          userIdToPullData={profileData._id}
+          socialType="instagram"
+          emptyText="No social posts yet"
+        />
+      </View>
+    );
+  }
+
+  if (activeTab === 'blog' && visibleTabs.includes('blog')) {
+    return (
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
+        <BlogFlatlist
+          key={listKey}
+          headerItem={headerContent}
+          userId={profileData._id}
+          emptyText="No blog posts yet"
+        />
+      </View>
+    );
+  }
+
+  if (activeTab === 'watch' && visibleTabs.includes('watch')) {
+    return (
+      <View style={{ backgroundColor: colors.background, flex: 1 }}>
+        <WatchFlatlist
+          key={listKey}
+          headerItem={headerContent}
+          userId={profileData._id}
+          emptyText="No watch posts yet"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ backgroundColor: colors.background, flex: 1 }}>
       <SocialFlatlist
-        ref={socialList}
-        headerItem={() => (
-          <ProfileHeader
-            profileData={profileData}
-            currentUser={currentUser}
-            relatedUsers={relatedUsers}
-            handleSubscribe={handleSubscribe}
-            handleUnSubscribe={handleUnSubscribe}
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-          />
-        )}
+        key={listKey}
+        headerItem={headerContent}
         userIdToPullData={profileData._id}
+        socialType="onebody"
+        emptyText="No posts yet"
       />
-    );
-  }
-  if (activeTab == 'blog') {
-    return (
-      <BlogFlatlist
-        userId={profileData._id}
-        headerItem={() => (
-          <ProfileHeader
-            profileData={profileData}
-            currentUser={currentUser}
-            relatedUsers={relatedUsers}
-            handleSubscribe={handleSubscribe}
-            handleUnSubscribe={handleUnSubscribe}
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-          />
-        )}
-      />
-    );
-  }
-  return null;
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  activeTabButton: {
+    backgroundColor: Colors.neutral[800],
+  },
+  activeTabLabel: {
+    color: Colors.primarySapphire.brand,
+  },
+  tabBarRow: {
+    backgroundColor: '#FFFFFF',
+    borderBottomColor: Colors.neutral[800],
+    borderBottomWidth: borderWidth.thin,
+    borderTopColor: Colors.neutral[800],
+    borderTopWidth: borderWidth.thin,
+    flexDirection: 'row',
+    gap: spacing.x8,
+    paddingHorizontal: spacing.x16,
+    paddingVertical: spacing.x10,
+  },
+  tabBarShell: {
+    backgroundColor: '#FFFFFF',
+  },
+  tabButton: {
+    alignItems: 'center',
+    borderRadius: borderRadius.button,
+    flex: 1,
+    paddingHorizontal: spacing.x10,
+    paddingVertical: spacing.x10,
+  },
+  tabLabel: {
+    color: Colors.primary.brand,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
 
 export default Profile;

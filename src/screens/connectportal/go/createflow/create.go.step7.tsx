@@ -1,17 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { getConnectPortalEventById } from '@/src/services/connectPortal';
 import { useCreateFlowPalette } from './shared';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep7Success'>;
 
@@ -19,7 +12,7 @@ function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
   const [title, setTitle] = useState('Your Event');
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -32,11 +25,10 @@ function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {
     return () => {
       isActive = false;
     };
-  }, [route.params.draftId]);
+  });
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBg }]}>
-      <StatusBar barStyle={palette.isDark ? 'light-content' : 'dark-content'} />
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.navigate('ConnectGoEventDash')}>

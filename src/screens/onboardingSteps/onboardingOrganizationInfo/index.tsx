@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useToast } from 'react-native-toast-notifications';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
@@ -21,7 +22,7 @@ function OnboardingLocation({ navigation, route }: Props) {
   const [countryCode, setCountryCode] = useState<string | undefined>();
   const toast = useToast();
 
-  useEffect(() => {
+  useMountEffect(() => {
     const { locale } = Intl.DateTimeFormat().resolvedOptions();
     const match = locale.match(/[-_](\w{2})\b/);
     const region = match?.[1]?.toLowerCase();
@@ -29,7 +30,7 @@ function OnboardingLocation({ navigation, route }: Props) {
     if (region) {
       setCountryCode(region);
     }
-  }, []);
+  });
 
   return (
     <OnboardingStepsLayout

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View,
   Animated,
@@ -11,6 +11,7 @@ import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType } from '@/utils/types';
@@ -100,21 +101,19 @@ function OnboardingDateOfBirth({ navigation }: Props) {
   });
 
   // Initial selection (set the first year as default)
-  useEffect(() => {
+  useMountEffect(() => {
     // Set initial year to the first item in the list automatically
     if (!year && years.length > 0) {
       setYear(years[0]);
       lastTriggeredIndex.current = 0;
     }
-  }, [years, year]);
 
-  useEffect(() => {
     preloadSoundEffect('pickerClick', pickerClickSound, 0.2).catch(() => {
       if (__DEV__) {
-        console.warn('🔇 Picker click sound failed to preload');
+        console.warn('Picker click sound failed to preload');
       }
     });
-  }, []);
+  });
 
   const renderItem = ({ item, index }: { item: string; index: number }) => {
     const inputRange = [(index - 1) * ITEM_HEIGHT, index * ITEM_HEIGHT, (index + 1) * ITEM_HEIGHT];

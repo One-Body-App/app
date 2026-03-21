@@ -1,6 +1,6 @@
 import { StackScreenProps } from '@react-navigation/stack';
 import { useTheme } from '@react-navigation/native';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -29,6 +29,7 @@ import {
   useImage,
 } from '@shopify/react-native-skia';
 import RNFS from 'react-native-fs';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import StyledText from '@/components/styled/Text';
 import { MainStackParamList } from '@/src/navigator/types';
 import {
@@ -295,9 +296,6 @@ function UploadImage({ navigation, route }: Props) {
   const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
   const [stickerOverlays, setStickerOverlays] = useState<StickerOverlay[]>([]);
   const [isPreparingImage, setIsPreparingImage] = useState(false);
-  const [imageSourceCandidates, setImageSourceCandidates] = useState<string[]>(() => [
-    normalizeImageUri(route.params?.imageUri ?? FALLBACK_PREVIEW_IMAGE),
-  ]);
   const [decodedImage, setDecodedImage] = useState<ReturnType<
     typeof Skia.Image.MakeImageFromEncoded
   > | null>(null);
@@ -313,7 +311,7 @@ function UploadImage({ navigation, route }: Props) {
   const image =
     Platform.OS === 'android' ? (decodedImage ?? loadedImage) : (loadedImage ?? decodedImage);
 
-  useEffect(() => {
+  const imageSourceCandidatesMemo = useMemo(() => {
     const nextCandidates: string[] = [];
     const pushCandidate = (value?: string) => {
       if (!value || nextCandidates.includes(value)) {
@@ -325,11 +323,10 @@ function UploadImage({ navigation, route }: Props) {
     if (sourceUri.startsWith('file://')) {
       pushCandidate(stripFileScheme(sourceUri));
     }
-    setImageSourceCandidates(nextCandidates.length ? nextCandidates : [sourceUri]);
-    setDecodedImage(null);
+    return nextCandidates.length ? nextCandidates : [sourceUri];
   }, [sourceUri]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     let cancelled = false;
     const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> =>
       new Promise<T>((resolve, reject) => {
@@ -434,7 +431,7 @@ function UploadImage({ navigation, route }: Props) {
       }
       setIsPreparingImage(true);
 
-      const candidates = [...imageSourceCandidates];
+      const candidates = [...imageSourceCandidatesMemo];
       // eslint-disable-next-line no-restricted-syntax
       for (const candidateUri of candidates) {
         try {
@@ -476,7 +473,7 @@ function UploadImage({ navigation, route }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [imageSourceCandidates]);
+  });
 
   const textColor = dark ? DARK_TEXT : LIGHT_TEXT;
   const backgroundColor = dark ? DARK_BACKGROUND : LIGHT_BACKGROUND;
@@ -575,9 +572,9 @@ function UploadImage({ navigation, route }: Props) {
     transform,
   ]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     setTransform((previous) => clampTransform(previous));
-  }, [clampTransform]);
+  });
 
   const filters = useMemo<FilterId[]>(() => ['original', 'warm', 'cool', 'bw', 'dramatic'], []);
   const adjustOptions = useMemo<[AdjustPresetId, string][]>(
@@ -608,7 +605,7 @@ function UploadImage({ navigation, route }: Props) {
     return font;
   }, []);
 
-  useEffect(() => {
+  useMountEffect(() => {
     setTransform({ scale: 1, translateX: 0, translateY: 0 });
     setTextOverlays([]);
     setStickerOverlays([]);
@@ -616,7 +613,7 @@ function UploadImage({ navigation, route }: Props) {
     setFilter('original');
     setNewTextValue('Faith');
     setRatio(defaultRatioForContext(route.params?.usageContext));
-  }, [route.params?.usageContext, sourceUri]);
+  });
 
   const cropGesture = useMemo(() => {
     const pan = Gesture.Pan()
@@ -681,14 +678,14 @@ function UploadImage({ navigation, route }: Props) {
     [navigation, requestId]
   );
 
-  useEffect(() => {
+  useMountEffect(() => {
     return () => {
       if (requestId && !resolvedRef.current) {
         cancelUploadImageRequest(requestId);
         resolvedRef.current = true;
       }
     };
-  }, [requestId]);
+  });
 
   const cancelEditing = useCallback(() => {
     resolveAndClose({ status: 'cancelled' });

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Payout'>;
 
@@ -14,7 +15,7 @@ function PayoutMethodScreen({ navigation, route }: Props): React.JSX.Element {
   const [businessName, setBusinessName] = useState('');
   const [ein, setEin] = useState('');
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -36,7 +37,7 @@ function PayoutMethodScreen({ navigation, route }: Props): React.JSX.Element {
     return () => {
       isActive = false;
     };
-  }, [navigation, route.params?.draftId]);
+  });
 
   const persistDraft = async (markPayoutConfigured = false) => {
     if (!draftId) {
@@ -73,16 +74,18 @@ function PayoutMethodScreen({ navigation, route }: Props): React.JSX.Element {
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          Confirm payout details.
+          Where should we send the funds?
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          This is a local-only implementation. We store the payout draft data so review and resume
-          routing behave correctly, but no external payouts are created.
+          To securely process ticket sales and transfer funds directly to your ministry or
+          organization, please provide your legal entity details.
         </Text>
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.textPrimary }]}>Legal Business Name</Text>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>
+          Legal Ministry or Organization Name
+        </Text>
         <TextInput
           style={[
             styles.input,
@@ -94,13 +97,13 @@ function PayoutMethodScreen({ navigation, route }: Props): React.JSX.Element {
           ]}
           value={businessName}
           onChangeText={setBusinessName}
-          placeholder="Acme Events LLC"
+          placeholder="e.g., Grace Fellowship Church"
           placeholderTextColor={palette.inputPlaceholder}
         />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.textPrimary }]}>EIN</Text>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Tax ID (EIN)</Text>
         <TextInput
           style={[
             styles.input,
@@ -112,7 +115,7 @@ function PayoutMethodScreen({ navigation, route }: Props): React.JSX.Element {
           ]}
           value={ein}
           onChangeText={setEin}
-          placeholder="12-3456789"
+          placeholder="e.g., 12-3456789"
           placeholderTextColor={palette.inputPlaceholder}
         />
       </View>

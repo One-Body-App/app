@@ -5,7 +5,6 @@ import Explore from '../screens/explore';
 
 import UserProfile from '../screens/main/userProfile';
 import { ExploreStackParamsList } from './types';
-import { Colors } from '../styles';
 
 const Stack = createNativeStackNavigator<ExploreStackParamsList>();
 
@@ -34,9 +33,11 @@ function ExploreStack() {
         component={UserProfile}
         options={{
           headerBackTitleVisible: false,
+          headerTransparent: false,
+          headerShadowVisible: false,
           headerStyle: { backgroundColor: colors.background },
           title: '',
-          contentStyle: { backgroundColor: Colors.neutral[700] },
+          contentStyle: { backgroundColor: colors.background },
         }}
       />
     </Stack.Navigator>

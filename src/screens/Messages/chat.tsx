@@ -919,7 +919,7 @@ function ChatListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 22,
   },
   headerRow: {
     justifyContent: 'space-between',
@@ -935,7 +935,7 @@ const styles = StyleSheet.create({
   headerAndroidTitleWrap: {
     flex: 1,
     justifyContent: 'center',
-    paddingLeft: 10,
+    paddingLeft: 14,
   },
   headerCenterWrap: {
     position: 'absolute',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
@@ -11,6 +11,7 @@ import {
   getStepFiveNextRouteName,
   useCreateFlowPalette,
 } from './shared';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep5'>;
 
@@ -20,7 +21,7 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
   const [draft, setDraft] = useState<ConnectPortalEventDraft | null>(null);
   const [ticketTiers, setTicketTiers] = useState<TicketTier[]>([createDraftTicketTier()]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -43,7 +44,7 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
     return () => {
       isActive = false;
     };
-  }, [navigation, route.params?.draftId]);
+  });
 
   const updateTier = (tierId: string, key: keyof TicketTier, value: string) => {
     setTicketTiers((current) =>
@@ -106,10 +107,11 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          Set up your ticket tiers.
+          Set up registration options.
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Free events keep price at zero. Paid events can define multiple tiers before review.
+          Create the different ways believers can RSVP. Free gatherings will automatically stay at
+          zero cost, while ticketed events can offer multiple tiers.
         </Text>
       </View>
 
@@ -134,7 +136,7 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
               ]}
               value={tier.name}
               onChangeText={(value) => updateTier(tier.id, 'name', value)}
-              placeholder="General Admission"
+              placeholder="e.g., General Admission, Student, Family Pass"
               placeholderTextColor={palette.inputPlaceholder}
             />
           </View>
@@ -153,7 +155,7 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
                 ]}
                 value={tier.quantity}
                 onChangeText={(value) => updateTier(tier.id, 'quantity', value)}
-                placeholder="100"
+                placeholder="e.g., 100"
                 placeholderTextColor={palette.inputPlaceholder}
                 keyboardType="number-pad"
               />
@@ -172,7 +174,7 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
                 ]}
                 value={draft?.ticketType === 'free' ? '0.00' : tier.price}
                 onChangeText={(value) => updateTier(tier.id, 'price', value)}
-                placeholder="25.00"
+                placeholder="e.g., 25.00"
                 placeholderTextColor={palette.inputPlaceholder}
                 keyboardType="decimal-pad"
                 editable={draft?.ticketType !== 'free'}
@@ -193,7 +195,7 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
         onPress={() => setTicketTiers((current) => [...current, createDraftTicketTier()])}
       >
         <Text style={[styles.addButtonText, { color: palette.accent }]}>
-          Add another ticket type
+          Add another ticket option
         </Text>
       </TouchableOpacity>
     </CreateFlowLayout>

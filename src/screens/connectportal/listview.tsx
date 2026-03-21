@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import {
   Alert,
   Animated,
@@ -28,6 +28,7 @@ import {
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { CONNECT_PORTAL_LIST_DATA, type ConnectTab } from './data';
 import {
   CONNECT_BRAND,
@@ -136,11 +137,11 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     [chipOffset]
   );
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (route.params?.initialTab) {
       setActiveTab(route.params.initialTab);
     }
-  }, [route.params?.initialTab, setActiveTab]);
+  });
 
   useFocusEffect(
     React.useCallback(() => {

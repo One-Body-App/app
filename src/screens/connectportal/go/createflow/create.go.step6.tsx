@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
@@ -15,6 +15,7 @@ import {
   getReviewBackRouteName,
   useCreateFlowPalette,
 } from './shared';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Review'>;
 
@@ -23,7 +24,7 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<ConnectPortalEventDraft | null>(null);
 
-  useEffect(() => {
+  useMountEffect(() => {
     let isActive = true;
 
     (async () => {
@@ -43,7 +44,7 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
     return () => {
       isActive = false;
     };
-  }, [navigation, route.params?.draftId]);
+  });
 
   return (
     <CreateFlowLayout

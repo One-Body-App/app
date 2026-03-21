@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Image, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
@@ -6,6 +6,7 @@ import { useToast } from 'react-native-toast-notifications';
 import { serialize } from 'object-to-formdata';
 import { useTheme } from '@react-navigation/native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import OnboardingStepsLayout from '../../layout/OnboardingStepsLayout';
 import { OnboardingStackParamList } from '@/src/navigator/types';
 import { AccountType, User } from '@/utils/types';
@@ -62,10 +63,11 @@ function OnboardingInfluencers({ route }: Props) {
   );
 
   const getInfluencers = useCallback(
-    async (pageNumber: number) => {
+    async (pageNumber: number, term: string = searchText) => {
+      setLoadingMore(true);
       try {
         const res = await ApiCall({
-          route: `user/get-users-to-subscribe/${pageNumber}?term=${searchText}&itemsPerPage=12`,
+          route: `user/get-users-to-subscribe/${pageNumber}?term=${term}&itemsPerPage=12`,
           verb: 'get',
           token,
         });
@@ -127,12 +129,11 @@ function OnboardingInfluencers({ route }: Props) {
     }
   };
 
-  useEffect(() => {
+  useMountEffect(() => {
     if (token) {
-      getInfluencers(page);
-      setLoadingMore(true);
+      getInfluencers(1);
     }
-  }, [getInfluencers, page, searchText, token]);
+  });
 
   return (
     <OnboardingStepsLayout
@@ -212,6 +213,7 @@ function OnboardingInfluencers({ route }: Props) {
               onChangeText={(text) => {
                 setSearchText(text);
                 setPage(1);
+                getInfluencers(1, text);
               }}
               value={searchText}
               leftIcon={
@@ -251,7 +253,11 @@ function OnboardingInfluencers({ route }: Props) {
                 return getInfluencerKey(item, index);
               }}
               onEndReached={() => {
-                if (!loadingMore && !isRefreshing && !isEndOfList) setPage(page + 1);
+                if (!loadingMore && !isRefreshing && !isEndOfList) {
+                  const nextPage = page + 1;
+                  setPage(nextPage);
+                  getInfluencers(nextPage);
+                }
               }}
               onEndReachedThreshold={0.8}
               contentContainerStyle={{

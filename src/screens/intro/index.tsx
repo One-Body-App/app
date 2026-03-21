@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { StackScreenProps } from '@react-navigation/stack';
 import {
   View,
@@ -14,6 +14,7 @@ import FastImage from 'react-native-fast-image';
 import { useTheme } from '@react-navigation/native';
 import { BlurView } from '@react-native-community/blur';
 import Color from 'color';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { header, subheader } from '@/src/styles/typography';
 import { Colors } from '@/src/styles';
 import { button } from '@/src/styles/buttons';
@@ -60,18 +61,11 @@ function IntroScreen({ navigation }: Props) {
   const textAnim = useRef(new Animated.Value(0)).current;
   const primaryBtnAnim = useRef(new Animated.Value(0)).current;
   const secondaryBtnAnim = useRef(new Animated.Value(0)).current;
-  const hasAnimated = useRef(false);
-
   // 2. Continuous Loop Animations (Solar System)
   const loopAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (hasAnimated.current) {
-      return undefined;
-    }
+  useMountEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
-      hasAnimated.current = true;
-
       const sweepAndWobble = (anim: Animated.Value) =>
         Animated.sequence([
           Animated.timing(anim, {
@@ -122,7 +116,7 @@ function IntroScreen({ navigation }: Props) {
       ).start();
     });
     return () => task.cancel();
-  }, [orbitAnim, textAnim, loopAnim, primaryBtnAnim, secondaryBtnAnim]);
+  });
 
   // --- Interpolations ---
 
