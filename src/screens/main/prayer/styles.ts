@@ -46,31 +46,6 @@ const styles = StyleSheet.create({
     width: getWidth(75),
     borderRadius: 5,
   },
-  tabBar: {
-    flexDirection: 'row',
-    position: 'relative',
-    overflow: 'hidden',
-    borderRadius: 20,
-    marginHorizontal: 16,
-    marginVertical: 1,
-    paddingVertical: 0,
-    minHeight: 36,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-    padding: 0,
-    height: 36,
-  },
-  liquidCanvasLayer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 });
 
 export default styles;
