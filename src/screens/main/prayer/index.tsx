@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, TouchableOpacity, SafeAreaView, Platform, Animated, Easing } from 'react-native';
+import { View, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
 
 import { TabView } from 'react-native-tab-view';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
-import styles from './styles';
 
 import WallComponent from '@/components/prayerWallComponent';
 import PrayersComponent from '@/components/prayerWallMyPrayersComponent';
@@ -13,9 +12,8 @@ import { PrayerWallStackParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
-import { fontSize } from '@/src/styles/typography';
 import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
-import { HapticService } from '@/src/services/haptic';
+import GlassTabBar from '@/components/GlassTabBar';
 
 type Props = StackScreenProps<PrayerWallStackParamsList, 'index'>;
 
@@ -28,11 +26,7 @@ function Prayer({ navigation }: Props) {
     { key: 'Saved', title: 'Saved' },
     { key: 'MyPrayers', title: 'My Prayers' },
   ]);
-  const [tabBarWidth, setTabBarWidth] = React.useState(0);
-  const liquidTranslate = React.useRef(new Animated.Value(0)).current;
-  const liquidStretch = React.useRef(new Animated.Value(1)).current;
-  const hasInitializedLiquidRef = React.useRef(false);
-  const { colors, dark } = useTheme();
+  const { dark } = useTheme();
   const [areSubtabsVisible, setAreSubtabsVisible] = React.useState(true);
   const lastPrayerScrollY = React.useRef(0);
   const lastPrayerSubtabToggleAt = React.useRef(0);
@@ -134,44 +128,6 @@ function Prayer({ navigation }: Props) {
         return null;
     }
   };
-  const tabWidth = tabBarWidth > 0 ? tabBarWidth / routes.length : 0;
-
-  React.useEffect(() => {
-    if (tabWidth <= 0) {
-      return;
-    }
-    const toValue = index * tabWidth;
-    if (!hasInitializedLiquidRef.current) {
-      liquidTranslate.setValue(toValue);
-      hasInitializedLiquidRef.current = true;
-      return;
-    }
-    Animated.parallel([
-      Animated.timing(liquidTranslate, {
-        toValue,
-        duration: 280,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.sequence([
-        Animated.timing(liquidStretch, {
-          toValue: 1.2,
-          duration: 120,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(liquidStretch, {
-          toValue: 1,
-          duration: 180,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start(() => {
-      HapticService.trigger('selection');
-    });
-  }, [index, liquidStretch, liquidTranslate, tabWidth]);
-
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
@@ -180,69 +136,21 @@ function Prayer({ navigation }: Props) {
           swipeEnabled={false}
           renderScene={renderScene}
           sceneContainerStyle={{ marginBottom: spacing.x88 }}
-          renderTabBar={(props) => {
-            if (!areSubtabsVisible) {
-              return null;
-            }
+          renderTabBar={() => {
+            if (!areSubtabsVisible) return null;
             return (
-              <View
-                style={styles.tabBar}
-                onLayout={(event) => {
-                  const nextWidth = event.nativeEvent.layout.width;
-                  if (Math.abs(nextWidth - tabBarWidth) > 1) {
-                    setTabBarWidth(nextWidth);
-                  }
+              <GlassTabBar
+                tabs={routes.map((r) => r.title)}
+                activeIndex={index}
+                onTabChange={(i) => {
+                  setIndex(i);
+                  hasInitializedPrayerScroll.current = false;
+                  lastPrayerScrollY.current = 0;
+                  lastPrayerSubtabToggleAt.current = 0;
+                  setSubtabsVisibility(true);
                 }}
-              >
-                {tabWidth > 0 ? (
-                  <Animated.View
-                    pointerEvents="none"
-                    renderToHardwareTextureAndroid={!isIOS}
-                    style={[
-                      styles.liquidIndicatorContainer,
-                      {
-                        width: tabWidth,
-                        transform: [{ translateX: liquidTranslate }],
-                      },
-                    ]}
-                  >
-                    <Animated.View
-                      style={[
-                        styles.liquidCore,
-                        {
-                          transform: [{ scaleX: liquidStretch }],
-                        },
-                      ]}
-                    />
-                    {!isIOS ? <View pointerEvents="none" style={styles.liquidSheen} /> : null}
-                    <Animated.View style={[styles.liquidBlob, styles.liquidBlobLeft]} />
-                    <Animated.View style={[styles.liquidBlob, styles.liquidBlobRight]} />
-                  </Animated.View>
-                ) : null}
-                {props.navigationState.routes.map((route, i) => {
-                  return (
-                    <TouchableOpacity
-                      key={route.key}
-                      style={styles.tabItem}
-                      onPress={() => {
-                        setIndex(i);
-                      }}
-                    >
-                      {props?.navigationState?.index === i ? (
-                        <StyledText
-                          style={{ color: colors.text, fontWeight: 'bold', ...fontSize.x092 }}
-                        >
-                          {route.title}
-                        </StyledText>
-                      ) : (
-                        <StyledText style={{ color: colors.text, ...fontSize.x092 }}>
-                          {route.title}
-                        </StyledText>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                style={{ marginHorizontal: 16 }}
+              />
             );
           }}
           onIndexChange={(nextIndex) => {
