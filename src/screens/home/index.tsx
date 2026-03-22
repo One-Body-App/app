@@ -29,16 +29,8 @@ import {
   NativeSyntheticEvent,
   ViewStyle,
 } from 'react-native';
-import { TabView, SceneRendererProps, NavigationState } from 'react-native-tab-view';
+import { TabView } from 'react-native-tab-view';
 import Toast from 'react-native-simple-toast';
-import Reanimated, {
-  SensorType,
-  useAnimatedSensor,
-  useFrameCallback,
-  useSharedValue,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
-
 import { useSelector } from 'react-redux';
 import {
   CompositeScreenProps,
@@ -87,13 +79,12 @@ import WallComponent from '@/components/prayerWallComponent';
 import PrayersComponent from '@/components/prayerWallMyPrayersComponent';
 import TestimoniesComponent from '@/components/prayerWallTestimoniesComponent';
 import PrayerWallSavedPrayersComponent from '@/components/prayerWallSavedPrayersComponent';
-import prayerTabStyles from '@/src/screens/main/prayer/styles';
+import GlassTabBar from '@/components/GlassTabBar';
 import {
   flushFeedTelemetry,
   setFeedTelemetryAuthToken,
   trackFeedTelemetry,
 } from '@/services/feedTelemetry';
-import { HapticService } from '@/src/services/haptic';
 
 import {
   HomeStackParamsList,
@@ -124,9 +115,6 @@ const BRAND = {
   accentDark: '#12d2d9',
   primaryBase: '#41899f',
 };
-const PRAYER_LIQUID_HEIGHT = 36;
-const PRAYER_GLASS_PILL_HORIZONTAL_INSET = 0;
-const PRAYER_GLASS_PILL_HEIGHT = 36;
 
 // --- TYPES ---
 type FeedPost = (ArticleType | SocialPost) & {
@@ -423,111 +411,6 @@ type PrayerWallTabsProps = {
   wallRefreshSignal: number;
 };
 
-type PrayerWallRoute = {
-  key: string;
-  title: string;
-};
-
-type PrayerLiquidIndicatorProps = {
-  tabWidth: number;
-};
-
-function PrayerLiquidIndicator({ tabWidth }: PrayerLiquidIndicatorProps) {
-  const pillWidth = Math.max(56, tabWidth - PRAYER_GLASS_PILL_HORIZONTAL_INSET * 2);
-  const pillRadius = PRAYER_GLASS_PILL_HEIGHT / 2;
-  const gravitySensor = useAnimatedSensor(SensorType.GRAVITY, {
-    interval: 'auto',
-  });
-  const waterTime = useSharedValue(0);
-  const waterGravityX = useSharedValue(0);
-  const waterGravityY = useSharedValue(0);
-  const waterWidth = useSharedValue(pillWidth);
-  const waterHeight = useSharedValue(PRAYER_GLASS_PILL_HEIGHT);
-
-  useEffect(() => {
-    waterWidth.value = pillWidth;
-    waterHeight.value = PRAYER_GLASS_PILL_HEIGHT;
-  }, [pillWidth, waterHeight, waterWidth]);
-
-  useFrameCallback((frameInfo) => {
-    'worklet';
-
-    const elapsedMs = frameInfo.timeSinceFirstFrame ?? frameInfo.timestamp;
-    waterTime.value = elapsedMs / 1000;
-
-    const rawX = Math.max(-1.6, Math.min(1.6, gravitySensor.sensor.value.x || 0));
-    const rawY = Math.max(-1.6, Math.min(1.6, gravitySensor.sensor.value.y || 0));
-
-    // Low-pass keeps liquid inertia realistic and avoids jitter.
-    waterGravityX.value += (rawX - waterGravityX.value) * 0.06;
-    waterGravityY.value += (rawY - waterGravityY.value) * 0.06;
-  });
-
-  const sheenAnimatedStyle = useAnimatedStyle(() => {
-    const width = Math.max(waterWidth.value, 1);
-    const driftRange = width * 0.055;
-    const gravityShift = -waterGravityX.value * width * 0.05;
-    const idleDrift = Math.sin(waterTime.value * 1.35) * driftRange;
-    const sheenOpacity = 0.2 + Math.cos(waterTime.value * 0.95) * 0.05;
-    const skewX = -waterGravityY.value * 1.8 + Math.cos(waterTime.value * 1.15) * 0.45;
-
-    return {
-      opacity: Math.max(0.1, Math.min(0.28, sheenOpacity)),
-      transform: [{ translateX: gravityShift + idleDrift }, { skewX: `${skewX}deg` }],
-    };
-  });
-
-  return (
-    <>
-      {/* Shadow layer — separate from the clipped content so iOS shadow isn't cropped */}
-      <View
-        style={{
-          ...StyleSheet.absoluteFillObject,
-          borderRadius: pillRadius,
-          shadowColor: '#ffffff',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.12,
-          shadowRadius: 4,
-        }}
-      />
-      {/* Glass pill */}
-      <View
-        style={{
-          ...StyleSheet.absoluteFillObject,
-          borderRadius: pillRadius,
-          backgroundColor: 'rgba(18, 107, 135, 0.15)',
-          overflow: 'hidden',
-          elevation: 4,
-        }}
-      >
-        {/* Animated sheen keeps highlight physically tied to liquid movement */}
-        <Reanimated.View
-          style={{
-            position: 'absolute',
-            top: 4,
-            left: '20%',
-            width: '56%',
-            height: 8,
-            borderRadius: 999,
-            backgroundColor: 'rgba(255, 255, 255, 0.24)',
-          }}
-        >
-          <Reanimated.View
-            style={[
-              {
-                ...StyleSheet.absoluteFillObject,
-                borderRadius: 999,
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              },
-              sheenAnimatedStyle,
-            ]}
-          />
-        </Reanimated.View>
-      </View>
-    </>
-  );
-}
-
 function PrayerWallTabs({
   topInset,
   bottomInset,
@@ -545,8 +428,7 @@ function PrayerWallTabs({
     { key: 'Saved', title: 'Saved' },
     { key: 'MyPrayers', title: 'My Prayers' },
   ]);
-  const [tabBarWidth, setTabBarWidth] = useState(0);
-  const { colors, dark } = useTheme();
+  const { dark } = useTheme();
   const [areSubtabsVisible, setAreSubtabsVisible] = useState(true);
   const [localWallRefreshSignal, setLocalWallRefreshSignal] = useState(0);
   const previousWallRefreshSignalRef = useRef<number | undefined>(wallRefreshSignal);
@@ -555,11 +437,6 @@ function PrayerWallTabs({
   const prayerScrollAccumulator = useRef(0);
   const areSubtabsVisibleRef = useRef(true);
   const prayerSubtabsVisibility = useRef(new Animated.Value(1)).current;
-  const pillLeftAnim = useRef(new Animated.Value(0)).current;
-  const pillWidthAnim = useRef(new Animated.Value(0)).current;
-  const pillScaleYAnim = useRef(new Animated.Value(1)).current;
-  const previousTabIndexRef = useRef(0);
-  const hasInitializedLiquidRef = useRef(false);
   const setSubtabsVisibility = useCallback(
     (visible: boolean) => {
       if (areSubtabsVisibleRef.current === visible) {
@@ -647,170 +524,6 @@ function PrayerWallTabs({
       refreshWallFeed();
     }
   }, [index, refreshWallFeed, wallRefreshSignal]);
-  const tabWidth = tabBarWidth > 0 ? tabBarWidth / routes.length : 0;
-
-  useEffect(() => {
-    if (tabWidth <= 0) {
-      return;
-    }
-    const toX = index * tabWidth;
-
-    if (!hasInitializedLiquidRef.current) {
-      pillLeftAnim.setValue(toX);
-      pillWidthAnim.setValue(tabWidth);
-      pillScaleYAnim.setValue(1);
-      hasInitializedLiquidRef.current = true;
-      previousTabIndexRef.current = index;
-      return;
-    }
-
-    const fromX = previousTabIndexRef.current * tabWidth;
-    previousTabIndexRef.current = index;
-    if (toX === fromX) {
-      return;
-    }
-
-    const movingRight = toX > fromX;
-    const naturalSpan = Math.abs(toX - fromX) + tabWidth;
-
-    let surgePhase: Animated.CompositeAnimation;
-
-    if (Platform.OS === 'ios') {
-      if (movingRight) {
-        // iOS right: clamp surge so right edge never exceeds tabBarWidth
-        const surgeWidth = Math.min(tabBarWidth - fromX, naturalSpan * 1.2);
-        surgePhase = Animated.parallel([
-          Animated.timing(pillWidthAnim, {
-            toValue: surgeWidth,
-            duration: 200,
-            easing: Easing.out(Easing.exp),
-            useNativeDriver: false,
-          }),
-          Animated.timing(pillScaleYAnim, {
-            toValue: 0.72,
-            duration: 200,
-            easing: Easing.out(Easing.exp),
-            useNativeDriver: false,
-          }),
-        ]);
-      } else {
-        // iOS left: keep right edge fixed at fromX + tabWidth (no right-side overflow)
-        const fixedWidth = fromX + tabWidth - toX;
-        surgePhase = Animated.parallel([
-          Animated.timing(pillLeftAnim, {
-            toValue: toX,
-            duration: 200,
-            easing: Easing.out(Easing.exp),
-            useNativeDriver: false,
-          }),
-          Animated.timing(pillWidthAnim, {
-            toValue: fixedWidth,
-            duration: 200,
-            easing: Easing.out(Easing.exp),
-            useNativeDriver: false,
-          }),
-          Animated.timing(pillScaleYAnim, {
-            toValue: 0.72,
-            duration: 200,
-            easing: Easing.out(Easing.exp),
-            useNativeDriver: false,
-          }),
-        ]);
-      }
-    } else {
-      // Android: keep original 20% overshoot behavior (works correctly)
-      const spanWidth = naturalSpan * 1.2;
-      surgePhase = movingRight
-        ? // Right edge surges: expand width rightward, squish height
-          Animated.parallel([
-            Animated.timing(pillWidthAnim, {
-              toValue: spanWidth,
-              duration: 200,
-              easing: Easing.out(Easing.exp),
-              useNativeDriver: false,
-            }),
-            Animated.timing(pillScaleYAnim, {
-              toValue: 0.72,
-              duration: 200,
-              easing: Easing.out(Easing.exp),
-              useNativeDriver: false,
-            }),
-          ])
-        : // Left edge surges: move left + expand width leftward, squish height
-          Animated.parallel([
-            Animated.timing(pillLeftAnim, {
-              toValue: toX,
-              duration: 200,
-              easing: Easing.out(Easing.exp),
-              useNativeDriver: false,
-            }),
-            Animated.timing(pillWidthAnim, {
-              toValue: spanWidth,
-              duration: 200,
-              easing: Easing.out(Easing.exp),
-              useNativeDriver: false,
-            }),
-            Animated.timing(pillScaleYAnim, {
-              toValue: 0.72,
-              duration: 200,
-              easing: Easing.out(Easing.exp),
-              useNativeDriver: false,
-            }),
-          ]);
-    }
-
-    // Snap phase: return to final position — water settling
-    // iOS: timing only (no spring) for left/width so right edge never clips overflow:hidden
-    // Android: spring bounce for full water-settle effect
-    const snapPhase =
-      Platform.OS === 'ios'
-        ? Animated.parallel([
-            Animated.timing(pillLeftAnim, {
-              toValue: toX,
-              duration: 200,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: false,
-            }),
-            Animated.timing(pillWidthAnim, {
-              toValue: tabWidth,
-              duration: 200,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: false,
-            }),
-            Animated.spring(pillScaleYAnim, {
-              toValue: 1,
-              tension: 95,
-              friction: 6,
-              useNativeDriver: false,
-            }),
-          ])
-        : Animated.parallel([
-            Animated.spring(pillLeftAnim, {
-              toValue: toX,
-              tension: 95,
-              friction: 6,
-              useNativeDriver: false,
-            }),
-            Animated.spring(pillWidthAnim, {
-              toValue: tabWidth,
-              tension: 95,
-              friction: 6,
-              useNativeDriver: false,
-            }),
-            Animated.spring(pillScaleYAnim, {
-              toValue: 1,
-              tension: 95,
-              friction: 6,
-              useNativeDriver: false,
-            }),
-          ]);
-
-    Animated.sequence([surgePhase, snapPhase]).start(({ finished }) => {
-      if (finished) {
-        HapticService.trigger('impactLight');
-      }
-    });
-  }, [index, pillLeftAnim, pillScaleYAnim, pillWidthAnim, tabBarWidth, tabWidth]);
 
   const prayerSubtabContainerHeight = prayerSubtabsVisibility.interpolate({
     inputRange: [0, 1],
@@ -888,11 +601,7 @@ function PrayerWallTabs({
         onIndexChange={applyPrayerTabIndex}
         initialLayout={{ width: layout.width }}
         sceneContainerStyle={{ paddingBottom: bottomInset / 2 }}
-        renderTabBar={(
-          props: SceneRendererProps & {
-            navigationState: NavigationState<PrayerWallRoute>;
-          }
-        ) => {
+        renderTabBar={() => {
           return (
             <Animated.View
               pointerEvents={areSubtabsVisible ? 'auto' : 'none'}
@@ -903,63 +612,12 @@ function PrayerWallTabs({
                 overflow: 'hidden',
               }}
             >
-              <View
-                style={[
-                  prayerTabStyles.tabBar,
-                  { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' },
-                ]}
-                onLayout={(event) => {
-                  const nextWidth = event.nativeEvent.layout.width;
-                  if (Math.abs(nextWidth - tabBarWidth) > 1) {
-                    setTabBarWidth(nextWidth);
-                  }
-                }}
-              >
-                {tabWidth > 0 ? (
-                  <Animated.View
-                    pointerEvents="none"
-                    style={[
-                      prayerTabStyles.liquidCanvasLayer,
-                      {
-                        left: pillLeftAnim,
-                        width: pillWidthAnim,
-                        height: PRAYER_LIQUID_HEIGHT,
-                        transform: [{ scaleY: pillScaleYAnim }],
-                      },
-                    ]}
-                  >
-                    <PrayerLiquidIndicator tabWidth={tabWidth} />
-                  </Animated.View>
-                ) : null}
-                {props.navigationState.routes.map((route, i) => {
-                  const isActive = props.navigationState.index === i;
-                  return (
-                    <TouchableOpacity
-                      key={route.key}
-                      style={prayerTabStyles.tabItem}
-                      onPress={() => {
-                        if (isActive) {
-                          if (route.key === 'Wall') {
-                            refreshWallFeed();
-                          }
-                          return;
-                        }
-                        applyPrayerTabIndex(i);
-                      }}
-                    >
-                      <StyledText
-                        style={
-                          isActive
-                            ? { color: colors.text, fontWeight: 'bold' }
-                            : { color: colors.text }
-                        }
-                      >
-                        {route.title}
-                      </StyledText>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <GlassTabBar
+                tabs={routes.map((r) => r.title)}
+                activeIndex={index}
+                onTabChange={applyPrayerTabIndex}
+                style={{ marginHorizontal: 16 }}
+              />
             </Animated.View>
           );
         }}
