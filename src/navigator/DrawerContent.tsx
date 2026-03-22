@@ -1,13 +1,14 @@
 import {
   DrawerContentComponentProps,
   DrawerContentScrollView,
+  DrawerItem,
   DrawerItemList,
 } from '@react-navigation/drawer';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LogoutCurve, Setting2 } from 'iconsax-react-native';
+import { LogoutCurve, ProfileAdd, Setting2 } from 'iconsax-react-native';
 import { LoginManager } from 'react-native-fbsdk-next';
 import Icon from '@react-native-vector-icons/ant-design';
 import { useTheme } from '@react-navigation/native';
@@ -21,6 +22,7 @@ import { Colors, Typography } from '../styles';
 import { borderRadius, borderWidth } from '../styles/outlines';
 import { logout } from '../redux/actions/AuthActions';
 import { clearAuthTokens } from '../services/authTokens';
+import { getCreatorMenuLabel, getCreatorMenuState } from '../utils/creatorApplication';
 
 export default function DrawerContent({
   descriptors,
@@ -36,6 +38,9 @@ export default function DrawerContent({
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const { dark, colors } = useTheme();
+  const creatorStatus = user?.influencerProfile?.influencerStatus;
+  const creatorMenuState = getCreatorMenuState(creatorStatus);
+  const creatorMenuLabel = getCreatorMenuLabel(creatorStatus);
 
   return (
     <DrawerContentScrollView
@@ -135,6 +140,29 @@ export default function DrawerContent({
             </View>
           </TouchableOpacity>
           <DrawerItemList descriptors={descriptors} state={drawerState} navigation={navigation} />
+          <DrawerItem
+            label={creatorMenuLabel}
+            focused={false}
+            onPress={() => {
+              navigation.navigate('Settings', {
+                screen:
+                  creatorMenuState === 'settings' ? 'InfluencerSettings' : 'InfluencerStepOne',
+              });
+            }}
+            icon={({ color, size }) =>
+              creatorMenuState === 'settings' ? (
+                <Setting2 size={size} color={color} />
+              ) : (
+                <ProfileAdd size={size} color={color} />
+              )
+            }
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
         </View>
         <View
           style={{

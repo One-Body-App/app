@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
+  Share,
   StyleProp,
   TouchableOpacity,
   View,
@@ -87,6 +88,8 @@ type ReplyTarget = {
   id: string;
   name: string;
 };
+
+const ONEBODY_APP_BASE_URL = 'https://app.onebodyapp.com';
 
 const isLocalImageUri = (value: string) =>
   value.startsWith('file://') || value.startsWith('content://');
@@ -1504,6 +1507,25 @@ function CommentThread({
     [handleSubmitCommentRepost]
   );
 
+  const handleShareComment = useCallback(
+    async (comment: CommentPost) => {
+      const commentId = getCommentId(comment);
+      if (!commentId || !postId) {
+        return;
+      }
+
+      const postType = type === PostType.prayer ? PostType.prayer : PostType.social;
+      const shareUrl = `${ONEBODY_APP_BASE_URL}/post/${postType}/${postId}?commentId=${encodeURIComponent(commentId)}`;
+
+      await Share.share({
+        title: comment.content ?? '',
+        url: Platform.OS === 'ios' ? shareUrl : '',
+        message: Platform.OS === 'android' ? shareUrl : shareUrl,
+      });
+    },
+    [postId, type]
+  );
+
   rootToggleReactionRef.current = handleToggleReaction;
   rootOpenRepostRef.current = handleOpenRepostActions;
   rootToggleBookmarkRef.current = (commentId: string, isBookmarked: boolean) => {
@@ -1562,6 +1584,7 @@ function CommentThread({
           mutedColor={secondaryTextColor}
           onToggleReaction={handleToggleReaction}
           onPressRepost={handleOpenRepostActions}
+          onSharePress={!isPrivate ? handleShareComment : undefined}
           onToggleBookmark={(commentId, isBookmarked) => {
             handleToggleBookmark(commentId, isBookmarked).catch(() => undefined);
           }}
@@ -1589,6 +1612,7 @@ function CommentThread({
       accentColor,
       handleToggleReaction,
       handleOpenRepostActions,
+      handleShareComment,
       handleToggleBookmark,
       handleShowReactionPicker,
       handleSelectReaction,

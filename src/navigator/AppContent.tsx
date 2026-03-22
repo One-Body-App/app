@@ -848,7 +848,7 @@ function AppContent() {
   });
 
   const resolvePostLinkState = (path: string) => {
-    const pathWithoutQuery = path.split('?')[0];
+    const [pathWithoutQuery, rawQuery] = path.split('?');
     const match = pathWithoutQuery.match(/^\/post\/([^/]+)\/([^/?#]+)$/i);
 
     if (!match) {
@@ -861,12 +861,18 @@ function AppContent() {
       return null;
     }
 
+    const queryParams = new URLSearchParams(rawQuery ?? '');
+    const commentId = queryParams.get('commentId') ?? undefined;
+
     if (rawType === PostType.social) {
       return {
         routes: [
           {
             name: 'SinglePost',
-            params: { postId },
+            params: {
+              postId,
+              ...(commentId ? { threadRootCommentId: commentId } : undefined),
+            },
           },
         ],
       };
@@ -885,7 +891,10 @@ function AppContent() {
                     routes: [
                       {
                         name: 'Single',
-                        params: { postId },
+                        params: {
+                          postId,
+                          ...(commentId ? { threadRootCommentId: commentId } : undefined),
+                        },
                       },
                     ],
                   },
@@ -905,6 +914,7 @@ function AppContent() {
             params: {
               postId,
               postType: rawType === PostType.watch ? PostType.watch : PostType.rss,
+              ...(commentId ? { threadRootCommentId: commentId } : undefined),
             },
           },
         ],
@@ -1237,6 +1247,11 @@ function AppContent() {
                 headerShown: Platform.OS !== 'android',
                 headerBackTitleVisible: false,
                 title: 'Comment',
+                headerTitleStyle: {
+                  fontSize: 24,
+                  fontWeight: '700',
+                  letterSpacing: 0.3,
+                },
                 animation: 'slide_from_right',
               }}
             />

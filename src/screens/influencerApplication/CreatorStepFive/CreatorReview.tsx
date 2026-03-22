@@ -1,0 +1,475 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+  Platform,
+  Alert,
+} from 'react-native';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import { StackScreenProps } from '@react-navigation/stack';
+import { SettingsStackParamsList } from '@/src/navigator/types';
+
+type Props = StackScreenProps<SettingsStackParamsList, 'CreatorReview'>;
+
+// --- Dynamic Brand Palette ---
+const getThemeColors = (isDark: boolean) => ({
+  background: isDark ? '#032F3C' : '#FFFFFF',
+  surface: isDark ? '#0B3C4A' : '#F2F3F3', // Muted blue/gray for cards
+  surfaceBorder: isDark ? 'rgba(255,255,255,0.1)' : '#E6EAEC',
+  pillBg: isDark ? 'rgba(0,0,0,0.2)' : '#E6EAEC',
+  primary: '#126B87',
+  accent: '#12D2D9',
+  textMain: isDark ? '#FFFFFF' : '#032F3C',
+  textMuted: isDark ? 'rgba(255,255,255,0.7)' : '#68828A',
+  headerBg: isDark ? 'rgba(3, 47, 60, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+});
+
+function CreatorReview({ navigation, route }: Props) {
+  const isDark = useColorScheme() === 'dark';
+  const colors = getThemeColors(isDark);
+
+  // In a real app, fallback to empty strings/arrays if data is missing
+  const data = route.params?.data || {
+    bio: 'No bio provided.',
+    instagramUsername: '',
+    rssFeed1: '',
+    rssFeed2: '',
+    topics: [],
+  };
+
+  const [agreed, setAgreed] = useState(false);
+
+  const handleSubmit = () => {
+    if (!agreed) {
+      Alert.alert(
+        'Agreement Required',
+        "Please agree to uphold One Body's values before submitting."
+      );
+      return;
+    }
+
+    // TODO: Dispatch Redux action or API Call here to submit the application
+
+    // Navigate to a Success Screen or back to Feed
+    // navigation.navigate('CreatorSuccess');
+    console.log('Application Submitted:', data);
+  };
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.headerBg, borderBottomColor: colors.surfaceBorder },
+        ]}
+      >
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.accent} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Review Details</Text>
+        </View>
+        <Text style={[styles.headerStepText, { color: colors.accent }]}>STEP 4 OF 4</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Title Section */}
+        <View style={styles.titleSection}>
+          <Text style={[styles.mainHeading, { color: colors.textMain }]}>
+            Does everything look right?
+          </Text>
+          <Text style={[styles.subHeading, { color: colors.textMuted }]}>
+            Please confirm your application details before submitting to the One Body community.
+          </Text>
+        </View>
+
+        {/* Bento-style Review Cards */}
+        <View style={styles.cardsContainer}>
+          {/* Bio Section */}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.surfaceBorder },
+            ]}
+          >
+            <View style={styles.cardHeader}>
+              <Text style={[styles.cardTitle, { color: colors.accent }]}>BIO</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('InfluencerStepTwo')}>
+                <Text style={[styles.editButton, { color: colors.accent }]}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.bioText, { color: colors.textMain }]}>{data.bio}</Text>
+          </View>
+
+          {/* Instagram Section */}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.surfaceBorder },
+            ]}
+          >
+            <View style={styles.cardHeader}>
+              <Text style={[styles.cardTitle, { color: colors.accent }]}>INSTAGRAM</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('InfluencerStepThree', { data })}
+              >
+                <Text style={[styles.editButton, { color: colors.accent }]}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            {data.instagramUsername ? (
+              <View style={styles.igRow}>
+                <View style={[styles.igIconWrapper, { backgroundColor: colors.pillBg }]}>
+                  <MaterialCommunityIcons name="account-circle" size={24} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={[styles.igHandle, { color: colors.textMain }]}>
+                    @{data.instagramUsername}
+                  </Text>
+                  <Text style={[styles.igSub, { color: colors.textMuted }]}>Connected Account</Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={[styles.bioText, { color: colors.textMuted }]}>Not connected</Text>
+            )}
+          </View>
+
+          {/* RSS Feeds Section */}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.surfaceBorder },
+            ]}
+          >
+            <View style={styles.cardHeader}>
+              <Text style={[styles.cardTitle, { color: colors.accent }]}>RSS FEEDS</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('InfluencerStepThree', { data })}
+              >
+                <Text style={[styles.editButton, { color: colors.accent }]}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.rssList}>
+              {data.rssFeed1 ? (
+                <View style={styles.rssRow}>
+                  <MaterialCommunityIcons name="rss" size={16} color={colors.primary} />
+                  <Text style={[styles.rssText, { color: colors.textMuted }]} numberOfLines={1}>
+                    {data.rssFeed1}
+                  </Text>
+                </View>
+              ) : null}
+              {data.rssFeed2 ? (
+                <View style={styles.rssRow}>
+                  <MaterialCommunityIcons name="rss" size={16} color={colors.primary} />
+                  <Text style={[styles.rssText, { color: colors.textMuted }]} numberOfLines={1}>
+                    {data.rssFeed2}
+                  </Text>
+                </View>
+              ) : null}
+              {!data.rssFeed1 && !data.rssFeed2 && (
+                <Text style={[styles.bioText, { color: colors.textMuted }]}>No feeds provided</Text>
+              )}
+            </View>
+          </View>
+
+          {/* Topics/Focus Areas Section */}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.surfaceBorder },
+            ]}
+          >
+            <View style={styles.cardHeader}>
+              <Text style={[styles.cardTitle, { color: colors.accent }]}>FOCUS AREAS</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('InfluencerStepFour', { data })}>
+                <Text style={[styles.editButton, { color: colors.accent }]}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.pillContainer}>
+              {data.topics && data.topics.length > 0 ? (
+                data.topics.map((topic: string, index: number) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.pill,
+                      { backgroundColor: colors.pillBg, borderColor: colors.surfaceBorder },
+                    ]}
+                  >
+                    <Text style={[styles.pillText, { color: colors.textMain }]}>{topic}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.bioText, { color: colors.textMuted }]}>
+                  No focus areas selected
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Agreement Checkbox */}
+        <TouchableOpacity
+          style={[
+            styles.agreementContainer,
+            {
+              backgroundColor: isDark ? 'rgba(11, 60, 74, 0.5)' : '#F2F3F3',
+              borderColor: 'rgba(18, 107, 135, 0.2)',
+            },
+          ]}
+          activeOpacity={0.8}
+          onPress={() => setAgreed(!agreed)}
+        >
+          <MaterialCommunityIcons
+            name={agreed ? 'checkbox-marked' : 'checkbox-blank-outline'}
+            size={24}
+            color={colors.accent}
+            style={styles.checkboxIcon}
+          />
+          <Text style={[styles.agreementText, { color: colors.textMain }]}>
+            I agree to uphold One Body&#39;s{' '}
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>
+              Protestant Christian values
+            </Text>{' '}
+            and community guidelines.
+          </Text>
+        </TouchableOpacity>
+
+        {/* Visual Shield Watermark */}
+        <View style={styles.watermarkContainer}>
+          <MaterialCommunityIcons
+            name="shield-check"
+            size={120}
+            color={colors.textMain}
+            style={styles.watermarkIcon}
+          />
+        </View>
+      </ScrollView>
+
+      {/* Bottom Navigation */}
+      <View
+        style={[
+          styles.bottomNav,
+          { backgroundColor: colors.background, borderTopColor: colors.surfaceBorder },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: colors.primary }]}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialCommunityIcons name="chevron-left" size={20} color={colors.primary} />
+          <Text style={[styles.backButtonText, { color: colors.primary }]}>BACK</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            { backgroundColor: colors.accent, opacity: agreed ? 1 : 0.6 },
+          ]}
+          onPress={handleSubmit}
+        >
+          <Text style={[styles.submitButtonText, { color: '#032F3C' }]}>SUBMIT APPLICATION</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#032F3C" />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    height: 64,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: '#12D2D9',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  headerStepText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 120, // Space for bottom nav
+  },
+  titleSection: {
+    marginBottom: 32,
+  },
+  mainHeading: {
+    fontSize: 30,
+    fontWeight: '800',
+    marginBottom: 8,
+    lineHeight: 36,
+  },
+  subHeading: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  cardsContainer: {
+    gap: 16,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    opacity: 0.9,
+  },
+  editButton: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  bioText: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  igRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  igIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  igHandle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  igSub: {
+    fontSize: 12,
+  },
+  rssList: {
+    gap: 8,
+  },
+  rssRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rssText: {
+    fontSize: 12,
+    flex: 1,
+  },
+  pillContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  pill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  pillText: {
+    fontSize: 12,
+  },
+  agreementContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 32,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  checkboxIcon: {
+    marginRight: 12,
+    marginTop: -2,
+  },
+  agreementText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  watermarkContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 40,
+    marginBottom: 20,
+    opacity: 0.05,
+    pointerEvents: 'none',
+  },
+  watermarkIcon: {
+    alignSelf: 'center',
+  },
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: Platform.OS === 'ios' ? 24 : 16,
+    borderTopWidth: 1,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  backButtonText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginLeft: 4,
+  },
+  submitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+  },
+  submitButtonText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginRight: 6,
+  },
+});
+
+export default CreatorReview;

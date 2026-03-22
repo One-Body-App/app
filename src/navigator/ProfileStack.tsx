@@ -22,7 +22,7 @@ function ProfileStack() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="MyProfile" component={MyProfile} />
+      <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
       <Stack.Screen
         name="EditProfile"
         component={EditProfile}

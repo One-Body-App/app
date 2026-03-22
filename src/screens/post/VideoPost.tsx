@@ -29,6 +29,7 @@ import {
 import VideoTrim, { showEditor } from 'react-native-video-trim';
 import CameraComponent from '@/src/components/VideoPost/Camera';
 import CustomVideo from '@/src/components/CustomVideo';
+import useMountEffect from '@/src/hooks/useMountEffect';
 import { MainStackParamList } from '@/src/navigator/types';
 import {
   createDefaultVideoTransform,
@@ -255,7 +256,7 @@ export default function VideoPost({ navigation, route }: Props) {
       setVideoDuration(0);
       resetTrimState();
       setVideoNaturalSize({ width: 0, height: 0 });
-      setIsPlaying(true);
+      setIsPlaying(false);
       hasShownTrimWarningRef.current = false;
       resetCropState();
     },
@@ -337,6 +338,10 @@ export default function VideoPost({ navigation, route }: Props) {
         hasShownTrimWarningRef.current = true;
         toast.show('Trim this video to 60 seconds or less before posting.', { type: 'warning' });
       }
+
+      requestAnimationFrame(() => {
+        setIsPlaying(true);
+      });
     },
     [hasTrimSelection, resolvedTrimStartMs, toast]
   );
@@ -576,7 +581,12 @@ export default function VideoPost({ navigation, route }: Props) {
         trimEndMs: resolvedTrimEndMs,
         trimDurationMs: selectedDurationMs,
         ratioId: selectedRatio,
-        cropRect: sourceCrop,
+        cropRect: {
+          x: sourceCrop.cropX,
+          y: sourceCrop.cropY,
+          width: sourceCrop.cropWidth,
+          height: sourceCrop.cropHeight,
+        },
         transform: clampedTransform,
         sourceWidth: videoNaturalSize.width,
         sourceHeight: videoNaturalSize.height,
@@ -779,7 +789,6 @@ export default function VideoPost({ navigation, route }: Props) {
   }
 
   const cropStatusColor = cropConfirmed ? palette.success : palette.warning;
-  const cropStatusLabel = cropConfirmed ? 'Crop confirmed' : 'Crop confirmation required';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
@@ -823,7 +832,7 @@ export default function VideoPost({ navigation, route }: Props) {
             style={[styles.previewStage, { backgroundColor: palette.previewBackground }]}
             onLayout={handlePreviewLayout}
           >
-            {hasVideo && displayedFrame ? (
+            {hasVideo ? (
               <>
                 <View
                   style={[
@@ -847,12 +856,19 @@ export default function VideoPost({ navigation, route }: Props) {
                     repeat={!hasTrimSelection}
                     style={[
                       styles.videoSurface,
-                      {
-                        left: displayedFrame.x - cropFrame.x,
-                        top: displayedFrame.y - cropFrame.y,
-                        width: displayedFrame.width,
-                        height: displayedFrame.height,
-                      },
+                      displayedFrame
+                        ? {
+                            left: displayedFrame.x - cropFrame.x,
+                            top: displayedFrame.y - cropFrame.y,
+                            width: displayedFrame.width,
+                            height: displayedFrame.height,
+                          }
+                        : {
+                            left: 0,
+                            top: 0,
+                            width: cropFrame.width,
+                            height: cropFrame.height,
+                          },
                     ]}
                   />
                   <TouchableOpacity
@@ -982,31 +998,18 @@ export default function VideoPost({ navigation, route }: Props) {
           />
         </View>
 
-        <View
-          style={[
-            styles.statusCard,
-            { backgroundColor: palette.cardBackground, borderColor: palette.border },
-          ]}
-        >
-          <Text style={[styles.statusTitle, { color: palette.textPrimary }]}>Trim and Crop</Text>
-          <Text style={[styles.statusBody, { color: palette.textSecondary }]}>
-            {requiresTrim
-              ? 'This clip is longer than 60 seconds. Trim it before posting.'
-              : `Selected clip length: ${formatTime(selectedDurationSeconds)}. ${cropStatusLabel}.`}
-          </Text>
-          <Text style={[styles.statusMeta, { color: cropStatusColor }]}>
-            Ratio {selectedRatio} • Output {ratioConfig.outputWidth}x{ratioConfig.outputHeight}
-          </Text>
-          <Text style={[styles.statusMeta, { color: palette.textMuted }]}>
-            Full source: {formatTime(videoDuration)}.
-          </Text>
-          {hasTrimSelection ? (
-            <Text style={[styles.statusMeta, { color: palette.textMuted }]}>
-              Trim range: {formatTime(resolvedTrimStartMs / 1000)} -{' '}
-              {formatTime(resolvedTrimEndMs / 1000)}. Upload starts only after Done.
+        {requiresTrim ? (
+          <View
+            style={[
+              styles.statusCard,
+              { backgroundColor: palette.cardBackground, borderColor: palette.warning },
+            ]}
+          >
+            <Text style={[styles.statusBody, { color: palette.warning }]}>
+              This clip is longer than 60 seconds. Trim it before posting.
             </Text>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
 
         <View style={styles.ratioRow}>
           {RATIO_OPTIONS.map((ratioId) => {

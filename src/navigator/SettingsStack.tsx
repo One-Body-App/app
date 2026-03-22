@@ -18,6 +18,8 @@ import InfluencerStepOne from '../screens/influencerApplication/InfluencerStepOn
 
 import InfluencerStepThree from '../screens/influencerApplication/InfluencerStepThree';
 import InfluencerStepFour from '../screens/influencerApplication/InfluencerStepFour';
+import CreatorReview from '../screens/influencerApplication/CreatorStepFive/CreatorReview';
+import CreatorSubmitSuccess from '../screens/influencerApplication/SuccessfulSubmit/CreatorSubmitSuccess';
 import NewPassword from '../screens/newPassword/NewPassword';
 import { Colors } from '../styles';
 import InfluencerStepTwo from '../screens/influencerApplication/InfluencerStepTwo';
@@ -108,7 +110,11 @@ function SettingsStack() {
       <Stack.Screen
         name="InfluencerSettings"
         component={InfluencerSettings}
-        options={headerOptions}
+        options={{
+          ...headerOptions,
+          title: 'Creator Settings',
+          headerStyle: { backgroundColor: colors.background },
+        }}
       />
       <Stack.Screen
         name="EmailChange"
@@ -131,22 +137,50 @@ function SettingsStack() {
       <Stack.Screen
         name="InfluencerStepOne"
         component={InfluencerStepOne}
-        options={headerOptions}
+        options={{
+          ...headerOptions,
+          headerShown: false,
+        }}
       />
       <Stack.Screen
         name="InfluencerStepTwo"
         component={InfluencerStepTwo}
-        options={headerOptions}
+        options={{
+          ...headerOptions,
+          headerShown: false,
+        }}
       />
       <Stack.Screen
         name="InfluencerStepThree"
         component={InfluencerStepThree}
-        options={headerOptions}
+        options={{
+          ...headerOptions,
+          headerShown: false,
+        }}
       />
       <Stack.Screen
         name="InfluencerStepFour"
         component={InfluencerStepFour}
-        options={headerOptions}
+        options={{
+          ...headerOptions,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="CreatorReview"
+        component={CreatorReview}
+        options={{
+          ...headerOptions,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="CreatorSuccess"
+        component={CreatorSubmitSuccess}
+        options={{
+          ...headerOptions,
+          headerShown: false,
+        }}
       />
       <Stack.Screen name="NewPassword" component={NewPassword} options={headerOptions} />
       <Stack.Screen

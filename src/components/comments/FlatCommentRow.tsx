@@ -1,8 +1,11 @@
 import { memo } from 'react';
 import { Image, Platform, Text, TouchableOpacity, View } from 'react-native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import FastImage from 'react-native-fast-image';
 import { GiphyMedia, GiphyMediaView } from '@giphy/react-native-sdk';
+import RepeatIcon from '@/assets/icons/repeat.svg';
+import SendIcon from '@/assets/icons/send.svg';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { CommentPost, SocialPostReaction, SocialPostReactionType } from '@/utils/types';
@@ -92,6 +95,7 @@ type FlatCommentRowProps = {
   mutedColor: string;
   onToggleReaction: (commentId: string, hasReaction: boolean) => void;
   onPressRepost?: (comment: CommentPost) => void;
+  onSharePress?: (comment: CommentPost) => void;
   onToggleBookmark?: (commentId: string, isBookmarked: boolean) => void;
   onShowReactionPicker: (commentId: string) => void;
   onSelectReaction: (commentId: string, reactionType: SocialPostReactionType) => void;
@@ -116,6 +120,7 @@ function FlatCommentRow({
   mutedColor,
   onToggleReaction,
   onPressRepost,
+  onSharePress,
   onToggleBookmark,
   onShowReactionPicker,
   onSelectReaction,
@@ -260,8 +265,8 @@ function FlatCommentRow({
               }}
               style={flatStyles.reactionButton}
             >
-              <MaterialCommunityIcons
-                name={myReaction ? 'heart' : 'heart-outline'}
+              <MaterialIcons
+                name={myReaction ? 'favorite' : 'favorite-border'}
                 size={22}
                 color={myReaction ? accentColor : mutedColor}
               />
@@ -285,7 +290,7 @@ function FlatCommentRow({
                 onOpenThread?.(comment);
               }}
             >
-              <MaterialCommunityIcons name="comment-outline" size={22} color={mutedColor} />
+              <MaterialIcons name="chat-bubble-outline" size={22} color={mutedColor} />
               {item.directReplyCount > 0 ? (
                 <Text style={[flatStyles.commentThreadCount, { color: mutedColor }]}>
                   {item.directReplyCount}
@@ -299,7 +304,7 @@ function FlatCommentRow({
                 onPressRepost?.(comment);
               }}
             >
-              <MaterialCommunityIcons name="repeat" size={22} color={mutedColor} />
+              <RepeatIcon width={22} height={22} color={mutedColor} />
               {repostCount > 0 ? (
                 <Text style={[flatStyles.commentThreadCount, { color: mutedColor }]}>
                   {repostCount}
@@ -308,13 +313,22 @@ function FlatCommentRow({
             </TouchableOpacity>
             <TouchableOpacity
               style={flatStyles.commentThreadButton}
+              disabled={!onSharePress}
+              onPress={() => {
+                onSharePress?.(comment);
+              }}
+            >
+              <SendIcon width={22} height={22} color={mutedColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={flatStyles.commentThreadButton}
               disabled={isBookmarking || !onToggleBookmark}
               onPress={() => {
                 onToggleBookmark?.(commentId, isBookmarked);
               }}
             >
-              <MaterialCommunityIcons
-                name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+              <MaterialIcons
+                name={isBookmarked ? 'bookmark' : 'bookmark-border'}
                 size={22}
                 color={isBookmarked ? accentColor : mutedColor}
               />

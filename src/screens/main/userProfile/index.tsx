@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Share, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Toast from 'react-native-simple-toast';
@@ -26,6 +26,22 @@ import { spacing } from '@/src/styles/spacing';
 import { User } from '@/utils/types';
 import { getProfileDisplayName } from '@/components/profile/profileUtils';
 
+function HeaderBackButton({ onPress, color }: { onPress: () => void; color: string }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={{ marginLeft: spacing.x10, padding: spacing.x5 }}>
+      <Ionicons name="chevron-back" size={30} color={color} />
+    </TouchableOpacity>
+  );
+}
+
+function HeaderMenuButton({ onPress, color }: { onPress: () => void; color: string }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={{ marginRight: spacing.x10, padding: spacing.x5 }}>
+      <Ionicons name="ellipsis-vertical" size={22} color={color} />
+    </TouchableOpacity>
+  );
+}
+
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'UserProfile'>,
   CompositeScreenProps<
@@ -47,6 +63,17 @@ function UserProfile({ navigation, route }: Props) {
   const [relatedUsers, setRelatedUsers] = useState<User[] | undefined>();
   const [showActions, setShowActions] = useState(false);
   const { dark, colors } = useTheme();
+  const headerColor = dark ? colors.text : Colors.primary.brand;
+
+  const headerLeft = useMemo(
+    () => <HeaderBackButton onPress={() => navigation.goBack()} color={headerColor} />,
+    [headerColor, navigation]
+  );
+
+  const headerRight = useMemo(
+    () => <HeaderMenuButton onPress={() => setShowActions(true)} color={headerColor} />,
+    [headerColor]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -110,34 +137,12 @@ function UserProfile({ navigation, route }: Props) {
         headerTintColor: dark ? colors.text : Colors.primary.brand,
         headerTitleAlign: 'center',
         title: getProfileDisplayName(user),
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ marginLeft: spacing.x10, padding: spacing.x5 }}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={30}
-              color={dark ? colors.text : Colors.primary.brand}
-            />
-          </TouchableOpacity>
-        ),
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => setShowActions(true)}
-            style={{ marginRight: spacing.x10, padding: spacing.x5 }}
-          >
-            <Ionicons
-              name="ellipsis-vertical"
-              size={22}
-              color={dark ? colors.text : Colors.primary.brand}
-            />
-          </TouchableOpacity>
-        ),
+        headerLeft: () => headerLeft,
+        headerRight: () => headerRight,
       });
 
       return undefined;
-    }, [colors.background, colors.text, dark, navigation, user])
+    }, [colors.background, colors.text, dark, headerLeft, headerRight, navigation, user])
   );
 
   const handleUnSubscribe = async (userId: string) => {
@@ -187,6 +192,7 @@ function UserProfile({ navigation, route }: Props) {
           relatedUsers={relatedUsers}
           handleSubscribe={handleSubscribe}
           handleUnSubscribe={handleUnSubscribe}
+          variant="public"
         />
       ) : (
         <View />

@@ -33,6 +33,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { differenceInHours, format, parseISO } from 'date-fns';
 import Video from 'react-native-video';
+import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { getUserProfile } from '@/src/redux/actions/UserAction';
 import { ApiCall } from '@/src/services/api';
@@ -1359,7 +1360,10 @@ function Explore({ navigation }: Props) {
     <ScrollView
       style={{ flex: 1 }}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.browseContentContainer}
+      contentContainerStyle={[
+        styles.browseContentContainer,
+        { paddingBottom: getHeight(7) + insets.bottom + 40 },
+      ]}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshingBrowse}
@@ -1903,7 +1907,10 @@ function Explore({ navigation }: Props) {
           data={filteredSearchResults}
           keyExtractor={(item) => `${item.kind}:${item.id}`}
           renderItem={renderSearchItem}
-          contentContainerStyle={styles.searchContentContainer}
+          contentContainerStyle={[
+            styles.searchContentContainer,
+            { paddingBottom: getHeight(7) + insets.bottom },
+          ]}
           showsVerticalScrollIndicator={false}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.35}

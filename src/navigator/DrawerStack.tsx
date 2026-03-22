@@ -2,8 +2,8 @@
 import React from 'react';
 import { createDrawerNavigator, getDrawerStatusFromState } from '@react-navigation/drawer';
 import { useSelector } from 'react-redux';
-import { Platform, View, useWindowDimensions } from 'react-native';
-import { Home3, Profile2User } from 'iconsax-react-native';
+import { Platform, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Profile2User } from 'iconsax-react-native';
 import { useTheme } from '@react-navigation/native';
 import Feather from '@react-native-vector-icons/feather';
 
@@ -23,6 +23,7 @@ import PrayerWallStack from './PrayerWallStack';
 import Saved from '../screens/main/saved';
 import ZoeChat from '../screens/main/zoeChat';
 import mainPageOptions from './global';
+import Home2Icon from '@/assets/icons/home2.svg';
 
 const DrawerStack = createDrawerNavigator<MainDrawerParamsList>();
 
@@ -52,7 +53,8 @@ function DrawerNav() {
             headerTintColor: dark ? colors.text : Colors.primary.brand,
 
             drawerActiveBackgroundColor: Colors.neutral[600],
-            drawerActiveTintColor: dark ? Colors.primarySapphire[500] : Colors.primary.brand,
+            drawerActiveTintColor: dark ? Colors.primarySapphire[500] : '#126b87',
+            drawerInactiveTintColor: dark ? colors.text : '#032f3c',
 
             headerLeft: (props: { tintColor?: string }) => {
               const isDrawerOpen = getDrawerStatusFromState(navigation.getState()) === 'open';
@@ -92,9 +94,20 @@ function DrawerNav() {
             return {
               title: 'Home',
               drawerIcon: ({ color, size }) => {
-                return <Home3 size={size} color={color} />;
+                return <Home2Icon width={size} height={size} color={color} />;
               },
             };
+          }}
+        />
+
+        <DrawerStack.Screen
+          name="ZoeAI"
+          component={ZoeChat}
+          options={{
+            headerShown: false,
+            title: 'ZoeAI',
+            drawerLabel: 'ZoeAI',
+            drawerIcon: ({ color, size }) => <ZoeIcon width={size} height={size} color={color} />,
           }}
         />
 
@@ -113,25 +126,27 @@ function DrawerNav() {
         <DrawerStack.Screen
           name="Connections"
           component={Connections}
-          options={() => {
+          options={({ navigation }) => {
             return {
               headerShown: true,
               title: 'My Connections',
+              headerLeft: () => (
+                <TouchableOpacity
+                  style={{ marginHorizontal: 11, padding: 4 }}
+                  onPress={() => navigation.goBack()}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Feather
+                    name="chevron-left"
+                    size={28}
+                    color={dark ? colors.text : Colors.primary.brand}
+                  />
+                </TouchableOpacity>
+              ),
               drawerIcon: ({ color, size }) => {
                 return <Profile2User size={size} color={color} />;
               },
             };
-          }}
-        />
-
-        <DrawerStack.Screen
-          name="ZoeAI"
-          component={ZoeChat}
-          options={{
-            headerShown: false,
-            title: 'ZoeAI',
-            drawerLabel: 'ZoeAI',
-            drawerIcon: ({ color, size }) => <ZoeIcon width={size} height={size} color={color} />,
           }}
         />
 
@@ -141,7 +156,7 @@ function DrawerNav() {
           options={() => {
             return {
               title: 'Prayer Wall',
-              drawerItemStyle: { height: 0 },
+              drawerItemStyle: { display: 'none', height: 0 },
               drawerIcon: ({ color, size }) => {
                 return <Prayers width={size} height={size} color={color} />;
               },
@@ -154,7 +169,7 @@ function DrawerNav() {
           component={SettingsStack}
           options={() => {
             return {
-              drawerItemStyle: { height: 0 },
+              drawerItemStyle: { display: 'none', height: 0 },
             };
           }}
         />

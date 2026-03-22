@@ -87,7 +87,9 @@ function InfluencerSettings({ route }: Props) {
               </Text>
             </View>
           ) : null}
-          <Text>Disclaimer: Any changes on this form will trigger an approval process</Text>
+          <Text>
+            Disclaimer: Any changes to your creator profile will trigger an approval process
+          </Text>
           <View style={{ flexDirection: 'row', marginTop: getHeight(5), marginBottom: 10 }}>
             <Ionicons name="logo-instagram" color="#032F3C" size={20} />
             <Text
@@ -99,7 +101,7 @@ function InfluencerSettings({ route }: Props) {
                 fontFamily: 'OpenSans-Regular',
               }}
             >
-              Instagram Account
+              Creator Instagram Account
             </Text>
           </View>
 

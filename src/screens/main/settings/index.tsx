@@ -1,15 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Linking,
-  TouchableOpacity,
-  Alert,
-  Platform,
-  ScrollView,
-  Image,
-  Switch,
-  ActivityIndicator,
-} from 'react-native';
+import { View, TouchableOpacity, ScrollView, Switch, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
@@ -24,7 +14,6 @@ import {
   UserRemove,
 } from 'iconsax-react-native';
 import Feather from '@react-native-vector-icons/feather';
-import Icon from '@react-native-vector-icons/ant-design';
 import { useToast } from 'react-native-toast-notifications';
 import DeviceInfo from 'react-native-device-info';
 import { styles } from './styles';
@@ -45,14 +34,12 @@ import {
   isSecureMessagePreviewEnabled,
   setSecureMessagePreviewEnabled,
 } from '@/src/services/chat/backgroundHandler';
+import { getCreatorMenuLabel, getCreatorMenuState } from '@/src/utils/creatorApplication';
 
 type Props = DrawerScreenProps<SettingsStackParamsList, 'SettingsMain'>;
 
 function Settings({ navigation }: Props) {
   const appVersion = DeviceInfo.getVersion();
-
-  const GOOGLE_PACKAGE_NAME = '';
-  const APPLE_STORE_ID = '';
 
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData);
   const userData = useSelector((state: RootState) => state.auth.userData);
@@ -187,52 +174,14 @@ function Settings({ navigation }: Props) {
     }
   };
 
-  const startRatingCounter = () => {
-    Alert.alert(
-      'Rate us',
-      'Would you like to share your review with us?',
-
-      [
-        { text: 'Sure', onPress: () => openStore() },
-        {
-          text: 'No Thanks!',
-
-          onPress: () => console.log('No Thanks Pressed'),
-          style: 'cancel',
-        },
-      ],
-      { cancelable: false }
-    );
-  };
-  const openStore = () => {
-    // This is the main trick
-    if (Platform.OS != 'ios') {
-      Linking.openURL(`market://details?id=${GOOGLE_PACKAGE_NAME}`).catch((err) =>
-        // alert('Please check for Google Play Store')
-        Alert.alert('Please check for Google Play Store')
-      );
-    } else {
-      Linking.openURL(`itms://itunes.apple.com/in/app/apple-store/${APPLE_STORE_ID}`).catch((err) =>
-        // alert('Please check for the App Store' + err)
-        Alert.alert('Please check for the App Store')
-      );
-    }
-  };
-
-  const time = new Date().getTime() / 1000;
-  let showInfluencerNotification = false;
-
-  if (
-    userProfile?.influencerProfile?.instagramId &&
-    userProfile?.influencerProfile?.instagramTokenExpirationReal &&
-    userProfile?.influencerProfile?.instagramTokenExpirationReal < time &&
-    !showInfluencerNotification
-  ) {
-    showInfluencerNotification =
-      userProfile?.influencerProfile?.instagramTokenExpirationReal < time;
-  }
-
-  const { colors, dark } = useTheme();
+  const { colors } = useTheme();
+  const creatorStatus = userProfile?.influencerProfile?.influencerStatus;
+  const creatorMenuState = getCreatorMenuState(creatorStatus);
+  const creatorMenuLabel = getCreatorMenuLabel(creatorStatus);
+  const creatorMenuDescription =
+    creatorMenuState === 'settings'
+      ? 'Update your creator profile settings'
+      : 'Apply to share your content on One Body';
 
   return (
     <View
@@ -243,65 +192,6 @@ function Settings({ navigation }: Props) {
       }}
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        {false && userProfile?.influencerProfile?.influencerStatus != 'approved' ? (
-          <TouchableOpacity
-            style={[
-              styles.settingsCard,
-              {
-                padding: 0,
-                paddingTop: spacing.x24,
-                paddingBottom: spacing.x24,
-                paddingLeft: spacing.x24,
-                backgroundColor: '#D9D1FA',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-              },
-            ]}
-            onPress={() => {
-              navigation.navigate('InfluencerStepOne');
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <StyledText style={[Typography.body.x4M, { color: Colors.primary[300], flex: 1 }]}>
-                Get more from your account. Apply to become an influencer
-              </StyledText>
-            </View>
-            <View style={{ flex: 1, flexDirection: 'column' }}>
-              <View style={{ flexDirection: 'row', flex: 1 }}>
-                <View style={{ flex: 1 }} />
-                <View
-                  style={{
-                    backgroundColor: Colors.primarySapphire.brand,
-                    paddingVertical: spacing.x5,
-                    flex: 1,
-                    borderStartStartRadius: borderRadius.base,
-                    borderBottomStartRadius: borderRadius.base,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'row',
-                  }}
-                >
-                  <StyledText style={[Typography.body.x2M, { color: 'white' }]}>Start</StyledText>
-                  <Icon name="right" style={{ marginLeft: 10 }} color="white" />
-                </View>
-              </View>
-              <View style={{ flex: 1, paddingHorizontal: spacing.x24 }}>
-                <Image
-                  resizeMode="contain"
-                  resizeMethod="scale"
-                  style={{
-                    width: '100%',
-                    aspectRatio: 1.77,
-                    height: null,
-                  }}
-                  // eslint-disable-next-line global-require
-                  source={require('@/assets/images/influencerIntro.png')}
-                />
-              </View>
-            </View>
-          </TouchableOpacity>
-        ) : null}
         <View style={{ flex: 3 }}>
           {userData?.tokenResult.signInProvider == 'password' ? (
             <View
@@ -659,61 +549,60 @@ function Settings({ navigation }: Props) {
               </View>
             </TouchableOpacity>
           </View>
-          {userProfile?.influencerProfile?.influencerStatus == 'approved' ||
-          userProfile?.influencerProfile?.influencerStatus == 'pending' ? (
-            <View
-              style={[
-                styles.settingsCard,
-                {
-                  backgroundColor: colors.card,
-                },
-              ]}
-            >
-              <View>
-                <StyledText
-                  style={[
-                    Typography.header.h3,
-                    { textTransform: 'uppercase', marginBottom: spacing.x16 },
-                  ]}
-                >
-                  Influencer
-                </StyledText>
-              </View>
+          <View
+            style={[
+              styles.settingsCard,
+              {
+                backgroundColor: colors.card,
+              },
+            ]}
+          >
+            <View>
+              <StyledText
+                style={[
+                  Typography.header.h3,
+                  { textTransform: 'uppercase', marginBottom: spacing.x16 },
+                ]}
+              >
+                Creator
+              </StyledText>
+            </View>
 
-              <TouchableOpacity
-                onPress={() => {
-                  navigation.navigate('InfluencerSettings');
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate(
+                  creatorMenuState === 'settings' ? 'InfluencerSettings' : 'InfluencerStepOne'
+                );
+              }}
+              style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
+            >
+              <View
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: spacing.x24,
                 }}
-                style={{ flexDirection: 'row', marginBottom: spacing.x16 }}
               >
                 <View
                   style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: spacing.x24,
+                    borderRadius: borderRadius.max,
+                    backgroundColor: Colors.neutral[800],
+                    padding: 6,
                   }}
                 >
-                  <View
-                    style={{
-                      borderRadius: borderRadius.max,
-                      backgroundColor: Colors.neutral[800],
-                      padding: 6,
-                    }}
-                  >
-                    <Setting color={Colors.primary.brand} size={18} />
-                  </View>
+                  <Setting color={Colors.primary.brand} size={18} />
                 </View>
-                <View>
-                  <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
-                    Influencer Settings
-                  </StyledText>
-                  <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
-                    Update your influencer profile settings
-                  </StyledText>
-                </View>
-              </TouchableOpacity>
-            </View>
-          ) : null}
+              </View>
+              <View>
+                <StyledText style={[Typography.header.h4, { color: Colors.neutral.brand }]}>
+                  {creatorMenuLabel}
+                </StyledText>
+                <StyledText style={[Typography.body.x2, { color: Colors.neutral[300] }]}>
+                  {creatorMenuDescription}
+                </StyledText>
+              </View>
+            </TouchableOpacity>
+          </View>
           <View
             style={[
               styles.settingsCard,

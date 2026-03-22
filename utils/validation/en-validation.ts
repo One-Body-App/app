@@ -152,7 +152,7 @@ export const enValidation = {
 
   bio: {
     presence: {
-      message: '^A Bio is required to be an Influencer.',
+      message: '^A Bio is required to become a Creator.',
     },
   },
   title: {
@@ -165,7 +165,7 @@ export const enValidation = {
     //   message: '^This filed Required!',
     // },
     url: {
-      message: '^Please enter a valid url starting with http/https',
+      message: '^Please enter a valid website link',
     },
   },
 };

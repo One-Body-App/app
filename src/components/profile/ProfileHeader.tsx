@@ -1,5 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Image, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  SafeAreaView,
+  ScrollView,
+  Share,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import FastImage from 'react-native-fast-image';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { Add, Calendar, Link21, Location, ShieldTick, HomeHashtag } from 'iconsax-react-native';
@@ -18,7 +26,7 @@ import { Badge } from '@/utils/types';
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
 import Selected from '@/assets/svg/Selected.svg';
-import { ProfileProps } from './Profile';
+import { ProfileProps } from './profileTypes';
 import { getProfileDisplayName, getProfileRoleLabel, getProfileTypeLabel } from './profileUtils';
 
 const COVER_HEIGHT = 150;
@@ -57,6 +65,7 @@ function ProfileHeader({
   currentUser,
   handleSubscribe,
   handleUnSubscribe,
+  variant = 'public',
 }: ProfileProps) {
   const dispatch = useDispatch();
   const navigation = useNavigation<any>();
@@ -84,6 +93,7 @@ function ProfileHeader({
     return format(parsedDate, 'MMMM yyyy');
   }, [profileData.createdAt]);
   const isConnected = currentUser.following?.includes(profileData._id);
+  const isSelfVariant = variant === 'self';
   const [requestModal, setRequestModal] = useState(false);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>(persistedBadgeIds);
 
@@ -101,6 +111,22 @@ function ProfileHeader({
       .filter(Boolean) as Badge[];
   }, [badgeMap, persistedBadgeIds, profileData.badgesData]);
   const isAddOnlyBadgeRail = isOwnProfile && displayedBadges.length === 0;
+  const useCompactAddOnlyBadge = isSelfVariant && isAddOnlyBadgeRail;
+  const badgeTrailingContent = useMemo(() => {
+    if (useCompactAddOnlyBadge) {
+      return <Add size={20} color="#FFFFFF" />;
+    }
+
+    if (displayedBadges.length < 3) {
+      return (
+        <View style={[styles.badgeAddButton, isSelfVariant ? styles.selfBadgeAddButton : null]}>
+          <Add size={16} color="#FFFFFF" />
+        </View>
+      );
+    }
+
+    return null;
+  }, [displayedBadges.length, isSelfVariant, useCompactAddOnlyBadge]);
 
   const handleToggleBadge = (badgeId: string) => {
     setSelectedBadgeIds((previous) => {
@@ -189,6 +215,18 @@ function ProfileHeader({
     OpenURLButton(websiteUrl);
   };
 
+  const handleShareProfile = async () => {
+    const profileUrl = profileData.username
+      ? `https://app.onebodyapp.com/profile/${profileData.username}`
+      : undefined;
+
+    await Share.share({
+      title: `Check out ${displayName} on One Body`,
+      url: profileUrl,
+      message: profileUrl ? `Check out ${displayName} on One Body\n${profileUrl}` : displayName,
+    });
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.coverWrap}>
@@ -206,24 +244,29 @@ function ProfileHeader({
           (isOwnProfile ? (
             <TouchableOpacity
               onPress={openBadgeModal}
-              style={[styles.badgeRail, isAddOnlyBadgeRail ? styles.badgeRailAddOnly : null]}
+              style={[
+                styles.badgeRail,
+                isSelfVariant ? styles.selfBadgeRail : null,
+                isAddOnlyBadgeRail ? styles.badgeRailAddOnly : null,
+                isSelfVariant && isAddOnlyBadgeRail ? styles.selfBadgeRailAddOnly : null,
+              ]}
             >
-              {displayedBadges.slice(0, 3).map((badge) => (
-                <FastImage
-                  key={badge._id}
-                  source={{ uri: badge.badge }}
-                  style={styles.badgeImage}
-                  resizeMode={FastImage.resizeMode.contain}
-                />
-              ))}
-              {displayedBadges.length < 3 ? (
-                <View style={styles.badgeAddButton}>
-                  <Add size={16} color="#FFFFFF" />
-                </View>
-              ) : null}
+              {!useCompactAddOnlyBadge
+                ? displayedBadges
+                    .slice(0, 3)
+                    .map((badge) => (
+                      <FastImage
+                        key={badge._id}
+                        source={{ uri: badge.badge }}
+                        style={styles.badgeImage}
+                        resizeMode={FastImage.resizeMode.contain}
+                      />
+                    ))
+                : null}
+              {badgeTrailingContent}
             </TouchableOpacity>
           ) : (
-            <View style={styles.badgeRail}>
+            <View style={[styles.badgeRail, isSelfVariant ? styles.selfBadgeRail : null]}>
               {displayedBadges.slice(0, 3).map((badge) => (
                 <FastImage
                   key={badge._id}
@@ -234,139 +277,184 @@ function ProfileHeader({
               ))}
             </View>
           ))}
-
-        <View style={styles.avatarWrap}>
-          <FastImage
-            source={{
-              uri: profileData.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
-            }}
-            style={styles.avatar}
-            resizeMode={FastImage.resizeMode.cover}
-          />
-        </View>
       </View>
 
       <View style={styles.content}>
-        <View style={styles.actionRow}>
-          {isOwnProfile ? (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('EditProfile')}
-              style={styles.ownProfileAction}
-            >
-              <StyledText style={styles.primaryActionText}>Edit Profile</StyledText>
-            </TouchableOpacity>
-          ) : (
-            <>
+        {isSelfVariant ? (
+          <View style={styles.selfHeroRow}>
+            <View style={styles.selfHero}>
+              <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
+                <FastImage
+                  source={{
+                    uri: profileData.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                  }}
+                  style={[styles.avatar, styles.selfAvatar]}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              </View>
+            </View>
+
+            <View style={styles.selfActionRow}>
               <TouchableOpacity
-                style={[
-                  styles.secondaryAction,
-                  profileData.allowDirectMessages === false && styles.disabledAction,
-                ]}
-                onPress={openDirectMessage}
-                disabled={profileData.allowDirectMessages === false}
+                onPress={() => navigation.navigate('EditProfile')}
+                style={[styles.secondaryAction, styles.selfActionButton]}
               >
-                <StyledText style={styles.secondaryActionText}>Message</StyledText>
+                <StyledText style={styles.secondaryActionText}>Edit Profile</StyledText>
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.primaryAction, isConnected ? styles.connectedAction : null]}
                 onPress={() => {
-                  if (isConnected) {
-                    handleUnSubscribe?.(profileData._id);
-                  } else {
-                    handleSubscribe?.(profileData._id);
-                  }
+                  handleShareProfile().catch(() => undefined);
                 }}
+                style={[styles.primaryAction, styles.selfActionButton]}
               >
-                <StyledText style={styles.primaryActionText}>
-                  {isConnected ? 'Connected' : 'Connect'}
-                </StyledText>
+                <StyledText style={styles.primaryActionText}>Share Profile</StyledText>
               </TouchableOpacity>
-            </>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.heroRow}>
+            <View style={styles.avatarWrap}>
+              <FastImage
+                source={{
+                  uri: profileData.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                }}
+                style={styles.avatar}
+                resizeMode={FastImage.resizeMode.cover}
+              />
+            </View>
+
+            <View style={styles.actionRow}>
+              {isOwnProfile ? (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('EditProfile')}
+                  style={styles.ownProfileAction}
+                >
+                  <StyledText style={styles.primaryActionText}>Edit Profile</StyledText>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[
+                      styles.secondaryAction,
+                      profileData.allowDirectMessages === false && styles.disabledAction,
+                    ]}
+                    onPress={openDirectMessage}
+                    disabled={profileData.allowDirectMessages === false}
+                  >
+                    <StyledText style={styles.secondaryActionText}>Message</StyledText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.primaryAction, isConnected ? styles.connectedAction : null]}
+                    onPress={() => {
+                      if (isConnected) {
+                        handleUnSubscribe?.(profileData._id);
+                      } else {
+                        handleSubscribe?.(profileData._id);
+                      }
+                    }}
+                  >
+                    <StyledText style={styles.primaryActionText}>
+                      {isConnected ? 'Connected' : 'Connect'}
+                    </StyledText>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        )}
+
+        <View style={styles.identityBlock}>
+          <View style={styles.nameRow}>
+            <StyledText numberOfLines={2} style={styles.nameText}>
+              {displayName}
+            </StyledText>
+            {profileData.influencerProfile?.influencerStatus === 'approved' ? (
+              <Icon
+                name="check-decagram"
+                size={20}
+                color={Colors.primarySapphire.brand}
+                style={styles.verifiedIcon}
+              />
+            ) : null}
+          </View>
+
+          <View style={styles.subtitleRow}>
+            {profileData.username ? (
+              <StyledText style={styles.mutedText}>{`@${profileData.username}`}</StyledText>
+            ) : null}
+            {profileData.username && roleLabel ? (
+              <StyledText style={styles.mutedText}> • </StyledText>
+            ) : null}
+            {roleLabel ? <StyledText style={styles.subtitleText}>{roleLabel}</StyledText> : null}
+          </View>
+
+          {profileData.bio ? (
+            <StyledText style={styles.bioText}>{profileData.bio}</StyledText>
+          ) : null}
+
+          {(Boolean(
+            profileData.profile?.location?.address && profileData.profile?.isLocationPublic
+          ) ||
+            Boolean(joinedLabel)) && (
+            <View style={styles.inlineMetaRow}>
+              {profileData.profile?.location?.address && profileData.profile?.isLocationPublic ? (
+                <View style={styles.inlineMetaItem}>
+                  <Location size={18} color={Colors.neutral.brand} />
+                  <StyledText style={styles.inlineMetaText}>
+                    {profileData.profile.location.address}
+                  </StyledText>
+                </View>
+              ) : null}
+
+              {joinedLabel ? (
+                <View style={styles.inlineMetaItem}>
+                  <Calendar size={18} color={Colors.neutral.brand} />
+                  <StyledText style={styles.inlineMetaText}>Joined {joinedLabel}</StyledText>
+                </View>
+              ) : null}
+            </View>
           )}
-        </View>
 
-        <View style={styles.nameRow}>
-          <StyledText numberOfLines={2} style={styles.nameText}>
-            {displayName}
-          </StyledText>
-          {profileData.influencerProfile?.influencerStatus === 'approved' ? (
-            <Icon
-              name="check-decagram"
-              size={20}
-              color={Colors.primarySapphire.brand}
-              style={styles.verifiedIcon}
-            />
-          ) : null}
-        </View>
+          <View style={styles.metaRow}>
+            <ShieldTick size={18} color={Colors.neutral.brand} />
+            <StyledText style={styles.metaLabel}>Profile</StyledText>
+            <StyledText style={styles.metaSeparator}> • </StyledText>
+            <StyledText style={styles.metaValue}>{typeLabel}</StyledText>
+          </View>
 
-        <View style={styles.subtitleRow}>
-          {profileData.username ? (
-            <StyledText style={styles.mutedText}>{`@${profileData.username}`}</StyledText>
-          ) : null}
-          {profileData.username && roleLabel ? (
-            <StyledText style={styles.mutedText}> • </StyledText>
-          ) : null}
-          {roleLabel ? <StyledText style={styles.subtitleText}>{roleLabel}</StyledText> : null}
-        </View>
-
-        {profileData.bio ? <StyledText style={styles.bioText}>{profileData.bio}</StyledText> : null}
-
-        <View style={styles.inlineMetaRow}>
-          {profileData.profile?.location?.address && profileData.profile?.isLocationPublic ? (
-            <View style={styles.inlineMetaItem}>
-              <Location size={18} color={Colors.neutral.brand} />
-              <StyledText style={styles.inlineMetaText}>
-                {profileData.profile.location.address}
+          {profileData.profile?.churchType && profileData.profile?.isChurchTypePublic ? (
+            <View style={styles.metaRow}>
+              <HomeHashtag size={18} color={Colors.neutral.brand} />
+              <StyledText style={styles.metaLabel}>Denomination</StyledText>
+              <StyledText style={styles.metaSeparator}> • </StyledText>
+              <StyledText style={styles.metaValue}>
+                {profileData.profile.churchType}
+                {profileData.profile.churchSubType ? ` - ${profileData.profile.churchSubType}` : ''}
               </StyledText>
             </View>
           ) : null}
 
-          {joinedLabel ? (
-            <View style={styles.inlineMetaItem}>
-              <Calendar size={18} color={Colors.neutral.brand} />
-              <StyledText style={styles.inlineMetaText}>Joined {joinedLabel}</StyledText>
-            </View>
+          {profileData.website ? (
+            <TouchableOpacity style={styles.metaRow} onPress={handleWebsitePress}>
+              <Link21 size={18} color={Colors.neutral.brand} />
+              <StyledText style={styles.websiteText}>{profileData.website}</StyledText>
+            </TouchableOpacity>
           ) : null}
-        </View>
 
-        <View style={styles.metaRow}>
-          <ShieldTick size={18} color={Colors.neutral.brand} />
-          <StyledText style={styles.metaLabel}>Profile</StyledText>
-          <StyledText style={styles.metaSeparator}> • </StyledText>
-          <StyledText style={styles.metaValue}>{typeLabel}</StyledText>
-        </View>
-
-        {profileData.profile?.churchType && profileData.profile?.isChurchTypePublic ? (
-          <View style={styles.metaRow}>
-            <HomeHashtag size={18} color={Colors.neutral.brand} />
-            <StyledText style={styles.metaLabel}>Denomination</StyledText>
-            <StyledText style={styles.metaSeparator}> • </StyledText>
-            <StyledText style={styles.metaValue}>
-              {profileData.profile.churchType}
-              {profileData.profile.churchSubType ? ` - ${profileData.profile.churchSubType}` : ''}
-            </StyledText>
-          </View>
-        ) : null}
-
-        {profileData.website ? (
-          <TouchableOpacity style={styles.metaRow} onPress={handleWebsitePress}>
-            <Link21 size={18} color={Colors.neutral.brand} />
-            <StyledText style={styles.websiteText}>{profileData.website}</StyledText>
-          </TouchableOpacity>
-        ) : null}
-
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <StyledText style={styles.statCount}>
-              {formatCount(profileData.followerCount)}
-            </StyledText>
-            <StyledText style={styles.statLabel}>Connectors</StyledText>
-          </View>
-          <View style={styles.statItem}>
-            <StyledText style={styles.statCount}>
-              {formatCount(profileData.following?.length)}
-            </StyledText>
-            <StyledText style={styles.statLabel}>Connections</StyledText>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <StyledText style={styles.statCount}>
+                {formatCount(profileData.followerCount)}
+              </StyledText>
+              <StyledText style={styles.statLabel}>Connectors</StyledText>
+            </View>
+            <View style={styles.statItem}>
+              <StyledText style={styles.statCount}>
+                {formatCount(profileData.following?.length)}
+              </StyledText>
+              <StyledText style={styles.statLabel}>Connections</StyledText>
+            </View>
           </View>
         </View>
       </View>
@@ -426,11 +514,11 @@ function ProfileHeader({
 
 const styles = StyleSheet.create({
   actionRow: {
+    flex: 1,
     flexDirection: 'row',
     gap: spacing.x10,
     justifyContent: 'flex-end',
-    marginBottom: spacing.x16,
-    marginTop: spacing.x8,
+    marginLeft: spacing.x16,
   },
   avatar: {
     borderColor: '#FFFFFF',
@@ -441,11 +529,8 @@ const styles = StyleSheet.create({
   },
   avatarWrap: {
     backgroundColor: '#FFFFFF',
-    borderRadius: AVATAR_SIZE / 2,
-    bottom: -AVATAR_SIZE / 2,
-    left: spacing.x20,
-    padding: 3,
-    position: 'absolute',
+    borderRadius: AVATAR_SIZE / 2 + 4,
+    padding: 4,
   },
   badgeAddButton: {
     alignItems: 'center',
@@ -480,6 +565,8 @@ const styles = StyleSheet.create({
   badgeRail: {
     alignItems: 'center',
     backgroundColor: 'rgba(78, 78, 78, 0.78)',
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderWidth: borderWidth.hairline,
     borderRadius: 24,
     bottom: 14,
     flexDirection: 'row',
@@ -522,7 +609,7 @@ const styles = StyleSheet.create({
     color: Colors.neutral[200],
     fontSize: 14,
     lineHeight: 21,
-    marginBottom: spacing.x20,
+    marginBottom: spacing.x8,
   },
   connectedAction: {
     backgroundColor: Colors.neutral[800],
@@ -532,7 +619,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.x20,
-    paddingTop: AVATAR_SIZE / 2 + spacing.x8,
+    paddingBottom: spacing.x20,
+    paddingTop: spacing.x12,
   },
   coverFallback: {
     backgroundColor: Colors.neutral[600],
@@ -544,11 +632,21 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   coverWrap: {
-    height: COVER_HEIGHT + AVATAR_SIZE / 2,
+    height: COVER_HEIGHT,
     position: 'relative',
   },
   disabledAction: {
     opacity: 0.45,
+  },
+  heroRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.x12,
+    marginTop: -(AVATAR_SIZE / 2),
+  },
+  identityBlock: {
+    gap: spacing.x12,
   },
   inlineMetaItem: {
     alignItems: 'center',
@@ -558,8 +656,8 @@ const styles = StyleSheet.create({
   inlineMetaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.x16,
-    marginBottom: spacing.x16,
+    gap: spacing.x12,
+    marginTop: spacing.x2,
   },
   inlineMetaText: {
     color: Colors.neutral[300],
@@ -569,12 +667,11 @@ const styles = StyleSheet.create({
     ...Typography.body.x2M,
     fontSize: 14,
     lineHeight: 18,
-    marginLeft: spacing.x8,
   },
   metaRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    marginBottom: spacing.x10,
+    gap: spacing.x8,
   },
   metaSeparator: {
     color: Colors.neutral[300],
@@ -590,7 +687,6 @@ const styles = StyleSheet.create({
   nameRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    marginBottom: spacing.x8,
   },
   nameText: {
     color: Colors.neutral.brand,
@@ -604,8 +700,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primarySapphire.brand,
     borderRadius: borderRadius.button,
     justifyContent: 'center',
-    minHeight: 42,
-    minWidth: 156,
+    minHeight: 46,
+    minWidth: 164,
     paddingHorizontal: spacing.x20,
   },
   primaryAction: {
@@ -636,6 +732,63 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  selfActionButton: {
+    borderRadius: 22,
+    flex: 0,
+    minHeight: 42,
+    paddingHorizontal: spacing.x12,
+    width: '48%',
+  },
+  selfActionRow: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.x8,
+    marginLeft: spacing.x16,
+    marginRight: spacing.x2,
+    marginTop: spacing.x8,
+  },
+  selfAvatar: {
+    height: 96,
+    width: 96,
+  },
+  selfAvatarWrap: {
+    borderRadius: 52,
+    marginTop: -48,
+    padding: 5,
+  },
+  selfBadgeAddButton: {
+    backgroundColor: Colors.primary.brand,
+    height: 28,
+    width: 28,
+  },
+  selfBadgeRail: {
+    backgroundColor: 'rgba(3, 47, 60, 0.64)',
+    bottom: spacing.x12,
+    minHeight: 42,
+    paddingHorizontal: spacing.x6,
+    paddingVertical: spacing.x6,
+    right: spacing.x14,
+  },
+  selfBadgeRailAddOnly: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(53, 89, 99, 0.78)',
+    borderRadius: 21,
+    height: 42,
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    width: 42,
+  },
+  selfHero: {
+    alignItems: 'flex-start',
+    marginBottom: spacing.x8,
+  },
+  selfHeroRow: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    marginBottom: spacing.x10,
+  },
   selectedBadgeOverlay: {
     position: 'absolute',
     top: 4,
@@ -647,6 +800,7 @@ const styles = StyleSheet.create({
   },
   statItem: {
     flex: 1,
+    gap: spacing.x4,
   },
   statLabel: {
     color: Colors.neutral[300],
@@ -655,14 +809,13 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap: spacing.x16,
-    marginBottom: spacing.x20,
-    marginTop: spacing.x5,
+    justifyContent: 'space-between',
+    marginTop: spacing.x4,
   },
   subtitleRow: {
     alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: spacing.x13,
   },
   subtitleText: {
     fontSize: 13,

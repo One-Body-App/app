@@ -17,7 +17,7 @@ export const getProfileRoleLabel = (profile: User) => {
     profile.profile?.typeOfOrganization?.name ||
     '';
 
-  return roleName.trim();
+  return typeof roleName === 'string' ? roleName.trim() : '';
 };
 
 export const getProfileTypeLabel = (profile: User) => {
@@ -25,7 +25,7 @@ export const getProfileTypeLabel = (profile: User) => {
     profile.accountType === AccountType.organization ? 'Organization' : 'Individual';
 
   if (profile.influencerProfile?.influencerStatus === 'approved') {
-    return `${baseLabel} Influencer`;
+    return `${baseLabel} Creator`;
   }
 
   return baseLabel;

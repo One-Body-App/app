@@ -1,14 +1,22 @@
 import { StackScreenProps } from '@react-navigation/stack';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, SafeAreaView, StatusBar, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@react-navigation/native';
+import Icon from '@react-native-vector-icons/ionicons';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ApiCall } from '@/src/services/api';
 import StyledText from '@/components/styled/Text';
-import Header from '@/components/Header';
-import GoBackIcon from '@/components/GoBackIcon';
 import { MainStackParamList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
 import { borderWidth } from '@/src/styles/outlines';
@@ -154,17 +162,20 @@ function SinglePost({ navigation, route }: Props) {
             barStyle={dark ? 'light-content' : 'dark-content'}
             backgroundColor={colors.background}
           />
-          <Header
-            title="Comment"
-            hideBorder
-            leftView={
-              <GoBackIcon
+          <View style={singleStyles.header}>
+            <TouchableOpacity
+              onPress={handleBackPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={singleStyles.backButton}
+            >
+              <Icon
+                name="chevron-back"
+                size={28}
                 color={dark ? colors.text : Colors.primary.brand}
-                goBack={handleBackPress}
               />
-            }
-            RightView={<View style={{ width: 20 }} />}
-          />
+            </TouchableOpacity>
+            <Text style={[singleStyles.headerTitle, { color: colors.text }]}>Comment</Text>
+          </View>
         </>
       ) : null}
       {post ? (
@@ -222,5 +233,23 @@ function SinglePost({ navigation, route }: Props) {
     </SafeAreaView>
   );
 }
+
+const singleStyles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  backButton: {
+    padding: 4,
+    marginRight: 8,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+});
 
 export default SinglePost;

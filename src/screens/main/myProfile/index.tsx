@@ -1,14 +1,15 @@
-/* eslint-disable react/no-unstable-nested-components */
 import React, { useCallback, useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useSelector } from 'react-redux';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Profile from '@/components/profile/Profile';
+import StyledText from '@/components/styled/Text';
 import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
@@ -16,9 +17,9 @@ import {
 } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors } from '@/src/styles';
+import { borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import SettingsSheet from './SettingsSheet';
-import { getProfileDisplayName } from '@/components/profile/profileUtils';
 
 type Props = CompositeScreenProps<
   StackScreenProps<MyProfileStackParamsList, 'MyProfile'>,
@@ -31,6 +32,7 @@ type Props = CompositeScreenProps<
 function MyProfile({ navigation, route }: Props) {
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const { dark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [showSettings, setShowSettings] = useState(Boolean(route.params?.openSettings));
   const [refreshToken, setRefreshToken] = useState(0);
 
@@ -45,70 +47,93 @@ function MyProfile({ navigation, route }: Props) {
     }, [navigation, route.params?.openSettings])
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!user) {
-        return undefined;
-      }
-
-      navigation.setOptions({
-        headerBackTitleVisible: false,
-        headerShadowVisible: false,
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
-        headerTintColor: dark ? colors.text : Colors.primary.brand,
-        headerTitleAlign: 'center',
-        title: getProfileDisplayName(user),
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-                return;
-              }
-
-              navigation.getParent()?.navigate('HomeTab', {
-                screen: 'Home',
-              });
-            }}
-            style={{ marginLeft: spacing.x10, padding: spacing.x5 }}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={30}
-              color={dark ? colors.text : Colors.primary.brand}
-            />
-          </TouchableOpacity>
-        ),
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => setShowSettings(true)}
-            style={{ marginRight: spacing.x10, padding: spacing.x5 }}
-          >
-            <Ionicons
-              name="ellipsis-vertical"
-              size={22}
-              color={dark ? colors.text : Colors.primary.brand}
-            />
-          </TouchableOpacity>
-        ),
-      });
-
-      return undefined;
-    }, [colors.background, colors.text, dark, navigation, user])
-  );
-
   if (!user) {
     return null;
   }
 
   return (
     <View style={{ flex: 1 }}>
-      <Profile profileData={user} currentUser={user} refreshToken={refreshToken} />
+      <View
+        style={[
+          styles.topBar,
+          {
+            backgroundColor: colors.background,
+            borderBottomColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+            paddingTop: insets.top + spacing.x8,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          accessibilityLabel="Go to Home"
+          onPress={() =>
+            navigation.getParent()?.navigate('HomeTab', {
+              screen: 'Home',
+            })
+          }
+          style={styles.topBarAction}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={30}
+            color={dark ? colors.text : Colors.primary.brand}
+          />
+        </TouchableOpacity>
+
+        <View style={styles.topBarTitleWrap}>
+          <StyledText
+            style={[styles.topBarTitleText, { color: dark ? colors.text : Colors.neutral.brand }]}
+          >
+            Profile
+          </StyledText>
+        </View>
+
+        <TouchableOpacity
+          accessibilityLabel="Open profile settings"
+          onPress={() => setShowSettings(true)}
+          style={styles.topBarAction}
+        >
+          <Ionicons
+            name="settings-outline"
+            size={25}
+            color={dark ? colors.text : Colors.primary.brand}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.profileWrap}>
+        <Profile profileData={user} currentUser={user} refreshToken={refreshToken} variant="self" />
+      </View>
       <SettingsSheet userData={user} showModal={showSettings} setShowModal={setShowSettings} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  profileWrap: {
+    flex: 1,
+  },
+  topBar: {
+    alignItems: 'center',
+    borderBottomWidth: borderWidth.hairline,
+    flexDirection: 'row',
+    paddingBottom: spacing.x12,
+    paddingHorizontal: spacing.x16,
+  },
+  topBarAction: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  topBarTitleText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  topBarTitleWrap: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+});
 
 export default MyProfile;

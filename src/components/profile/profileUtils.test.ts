@@ -1,5 +1,10 @@
 import { AccountType, User } from '@/utils/types';
-import { getProfileDisplayName, getProfileTypeLabel, getVisibleProfileTabs } from './profileUtils';
+import {
+  getProfileDisplayName,
+  getProfileRoleLabel,
+  getProfileTypeLabel,
+  getVisibleProfileTabs,
+} from './profileUtils';
 
 const createUser = (overrides: Partial<User> = {}): User =>
   ({
@@ -48,7 +53,7 @@ describe('profileUtils', () => {
     expect(getProfileDisplayName(profile)).toBe('One Body Org');
   });
 
-  it('builds approved influencer type labels', () => {
+  it('builds approved creator type labels', () => {
     const profile = createUser({
       accountType: AccountType.organization,
       influencerProfile: {
@@ -62,7 +67,7 @@ describe('profileUtils', () => {
       },
     });
 
-    expect(getProfileTypeLabel(profile)).toBe('Organization Influencer');
+    expect(getProfileTypeLabel(profile)).toBe('Organization Creator');
   });
 
   it('returns the expected visible tabs for a creator profile', () => {
@@ -81,5 +86,21 @@ describe('profileUtils', () => {
     });
 
     expect(getVisibleProfileTabs(profile)).toEqual(['post', 'social', 'blog', 'watch']);
+  });
+
+  it('returns an empty role label when the role field is not a string', () => {
+    const profile = createUser({
+      profile: {
+        dateOfBirth: '1990-01-01',
+        gender: 'Male',
+        location: {},
+        typeOfOrganization: {
+          organizationType: undefined,
+          name: undefined,
+        } as any,
+      },
+    });
+
+    expect(getProfileRoleLabel(profile)).toBe('');
   });
 });

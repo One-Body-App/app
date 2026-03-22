@@ -6,21 +6,12 @@ import { Colors } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import StyledText from '@/components/styled/Text';
-import { User } from '@/utils/types';
 import SocialFlatlist from '../SocialFlatlist';
 import BlogFlatlist from '../BlogFlatlist';
 import WatchFlatlist from '../WatchFlatlist';
 import ProfileHeader from './ProfileHeader';
+import { ProfileProps, ProfileVariant } from './profileTypes';
 import { getVisibleProfileTabs, ProfileTabKey } from './profileUtils';
-
-export interface ProfileProps {
-  profileData: User;
-  currentUser: User;
-  relatedUsers?: User[];
-  handleSubscribe?: Function;
-  handleUnSubscribe?: Function;
-  refreshToken?: number;
-}
 
 const TAB_LABELS: Record<ProfileTabKey, string> = {
   post: 'Post',
@@ -33,12 +24,33 @@ type ProfileTabBarProps = {
   activeTab: ProfileTabKey;
   visibleTabs: ProfileTabKey[];
   onTabPress: (tab: ProfileTabKey) => void;
+  variant: ProfileVariant;
 };
 
-function ProfileTabBar({ activeTab, onTabPress, visibleTabs }: ProfileTabBarProps) {
+function ProfileTabBar({ activeTab, onTabPress, visibleTabs, variant }: ProfileTabBarProps) {
+  const { dark, colors } = useTheme();
+  const isSelfVariant = variant === 'self';
+
   return (
-    <View style={styles.tabBarShell}>
-      <View style={styles.tabBarRow}>
+    <View
+      style={[
+        styles.tabBarShell,
+        isSelfVariant ? styles.selfTabBarShell : null,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <View
+        style={[
+          styles.tabBarRow,
+          isSelfVariant
+            ? styles.selfTabBarRow
+            : {
+                backgroundColor: colors.background,
+                borderBottomColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+                borderTopColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+              },
+        ]}
+      >
         {visibleTabs.map((tab) => {
           const isActive = tab === activeTab;
 
@@ -46,11 +58,46 @@ function ProfileTabBar({ activeTab, onTabPress, visibleTabs }: ProfileTabBarProp
             <Pressable
               key={tab}
               onPress={() => onTabPress(tab)}
-              style={[styles.tabButton, isActive ? styles.activeTabButton : null]}
+              style={[
+                styles.tabButton,
+                isSelfVariant ? styles.selfTabButton : null,
+                isActive && !isSelfVariant
+                  ? {
+                      backgroundColor: dark ? Colors.neutral[900] : Colors.neutral[800],
+                    }
+                  : null,
+              ]}
             >
-              <StyledText style={[styles.tabLabel, isActive ? styles.activeTabLabel : null]}>
-                {TAB_LABELS[tab]}
-              </StyledText>
+              {isSelfVariant ? (
+                <View style={styles.selfTabInner}>
+                  <StyledText
+                    style={[
+                      styles.tabLabel,
+                      { color: dark ? colors.text : Colors.primary.brand },
+                      isActive ? styles.activeTabLabel : null,
+                      styles.selfTabLabel,
+                    ]}
+                  >
+                    {TAB_LABELS[tab]}
+                  </StyledText>
+                  <View
+                    style={[
+                      styles.selfTabIndicator,
+                      isActive ? styles.selfTabIndicatorActive : null,
+                    ]}
+                  />
+                </View>
+              ) : (
+                <StyledText
+                  style={[
+                    styles.tabLabel,
+                    { color: dark ? colors.text : Colors.primary.brand },
+                    isActive ? styles.activeTabLabel : null,
+                  ]}
+                >
+                  {TAB_LABELS[tab]}
+                </StyledText>
+              )}
             </Pressable>
           );
         })}
@@ -66,6 +113,7 @@ function Profile({
   handleSubscribe,
   handleUnSubscribe,
   refreshToken = 0,
+  variant = 'public',
 }: ProfileProps) {
   const { colors } = useTheme();
   const visibleTabs = useMemo(() => getVisibleProfileTabs(profileData), [profileData]);
@@ -81,8 +129,14 @@ function Profile({
         relatedUsers={relatedUsers}
         handleSubscribe={handleSubscribe}
         handleUnSubscribe={handleUnSubscribe}
+        variant={variant}
       />
-      <ProfileTabBar activeTab={activeTab} onTabPress={setRequestedTab} visibleTabs={visibleTabs} />
+      <ProfileTabBar
+        activeTab={activeTab}
+        onTabPress={setRequestedTab}
+        visibleTabs={visibleTabs}
+        variant={variant}
+      />
     </>
   );
   const listKey = `${profileData._id}-${activeTab}-${refreshToken}`;
@@ -141,14 +195,44 @@ function Profile({
 }
 
 const styles = StyleSheet.create({
-  activeTabButton: {
-    backgroundColor: Colors.neutral[800],
-  },
   activeTabLabel: {
     color: Colors.primarySapphire.brand,
   },
+  selfTabBarRow: {
+    borderBottomColor: Colors.neutral[800],
+    borderBottomWidth: borderWidth.thin,
+    flexDirection: 'row',
+    paddingHorizontal: spacing.x20,
+  },
+  selfTabBarShell: {
+    marginBottom: spacing.x12,
+    marginTop: spacing.x4,
+  },
+  selfTabButton: {
+    borderRadius: 0,
+    paddingHorizontal: spacing.x4,
+    paddingVertical: spacing.x10,
+  },
+  selfTabIndicator: {
+    backgroundColor: 'transparent',
+    borderRadius: borderRadius.max,
+    height: 3,
+    marginTop: spacing.x8,
+    minWidth: 28,
+    width: '100%',
+  },
+  selfTabIndicatorActive: {
+    backgroundColor: Colors.primarySapphire.brand,
+  },
+  selfTabInner: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.x6,
+  },
+  selfTabLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
   tabBarRow: {
-    backgroundColor: '#FFFFFF',
     borderBottomColor: Colors.neutral[800],
     borderBottomWidth: borderWidth.thin,
     borderTopColor: Colors.neutral[800],
@@ -158,9 +242,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.x16,
     paddingVertical: spacing.x10,
   },
-  tabBarShell: {
-    backgroundColor: '#FFFFFF',
-  },
+  tabBarShell: {},
   tabButton: {
     alignItems: 'center',
     borderRadius: borderRadius.button,
@@ -169,7 +251,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.x10,
   },
   tabLabel: {
-    color: Colors.primary.brand,
     fontSize: 16,
     fontWeight: '600',
   },

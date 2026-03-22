@@ -1554,10 +1554,17 @@ function BaseItem({
             paddingTop: spacing.x5,
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.x16 }}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-around',
+            }}
+          >
             <View style={{ position: 'relative' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity
@@ -1693,12 +1700,9 @@ function BaseItem({
             >
               <SendIcon width={22} height={22} color={shareIconColor} />
             </TouchableOpacity>
-          </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {actionBarRightAccessory ? (
-              <View style={{ marginRight: spacing.x10 }}>{actionBarRightAccessory}</View>
-            ) : null}
+            {actionBarRightAccessory ?? null}
+
             <TouchableOpacity
               onPress={() => {
                 if (isThisPostSaved) {

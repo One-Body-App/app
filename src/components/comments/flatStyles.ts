@@ -99,12 +99,13 @@ const flatStyles = StyleSheet.create({
     marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   leftActions: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
+    justifyContent: 'space-around',
   },
   reactionButton: {
     flexDirection: 'row',

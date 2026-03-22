@@ -17,7 +17,7 @@ import Config from 'react-native-config';
 import StyledText from '@/components/styled/Text';
 import { FeedTypes } from '@/src/screens/home';
 import type { MainDrawerParamsList } from '@/src/navigator/types';
-import { Colors, Typography } from '@/src/styles';
+import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
 const ZOE_CHAT_URL = String(Config.ZOE_CHAT_URL ?? '').trim();
@@ -37,12 +37,12 @@ function getAllowedChatOrigin() {
 }
 
 function isAllowedTopLevelNavigation(url: string, allowedOrigin: string | null) {
-  if (!allowedOrigin) {
-    return false;
+  if (url === 'about:blank' || url === 'about:srcdoc') {
+    return true;
   }
 
-  if (url === 'about:blank') {
-    return true;
+  if (!allowedOrigin) {
+    return false;
   }
 
   try {
@@ -144,7 +144,7 @@ function ZoeChat({ navigation }: Props) {
             />
           </TouchableOpacity>
 
-          <StyledText style={[styles.headerTitle, { color: colors.text }]}>Chatbot</StyledText>
+          <StyledText style={[styles.headerTitle, { color: colors.text }]}>ZoeAI</StyledText>
 
           <View style={styles.headerSpacer} />
         </View>
@@ -233,8 +233,11 @@ const styles = StyleSheet.create({
     height: 40,
   },
   headerTitle: {
-    ...Typography.body.x2M,
+    fontSize: 24,
+    lineHeight: 30,
+    fontFamily: 'Rubik-Bold',
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });
 

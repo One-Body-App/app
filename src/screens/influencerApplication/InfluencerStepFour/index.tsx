@@ -1,148 +1,460 @@
-/* eslint-disable global-require */
 import React, { useState } from 'react';
-import { Text, View, ImageBackground, TouchableOpacity, ScrollView, Alert } from 'react-native';
-
-import Ionicons from '@react-native-vector-icons/ionicons';
-import { useDispatch, useSelector } from 'react-redux';
-import LinearGradient from 'react-native-linear-gradient';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+  ImageBackground,
+  Platform,
+} from 'react-native';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
-import { getFontSize, getHeight, getWidth } from '@/utils/ResponsiveFun';
-import { styles } from './styles';
-import { setLoader } from '@/src/redux/actions/GeneralActions';
-import { ApiCall } from '@/src/services/api';
-import Logo from '@/assets/svg/LogoBlue.svg';
-
-import { RootState } from '@/src/redux/reducers/rootReducer';
+import LinearGradient from 'react-native-linear-gradient';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepFour'>;
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+type ContentTypeOption = {
+  id: string;
+  label: string;
+  icon: IconName;
+};
 
-function InfluencerStepFour({ navigation, route }: Props) {
-  const { data } = route.params;
-  const dispatch = useDispatch();
-  const token = useSelector((state: RootState) => state.auth.userToken);
+// --- Dynamic Brand Palette ---
+const getThemeColors = (isDark: boolean) => ({
+  background: isDark ? '#032F3C' : '#FFFFFF',
+  surface: isDark ? '#0B3C4A' : '#F2F3F3',
+  surfaceBorder: isDark ? 'rgba(53, 89, 99, 0.3)' : '#E6EAEC',
+  primary: '#126B87',
+  primaryActive: isDark ? '#126B87' : '#E7F0F3',
+  accent: '#12D2D9',
+  textMain: isDark ? '#FFFFFF' : '#032F3C',
+  textMuted: isDark ? '#81979E' : '#68828A',
+  headerBg: isDark ? 'rgba(3, 47, 60, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+});
 
-  const [checked, setChecked] = useState(false);
+// --- Mock Data ---
+const CONTENT_TYPES: ContentTypeOption[] = [
+  { id: 'video', label: 'Video', icon: 'video' },
+  { id: 'audio', label: 'Audio', icon: 'microphone' },
+  { id: 'written', label: 'Written', icon: 'pencil-box-outline' },
+  { id: 'images', label: 'Images', icon: 'image' },
+];
 
-  const BecomeInfluencer = async () => {
-    dispatch(setLoader(true));
-    try {
-      const res = await ApiCall({
-        params: data,
-        token,
-        route: 'influencer/apply-for-influencer',
-        verb: 'post',
-      });
+const TOPICS = [
+  { id: 'faith', label: 'Faith & Theology' },
+  { id: 'marriage', label: 'Marriage & Family' },
+  { id: 'youth', label: 'Youth Ministry' },
+  { id: 'worship', label: 'Worship & Music' },
+  { id: 'bible', label: 'Bible Study' },
+  { id: 'apologetics', label: 'Apologetics' },
+  { id: 'missions', label: 'Missions & Outreach' },
+  { id: 'prayer', label: 'Prayer & Devotion' },
+  { id: 'leadership', label: 'Leadership' },
+  { id: 'current_events', label: 'Current Events' },
+];
 
-      if (res?.status == 200) {
-        dispatch(setLoader(false));
-        Alert.alert(res?.response.message);
-        // navigation.navigate('Home', {});
-      } else {
-        console.log('error', res?.response.data);
-      }
-    } catch (e) {
-      console.log('saga become infulancer err --- ', e);
+function CreatorStepFour({ navigation, route }: Props) {
+  const isDark = useColorScheme() === 'dark';
+  const colors = getThemeColors(isDark);
+
+  // Bring over previous steps' data
+  const previousData = route.params?.data || {};
+
+  // --- State Management ---
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+
+  // Toggle helpers
+  const toggleType = (id: string) => {
+    if (selectedTypes.includes(id)) {
+      setSelectedTypes(selectedTypes.filter((item) => item !== id));
+    } else {
+      setSelectedTypes([...selectedTypes, id]);
     }
   };
 
+  const toggleTopic = (id: string) => {
+    if (selectedTopics.includes(id)) {
+      // Allow deselection
+      setSelectedTopics(selectedTopics.filter((item) => item !== id));
+    } else if (selectedTopics.length < 5) {
+      // Enforce max 5 limit
+      setSelectedTopics([...selectedTopics, id]);
+    } else {
+      // Optional: Trigger a toast here saying "Maximum 5 topics allowed"
+      console.log('Max 5 topics reached');
+    }
+  };
+
+  const onReview = () => {
+    // Navigate to the final Review/Summary screen
+    navigation.navigate('CreatorReview', {
+      data: {
+        ...previousData,
+        contentTypes: selectedTypes,
+        topics: selectedTopics, // Updated from formats to topics
+      },
+    });
+  };
+
   return (
-    <LinearGradient colors={['#fff', '#fff', '#E0EEF3']} style={styles.container}>
-      <ScrollView>
-        <View style={styles.innerContainer}>
-          <View style={styles.privecystepview}>
-            <Logo
-              height={getHeight(14)}
-              width={getWidth(40)}
-              style={{ margin: getHeight(1), alignSelf: 'center' }}
-            />
-
-            <Text style={{ ...styles.text, color: '#4F6D77' }}>Step 3 of 3</Text>
-            <Text
-              style={{
-                ...styles.heading,
-                color: '#032F3C',
-                marginTop: 12,
-                fontFamily: 'OpenSans-Medium',
-              }}
-            >
-              Influencer Agreement
-            </Text>
-          </View>
-
-          <View>
-            <Text style={styles.headingt}>Overview</Text>
-            <Text style={styles.paragraph}>
-              If approved, we will begin immediately aggregating your social content from the
-              sources you provided. Post normally on your social or RSS feeds and you should see
-              content begin to be displayed shortly (usually in less than 1 hour).
-            </Text>
-            <Text style={styles.paragraph}>
-              From time to time we will ask you to re-certify your Instagram connection. This will
-              help us ensure that your account is secure.
-            </Text>
-            <Text style={styles.paragraph}>
-              Any posted content that goes against the One Body Ethos will be filtered and either
-              suppressed or entirely removed. Please make yourself familiar with the One Body Ethos.
-              You will be notified of any content moderation actions.
-            </Text>
-
-            <Text style={styles.headingt}>Your Consent</Text>
-            <Text style={styles.paragraph}>
-              By completing this application, you acknowledge that you are asking One Body Inc. To
-              aggregate and display your original posts and content from 3rd party platforms into
-              the One Body app.
-            </Text>
-
-            <View style={{ width: getWidth(70), height: getHeight(20) }} />
-          </View>
-          <View />
-        </View>
-      </ScrollView>
-      <View style={styles.foter}>
-        <ImageBackground
-          resizeMode="contain"
-          style={styles.imagebackgroundview}
-          source={require('@/assets/images/waveBG.png')}
-        >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.headerBg, borderBottomColor: colors.surfaceBorder },
+        ]}
+      >
+        <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chevron-back" size={getFontSize(3)} />
-            <Text style={styles.footerText}>Back</Text>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.accent} />
           </TouchableOpacity>
-
-          <View style={styles.progressBar}>
-            <View style={styles.progressBarStatus} />
-          </View>
-
-          <TouchableOpacity
-            onPress={() => BecomeInfluencer()}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={styles.footerText}>Done</Text>
-          </TouchableOpacity>
-        </ImageBackground>
+          <Text style={styles.headerTitle}>Creator Application</Text>
+        </View>
+        <Text style={[styles.headerStepText, { color: colors.textMuted }]}>STEP 4 OF 4</Text>
       </View>
 
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
-        <Ionicons
-          name="chevron-back"
-          style={{ margin: getFontSize(3) }}
-          size={20}
-          color="#4F6D77"
-        />
-      </TouchableOpacity>
-    </LinearGradient>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Title Section */}
+        <View style={styles.titleSection}>
+          <Text style={styles.stepIndicator}>FINAL STEP</Text>
+          <Text style={[styles.mainHeading, { color: colors.textMain }]}>
+            How do you share your message?
+          </Text>
+          <Text style={[styles.subHeading, { color: colors.textMuted }]}>
+            Select the content types and topics you typically focus on to build community.
+          </Text>
+        </View>
+
+        {/* Category 1: Content Type */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>CONTENT TYPE</Text>
+            <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
+              SELECT ALL THAT APPLY
+            </Text>
+          </View>
+
+          <View style={styles.gridContainer}>
+            {CONTENT_TYPES.map((type) => {
+              const isActive = selectedTypes.includes(type.id);
+              const activeContentColor = isDark ? '#FFF' : colors.primary;
+              const contentColor = isActive ? activeContentColor : colors.textMuted;
+
+              return (
+                <TouchableOpacity
+                  key={type.id}
+                  style={[
+                    styles.gridItem,
+                    {
+                      backgroundColor: isActive ? colors.primaryActive : colors.surface,
+                      borderColor: isActive ? colors.accent : colors.surfaceBorder,
+                    },
+                  ]}
+                  onPress={() => toggleType(type.id)}
+                >
+                  <MaterialCommunityIcons
+                    name={type.icon}
+                    size={28}
+                    color={contentColor}
+                    style={styles.gridIcon}
+                  />
+                  <Text style={[styles.gridText, { color: contentColor }]}>{type.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Category 2: Topics */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>TOPICS</Text>
+            <Text
+              style={[
+                styles.sectionSub,
+                { color: selectedTopics.length === 5 ? colors.accent : colors.textMuted },
+              ]}
+            >
+              {selectedTopics.length} / 5 SELECTED
+            </Text>
+          </View>
+
+          <View style={styles.tagsContainer}>
+            {TOPICS.map((topic) => {
+              const isActive = selectedTopics.includes(topic.id);
+              // Disable unselected buttons if max limit is reached to guide the user
+              const isDisabled = !isActive && selectedTopics.length >= 5;
+
+              return (
+                <TouchableOpacity
+                  key={topic.id}
+                  activeOpacity={0.7}
+                  disabled={isDisabled}
+                  style={[
+                    styles.tagButton,
+                    {
+                      backgroundColor: isActive ? colors.primary : 'transparent',
+                      borderColor: isActive ? colors.primary : colors.surfaceBorder,
+                      opacity: isDisabled ? 0.4 : 1, // Dim if they can't select more
+                    },
+                  ]}
+                  onPress={() => toggleTopic(topic.id)}
+                >
+                  {isActive && (
+                    <MaterialCommunityIcons
+                      name="check-circle"
+                      size={16}
+                      color="#FFFFFF"
+                      style={styles.tagIcon}
+                    />
+                  )}
+                  <Text style={[styles.tagText, { color: isActive ? '#FFFFFF' : colors.primary }]}>
+                    {topic.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Visual Decorative Element */}
+        <View style={styles.impactCardWrapper}>
+          <ImageBackground
+            source={{
+              uri: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop',
+            }}
+            style={styles.impactCard}
+            imageStyle={{ opacity: 0.6 }}
+          >
+            <LinearGradient
+              colors={['transparent', 'rgba(3, 47, 60, 0.9)']}
+              style={styles.impactGradient}
+            >
+              <Text style={styles.impactTitle}>MESSAGE IMPACT</Text>
+              <Text style={styles.impactText}>Visual storytelling increases engagement by 4x.</Text>
+            </LinearGradient>
+          </ImageBackground>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Navigation */}
+      <View
+        style={[
+          styles.bottomNav,
+          { backgroundColor: colors.background, borderTopColor: colors.surfaceBorder },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: colors.primary }]}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialCommunityIcons name="chevron-left" size={20} color={colors.primary} />
+          <Text style={[styles.backButtonText, { color: colors.primary }]}>BACK</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.continueButton, { backgroundColor: colors.accent }]}
+          onPress={onReview}
+        >
+          <Text style={[styles.continueButtonText, { color: '#032F3C' }]}>REVIEW APPLICATION</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#032F3C" />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
-export default InfluencerStepFour;
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    height: 64,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: '#12D2D9',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  headerStepText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 120, // Space for bottom nav
+  },
+  titleSection: {
+    marginBottom: 32,
+  },
+  stepIndicator: {
+    color: '#12D2D9',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+  mainHeading: {
+    fontSize: 30,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
+  subHeading: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  section: {
+    marginBottom: 36,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+  },
+  sectionSub: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  gridItem: {
+    width: '48%',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginBottom: 12,
+  },
+  gridIcon: {
+    marginBottom: 12,
+  },
+  gridText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  tagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 30,
+    borderWidth: 1,
+    marginBottom: 12,
+    marginRight: 12,
+  },
+  tagIcon: {
+    marginRight: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  impactCardWrapper: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    height: 180,
+    marginBottom: 32,
+  },
+  impactCard: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#032F3C',
+  },
+  impactGradient: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 16,
+  },
+  impactTitle: {
+    color: '#12D2D9',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  impactText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: Platform.OS === 'ios' ? 24 : 16,
+    borderTopWidth: 1,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  backButtonText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginLeft: 4,
+  },
+  continueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+  },
+  continueButtonText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginRight: 6,
+  },
+});
+
+export default CreatorStepFour;

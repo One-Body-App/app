@@ -113,7 +113,12 @@ export type HomeStackParamsList = {
     oauth_verifier?: string;
   };
   InfluencerStepThree: {
-    data: any;
+    data?: any;
+    code?: string;
+    action?: string;
+    state?: string;
+    oauth_token?: string;
+    oauth_verifier?: string;
   };
   InfluencerStepFour: {
     data: any;
@@ -160,11 +165,20 @@ export type SettingsStackParamsList = {
     oauth_verifier?: string;
   };
   InfluencerStepThree: {
-    data: any;
+    data?: any;
+    code?: string;
+    action?: string;
+    state?: string;
+    oauth_token?: string;
+    oauth_verifier?: string;
   };
   InfluencerStepFour: {
     data: any;
   };
+  CreatorReview: {
+    data: any;
+  };
+  CreatorSuccess: undefined;
 
   RemoveAccountConfirmation: { reason: string };
   ConfirmLogin: ConfirmLoginScreen;
