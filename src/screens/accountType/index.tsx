@@ -39,7 +39,15 @@ function AccountType({ navigation }: Props) {
   const isTablet = windowWidth >= 768;
   const isIos = Platform.OS === 'ios';
   const primaryTextColor = dark ? colors.text : '#032F3C';
-  const cardRadius = typeof card.borderRadius === 'number' ? card.borderRadius : 14;
+  const baseCardStyle = card ?? {
+    padding: spacing.x16,
+    borderRadius: borderRadius.base,
+    marginBottom: spacing.x10,
+    borderWidth: 1,
+    borderColor: Colors.neutral[800],
+    backgroundColor: Colors.neutral[800],
+  };
+  const cardRadius = borderRadius.base;
   const glassOverlayStyle = {
     backgroundColor: colors.card,
     opacity: dark ? 0.55 : 0.75,
@@ -249,7 +257,7 @@ function AccountType({ navigation }: Props) {
 
           <Animated.View
             style={[
-              card,
+              baseCardStyle,
               cardAnimatedStyle(individualAnim, accountType === AccountTypeType.individual),
               optionEntryStyle(optionOneAnim),
               fadeUp(cardsAnim, 10),
@@ -348,7 +356,7 @@ function AccountType({ navigation }: Props) {
 
           <Animated.View
             style={[
-              card,
+              baseCardStyle,
               cardAnimatedStyle(organizationAnim, accountType === AccountTypeType.organization),
               optionEntryStyle(optionTwoAnim),
               fadeUp(cardsAnim, 10),

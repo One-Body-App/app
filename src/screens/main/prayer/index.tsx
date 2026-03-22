@@ -114,6 +114,16 @@ function Prayer({ navigation }: Props) {
         backgroundColor: shareBackgroundColor,
       };
 
+  const applyTabIndex = React.useCallback(
+    (nextIndex: number) => {
+      setIndex(nextIndex);
+      hasInitializedPrayerScroll.current = false;
+      lastPrayerScrollY.current = 0;
+      lastPrayerSubtabToggleAt.current = 0;
+      setSubtabsVisibility(true);
+    },
+    [setSubtabsVisibility]
+  );
   const renderScene = ({ route }: { route: { key: string } }) => {
     switch (route.key) {
       case 'Wall':
@@ -142,24 +152,12 @@ function Prayer({ navigation }: Props) {
               <GlassTabBar
                 tabs={routes.map((r) => r.title)}
                 activeIndex={index}
-                onTabChange={(i) => {
-                  setIndex(i);
-                  hasInitializedPrayerScroll.current = false;
-                  lastPrayerScrollY.current = 0;
-                  lastPrayerSubtabToggleAt.current = 0;
-                  setSubtabsVisibility(true);
-                }}
+                onTabChange={applyTabIndex}
                 style={{ marginHorizontal: 16 }}
               />
             );
           }}
-          onIndexChange={(nextIndex) => {
-            setIndex(nextIndex);
-            hasInitializedPrayerScroll.current = false;
-            lastPrayerScrollY.current = 0;
-            lastPrayerSubtabToggleAt.current = 0;
-            setSubtabsVisibility(true);
-          }}
+          onIndexChange={applyTabIndex}
         />
         <TouchableOpacity
           onPress={() => {

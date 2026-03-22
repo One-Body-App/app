@@ -4,6 +4,15 @@ import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 
+export const card: ViewStyle = {
+  padding: spacing.x16,
+  borderRadius: borderRadius.base,
+  marginBottom: spacing.x10,
+  borderWidth: 1,
+  borderColor: Colors.neutral[800],
+  backgroundColor: Colors.neutral[800],
+};
+
 export const profileImageList: ImageStyle = {
   width: 60,
   height: 60,
