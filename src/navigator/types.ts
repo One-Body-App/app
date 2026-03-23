@@ -246,6 +246,22 @@ export type ConnectStackParamsList = {
   };
   ConnectPlacesHome: undefined;
   ConnectServeHome: undefined;
+  ConnectServeSaved: undefined;
+  ConnectServeApplied: undefined;
+  ConnectServeJobView: {
+    jobId: string;
+  };
+  ConnectServeJobApply: {
+    jobId: string;
+  };
+  ConnectServeAppliedJobView: {
+    jobId: string;
+  };
+  ConnectServeApplications: {
+    jobId: string;
+  };
+  ConnectServeCreateJobStep1: undefined;
+  ConnectServeCreateJobStep2: undefined;
   UserProfile: {
     id: string;
   };

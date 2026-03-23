@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { getConnectPortalEventById } from '@/src/services/connectPortal';
@@ -31,11 +39,32 @@ function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBg }]}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.navigate('ConnectGoEventDash')}>
-            <Text style={[styles.headerButton, { color: palette.accent }]}>Close</Text>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: palette.headerTitle }]}>Success</Text>
-          <View style={styles.headerSpacer} />
+          {Platform.OS === 'android' ? (
+            <>
+              <TouchableOpacity onPress={() => navigation.navigate('ConnectGoEventDash')}>
+                <Text style={[styles.headerButton, { color: palette.accent }]}>Close</Text>
+              </TouchableOpacity>
+              <View style={styles.headerTitleAndroidWrap}>
+                <Text
+                  style={[
+                    styles.headerTitle,
+                    styles.headerTitleAndroid,
+                    { color: palette.headerTitle },
+                  ]}
+                >
+                  Success
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity onPress={() => navigation.navigate('ConnectGoEventDash')}>
+                <Text style={[styles.headerButton, { color: palette.accent }]}>Close</Text>
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: palette.headerTitle }]}>Success</Text>
+              <View style={styles.headerSpacer} />
+            </>
+          )}
         </View>
 
         <ScrollView
@@ -117,9 +146,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  headerTitleAndroidWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 10,
+  },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '700',
+    fontFamily: 'Rubik-Bold',
+    letterSpacing: 0.3,
+  },
+  headerTitleAndroid: {
+    textAlign: 'left',
   },
   headerSpacer: {
     width: 48,

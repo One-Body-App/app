@@ -8,17 +8,11 @@ import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 
-type Props = NativeStackScreenProps<
-  ConnectStackParamsList,
-  'ConnectPlacesHome' | 'ConnectServeHome'
->;
+type Props = NativeStackScreenProps<ConnectStackParamsList, 'ConnectPlacesHome'>;
 
 function ConnectPortalPlaceholderScreen({ navigation, route }: Props): React.JSX.Element {
   const { dark } = useTheme();
-  let title = 'Serve';
-  if (route.name === 'ConnectPlacesHome') {
-    title = 'Places';
-  }
+  const title = route.name === 'ConnectPlacesHome' ? 'Places' : 'Connect Portal';
 
   return (
     <SafeAreaView style={[styles.safeArea, dark ? styles.safeAreaDark : null]}>
@@ -41,8 +35,7 @@ function ConnectPortalPlaceholderScreen({ navigation, route }: Props): React.JSX
           </StyledText>
           <StyledText style={[styles.title, dark ? styles.textDark : null]}>{title}</StyledText>
           <StyledText style={[styles.body, dark ? styles.textDarkMuted : null]}>
-            This screen is reserved for future Connect portal work. The current implementation only
-            wires the `Go!` organizer and public event flow.
+            This screen is reserved for future Connect portal work.
           </StyledText>
         </View>
       </View>

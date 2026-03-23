@@ -200,8 +200,8 @@ const styles = StyleSheet.create({
   },
   detailTitle: {
     fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontFamily: 'Rubik-Medium',
+    letterSpacing: 0.2,
   },
   detailValue: {
     fontSize: 17,

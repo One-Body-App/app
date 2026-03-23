@@ -20,6 +20,8 @@ import MaterialCommunityIcons from '@react-native-vector-icons/material-design-i
 import LinearGradient from 'react-native-linear-gradient';
 import NetworkPinIcon from '@/assets/svg/Network-Pin--Streamline-Ultimate.svg';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
+import BusinessUserCurriculumIcon from '@/assets/svg/Business-User-Curriculum--Streamline-Core.svg';
+import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core.svg';
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
@@ -111,9 +113,16 @@ type RetractableSearchBarProps = {
   searchText: string;
   onSearchChange: (text: string) => void;
   searchPlaceholder?: string;
-  onOpenFilters?: () => void;
   onAddPress?: () => void;
+  tertiaryAction?: RetractableSearchBarTertiaryAction;
   onExpandedChange?: (expanded: boolean) => void;
+};
+
+type RetractableSearchBarTertiaryAction = {
+  icon: 'serveManager' | 'eventManager';
+  onPress: () => void;
+  accessibilityLabel: string;
+  testID?: string;
 };
 
 type MapTabRowProps = {
@@ -955,6 +964,7 @@ export function ConnectRetractableSearchBar({
   onSearchChange,
   searchPlaceholder,
   onAddPress,
+  tertiaryAction,
   onExpandedChange,
 }: RetractableSearchBarProps) {
   const palette = useConnectPalette();
@@ -964,10 +974,11 @@ export function ConnectRetractableSearchBar({
   const [containerWidth, setContainerWidth] = useState(0);
   const expandAnim = useRef(new Animated.Value(searchText ? 1 : 0)).current;
   const inputRef = useRef<TextInput>(null);
-  const collapsedWidth = onAddPress ? 106 : 64;
+  const actionButtonCount = 1 + (tertiaryAction ? 1 : 0) + (onAddPress ? 1 : 0);
+  const collapsedWidth = 64 + Math.max(0, actionButtonCount - 1) * 42;
   const expandedWidth = Math.max(collapsedWidth, containerWidth);
   const collapseSlotWidth = 46;
-  const actionRowWidth = onAddPress ? 84 : 38;
+  const actionRowWidth = 38 + Math.max(0, actionButtonCount - 1) * 46;
   const expandedInputWidth = Math.max(0, expandedWidth - (collapseSlotWidth + actionRowWidth + 16));
 
   // Sync expanded state when searchText is set externally
@@ -1137,6 +1148,7 @@ export function ConnectRetractableSearchBar({
         <View style={styles.retractableActionRow}>
           <TouchableOpacity
             onPress={handleSearchPress}
+            testID="connect-retractable-search-action"
             style={[
               styles.retractableIconButton,
               {
@@ -1151,6 +1163,7 @@ export function ConnectRetractableSearchBar({
           {onAddPress ? (
             <TouchableOpacity
               onPress={onAddPress}
+              testID="connect-retractable-add-action"
               style={[
                 styles.retractableIconButton,
                 {
@@ -1160,6 +1173,29 @@ export function ConnectRetractableSearchBar({
               ]}
             >
               <MaterialIcons name="add" size={22} color={palette.mapSearchIcon} />
+            </TouchableOpacity>
+          ) : null}
+
+          {tertiaryAction ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={tertiaryAction.accessibilityLabel}
+              onPress={tertiaryAction.onPress}
+              testID={tertiaryAction.testID || 'connect-retractable-tertiary-action'}
+              style={[
+                styles.retractableIconButton,
+                {
+                  backgroundColor: palette.mapActionBg,
+                  borderColor: palette.mapActionBorder,
+                },
+              ]}
+            >
+              {tertiaryAction.icon === 'serveManager' ? (
+                <BusinessUserCurriculumIcon width={18} height={18} color={palette.mapSearchIcon} />
+              ) : null}
+              {tertiaryAction.icon === 'eventManager' ? (
+                <CalendarEditIcon width={18} height={18} color={palette.mapSearchIcon} />
+              ) : null}
             </TouchableOpacity>
           ) : null}
         </View>
@@ -1411,6 +1447,21 @@ export function ConnectPlacesQuickChips<T extends ConnectQuickChip = ConnectPlac
     >
       {resolvedChips.map((chip) => {
         const isActive = chip === selectedChip;
+        const isBottomOverlay = variant === 'bottomOverlay';
+        let chipShadowOpacity = 0;
+        if (Platform.OS !== 'android') {
+          chipShadowOpacity = isActive ? 0.16 : 0.1;
+        }
+        let chipShadowRadius = 0;
+        if (Platform.OS !== 'android') {
+          chipShadowRadius = isActive ? 7 : 5;
+        }
+        const chipShadowOffset =
+          Platform.OS === 'android' ? { width: 0, height: 0 } : { width: 0, height: 3 };
+        let chipElevation = 0;
+        if (Platform.OS !== 'android') {
+          chipElevation = isActive ? 4 : 2;
+        }
         return (
           <TouchableOpacity
             key={chip}
@@ -1418,7 +1469,7 @@ export function ConnectPlacesQuickChips<T extends ConnectQuickChip = ConnectPlac
             onPress={() => onSelect(chip)}
             style={[
               styles.quickChip,
-              variant === 'bottomOverlay'
+              isBottomOverlay
                 ? [
                     styles.quickChipBottomOverlay,
                     {
@@ -1426,22 +1477,19 @@ export function ConnectPlacesQuickChips<T extends ConnectQuickChip = ConnectPlac
                       borderWidth: 1,
                       borderColor: isActive ? palette.chipGlassActive : palette.chipGlassBorder,
                       shadowColor: '#000',
-                      shadowOpacity: Platform.OS === 'android' ? 0 : isActive ? 0.16 : 0.1,
-                      shadowRadius: Platform.OS === 'android' ? 0 : isActive ? 7 : 5,
-                      shadowOffset:
-                        Platform.OS === 'android'
-                          ? { width: 0, height: 0 }
-                          : { width: 0, height: 3 },
-                      elevation: Platform.OS === 'android' ? 0 : isActive ? 4 : 2,
+                      shadowOpacity: chipShadowOpacity,
+                      shadowRadius: chipShadowRadius,
+                      shadowOffset: chipShadowOffset,
+                      elevation: chipElevation,
                     },
                   ]
                 : { backgroundColor: palette.chip },
-              isActive && variant !== 'bottomOverlay'
+              isActive && !isBottomOverlay
                 ? [styles.quickChipActive, { backgroundColor: palette.chipActive }]
                 : null,
             ]}
           >
-            {variant === 'bottomOverlay' && (
+            {isBottomOverlay && (
               <BlurView
                 blurType={palette.isDark ? 'dark' : 'light'}
                 blurAmount={12}
@@ -1451,7 +1499,7 @@ export function ConnectPlacesQuickChips<T extends ConnectQuickChip = ConnectPlac
             <StyledText
               style={[
                 styles.quickChipText,
-                variant === 'bottomOverlay' ? styles.quickChipTextBottomOverlay : null,
+                isBottomOverlay ? styles.quickChipTextBottomOverlay : null,
                 {
                   color:
                     variant === 'bottomOverlay' ? palette.chipGlassMutedText : palette.textPrimary,

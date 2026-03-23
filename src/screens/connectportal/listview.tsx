@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import {
-  Alert,
   Animated,
   FlatList,
   NativeSyntheticEvent,
@@ -292,7 +291,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
       return;
     }
     if (activeTab === 'Serve') {
-      Alert.alert('Coming Soon', 'Serve opportunity creation is coming soon.');
+      navigation.navigate('ConnectServeCreateJobStep1');
     }
   }, [activeTab, navigation]);
 
@@ -494,7 +493,11 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
 
             const serveItem = item as (typeof serveItems)[number];
             return (
-              <View style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}>
+              <TouchableOpacity
+                style={[styles.genericCard, { backgroundColor: palette.cardMuted }]}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('ConnectServeJobView', { jobId: serveItem.id })}
+              >
                 <MaterialIcons name="volunteer-activism" size={28} color={palette.activeText} />
                 <View style={styles.genericCardCopy}>
                   <StyledText style={[styles.genericCardTitle, { color: palette.textPrimary }]}>
@@ -518,7 +521,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                     ))}
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
           ItemSeparatorComponent={ListItemSeparator}
@@ -531,6 +534,23 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           searchText={searchByTab[activeTab]}
           onSearchChange={(text) => setSearchText(activeTab, text)}
           searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
+          tertiaryAction={
+            activeTab === 'Go!'
+              ? {
+                  icon: 'eventManager',
+                  accessibilityLabel: 'Open event management',
+                  onPress: () => navigation.navigate('ConnectGoLanding'),
+                  testID: 'connect-go-event-manager-action',
+                }
+              : activeTab === 'Serve'
+                ? {
+                    icon: 'serveManager',
+                    accessibilityLabel: 'Open serve manager',
+                    onPress: () => navigation.navigate('ConnectServeHome'),
+                    testID: 'connect-serve-manager-action',
+                  }
+                : undefined
+          }
           onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
         />
       </View>

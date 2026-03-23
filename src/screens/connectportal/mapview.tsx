@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useTheme } from '@react-navigation/native';
@@ -366,7 +366,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       return;
     }
     if (activeTab === 'Serve') {
-      Alert.alert('Coming Soon', 'Serve opportunity creation is coming soon.');
+      navigation.navigate('ConnectServeCreateJobStep1');
     }
   }, [activeTab, navigation]);
 
@@ -477,8 +477,9 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           fallbackIcon="hand-heart"
           trailingIconName="volunteer-activism"
           primaryAction={{
-            label: 'Explore',
-            onPress: onOpenLanding,
+            label: 'Details',
+            onPress: () =>
+              navigation.navigate('ConnectServeJobView', { jobId: selectedServeItem.id }),
           }}
           onDismiss={clearSelection}
         />
@@ -617,10 +618,26 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           searchText={searchByTab[activeTab]}
           onSearchChange={(text) => setSearchText(activeTab, text)}
           searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
+          tertiaryAction={(() => {
+            if (activeTab === 'Go!') {
+              return {
+                icon: 'eventManager' as const,
+                accessibilityLabel: 'Open event management',
+                onPress: () => navigation.navigate('ConnectGoLanding'),
+                testID: 'connect-go-event-manager-action',
+              };
+            }
+            if (activeTab === 'Serve') {
+              return {
+                icon: 'serveManager' as const,
+                accessibilityLabel: 'Open serve manager',
+                onPress: () => navigation.navigate('ConnectServeHome'),
+                testID: 'connect-serve-manager-action',
+              };
+            }
+            return undefined;
+          })()}
           onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
-          onOpenFilters={
-            activeTab === 'Places' ? () => places.setFilterSheetOpen(true) : onOpenLanding
-          }
         />
       </View>
 

@@ -55,7 +55,7 @@ function CreatorSubmitSuccess({ navigation }: Props) {
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.accent} />
+            <MaterialCommunityIcons name="chevron-left" size={32} color={colors.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Creator Application</Text>
         </View>

@@ -207,9 +207,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'Rubik-Medium',
+    letterSpacing: 0.15,
   },
   paymentCard: {
     flexDirection: 'row',

@@ -6,6 +6,8 @@ import {
   Image,
   ImageBackground,
   type ListRenderItemInfo,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Platform,
   RefreshControl,
   ScrollView,
@@ -224,6 +226,7 @@ interface CommunityPrayerItem {
 
 const SEARCH_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 350;
+const EXPLORE_CHIP_ROW_HEIGHT = 46;
 const EXPLORE_HEADER_COLOR = '#032f3c';
 const EXPLORE_HEADER_FONT_FAMILY = 'Rubik-Bold';
 const EXPLORE_SUBHEADER_FONT_FAMILY = 'OpenSans-Regular';
@@ -380,6 +383,9 @@ function Explore({ navigation }: Props) {
   );
   const [visibleVideoId, setVisibleVideoId] = useState<string | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const chipOffset = useRef(new Animated.Value(0)).current;
+  const lastSearchScrollYRef = useRef(0);
+  const searchChipHiddenRef = useRef(false);
 
   const [searchResults, setSearchResults] = useState<ExploreSearchResult[]>([]);
   const [searchPage, setSearchPage] = useState(1);
@@ -405,7 +411,44 @@ function Explore({ navigation }: Props) {
     setIsSearchLoading(false);
     setIsSearchLoadingMore(false);
     setActiveFilter(SearchFeedFilter.top);
-  }, []);
+    chipOffset.setValue(0);
+    searchChipHiddenRef.current = false;
+    lastSearchScrollYRef.current = 0;
+  }, [chipOffset]);
+
+  const handleSearchScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { y } = event.nativeEvent.contentOffset;
+      const diff = y - lastSearchScrollYRef.current;
+      lastSearchScrollYRef.current = y;
+
+      if (y <= 0) {
+        if (searchChipHiddenRef.current) {
+          searchChipHiddenRef.current = false;
+          Animated.timing(chipOffset, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+      } else if (diff > 2 && !searchChipHiddenRef.current) {
+        searchChipHiddenRef.current = true;
+        Animated.timing(chipOffset, {
+          toValue: -EXPLORE_CHIP_ROW_HEIGHT,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      } else if (diff < -2 && searchChipHiddenRef.current) {
+        searchChipHiddenRef.current = false;
+        Animated.timing(chipOffset, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
+    [chipOffset]
+  );
 
   const userAvatar = userProfile?.profileImage ?? '';
 
@@ -888,36 +931,33 @@ function Explore({ navigation }: Props) {
     setIsPrayerLoading(false);
   }, [token]);
 
-  const fetchServeOpportunities = useCallback(
-    async (_location: { latitude: number; longitude: number } | null) => {
-      setIsServeLoading(true);
-      try {
-        const res = await ApiCall({
-          route: 'user/search',
-          token,
-          verb: 'post',
-          params: { text: 'serve', type: 'posts', limit: 10, skip: 0 },
-        });
-        let items: any[] = [];
-        if (res?.status === 200 && Array.isArray(res.response)) {
-          items = res.response.slice(0, 5);
-        }
-        setServeOpportunityItems(
-          items.map((item: any, idx: number) => ({
-            id: item._id ?? item.id ?? `serve-${idx}`,
-            imageUri: resolveImageUrl(item) || NO_PROFILE_IMAGE,
-            title: resolveTitle(item.title) || item.content?.slice(0, 50) || 'Serve Opportunity',
-            organization: item.userData?.name ?? item.organization ?? 'Community',
-            distance: item.distance ? `${item.distance} miles` : 'Nearby',
-          }))
-        );
-      } catch {
-        // Network failure — section stays empty
+  const fetchServeOpportunities = useCallback(async () => {
+    setIsServeLoading(true);
+    try {
+      const res = await ApiCall({
+        route: 'user/search',
+        token,
+        verb: 'post',
+        params: { text: 'serve', type: 'posts', limit: 10, skip: 0 },
+      });
+      let items: any[] = [];
+      if (res?.status === 200 && Array.isArray(res.response)) {
+        items = res.response.slice(0, 5);
       }
-      setIsServeLoading(false);
-    },
-    [token]
-  );
+      setServeOpportunityItems(
+        items.map((item: any, idx: number) => ({
+          id: item._id ?? item.id ?? `serve-${idx}`,
+          imageUri: resolveImageUrl(item) || NO_PROFILE_IMAGE,
+          title: resolveTitle(item.title) || item.content?.slice(0, 50) || 'Serve Opportunity',
+          organization: item.userData?.name ?? item.organization ?? 'Community',
+          distance: item.distance ? `${item.distance} miles` : 'Nearby',
+        }))
+      );
+    } catch {
+      // Network failure — section stays empty
+    }
+    setIsServeLoading(false);
+  }, [token]);
 
   const fetchGoEvents = useCallback(async () => {
     setIsEventsLoading(true);
@@ -962,7 +1002,7 @@ function Explore({ navigation }: Props) {
       fetchTrending(),
       fetchNewVoices(),
       fetchCommunityPrayer(),
-      fetchServeOpportunities(location),
+      fetchServeOpportunities(),
       fetchGoEvents(),
       fetchTrendingTopics(),
     ]);
@@ -1778,23 +1818,15 @@ function Explore({ navigation }: Props) {
           },
         ]}
       >
-        {shouldUseBlurHeader && dark ? (
+        {shouldUseBlurHeader && (
           <BlurView
             pointerEvents="none"
             style={StyleSheet.absoluteFill}
-            blurType="dark"
+            blurType={dark ? 'dark' : 'light'}
             blurAmount={18}
             reducedTransparencyFallbackColor={colors.background}
           />
-        ) : shouldUseBlurHeader ? (
-          <BlurView
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-            blurType="light"
-            blurAmount={18}
-            reducedTransparencyFallbackColor={colors.background}
-          />
-        ) : null}
+        )}
 
         <View style={styles.headerRow}>
           <View style={styles.headerSideSlot}>
@@ -1853,94 +1885,104 @@ function Explore({ navigation }: Props) {
             ) : null}
           </View>
         </View>
-
-        {isSearchMode ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsRow}
-          >
-            {searchFilterChips.map((chip) => {
-              const isActive = activeFilter === chip.id;
-              const { 300: neutral300, 400: neutral400 } = Colors.neutral;
-              let chipBackgroundColor = '#eef2f6';
-              if (isActive) {
-                chipBackgroundColor = Colors.primarySapphire.brand;
-              } else if (dark) {
-                chipBackgroundColor = 'rgba(255,255,255,0.08)';
-              }
-
-              let chipTextColor = neutral400;
-              if (isActive) {
-                chipTextColor = '#fff';
-              } else if (dark) {
-                chipTextColor = neutral300;
-              }
-
-              return (
-                <TouchableOpacity
-                  key={chip.id}
-                  onPress={() => setActiveFilter(chip.id)}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: chipBackgroundColor,
-                    },
-                  ]}
-                >
-                  <StyledText
-                    style={{
-                      color: chipTextColor,
-                    }}
-                  >
-                    {chip.label}
-                  </StyledText>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        ) : null}
       </View>
 
       {isSearchMode ? (
-        <FlatList
-          data={filteredSearchResults}
-          keyExtractor={(item) => `${item.kind}:${item.id}`}
-          renderItem={renderSearchItem}
-          contentContainerStyle={[
-            styles.searchContentContainer,
-            { paddingBottom: getHeight(7) + insets.bottom },
-          ]}
-          showsVerticalScrollIndicator={false}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.35}
-          ListFooterComponent={searchListFooter}
-          refreshControl={
-            <RefreshControl
-              refreshing={isSearchMode ? isSearchLoading : isRefreshingBrowse}
-              onRefresh={handleRefresh}
-              tintColor={Colors.primarySapphire.brand}
-            />
-          }
-          ListEmptyComponent={
-            !isSearchLoading ? (
-              <View style={styles.emptyStateWrap}>
-                <StyledText style={[Typography.body.x3, { color: primaryTextColor }]}>
-                  No results found
-                </StyledText>
-                {searchError ? (
-                  <StyledText style={{ color: Colors.errorFeedback[200], marginTop: spacing.x8 }}>
-                    {searchError}
+        <View style={{ flex: 1, overflow: 'hidden' }}>
+          <Animated.View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1,
+              transform: [{ translateY: chipOffset }],
+            }}
+          >
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+            >
+              {searchFilterChips.map((chip) => {
+                const isActive = activeFilter === chip.id;
+                const { 300: neutral300, 500: neutral500 } = Colors.neutral;
+                let chipTextColor = neutral500;
+                if (isActive) {
+                  chipTextColor = '#fff';
+                } else if (dark) {
+                  chipTextColor = neutral300;
+                }
+
+                return (
+                  <TouchableOpacity
+                    key={chip.id}
+                    onPress={() => setActiveFilter(chip.id)}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: isActive ? Colors.primarySapphire.brand : 'transparent',
+                      },
+                    ]}
+                  >
+                    <StyledText
+                      style={{
+                        color: chipTextColor,
+                        fontWeight: isActive ? '700' : '600',
+                      }}
+                    >
+                      {chip.label}
+                    </StyledText>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Animated.View>
+
+          <FlatList
+            data={filteredSearchResults}
+            keyExtractor={(item) => `${item.kind}:${item.id}`}
+            renderItem={renderSearchItem}
+            contentContainerStyle={[
+              styles.searchContentContainer,
+              {
+                paddingTop: EXPLORE_CHIP_ROW_HEIGHT,
+                paddingBottom: getHeight(7) + insets.bottom,
+              },
+            ]}
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={handleSearchScroll}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.35}
+            ListFooterComponent={searchListFooter}
+            refreshControl={
+              <RefreshControl
+                refreshing={isSearchMode ? isSearchLoading : isRefreshingBrowse}
+                onRefresh={handleRefresh}
+                tintColor={Colors.primarySapphire.brand}
+              />
+            }
+            ListEmptyComponent={
+              !isSearchLoading ? (
+                <View style={styles.emptyStateWrap}>
+                  <StyledText style={[Typography.body.x3, { color: primaryTextColor }]}>
+                    No results found
                   </StyledText>
-                ) : null}
-              </View>
-            ) : (
-              <View style={styles.emptyStateWrap}>
-                <ActivityIndicator color={Colors.primarySapphire.brand} />
-              </View>
-            )
-          }
-        />
+                  {searchError ? (
+                    <StyledText style={{ color: Colors.errorFeedback[200], marginTop: spacing.x8 }}>
+                      {searchError}
+                    </StyledText>
+                  ) : null}
+                </View>
+              ) : (
+                <View style={styles.emptyStateWrap}>
+                  <ActivityIndicator color={Colors.primarySapphire.brand} />
+                </View>
+              )
+            }
+          />
+        </View>
       ) : (
         browseContent
       )}
@@ -1977,7 +2019,7 @@ const createStyles = (dark: boolean) =>
     },
     headerTitle: {
       fontSize: 24,
-      lineHeight: 28,
+      lineHeight: 32,
       fontFamily: 'Rubik-Bold',
       fontWeight: '700',
       letterSpacing: 0.3,
@@ -2330,7 +2372,7 @@ const createStyles = (dark: boolean) =>
       fontSize: 12,
     },
     searchContentContainer: {
-      paddingHorizontal: spacing.x16,
+      paddingHorizontal: spacing.x8,
       paddingTop: 12,
       paddingBottom: spacing.x32,
       flexGrow: 1,

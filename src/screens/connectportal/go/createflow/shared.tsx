@@ -146,34 +146,40 @@ export function CreateFlowLayout({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={[styles.header, { backgroundColor: palette.screenBg }]}>
-          <TouchableOpacity
-            style={[styles.headerButton, !onBack ? styles.headerButtonHidden : null]}
-            onPress={onBack}
-            disabled={!onBack}
-          >
-            <MaterialIcons name="chevron-left" size={28} color={palette.accent} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: palette.headerTitle }]}>{title}</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        <View style={styles.progressWrap}>
-          <View style={styles.progressHeader}>
-            <Text style={[styles.progressLabel, { color: palette.textPrimary }]}>
-              Step {step} of 7
-            </Text>
-            <Text style={[styles.progressPercent, { color: palette.accent }]}>
-              {Math.round((step / 7) * 100)}%
-            </Text>
-          </View>
-          <View style={[styles.progressTrack, { backgroundColor: palette.progressTrack }]}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: progressWidth, backgroundColor: palette.progressFill },
-              ]}
-            />
-          </View>
+          {Platform.OS === 'android' ? (
+            <>
+              <TouchableOpacity
+                style={[styles.headerButton, !onBack ? styles.headerButtonHidden : null]}
+                onPress={onBack}
+                disabled={!onBack}
+              >
+                <MaterialIcons name="chevron-left" size={32} color={palette.accent} />
+              </TouchableOpacity>
+              <View style={styles.headerTitleAndroidWrap}>
+                <Text
+                  style={[
+                    styles.headerTitle,
+                    styles.headerTitleAndroid,
+                    { color: palette.headerTitle },
+                  ]}
+                >
+                  {title}
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[styles.headerButton, !onBack ? styles.headerButtonHidden : null]}
+                onPress={onBack}
+                disabled={!onBack}
+              >
+                <MaterialIcons name="chevron-left" size={32} color={palette.accent} />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: palette.headerTitle }]}>{title}</Text>
+              <View style={styles.headerSpacer} />
+            </>
+          )}
         </View>
 
         {loading ? (
@@ -198,52 +204,73 @@ export function CreateFlowLayout({
                 },
               ]}
             >
-              {saveLabel && onSave ? (
+              <View style={styles.progressWrap}>
+                <View style={styles.progressHeader}>
+                  <Text style={[styles.progressLabel, { color: palette.textPrimary }]}>
+                    Step {step} of 7
+                  </Text>
+                  <Text style={[styles.progressPercent, { color: palette.accent }]}>
+                    {Math.round((step / 7) * 100)}%
+                  </Text>
+                </View>
+                <View style={[styles.progressTrack, { backgroundColor: palette.progressTrack }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: progressWidth, backgroundColor: palette.progressFill },
+                    ]}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.footerActions}>
+                {saveLabel && onSave ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.secondaryButton,
+                      {
+                        backgroundColor: palette.secondaryBtnBg,
+                        borderColor: palette.secondaryBtnBorder,
+                      },
+                    ]}
+                    onPress={onSave}
+                  >
+                    <Text style={[styles.secondaryButtonText, { color: palette.secondaryBtnText }]}>
+                      {saveLabel}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.secondaryButton,
+                      {
+                        backgroundColor: palette.secondaryBtnBg,
+                        borderColor: palette.secondaryBtnBorder,
+                      },
+                      !onBack ? styles.secondaryButtonHidden : null,
+                    ]}
+                    onPress={onBack}
+                    disabled={!onBack}
+                  >
+                    <Text style={[styles.secondaryButtonText, { color: palette.secondaryBtnText }]}>
+                      {backLabel}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   style={[
-                    styles.secondaryButton,
-                    {
-                      backgroundColor: palette.secondaryBtnBg,
-                      borderColor: palette.secondaryBtnBorder,
-                    },
+                    styles.primaryButton,
+                    { backgroundColor: palette.primaryBtnBg },
+                    nextDisabled ? styles.primaryButtonDisabled : null,
                   ]}
-                  onPress={onSave}
+                  onPress={onNext}
+                  disabled={nextDisabled}
                 >
-                  <Text style={[styles.secondaryButtonText, { color: palette.secondaryBtnText }]}>
-                    {saveLabel}
+                  <Text style={[styles.primaryButtonText, { color: palette.primaryBtnText }]}>
+                    {nextLabel}
                   </Text>
                 </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.secondaryButton,
-                    {
-                      backgroundColor: palette.secondaryBtnBg,
-                      borderColor: palette.secondaryBtnBorder,
-                    },
-                    !onBack ? styles.secondaryButtonHidden : null,
-                  ]}
-                  onPress={onBack}
-                  disabled={!onBack}
-                >
-                  <Text style={[styles.secondaryButtonText, { color: palette.secondaryBtnText }]}>
-                    {backLabel}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  { backgroundColor: palette.primaryBtnBg },
-                  nextDisabled ? styles.primaryButtonDisabled : null,
-                ]}
-                onPress={onNext}
-                disabled={nextDisabled}
-              >
-                <Text style={[styles.primaryButtonText, { color: palette.primaryBtnText }]}>
-                  {nextLabel}
-                </Text>
-              </TouchableOpacity>
+              </View>
             </View>
           </>
         )}
@@ -272,16 +299,25 @@ const styles = StyleSheet.create({
   headerButtonHidden: {
     opacity: 0,
   },
+  headerTitleAndroidWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 10,
+  },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '700',
+    fontFamily: 'Rubik-Bold',
+    letterSpacing: 0.3,
+  },
+  headerTitleAndroid: {
+    textAlign: 'left',
   },
   headerSpacer: {
     minWidth: 36,
   },
   progressWrap: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   progressHeader: {
     flexDirection: 'row',
@@ -313,7 +349,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 128,
+    paddingBottom: 176,
     gap: 16,
   },
   footer: {
@@ -321,12 +357,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    flexDirection: 'row',
-    gap: 12,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 24,
     borderTopWidth: 1,
+  },
+  footerActions: {
+    flexDirection: 'row',
+    gap: 12,
   },
   primaryButton: {
     flex: 1,

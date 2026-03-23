@@ -258,16 +258,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'Rubik-Medium',
+    letterSpacing: 0.15,
   },
   input: {
     minHeight: 54,
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: 'OpenSans-Regular',
   },
   toggleRow: {
     flexDirection: 'row',

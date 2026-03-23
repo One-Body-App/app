@@ -149,12 +149,13 @@ function Prayer({ navigation }: Props) {
           renderTabBar={() => {
             if (!areSubtabsVisible) return null;
             return (
-              <GlassTabBar
-                tabs={routes.map((r) => r.title)}
-                activeIndex={index}
-                onTabChange={applyTabIndex}
-                style={{ marginHorizontal: 16 }}
-              />
+              <View style={{ paddingHorizontal: 16 }}>
+                <GlassTabBar
+                  tabs={routes.map((r) => r.title)}
+                  activeIndex={index}
+                  onTabChange={applyTabIndex}
+                />
+              </View>
             );
           }}
           onIndexChange={applyTabIndex}

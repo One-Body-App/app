@@ -122,7 +122,43 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
     }
   };
 
+  const pickImageFromIosLibrary = async () => {
+    try {
+      const selected = await ImagePicker.openPicker({
+        mediaType: 'photo',
+        width: cropWidth,
+        height: cropHeight,
+        cropping: true,
+        forceJpg: true,
+        compressImageQuality: 0.8,
+      });
+      setHeroImageUri(selected.path);
+    } catch {
+      // user cancelled picker/cropper
+    }
+  };
+
+  const captureImageOnIos = async () => {
+    try {
+      const captured = await ImagePicker.openCamera({
+        mediaType: 'photo',
+        width: cropWidth,
+        height: cropHeight,
+        cropping: true,
+        forceJpg: true,
+        compressImageQuality: 0.8,
+      });
+      setHeroImageUri(captured.path);
+    } catch {
+      // user cancelled camera/cropper
+    }
+  };
+
   const chooseFromGallery = async () => {
+    if (Platform.OS === 'ios') {
+      await pickImageFromIosLibrary();
+      return;
+    }
     const response = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
     if (response.didCancel || response.errorCode) return;
     const uri = response.assets?.[0]?.uri;
@@ -130,6 +166,10 @@ function BasicInfoScreen({ navigation, route }: Props): React.JSX.Element {
   };
 
   const takePhoto = async () => {
+    if (Platform.OS === 'ios') {
+      await captureImageOnIos();
+      return;
+    }
     const response = await rnLaunchCamera({ mediaType: 'photo', quality: 0.8 });
     if (response.didCancel || response.errorCode) return;
     const uri = response.assets?.[0]?.uri;
@@ -292,16 +332,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'Rubik-Medium',
+    letterSpacing: 0.15,
   },
   input: {
     minHeight: 54,
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: 'OpenSans-Regular',
   },
   photoCard: {
     borderRadius: 18,

@@ -20,6 +20,15 @@ import ConfigureTicketsFreeScreen from '../screens/connectportal/go/createflow/c
 import PayoutMethodScreen from '../screens/connectportal/go/createflow/create.go.step6payout';
 import ReviewAndConfirmScreen from '../screens/connectportal/go/createflow/create.go.step6';
 import EventSuccessScreen from '../screens/connectportal/go/createflow/create.go.step7';
+import ServeMyJobsScreen from '../screens/connectportal/serve/jobs/myjobs';
+import ServeSavedScreen from '../screens/connectportal/serve/apply/srvsaved';
+import ServeAppliedScreen from '../screens/connectportal/serve/apply/srvapplied';
+import ServeJobPage from '../screens/connectportal/serve/apply/srvjobpage';
+import ServeJobPageApply from '../screens/connectportal/serve/apply/srvjobpageapply';
+import ServeAppliedJobPage from '../screens/connectportal/serve/apply/srvappliedjob';
+import ServeApplicationsScreen from '../screens/connectportal/serve/jobs/srvapplications';
+import ServeCreateJobStep1 from '../screens/connectportal/serve/jobs/srvstep1';
+import ServeCreateJobStep2 from '../screens/connectportal/serve/jobs/srvstep2';
 import { ConnectPortalProvider } from '../services/connectPortal/provider';
 
 const Stack = createNativeStackNavigator<ConnectStackParamsList>();
@@ -132,7 +141,47 @@ function ConnectStack() {
         />
         <Stack.Screen
           name="ConnectServeHome"
-          component={ConnectPortalPlaceholderScreen}
+          component={ServeMyJobsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ConnectServeSaved"
+          component={ServeSavedScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ConnectServeApplied"
+          component={ServeAppliedScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ConnectServeJobView"
+          component={ServeJobPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ConnectServeJobApply"
+          component={ServeJobPageApply}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ConnectServeAppliedJobView"
+          component={ServeAppliedJobPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ConnectServeApplications"
+          component={ServeApplicationsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ConnectServeCreateJobStep1"
+          component={ServeCreateJobStep1}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ConnectServeCreateJobStep2"
+          component={ServeCreateJobStep2}
           options={{ headerShown: false }}
         />
         <Stack.Screen

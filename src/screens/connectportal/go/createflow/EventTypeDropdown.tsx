@@ -166,7 +166,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   triggerText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: 'OpenSans-Regular',
     flex: 1,
   },
   customInput: {
@@ -174,7 +175,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: 'OpenSans-Regular',
     marginTop: 8,
   },
   overlay: {
@@ -211,6 +213,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: 'OpenSans-Regular',
   },
 });

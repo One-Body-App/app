@@ -33,7 +33,7 @@ function InfluencerStepOne({ navigation }: Props) {
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <MaterialCommunityIcons name="close" size={24} color={OBPalette.grays.black} />
+          <MaterialCommunityIcons name="chevron-left" size={32} color={OBPalette.primary.dark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Creator Application</Text>
         <View style={styles.headerSpacer} />
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     color: OBPalette.grays.black,
   },
   headerSpacer: {
-    width: 24, // Balances the close button for true centering
+    width: 32, // Balances the back button for true centering
   },
   scrollContent: {
     flexGrow: 1,

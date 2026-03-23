@@ -344,7 +344,7 @@ function CreatorStepThree({ navigation, route }: Props) {
               onPress={() => navigation.goBack()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <MaterialCommunityIcons name="chevron-left" size={34} color={palette.text} />
+              <MaterialCommunityIcons name="chevron-left" size={32} color={palette.text} />
             </TouchableOpacity>
           </View>
           <Text style={styles.headerTitle}>Creator Application</Text>

@@ -428,7 +428,7 @@ function PrayerWallTabs({
     { key: 'Saved', title: 'Saved' },
     { key: 'MyPrayers', title: 'My Prayers' },
   ]);
-  const { dark } = useTheme();
+  const { dark, colors } = useTheme();
   const [areSubtabsVisible, setAreSubtabsVisible] = useState(true);
   const [localWallRefreshSignal, setLocalWallRefreshSignal] = useState(0);
   const previousWallRefreshSignalRef = useRef<number | undefined>(wallRefreshSignal);
@@ -527,12 +527,12 @@ function PrayerWallTabs({
 
   const prayerSubtabContainerHeight = prayerSubtabsVisibility.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 44],
+    outputRange: [0, 60],
     extrapolate: 'clamp',
   });
   const prayerSubtabTranslateY = prayerSubtabsVisibility.interpolate({
     inputRange: [0, 1],
-    outputRange: [-12, 0],
+    outputRange: [-16, 0],
     extrapolate: 'clamp',
   });
   const shareButtonStyle = isIOS
@@ -609,14 +609,15 @@ function PrayerWallTabs({
                 height: prayerSubtabContainerHeight,
                 opacity: prayerSubtabsVisibility,
                 transform: [{ translateY: prayerSubtabTranslateY }],
-                overflow: 'hidden',
+                paddingHorizontal: 16,
+                backgroundColor: colors.card,
               }}
             >
               <GlassTabBar
                 tabs={routes.map((r) => r.title)}
                 activeIndex={index}
                 onTabChange={applyPrayerTabIndex}
-                style={{ marginHorizontal: 16 }}
+                style={{ marginVertical: 2 }}
               />
             </Animated.View>
           );
@@ -2966,44 +2967,43 @@ function Home({ navigation, route }: Props) {
       const parent = navigation.getParent?.();
       if (!parent) return undefined;
 
-      tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY);
+      lastScrollRef.current = 0;
+      headerVisibility.setValue(1);
+      footerVisibility.setValue(1);
+      tabBarAnimationRef.current?.setTabBarTranslateY(0);
 
-      const shouldShowTabBar = feedOptions.type !== FeedTypes.Pray;
-      const baseTabStyle = {
-        height: footerHeight,
-        paddingBottom: insets.bottom,
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-        backgroundColor: Platform.OS === 'android' ? colors.background : 'transparent',
-        zIndex: 20,
-        elevation: 20,
-      };
-
-      parent.setOptions({
-        tabBarStyle: shouldShowTabBar
-          ? baseTabStyle
-          : {
-              height: 0,
-              opacity: 0,
-              display: 'none',
-            },
+      const animationFrame = requestAnimationFrame(() => {
+        tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY);
       });
 
       return () => {
+        cancelAnimationFrame(animationFrame);
         tabBarAnimationRef.current?.resetTabBar();
+      };
+    }, [footerVisibility, footerTranslateY, headerVisibility, navigation])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const parent = navigation.getParent?.();
+      if (!parent || feedOptions.type !== FeedTypes.Pray) {
+        return undefined;
+      }
+
+      parent.setOptions({
+        tabBarStyle: {
+          height: 0,
+          opacity: 0,
+          display: 'none',
+        },
+      });
+
+      return () => {
         parent.setOptions({
           tabBarStyle: undefined,
         });
       };
-    }, [
-      colors.background,
-      colors.border,
-      footerHeight,
-      footerTranslateY,
-      feedOptions.type,
-      insets.bottom,
-      navigation,
-    ])
+    }, [feedOptions.type, navigation])
   );
 
   const handleFeedRefresh = useCallback(() => {
