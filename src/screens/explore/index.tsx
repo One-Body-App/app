@@ -50,6 +50,7 @@ import SocialItem from '@/components/listItems/SocialItem';
 import PrayerItem from '@/components/listItems/PrayerItem';
 import ArticleItem from '@/components/listItems/ArticleItem';
 import UserItem from '@/components/listItems/UserItem';
+import GoBackIcon from '@/components/GoBackIcon';
 import {
   ExploreStackParamsList,
   MainBottomStackParamsList,
@@ -73,6 +74,11 @@ import { refreshConnectPortalPublishedEvents } from '@/src/services/connectPorta
 import getDeviceLocation from '@/src/services/deviceLocation';
 import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal/types';
 import useMountEffect from '@/src/hooks/useMountEffect';
+import TrendingTopicsBubbles, {
+  TRENDING_TOPICS_MOCK_DATA,
+  TrendingTopicBubbleItem,
+  mapTrendingTopicResponse,
+} from './TrendingTopicsBubbles';
 
 type Props = CompositeScreenProps<
   StackScreenProps<ExploreStackParamsList, 'Explore'>,
@@ -214,11 +220,6 @@ interface GoEventItem {
   buttonText: string;
 }
 
-interface PopularTopicItem {
-  id: string;
-  title: string;
-}
-
 interface CommunityPrayerItem {
   post: PrayerPost;
   reactionCount: number;
@@ -341,7 +342,12 @@ function Explore({ navigation }: Props) {
   const dispatch = useDispatch();
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const styles = useMemo(() => createStyles(dark), [dark]);
+  const headerRowHeight = getHeight(5.8);
+  const headerSideWidth = headerRowHeight;
+  const styles = useMemo(
+    () => createStyles(dark, headerRowHeight, headerSideWidth),
+    [dark, headerRowHeight, headerSideWidth]
+  );
   const headerTextColor = dark ? '#f8fafc' : EXPLORE_HEADER_COLOR;
   const subheaderTextColor = dark ? '#d5dae1' : EXPLORE_HEADER_COLOR;
   const primaryTextColor = dark ? '#f4f7fb' : colors.text;
@@ -353,7 +359,9 @@ function Explore({ navigation }: Props) {
   const searchSurfaceColor = dark ? '#1c2024' : '#f1f5f9';
   const surfaceCardColor = dark ? '#15191d' : colors.card;
   const surfaceBorderColor = dark ? 'rgba(255,255,255,0.1)' : colors.border;
+  const headerChevronColor = dark ? colors.text : Colors.primary.brand;
   const shouldUseBlurHeader = Platform.OS === 'ios';
+  const canGoBack = navigation.canGoBack();
 
   const token = useSelector((state: RootState) => state.auth.userToken);
   const userProfile = useSelector((state: RootState) => state.auth.getProfileData as User | null);
@@ -371,12 +379,8 @@ function Explore({ navigation }: Props) {
   const [isServeLoading, setIsServeLoading] = useState(true);
   const [goEvents, setGoEvents] = useState<ConnectPortalPublishedEvent[]>([]);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
-  const [popularTopicItems, setPopularTopicItems] = useState<PopularTopicItem[]>([
-    { id: 'topic-1', title: 'Theology & Life' },
-    { id: 'topic-2', title: 'Tech & Ethics' },
-    { id: 'topic-3', title: 'Prayer Habits' },
-    { id: 'topic-4', title: 'Church Leadership' },
-  ]);
+  const [popularTopicItems, setPopularTopicItems] =
+    useState<TrendingTopicBubbleItem[]>(TRENDING_TOPICS_MOCK_DATA);
   const [isRefreshingBrowse, setIsRefreshingBrowse] = useState(false);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
     null
@@ -979,15 +983,17 @@ function Explore({ navigation }: Props) {
 
   const fetchTrendingTopics = useCallback(async () => {
     try {
-      const res = await ApiCall({ route: 'tags/interest', token, verb: 'get' });
+      const res = await ApiCall({
+        route: 'tags/interest?sort=trending&limit=18',
+        token,
+        verb: 'get',
+      });
       const tags = Array.isArray(res?.response) ? res.response : res?.response?.data;
       if (res?.status === 200 && Array.isArray(tags) && tags.length > 0) {
-        setPopularTopicItems(
-          tags.map((t: any, idx: number) => ({
-            id: t._id ?? t.id ?? `topic-${idx}`,
-            title: t.title ?? t.name ?? 'Topic',
-          }))
-        );
+        const mappedTopics = mapTrendingTopicResponse(tags);
+        if (mappedTopics.length > 0) {
+          setPopularTopicItems(mappedTopics);
+        }
       }
     } catch {
       // Network failure — section stays empty
@@ -1790,18 +1796,11 @@ function Explore({ navigation }: Props) {
         >
           Trending Topics
         </StyledText>
-        <View style={styles.topicsPillWrap}>
-          {popularTopicItems.map((topic) => (
-            <TouchableOpacity
-              key={topic.id}
-              style={styles.topicPill}
-              activeOpacity={0.8}
-              onPress={() => handleSearchTextChange(topic.title)}
-            >
-              <StyledText style={styles.topicPillText}>{topic.title}</StyledText>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <TrendingTopicsBubbles
+          topics={popularTopicItems}
+          onTopicPress={handleSearchTextChange}
+          style={{ marginHorizontal: spacing.x16 }}
+        />
       </View>
     </ScrollView>
   );
@@ -1812,7 +1811,7 @@ function Explore({ navigation }: Props) {
         style={[
           styles.headerWrap,
           {
-            paddingTop: insets.top + spacing.x8,
+            paddingTop: insets.top,
             borderBottomColor: headerDividerColor,
             backgroundColor: headerBackgroundColor,
           },
@@ -1830,19 +1829,29 @@ function Explore({ navigation }: Props) {
 
         <View style={styles.headerRow}>
           <View style={styles.headerSideSlot}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={handleOpenDrawer}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              {userAvatar ? (
-                <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
-              ) : (
-                <View style={styles.headerAvatarFallback}>
-                  <ProfileFill width={22} height={22} />
-                </View>
-              )}
-            </TouchableOpacity>
+            {canGoBack ? (
+              <GoBackIcon
+                color={headerChevronColor}
+                goBack={() => navigation.goBack()}
+                size={30}
+                style={styles.headerBackButton}
+                accessibilityLabel="Go back"
+              />
+            ) : (
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={handleOpenDrawer}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {userAvatar ? (
+                  <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
+                ) : (
+                  <View style={styles.headerAvatarFallback}>
+                    <ProfileFill width={22} height={22} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.headerCenterWrap} pointerEvents="none">
@@ -1990,7 +1999,7 @@ function Explore({ navigation }: Props) {
   );
 }
 
-const createStyles = (dark: boolean) =>
+const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -2000,22 +2009,29 @@ const createStyles = (dark: boolean) =>
       zIndex: 8,
     },
     headerRow: {
-      minHeight: 52,
+      height: headerRowHeight,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.x16,
+      transform: [{ translateY: Platform.OS === 'ios' ? -6 : -4 }],
     },
     headerSideSlot: {
-      width: 48,
+      width: headerSideWidth,
+      height: headerRowHeight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerBackButton: {
+      width: 44,
+      height: 44,
       alignItems: 'center',
       justifyContent: 'center',
     },
     headerCenterWrap: {
       flex: 1,
-      alignItems: Platform.OS === 'android' ? 'flex-start' : 'center',
+      alignItems: 'center',
       justifyContent: 'center',
-      ...(Platform.OS === 'android' ? { paddingLeft: 14 } : {}),
     },
     headerTitle: {
       fontSize: 24,
@@ -2024,7 +2040,7 @@ const createStyles = (dark: boolean) =>
       fontWeight: '700',
       letterSpacing: 0.3,
       color: EXPLORE_HEADER_COLOR,
-      textAlign: Platform.OS === 'android' ? 'left' : 'center',
+      textAlign: 'center',
     },
     headerAvatar: {
       width: 30,
@@ -2042,6 +2058,7 @@ const createStyles = (dark: boolean) =>
     },
     searchContainer: {
       paddingHorizontal: spacing.x16,
+      paddingTop: spacing.x4,
       paddingBottom: spacing.x10,
     },
     searchInputWrap: {
@@ -2302,23 +2319,6 @@ const createStyles = (dark: boolean) =>
       borderRadius: 4,
       backgroundColor: '#41dbe1',
       marginRight: spacing.x8,
-    },
-    topicsPillWrap: {
-      paddingHorizontal: spacing.x16,
-      marginTop: 12,
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-    },
-    topicPill: {
-      backgroundColor: dark ? '#1a1e23' : '#e6eaec',
-      borderRadius: 20,
-      paddingHorizontal: 14,
-      paddingVertical: 7,
-    },
-    topicPillText: {
-      color: dark ? Colors.neutral[200] : '#032f3c',
-      fontWeight: '600',
     },
     featuredBanner: {
       marginHorizontal: spacing.x16,

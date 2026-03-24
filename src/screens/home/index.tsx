@@ -950,6 +950,20 @@ function Home({ navigation, route }: Props) {
   const headerRowHeight = getHeight(5.8);
   const headerSideWidth = headerRowHeight;
   const footerHeight = getHeight(7) + insets.bottom;
+  const homeVisibleTabBarStyle = useMemo(
+    () => ({
+      height: getHeight(7) + insets.bottom,
+      borderTopWidth: 0,
+      borderTopColor: 'transparent',
+      backgroundColor: 'transparent',
+      elevation: 0,
+      overflow: 'visible' as const,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      paddingBottom: insets.bottom,
+    }),
+    [insets.bottom]
+  );
   const defaultHeaderHeight = insets.top + headerRowHeight + spacing.x10 + spacing.x8 + 20;
   const glassOverlayColor = dark ? 'rgba(13,13,13,0.7)' : 'rgba(246,246,247,0.7)';
   const androidHeaderBackground = dark ? 'rgba(13,13,13,0.92)' : 'rgba(246,246,247,0.92)';
@@ -1005,6 +1019,7 @@ function Home({ navigation, route }: Props) {
   const feedIntroCardValues = useRef<Record<string, Animated.Value>>({});
   const latestVisibleItems = useRef<ViewToken[]>([]);
   const suggestionsRequestSequenceRef = useRef(0);
+  const suggestionsInitialFocusRef = useRef(true);
   const isPaginatingRef = useRef(false);
   const [peopleYouMayKnowUsers, setPeopleYouMayKnowUsers] = useState<User[]>([]);
   const [suggestedForYouUsers, setSuggestedForYouUsers] = useState<User[]>([]);
@@ -1029,16 +1044,6 @@ function Home({ navigation, route }: Props) {
   useEffect(() => {
     setFeedTelemetryAuthToken(token || undefined);
   }, [token]);
-
-  useEffect(() => {
-    const followingIds = (userProfile?.following ?? [])
-      .map((id) => String(id))
-      .filter((id) => id.length > 0);
-    if (followingIds.length < 1) {
-      return;
-    }
-    setSelectedSuggestionIds((previous) => Array.from(new Set([...previous, ...followingIds])));
-  }, [userProfile?.following]);
 
   const handleNewPrayerPress = useCallback(() => {
     navigation.navigate('PrayerWall', {
@@ -1339,8 +1344,14 @@ function Home({ navigation, route }: Props) {
         return;
       }
 
-      setPeopleYouMayKnowUsers(peopleResult);
-      setSuggestedForYouUsers(suggestedResult);
+      const followingSet = new Set(
+        (userProfile?.following ?? []).map((id) => String(id)).filter(Boolean)
+      );
+      const excludeFollowed = (users: User[]) =>
+        users.filter((u) => !followingSet.has(getSuggestionUserId(u)));
+
+      setPeopleYouMayKnowUsers(excludeFollowed(peopleResult));
+      setSuggestedForYouUsers(excludeFollowed(suggestedResult));
     };
 
     loadSuggestions();
@@ -1349,6 +1360,47 @@ function Home({ navigation, route }: Props) {
       isCancelled = true;
     };
   }, [feedOptions.type, getSuggestedUsers]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (suggestionsInitialFocusRef.current) {
+        suggestionsInitialFocusRef.current = false;
+        return;
+      }
+
+      setSelectedSuggestionIds([]);
+      setPeopleYouMayKnowUsers([]);
+      setSuggestedForYouUsers([]);
+
+      if (feedOptions.type !== FeedTypes.Connected && feedOptions.type !== FeedTypes.ForYou) {
+        return;
+      }
+
+      const requestSequence = ++suggestionsRequestSequenceRef.current;
+
+      const reload = async () => {
+        const [peopleResult, suggestedResult] = await Promise.all([
+          getSuggestedUsers(),
+          getSuggestedUsers('popular'),
+        ]);
+
+        if (requestSequence !== suggestionsRequestSequenceRef.current) {
+          return;
+        }
+
+        const followingSet = new Set(
+          (userProfile?.following ?? []).map((id) => String(id)).filter(Boolean)
+        );
+        const excludeFollowed = (users: User[]) =>
+          users.filter((u) => !followingSet.has(getSuggestionUserId(u)));
+
+        setPeopleYouMayKnowUsers(excludeFollowed(peopleResult));
+        setSuggestedForYouUsers(excludeFollowed(suggestedResult));
+      };
+
+      reload();
+    }, [feedOptions.type, getSuggestedUsers, userProfile?.following])
+  );
 
   const feedDataWithSuggestions = useMemo<RenderFeedEntry[]>(() => {
     const isPrimaryFeed =
@@ -2972,6 +3024,13 @@ function Home({ navigation, route }: Props) {
       footerVisibility.setValue(1);
       tabBarAnimationRef.current?.setTabBarTranslateY(0);
 
+      if (feedOptions.type === FeedTypes.Pray) {
+        tabBarAnimationRef.current?.resetTabBar();
+        return () => {
+          tabBarAnimationRef.current?.resetTabBar();
+        };
+      }
+
       const animationFrame = requestAnimationFrame(() => {
         tabBarAnimationRef.current?.setTabBarTranslateY(footerTranslateY);
       });
@@ -2980,30 +3039,39 @@ function Home({ navigation, route }: Props) {
         cancelAnimationFrame(animationFrame);
         tabBarAnimationRef.current?.resetTabBar();
       };
-    }, [footerVisibility, footerTranslateY, headerVisibility, navigation])
+    }, [feedOptions.type, footerVisibility, footerTranslateY, headerVisibility, navigation])
   );
 
   useFocusEffect(
     useCallback(() => {
       const parent = navigation.getParent?.();
-      if (!parent || feedOptions.type !== FeedTypes.Pray) {
+      if (!parent) {
+        return undefined;
+      }
+
+      if (feedOptions.type !== FeedTypes.Pray) {
+        parent.setOptions({
+          tabBarStyle: homeVisibleTabBarStyle,
+        });
         return undefined;
       }
 
       parent.setOptions({
         tabBarStyle: {
+          ...homeVisibleTabBarStyle,
           height: 0,
           opacity: 0,
           display: 'none',
+          paddingBottom: 0,
         },
       });
 
       return () => {
         parent.setOptions({
-          tabBarStyle: undefined,
+          tabBarStyle: homeVisibleTabBarStyle,
         });
       };
-    }, [feedOptions.type, navigation])
+    }, [feedOptions.type, homeVisibleTabBarStyle, navigation])
   );
 
   const handleFeedRefresh = useCallback(() => {

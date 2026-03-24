@@ -7,10 +7,14 @@ function GoBackIcon({
   color,
   goBack,
   style,
+  size = 20,
+  accessibilityLabel = 'Back',
 }: {
   color: string;
   goBack?: () => void;
   style?: ViewStyle;
+  size?: number;
+  accessibilityLabel?: string;
 }) {
   const navigation = useNavigation();
   if (!goBack && !navigation.canGoBack()) {
@@ -27,8 +31,11 @@ function GoBackIcon({
         navigation.goBack();
       }}
       style={style}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      hitSlop={8}
     >
-      <Icon name="chevron-back" size={20} color={color} />
+      <Icon name="chevron-back" size={size} color={color} />
     </TouchableOpacity>
   );
 }

@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -56,6 +55,7 @@ import {
   updateChatConversationArchiveState,
   updateChatConversationMuteState,
 } from '@/src/services/chat/api';
+import GlassTabBar from '@/src/components/GlassTabBar';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 import { MessagesConversationListView } from '@/src/components/chat/MessagesConversationListView';
 import { SwipeableChatItem } from '@/src/components/chat/SwipeableChatItem';
@@ -63,6 +63,11 @@ import ChatEmptyState from './chatempty';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'MessagesList'>;
 type ChatSectionFilter = 'inbox' | 'groups' | 'archived';
+const CHAT_FILTER_TABS: { label: string; value: ChatSectionFilter }[] = [
+  { label: 'Inbox', value: 'inbox' },
+  { label: 'Groups', value: 'groups' },
+  { label: 'Archived', value: 'archived' },
+];
 
 const formatTimeLabel = (iso: string) => {
   const date = new Date(iso);
@@ -117,7 +122,7 @@ const getNativeDestructiveAction = (
 };
 
 function ChatListScreen({ navigation }: Props) {
-  const { colors, dark } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -127,6 +132,7 @@ function ChatListScreen({ navigation }: Props) {
   const [selectedFilter, setSelectedFilter] = useState<ChatSectionFilter>('inbox');
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const searchInputRef = useRef<TextInput>(null);
+  const selectedFilterIndex = CHAT_FILTER_TABS.findIndex((tab) => tab.value === selectedFilter);
 
   useEffect(() => {
     publishChatUnreadFromConversations(conversations);
@@ -532,47 +538,13 @@ function ChatListScreen({ navigation }: Props) {
     [handleDestructiveConversation]
   );
 
-  const renderFilters = () => {
-    const filters: { label: string; value: ChatSectionFilter }[] = [
-      { label: 'Inbox', value: 'inbox' },
-      { label: 'Groups', value: 'groups' },
-      { label: 'Archived', value: 'archived' },
-    ];
+  const handleFilterTabChange = (index: number) => {
+    const nextFilter = CHAT_FILTER_TABS[index]?.value;
+    if (!nextFilter) {
+      return;
+    }
 
-    return (
-      <View
-        style={[
-          styles.filterContainer,
-          {
-            borderBottomColor: dark ? 'rgba(255,255,255,0.08)' : '#e6eaec',
-            backgroundColor: colors.background,
-          },
-        ]}
-      >
-        {filters.map((filter) => {
-          const isActive = selectedFilter === filter.value;
-          return (
-            <TouchableOpacity
-              key={filter.value}
-              style={[styles.filterItem, isActive && styles.filterItemSelected]}
-              onPress={() => setSelectedFilter(filter.value)}
-            >
-              <View style={[styles.filterUnderline, isActive && styles.filterUnderlineSelected]}>
-                <Text
-                  style={[
-                    styles.filterText,
-                    { color: dark ? 'rgba(255,255,255,0.58)' : '#9aacb1' },
-                    isActive && styles.filterTextSelected,
-                  ]}
-                >
-                  {filter.label}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
+    setSelectedFilter(nextFilter);
   };
 
   const handleMuteConversation = useCallback(
@@ -877,7 +849,11 @@ function ChatListScreen({ navigation }: Props) {
         )}
 
         <View style={styles.headerSideSlot}>
-          <Pressable onPress={openSettings} style={styles.settingsButton}>
+          <Pressable
+            onPress={openSettings}
+            style={styles.settingsButton}
+            testID="chat-settings-button"
+          >
             <MaterialIcons name="settings" size={30} color="#126b87" />
           </Pressable>
         </View>
@@ -894,7 +870,13 @@ function ChatListScreen({ navigation }: Props) {
           style={[styles.searchInput, { color: colors.text }]}
         />
       </View>
-      {renderFilters()}
+      <View style={styles.filterBarWrap} testID="chat-filter-tabs">
+        <GlassTabBar
+          tabs={CHAT_FILTER_TABS.map((tab) => tab.label)}
+          activeIndex={Math.max(selectedFilterIndex, 0)}
+          onTabChange={handleFilterTabChange}
+        />
+      </View>
       {conversationsContent}
       {selectedFilter !== 'groups' ? (
         <View style={[styles.encryptedWrap, { bottom: encryptedBottom }]}>
@@ -971,38 +953,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
-  filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 6,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-  },
-  filterItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  filterItemSelected: {},
-  filterUnderline: {
+  filterBarWrap: {
+    paddingTop: 10,
     paddingBottom: 8,
-    paddingHorizontal: 5,
-    alignItems: 'center',
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
-  },
-  filterUnderlineSelected: {
-    borderBottomColor: '#126b87',
-  },
-  filterText: {
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.1,
-    color: '#9aacb1',
-  },
-  filterTextSelected: {
-    color: '#126b87',
-    fontWeight: '700',
   },
   searchInput: {
     marginLeft: 8,

@@ -12,7 +12,12 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useDispatch, useSelector } from 'react-redux';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import { ApiCall } from '@/src/services/api';
+import { getProfile } from '@/src/redux/actions/AuthActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
+import { RootState } from '@/src/redux/reducers/rootReducer';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'CreatorReview'>;
 
@@ -32,19 +37,29 @@ const getThemeColors = (isDark: boolean) => ({
 function CreatorReview({ navigation, route }: Props) {
   const isDark = useColorScheme() === 'dark';
   const colors = getThemeColors(isDark);
+  const dispatch = useDispatch();
+  const userToken = useSelector((state: RootState) => state.auth.userToken);
 
   // In a real app, fallback to empty strings/arrays if data is missing
   const data = route.params?.data || {
     bio: 'No bio provided.',
+    website: '',
+    comments: '',
     instagramUsername: '',
+    instagramId: '',
     rssFeed1: '',
     rssFeed2: '',
+    rssFeed1Category: 'news',
+    rssFeed2Category: 'news',
+    reviewSocialLinks: undefined,
+    contentTypes: [],
     topics: [],
   };
 
   const [agreed, setAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!agreed) {
       Alert.alert(
         'Agreement Required',
@@ -53,11 +68,51 @@ function CreatorReview({ navigation, route }: Props) {
       return;
     }
 
-    // TODO: Dispatch Redux action or API Call here to submit the application
+    if (!userToken) {
+      Alert.alert('Unable to submit', 'Please log in again and retry your creator application.');
+      return;
+    }
 
-    // Navigate to a Success Screen or back to Feed
-    // navigation.navigate('CreatorSuccess');
-    console.log('Application Submitted:', data);
+    setSubmitting(true);
+    dispatch(setLoader(true));
+
+    try {
+      const response = await ApiCall<{ message?: string }>({
+        route: 'influencer/apply-for-influencer',
+        verb: 'post',
+        token: userToken,
+        params: {
+          bio: data.bio,
+          website: data.website,
+          comments: data.comments,
+          instagramUsername: data.instagramUsername,
+          instagramId: data.instagramId,
+          rssFeed1: data.rssFeed1,
+          rssFeed1Category: data.rssFeed1Category,
+          rssFeed2: data.rssFeed2,
+          rssFeed2Category: data.rssFeed2Category,
+          reviewSocialLinks: data.reviewSocialLinks,
+          contentTypes: data.contentTypes,
+          topics: data.topics,
+        },
+      });
+
+      if (response.status === 200) {
+        dispatch(getProfile.Request({ token: userToken }));
+        navigation.navigate('CreatorSuccess');
+        return;
+      }
+
+      Alert.alert(
+        'Unable to submit',
+        response.response?.message || 'Please try again in a moment.'
+      );
+    } catch (error) {
+      Alert.alert('Unable to submit', 'Please try again in a moment.');
+    } finally {
+      dispatch(setLoader(false));
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -271,11 +326,17 @@ function CreatorReview({ navigation, route }: Props) {
         <TouchableOpacity
           style={[
             styles.submitButton,
-            { backgroundColor: colors.accent, opacity: agreed ? 1 : 0.6 },
+            {
+              backgroundColor: colors.accent,
+              opacity: agreed && !submitting ? 1 : 0.6,
+            },
           ]}
           onPress={handleSubmit}
+          disabled={!agreed || submitting}
         >
-          <Text style={[styles.submitButtonText, { color: '#032F3C' }]}>SUBMIT APPLICATION</Text>
+          <Text style={[styles.submitButtonText, { color: '#032F3C' }]}>
+            {submitting ? 'SUBMITTING...' : 'SUBMIT APPLICATION'}
+          </Text>
           <MaterialCommunityIcons name="chevron-right" size={20} color="#032F3C" />
         </TouchableOpacity>
       </View>
