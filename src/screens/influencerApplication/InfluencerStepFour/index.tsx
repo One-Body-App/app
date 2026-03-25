@@ -18,6 +18,12 @@ import CustomModal from '@/src/components/CustomModal';
 import { SettingsStackParamsList } from '@/src/navigator/types';
 import { FeedTypes } from '@/src/screens/home';
 import { Colors } from '@/src/styles';
+import {
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'InfluencerStepFour'>;
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -368,11 +374,12 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: 56,
+      minHeight: APP_HEADER_ROW_HEIGHT,
       backgroundColor: palette.screen,
+      transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
     },
     headerSide: {
-      width: 44,
+      width: APP_HEADER_SIDE_WIDTH,
       justifyContent: 'center',
       alignItems: 'flex-start',
     },
@@ -386,7 +393,7 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
       flex: 1,
       color: palette.text,
       fontSize: 24,
-      lineHeight: 30,
+      lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
       fontFamily: 'Rubik-Bold',
       fontWeight: '600',
       letterSpacing: 0.3,
@@ -407,7 +414,7 @@ const createStyles = (palette: ScreenPalette, dark: boolean, bottomInset: number
       borderRadius: 999,
       backgroundColor: palette.subtleBorder,
       overflow: 'hidden',
-      marginTop: 2,
+      marginTop: 4,
     },
     progressBarFill: {
       width: '100%',

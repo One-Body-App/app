@@ -56,7 +56,7 @@ function SettingsStack() {
             backgroundColor: colors.background,
           },
           headerTintColor: dark ? colors.text : Colors.primary.brand,
-          headerTitleAlign: 'center',
+          headerTitleAlign: Platform.OS === 'android' ? 'left' : 'center',
           headerLeftContainerStyle: {
             paddingLeft: spacing.x8,
           },

@@ -18,6 +18,7 @@ import { useNavigation, useTheme } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
 import ImagePicker from 'react-native-image-crop-picker';
+import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/components/mentions';
 import { Colors } from '@/src/styles';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
@@ -80,7 +81,10 @@ const MEDIA_RADIUS = 12;
 interface Props {
   mediaGif: GiphyMedia | null;
   setGif: React.Dispatch<React.SetStateAction<GiphyMedia | null>>;
-  publishComment: Function;
+  publishComment: (payload: {
+    text: string;
+    mentionedUserIds: string[];
+  }) => Promise<boolean> | boolean;
   text?: string;
   placeholderText?: string;
   isEditingComment?: boolean;
@@ -120,12 +124,26 @@ function CommentField({
   const { dark, colors } = useTheme();
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
-  const [content, setContent] = useState(text ?? '');
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
   const inputRef = useRef<RNTextInput | null>(null);
   const InputComponent = isFromBottomField ? BottomSheetTextInput : TextInput;
+  const mentionComposer = useMentionComposer({
+    initialText: text ?? '',
+    sanitizeText: (value) => sanitizeComposerText(value, 2000),
+  });
+  const {
+    suggestions,
+    isLoading: isMentionLoading,
+    isError: isMentionError,
+  } = useMentionSuggestions({
+    query: mentionComposer.activeMention?.query ?? '',
+    token,
+    limit: 8,
+    enabled: Boolean(mentionComposer.activeMention?.query),
+  });
+  const content = mentionComposer.text;
   const gifAspectRatioRaw = mediaGif?.aspectRatio;
   const gifAspectRatio = Number(gifAspectRatioRaw);
   const safeGifAspectRatio =
@@ -169,6 +187,14 @@ function CommentField({
     };
   }, [focusRequestKey, isEditingComment]);
 
+  useEffect(() => {
+    if (typeof text !== 'string') {
+      return;
+    }
+
+    mentionComposer.reset(text);
+  }, [mentionComposer.reset, text]);
+
   // const onKeyboardWillShow = (e: KeyboardEvent) => {
   //   setKeyboardHeight(e.endCoordinates.height);
   // };
@@ -206,9 +232,12 @@ function CommentField({
       isSubmittingRef.current = true;
       setIsSubmitting(true);
       try {
-        const publishResult = await publishComment(value ?? '');
+        const publishResult = await publishComment({
+          text: value ?? '',
+          mentionedUserIds: mentionComposer.mentionedUserIds,
+        });
         if (publishResult) {
-          setContent('');
+          mentionComposer.reset();
           setGif(null);
           if (setImages) {
             setImages([]);
@@ -388,23 +417,55 @@ function CommentField({
             style={{ width: 36, height: 36, borderRadius: borderRadius.max }}
           />
           <View style={{ flex: 1, position: 'relative' }}>
-            <InputComponent
-              ref={inputRef as any}
-              placeholder={
-                isEditingComment ? 'Edit comment...' : (placeholderText ?? 'Add a comment...')
-              }
-              multiline
-              value={content}
-              onChangeText={(value: string) => {
-                setContent(sanitizeComposerText(value, 2000));
-              }}
-              placeholderTextColor={textSecondary}
-              selectionColor={primary}
+            <MentionInput
+              activeMention={mentionComposer.activeMention}
               cursorColor={primary}
-              onSubmitEditing={() => {
-                submitComment(content).catch(() => undefined);
-              }}
-              style={{
+              inputComponent={InputComponent}
+              inputRef={inputRef as any}
+              inputRightAccessory={
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.x10,
+                  }}
+                >
+                  {canUseImages ? (
+                    <TouchableOpacity
+                      onPress={chooseImageSource}
+                      disabled={isActionBlocked}
+                      style={{ opacity: isActionBlocked ? 0.5 : 1 }}
+                    >
+                      <MaterialCommunityIcons
+                        name="image-outline"
+                        size={20}
+                        color={textSecondary}
+                      />
+                    </TouchableOpacity>
+                  ) : null}
+                  {canUseGiphy ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (isActionBlocked) {
+                          return;
+                        }
+                        if (onOpenGifPicker) {
+                          onOpenGifPicker();
+                          return;
+                        }
+                        try {
+                          GiphyDialog.show();
+                        } catch (e) {
+                          console.log(e);
+                        }
+                      }}
+                    >
+                      <GifIcon size={20} color={textSecondary} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              }
+              inputStyle={{
                 width: '100%',
                 minHeight: 50,
                 maxHeight: 120,
@@ -413,51 +474,32 @@ function CommentField({
                 borderRadius: borderRadius.max,
                 paddingVertical: spacing.x16,
                 paddingHorizontal: spacing.x16,
-                paddingRight: spacing.x32,
+                paddingRight: spacing.x72,
                 textAlignVertical: 'center',
                 fontSize: 13,
               }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                right: spacing.x10,
-                top: 16,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.x10,
+              isError={isMentionError}
+              isLoading={isMentionLoading}
+              multiline
+              onChangeText={mentionComposer.setText}
+              onSelectSuggestion={mentionComposer.selectMention}
+              onSelectionChange={mentionComposer.setSelection}
+              onSubmitEditing={() => {
+                submitComment(content).catch(() => undefined);
               }}
-            >
-              {canUseImages ? (
-                <TouchableOpacity
-                  onPress={chooseImageSource}
-                  disabled={isActionBlocked}
-                  style={{ opacity: isActionBlocked ? 0.5 : 1 }}
-                >
-                  <MaterialCommunityIcons name="image-outline" size={20} color={textSecondary} />
-                </TouchableOpacity>
-              ) : null}
-              {canUseGiphy ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    if (isActionBlocked) {
-                      return;
-                    }
-                    if (onOpenGifPicker) {
-                      onOpenGifPicker();
-                      return;
-                    }
-                    try {
-                      GiphyDialog.show();
-                    } catch (e) {
-                      console.log(e);
-                    }
-                  }}
-                >
-                  <GifIcon size={20} color={textSecondary} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
+              placeholder={
+                isEditingComment ? 'Edit comment...' : (placeholderText ?? 'Add a comment...')
+              }
+              placeholderTextColor={textSecondary}
+              selection={mentionComposer.selection}
+              selectionColor={primary}
+              suggestions={suggestions}
+              suggestionsContainerStyle={{
+                backgroundColor: composerBackground,
+                borderColor: dividerColor,
+              }}
+              value={content}
+            />
           </View>
           {isEditingComment ? (
             <View style={{ flexDirection: 'row', gap: spacing.x8 }}>

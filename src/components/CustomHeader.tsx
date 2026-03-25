@@ -4,6 +4,13 @@ import { useNavigation, useTheme } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { Colors } from '@/src/styles';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_CONTROL_SIZE,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
 
 const logoWhite = require('@/assets/images/logo_header_white.png');
 const logoHeader = require('@/assets/images/logo_header.png');
@@ -25,10 +32,10 @@ export default function CustomHeader({
   const canGoBack = navigation.canGoBack?.() ?? false;
   const { dark } = useTheme();
   const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
-  const resolvedContentHeight = contentHeight ?? (Platform.OS === 'android' ? 44 : 44);
-  const iconSize = 45;
+  const resolvedContentHeight = contentHeight ?? APP_HEADER_ROW_HEIGHT;
+  const iconSize = 30;
   const sideSlotStyle = {
-    width: 50,
+    width: APP_HEADER_SIDE_WIDTH,
     height: resolvedContentHeight,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -78,29 +85,30 @@ export default function CustomHeader({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 6,
-    paddingVertical: 36,
+    paddingHorizontal: 16,
     borderBottomWidth: Platform.OS === 'android' ? 1 : 0,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   headerRowAndroid: {
     justifyContent: 'flex-start',
   },
   backButton: {
-    padding: 1,
+    width: APP_HEADER_CONTROL_SIZE,
+    height: APP_HEADER_CONTROL_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
     width: 120,
     height: 40,
   },
   logoAndroid: {
-    marginLeft: 7,
+    marginLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
 });

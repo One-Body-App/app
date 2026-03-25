@@ -18,6 +18,13 @@ import StyledText from '@/components/styled/Text';
 import { FeedTypes } from '@/src/screens/home';
 import type { MainDrawerParamsList } from '@/src/navigator/types';
 import { Colors } from '@/src/styles';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
 import { spacing } from '@/src/styles/spacing';
 
 const ZOE_CHAT_URL = String(Config.ZOE_CHAT_URL ?? '').trim();
@@ -144,7 +151,13 @@ function ZoeChat({ navigation }: Props) {
             />
           </TouchableOpacity>
 
-          <StyledText style={[styles.headerTitle, { color: colors.text }]}>ZoeAI</StyledText>
+          {Platform.OS === 'ios' ? (
+            <StyledText style={[styles.headerTitle, { color: colors.text }]}>ZoeAI</StyledText>
+          ) : (
+            <View style={styles.headerTitleAndroidWrap}>
+              <StyledText style={[styles.headerTitle, { color: colors.text }]}>ZoeAI</StyledText>
+            </View>
+          )}
 
           <View style={styles.headerSpacer} />
         </View>
@@ -215,11 +228,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerRow: {
-    minHeight: 56,
+    minHeight: APP_HEADER_ROW_HEIGHT,
     paddingHorizontal: spacing.x12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   headerButton: {
     width: 40,
@@ -229,15 +243,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerSpacer: {
-    width: 40,
-    height: 40,
+    width: APP_HEADER_SIDE_WIDTH,
+    height: APP_HEADER_ROW_HEIGHT,
+  },
+  headerTitleAndroidWrap: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitle: {
     fontSize: 24,
-    lineHeight: 30,
+    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
     fontFamily: 'Rubik-Bold',
     fontWeight: '700',
     letterSpacing: 0.3,
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
 });
 

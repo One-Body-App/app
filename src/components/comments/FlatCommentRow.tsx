@@ -9,6 +9,7 @@ import SendIcon from '@/assets/icons/send.svg';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { CommentPost, SocialPostReaction, SocialPostReactionType } from '@/utils/types';
+import ParsedText from '@/components/mentions/ParsedText';
 import { FlatCommentItem, getCommentTimestampMs } from './commentListUtils';
 import flatStyles from './flatStyles';
 
@@ -213,9 +214,10 @@ function FlatCommentRow({
             </Text>
           ) : null}
 
-          <Text style={[flatStyles.contentText, { color: primaryTextColor }]}>
-            {comment.content}
-          </Text>
+          <ParsedText
+            text={comment.content}
+            textStyle={[flatStyles.contentText, { color: primaryTextColor }]}
+          />
 
           {comment.edited ? (
             <Text style={{ marginTop: 4, color: secondaryTextColor, fontSize: 11 }}>Edited</Text>

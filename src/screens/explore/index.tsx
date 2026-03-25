@@ -41,6 +41,19 @@ import { getUserProfile } from '@/src/redux/actions/UserAction';
 import { ApiCall } from '@/src/services/api';
 import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { Colors, Typography } from '@/src/styles';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_CONTENT_GAP,
+  APP_HEADER_HORIZONTAL_INSET,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_FONT_FAMILY,
+  APP_HEADER_TITLE_FONT_SIZE,
+  APP_HEADER_TITLE_FONT_WEIGHT,
+  APP_HEADER_TITLE_LETTER_SPACING,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import SearchIcon from '@/assets/icons/search.svg';
@@ -342,8 +355,8 @@ function Explore({ navigation }: Props) {
   const dispatch = useDispatch();
   const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const headerRowHeight = getHeight(5.8);
-  const headerSideWidth = headerRowHeight;
+  const headerRowHeight = APP_HEADER_ROW_HEIGHT;
+  const headerSideWidth = APP_HEADER_SIDE_WIDTH;
   const styles = useMemo(
     () => createStyles(dark, headerRowHeight, headerSideWidth),
     [dark, headerRowHeight, headerSideWidth]
@@ -1447,7 +1460,7 @@ function Explore({ navigation }: Props) {
               }}
             >
               <StyledText style={styles.featuredFollowText}>
-                {featuredVoice.isFollowing ? 'Following' : 'Follow'}
+                {featuredVoice.isFollowing ? 'Connected' : 'Connect'}
               </StyledText>
             </TouchableOpacity>
           </View>
@@ -1556,7 +1569,7 @@ function Explore({ navigation }: Props) {
                       creator.isFollowing && { color: Colors.primarySapphire.brand },
                     ]}
                   >
-                    {creator.isFollowing ? 'Following' : 'Follow'}
+                    {creator.isFollowing ? 'Connected' : 'Connect'}
                   </StyledText>
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -2013,8 +2026,8 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: spacing.x16,
-      transform: [{ translateY: Platform.OS === 'ios' ? -6 : -4 }],
+      paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
+      transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
     },
     headerSideSlot: {
       width: headerSideWidth,
@@ -2030,17 +2043,18 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
     },
     headerCenterWrap: {
       flex: 1,
-      alignItems: 'center',
+      alignItems: Platform.OS === 'android' ? 'flex-start' : 'center',
       justifyContent: 'center',
+      ...(Platform.OS === 'android' ? { paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT } : {}),
     },
     headerTitle: {
-      fontSize: 24,
-      lineHeight: 32,
-      fontFamily: 'Rubik-Bold',
-      fontWeight: '700',
-      letterSpacing: 0.3,
+      fontSize: APP_HEADER_TITLE_FONT_SIZE,
+      lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
+      fontFamily: APP_HEADER_TITLE_FONT_FAMILY,
+      fontWeight: APP_HEADER_TITLE_FONT_WEIGHT,
+      letterSpacing: APP_HEADER_TITLE_LETTER_SPACING,
       color: EXPLORE_HEADER_COLOR,
-      textAlign: 'center',
+      textAlign: Platform.OS === 'android' ? 'left' : 'center',
     },
     headerAvatar: {
       width: 30,
@@ -2057,8 +2071,8 @@ const createStyles = (dark: boolean, headerRowHeight: number, headerSideWidth: n
       justifyContent: 'center',
     },
     searchContainer: {
-      paddingHorizontal: spacing.x16,
-      paddingTop: spacing.x4,
+      paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
+      paddingTop: APP_HEADER_CONTENT_GAP,
       paddingBottom: spacing.x10,
     },
     searchInputWrap: {

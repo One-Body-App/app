@@ -12,6 +12,12 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
 
 type Props = StackScreenProps<SettingsStackParamsList, 'CreatorSuccess'>;
 
@@ -50,16 +56,26 @@ function CreatorSubmitSuccess({ navigation }: Props) {
           { backgroundColor: colors.headerBg, borderBottomColor: colors.surfaceBorder },
         ]}
       >
-        <View style={styles.headerLeft}>
+        <View style={styles.headerSideSlot}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <MaterialCommunityIcons name="chevron-left" size={32} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Creator Application</Text>
         </View>
-        <Text style={[styles.headerStepText, { color: colors.textMuted }]}>STEP 4 OF 4</Text>
+        {Platform.OS === 'ios' ? (
+          <View style={styles.headerCenterWrap} pointerEvents="none">
+            <Text style={styles.headerTitle}>Creator Application</Text>
+          </View>
+        ) : (
+          <View style={styles.headerTitleAndroidWrap}>
+            <Text style={styles.headerTitle}>Creator Application</Text>
+          </View>
+        )}
+        <View style={styles.headerSideSlot}>
+          <Text style={[styles.headerStepText, { color: colors.textMuted }]}>STEP 4 OF 4</Text>
+        </View>
       </View>
 
       <View style={styles.mainContent}>
@@ -165,24 +181,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    height: 64,
+    minHeight: APP_HEADER_ROW_HEIGHT,
     borderBottomWidth: 1,
     zIndex: 10,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
-  headerLeft: {
-    flexDirection: 'row',
+  headerSideSlot: {
+    minWidth: APP_HEADER_SIDE_WIDTH + 40,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    justifyContent: 'center',
+  },
+  headerCenterWrap: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 24 + APP_HEADER_SIDE_WIDTH,
+    right: 24 + APP_HEADER_SIDE_WIDTH,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleAndroidWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitle: {
     color: '#12D2D9',
     fontSize: 18,
     fontWeight: '600',
-    marginLeft: 12,
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
   headerStepText: {
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.5,
+    textAlign: 'right',
   },
   mainContent: {
     flex: 1,

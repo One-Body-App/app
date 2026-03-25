@@ -11,7 +11,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import FastImage from 'react-native-fast-image';
 import ImagePicker from 'react-native-image-crop-picker';
 import { StackScreenProps } from '@react-navigation/stack';
-import { CompositeScreenProps, useTheme } from '@react-navigation/native';
+import { CompositeScreenProps, useFocusEffect, useTheme } from '@react-navigation/native';
 import DatePicker from 'react-native-date-picker';
 import { format, parse } from 'date-fns';
 import { ArrowDown2, Calendar, GalleryEdit } from 'iconsax-react-native';
@@ -54,6 +54,12 @@ import {
   MyProfileStackParamsList,
 } from '@/src/navigator/types';
 import { requestExternalWritePermission } from '@/utils/ImageAndCamera';
+import {
+  buildCroppedMediaState,
+  shouldConsumeMediaPickerIntent,
+  shouldOpenHeaderPicker,
+  shouldOpenPhotoPicker,
+} from './mediaHelpers';
 
 type Props = CompositeScreenProps<
   StackScreenProps<MyProfileStackParamsList, 'EditProfile'>,
@@ -97,7 +103,7 @@ type EditProfileDTO = {
   };
 };
 
-function EditProfile({ navigation }: Props) {
+function EditProfile({ navigation, route }: Props) {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.getProfileData);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -194,6 +200,22 @@ function EditProfile({ navigation }: Props) {
   ];
 
   const { colors } = useTheme();
+
+  useFocusEffect(
+    useCallback(() => {
+      const intent = route.params?.openMediaPicker;
+
+      if (shouldOpenPhotoPicker(intent)) {
+        setPickerModalVisibile(true);
+      } else if (shouldOpenHeaderPicker(intent)) {
+        setHeaderImagePickerModalVisibile(true);
+      }
+
+      if (shouldConsumeMediaPickerIntent(intent)) {
+        navigation.setParams({ openMediaPicker: undefined });
+      }
+    }, [navigation, route.params?.openMediaPicker])
+  );
 
   useEffect(() => {
     if (newLocation && latitude && longitude) {
@@ -413,25 +435,19 @@ function EditProfile({ navigation }: Props) {
           maxFiles: 1,
           compressImageMaxHeight: 150,
         });
-
-        const MyObject = {
-          uri: image?.path,
-          type: image?.mime,
-        };
+        const croppedMedia = buildCroppedMediaState({
+          image,
+          imageType,
+          userId: user?._id,
+        });
 
         if (imageType === 'photo') {
-          setImageToUpload(image?.path);
-          setImageObject({
-            ...MyObject,
-            name: `profileImage${user?._id}`,
-          });
+          setImageToUpload(croppedMedia.previewUri);
+          setImageObject(croppedMedia.upload);
           setPickerModalVisibile(false);
         } else {
-          setHeaderImageToUpload(uri ?? '');
-          setHeaderImageObject({
-            ...MyObject,
-            name: `headerImage${user?._id}`,
-          });
+          setHeaderImageToUpload(croppedMedia.previewUri);
+          setHeaderImageObject(croppedMedia.upload);
           setHeaderImagePickerModalVisibile(false);
         }
       }, 500);
@@ -528,7 +544,7 @@ function EditProfile({ navigation }: Props) {
                 source={{
                   uri: headerImageToUpload,
                 }}
-                resizeMode="contain"
+                resizeMode={FastImage.resizeMode.cover}
               />
             ) : (
               <View
@@ -542,14 +558,17 @@ function EditProfile({ navigation }: Props) {
 
             <View
               style={{
-                alignSelf: 'flex-end',
+                alignItems: 'center',
                 backgroundColor: 'white',
-                borderRadius: borderRadius.button,
-                padding: spacing.x10,
-                marginRight: spacing.x24,
+                borderColor: Colors.neutral[900],
+                borderRadius: 21,
+                borderWidth: borderWidth.base,
+                height: 42,
+                justifyContent: 'center',
                 position: 'absolute',
-                bottom: spacing.x64, // size of the profile image + margin space
-                right: 0,
+                bottom: spacing.x16,
+                right: spacing.x16,
+                width: 42,
               }}
             >
               <ImagePickerModal
@@ -610,7 +629,7 @@ function EditProfile({ navigation }: Props) {
                               user?.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
                           }
                     }
-                    resizeMode={FastImage.resizeMode.stretch}
+                    resizeMode={FastImage.resizeMode.cover}
                   />
 
                   <View

@@ -854,6 +854,7 @@ function CommentThread({
         objectId: postId,
         objectType: type,
         content: payload?.content ?? content,
+        mentionedUserIds: payload?.mentionedUserIds ?? [],
         userData: payload?.userData ?? {
           _id: user?._id,
           name: user?.name ?? user?.username ?? 'You',
@@ -878,12 +879,12 @@ function CommentThread({
   );
 
   const publishComment = useCallback(
-    async (content: string) => {
+    async ({ text, mentionedUserIds }: { text: string; mentionedUserIds: string[] }) => {
       if (!postId) {
         return false;
       }
 
-      const value = content.trim();
+      const value = text.trim();
       if (!value && !mediaGif && mediaImages.length < 1) {
         return false;
       }
@@ -905,6 +906,7 @@ function CommentThread({
               ? serialize(
                   {
                     content: value,
+                    mentionedUserIds,
                     gif: allowMedia ? mediaGif : undefined,
                     images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
                     uploadImages,
@@ -916,6 +918,7 @@ function CommentThread({
                 )
               : {
                   content: value,
+                  mentionedUserIds,
                   gif: allowMedia ? mediaGif : undefined,
                   images: remoteImageUris.length > 0 ? remoteImageUris : undefined,
                 },
@@ -927,6 +930,7 @@ function CommentThread({
               updateCommentInTree(previous, editingCommentId, (comment) => ({
                 ...comment,
                 content: value,
+                mentionedUserIds: result?.response?.mentionedUserIds ?? mentionedUserIds,
                 images: allowMedia ? mediaImages : undefined,
                 gif: allowMedia ? (mediaGif ?? undefined) : undefined,
                 edited: true,
@@ -970,6 +974,7 @@ function CommentThread({
             ? serialize(
                 {
                   content: value,
+                  mentionedUserIds,
                   gif: allowMedia ? mediaGif : undefined,
                   images: localUploadImages,
                   parentCommentId: replyingTo?.id,
@@ -982,6 +987,7 @@ function CommentThread({
               )
             : {
                 content: value,
+                mentionedUserIds,
                 gif: allowMedia ? mediaGif : undefined,
                 parentCommentId: replyingTo?.id,
                 replyToCommentId: replyingTo?.id,

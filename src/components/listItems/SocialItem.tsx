@@ -27,6 +27,7 @@ import {
 } from '@/src/navigator/types';
 import { borderWidth } from '@/src/styles/outlines';
 import { Colors } from '@/src/styles';
+import ParsedText from '@/components/mentions/ParsedText';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import BaseItem from './BaseItem';
@@ -892,15 +893,14 @@ function SocialItem({
         >
           {shouldRenderPrimaryText ? (
             <Pressable onPress={handleContentPress} style={{ flexGrow: 1 }}>
-              <StyledText
-                style={{
+              <ParsedText
+                text={primaryTextToRender}
+                textStyle={{
                   color: colors.text,
                   marginBottom: spacing.x8,
                   flexGrow: 1,
                 }}
-              >
-                {primaryTextToRender}
-              </StyledText>
+              />
             </Pressable>
           ) : null}
 
@@ -1020,8 +1020,9 @@ function SocialItem({
                   ) : (
                     <>
                       {sourceContent ? (
-                        <StyledText
-                          style={{
+                        <ParsedText
+                          text={sourceContent}
+                          textStyle={{
                             color: colors.text,
                             marginBottom:
                               sourceImageUrls.length > 0 ||
@@ -1031,9 +1032,7 @@ function SocialItem({
                                 ? spacing.x8
                                 : 0,
                           }}
-                        >
-                          {sourceContent}
-                        </StyledText>
+                        />
                       ) : null}
 
                       {sourceImageUrls.map((url) => (

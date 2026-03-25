@@ -31,6 +31,7 @@ import { getProfileDisplayName, getProfileRoleLabel, getProfileTypeLabel } from 
 
 const COVER_HEIGHT = 150;
 const AVATAR_SIZE = 84;
+const DEFAULT_PROFILE_IMAGE = 'https://cdn.onebodyapp.com/user/no-image.png';
 
 const modalStyles = StyleSheet.create({
   bottomView: {
@@ -96,6 +97,7 @@ function ProfileHeader({
   const isSelfVariant = variant === 'self';
   const [requestModal, setRequestModal] = useState(false);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>(persistedBadgeIds);
+  const showSelfProfileMediaControls = isOwnProfile && isSelfVariant;
 
   const badgeMap = useMemo(() => {
     const allBadges = Array.isArray(authState?.getBadgesData) ? authState.getBadgesData : [];
@@ -227,6 +229,10 @@ function ProfileHeader({
     });
   };
 
+  const openEditProfile = (openMediaPicker?: 'photo' | 'header') => {
+    navigation.navigate('EditProfile', openMediaPicker ? { openMediaPicker } : undefined);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.coverWrap}>
@@ -239,6 +245,21 @@ function ProfileHeader({
         ) : (
           <View style={styles.coverFallback} />
         )}
+
+        {showSelfProfileMediaControls ? (
+          <TouchableOpacity
+            accessibilityLabel="Edit cover image"
+            onPress={() => openEditProfile('header')}
+            style={styles.coverEditButton}
+            testID="profile-cover-edit-button"
+          >
+            {profileData.profileHeader ? (
+              <Icon name="pencil-outline" size={18} color="#FFFFFF" />
+            ) : (
+              <Add size={18} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+        ) : null}
 
         {(displayedBadges.length > 0 || isOwnProfile) &&
           (isOwnProfile ? (
@@ -283,20 +304,43 @@ function ProfileHeader({
         {isSelfVariant ? (
           <View style={styles.selfHeroRow}>
             <View style={styles.selfHero}>
-              <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
-                <FastImage
-                  source={{
-                    uri: profileData.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
-                  }}
-                  style={[styles.avatar, styles.selfAvatar]}
-                  resizeMode={FastImage.resizeMode.cover}
-                />
-              </View>
+              {showSelfProfileMediaControls ? (
+                <TouchableOpacity
+                  accessibilityLabel="Edit profile photo"
+                  activeOpacity={0.85}
+                  onPress={() => openEditProfile('photo')}
+                  style={styles.avatarEditButton}
+                  testID="profile-avatar-edit-button"
+                >
+                  <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
+                    <FastImage
+                      source={{
+                        uri: profileData.profileImage || DEFAULT_PROFILE_IMAGE,
+                      }}
+                      style={[styles.avatar, styles.selfAvatar]}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                    <View pointerEvents="none" style={styles.avatarEditBadge}>
+                      <Icon name="pencil-outline" size={16} color="#FFFFFF" />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.avatarWrap, styles.selfAvatarWrap]}>
+                  <FastImage
+                    source={{
+                      uri: profileData.profileImage || DEFAULT_PROFILE_IMAGE,
+                    }}
+                    style={[styles.avatar, styles.selfAvatar]}
+                    resizeMode={FastImage.resizeMode.cover}
+                  />
+                </View>
+              )}
             </View>
 
             <View style={styles.selfActionRow}>
               <TouchableOpacity
-                onPress={() => navigation.navigate('EditProfile')}
+                onPress={() => openEditProfile()}
                 style={[styles.secondaryAction, styles.selfActionButton]}
               >
                 <StyledText style={styles.secondaryActionText}>Edit Profile</StyledText>
@@ -317,7 +361,7 @@ function ProfileHeader({
             <View style={styles.avatarWrap}>
               <FastImage
                 source={{
-                  uri: profileData.profileImage || 'https://cdn.onebodyapp.com/user/no-image.png',
+                  uri: profileData.profileImage || DEFAULT_PROFILE_IMAGE,
                 }}
                 style={styles.avatar}
                 resizeMode={FastImage.resizeMode.cover}
@@ -326,10 +370,7 @@ function ProfileHeader({
 
             <View style={styles.actionRow}>
               {isOwnProfile ? (
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('EditProfile')}
-                  style={styles.ownProfileAction}
-                >
+                <TouchableOpacity onPress={() => openEditProfile()} style={styles.ownProfileAction}>
                   <StyledText style={styles.primaryActionText}>Edit Profile</StyledText>
                 </TouchableOpacity>
               ) : (
@@ -527,6 +568,22 @@ const styles = StyleSheet.create({
     height: AVATAR_SIZE,
     width: AVATAR_SIZE,
   },
+  avatarEditBadge: {
+    alignItems: 'center',
+    backgroundColor: Colors.primarySapphire.brand,
+    borderColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: borderWidth.base,
+    bottom: 2,
+    height: 30,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 2,
+    width: 30,
+  },
+  avatarEditButton: {
+    alignSelf: 'flex-start',
+  },
   avatarWrap: {
     backgroundColor: '#FFFFFF',
     borderRadius: AVATAR_SIZE / 2 + 4,
@@ -616,6 +673,20 @@ const styles = StyleSheet.create({
   },
   container: {
     width: '100%',
+  },
+  coverEditButton: {
+    alignItems: 'center',
+    backgroundColor: Colors.primarySapphire.brand,
+    borderColor: '#FFFFFF',
+    borderRadius: 21,
+    borderWidth: borderWidth.base,
+    bottom: spacing.x12,
+    height: 42,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: spacing.x16,
+    width: 42,
+    zIndex: 2,
   },
   content: {
     paddingHorizontal: spacing.x20,
@@ -768,7 +839,7 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingHorizontal: spacing.x6,
     paddingVertical: spacing.x6,
-    right: spacing.x14,
+    right: spacing.x72,
   },
   selfBadgeRailAddOnly: {
     alignItems: 'center',

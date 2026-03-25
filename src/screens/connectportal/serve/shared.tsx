@@ -1,9 +1,16 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useTheme } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
 
 export const BRAND_COLORS = {
   white: '#FFFFFF',
@@ -214,7 +221,7 @@ export function ServeHeader({
 }: ServeHeaderProps): React.JSX.Element {
   return (
     <View style={styles.header}>
-      <View style={styles.headerLeft}>
+      <View style={styles.headerSideSlot}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <MaterialIcons
             name="chevron-left"
@@ -222,9 +229,21 @@ export function ServeHeader({
             color={titleColor || BRAND_COLORS.primaryDark}
           />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, titleColor ? { color: titleColor } : null]}>{title}</Text>
       </View>
-      {rightAccessory ? <View style={styles.headerRight}>{rightAccessory}</View> : null}
+      {Platform.OS === 'ios' ? (
+        <View style={styles.headerCenterWrap} pointerEvents="none">
+          <Text style={[styles.headerTitle, titleColor ? { color: titleColor } : null]}>
+            {title}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.headerTitleAndroidWrap}>
+          <Text style={[styles.headerTitle, titleColor ? { color: titleColor } : null]}>
+            {title}
+          </Text>
+        </View>
+      )}
+      <View style={[styles.headerSideSlot, styles.headerRight]}>{rightAccessory}</View>
     </View>
   );
 }
@@ -294,28 +313,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  headerSideSlot: {
+    minWidth: APP_HEADER_SIDE_WIDTH,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    justifyContent: 'center',
   },
   backButton: {
-    width: 40,
+    width: APP_HEADER_SIDE_WIDTH,
+    minHeight: APP_HEADER_ROW_HEIGHT,
     alignItems: 'flex-start',
     justifyContent: 'center',
-    marginRight: 4,
+  },
+  headerCenterWrap: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 16 + APP_HEADER_SIDE_WIDTH,
+    right: 16 + APP_HEADER_SIDE_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleAndroidWrap: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitle: {
     color: BRAND_COLORS.black,
     fontSize: 24,
+    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
     fontWeight: '700',
     fontFamily: 'Rubik-Bold',
     letterSpacing: 0.3,
   },
   headerRight: {
-    minWidth: 40,
+    alignItems: 'flex-end',
     alignItems: 'flex-end',
     justifyContent: 'center',
   },

@@ -23,6 +23,13 @@ import {
   getConnectPortalResumeResolution,
   requiresPayoutStep,
 } from '@/src/services/connectPortal';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
 
 export function useCreateFlowPalette() {
   const { dark } = useTheme();
@@ -291,10 +298,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   headerButton: {
-    minWidth: 36,
+    minWidth: APP_HEADER_SIDE_WIDTH,
   },
   headerButtonHidden: {
     opacity: 0,
@@ -302,10 +310,11 @@ const styles = StyleSheet.create({
   headerTitleAndroidWrap: {
     flex: 1,
     justifyContent: 'center',
-    paddingLeft: 10,
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitle: {
     fontSize: 24,
+    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
     fontWeight: '700',
     fontFamily: 'Rubik-Bold',
     letterSpacing: 0.3,
@@ -314,7 +323,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   headerSpacer: {
-    minWidth: 36,
+    minWidth: APP_HEADER_SIDE_WIDTH,
   },
   progressWrap: {
     paddingBottom: 12,

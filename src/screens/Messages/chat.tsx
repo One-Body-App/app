@@ -59,6 +59,20 @@ import GlassTabBar from '@/src/components/GlassTabBar';
 import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 import { MessagesConversationListView } from '@/src/components/chat/MessagesConversationListView';
 import { SwipeableChatItem } from '@/src/components/chat/SwipeableChatItem';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_CONTENT_GAP,
+  APP_HEADER_HORIZONTAL_INSET,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_FONT_FAMILY,
+  APP_HEADER_TITLE_FONT_SIZE,
+  APP_HEADER_TITLE_FONT_WEIGHT,
+  APP_HEADER_TITLE_LETTER_SPACING,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
+import { spacing } from '@/src/styles/spacing';
 import ChatEmptyState from './chatempty';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'MessagesList'>;
@@ -830,7 +844,7 @@ function ChatListScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.headerRow, { marginTop: insets.top + (isIOS ? 6 : 12) }]}>
+      <View style={[styles.headerRow, { marginTop: insets.top }]}>
         <View style={styles.headerSideSlot}>
           <Image
             source={{ uri: headerAvatarUri }}
@@ -901,23 +915,26 @@ function ChatListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 22,
+    paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
   },
   headerRow: {
+    minHeight: APP_HEADER_ROW_HEIGHT,
     justifyContent: 'space-between',
-    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   headerSideSlot: {
-    width: 48,
+    width: APP_HEADER_SIDE_WIDTH,
+    minHeight: APP_HEADER_ROW_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerAndroidTitleWrap: {
     flex: 1,
     justifyContent: 'center',
-    paddingLeft: 14,
+    alignItems: 'flex-start',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerCenterWrap: {
     position: 'absolute',
@@ -929,9 +946,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1,
   },
   settingsButton: {
@@ -942,20 +959,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontSize: APP_HEADER_TITLE_FONT_SIZE,
+    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
+    fontFamily: APP_HEADER_TITLE_FONT_FAMILY,
+    fontWeight: APP_HEADER_TITLE_FONT_WEIGHT,
+    letterSpacing: APP_HEADER_TITLE_LETTER_SPACING,
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
   searchWrap: {
     borderRadius: 16,
-    minHeight: 52,
+    minHeight: Platform.OS === 'android' ? 46 : 52,
     paddingHorizontal: 14,
     alignItems: 'center',
     flexDirection: 'row',
+    marginTop: Platform.OS === 'android' ? spacing.x5 : APP_HEADER_CONTENT_GAP,
   },
   filterBarWrap: {
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: Platform.OS === 'android' ? spacing.x5 : APP_HEADER_CONTENT_GAP,
+    paddingBottom: Platform.OS === 'android' ? 4 : 8,
   },
   searchInput: {
     marginLeft: 8,

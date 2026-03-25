@@ -28,6 +28,20 @@ import { NO_PROFILE_IMAGE } from '@/src/services/constants';
 import { HapticService } from '@/src/services/haptic';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { Typography } from '@/src/styles';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_CONTENT_GAP,
+  APP_HEADER_CONTROL_SIZE,
+  APP_HEADER_HORIZONTAL_INSET,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_FONT_FAMILY,
+  APP_HEADER_TITLE_FONT_SIZE,
+  APP_HEADER_TITLE_FONT_WEIGHT,
+  APP_HEADER_TITLE_LETTER_SPACING,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import type { ConnectTab } from './data';
@@ -1223,7 +1237,7 @@ export function ConnectPortalChrome({
         styles.chromeWrap,
         overlay ? styles.chromeWrapOverlay : null,
         { backgroundColor: overlay ? 'transparent' : palette.screenBackground },
-        { paddingTop: insets.top + (overlay ? spacing.x5 : spacing.x8) },
+        { paddingTop: insets.top },
       ]}
     >
       {overlay ? (
@@ -1243,17 +1257,19 @@ export function ConnectPortalChrome({
       ) : null}
 
       <View style={styles.topBar}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-          style={styles.chromeAvatarButton}
-        >
-          <Image
-            source={{ uri: userAvatarUri || NO_PROFILE_IMAGE }}
-            style={styles.userAvatar}
-            resizeMode="cover"
-          />
-        </TouchableOpacity>
+        <View style={styles.chromeSideSlot}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+            style={styles.chromeAvatarButton}
+          >
+            <Image
+              source={{ uri: userAvatarUri || NO_PROFILE_IMAGE }}
+              style={styles.userAvatar}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.titleWrap}>
           <StyledText style={[styles.titleText, { color: palette.textPrimary }]}>
@@ -1261,28 +1277,34 @@ export function ConnectPortalChrome({
           </StyledText>
         </View>
 
-        {headerActionIconName && onHeaderActionPress ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={headerActionAccessibilityLabel}
-            onPress={onHeaderActionPress}
-            style={[
-              styles.chromeHeaderAction,
-              {
-                backgroundColor: palette.mapActionBg,
-                borderColor: palette.mapActionBorder,
-              },
-            ]}
-          >
-            {headerActionIconName === 'map' ? (
-              <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />
-            ) : (
-              <MaterialIcons name={headerActionIconName} size={22} color={palette.mapSearchIcon} />
-            )}
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.chromeHeaderActionSpacer} />
-        )}
+        <View style={styles.chromeSideSlot}>
+          {headerActionIconName && onHeaderActionPress ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={headerActionAccessibilityLabel}
+              onPress={onHeaderActionPress}
+              style={[
+                styles.chromeHeaderAction,
+                {
+                  backgroundColor: palette.mapActionBg,
+                  borderColor: palette.mapActionBorder,
+                },
+              ]}
+            >
+              {headerActionIconName === 'map' ? (
+                <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />
+              ) : (
+                <MaterialIcons
+                  name={headerActionIconName}
+                  size={22}
+                  color={palette.mapSearchIcon}
+                />
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.chromeHeaderActionSpacer} />
+          )}
+        </View>
       </View>
 
       <View style={styles.headerGlassTabsWrap}>
@@ -2133,9 +2155,9 @@ export function ConnectPlaceDetailSheet({ place, isFollowing, onToggleFollow }: 
 const styles = StyleSheet.create({
   chromeWrap: {
     backgroundColor: CONNECT_BRAND.backgroundDark,
-    paddingHorizontal: spacing.x16,
-    paddingBottom: spacing.x5,
-    gap: spacing.x5,
+    paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
+    paddingBottom: Platform.OS === 'android' ? spacing.x5 : spacing.x8,
+    gap: Platform.OS === 'android' ? spacing.x5 : APP_HEADER_CONTENT_GAP,
   },
   chromeWrapOverlay: {
     backgroundColor: 'transparent',
@@ -2147,12 +2169,18 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 46,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+  },
+  chromeSideSlot: {
+    width: APP_HEADER_SIDE_WIDTH,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chromeAvatarButton: {
-    width: 40,
-    height: 40,
+    width: APP_HEADER_CONTROL_SIZE,
+    height: APP_HEADER_CONTROL_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2168,15 +2196,16 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: Platform.OS === 'android' ? 'flex-start' : 'center',
     justifyContent: 'center',
-    minHeight: 40,
-    ...(Platform.OS === 'android' ? { paddingLeft: 10 } : {}),
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    ...(Platform.OS === 'android' ? { paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT } : {}),
   },
   titleText: {
-    ...Typography.header.h1,
+    fontSize: APP_HEADER_TITLE_FONT_SIZE,
+    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
     color: '#032f3c',
-    fontFamily: 'Rubik-Bold',
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontFamily: APP_HEADER_TITLE_FONT_FAMILY,
+    fontWeight: APP_HEADER_TITLE_FONT_WEIGHT,
+    letterSpacing: APP_HEADER_TITLE_LETTER_SPACING,
     textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
   userAvatar: {
@@ -2190,7 +2219,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.x5,
   },
   chromeHeaderAction: {
     width: 40,
@@ -2202,8 +2230,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   chromeHeaderActionSpacer: {
-    width: 40,
-    height: 40,
+    width: APP_HEADER_CONTROL_SIZE,
+    height: APP_HEADER_CONTROL_SIZE,
   },
   searchActionRow: {
     flexDirection: 'row',

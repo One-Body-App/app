@@ -1,7 +1,13 @@
 import React, { ReactNode } from 'react';
-import { View, StyleSheet, ViewStyle, TextStyle, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '@react-navigation/native';
-import { getFontSize, getHeight } from '@/utils/ResponsiveFun';
+import { getFontSize } from '@/utils/ResponsiveFun';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
 import StyledText from './styled/Text';
 
 type Props = {
@@ -12,7 +18,7 @@ type Props = {
 };
 
 function Header({ title, leftView, RightView, hideBorder = false }: Props) {
-  const { colors, dark } = useTheme();
+  const { dark } = useTheme();
   const brandColors = {
     primaryBase: '#41899f',
     primaryDark: '#126b87',
@@ -41,40 +47,31 @@ function Header({ title, leftView, RightView, hideBorder = false }: Props) {
         },
       ]}
     >
-      <View
-        style={{
-          // paddingTop: 10,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flex: 1,
-        }}
-      >
-        {leftView}
+      <View style={styles.row}>
+        <View style={styles.sideSlot}>{leftView}</View>
 
-        <StyledText
-          style={{
-            ...styles.titletext,
-            color: dark ? brandColors.scale100 : brandColors.black,
-          }}
-        >
-          {title}
-        </StyledText>
+        <View style={Platform.OS === 'android' ? styles.titleWrapAndroid : styles.titleWrapIOS}>
+          <StyledText
+            style={[
+              styles.titletext,
+              {
+                color: dark ? brandColors.scale100 : brandColors.black,
+              },
+            ]}
+          >
+            {title}
+          </StyledText>
+        </View>
 
-        {RightView}
+        <View style={styles.sideSlot}>{RightView}</View>
       </View>
     </View>
   );
 }
 const styles = StyleSheet.create({
   headview: {
-    height: getHeight(7),
-
-    flexDirection: 'row',
-
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    alignItems: 'center',
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    paddingHorizontal: 16,
     shadowColor: 'rgba(18, 107, 135, 0.25)',
     borderBottomColor: '#e6eaec',
     borderBottomWidth: 1,
@@ -87,10 +84,34 @@ const styles = StyleSheet.create({
     elevation: 0,
     // marginBottom: getHeight("6"),
   },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+  },
+  sideSlot: {
+    width: APP_HEADER_SIDE_WIDTH,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleWrapIOS: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleWrapAndroid: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  },
   titletext: {
     fontSize: getFontSize(2.5),
     lineHeight: getFontSize(4),
     fontFamily: 'OpenSans-Medium',
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
 });
 export default Header;

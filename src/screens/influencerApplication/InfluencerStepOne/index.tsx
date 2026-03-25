@@ -1,9 +1,23 @@
 import React from 'react';
-import { Text, View, TouchableOpacity, SafeAreaView, ScrollView, StyleSheet } from 'react-native';
+import {
+  Platform,
+  Text,
+  View,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 
 import { SettingsStackParamsList } from '@/src/navigator/types';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
 
 // --- One Body Brand Palette ---
 const OBPalette = {
@@ -35,7 +49,13 @@ function InfluencerStepOne({ navigation }: Props) {
         >
           <MaterialCommunityIcons name="chevron-left" size={32} color={OBPalette.primary.dark} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Creator Application</Text>
+        {Platform.OS === 'ios' ? (
+          <Text style={styles.headerTitle}>Creator Application</Text>
+        ) : (
+          <View style={styles.headerTitleAndroidWrap}>
+            <Text style={styles.headerTitle}>Creator Application</Text>
+          </View>
+        )}
         <View style={styles.headerSpacer} />
       </View>
 
@@ -109,19 +129,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    height: 56,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   closeButton: {
-    padding: 4,
+    width: APP_HEADER_SIDE_WIDTH,
+    height: APP_HEADER_ROW_HEIGHT,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  headerTitleAndroidWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerTitle: {
     fontFamily: 'Rubik-Medium',
     fontSize: 20,
     fontWeight: '500',
     color: OBPalette.grays.black,
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
   headerSpacer: {
-    width: 32, // Balances the back button for true centering
+    width: APP_HEADER_SIDE_WIDTH,
+    height: APP_HEADER_ROW_HEIGHT,
   },
   scrollContent: {
     flexGrow: 1,

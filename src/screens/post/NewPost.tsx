@@ -40,6 +40,7 @@ import Button from '@/components/Button';
 import GifIcon from '@/components/GifIcon';
 import MapBox, { MapSuggestion } from '@/components/MapBox';
 import { sanitizeComposerText } from '@/components/composer/composerText';
+import { MentionInput, useMentionComposer, useMentionSuggestions } from '@/components/mentions';
 import StyledText from '@/components/styled/Text';
 import StyledTextInput from '@/components/styled/TextInput';
 import { MainStackParamList } from '@/src/navigator/types';
@@ -80,7 +81,6 @@ function NewPost({ navigation, route }: Props) {
   const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
   const ACTION_BAR_ICON_SIZE = 36;
   const MEDIA_RADIUS = 12;
-  const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mediaGif, setGif] = useState<GiphyMedia | null>(null);
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -102,6 +102,7 @@ function NewPost({ navigation, route }: Props) {
     useState<{ uri: string; type: string; name?: string }[]>();
   const [isGiphyInitialized, setIsGiphyInitialized] = useState(false);
   const giphyListenerRef = useRef<{ remove: () => void } | null>(null);
+  const postInputRef = useRef<any>(null);
   const repostDraft = route.params?.repostDraft;
   const isQuoteMode = Boolean(repostDraft && !route.params?.postId);
   const quoteSourceTitle =
@@ -109,6 +110,22 @@ function NewPost({ navigation, route }: Props) {
     repostDraft?.sourcePreview?.content ||
     repostDraft?.sourcePreview?.link ||
     '';
+  const mentionComposer = useMentionComposer({
+    initialText: '',
+    sanitizeText: (value) => sanitizeComposerText(value, MAX_CONTENT_LENGHT),
+  });
+  const {
+    suggestions,
+    isLoading: isMentionLoading,
+    isError: isMentionError,
+  } = useMentionSuggestions({
+    query: mentionComposer.activeMention?.query ?? '',
+    token,
+    limit: 8,
+    enabled: Boolean(mentionComposer.activeMention?.query),
+  });
+  const content = mentionComposer.text;
+  const setContent = mentionComposer.setText;
 
   const navigateToHomeFallback = useCallback(
     (reason: string) => {
@@ -315,6 +332,7 @@ function NewPost({ navigation, route }: Props) {
         params: serialize(
           {
             content: mergedContent,
+            mentionedUserIds: mentionComposer.mentionedUserIds,
             images: uploadImagesObject?.length ? uploadImagesObject : imagesObject,
             gif: mediaGif,
             location: location
@@ -336,7 +354,7 @@ function NewPost({ navigation, route }: Props) {
       setIsLoading(false);
 
       if (result.status === 200) {
-        setContent('');
+        mentionComposer.reset();
         navigateAfterSocialPostSuccess('edit');
       }
       setIsLoading(false);
@@ -358,6 +376,7 @@ function NewPost({ navigation, route }: Props) {
         params: serialize(
           {
             content: mergedContent,
+            mentionedUserIds: mentionComposer.mentionedUserIds,
             images: uploadImagesObject?.length ? uploadImagesObject : imagesObject,
             gif: mediaGif,
             location: location
@@ -380,7 +399,7 @@ function NewPost({ navigation, route }: Props) {
 
       console.log('postSocial result', result.status, result.response);
       if (result.status === 200) {
-        setContent('');
+        mentionComposer.reset();
         navigateAfterSocialPostSuccess('create');
       } else if (result.status === 413) {
         toast.show('Image too large. Please choose a smaller image.', {
@@ -448,12 +467,13 @@ function NewPost({ navigation, route }: Props) {
           sourceType: repostDraft.sourceType,
           sourceId: repostDraft.sourceId,
           quoteContent,
+          mentionedUserIds: mentionComposer.mentionedUserIds,
         },
         verb: 'post',
       });
 
       if (result.status === 200) {
-        setContent('');
+        mentionComposer.reset();
         const responseMessage =
           typeof (result.response as { message?: unknown })?.message === 'string'
             ? String((result.response as { message?: string }).message)
@@ -879,35 +899,45 @@ function NewPost({ navigation, route }: Props) {
                 </View>
               ) : null}
 
-              <StyledTextInput
+              <MentionInput
+                inputRef={postInputRef}
+                activeMention={mentionComposer.activeMention}
+                autoCorrect
+                containerStyle={{ flexGrow: 1 }}
                 inputStyle={{
                   textAlignVertical: 'top',
                   height: 220,
                   flexGrow: 1,
                   color: colors.text,
+                  paddingVertical: spacing.x5,
                   ...fontSize.x6,
                 }}
                 inputWrapperStyle={{
-                  paddingVertical: spacing.x5,
                   backgroundColor: 'transparent',
                   borderWidth: 0,
                   borderRadius: borderRadius.base,
                 }}
-                value={content}
+                isError={isMentionError}
+                isLoading={isMentionLoading}
                 maxLength={MAX_CONTENT_LENGHT}
                 maxLengthErrorMessage="This message exceeds the character limit."
-                numberOfLines={4}
-                showCharCounter
                 multiline
-                returnKeyType="default"
-                label=""
-                autoCorrect
+                numberOfLines={4}
+                onChangeText={setContent}
+                onSelectSuggestion={mentionComposer.selectMention}
+                onSelectionChange={mentionComposer.setSelection}
                 placeholder={isQuoteMode ? 'Add your thoughts...' : "What's on your heart?"}
                 placeholderTextColor={Colors.neutral[300]}
-                // onSubmitEditing={() => inputRefs.password?.current.focus()}
-                onChangeText={(value) => {
-                  setContent(sanitizeComposerText(value, MAX_CONTENT_LENGHT));
+                returnKeyType="default"
+                selection={mentionComposer.selection}
+                showCharCounter
+                suggestions={suggestions}
+                suggestionsContainerStyle={{
+                  backgroundColor: colors.card,
+                  borderColor: Colors.neutral[600],
                 }}
+                textAlignVertical="top"
+                value={content}
               />
               {attachmentMode ? (
                 <View

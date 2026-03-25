@@ -8,6 +8,7 @@ import {
   getCommentReplies,
   getCommentTimestampMs,
 } from '@/components/comments/commentListUtils';
+import ParsedText from '@/components/mentions/ParsedText';
 import { CommentPost, SocialPostReaction } from '@/utils/types';
 import { timeSince } from '@/utils/ResponsiveFun';
 import { COLORS, styles } from './commentstyles';
@@ -56,7 +57,7 @@ function WatchCommentRow({
           </Text>
         </View>
 
-        <Text style={styles.commentContent}>{comment.content}</Text>
+        <ParsedText text={comment.content} textStyle={styles.commentContent} />
 
         {previewReply ? (
           <TouchableOpacity

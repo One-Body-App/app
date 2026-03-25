@@ -44,6 +44,7 @@
 
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { Animated, StyleProp, TextProps, TextStyle } from 'react-native';
+import { EditProfileRouteParams } from '@/src/screens/main/editProfile/mediaHelpers';
 import { AccountType, PostType, SerializableCommentSnapshot, WatchPost } from '@/utils/types';
 import { FeedTypes } from '../screens/home';
 import type { ConnectTab } from '../screens/connectportal/data';
@@ -126,14 +127,16 @@ export type HomeStackParamsList = {
   Search: undefined;
   Notifications: undefined;
   UserProfile: {
-    id: string;
+    id?: string;
+    handle?: string;
   };
 };
 
 export type ExploreStackParamsList = {
   Explore: undefined;
   UserProfile: {
-    id: string;
+    id?: string;
+    handle?: string;
   };
 };
 
@@ -189,7 +192,8 @@ export type SettingsStackParamsList = {
 export type SearchStackParamsList = {
   Search: undefined;
   UserProfile: {
-    id: string;
+    id?: string;
+    handle?: string;
   };
 };
 
@@ -263,7 +267,8 @@ export type ConnectStackParamsList = {
   ConnectServeCreateJobStep1: undefined;
   ConnectServeCreateJobStep2: undefined;
   UserProfile: {
-    id: string;
+    id?: string;
+    handle?: string;
   };
 };
 
@@ -271,7 +276,7 @@ export type MyProfileStackParamsList = {
   MyProfile?: {
     openSettings?: boolean;
   };
-  EditProfile: undefined;
+  EditProfile: EditProfileRouteParams | undefined;
   InviteFriends: undefined;
 };
 
@@ -331,7 +336,8 @@ export type PrayerWallStackParamsList = {
     returnTo?: PrayerWallReturnTarget;
   };
   UserProfile: {
-    id: string;
+    id?: string;
+    handle?: string;
   };
   Single: {
     postId: string;

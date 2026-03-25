@@ -26,6 +26,12 @@ import ImageView from 'react-native-image-viewing';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
 import {
+  APP_HEADER_CONTENT_GAP,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
+import {
   ChatTransportError,
   connectChatSocket,
   onChatGroupMessage,
@@ -1756,7 +1762,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
       <View
         style={[
           styles.header,
-          { paddingTop: insets.top + 6, borderBottomColor: isDark ? '#1b1b1b' : '#ececee' },
+          { paddingTop: insets.top, borderBottomColor: isDark ? '#1b1b1b' : '#ececee' },
         ]}
       >
         <Pressable onPress={() => navigation.goBack()} style={styles.iconButton}>
@@ -1910,7 +1916,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingBottom: 8,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
     borderBottomWidth: 1,
   },
   iconButton: {
@@ -1953,6 +1960,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     flexShrink: 1,
+    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
   },
   headerUsername: {
     marginTop: 1,
@@ -1961,6 +1969,7 @@ const styles = StyleSheet.create({
   },
   contentWrap: {
     flex: 1,
+    paddingTop: APP_HEADER_CONTENT_GAP,
   },
   messagesContent: {
     paddingHorizontal: 16,

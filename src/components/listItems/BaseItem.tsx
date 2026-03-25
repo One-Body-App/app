@@ -363,7 +363,6 @@ function BaseItem({
   const primaryTextColor = dark ? Colors.neutral.brand : brandColors.black;
   const secondaryTextColor = dark ? Colors.neutral[400] : brandColors.primaryDark;
   const isSocialPost = postData.type === PostType.social;
-  const isPrayerPost = postData.type === PostType.prayer;
   const locationPillBackground = dark ? Colors.neutral[800] : Colors.neutral[900];
   const locationPillBorder = dark ? 'rgba(255,255,255,0.08)' : Colors.neutral[600];
   const [myReaction, setMyReaction] = useState<SocialPostReaction | undefined>(postData.myReaction);
@@ -691,7 +690,7 @@ function BaseItem({
   const formattedHandle = userHandle ? `@${userHandle}` : '';
   const hasHandle = Boolean(formattedHandle);
   const prayerDisplayEmoji = (() => {
-    if (!isPrayerPost) {
+    if (postData.type !== PostType.prayer) {
       return '';
     }
 

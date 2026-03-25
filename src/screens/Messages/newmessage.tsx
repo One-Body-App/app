@@ -18,6 +18,14 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
 import { ApiCall } from '@/src/services/api';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_CONTENT_GAP,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'NewMessage'>;
 
@@ -315,7 +323,7 @@ function NewMessageScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { marginTop: insets.top + (isIOS ? 6 : 12) }]}>
+      <View style={[styles.header, { marginTop: insets.top }]}>
         <View style={styles.headerSideSlot}>
           <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
             <MaterialIcons name="chevron-left" size={34} color="#126b87" />
@@ -370,14 +378,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    minHeight: APP_HEADER_ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
-    paddingBottom: 10,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
   },
   headerSideSlot: {
-    width: 70,
+    width: APP_HEADER_SIDE_WIDTH + 22,
+    minHeight: APP_HEADER_ROW_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -393,7 +403,8 @@ const styles = StyleSheet.create({
   headerTitleAndroidWrap: {
     flex: 1,
     justifyContent: 'center',
-    paddingLeft: 10,
+    alignItems: 'flex-start',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerButton: {
     minWidth: 64,
@@ -403,6 +414,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
+    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
   cancelText: {
     color: '#126b87',
@@ -412,7 +425,7 @@ const styles = StyleSheet.create({
   },
   searchWrap: {
     marginHorizontal: 16,
-    marginTop: 6,
+    marginTop: APP_HEADER_CONTENT_GAP,
     borderRadius: 16,
     minHeight: 52,
     paddingHorizontal: 14,

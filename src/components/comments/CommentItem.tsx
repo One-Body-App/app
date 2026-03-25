@@ -646,13 +646,21 @@ function CommentItem({
                   mediaImages={postData.images ?? []}
                   setImages={setThreadImages}
                   onOpenGifPicker={onOpenGifPicker}
-                  publishComment={async (value: string) => {
+                  publishComment={async ({
+                    text: value,
+                  }: {
+                    text: string;
+                    mentionedUserIds: string[];
+                  }) => {
                     if (editCommentAction && postData.id) {
                       setIsLoading(true);
                       await editCommentAction(postData.id, value);
                       editComment(false);
                       setIsLoading(false);
+                      return true;
                     }
+
+                    return false;
                   }}
                 />
               )}

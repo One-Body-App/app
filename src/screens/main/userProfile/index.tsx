@@ -54,7 +54,7 @@ type Props = CompositeScreenProps<
 >;
 
 function UserProfile({ navigation, route }: Props) {
-  const { id } = route.params;
+  const { id, handle } = route.params;
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const isLoading = useSelector((state: RootState) => state.general.loader);
@@ -83,14 +83,35 @@ function UserProfile({ navigation, route }: Props) {
         dispatch(setLoader(true));
 
         try {
+          let resolvedUserId = id;
+          if (!resolvedUserId && handle) {
+            const userByHandleRes = await ApiCall({
+              route: `user/by-username/${encodeURIComponent(handle)}`,
+              verb: 'get',
+              token,
+            });
+
+            if (userByHandleRes?.status === 200) {
+              resolvedUserId = userByHandleRes.response?._id ?? userByHandleRes.response?.id;
+            }
+          }
+
+          if (!resolvedUserId) {
+            if (isActive) {
+              setUser(undefined);
+              setRelatedUsers(undefined);
+            }
+            return;
+          }
+
           const [userRes, relatedUsersRes] = await Promise.all([
             ApiCall({
-              route: `user/${id}`,
+              route: `user/${resolvedUserId}`,
               verb: 'get',
               token,
             }),
             ApiCall({
-              route: `user/get-related-users/${id}/1?itemsPerPage=12`,
+              route: `user/get-related-users/${resolvedUserId}/1?itemsPerPage=12`,
               verb: 'get',
               token,
             }),
@@ -119,7 +140,7 @@ function UserProfile({ navigation, route }: Props) {
       return () => {
         isActive = false;
       };
-    }, [dispatch, id, token])
+    }, [dispatch, handle, id, token])
   );
 
   useFocusEffect(

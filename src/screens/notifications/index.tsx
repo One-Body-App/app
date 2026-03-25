@@ -16,6 +16,7 @@ import {
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { useToast } from 'react-native-toast-notifications';
 import { NotificationBing } from 'iconsax-react-native';
@@ -27,6 +28,12 @@ import LogoWhite from '@/assets/icons/logo_white.svg';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors, Typography } from '@/src/styles';
+import {
+  APP_HEADER_CONTENT_GAP,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
 import { spacing } from '@/src/styles/spacing';
 import {
   QueuedPushNotification,
@@ -270,7 +277,8 @@ function NotificationScreen({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const toast = useToast();
   const { colors, dark } = useTheme();
-  const styles = createStyles(dark, colors);
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(dark, colors, insets.top);
 
   const [notifications, setNotifications] = useState<InboxNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -914,7 +922,7 @@ function NotificationScreen({ navigation }: Props) {
   );
 }
 
-const createStyles = (dark: boolean, colors: any) =>
+const createStyles = (dark: boolean, colors: any, topInset: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -930,24 +938,26 @@ const createStyles = (dark: boolean, colors: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingTop: Platform.OS === 'ios' ? spacing.x64 : spacing.x13,
+      minHeight: APP_HEADER_ROW_HEIGHT + topInset,
+      paddingTop: topInset,
       paddingHorizontal: spacing.x16,
-      paddingBottom: spacing.x5,
+      transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
     },
     headerLeft: {
       flexDirection: 'row',
       alignItems: 'center',
+      flex: Platform.OS === 'android' ? 1 : 0,
     },
     headerBackButton: {
-      width: 32,
-      height: 32,
+      width: APP_HEADER_SIDE_WIDTH,
+      height: APP_HEADER_ROW_HEIGHT,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: Platform.OS === 'android' ? spacing.x5 : 0,
     },
     headerTitle: {
       ...Typography.body.x5M,
       color: colors.text,
+      textAlign: 'left',
     },
     headerTitleIOS: {
       ...Typography.body.x5M,
@@ -956,14 +966,14 @@ const createStyles = (dark: boolean, colors: any) =>
       textAlign: 'center',
     },
     headerActionButton: {
-      width: 32,
-      height: 32,
+      width: APP_HEADER_SIDE_WIDTH,
+      height: APP_HEADER_ROW_HEIGHT,
       alignItems: 'center',
       justifyContent: 'center',
     },
     chipsContainer: {
       paddingHorizontal: spacing.x16,
-      paddingTop: spacing.x10,
+      paddingTop: APP_HEADER_CONTENT_GAP,
       paddingBottom: spacing.x8,
       gap: spacing.x8,
     },

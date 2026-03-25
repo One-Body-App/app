@@ -261,6 +261,7 @@ export interface SocialPost {
   _id?: string;
   postId?: string;
   content: string;
+  mentionedUserIds?: string[];
   date: string;
   source: 'instagram';
   handler: string;
@@ -353,6 +354,7 @@ export interface WatchPost {
   duration?: string;
   durationMs?: number;
   content: string;
+  mentionedUserIds?: string[];
   date: string;
   handler: string;
   link: string;
@@ -396,6 +398,7 @@ export enum PrayerWallCategory {
 export interface PrayerPost {
   postId?: string;
   content: string;
+  mentionedUserIds?: string[];
   date: string;
   private: boolean;
   category: PrayerWallCategory;
@@ -455,6 +458,7 @@ export interface CommentPost {
   objectId: string;
   objectType: string;
   content: string;
+  mentionedUserIds?: string[];
   userData: {
     _id?: string;
     name: string;
@@ -487,6 +491,7 @@ export interface SerializableCommentSnapshot {
   objectId?: string;
   objectType?: string;
   content?: string;
+  mentionedUserIds?: string[];
   userData?: {
     _id?: string;
     name?: string;

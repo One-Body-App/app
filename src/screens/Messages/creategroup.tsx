@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,12 +13,21 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { MessagesStackParamsList } from '@/src/navigator/types';
 import { ApiCall } from '@/src/services/api';
 import { createChatGroup } from '@/src/services/chat/api';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_CONTENT_GAP,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+  APP_HEADER_TITLE_LINE_HEIGHT,
+} from '@/src/styles/headerLayout';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'CreateGroup'>;
 
@@ -82,6 +92,7 @@ const pickListSource = (response: any): any[] => {
 
 function CreateGroupScreen({ navigation }: Props) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const token = useSelector((state: RootState) => state.auth.userToken);
   const [groupName, setGroupName] = useState('');
   const [query, setQuery] = useState('');
@@ -241,14 +252,26 @@ function CreateGroupScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <MaterialIcons name="arrow-back" size={30} color="#126b87" />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Create Group</Text>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </Pressable>
+      <View style={[styles.header, { marginTop: insets.top }]}>
+        <View style={styles.headerSideSlot}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
+            <MaterialIcons name="arrow-back" size={30} color="#126b87" />
+          </Pressable>
+        </View>
+        {Platform.OS === 'ios' ? (
+          <View style={styles.headerCenterWrap} pointerEvents="none">
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Create Group</Text>
+          </View>
+        ) : (
+          <View style={styles.headerTitleAndroidWrap}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Create Group</Text>
+          </View>
+        )}
+        <View style={styles.headerSideSlot}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={[styles.groupNameWrap, { backgroundColor: colors.card }]}>
@@ -321,12 +344,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    minHeight: APP_HEADER_ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
+    transform: [{ translateY: APP_HEADER_ROW_OFFSET }],
+  },
+  headerSideSlot: {
+    minWidth: APP_HEADER_SIDE_WIDTH,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    justifyContent: 'center',
+  },
+  headerCenterWrap: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 16 + APP_HEADER_SIDE_WIDTH,
+    right: 16 + APP_HEADER_SIDE_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleAndroidWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
   headerButton: {
     minWidth: 56,
@@ -334,8 +377,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 34,
+    fontSize: 24,
     fontWeight: '700',
+    lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
+    textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
   cancelText: {
     color: '#126b87',
@@ -345,7 +390,7 @@ const styles = StyleSheet.create({
   },
   groupNameWrap: {
     marginHorizontal: 16,
-    marginTop: 6,
+    marginTop: APP_HEADER_CONTENT_GAP,
     borderRadius: 16,
     minHeight: 52,
     paddingHorizontal: 14,
