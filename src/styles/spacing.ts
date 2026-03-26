@@ -16,6 +16,7 @@ type Spacing =
   | 'x88'
   | 'x104';
 
+// eslint-disable-next-line import/prefer-default-export
 export const spacing: Record<Spacing, number> = {
   x5: 5,
   x8: 8,

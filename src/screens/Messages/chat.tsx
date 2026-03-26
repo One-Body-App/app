@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { BlurView } from '@react-native-community/blur';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -61,6 +62,10 @@ import { MessagesConversationListView } from '@/src/components/chat/MessagesConv
 import { SwipeableChatItem } from '@/src/components/chat/SwipeableChatItem';
 import {
   APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_BACKGROUND_DARK,
+  APP_HEADER_BACKGROUND_LIGHT,
+  APP_HEADER_BORDER_DARK,
+  APP_HEADER_BORDER_LIGHT,
   APP_HEADER_CONTENT_GAP,
   APP_HEADER_HORIZONTAL_INSET,
   APP_HEADER_ROW_HEIGHT,
@@ -136,7 +141,7 @@ const getNativeDestructiveAction = (
 };
 
 function ChatListScreen({ navigation }: Props) {
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
   const token = useSelector((state: RootState) => state.auth.userToken);
@@ -844,52 +849,73 @@ function ChatListScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.headerRow, { marginTop: insets.top }]}>
-        <View style={styles.headerSideSlot}>
-          <Image
-            source={{ uri: headerAvatarUri }}
-            style={[styles.headerAvatar, { borderColor: colors.border }]}
+      <View
+        style={[
+          styles.headerWrap,
+          {
+            paddingTop: insets.top,
+            backgroundColor: dark ? APP_HEADER_BACKGROUND_DARK : APP_HEADER_BACKGROUND_LIGHT,
+            borderBottomColor: dark ? APP_HEADER_BORDER_DARK : APP_HEADER_BORDER_LIGHT,
+          },
+        ]}
+      >
+        {isIOS && (
+          <BlurView
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+            blurType={dark ? 'dark' : 'light'}
+            blurAmount={18}
+            reducedTransparencyFallbackColor={colors.background}
           />
-        </View>
-
-        {isIOS ? (
-          <View style={styles.headerCenterWrap} pointerEvents="none">
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
-          </View>
-        ) : (
-          <View style={styles.headerAndroidTitleWrap}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
-          </View>
         )}
 
-        <View style={styles.headerSideSlot}>
-          <Pressable
-            onPress={openSettings}
-            style={styles.settingsButton}
-            testID="chat-settings-button"
-          >
-            <MaterialIcons name="settings" size={30} color="#126b87" />
-          </Pressable>
-        </View>
-      </View>
+        <View style={styles.headerRow}>
+          <View style={styles.headerSideSlot}>
+            <Image
+              source={{ uri: headerAvatarUri }}
+              style={[styles.headerAvatar, { borderColor: colors.border }]}
+            />
+          </View>
 
-      <View style={[styles.searchWrap, { backgroundColor: colors.card }]}>
-        <MaterialIcons name="search" size={20} color={colors.text} />
-        <TextInput
-          ref={searchInputRef}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search conversations..."
-          placeholderTextColor={colors.text}
-          style={[styles.searchInput, { color: colors.text }]}
-        />
-      </View>
-      <View style={styles.filterBarWrap} testID="chat-filter-tabs">
-        <GlassTabBar
-          tabs={CHAT_FILTER_TABS.map((tab) => tab.label)}
-          activeIndex={Math.max(selectedFilterIndex, 0)}
-          onTabChange={handleFilterTabChange}
-        />
+          {isIOS ? (
+            <View style={styles.headerCenterWrap} pointerEvents="none">
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
+            </View>
+          ) : (
+            <View style={styles.headerAndroidTitleWrap}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
+            </View>
+          )}
+
+          <View style={styles.headerSideSlot}>
+            <Pressable
+              onPress={openSettings}
+              style={styles.settingsButton}
+              testID="chat-settings-button"
+            >
+              <MaterialIcons name="settings" size={30} color="#126b87" />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={[styles.searchWrap, { backgroundColor: colors.card }]}>
+          <MaterialIcons name="search" size={20} color={colors.text} />
+          <TextInput
+            ref={searchInputRef}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search conversations..."
+            placeholderTextColor={colors.text}
+            style={[styles.searchInput, { color: colors.text }]}
+          />
+        </View>
+        <View style={styles.filterBarWrap} testID="chat-filter-tabs">
+          <GlassTabBar
+            tabs={CHAT_FILTER_TABS.map((tab) => tab.label)}
+            activeIndex={Math.max(selectedFilterIndex, 0)}
+            onTabChange={handleFilterTabChange}
+          />
+        </View>
       </View>
       {conversationsContent}
       {selectedFilter !== 'groups' ? (
@@ -915,6 +941,12 @@ function ChatListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
+  },
+  headerWrap: {
+    borderBottomWidth: 1,
+    paddingBottom: Platform.OS === 'android' ? spacing.x5 : spacing.x8,
+    marginHorizontal: -APP_HEADER_HORIZONTAL_INSET,
     paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
   },
   headerRow: {

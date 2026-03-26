@@ -76,7 +76,7 @@ const getServeRoleType = (location: string) =>
     .filter(Boolean)[1] || location;
 
 function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
-  const { colors, dark } = useTheme();
+  const { dark, colors } = useTheme();
   const palette = useConnectPalette();
   const insets = useSafeAreaInsets();
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);

@@ -80,7 +80,13 @@ import useMountEffect from '@/src/hooks/useMountEffect';
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
 // This fixes Android crash: "Cannot read property 'DocumentDir' of null"
 const LazyVideoPost = React.lazy(() => import('../screens/post/VideoPost'));
+const DirectVideoPost = Platform.OS === 'ios' ? require('../screens/post/VideoPost').default : null;
+
 function VideoPost({ navigation, route }: { navigation: any; route: any }) {
+  if (Platform.OS === 'ios' && DirectVideoPost) {
+    return <DirectVideoPost navigation={navigation} route={route} />;
+  }
+
   return (
     <React.Suspense fallback={<ActivityIndicator size="large" />}>
       <LazyVideoPost navigation={navigation} route={route} />
@@ -275,7 +281,9 @@ function AppContent() {
       appStateRef.current = nextAppState;
       if (wasBackground && nextAppState === 'active') {
         refreshTokenOnResumeRef.current().catch(() => undefined);
-        resumePendingVideoUploads().catch(() => undefined);
+        if (Platform.OS !== 'ios') {
+          resumePendingVideoUploads().catch(() => undefined);
+        }
       }
     });
 
@@ -285,7 +293,9 @@ function AppContent() {
   });
 
   useMountEffect(() => {
-    resumePendingVideoUploads().catch(() => undefined);
+    if (Platform.OS !== 'ios') {
+      resumePendingVideoUploads().catch(() => undefined);
+    }
   });
 
   ignoreAuthLinksRef.current = !!authState.getProfileData?.emailVerified;

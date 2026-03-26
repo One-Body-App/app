@@ -38,7 +38,13 @@ type QueueDependencies = {
 
 type VideoUploadQueue = {
   hydrate: () => Promise<PendingVideoUpload[]>;
-  enqueue: (recipe: VideoEditRecipe) => Promise<PendingVideoUpload>;
+  enqueue: (
+    recipe: VideoEditRecipe,
+    options?: {
+      startImmediately?: boolean;
+    }
+  ) => Promise<PendingVideoUpload>;
+  start: () => Promise<void>;
   resume: () => Promise<void>;
   getItems: () => PendingVideoUpload[];
   waitForIdle: () => Promise<void>;
@@ -501,7 +507,14 @@ export const createVideoUploadQueue = (
     return processingPromise;
   };
 
-  const enqueue = async (recipe: VideoEditRecipe) => {
+  const start = async () => ensureProcessing();
+
+  const enqueue = async (
+    recipe: VideoEditRecipe,
+    options?: {
+      startImmediately?: boolean;
+    }
+  ) => {
     await hydrate();
 
     const timestamp = dependencies.now();
@@ -516,7 +529,9 @@ export const createVideoUploadQueue = (
 
     items = [...items, item];
     await persist();
-    ensureProcessing().catch(() => undefined);
+    if (options?.startImmediately !== false) {
+      ensureProcessing().catch(() => undefined);
+    }
     return item;
   };
 
@@ -537,6 +552,7 @@ export const createVideoUploadQueue = (
   return {
     hydrate,
     enqueue,
+    start,
     resume,
     getItems,
     waitForIdle,
@@ -546,7 +562,13 @@ export const createVideoUploadQueue = (
 const defaultQueue = createVideoUploadQueue();
 
 export const hydratePendingVideoUploads = () => defaultQueue.hydrate();
-export const enqueuePendingVideoUpload = (recipe: VideoEditRecipe) => defaultQueue.enqueue(recipe);
+export const enqueuePendingVideoUpload = (
+  recipe: VideoEditRecipe,
+  options?: {
+    startImmediately?: boolean;
+  }
+) => defaultQueue.enqueue(recipe, options);
+export const startPendingVideoUploads = () => defaultQueue.start();
 export const resumePendingVideoUploads = () => defaultQueue.resume();
 export const getPendingVideoUploadsSnapshot = () => defaultQueue.getItems();
 export const waitForPendingVideoUploadsIdle = () => defaultQueue.waitForIdle();

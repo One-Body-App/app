@@ -30,6 +30,10 @@ import useMountEffect from '@/src/hooks/useMountEffect';
 import { Typography } from '@/src/styles';
 import {
   APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_BACKGROUND_DARK,
+  APP_HEADER_BACKGROUND_LIGHT,
+  APP_HEADER_BORDER_DARK,
+  APP_HEADER_BORDER_LIGHT,
   APP_HEADER_CONTENT_GAP,
   APP_HEADER_CONTROL_SIZE,
   APP_HEADER_HORIZONTAL_INSET,
@@ -266,7 +270,7 @@ export function useConnectPalette() {
 
   return {
     isDark: dark,
-    screenBackground: colors.background,
+    screenBackground: dark ? APP_HEADER_BACKGROUND_DARK : APP_HEADER_BACKGROUND_LIGHT,
     overlayBackground: dark ? 'rgba(13,13,13,0.82)' : 'rgba(247,251,252,0.92)',
     overlaySubtle: dark ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.88)',
     overlayStrong: dark ? 'rgba(18,18,18,0.94)' : 'rgba(255,255,255,0.96)',
@@ -1236,7 +1240,14 @@ export function ConnectPortalChrome({
       style={[
         styles.chromeWrap,
         overlay ? styles.chromeWrapOverlay : null,
-        { backgroundColor: overlay ? 'transparent' : palette.screenBackground },
+        {
+          backgroundColor: overlay ? 'transparent' : palette.screenBackground,
+          borderBottomColor: overlay
+            ? 'transparent'
+            : palette.isDark
+              ? APP_HEADER_BORDER_DARK
+              : APP_HEADER_BORDER_LIGHT,
+        },
         { paddingTop: insets.top },
       ]}
     >
@@ -1254,6 +1265,14 @@ export function ConnectPortalChrome({
             pointerEvents="none"
           />
         </>
+      ) : Platform.OS === 'ios' ? (
+        <BlurView
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+          blurType={palette.isDark ? 'dark' : 'light'}
+          blurAmount={18}
+          reducedTransparencyFallbackColor={palette.glassFallback}
+        />
       ) : null}
 
       <View style={styles.topBar}>
@@ -2154,17 +2173,19 @@ export function ConnectPlaceDetailSheet({ place, isFollowing, onToggleFollow }: 
 
 const styles = StyleSheet.create({
   chromeWrap: {
-    backgroundColor: CONNECT_BRAND.backgroundDark,
+    backgroundColor: APP_HEADER_BACKGROUND_LIGHT,
     paddingHorizontal: APP_HEADER_HORIZONTAL_INSET,
-    paddingBottom: Platform.OS === 'android' ? spacing.x5 : spacing.x8,
-    gap: Platform.OS === 'android' ? spacing.x5 : APP_HEADER_CONTENT_GAP,
+    paddingBottom: spacing.x5,
+    gap: APP_HEADER_CONTENT_GAP,
+    borderBottomWidth: 1,
+    borderBottomColor: APP_HEADER_BORDER_LIGHT,
   },
   chromeWrapOverlay: {
     backgroundColor: 'transparent',
   },
   chromeOverlayScrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3,47,60,0.86)',
+    backgroundColor: 'rgba(230,234,236,0.82)',
   },
   topBar: {
     flexDirection: 'row',

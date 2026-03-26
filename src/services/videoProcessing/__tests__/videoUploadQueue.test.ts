@@ -116,6 +116,50 @@ describe('videoUploadQueue', () => {
     ]);
   });
 
+  it('can enqueue without starting processing until explicitly started', async () => {
+    const storage = createMemoryStorage();
+    const moderateVideo = jest.fn(async () => ({
+      moderationDecision: 'safe' as const,
+      moderationScores: null,
+    }));
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      moderateVideo,
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported.mp4',
+        processedDuration: 12_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo: jest.fn(async () => 'mux_upload_delayed'),
+      createWatchPost: jest.fn(async () => undefined),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    const item = await queue.enqueue(baseRecipe, { startImmediately: false });
+
+    expect(queue.getItems()).toEqual([
+      expect.objectContaining({
+        id: item.id,
+        status: 'queued',
+      }),
+    ]);
+    expect(moderateVideo).not.toHaveBeenCalled();
+
+    await queue.start();
+    await queue.waitForIdle();
+
+    expect(moderateVideo).toHaveBeenCalledTimes(1);
+    expect(queue.getItems()).toEqual([
+      expect.objectContaining({
+        id: item.id,
+        status: 'complete',
+      }),
+    ]);
+  });
+
   it('retries retryable upload failures and completes when a later retry succeeds', async () => {
     const storage = createMemoryStorage();
     let uploadAttempts = 0;

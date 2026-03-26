@@ -43,6 +43,10 @@ import { NO_PROFILE_IMAGE } from '@/services/constants';
 import { Colors, Typography } from '@/src/styles';
 import {
   APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_BACKGROUND_DARK,
+  APP_HEADER_BACKGROUND_LIGHT,
+  APP_HEADER_BORDER_DARK,
+  APP_HEADER_BORDER_LIGHT,
   APP_HEADER_CONTENT_GAP,
   APP_HEADER_HORIZONTAL_INSET,
   APP_HEADER_ROW_HEIGHT,
@@ -367,8 +371,8 @@ function Explore({ navigation }: Props) {
   const secondaryTextColor = dark ? '#c4ccd6' : Colors.neutral[300];
   const tertiaryTextColor = dark ? '#9aa4b2' : Colors.neutral[300];
   const screenBackgroundColor = dark ? '#0a0b0d' : '#f8fafc';
-  const headerBackgroundColor = dark ? '#0c0d10' : '#ffffff';
-  const headerDividerColor = dark ? 'rgba(255,255,255,0.06)' : colors.border;
+  const headerBackgroundColor = dark ? APP_HEADER_BACKGROUND_DARK : APP_HEADER_BACKGROUND_LIGHT;
+  const headerDividerColor = dark ? APP_HEADER_BORDER_DARK : APP_HEADER_BORDER_LIGHT;
   const searchSurfaceColor = dark ? '#1c2024' : '#f1f5f9';
   const surfaceCardColor = dark ? '#15191d' : colors.card;
   const surfaceBorderColor = dark ? 'rgba(255,255,255,0.1)' : colors.border;

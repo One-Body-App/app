@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActiveMention,
   MentionSelection,
@@ -18,9 +18,14 @@ export const useMentionComposer = ({
   initialText?: string;
   sanitizeText?: (value: string) => string;
 }) => {
-  const [text, setTextState] = useState(() => sanitizeText(initialText));
+  const sanitizeTextRef = useRef(sanitizeText);
+  useEffect(() => {
+    sanitizeTextRef.current = sanitizeText;
+  }, [sanitizeText]);
+
+  const [text, setTextState] = useState(() => sanitizeTextRef.current(initialText));
   const [selection, setSelectionState] = useState<MentionSelection>(() => {
-    const { length } = sanitizeText(initialText);
+    const { length } = sanitizeTextRef.current(initialText);
     return { start: length, end: length };
   });
   const mentionsByHandleRef = useRef(new Map<string, string>());
@@ -51,7 +56,7 @@ export const useMentionComposer = ({
     (value: string | ((currentValue: string) => string)) => {
       setTextState((currentValue) => {
         const nextValue = typeof value === 'function' ? value(currentValue) : value;
-        const sanitizedValue = sanitizeText(nextValue);
+        const sanitizedValue = sanitizeTextRef.current(nextValue);
         pruneMentions(sanitizedValue);
         setSelectionState((currentSelection) =>
           clampSelection(currentSelection, sanitizedValue.length)
@@ -59,7 +64,7 @@ export const useMentionComposer = ({
         return sanitizedValue;
       });
     },
-    [pruneMentions, sanitizeText]
+    [pruneMentions]
   );
 
   const setSelection = useCallback(
@@ -92,25 +97,22 @@ export const useMentionComposer = ({
       const replacement = replaceMentionAtRange(text, activeMention, suggestion.username);
       mentionsByHandleRef.current.set(suggestion.username.toLowerCase(), suggestion.id);
       setMentionsVersion((current) => current + 1);
-      setTextState(sanitizeText(replacement.text));
+      setTextState(sanitizeTextRef.current(replacement.text));
       setSelectionState(replacement.selection);
     },
-    [activeMention, sanitizeText, text]
+    [activeMention, text]
   );
 
-  const reset = useCallback(
-    (nextText = '') => {
-      mentionsByHandleRef.current = new Map();
-      setMentionsVersion((current) => current + 1);
-      const sanitizedValue = sanitizeText(nextText);
-      setTextState(sanitizedValue);
-      setSelectionState({
-        start: sanitizedValue.length,
-        end: sanitizedValue.length,
-      });
-    },
-    [sanitizeText]
-  );
+  const reset = useCallback((nextText = '') => {
+    mentionsByHandleRef.current = new Map();
+    setMentionsVersion((current) => current + 1);
+    const sanitizedValue = sanitizeTextRef.current(nextText);
+    setTextState(sanitizedValue);
+    setSelectionState({
+      start: sanitizedValue.length,
+      end: sanitizedValue.length,
+    });
+  }, []);
 
   const mentionedUserIds = useMemo(
     () => syncMentionedUserIds(text, mentionsByHandleRef.current),

@@ -956,3 +956,14 @@ index e8fcab0..25c3878 100644
 -//# sourceMappingURL=index.js.map
 \ No newline at end of file
 +//# sourceMappingURL=index.js.map
+diff --git a/node_modules/react-native-video-trim/ios/VideoTrim.mm b/node_modules/react-native-video-trim/ios/VideoTrim.mm
+index 28f48b0..675a0f3 100644
+--- a/node_modules/react-native-video-trim/ios/VideoTrim.mm
++++ b/node_modules/react-native-video-trim/ios/VideoTrim.mm
+@@ -528,7 +528,7 @@ - (void)exportEditedVideo:(nonnull NSString *)url options:(JS::NativeVideoTrim::
+         @"-map", @"0:a?",
+-        @"-c:v", @"libx264",
++        @"-c:v", @"h264_videotoolbox",
+         @"-preset", @"faster",
+         @"-pix_fmt", @"yuv420p",
+         @"-b:v", [NSString stringWithFormat:@"%.0f", options.videoBitrate()],

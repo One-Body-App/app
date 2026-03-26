@@ -36,7 +36,6 @@ import {
   CompositeScreenProps,
   useNavigation,
   useTheme,
-  useScrollToTop,
   DrawerActions,
   useFocusEffect,
 } from '@react-navigation/native';
@@ -69,6 +68,12 @@ import PrayerItem from '@/components/listItems/PrayerItem';
 import { ArticleType, PostType, PrayerPost, SocialPost, User } from '@/utils/types';
 import { Colors } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
+import {
+  APP_HEADER_BACKGROUND_DARK,
+  APP_HEADER_BACKGROUND_LIGHT,
+  APP_HEADER_BORDER_DARK,
+  APP_HEADER_BORDER_LIGHT,
+} from '@/src/styles/headerLayout';
 import useScrollIntentLock from '@/src/hooks/useScrollIntentLock';
 import { getHeight } from '@/utils/ResponsiveFun';
 import Logo from '@/assets/icons/logo.svg';
@@ -966,8 +971,8 @@ function Home({ navigation, route }: Props) {
   );
   const defaultHeaderHeight = insets.top + headerRowHeight + spacing.x10 + spacing.x8 + 20;
   const glassOverlayColor = dark ? 'rgba(13,13,13,0.7)' : 'rgba(246,246,247,0.7)';
-  const androidHeaderBackground = dark ? 'rgba(13,13,13,0.92)' : 'rgba(246,246,247,0.92)';
-  const androidHeaderBorderColor = dark ? 'rgba(255,255,255,0.08)' : BRAND.gray100;
+  const androidHeaderBackground = dark ? APP_HEADER_BACKGROUND_DARK : APP_HEADER_BACKGROUND_LIGHT;
+  const androidHeaderBorderColor = dark ? APP_HEADER_BORDER_DARK : APP_HEADER_BORDER_LIGHT;
   const tabContainerGlassStyle = useMemo(
     () => ({
       backgroundColor: 'transparent',
@@ -1033,12 +1038,12 @@ function Home({ navigation, route }: Props) {
     [introAnimatedCardKeys]
   );
   const listRef = useRef<FlatList<RenderFeedEntry>>(null);
+  const headerInsetRef = useRef(0);
   const renderEntryFallbackKeyMapRef = useRef(new WeakMap<object, string>());
   const renderEntryFallbackKeySequenceRef = useRef(0);
   const feedVisibleStartByKeyRef = useRef<Map<string, number>>(new Map());
   const feedImpressionsByKeyRef = useRef<Set<string>>(new Set());
   const [viewableSocialPostIds, setViewableSocialPostIds] = useState<Set<string>>(new Set());
-  useScrollToTop(listRef as any);
   const scrollIntent = useScrollIntentLock();
 
   useEffect(() => {
@@ -1082,10 +1087,22 @@ function Home({ navigation, route }: Props) {
       if (!pendingScrollToTopRef.current) {
         return;
       }
-      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+      const offset = Platform.OS === 'ios' ? -headerInsetRef.current : 0;
+      listRef.current?.scrollToOffset({ offset, animated: false });
       pendingScrollToTopRef.current = false;
     });
   }, []);
+
+  useEffect(() => {
+    const parent = navigation.getParent();
+    if (!parent) return;
+    return (parent as any).addListener('tabPress', (e: any) => {
+      if (navigation.isFocused() && !e.defaultPrevented) {
+        const offset = Platform.OS === 'ios' ? -headerInsetRef.current : 0;
+        listRef.current?.scrollToOffset({ offset, animated: true });
+      }
+    });
+  }, [navigation]);
 
   const requestFeedRefresh = useCallback(
     ({
@@ -2612,17 +2629,19 @@ function Home({ navigation, route }: Props) {
   const lastScrollRef = useRef(0);
   const resolvedHeaderHeight = headerHeight || defaultHeaderHeight;
   const headerInset = resolvedHeaderHeight + spacing.x10;
-  const iosRefreshOffset = resolvedHeaderHeight + spacing.x13;
-  const hideFloatingHeaderForIOSRefresh = Platform.OS === 'ios' && isRefreshing;
+  headerInsetRef.current = headerInset;
   const clampDistance = headerInset + footerHeight;
   const scrollClampSource = useMemo(
     () =>
       scrollY.interpolate({
-        inputRange: [-100, 0, clampDistance],
+        inputRange:
+          Platform.OS === 'ios'
+            ? [-headerInset - 100, -headerInset, clampDistance - headerInset]
+            : [-100, 0, clampDistance],
         outputRange: [0, 0, clampDistance],
         extrapolate: 'clamp',
       }),
-    [scrollY, clampDistance]
+    [scrollY, clampDistance, headerInset]
   );
   const clampedScroll = useMemo(
     () => Animated.diffClamp(scrollClampSource, 0, clampDistance),
@@ -2664,7 +2683,9 @@ function Home({ navigation, route }: Props) {
         useNativeDriver: true,
         listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
           const rawValue = event?.nativeEvent?.contentOffset?.y ?? 0;
-          const nextValue = Math.max(0, rawValue);
+          const adjustedValue =
+            Platform.OS === 'ios' ? rawValue + headerInsetRef.current : rawValue;
+          const nextValue = Math.max(0, adjustedValue);
           const diff = nextValue - lastScrollRef.current;
           const threshold = 1;
           if (nextValue > 8 && !hasUserInteractedRef.current) {
@@ -3132,7 +3153,7 @@ function Home({ navigation, route }: Props) {
 
   const listContentContainerStyle = useMemo(
     () => ({
-      paddingTop: headerInset,
+      paddingTop: Platform.OS === 'ios' ? 0 : headerInset,
       paddingBottom: footerHeight + spacing.x16,
     }),
     [footerHeight, headerInset]
@@ -3164,19 +3185,26 @@ function Home({ navigation, route }: Props) {
     quickPostText,
   ]);
 
-  const feedRefreshControl = useMemo(() => {
-    const iosSpinnerColor = dark ? BRAND.gray100 : BRAND.primaryDark;
-    return (
+  const [refreshTintReady, setRefreshTintReady] = useState(Platform.OS !== 'ios');
+  useEffect(() => {
+    if (Platform.OS === 'ios' && !refreshTintReady) {
+      requestAnimationFrame(() => setRefreshTintReady(true));
+    }
+  }, [refreshTintReady]);
+
+  const feedRefreshControl = useMemo(
+    () => (
       <RefreshControl
         refreshing={isRefreshing}
         onRefresh={handleFeedRefresh}
-        progressViewOffset={Platform.OS === 'ios' ? iosRefreshOffset : headerInset}
-        tintColor={iosSpinnerColor}
-        titleColor={iosSpinnerColor}
-        colors={[BRAND.primaryDark]}
+        progressViewOffset={Platform.OS === 'android' ? headerInset : 0}
+        tintColor={refreshTintReady ? '#126b87' : undefined}
+        titleColor={refreshTintReady ? '#126b87' : undefined}
+        colors={['#126b87']}
       />
-    );
-  }, [dark, handleFeedRefresh, headerInset, iosRefreshOffset, isRefreshing]);
+    ),
+    [handleFeedRefresh, headerInset, isRefreshing, refreshTintReady]
+  );
 
   let mainFeedContent: React.ReactNode;
 
@@ -3212,6 +3240,9 @@ function Home({ navigation, route }: Props) {
         contentContainerStyle={listContentContainerStyle}
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
+        contentInset={Platform.OS === 'ios' ? { top: headerInset } : undefined}
+        contentOffset={Platform.OS === 'ios' ? { x: 0, y: -headerInset } : undefined}
+        scrollIndicatorInsets={Platform.OS === 'ios' ? { top: headerInset } : undefined}
         alwaysBounceVertical={Platform.OS === 'ios'}
         ListHeaderComponent={feedListHeaderComponent}
         ListEmptyComponent={emptyFeedState}
@@ -3251,7 +3282,7 @@ function Home({ navigation, route }: Props) {
           left: 0,
           right: 0,
           zIndex: 10,
-          opacity: hideFloatingHeaderForIOSRefresh ? 0 : feedIntroHeaderOpacity,
+          opacity: feedIntroHeaderOpacity,
           transform: [
             {
               translateY: Animated.add(headerTranslateY, feedIntroHeaderTranslateY),
