@@ -1,23 +1,34 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
-import type {
-  ConnectPortalPaymentOption,
-  ConnectPortalTicketType,
-} from '@/src/services/connectPortal';
+import type { ConnectPortalTicketType } from '@/src/services/connectPortal';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep4'>;
 
+const isValidExternalEventUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
   const [draftId, setDraftId] = useState(route.params?.draftId);
   const [ticketType, setTicketType] = useState<ConnectPortalTicketType>('free');
-  const [paymentOption, setPaymentOption] = useState<ConnectPortalPaymentOption>('external');
+  const [externalEventUrl, setExternalEventUrl] = useState('');
 
   useMountEffect(() => {
     let isActive = true;
@@ -33,8 +44,8 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
       }
 
       setDraftId(draft.id);
-      setTicketType(draft.ticketType);
-      setPaymentOption(draft.paymentOption);
+      setTicketType(draft.ticketType === 'paid' ? 'external' : draft.ticketType);
+      setExternalEventUrl(draft.externalEventUrl || '');
       setLoading(false);
     })();
 
@@ -52,7 +63,8 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
       draftId,
       {
         ticketType,
-        paymentOption: ticketType === 'free' ? 'external' : paymentOption,
+        paymentOption: 'external',
+        externalEventUrl: ticketType === 'external' ? externalEventUrl.trim() : '',
         payoutConfigured: false,
       },
       completedStep !== undefined ? { completedStep } : undefined
@@ -71,23 +83,28 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
       onNext={async () => {
         const draft = await persistDraft(4);
         if (draft) {
-          navigation.navigate('ConnectGoCreateStep5', { draftId: draft.id });
+          navigation.navigate(
+            ticketType === 'external' ? 'ConnectGoCreateStep6Review' : 'ConnectGoCreateStep5',
+            { draftId: draft.id }
+          );
         }
       }}
-      nextDisabled={!draftId}
+      nextDisabled={
+        !draftId || (ticketType === 'external' && !isValidExternalEventUrl(externalEventUrl))
+      }
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
           How will the community register?
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Let us know if your gathering is free and open to all, or if attendees need to purchase a
-          ticket to help cover costs.
+          Choose whether believers will RSVP through One Body&apos;s free gathering flow or be
+          redirected straight to your own registration destination.
         </Text>
       </View>
 
       <View style={styles.toggleRow}>
-        {(['free', 'paid'] as ConnectPortalTicketType[]).map((option) => {
+        {(['free', 'external'] as ConnectPortalTicketType[]).map((option) => {
           const isActive = ticketType === option;
           return (
             <TouchableOpacity
@@ -101,9 +118,6 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
               ]}
               onPress={() => {
                 setTicketType(option);
-                if (option === 'free') {
-                  setPaymentOption('external');
-                }
               }}
             >
               <Text
@@ -112,64 +126,68 @@ function TicketingTypeScreen({ navigation, route }: Props): React.JSX.Element {
                   { color: isActive ? palette.accent : palette.textPrimary },
                 ]}
               >
-                {option === 'free' ? 'Free Gathering' : 'Ticketed Event'}
+                {option === 'free' ? 'Free Gathering' : 'External Link'}
               </Text>
-              <Text
-                style={[
-                  styles.toggleBody,
-                  { color: isActive ? palette.textSecondary : palette.textSecondary },
-                ]}
-              >
+              <Text style={[styles.toggleBody, { color: palette.textSecondary }]}>
                 {option === 'free'
-                  ? 'No cost to attend. Simply invite believers to RSVP and join the fellowship.'
-                  : 'Set up paid registration to help support your ministry or event expenses.'}
+                  ? "Use One Body's free RSVP setup so attendees can register directly in the app."
+                  : 'Send attendees straight to your website, Eventbrite, or preferred registration platform.'}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {ticketType === 'paid' ? (
-        <View style={styles.paymentSection}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Payment Method</Text>
-          {(['external', 'internal'] as ConnectPortalPaymentOption[]).map((option) => {
-            const isActive = paymentOption === option;
-            return (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.paymentCard,
-                  {
-                    backgroundColor: isActive ? palette.cardActiveBg : palette.cardBg,
-                    borderColor: isActive ? palette.cardActiveBorder : palette.cardBorder,
-                  },
-                ]}
-                onPress={() => setPaymentOption(option)}
-              >
-                <View style={styles.paymentCopy}>
-                  <Text style={[styles.paymentTitle, { color: palette.textPrimary }]}>
-                    {option === 'external' ? 'External Link' : 'One Body Ticketing'}
-                  </Text>
-                  <Text style={[styles.paymentBody, { color: palette.textSecondary }]}>
-                    {option === 'external'
-                      ? 'Direct attendees to your church website, Eventbrite, or preferred registration platform.'
-                      : 'Securely process payments right here in the app (requires setup before review).'}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.radio,
-                    {
-                      borderColor: isActive ? palette.radioActiveBorder : palette.radioBorder,
-                      backgroundColor: isActive ? palette.radioActiveBg : palette.cardBg,
-                    },
-                  ]}
-                />
-              </TouchableOpacity>
-            );
-          })}
+      {ticketType === 'external' ? (
+        <View style={styles.formSection}>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>External Event Link</Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.inputBorder,
+                color: palette.inputText,
+              },
+            ]}
+            value={externalEventUrl}
+            onChangeText={setExternalEventUrl}
+            placeholder="https://yourchurch.org/events/spring-gathering"
+            placeholderTextColor={palette.inputPlaceholder}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Text style={[styles.helperText, { color: palette.textSecondary }]}>
+            Attendees will be redirected directly to this link. No One Body registration flow will
+            be shown.
+          </Text>
         </View>
       ) : null}
+
+      <View
+        style={[
+          styles.comingSoonCard,
+          {
+            backgroundColor: palette.cardBg,
+            borderColor: palette.cardBorder,
+          },
+        ]}
+      >
+        <View style={styles.paymentCopy}>
+          <Text style={[styles.paymentTitle, { color: palette.textPrimary }]}>
+            One Body Paid Ticketing
+          </Text>
+          <Text style={[styles.paymentBody, { color: palette.textSecondary }]}>
+            Coming soon. Paid ticketing is not available in the app right now.
+          </Text>
+        </View>
+        <View style={[styles.comingSoonBadge, { backgroundColor: palette.disabledInputBg }]}>
+          <Text style={[styles.comingSoonBadgeText, { color: palette.textSecondary }]}>
+            Coming soon
+          </Text>
+        </View>
+      </View>
     </CreateFlowLayout>
   );
 }
@@ -203,7 +221,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  paymentSection: {
+  formSection: {
     gap: 10,
   },
   label: {
@@ -211,6 +229,27 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontFamily: 'Rubik-Medium',
     letterSpacing: 0.15,
+  },
+  input: {
+    minHeight: 54,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontFamily: 'OpenSans-Regular',
+  },
+  helperText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  comingSoonCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    opacity: 0.72,
   },
   paymentCard: {
     flexDirection: 'row',
@@ -232,11 +271,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
+  comingSoonBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  comingSoonBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 

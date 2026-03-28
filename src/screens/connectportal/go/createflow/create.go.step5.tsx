@@ -34,6 +34,11 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
         return;
       }
 
+      if (nextDraft.ticketType === 'external') {
+        navigation.navigate('ConnectGoCreateStep6Review', { draftId: nextDraft.id });
+        return;
+      }
+
       setDraft(nextDraft);
       setTicketTiers(
         nextDraft.ticketTiers.length > 0 ? nextDraft.ticketTiers : [createDraftTicketTier()]
@@ -89,12 +94,14 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
 
   return (
     <CreateFlowLayout
-      title="Configure Tickets"
+      title={draft?.ticketType === 'paid' ? 'Configure Tickets' : 'Free RSVP Setup'}
       step={5}
       loading={loading}
       onBack={async () => {
         await persistDraft(4);
-        navigation.navigate('ConnectGoCreateStep4', { draftId: draft?.id || route.params.draftId });
+        navigation.navigate('ConnectGoCreateStep4', {
+          draftId: draft?.id || route.params.draftId,
+        });
       }}
       onNext={async () => {
         const nextDraft = await persistDraft(5);
@@ -107,11 +114,11 @@ function ConfigureTicketsScreen({ navigation, route }: Props): React.JSX.Element
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-          Set up registration options.
+          Set up your free One Body RSVP options.
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Create the different ways believers can RSVP. Free gatherings will automatically stay at
-          zero cost, while ticketed events can offer multiple tiers.
+          Configure the attendance options believers will see in the app. Free gatherings stay at
+          zero cost and can still offer multiple RSVP tiers if needed.
         </Text>
       </View>
 

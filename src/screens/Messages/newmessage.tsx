@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -98,119 +98,142 @@ function NewMessageScreen({ navigation }: Props) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<ConnectedContact[]>([]);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRequestIdRef = useRef(0);
+  const latestQueryRef = useRef('');
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchConnectedAccounts = async () => {
-      setIsLoadingContacts(true);
-      try {
-        const response = await ApiCall<any>({
-          route: 'user/get-following',
-          verb: 'get',
-          token: token || true,
-        });
-
-        if (!isMounted) {
-          return;
-        }
-
-        const source = pickListSource(response);
-
-        const mapped = source
-          .map(normalizeContact)
-          .filter((item): item is ConnectedContact => Boolean(item))
-          .sort((a, b) => a.name.localeCompare(b.name));
-
-        setConnectedAccounts(mapped);
-      } catch {
-        if (isMounted) {
-          setConnectedAccounts([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingContacts(false);
-        }
-      }
-    };
-
-    fetchConnectedAccounts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [token]);
-
-  const connectedIdSet = useMemo(
-    () => new Set(connectedAccounts.map((contact) => contact.id)),
-    [connectedAccounts]
-  );
-
-  useEffect(() => {
-    const text = query.trim();
-    if (!text) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return undefined;
+  const clearPendingSearch = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
     }
+  }, []);
 
-    let isMounted = true;
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const response = await ApiCall<any>({
-          route: 'user/search',
-          verb: 'post',
-          token: token || true,
-          params: {
-            type: 'users',
-            text,
-          },
-        });
+  const scheduleSearch = useCallback(
+    (nextQuery: string, availableContacts: ConnectedContact[] = connectedAccounts) => {
+      latestQueryRef.current = nextQuery;
+      clearPendingSearch();
 
-        if (!isMounted) {
-          return;
-        }
+      const text = nextQuery.trim();
+      if (!text) {
+        searchRequestIdRef.current += 1;
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
 
-        const source = pickListSource(response);
+      const requestId = searchRequestIdRef.current + 1;
+      searchRequestIdRef.current = requestId;
+      searchTimeoutRef.current = setTimeout(async () => {
+        setIsSearching(true);
+        try {
+          const response = await ApiCall<any>({
+            route: 'user/search',
+            verb: 'post',
+            token: token || true,
+            params: {
+              type: 'users',
+              text,
+            },
+          });
 
-        const map = new Map<string, ConnectedContact>();
-        source.forEach((entry: any) => {
-          const next = normalizeContact(entry);
-          if (!next || !connectedIdSet.has(next.id) || map.has(next.id)) {
+          if (searchRequestIdRef.current !== requestId || latestQueryRef.current.trim() !== text) {
             return;
           }
-          map.set(next.id, next);
-        });
 
-        // Fallback local filter so connected users still show if OpenSearch index is stale.
-        if (map.size < 1) {
-          const local = connectedAccounts.filter((item) => {
-            const name = item.name.toLowerCase();
-            const username = item.username?.toLowerCase() ?? '';
-            const value = text.toLowerCase();
-            return name.includes(value) || username.includes(value);
+          const source = pickListSource(response);
+          const availableContactIds = new Set(availableContacts.map((contact) => contact.id));
+          const map = new Map<string, ConnectedContact>();
+          source.forEach((entry: any) => {
+            const next = normalizeContact(entry);
+            if (!next || !availableContactIds.has(next.id) || map.has(next.id)) {
+              return;
+            }
+            map.set(next.id, next);
           });
-          setSearchResults(local);
-        } else {
-          setSearchResults(Array.from(map.values()));
-        }
-      } catch {
-        if (isMounted) {
-          setSearchResults([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsSearching(false);
-        }
-      }
-    }, 300);
 
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
-  }, [connectedAccounts, connectedIdSet, query, token]);
+          if (map.size < 1) {
+            const local = availableContacts.filter((item) => {
+              const name = item.name.toLowerCase();
+              const username = item.username?.toLowerCase() ?? '';
+              const value = text.toLowerCase();
+              return name.includes(value) || username.includes(value);
+            });
+            setSearchResults(local);
+          } else {
+            setSearchResults(Array.from(map.values()));
+          }
+        } catch {
+          if (searchRequestIdRef.current === requestId) {
+            setSearchResults([]);
+          }
+        } finally {
+          if (searchRequestIdRef.current === requestId) {
+            setIsSearching(false);
+          }
+        }
+      }, 300);
+    },
+    [clearPendingSearch, connectedAccounts, token]
+  );
+
+  const handleQueryChange = useCallback(
+    (nextQuery: string) => {
+      setQuery(nextQuery);
+      scheduleSearch(nextQuery);
+    },
+    [scheduleSearch]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+
+      const fetchConnectedAccounts = async () => {
+        setIsLoadingContacts(true);
+        try {
+          const response = await ApiCall<any>({
+            route: 'user/get-following',
+            verb: 'get',
+            token: token || true,
+          });
+
+          if (!isMounted) {
+            return;
+          }
+
+          const source = pickListSource(response);
+
+          const mapped = source
+            .map(normalizeContact)
+            .filter((item): item is ConnectedContact => Boolean(item))
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+          setConnectedAccounts(mapped);
+          if (latestQueryRef.current.trim()) {
+            scheduleSearch(latestQueryRef.current, mapped);
+          }
+        } catch {
+          if (isMounted) {
+            setConnectedAccounts([]);
+          }
+        } finally {
+          if (isMounted) {
+            setIsLoadingContacts(false);
+          }
+        }
+      };
+
+      fetchConnectedAccounts();
+
+      return () => {
+        isMounted = false;
+        clearPendingSearch();
+        searchRequestIdRef.current += 1;
+        setIsSearching(false);
+      };
+    }, [clearPendingSearch, scheduleSearch, token])
+  );
 
   const groupedContacts = useMemo(() => {
     const groups: Record<string, ConnectedContact[]> = {};
@@ -351,7 +374,7 @@ function NewMessageScreen({ navigation }: Props) {
         <MaterialIcons name="search" size={24} color="#7da9bb" />
         <TextInput
           value={query}
-          onChangeText={setQuery}
+          onChangeText={handleQueryChange}
           placeholder="Search contacts or churches"
           placeholderTextColor="#7da9bb"
           style={[styles.searchInput, { color: colors.text }]}

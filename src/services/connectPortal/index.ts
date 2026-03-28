@@ -80,7 +80,14 @@ const createSeededPublishedEvent = (
     endDate: overrides.endDate || overrides.startDate || '2026-06-01',
     startTime: overrides.startTime || '6:00 PM',
     endTime: overrides.endTime || '8:00 PM',
+    isSingleDayEvent:
+      overrides.isSingleDayEvent ??
+      (Boolean(overrides.startDate || overrides.endDate) &&
+        (overrides.endDate || overrides.startDate || '2026-06-01') ===
+          (overrides.startDate || '2026-06-01')),
     isOnline: overrides.isOnline ?? false,
+    onlineEventUrl: overrides.onlineEventUrl || '',
+    externalEventUrl: overrides.externalEventUrl || '',
     locationQuery: overrides.locationQuery || overrides.address || '',
     venueName: overrides.venueName || 'OneBody Hall',
     address: overrides.address || '123 Main St, Atlanta, GA',
@@ -246,8 +253,15 @@ const normalizeCoordinate = (value: unknown): Coordinate | undefined => {
   return [longitude, latitude];
 };
 
-const normalizeTicketType = (value: unknown): ConnectPortalTicketType =>
-  value === 'paid' ? 'paid' : 'free';
+const normalizeTicketType = (value: unknown): ConnectPortalTicketType => {
+  if (value === 'paid') {
+    return 'paid';
+  }
+  if (value === 'external') {
+    return 'external';
+  }
+  return 'free';
+};
 
 const normalizePaymentOption = (value: unknown): ConnectPortalPaymentOption =>
   value === 'internal' ? 'internal' : 'external';
@@ -307,7 +321,14 @@ const normalizeDraft = (value: unknown): ConnectPortalEventDraft | null => {
     endDate: String(item.endDate || ''),
     startTime: String(item.startTime || ''),
     endTime: String(item.endTime || ''),
+    isSingleDayEvent:
+      item.isSingleDayEvent === true ||
+      (item.isSingleDayEvent === undefined &&
+        Boolean(item.startDate) &&
+        String(item.startDate || '') === String(item.endDate || item.startDate || '')),
     isOnline: item.isOnline === true,
+    onlineEventUrl: String(item.onlineEventUrl || ''),
+    externalEventUrl: String((item as Partial<ConnectPortalEventDraft>).externalEventUrl || ''),
     locationQuery: String(item.locationQuery || ''),
     venueName: String(item.venueName || ''),
     address: String(item.address || ''),
@@ -371,7 +392,14 @@ const normalizePublishedEvent = (value: unknown): ConnectPortalPublishedEvent | 
     endDate: String(item.endDate || item.startDate || ''),
     startTime: String(item.startTime || ''),
     endTime: String(item.endTime || ''),
+    isSingleDayEvent:
+      item.isSingleDayEvent === true ||
+      (item.isSingleDayEvent === undefined &&
+        Boolean(item.startDate) &&
+        String(item.startDate || '') === String(item.endDate || item.startDate || '')),
     isOnline: item.isOnline === true,
+    onlineEventUrl: String(item.onlineEventUrl || ''),
+    externalEventUrl: String((item as Partial<ConnectPortalPublishedEvent>).externalEventUrl || ''),
     locationQuery: String(item.locationQuery || ''),
     venueName: String(item.venueName || ''),
     address: String(item.address || ''),
@@ -483,7 +511,13 @@ const createEmptyDraft = (
   endDate: overrides?.endDate || '',
   startTime: overrides?.startTime || '',
   endTime: overrides?.endTime || '',
+  isSingleDayEvent:
+    overrides?.isSingleDayEvent ??
+    (Boolean(overrides?.startDate) &&
+      (overrides?.endDate || overrides?.startDate || '') === (overrides?.startDate || '')),
   isOnline: overrides?.isOnline ?? false,
+  onlineEventUrl: overrides?.onlineEventUrl || '',
+  externalEventUrl: overrides?.externalEventUrl || '',
   locationQuery: overrides?.locationQuery || '',
   venueName: overrides?.venueName || '',
   address: overrides?.address || '',
@@ -511,6 +545,7 @@ export const getDraftResumeRouteName = (record: ConnectPortalEventDraft) => {
   if (record.lastCompletedStep < 2) return 'ConnectGoCreateStep2';
   if (record.lastCompletedStep < 3) return 'ConnectGoCreateStep3';
   if (record.lastCompletedStep < 4) return 'ConnectGoCreateStep4';
+  if (record.ticketType === 'external') return 'ConnectGoCreateStep6Review';
   if (record.lastCompletedStep < 5) return 'ConnectGoCreateStep5';
   if (requiresPayoutStep(record) && !record.payoutConfigured) return 'ConnectGoCreateStep6Payout';
   return 'ConnectGoCreateStep6Review';
@@ -827,7 +862,10 @@ export const createConnectPortalStorage = (
       endDate: draft.endDate,
       startTime: draft.startTime,
       endTime: draft.endTime,
+      isSingleDayEvent: draft.isSingleDayEvent,
       isOnline: draft.isOnline,
+      onlineEventUrl: draft.onlineEventUrl,
+      externalEventUrl: draft.externalEventUrl,
       locationQuery: draft.locationQuery,
       venueName: draft.venueName || (draft.isOnline ? 'Online Event' : ''),
       address: draft.address || (draft.isOnline ? 'Online' : ''),
@@ -943,12 +981,12 @@ const normalizePlaceRecord = (value: unknown): ConnectPlaceRecord | null => {
   const item = value as Partial<ConnectPlaceRecord> & {
     coordinate?: Coordinate;
   };
-  const id =
-    typeof item.id === 'string'
-      ? item.id
-      : typeof (item as any)._id === 'string'
-        ? (item as any)._id
-        : '';
+  let id = '';
+  if (typeof item.id === 'string') {
+    id = item.id;
+  } else if (typeof (item as any)._id === 'string') {
+    id = (item as any)._id;
+  }
 
   if (!id) {
     return null;

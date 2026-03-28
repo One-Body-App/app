@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unstable-nested-components */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useSelector } from 'react-redux';
-import { SceneMap } from 'react-native-tab-view';
 import { CompositeScreenProps, useTheme } from '@react-navigation/native';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -20,7 +19,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowRight } from 'iconsax-react-native';
 import FastImage from 'react-native-fast-image';
 
-import SearchContainComponent from '@/components/SearchContainComponent';
 import { ApiCall } from '@/services/api';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import ArticleItem from '@/components/listItems/ArticleItem';
@@ -40,6 +38,7 @@ import { borderRadius } from '@/src/styles/outlines';
 import SearchIcon from '@/assets/icons/search.svg';
 import UserItem from '@/components/listItems/UserItem';
 import { header } from '@/src/styles/typography';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 
 // type Props = DrawerScreenProps<RootStackParamList, 'Settings'>;
 type Props = CompositeScreenProps<
@@ -67,18 +66,6 @@ function Search() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // const user = useSelector((state: RootState) => state.auth.getProfileData);
-
-  // const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState([
-    { key: 'Recent', title: 'Most Recent' },
-    { key: 'Contains', title: 'Contains' },
-    { key: 'Match', title: 'Best Match' },
-  ]);
-  const renderScene = SceneMap({
-    Recent: SearchContainComponent,
-    Contains: SearchContainComponent,
-    Match: SearchContainComponent,
-  });
 
   const storeAsyncData = async (value: any) => {
     try {
@@ -183,6 +170,144 @@ function Search() {
   //   );
   // };
   const { colors } = useTheme();
+  const searchResultsEmpty = useMemo(() => {
+    if (isLoading) {
+      return null;
+    }
+
+    return <StyledText style={{ textAlign: 'center' }}>No search results</StyledText>;
+  }, [isLoading]);
+
+  const renderSearchResult = useCallback(
+    ({ item }: { item: any }) => {
+      if (item.type == 'posts') {
+        return (
+          <ArticleItem
+            key={item.id}
+            item={item}
+            imageSizeType="contain"
+            blogPostStyle={{
+              width: 'auto',
+              flexGrow: 1,
+              backgroundColor: colors.card,
+              marginVertical: spacing.x8,
+              paddingHorizontal: spacing.x24,
+            }}
+            blogPostImageStyle={{
+              flexGrow: 1,
+              borderTopLeftRadius: spacing.x10,
+              borderTopRightRadius: spacing.x10,
+              marginBottom: spacing.x8 / 2,
+            }}
+            blogPostTitleStyle={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+            }}
+          />
+        );
+      }
+
+      return (
+        <View style={{ paddingHorizontal: spacing.x24 }}>
+          <UserItem item={item} />
+        </View>
+      );
+    },
+    [colors.card]
+  );
+
+  const renderRecentSearchEmpty = useCallback(() => {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center' }}>
+        <View
+          style={{
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: Colors.neutral[700],
+              marginBottom: spacing.x32,
+              borderRadius: borderRadius.max,
+              padding: spacing.x32,
+            }}
+          >
+            <SearchIcon style={{ height: 100, width: 100 }} stroke={Colors.neutral[500]} />
+          </View>
+        </View>
+        <StyledText
+          style={[Typography.body.x4, { textAlign: 'center', marginBottom: spacing.x16 }]}
+        >
+          No recent search
+        </StyledText>
+        <StyledText
+          style={[
+            Typography.body.x2,
+            {
+              color: Colors.neutral[300],
+              textAlign: 'center',
+              paddingHorizontal: spacing.x48,
+            },
+          ]}
+        >
+          Start searching to have recent searches here
+        </StyledText>
+      </View>
+    );
+  }, []);
+
+  const renderRecentSearch = useCallback(
+    ({
+      item,
+    }: {
+      item: { item: string; type: SearchType; itemMeta?: { image?: string; whatIDo?: string } };
+    }) => (
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingVertical: spacing.x10,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => {
+            setInput(item.item);
+          }}
+          style={{ flexDirection: 'row', flex: 1, alignItems: 'center' }}
+        >
+          <View
+            style={{
+              borderColor: Colors.neutral[500],
+              borderWidth: 1,
+              borderRadius: borderRadius.max,
+              padding: spacing.x8,
+              marginRight: spacing.x10,
+            }}
+          >
+            {item.itemMeta?.image ? (
+              <FastImage source={{ uri: item.itemMeta?.image }} />
+            ) : (
+              <ArrowRight
+                size="16"
+                color={Colors.primary.brand}
+                style={{ transform: [{ rotate: '-45deg' }] }}
+              />
+            )}
+          </View>
+          <StyledText>{item.item}</StyledText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            setRecentSearches(recentSearches.filter((search) => search.item != item.item));
+          }}
+        >
+          <Ionicons name="close-outline" size={20} />
+        </TouchableOpacity>
+      </View>
+    ),
+    [recentSearches]
+  );
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -314,53 +439,18 @@ function Search() {
             <FlatList
               contentContainerStyle={{ flexGrow: 1 }}
               data={results}
-              ListEmptyComponent={() => {
-                if (!isLoading) {
-                  return <StyledText style={{ textAlign: 'center' }}>No search results</StyledText>;
-                }
-
-                return null;
-              }}
-              renderItem={({ item }) => {
-                if (item.type == 'posts') {
-                  return (
-                    <ArticleItem
-                      key={item.id}
-                      item={item}
-                      imageSizeType="contain"
-                      blogPostStyle={{
-                        width: 'auto',
-                        flexGrow: 1,
-                        backgroundColor: colors.card,
-                        marginVertical: spacing.x8,
-                        paddingHorizontal: spacing.x24,
-                      }}
-                      blogPostImageStyle={{
-                        flexGrow: 1,
-                        borderTopLeftRadius: spacing.x10,
-                        borderTopRightRadius: spacing.x10,
-                        marginBottom: spacing.x8 / 2,
-                      }}
-                      blogPostTitleStyle={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                      }}
-                      // onPress={(item) => {
-                      //   storeAsyncData([...recentSearches, input]);
-                      // }}
-                    />
-                  );
-                }
-
-                return (
-                  <View style={{ paddingHorizontal: spacing.x24 }}>
-                    <UserItem item={item} />
-                  </View>
-                );
-              }}
+              ListEmptyComponent={searchResultsEmpty}
+              renderItem={renderSearchResult}
               keyExtractor={(item, index) => {
                 return item.id ?? index.toString();
               }}
+              removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+              initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+              maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+              updateCellsBatchingPeriod={
+                STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
+              }
+              windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
             />
           </>
         ) : (
@@ -392,98 +482,15 @@ function Search() {
                 <FlatList
                   data={recentSearches}
                   contentContainerStyle={{ flex: 1, paddingHorizontal: spacing.x24 }}
-                  renderItem={({ item }) => (
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingVertical: spacing.x10,
-                      }}
-                    >
-                      <TouchableOpacity
-                        onPress={() => {
-                          setInput(item.item);
-                        }}
-                        style={{ flexDirection: 'row', flex: 1, alignItems: 'center' }}
-                      >
-                        <View
-                          style={{
-                            borderColor: Colors.neutral[500],
-                            borderWidth: 1,
-                            borderRadius: borderRadius.max,
-                            padding: spacing.x8,
-                            marginRight: spacing.x10,
-                          }}
-                        >
-                          {item.itemMeta?.image ? (
-                            <FastImage source={{ uri: item.itemMeta?.image }} />
-                          ) : (
-                            <ArrowRight
-                              size="16"
-                              color={Colors.primary.brand}
-                              style={{ transform: [{ rotate: '-45deg' }] }}
-                            />
-                          )}
-                        </View>
-                        <StyledText>{item.item}</StyledText>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setRecentSearches(
-                            recentSearches.filter((search) => search.item != item.item)
-                          );
-                        }}
-                      >
-                        <Ionicons name="close-outline" size={20} />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  ListEmptyComponent={() => {
-                    return (
-                      <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <View
-                          style={{
-                            alignItems: 'center',
-                          }}
-                        >
-                          <View
-                            style={{
-                              backgroundColor: Colors.neutral[700],
-                              marginBottom: spacing.x32,
-                              borderRadius: borderRadius.max,
-                              padding: spacing.x32,
-                            }}
-                          >
-                            <SearchIcon
-                              style={{ height: 100, width: 100 }}
-                              stroke={Colors.neutral[500]}
-                            />
-                          </View>
-                        </View>
-                        <StyledText
-                          style={[
-                            Typography.body.x4,
-                            { textAlign: 'center', marginBottom: spacing.x16 },
-                          ]}
-                        >
-                          No recent search
-                        </StyledText>
-                        <StyledText
-                          style={[
-                            Typography.body.x2,
-                            {
-                              color: Colors.neutral[300],
-                              textAlign: 'center',
-                              paddingHorizontal: spacing.x48,
-                            },
-                          ]}
-                        >
-                          Start searching to have recent searches here
-                        </StyledText>
-                      </View>
-                    );
-                  }}
+                  renderItem={renderRecentSearch}
+                  ListEmptyComponent={renderRecentSearchEmpty}
+                  removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+                  initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+                  maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+                  updateCellsBatchingPeriod={
+                    STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
+                  }
+                  windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
                 />
               </>
             ) : null}

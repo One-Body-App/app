@@ -73,6 +73,7 @@ import {
   MainBottomStackParamsList,
   MainDrawerParamsList,
 } from '@/src/navigator/types';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import {
   CONNECT_PORTAL_LIST_DATA,
   type ConnectPortalListItem,
@@ -2007,6 +2008,13 @@ function Explore({ navigation }: Props) {
                 </View>
               )
             }
+            removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+            initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+            maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+            updateCellsBatchingPeriod={
+              STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
+            }
+            windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
           />
         </View>
       ) : (

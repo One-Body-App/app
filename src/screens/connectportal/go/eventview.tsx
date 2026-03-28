@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   ImageBackground,
+  Linking,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -20,6 +22,19 @@ import type { ConnectPortalEventRecord } from '@/src/services/connectPortal';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventView'>;
+
+const isValidExternalLink = (value?: string) => {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
 
 function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
   const [eventRecord, setEventRecord] = useState<ConnectPortalEventRecord | null>(null);
@@ -47,6 +62,9 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
   const heroImageUri =
     eventRecord?.heroImageUri ||
     'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80';
+  const isExternalLinkEvent =
+    eventRecord?.status === 'published' && eventRecord.ticketType === 'external';
+  const hasExternalLink = isValidExternalLink(eventRecord?.externalEventUrl);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -126,6 +144,25 @@ function EventViewScreen({ navigation, route }: Props): React.JSX.Element {
               }
             >
               <Text style={styles.bottomButtonText}>Resume Draft</Text>
+            </TouchableOpacity>
+          ) : isExternalLinkEvent ? (
+            <TouchableOpacity
+              style={[styles.bottomButton, !hasExternalLink ? styles.bottomButtonDisabled : null]}
+              activeOpacity={0.92}
+              disabled={!hasExternalLink}
+              onPress={async () => {
+                if (!eventRecord?.externalEventUrl) {
+                  return;
+                }
+
+                try {
+                  await Linking.openURL(eventRecord.externalEventUrl);
+                } catch {
+                  Alert.alert('Unable to open link', 'Please try again later.');
+                }
+              }}
+            >
+              <Text style={styles.bottomButtonText}>Open Event Link</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.bottomButton} activeOpacity={0.92}>
@@ -287,6 +324,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#126b87',
+  },
+  bottomButtonDisabled: {
+    opacity: 0.45,
   },
   bottomButtonText: {
     color: '#FFFFFF',

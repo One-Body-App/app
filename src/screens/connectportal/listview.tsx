@@ -17,6 +17,7 @@ import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamlin
 import StyledText from '@/components/styled/Text';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { ConnectStackParamsList } from '@/src/navigator/types';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
@@ -525,6 +526,11 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
             );
           }}
           ItemSeparatorComponent={ListItemSeparator}
+          removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+          initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+          maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+          updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+          windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
         />
       </View>
 
@@ -539,7 +545,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
               ? {
                   icon: 'eventManager',
                   accessibilityLabel: 'Open event management',
-                  onPress: () => navigation.navigate('ConnectGoLanding'),
+                  onPress: () => navigation.navigate('ConnectGoEventDash'),
                   testID: 'connect-go-event-manager-action',
                 }
               : activeTab === 'Serve'

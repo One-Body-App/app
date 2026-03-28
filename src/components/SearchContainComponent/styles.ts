@@ -6,10 +6,19 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: getWidth(3),
   },
+  contentContainer: {
+    paddingBottom: getHeight(2),
+  },
   headingView: {
     justifyContent: 'space-between',
     marginTop: getHeight(1.5),
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headingActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getWidth(2),
   },
   heading: {
     fontSize: getFontSize(2),
@@ -34,6 +43,40 @@ export const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: 'gray',
+    flex: 1,
+  },
+  topicRow: {
+    flexDirection: 'row',
+    marginTop: getHeight(1.2),
+  },
+  topicRowItem: {
+    flex: 1,
+  },
+  articleSection: {
+    marginTop: getHeight(2.5),
+  },
+  articleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  articleContent: {
+    flexDirection: 'row',
+    width: '70%',
+    alignItems: 'center',
+  },
+  articleCopy: {
+    marginLeft: getWidth(2),
+  },
+  articleSource: {
+    letterSpacing: 1.5,
+    marginBottom: getHeight(0.8),
+  },
+  rowSeparator: {
+    height: getHeight(2),
+  },
+  sectionFooter: {
+    height: getHeight(2),
   },
   image: {
     height: getHeight(8),

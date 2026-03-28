@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -101,45 +101,47 @@ function CreateGroupScreen({ navigation }: Props) {
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedContact[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
 
-  useEffect(() => {
-    let isMounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
 
-    const fetchConnectedAccounts = async () => {
-      setIsLoadingContacts(true);
-      try {
-        const response = await ApiCall<any>({
-          route: 'user/get-following',
-          verb: 'get',
-          token: token || true,
-        });
+      const fetchConnectedAccounts = async () => {
+        setIsLoadingContacts(true);
+        try {
+          const response = await ApiCall<any>({
+            route: 'user/get-following',
+            verb: 'get',
+            token: token || true,
+          });
 
-        if (!isMounted) {
-          return;
+          if (!isMounted) {
+            return;
+          }
+
+          const source = pickListSource(response);
+          const mapped = source
+            .map(normalizeContact)
+            .filter((item): item is ConnectedContact => Boolean(item))
+            .sort((a, b) => a.name.localeCompare(b.name));
+          setConnectedAccounts(mapped);
+        } catch {
+          if (isMounted) {
+            setConnectedAccounts([]);
+          }
+        } finally {
+          if (isMounted) {
+            setIsLoadingContacts(false);
+          }
         }
+      };
 
-        const source = pickListSource(response);
-        const mapped = source
-          .map(normalizeContact)
-          .filter((item): item is ConnectedContact => Boolean(item))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setConnectedAccounts(mapped);
-      } catch {
-        if (isMounted) {
-          setConnectedAccounts([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingContacts(false);
-        }
-      }
-    };
+      fetchConnectedAccounts();
 
-    fetchConnectedAccounts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [token]);
+      return () => {
+        isMounted = false;
+      };
+    }, [token])
+  );
 
   const filteredContacts = useMemo(() => {
     const value = query.trim().toLowerCase();

@@ -248,16 +248,15 @@ export function ServeHeader({
   );
 }
 
-type ServeHubTab = 'Explore' | 'Saved' | 'Applied' | 'My Jobs';
+type ServeHubTab = 'My Jobs' | 'Saved' | 'Applied';
 
 const HUB_TAB_CONFIG: Array<{
   label: ServeHubTab;
-  route: 'ConnectPortal' | 'ConnectServeSaved' | 'ConnectServeApplied' | 'ConnectServeHome';
+  route: 'ConnectServeHome' | 'ConnectServeSaved' | 'ConnectServeApplied';
 }> = [
-  { label: 'Explore', route: 'ConnectPortal' },
+  { label: 'My Jobs', route: 'ConnectServeHome' },
   { label: 'Saved', route: 'ConnectServeSaved' },
   { label: 'Applied', route: 'ConnectServeApplied' },
-  { label: 'My Jobs', route: 'ConnectServeHome' },
 ];
 
 type ServeHubTabsProps = {
@@ -282,11 +281,6 @@ export function ServeHubTabs({
               key={tab.label}
               style={[styles.tab, isActive ? { borderBottomColor: palette.text } : null]}
               onPress={() => {
-                if (tab.route === 'ConnectPortal') {
-                  navigation.navigate('ConnectPortal', { initialTab: 'Serve' });
-                  return;
-                }
-
                 navigation.navigate(tab.route);
               }}
             >
@@ -352,7 +346,6 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     alignItems: 'flex-end',
-    alignItems: 'flex-end',
     justifyContent: 'center',
   },
   tabContainer: {
@@ -362,12 +355,13 @@ const styles = StyleSheet.create({
   tabScroll: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   tab: {
     paddingVertical: 12,
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
-    marginRight: 20,
+    marginHorizontal: 10,
   },
   tabText: {
     fontSize: 16,

@@ -13,8 +13,10 @@ import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { getConnectPortalEventById } from '@/src/services/connectPortal';
 import { useCreateFlowPalette } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
+import { borderRadius } from '@/src/styles/outlines';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep7Success'>;
+const GO_EVENT_BUTTON_RADIUS = borderRadius.button;
 
 function EventSuccessScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     minHeight: 54,
-    borderRadius: 14,
+    borderRadius: GO_EVENT_BUTTON_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -220,7 +222,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     minHeight: 54,
-    borderRadius: 14,
+    borderRadius: GO_EVENT_BUTTON_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

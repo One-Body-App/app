@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -78,6 +78,7 @@ import {
   APP_HEADER_TITLE_LINE_HEIGHT,
 } from '@/src/styles/headerLayout';
 import { spacing } from '@/src/styles/spacing';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import ChatEmptyState from './chatempty';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'MessagesList'>;
@@ -153,16 +154,6 @@ function ChatListScreen({ navigation }: Props) {
   const searchInputRef = useRef<TextInput>(null);
   const selectedFilterIndex = CHAT_FILTER_TABS.findIndex((tab) => tab.value === selectedFilter);
 
-  useEffect(() => {
-    publishChatUnreadFromConversations(conversations);
-  }, [conversations]);
-
-  useEffect(() => {
-    if (!token) {
-      resetChatUnreadIndicator();
-    }
-  }, [token]);
-
   const refreshConversations = useCallback(async () => {
     const conversationsResponse = await fetchChatConversations({
       token: token || undefined,
@@ -179,165 +170,183 @@ function ChatListScreen({ navigation }: Props) {
     }
   }, [token]);
 
-  useEffect(() => {
-    let isMounted = true;
-    let unsubscribeMessage: (() => void) | undefined;
-    let unsubscribeGroupMessage: (() => void) | undefined;
+  useFocusEffect(
+    useCallback(() => {
+      publishChatUnreadFromConversations(conversations);
+      return undefined;
+    }, [conversations])
+  );
 
-    const bootstrap = async () => {
-      try {
-        await ensureChatReady(token || undefined);
-        await connectChatSocket();
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) {
+        resetChatUnreadIndicator();
+      }
+      return undefined;
+    }, [token])
+  );
 
-        if (isMounted) {
-          await refreshConversations();
-        }
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      let unsubscribeMessage: (() => void) | undefined;
+      let unsubscribeGroupMessage: (() => void) | undefined;
 
-        unsubscribeMessage = await onChatMessage((payload: any) => {
-          if (!isMounted || !payload?.senderId || !payload?.receiverId) {
-            return;
+      const bootstrap = async () => {
+        try {
+          await ensureChatReady(token || undefined);
+          await connectChatSocket();
+
+          if (isMounted) {
+            await refreshConversations();
           }
 
-          setConversations((prev) => {
-            const senderId = String(payload.senderId);
-            const receiverId = String(payload.receiverId);
-            if (receiverId !== String(currentUser?._id || '')) {
-              return prev;
+          unsubscribeMessage = await onChatMessage((payload: any) => {
+            if (!isMounted || !payload?.senderId || !payload?.receiverId) {
+              return;
             }
 
-            const activePeerUserId = getActiveDirectConversationPeerId();
-            const shouldIncrementUnread = activePeerUserId !== senderId;
-            const preview = '[Encrypted message]';
-            const nowIso = payload?.createdAt
-              ? new Date(payload.createdAt).toISOString()
-              : new Date().toISOString();
-            const existingIndex = prev.findIndex((item) => item.peerUserId === senderId);
+            setConversations((prev) => {
+              const senderId = String(payload.senderId);
+              const receiverId = String(payload.receiverId);
+              if (receiverId !== String(currentUser?._id || '')) {
+                return prev;
+              }
 
-            if (existingIndex >= 0) {
-              const existing = prev[existingIndex]!;
-              const updated: ConversationListItem = {
-                ...existing,
-                lastMessagePreview: preview,
-                updatedAt: nowIso,
-                unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
-                lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
-                lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
-                isArchived: false,
-              };
-              const clone = [...prev];
-              clone.splice(existingIndex, 1);
-              return [updated, ...clone];
-            }
+              const activePeerUserId = getActiveDirectConversationPeerId();
+              const shouldIncrementUnread = activePeerUserId !== senderId;
+              const preview = '[Encrypted message]';
+              const nowIso = payload?.createdAt
+                ? new Date(payload.createdAt).toISOString()
+                : new Date().toISOString();
+              const existingIndex = prev.findIndex((item) => item.peerUserId === senderId);
 
-            return [
-              {
-                id: `c-${senderId}`,
-                conversationType: 'direct',
-                peerUserId: senderId,
-                peerName: payload.senderName || 'OneBody user',
-                peerUsername:
-                  typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
-                lastMessagePreview: preview,
-                updatedAt: nowIso,
-                unreadCount: shouldIncrementUnread ? 1 : 0,
-                isArchived: false,
-                lastMessageId: payload?._id ? String(payload._id) : '',
-                lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
-              },
-              ...prev,
-            ];
+              if (existingIndex >= 0) {
+                const existing = prev[existingIndex]!;
+                const updated: ConversationListItem = {
+                  ...existing,
+                  lastMessagePreview: preview,
+                  updatedAt: nowIso,
+                  unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
+                  lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
+                  lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
+                  isArchived: false,
+                };
+                const clone = [...prev];
+                clone.splice(existingIndex, 1);
+                return [updated, ...clone];
+              }
+
+              return [
+                {
+                  id: `c-${senderId}`,
+                  conversationType: 'direct',
+                  peerUserId: senderId,
+                  peerName: payload.senderName || 'OneBody user',
+                  peerUsername:
+                    typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
+                  lastMessagePreview: preview,
+                  updatedAt: nowIso,
+                  unreadCount: shouldIncrementUnread ? 1 : 0,
+                  isArchived: false,
+                  lastMessageId: payload?._id ? String(payload._id) : '',
+                  lastMessageStatus: shouldIncrementUnread ? 'delivered' : 'read',
+                },
+                ...prev,
+              ];
+            });
           });
-        });
 
-        unsubscribeGroupMessage = await onChatGroupMessage((payload: any) => {
-          if (!isMounted || !payload?.groupId || !payload?.senderId) {
-            return;
+          unsubscribeGroupMessage = await onChatGroupMessage((payload: any) => {
+            if (!isMounted || !payload?.groupId || !payload?.senderId) {
+              return;
+            }
+
+            setConversations((prev) => {
+              const groupId = String(payload.groupId);
+              const senderId = String(payload.senderId);
+              const activeGroupId = getActiveGroupConversationId();
+              const shouldIncrementUnread =
+                groupId.length > 0 &&
+                activeGroupId !== groupId &&
+                senderId !== String(currentUser?._id || '');
+              const parsed = parseChatMessagePayload(String(payload.plaintextPayload || ''));
+              const preview =
+                parsed.type === 'text'
+                  ? parsed.text.trim() || 'New group message'
+                  : parsed.text.trim() || (parsed.type === 'image' ? '[Image]' : '[GIF]');
+              const nowIso = payload?.createdAt
+                ? new Date(payload.createdAt).toISOString()
+                : new Date().toISOString();
+              const existingIndex = prev.findIndex(
+                (item) =>
+                  (item.conversationType === 'group' || Boolean(item.groupId)) &&
+                  (item.groupId === groupId || item.id === `group:${groupId}`)
+              );
+
+              if (existingIndex >= 0) {
+                const existing = prev[existingIndex]!;
+                const updated: ConversationListItem = {
+                  ...existing,
+                  groupId,
+                  groupName: String(
+                    payload.groupName || existing.groupName || existing.peerName || 'Group chat'
+                  ),
+                  peerName: String(
+                    payload.groupName || existing.groupName || existing.peerName || 'Group chat'
+                  ),
+                  lastMessagePreview: preview,
+                  updatedAt: nowIso,
+                  unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
+                  lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
+                  isArchived: false,
+                };
+                const clone = [...prev];
+                clone.splice(existingIndex, 1);
+                return [updated, ...clone];
+              }
+
+              return [
+                {
+                  id: `group:${groupId}`,
+                  conversationType: 'group',
+                  groupId,
+                  groupName: String(payload.groupName || 'Group chat'),
+                  peerUserId: '',
+                  peerName: String(payload.groupName || 'Group chat'),
+                  lastMessagePreview: preview,
+                  updatedAt: nowIso,
+                  unreadCount: shouldIncrementUnread ? 1 : 0,
+                  isArchived: false,
+                  lastMessageId: payload?._id ? String(payload._id) : '',
+                  participantCount: 0,
+                },
+                ...prev,
+              ];
+            });
+          });
+        } catch {
+          // Keep screen interactive when network/bootstrap fails.
+        } finally {
+          if (isMounted) {
+            setLoading(false);
           }
-
-          setConversations((prev) => {
-            const groupId = String(payload.groupId);
-            const senderId = String(payload.senderId);
-            const activeGroupId = getActiveGroupConversationId();
-            const shouldIncrementUnread =
-              groupId.length > 0 &&
-              activeGroupId !== groupId &&
-              senderId !== String(currentUser?._id || '');
-            const parsed = parseChatMessagePayload(String(payload.plaintextPayload || ''));
-            const preview =
-              parsed.type === 'text'
-                ? parsed.text.trim() || 'New group message'
-                : parsed.text.trim() || (parsed.type === 'image' ? '[Image]' : '[GIF]');
-            const nowIso = payload?.createdAt
-              ? new Date(payload.createdAt).toISOString()
-              : new Date().toISOString();
-            const existingIndex = prev.findIndex(
-              (item) =>
-                (item.conversationType === 'group' || Boolean(item.groupId)) &&
-                (item.groupId === groupId || item.id === `group:${groupId}`)
-            );
-
-            if (existingIndex >= 0) {
-              const existing = prev[existingIndex]!;
-              const updated: ConversationListItem = {
-                ...existing,
-                groupId,
-                groupName: String(
-                  payload.groupName || existing.groupName || existing.peerName || 'Group chat'
-                ),
-                peerName: String(
-                  payload.groupName || existing.groupName || existing.peerName || 'Group chat'
-                ),
-                lastMessagePreview: preview,
-                updatedAt: nowIso,
-                unreadCount: shouldIncrementUnread ? existing.unreadCount + 1 : 0,
-                lastMessageId: payload?._id ? String(payload._id) : existing.lastMessageId,
-                isArchived: false,
-              };
-              const clone = [...prev];
-              clone.splice(existingIndex, 1);
-              return [updated, ...clone];
-            }
-
-            return [
-              {
-                id: `group:${groupId}`,
-                conversationType: 'group',
-                groupId,
-                groupName: String(payload.groupName || 'Group chat'),
-                peerUserId: '',
-                peerName: String(payload.groupName || 'Group chat'),
-                lastMessagePreview: preview,
-                updatedAt: nowIso,
-                unreadCount: shouldIncrementUnread ? 1 : 0,
-                isArchived: false,
-                lastMessageId: payload?._id ? String(payload._id) : '',
-                participantCount: 0,
-              },
-              ...prev,
-            ];
-          });
-        });
-      } catch {
-        // Keep screen interactive when network/bootstrap fails.
-      } finally {
-        if (isMounted) {
-          setLoading(false);
         }
-      }
-    };
+      };
 
-    bootstrap();
+      bootstrap();
 
-    return () => {
-      isMounted = false;
-      if (unsubscribeMessage) {
-        unsubscribeMessage();
-      }
-      if (unsubscribeGroupMessage) {
-        unsubscribeGroupMessage();
-      }
-    };
-  }, [currentUser?._id, refreshConversations, token]);
+      return () => {
+        isMounted = false;
+        if (unsubscribeMessage) {
+          unsubscribeMessage();
+        }
+        if (unsubscribeGroupMessage) {
+          unsubscribeGroupMessage();
+        }
+      };
+    }, [currentUser?._id, refreshConversations, token])
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -346,9 +355,11 @@ function ChatListScreen({ navigation }: Props) {
     }, [refreshConversations])
   );
 
-  useEffect(() => {
-    return subscribeToConversationListReadEvents(setConversations);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      return subscribeToConversationListReadEvents(setConversations);
+    }, [])
+  );
 
   const filteredConversations = useMemo(() => {
     const sectionFiltered = conversations.filter((item) => {
@@ -843,6 +854,11 @@ function ChatListScreen({ navigation }: Props) {
             </SwipeableChatItem>
           );
         }}
+        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
     );
   }

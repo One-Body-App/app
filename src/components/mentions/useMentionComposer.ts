@@ -3,7 +3,6 @@ import {
   ActiveMention,
   MentionSelection,
   MentionSuggestion,
-  clampSelection,
   findActiveMention,
   replaceMentionAtRange,
   syncMentionedUserIds,
@@ -58,30 +57,24 @@ export const useMentionComposer = ({
         const nextValue = typeof value === 'function' ? value(currentValue) : value;
         const sanitizedValue = sanitizeTextRef.current(nextValue);
         pruneMentions(sanitizedValue);
-        setSelectionState((currentSelection) =>
-          clampSelection(currentSelection, sanitizedValue.length)
-        );
         return sanitizedValue;
       });
     },
     [pruneMentions]
   );
 
-  const setSelection = useCallback(
-    (nextSelection: MentionSelection) => {
-      setSelectionState((currentSelection) => {
-        if (
-          currentSelection.start === nextSelection.start &&
-          currentSelection.end === nextSelection.end
-        ) {
-          return currentSelection;
-        }
+  const setSelection = useCallback((nextSelection: MentionSelection) => {
+    setSelectionState((currentSelection) => {
+      if (
+        currentSelection.start === nextSelection.start &&
+        currentSelection.end === nextSelection.end
+      ) {
+        return currentSelection;
+      }
 
-        return clampSelection(nextSelection, text.length);
-      });
-    },
-    [text.length]
-  );
+      return nextSelection;
+    });
+  }, []);
 
   const activeMention = useMemo<ActiveMention | null>(
     () => findActiveMention(text, selection),

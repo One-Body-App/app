@@ -19,6 +19,50 @@ import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep6Review'>;
 
+const getScheduleSummary = (draft: ConnectPortalEventDraft) => {
+  const startLine = `${formatConnectPortalDate(draft.startDate)}${
+    draft.startTime ? ` • ${draft.startTime}` : ''
+  }`;
+  const isSingleDay = draft.isSingleDayEvent || !draft.endDate || draft.endDate === draft.startDate;
+
+  if (isSingleDay) {
+    return {
+      startLine,
+      endLine: draft.endTime ? `Ends ${draft.endTime}` : '',
+    };
+  }
+
+  return {
+    startLine,
+    endLine: `${formatConnectPortalDate(draft.endDate)}${draft.endTime ? ` • ${draft.endTime}` : ''}`,
+  };
+};
+
+const getTicketingSummary = (draft: ConnectPortalEventDraft) => {
+  if (draft.ticketType === 'external') {
+    return {
+      title: 'External Link',
+      supporting: draft.externalEventUrl || 'Link TBD',
+      detail:
+        'Attendees will be redirected directly to this event link. No One Body registration flow will appear.',
+    };
+  }
+
+  if (draft.ticketType === 'paid') {
+    return {
+      title: 'Legacy paid event',
+      supporting: getEventCapacityLabel(draft),
+      detail: `${draft.ticketTiers.length} ticket tier${draft.ticketTiers.length === 1 ? '' : 's'}`,
+    };
+  }
+
+  return {
+    title: 'Free event',
+    supporting: getEventCapacityLabel(draft),
+    detail: `${draft.ticketTiers.length} RSVP tier${draft.ticketTiers.length === 1 ? '' : 's'} in One Body`,
+  };
+};
+
 function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
   const [loading, setLoading] = useState(true);
@@ -45,6 +89,9 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
       isActive = false;
     };
   });
+
+  const scheduleSummary = draft ? getScheduleSummary(draft) : null;
+  const ticketingSummary = draft ? getTicketingSummary(draft) : null;
 
   return (
     <CreateFlowLayout
@@ -114,12 +161,11 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
           >
             <Text style={[styles.detailTitle, { color: palette.accent }]}>Schedule</Text>
             <Text style={[styles.detailValue, { color: palette.textPrimary }]}>
-              {formatConnectPortalDate(draft.startDate)}
-              {draft.startTime ? ` • ${draft.startTime}` : ''}
+              {scheduleSummary?.startLine}
             </Text>
-            {draft.endTime ? (
+            {scheduleSummary?.endLine ? (
               <Text style={[styles.detailValue, { color: palette.textPrimary }]}>
-                Ends {draft.endTime}
+                {scheduleSummary.endLine}
               </Text>
             ) : null}
           </View>
@@ -135,7 +181,9 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
               {draft.isOnline ? 'Online Event' : draft.venueName || 'Location TBD'}
             </Text>
             <Text style={[styles.detailSubvalue, { color: palette.textSecondary }]}>
-              {draft.address || draft.locationQuery || 'TBD'}
+              {draft.isOnline
+                ? draft.onlineEventUrl || 'Join link TBD'
+                : draft.address || draft.locationQuery || 'TBD'}
             </Text>
           </View>
 
@@ -145,15 +193,15 @@ function ReviewAndConfirmScreen({ navigation, route }: Props): React.JSX.Element
               { backgroundColor: palette.cardBg, borderColor: palette.cardBorder },
             ]}
           >
-            <Text style={[styles.detailTitle, { color: palette.accent }]}>Tickets</Text>
+            <Text style={[styles.detailTitle, { color: palette.accent }]}>Registration</Text>
             <Text style={[styles.detailValue, { color: palette.textPrimary }]}>
-              {draft.ticketType === 'free' ? 'Free event' : 'Paid event'}
+              {ticketingSummary?.title}
             </Text>
             <Text style={[styles.detailSubvalue, { color: palette.textSecondary }]}>
-              {getEventCapacityLabel(draft)}
+              {ticketingSummary?.supporting}
             </Text>
             <Text style={[styles.detailSubvalue, { color: palette.textSecondary }]}>
-              {draft.ticketTiers.length} ticket tier{draft.ticketTiers.length === 1 ? '' : 's'}
+              {ticketingSummary?.detail}
             </Text>
           </View>
         </>

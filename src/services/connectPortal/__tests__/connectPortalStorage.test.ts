@@ -42,6 +42,7 @@ const createApiClient = (overrides?: Partial<any>) => {
         startTime: payload.startTime || '7:00 PM',
         endTime: payload.endTime || '',
         isOnline: false,
+        externalEventUrl: payload.externalEventUrl || '',
         locationQuery: '',
         venueName: payload.venueName || 'Venue',
         address: payload.address || 'Address',
@@ -146,6 +147,7 @@ describe('connectPortalStorage', () => {
       coordinate: [-84.412, 33.755],
       ticketType: 'free',
       paymentOption: 'external',
+      externalEventUrl: '',
     });
 
     const publishedRecord = await api.publishDraftEvent(draft.id);
@@ -160,6 +162,90 @@ describe('connectPortalStorage', () => {
 
     const publicMapItems = await api.getPublicGoMapItems();
     expect(publicMapItems.some((item) => item.id === publishedRecord?.id)).toBe(true);
+  });
+
+  it('round-trips external-link drafts and resumes them at review', async () => {
+    const storage = createMemoryStorage();
+    const api = createConnectPortalStorage({
+      storage,
+      apiClient: createApiClient() as any,
+      now: jest.fn().mockReturnValue('2026-03-14T12:00:00.000Z'),
+      createId: jest.fn().mockReturnValue('draft-external'),
+    });
+
+    const draft = await api.createDraftEvent({
+      title: 'Conference Registration',
+      ticketType: 'external',
+      paymentOption: 'external',
+      externalEventUrl: 'https://example.com/register',
+    });
+
+    const savedDraft = await api.upsertDraftEvent(
+      draft.id,
+      {
+        ticketType: 'external',
+        paymentOption: 'external',
+        externalEventUrl: 'https://example.com/register',
+      },
+      { completedStep: 4 }
+    );
+
+    if (!savedDraft) {
+      throw new Error('Expected external-link draft');
+    }
+
+    expect(savedDraft.externalEventUrl).toBe('https://example.com/register');
+    expect(getDraftResumeRouteName(savedDraft)).toBe('ConnectGoCreateStep6Review');
+  });
+
+  it('normalizes missing external link fields on older draft records', async () => {
+    const storage = createMemoryStorage([
+      {
+        id: 'legacy-draft',
+        status: 'draft',
+        createdAt: '2026-03-14T12:00:00.000Z',
+        updatedAt: '2026-03-14T12:00:00.000Z',
+        lastCompletedStep: 4,
+        title: 'Legacy Free Event',
+        eventType: 'Event',
+        category: 'EVENT',
+        organizerName: 'You',
+        organizerRole: 'Event Organizer',
+        startDate: '',
+        endDate: '',
+        startTime: '',
+        endTime: '',
+        isSingleDayEvent: false,
+        isOnline: false,
+        onlineEventUrl: '',
+        locationQuery: '',
+        venueName: '',
+        address: '',
+        description: '',
+        capacity: '',
+        ticketType: 'free',
+        paymentOption: 'external',
+        payoutConfigured: false,
+        ticketTiers: [],
+        businessName: '',
+        ein: '',
+        registrationCount: 0,
+        viewCount: 0,
+        openCount: 0,
+        tags: ['Draft'],
+      } as ConnectPortalEventRecord,
+    ]);
+
+    const api = createConnectPortalStorage({
+      storage,
+      apiClient: createApiClient() as any,
+      now: jest.fn().mockReturnValue('2026-03-14T12:00:00.000Z'),
+      createId: jest.fn().mockReturnValue('draft-1'),
+    });
+
+    const records = await api.getUserRecords();
+
+    expect(records[0]?.externalEventUrl).toBe('');
   });
 
   it('keeps seeded public events out of organizer-owned results', async () => {

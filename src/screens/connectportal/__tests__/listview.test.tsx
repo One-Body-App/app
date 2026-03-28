@@ -231,7 +231,7 @@ describe('ListViewScreen', () => {
       searchBarProps.tertiaryAction.onPress();
     });
 
-    expect(navigation.navigate).toHaveBeenCalledWith('ConnectGoLanding');
+    expect(navigation.navigate).toHaveBeenCalledWith('ConnectGoEventDash');
   });
 
   it.each<MockTab>(['Places'])('does not pass a tertiary action on %s', (activeTab) => {

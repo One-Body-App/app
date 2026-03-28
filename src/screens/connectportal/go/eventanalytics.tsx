@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import type { StackScreenProps } from '@react-navigation/stack';
@@ -13,6 +14,7 @@ import {
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
 import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventAnalytics'>;
@@ -39,6 +41,7 @@ const SUPPORT_MESSAGES = [
 ];
 
 function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
+  const { snapshot, refresh } = useConnectPortalData();
   const [eventRecord, setEventRecord] = useState<ConnectPortalPublishedEvent | null>(null);
   const [analyticsSummary, setAnalyticsSummary] = useState<{
     viewCount: number;
@@ -46,17 +49,22 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
     registrationCount: number;
     conversionRate: number;
   } | null>(null);
+  const eventId = route.params?.eventId;
 
   useMountEffect(() => {
     let isActive = true;
 
     (async () => {
-      const payload = await getConnectPortalEventAnalytics(route.params.eventId);
+      if (!eventId) {
+        return;
+      }
+
+      const payload = await getConnectPortalEventAnalytics(eventId);
       if (isActive) {
         setEventRecord((payload?.event as ConnectPortalPublishedEvent) || null);
         setAnalyticsSummary(payload?.summary || null);
       }
-      trackConnectPortalEventTelemetry(route.params.eventId, 'manage_view', {
+      trackConnectPortalEventTelemetry(eventId, 'manage_view', {
         source: 'connect_event_analytics',
       }).catch(() => {});
     })();
@@ -66,10 +74,65 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
     };
   });
 
-  const progressPercent = useMemo(
-    () => (eventRecord ? Math.round(getEventProgressRatio(eventRecord) * 100) : 0),
-    [eventRecord]
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!eventId) {
+        refresh();
+      }
+    }, [eventId, refresh])
   );
+
+  const { organizerPublished } = snapshot;
+
+  const dashboardSummary = useMemo(() => {
+    const registrationCount = organizerPublished.reduce(
+      (sum, item) => sum + Number(item.registrationCount || 0),
+      0
+    );
+    const viewCount = organizerPublished.reduce(
+      (sum, item) => sum + Number(item.viewCount || 0),
+      0
+    );
+    const openCount = organizerPublished.reduce(
+      (sum, item) => sum + Number(item.openCount || 0),
+      0
+    );
+    const conversionRate = openCount > 0 ? registrationCount / openCount : 0;
+    return {
+      registrationCount,
+      viewCount,
+      openCount,
+      conversionRate,
+    };
+  }, [organizerPublished]);
+
+  const resolvedSummary = eventId ? analyticsSummary : dashboardSummary;
+
+  const progressPercent = useMemo(() => {
+    if (eventRecord) {
+      return Math.round(getEventProgressRatio(eventRecord) * 100);
+    }
+
+    const totalCapacity = organizerPublished.reduce((sum, item) => {
+      const parsed = Number(item.capacity || 0);
+      return Number.isFinite(parsed) && parsed > 0 ? sum + parsed : sum;
+    }, 0);
+    if (totalCapacity <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.round((dashboardSummary.registrationCount / totalCapacity) * 100));
+  }, [dashboardSummary.registrationCount, eventRecord, organizerPublished]);
+
+  const headerTitle = eventRecord?.title || (eventId ? 'Event Analytics' : 'Analytics Dashboard');
+  let headerSubtitle = 'No published events yet';
+  if (eventRecord) {
+    headerSubtitle = formatConnectPortalDateTime(eventRecord);
+  } else if (organizerPublished.length > 0) {
+    headerSubtitle = `${organizerPublished.length} published event${
+      organizerPublished.length === 1 ? '' : 's'
+    }`;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -79,10 +142,8 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Text style={styles.backText}>Back</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{eventRecord?.title || 'Event Analytics'}</Text>
-            {eventRecord ? (
-              <Text style={styles.headerSubtitle}>{formatConnectPortalDateTime(eventRecord)}</Text>
-            ) : null}
+            <Text style={styles.headerTitle}>{headerTitle}</Text>
+            <Text style={styles.headerSubtitle}>{headerSubtitle}</Text>
           </View>
         </View>
 
@@ -94,10 +155,14 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel}>REGISTRATIONS</Text>
               <Text style={styles.metricValue}>
-                {formatConnectPortalNumber(analyticsSummary?.registrationCount ?? 0)}
+                {formatConnectPortalNumber(resolvedSummary?.registrationCount ?? 0)}
               </Text>
               <Text style={styles.metricSubvalue}>
-                {eventRecord ? getEventCapacityLabel(eventRecord) : '0 registered'}
+                {eventRecord
+                  ? getEventCapacityLabel(eventRecord)
+                  : `${organizerPublished.length} event${
+                      organizerPublished.length === 1 ? '' : 's'
+                    } tracked`}
               </Text>
             </View>
 
@@ -105,7 +170,7 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
               <Text style={styles.metricLabel}>DETAIL VIEWS</Text>
               <Text style={styles.metricValue}>
                 {formatConnectPortalNumber(
-                  analyticsSummary?.viewCount ?? eventRecord?.viewCount ?? 0
+                  resolvedSummary?.viewCount ?? eventRecord?.viewCount ?? 0
                 )}
               </Text>
               <Text style={styles.metricSubvalue}>Persisted event-detail views</Text>
@@ -114,11 +179,11 @@ function EventAnalyticsScreen({ navigation, route }: Props): React.JSX.Element {
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel}>CONVERSION</Text>
               <Text style={styles.metricValue}>
-                {formatConnectPortalPercent(analyticsSummary?.conversionRate ?? 0)}
+                {formatConnectPortalPercent(resolvedSummary?.conversionRate ?? 0)}
               </Text>
               <Text style={styles.metricSubvalue}>
                 {formatConnectPortalNumber(
-                  analyticsSummary?.openCount ?? eventRecord?.openCount ?? 0
+                  resolvedSummary?.openCount ?? eventRecord?.openCount ?? 0
                 )}{' '}
                 opens
               </Text>

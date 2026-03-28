@@ -1,12 +1,97 @@
 import React, { useState } from 'react';
-import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DatePicker from 'react-native-date-picker';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
+import { format, isValid, parse, parseISO } from 'date-fns';
 import type { StackScreenProps } from '@react-navigation/stack';
+import MapBox, { MapBoxTypes, MapSuggestion } from '@/components/MapBox';
+import type { Coordinate } from '@/src/screens/connectportal/data';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import { saveConnectPortalDraft } from '@/src/services/connectPortal';
 import { CreateFlowLayout, ensureExistingDraftRecord, useCreateFlowPalette } from './shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoCreateStep2'>;
+
+type PickerField = 'startDate' | 'endDate' | 'startTime' | 'endTime';
+
+const formatStoredDate = (value: Date) => format(value, 'yyyy-MM-dd');
+
+const formatDisplayedDate = (value: string) => {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    return format(parseISO(`${value}T12:00:00`), 'MM/dd/yy');
+  } catch {
+    return value;
+  }
+};
+
+const parseStoredDate = (value: string) => {
+  if (!value) {
+    return new Date();
+  }
+
+  const parsed = parseISO(`${value}T12:00:00`);
+  return isValid(parsed) ? parsed : new Date();
+};
+
+const formatStoredTime = (value: Date) => format(value, 'h:mm a');
+
+const parseStoredTime = (value: string) => {
+  if (!value) {
+    return new Date();
+  }
+
+  const parsed = parse(value, 'h:mm a', new Date());
+  return isValid(parsed) ? parsed : new Date();
+};
+
+const isValidOnlineEventUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+const createAddressSuggestionFromDraft = (
+  address: string,
+  coordinate?: Coordinate
+): MapSuggestion | null => {
+  const trimmed = address.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const center = coordinate ? [coordinate[0], coordinate[1]] : [0, 0];
+  return {
+    bbox: [],
+    center,
+    geometry: {
+      type: 'Point',
+      coordinates: center,
+    },
+    id: `draft-address-${trimmed}`,
+    place_name: trimmed,
+    place_type: ['address'],
+    properties: {
+      wikidata: '',
+      short_code: '',
+    },
+    relevance: 1,
+    text: trimmed,
+    type: 'Feature',
+  };
+};
 
 function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
   const palette = useCreateFlowPalette();
@@ -16,9 +101,15 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
   const [endDate, setEndDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [isSingleDayEvent, setIsSingleDayEvent] = useState(false);
+  const [activePicker, setActivePicker] = useState<PickerField | null>(null);
   const [isOnline, setIsOnline] = useState(false);
+  const [onlineEventUrl, setOnlineEventUrl] = useState('');
   const [venueName, setVenueName] = useState('');
   const [address, setAddress] = useState('');
+  const [addressPickerVisible, setAddressPickerVisible] = useState(false);
+  const [coordinate, setCoordinate] = useState<Coordinate | undefined>();
+  const [addressSuggestion, setAddressSuggestion] = useState<MapSuggestion | null>(null);
 
   useMountEffect(() => {
     let isActive = true;
@@ -33,14 +124,23 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
         return;
       }
 
+      const hydratedSingleDay =
+        draft.isSingleDayEvent ||
+        (Boolean(draft.startDate) &&
+          (draft.endDate || draft.startDate || '') === (draft.startDate || ''));
+
       setDraftId(draft.id);
       setStartDate(draft.startDate);
-      setEndDate(draft.endDate);
+      setEndDate(draft.endDate || draft.startDate);
       setStartTime(draft.startTime);
       setEndTime(draft.endTime);
+      setIsSingleDayEvent(hydratedSingleDay);
       setIsOnline(draft.isOnline);
+      setOnlineEventUrl(draft.onlineEventUrl || '');
       setVenueName(draft.venueName);
       setAddress(draft.address);
+      setCoordinate(draft.coordinate);
+      setAddressSuggestion(createAddressSuggestionFromDraft(draft.address, draft.coordinate));
       setLoading(false);
     })();
 
@@ -49,26 +149,120 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
     };
   });
 
+  const handleAddressSelection = (value: React.SetStateAction<MapSuggestion | null>) => {
+    const nextSuggestion =
+      typeof value === 'function' ? value(addressSuggestion) : (value as MapSuggestion | null);
+
+    setAddressSuggestion(nextSuggestion);
+    setAddress(nextSuggestion?.place_name || '');
+
+    if (nextSuggestion?.center && nextSuggestion.center.length >= 2) {
+      setCoordinate([nextSuggestion.center[0], nextSuggestion.center[1]]);
+      return;
+    }
+
+    setCoordinate(undefined);
+  };
+
   const persistDraft = async (completedStep?: 1 | 2) => {
     if (!draftId) {
       return null;
     }
 
+    const nextVenueName = isOnline ? 'Online Event' : venueName.trim();
+    const nextAddress = isOnline ? 'Online' : address.trim();
+    const nextLocationQuery = isOnline
+      ? onlineEventUrl.trim()
+      : [venueName.trim(), address.trim()].filter(Boolean).join(', ');
+
     return saveConnectPortalDraft(
       draftId,
       {
         startDate,
-        endDate: endDate || startDate,
+        endDate: isSingleDayEvent ? startDate : endDate || startDate,
         startTime,
         endTime,
+        isSingleDayEvent,
         isOnline,
-        venueName: isOnline ? 'Online Event' : venueName,
-        address: isOnline ? 'Online' : address,
-        locationQuery: isOnline ? 'Online Event' : [venueName, address].filter(Boolean).join(', '),
+        onlineEventUrl: onlineEventUrl.trim(),
+        venueName: nextVenueName,
+        address: nextAddress,
+        coordinate: isOnline ? undefined : coordinate,
+        locationQuery: nextLocationQuery,
       },
       completedStep !== undefined ? { completedStep } : undefined
     );
   };
+
+  const handleDateConfirm = (value: Date) => {
+    const nextDate = formatStoredDate(value);
+
+    if (activePicker === 'startDate') {
+      setStartDate(nextDate);
+
+      if (isSingleDayEvent || !endDate || endDate < nextDate) {
+        setEndDate(nextDate);
+      }
+    }
+
+    if (activePicker === 'endDate') {
+      setEndDate(nextDate);
+    }
+
+    if (activePicker === 'startTime') {
+      setStartTime(formatStoredTime(value));
+    }
+
+    if (activePicker === 'endTime') {
+      setEndTime(formatStoredTime(value));
+    }
+
+    setActivePicker(null);
+  };
+
+  const toggleSingleDayEvent = () => {
+    const nextValue = !isSingleDayEvent;
+    setIsSingleDayEvent(nextValue);
+
+    if (nextValue) {
+      setEndDate(startDate);
+    }
+  };
+
+  const nextDisabled =
+    !draftId ||
+    !startDate ||
+    !startTime ||
+    !endTime ||
+    (!isSingleDayEvent && !endDate) ||
+    (isOnline ? !isValidOnlineEventUrl(onlineEventUrl) : !venueName.trim() || !address.trim());
+
+  const handleNext = async () => {
+    if (isOnline && !isValidOnlineEventUrl(onlineEventUrl)) {
+      Alert.alert('Add a valid event URL', 'Enter an `http://` or `https://` link for the event.');
+      return;
+    }
+
+    const draft = await persistDraft(2);
+    if (draft) {
+      navigation.navigate('ConnectGoCreateStep3', { draftId: draft.id });
+    }
+  };
+
+  let pickerDate = parseStoredTime(endTime);
+  if (activePicker === 'startDate') {
+    pickerDate = parseStoredDate(startDate);
+  } else if (activePicker === 'endDate') {
+    pickerDate = parseStoredDate(endDate || startDate);
+  } else if (activePicker === 'startTime') {
+    pickerDate = parseStoredTime(startTime);
+  }
+
+  const pickerMode = activePicker === 'startDate' || activePicker === 'endDate' ? 'date' : 'time';
+  let endDateTextColor = palette.inputPlaceholder;
+  if (endDate) {
+    endDateTextColor = isSingleDayEvent ? palette.textMuted : palette.inputText;
+  }
 
   return (
     <CreateFlowLayout
@@ -79,95 +273,148 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
         await persistDraft(1);
         navigation.navigate('ConnectGoCreateStep1', { draftId: draftId || route.params.draftId });
       }}
-      onNext={async () => {
-        const draft = await persistDraft(2);
-        if (draft) {
-          navigation.navigate('ConnectGoCreateStep3', { draftId: draft.id });
-        }
-      }}
-      nextDisabled={!draftId}
+      onNext={handleNext}
+      nextDisabled={nextDisabled}
     >
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
           When and where are we gathering?
         </Text>
         <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
-          Let people know exactly when and where to join the fellowship. Whether it’s in person or
-          online, every detail helps believers connect.
+          Let people know exactly when and where to join the fellowship. Whether it&apos;s in person
+          or online, every detail helps believers connect.
         </Text>
       </View>
 
       <View style={styles.row}>
         <View style={styles.fieldHalf}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Start Date</Text>
-          <TextInput
+          <TouchableOpacity
+            activeOpacity={0.85}
             style={[
-              styles.input,
+              styles.inputButton,
               {
                 backgroundColor: palette.inputBg,
                 borderColor: palette.inputBorder,
-                color: palette.inputText,
               },
             ]}
-            value={startDate}
-            onChangeText={setStartDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={palette.inputPlaceholder}
-          />
+            onPress={() => setActivePicker('startDate')}
+          >
+            <Text
+              style={[
+                styles.inputButtonText,
+                { color: startDate ? palette.inputText : palette.inputPlaceholder },
+              ]}
+            >
+              {startDate ? formatDisplayedDate(startDate) : 'MM/DD/YY'}
+            </Text>
+            <MaterialCommunityIcons
+              name="calendar-month-outline"
+              size={20}
+              color={palette.inputPlaceholder}
+            />
+          </TouchableOpacity>
         </View>
+
         <View style={styles.fieldHalf}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>End Date</Text>
-          <TextInput
+          <View style={styles.labelRow}>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>End Date</Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={toggleSingleDayEvent}
+              style={styles.checkboxRow}
+            >
+              <MaterialCommunityIcons
+                name={isSingleDayEvent ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                size={20}
+                color={isSingleDayEvent ? palette.accent : palette.inputPlaceholder}
+              />
+              <Text style={[styles.checkboxLabel, { color: palette.textSecondary }]}>
+                1 day event
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={isSingleDayEvent}
             style={[
-              styles.input,
+              styles.inputButton,
               {
-                backgroundColor: palette.inputBg,
+                backgroundColor: isSingleDayEvent ? palette.disabledInputBg : palette.inputBg,
                 borderColor: palette.inputBorder,
-                color: palette.inputText,
               },
             ]}
-            value={endDate}
-            onChangeText={setEndDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={palette.inputPlaceholder}
-          />
+            onPress={() => setActivePicker('endDate')}
+          >
+            <Text style={[styles.inputButtonText, { color: endDateTextColor }]}>
+              {endDate ? formatDisplayedDate(endDate) : 'MM/DD/YY'}
+            </Text>
+            <MaterialCommunityIcons
+              name="calendar-month-outline"
+              size={20}
+              color={isSingleDayEvent ? palette.textMuted : palette.inputPlaceholder}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.row}>
         <View style={styles.fieldHalf}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Start Time</Text>
-          <TextInput
+          <TouchableOpacity
+            activeOpacity={0.85}
             style={[
-              styles.input,
+              styles.inputButton,
               {
                 backgroundColor: palette.inputBg,
                 borderColor: palette.inputBorder,
-                color: palette.inputText,
               },
             ]}
-            value={startTime}
-            onChangeText={setStartTime}
-            placeholder="e.g., 7:00 PM"
-            placeholderTextColor={palette.inputPlaceholder}
-          />
+            onPress={() => setActivePicker('startTime')}
+          >
+            <Text
+              style={[
+                styles.inputButtonText,
+                { color: startTime ? palette.inputText : palette.inputPlaceholder },
+              ]}
+            >
+              {startTime || 'e.g., 7:00 PM'}
+            </Text>
+            <MaterialCommunityIcons
+              name="clock-outline"
+              size={20}
+              color={palette.inputPlaceholder}
+            />
+          </TouchableOpacity>
         </View>
+
         <View style={styles.fieldHalf}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>End Time</Text>
-          <TextInput
+          <TouchableOpacity
+            activeOpacity={0.85}
             style={[
-              styles.input,
+              styles.inputButton,
               {
                 backgroundColor: palette.inputBg,
                 borderColor: palette.inputBorder,
-                color: palette.inputText,
               },
             ]}
-            value={endTime}
-            onChangeText={setEndTime}
-            placeholder="e.g., 9:00 PM"
-            placeholderTextColor={palette.inputPlaceholder}
-          />
+            onPress={() => setActivePicker('endTime')}
+          >
+            <Text
+              style={[
+                styles.inputButtonText,
+                { color: endTime ? palette.inputText : palette.inputPlaceholder },
+              ]}
+            >
+              {endTime || 'e.g., 9:00 PM'}
+            </Text>
+            <MaterialCommunityIcons
+              name="clock-outline"
+              size={20}
+              color={palette.inputPlaceholder}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -192,7 +439,28 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
         />
       </View>
 
-      {!isOnline ? (
+      {isOnline ? (
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Event URL</Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.inputBorder,
+                color: palette.inputText,
+              },
+            ]}
+            value={onlineEventUrl}
+            onChangeText={setOnlineEventUrl}
+            placeholder="https://example.com/join"
+            placeholderTextColor={palette.inputPlaceholder}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+      ) : (
         <>
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: palette.textPrimary }]}>Venue Name</Text>
@@ -211,25 +479,61 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
               placeholderTextColor={palette.inputPlaceholder}
             />
           </View>
+
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: palette.textPrimary }]}>Address</Text>
-            <TextInput
+            <TouchableOpacity
+              activeOpacity={0.85}
               style={[
-                styles.input,
+                styles.inputButton,
                 {
                   backgroundColor: palette.inputBg,
                   borderColor: palette.inputBorder,
-                  color: palette.inputText,
                 },
               ]}
-              value={address}
-              onChangeText={setAddress}
-              placeholder="e.g., 123 Main St, Atlanta, GA"
-              placeholderTextColor={palette.inputPlaceholder}
-            />
+              onPress={() => setAddressPickerVisible(true)}
+            >
+              <Text
+                style={[
+                  styles.inputButtonText,
+                  { color: address ? palette.inputText : palette.inputPlaceholder },
+                ]}
+                numberOfLines={1}
+              >
+                {address || 'e.g., 123 Main St, Atlanta, GA'}
+              </Text>
+              <MaterialCommunityIcons
+                name="map-marker-outline"
+                size={20}
+                color={palette.inputPlaceholder}
+              />
+            </TouchableOpacity>
           </View>
         </>
-      ) : null}
+      )}
+
+      <MapBox
+        location={addressSuggestion}
+        modalVisible={addressPickerVisible}
+        setModalVisible={setAddressPickerVisible}
+        setLocation={handleAddressSelection}
+        modalTitle={<Text style={[styles.mapTitle, { color: palette.textPrimary }]}>Address</Text>}
+        types={[MapBoxTypes.address, MapBoxTypes.poi, MapBoxTypes.place]}
+        hideSearchMyLocation
+      />
+
+      <DatePicker
+        modal
+        open={activePicker !== null}
+        date={pickerDate}
+        mode={pickerMode}
+        androidVariant="nativeAndroid"
+        minimumDate={
+          activePicker === 'endDate' && startDate ? parseStoredDate(startDate) : undefined
+        }
+        onConfirm={handleDateConfirm}
+        onCancel={() => setActivePicker(null)}
+      />
     </CreateFlowLayout>
   );
 }
@@ -257,17 +561,47 @@ const styles = StyleSheet.create({
   fieldGroup: {
     gap: 8,
   },
+  labelRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   label: {
     fontSize: 12,
     lineHeight: 16,
     fontFamily: 'Rubik-Medium',
     letterSpacing: 0.15,
   },
+  checkboxRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  checkboxLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'OpenSans-SemiBold',
+  },
   input: {
     minHeight: 54,
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 16,
+    fontSize: 15,
+    fontFamily: 'OpenSans-Regular',
+  },
+  inputButton: {
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 54,
+    paddingHorizontal: 16,
+  },
+  inputButtonText: {
+    flex: 1,
     fontSize: 15,
     fontFamily: 'OpenSans-Regular',
   },
@@ -291,6 +625,10 @@ const styles = StyleSheet.create({
   toggleBody: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  mapTitle: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

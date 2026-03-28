@@ -208,7 +208,6 @@ export type ConnectStackParamsList = {
         initialTab?: ConnectTab;
       }
     | undefined;
-  ConnectGoLanding: undefined;
   ConnectGoEventDash: undefined;
   ConnectGoMyEvents:
     | {
@@ -219,9 +218,11 @@ export type ConnectStackParamsList = {
   ConnectGoEventView: {
     eventId: string;
   };
-  ConnectGoEventAnalytics: {
-    eventId: string;
-  };
+  ConnectGoEventAnalytics:
+    | {
+        eventId?: string;
+      }
+    | undefined;
   ConnectGoCreateStep1:
     | {
         draftId?: string;

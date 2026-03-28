@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView as KeyboardControllerAvoidingView } from 'react-native-keyboard-controller';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useFocusEffect, useIsFocused, useTheme } from '@react-navigation/native';
+import { useFocusEffect, useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -76,6 +76,8 @@ import {
   syncConversationReadMutationLocally,
 } from '@/src/services/chat/conversationReadState';
 import { isValidMongoObjectId } from '@/src/services/chat/conversationTarget';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import ChatOptions from './chatoptions';
 
 type Props = NativeStackScreenProps<MessagesStackParamsList, 'ChatDetail'>;
@@ -352,8 +354,6 @@ function ChatDetailScreen({ navigation, route }: Props) {
     routeParams?.conversationType === 'direct'
       ? String(routeParams.peerAvatarUri || NO_PROFILE_IMAGE)
       : NO_PROFILE_IMAGE;
-  const initialMutedState = Boolean(routeParams?.isMuted);
-  const initialArchivedState = Boolean(routeParams?.isArchived);
   const groupName =
     routeParams?.conversationType === 'group' ? String(routeParams.groupName || '') : '';
   const groupId =
@@ -372,8 +372,6 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const [isUploading, setIsUploading] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
-  const [isConversationMuted, setIsConversationMuted] = useState(initialMutedState);
-  const [isConversationArchived, setIsConversationArchived] = useState(initialArchivedState);
   const [optionsActionLoading, setOptionsActionLoading] = useState<
     'archive' | 'mute' | 'block' | 'report' | null
   >(null);
@@ -395,7 +393,8 @@ function ChatDetailScreen({ navigation, route }: Props) {
   const rateLimitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentUserId = currentUser?._id ? String(currentUser._id) : '';
-  const isScreenFocused = useIsFocused();
+  const isConversationMuted = Boolean(routeParams?.isMuted);
+  const isConversationArchived = Boolean(routeParams?.isArchived);
   const hasPeerAvatarImage = Boolean(peerAvatarUri && peerAvatarUri !== NO_PROFILE_IMAGE);
   const canShowBlockAndReport = !isGroupConversation && Boolean(peerUserId);
   const currentConversationTarget = useMemo(
@@ -411,14 +410,6 @@ function ChatDetailScreen({ navigation, route }: Props) {
           },
     [groupId, isGroupConversation, peerUserId]
   );
-
-  useEffect(() => {
-    setIsConversationMuted(initialMutedState);
-  }, [initialMutedState]);
-
-  useEffect(() => {
-    setIsConversationArchived(initialArchivedState);
-  }, [initialArchivedState]);
 
   const renderIncomingAvatar = (message?: LocalMessage) => {
     let avatarUri = '';
@@ -444,11 +435,11 @@ function ChatDetailScreen({ navigation, route }: Props) {
     );
   };
 
-  useEffect(() => {
+  useMountEffect(() => {
     navigation.setOptions({ headerShown: false });
-  }, [navigation]);
+  });
 
-  useEffect(() => {
+  useMountEffect(() => {
     return () => {
       if (highlightTimeoutRef.current) {
         clearTimeout(highlightTimeoutRef.current);
@@ -457,7 +448,7 @@ function ChatDetailScreen({ navigation, route }: Props) {
         clearTimeout(rateLimitTimeoutRef.current);
       }
     };
-  }, []);
+  });
 
   const registerMessageAnchor = useCallback((messageId: string, node: View | null) => {
     if (!messageId) {
@@ -602,47 +593,186 @@ function ChatDetailScreen({ navigation, route }: Props) {
     }, [groupId, isGroupConversation, peerUserId])
   );
 
-  useEffect(() => {
+  useMountEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
     const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
     return () => {
       show.remove();
       hide.remove();
     };
-  }, []);
+  });
 
-  useEffect(() => {
+  useMountEffect(() => {
     notifee.cancelAllNotifications().catch(() => undefined);
     notifee.setBadgeCount(0).catch(() => undefined);
-  }, []);
+  });
 
-  useEffect(() => {
-    let isMounted = true;
-    let offMessage: (() => void) | undefined;
-    let offGroupMessage: (() => void) | undefined;
-    let offStatus: (() => void) | undefined;
-    let offReaction: (() => void) | undefined;
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      let offMessage: (() => void) | undefined;
+      let offGroupMessage: (() => void) | undefined;
+      let offStatus: (() => void) | undefined;
+      let offReaction: (() => void) | undefined;
 
-    const bootstrap = async () => {
-      setIsBootstrapping(true);
-      setLoadError('');
-      setIsPeerKeyMissing(false);
-      setIsDMsDisabled(false);
-      hasScrolledToLatestRef.current = false;
+      const bootstrap = async () => {
+        setIsBootstrapping(true);
+        setLoadError('');
+        setIsPeerKeyMissing(false);
+        setIsDMsDisabled(false);
+        hasScrolledToLatestRef.current = false;
 
-      if (isGroupConversation) {
-        if (!groupId) {
+        if (isGroupConversation) {
+          if (!groupId) {
+            setMessages([]);
+            setLoadError('Unable to open this group right now.');
+            setIsBootstrapping(false);
+            return;
+          }
+
+          try {
+            await connectChatSocket();
+
+            const history = await loadGroupConversation({
+              groupId,
+              token: token || undefined,
+              limit: 50,
+            });
+
+            if (!isMounted) {
+              return;
+            }
+
+            setMessages(
+              sortMessages(
+                history.map((entry) => {
+                  const parsed = parseChatMessagePayload(String(entry.plaintextPayload || ''));
+                  return {
+                    id: entry._id,
+                    senderId: String(entry.senderId || ''),
+                    receiverId: '',
+                    text: parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text,
+                    status: 'sent',
+                    createdAt: entry.createdAt || new Date().toISOString(),
+                    mediaType: parsed.type !== 'text' ? parsed.type : undefined,
+                    mediaUrl: parsed.mediaUrl,
+                    mediaUrls: parsed.mediaUrls,
+                    senderName: typeof entry.senderName === 'string' ? entry.senderName : '',
+                    senderUsername:
+                      typeof entry.senderUsername === 'string' ? entry.senderUsername : '',
+                    senderAvatarUri:
+                      typeof entry.senderAvatarUri === 'string' ? entry.senderAvatarUri : '',
+                    conversationType: 'group',
+                    groupId,
+                    reactions: normalizeChatReactions(entry.reactions),
+                  };
+                })
+              )
+            );
+
+            offGroupMessage = await onChatGroupMessage((payload: any) => {
+              if (!isMounted) {
+                return;
+              }
+
+              const payloadGroupId = String(payload?.groupId || '');
+              const senderId = String(payload?.senderId || '');
+              if (!payload?._id || !payloadGroupId || payloadGroupId !== groupId || !senderId) {
+                return;
+              }
+
+              if (senderId === currentUserId) {
+                return;
+              }
+
+              const parsed = parseChatMessagePayload(String(payload?.plaintextPayload || ''));
+              setMessages((prev) => {
+                if (prev.some((message) => message.id === String(payload._id))) {
+                  return prev;
+                }
+
+                return sortMessages([
+                  ...prev,
+                  {
+                    id: String(payload._id),
+                    senderId,
+                    receiverId: '',
+                    text: parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text,
+                    status: 'sent',
+                    createdAt: payload.createdAt || new Date().toISOString(),
+                    mediaType: parsed.type !== 'text' ? parsed.type : undefined,
+                    mediaUrl: parsed.mediaUrl,
+                    mediaUrls: parsed.mediaUrls,
+                    senderName: typeof payload.senderName === 'string' ? payload.senderName : '',
+                    senderUsername:
+                      typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
+                    senderAvatarUri:
+                      typeof payload.senderAvatarUri === 'string' ? payload.senderAvatarUri : '',
+                    conversationType: 'group',
+                    groupId,
+                    reactions: normalizeChatReactions(payload.reactions),
+                  },
+                ]);
+              });
+            });
+
+            offReaction = await onChatMessageReaction((payload) => {
+              if (!isMounted || !payload?.messageId) {
+                return;
+              }
+
+              const payloadGroupId = String(payload.groupId || '');
+              if (payload.conversationType !== 'group' || payloadGroupId !== groupId) {
+                return;
+              }
+
+              applyReactionUpdate(payload);
+            });
+          } catch (error) {
+            if (__DEV__) {
+              console.log('[ChatDetail] group bootstrap failed', error);
+            }
+            if (isMounted) {
+              setMessages([]);
+              setLoadError('Unable to load messages right now.');
+            }
+          } finally {
+            if (isMounted) {
+              setIsBootstrapping(false);
+            }
+          }
+          return;
+        }
+
+        if (!peerUserId) {
           setMessages([]);
-          setLoadError('Unable to open this group right now.');
+          setLoadError('Unable to open this conversation right now.');
           setIsBootstrapping(false);
           return;
         }
 
         try {
+          await ensureChatReady(token || undefined);
           await connectChatSocket();
 
-          const history = await loadGroupConversation({
-            groupId,
+          try {
+            await getPeerPublicKey(peerUserId, token || undefined);
+          } catch (error) {
+            if (isMissingPeerKeyError(error)) {
+              if (isMounted) {
+                setIsPeerKeyMissing(true);
+              }
+            } else if (isDMsDisabledError(error)) {
+              if (isMounted) {
+                setIsDMsDisabled(true);
+              }
+            } else {
+              throw error;
+            }
+          }
+
+          const history = await loadAndDecryptConversation({
+            peerUserId,
             token: token || undefined,
             limit: 50,
           });
@@ -654,91 +784,116 @@ function ChatDetailScreen({ navigation, route }: Props) {
           setMessages(
             sortMessages(
               history.map((entry) => {
-                const parsed = parseChatMessagePayload(String(entry.plaintextPayload || ''));
+                const parsed = parseChatMessagePayload(entry.plaintext);
                 return {
                   id: entry._id,
-                  senderId: String(entry.senderId || ''),
-                  receiverId: '',
+                  senderId: String(entry.senderId),
+                  receiverId: String(entry.receiverId),
                   text: parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text,
-                  status: 'sent',
+                  status: entry.status,
                   createdAt: entry.createdAt || new Date().toISOString(),
                   mediaType: parsed.type !== 'text' ? parsed.type : undefined,
                   mediaUrl: parsed.mediaUrl,
                   mediaUrls: parsed.mediaUrls,
-                  senderName: typeof entry.senderName === 'string' ? entry.senderName : '',
-                  senderUsername:
-                    typeof entry.senderUsername === 'string' ? entry.senderUsername : '',
-                  senderAvatarUri:
-                    typeof entry.senderAvatarUri === 'string' ? entry.senderAvatarUri : '',
-                  conversationType: 'group',
-                  groupId,
                   reactions: normalizeChatReactions(entry.reactions),
                 };
               })
             )
           );
 
-          offGroupMessage = await onChatGroupMessage((payload: any) => {
-            if (!isMounted) {
-              return;
-            }
-
-            const payloadGroupId = String(payload?.groupId || '');
-            const senderId = String(payload?.senderId || '');
-            if (!payload?._id || !payloadGroupId || payloadGroupId !== groupId || !senderId) {
-              return;
-            }
-
-            if (senderId === currentUserId) {
-              return;
-            }
-
-            const parsed = parseChatMessagePayload(String(payload?.plaintextPayload || ''));
-            setMessages((prev) => {
-              if (prev.some((message) => message.id === String(payload._id))) {
-                return prev;
+          try {
+            offMessage = await onChatMessage(async (payload: any) => {
+              if (!isMounted) {
+                return;
               }
 
-              return sortMessages([
-                ...prev,
-                {
-                  id: String(payload._id),
-                  senderId,
-                  receiverId: '',
-                  text: parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text,
-                  status: 'sent',
-                  createdAt: payload.createdAt || new Date().toISOString(),
-                  mediaType: parsed.type !== 'text' ? parsed.type : undefined,
-                  mediaUrl: parsed.mediaUrl,
-                  mediaUrls: parsed.mediaUrls,
-                  senderName: typeof payload.senderName === 'string' ? payload.senderName : '',
-                  senderUsername:
-                    typeof payload.senderUsername === 'string' ? payload.senderUsername : '',
-                  senderAvatarUri:
-                    typeof payload.senderAvatarUri === 'string' ? payload.senderAvatarUri : '',
-                  conversationType: 'group',
-                  groupId,
-                  reactions: normalizeChatReactions(payload.reactions),
-                },
-              ]);
+              const senderId = String(payload.senderId || '');
+              const receiverId = String(payload.receiverId || '');
+              if (
+                !payload?._id ||
+                !senderId ||
+                !receiverId ||
+                ![peerUserId, currentUserId].includes(senderId) ||
+                ![peerUserId, currentUserId].includes(receiverId)
+              ) {
+                return;
+              }
+
+              // Fallback: show encrypted marker until next refresh if decrypt context is missing.
+              setMessages((prev) =>
+                sortMessages([
+                  ...prev,
+                  {
+                    id: String(payload._id),
+                    senderId,
+                    receiverId,
+                    text: normalizeMessageText('[Encrypted message]'),
+                    status: payload.status || 'sent',
+                    createdAt: payload.createdAt || new Date().toISOString(),
+                    mediaType:
+                      payload.messageType === 'image' ||
+                      payload.messageType === 'gif' ||
+                      payload.messageType === 'images'
+                        ? payload.messageType
+                        : undefined,
+                    reactions: normalizeChatReactions(payload.reactions),
+                  },
+                ])
+              );
             });
-          });
 
-          offReaction = await onChatMessageReaction((payload) => {
-            if (!isMounted || !payload?.messageId) {
-              return;
+            offStatus = await onChatMessageStatus((statusPayload: any) => {
+              if (!isMounted || !statusPayload?.messageId) {
+                return;
+              }
+
+              const nextStatus =
+                statusPayload.status === 'read' || statusPayload.status === 'delivered'
+                  ? statusPayload.status
+                  : 'sent';
+
+              setMessages((prev) =>
+                prev.map((message) =>
+                  message.id === String(statusPayload.messageId)
+                    ? {
+                        ...message,
+                        status: nextStatus,
+                      }
+                    : message
+                )
+              );
+            });
+
+            offReaction = await onChatMessageReaction((payload) => {
+              if (!isMounted || !payload?.messageId) {
+                return;
+              }
+
+              if (payload.conversationType === 'group') {
+                return;
+              }
+
+              const senderId = String(payload.senderId || '');
+              const receiverId = String(payload.receiverId || '');
+              if (
+                !senderId ||
+                !receiverId ||
+                ![peerUserId, currentUserId].includes(senderId) ||
+                ![peerUserId, currentUserId].includes(receiverId)
+              ) {
+                return;
+              }
+
+              applyReactionUpdate(payload);
+            });
+          } catch (error) {
+            if (__DEV__) {
+              console.log('[ChatDetail] realtime listener attach failed', error);
             }
-
-            const payloadGroupId = String(payload.groupId || '');
-            if (payload.conversationType !== 'group' || payloadGroupId !== groupId) {
-              return;
-            }
-
-            applyReactionUpdate(payload);
-          });
+          }
         } catch (error) {
           if (__DEV__) {
-            console.log('[ChatDetail] group bootstrap failed', error);
+            console.log('[ChatDetail] bootstrap failed, falling back to empty thread', error);
           }
           if (isMounted) {
             setMessages([]);
@@ -749,315 +904,169 @@ function ChatDetailScreen({ navigation, route }: Props) {
             setIsBootstrapping(false);
           }
         }
-        return;
-      }
+      };
 
-      if (!peerUserId) {
-        setMessages([]);
-        setLoadError('Unable to open this conversation right now.');
-        setIsBootstrapping(false);
-        return;
-      }
+      bootstrap();
 
-      try {
-        await ensureChatReady(token || undefined);
-        await connectChatSocket();
-
-        try {
-          await getPeerPublicKey(peerUserId, token || undefined);
-        } catch (error) {
-          if (isMissingPeerKeyError(error)) {
-            if (isMounted) {
-              setIsPeerKeyMissing(true);
-            }
-          } else if (isDMsDisabledError(error)) {
-            if (isMounted) {
-              setIsDMsDisabled(true);
-            }
-          } else {
-            throw error;
-          }
+      return () => {
+        isMounted = false;
+        if (offMessage) {
+          offMessage();
         }
-
-        const history = await loadAndDecryptConversation({
-          peerUserId,
-          token: token || undefined,
-          limit: 50,
-        });
-
-        if (!isMounted) {
-          return;
+        if (offGroupMessage) {
+          offGroupMessage();
         }
-
-        setMessages(
-          sortMessages(
-            history.map((entry) => {
-              const parsed = parseChatMessagePayload(entry.plaintext);
-              return {
-                id: entry._id,
-                senderId: String(entry.senderId),
-                receiverId: String(entry.receiverId),
-                text: parsed.type === 'text' ? normalizeMessageText(parsed.text) : parsed.text,
-                status: entry.status,
-                createdAt: entry.createdAt || new Date().toISOString(),
-                mediaType: parsed.type !== 'text' ? parsed.type : undefined,
-                mediaUrl: parsed.mediaUrl,
-                mediaUrls: parsed.mediaUrls,
-                reactions: normalizeChatReactions(entry.reactions),
-              };
-            })
-          )
-        );
-
-        try {
-          offMessage = await onChatMessage(async (payload: any) => {
-            if (!isMounted) {
-              return;
-            }
-
-            const senderId = String(payload.senderId || '');
-            const receiverId = String(payload.receiverId || '');
-            if (
-              !payload?._id ||
-              !senderId ||
-              !receiverId ||
-              ![peerUserId, currentUserId].includes(senderId) ||
-              ![peerUserId, currentUserId].includes(receiverId)
-            ) {
-              return;
-            }
-
-            // Fallback: show encrypted marker until next refresh if decrypt context is missing.
-            setMessages((prev) =>
-              sortMessages([
-                ...prev,
-                {
-                  id: String(payload._id),
-                  senderId,
-                  receiverId,
-                  text: normalizeMessageText('[Encrypted message]'),
-                  status: payload.status || 'sent',
-                  createdAt: payload.createdAt || new Date().toISOString(),
-                  mediaType:
-                    payload.messageType === 'image' ||
-                    payload.messageType === 'gif' ||
-                    payload.messageType === 'images'
-                      ? payload.messageType
-                      : undefined,
-                  reactions: normalizeChatReactions(payload.reactions),
-                },
-              ])
-            );
-          });
-
-          offStatus = await onChatMessageStatus((statusPayload: any) => {
-            if (!isMounted || !statusPayload?.messageId) {
-              return;
-            }
-
-            const nextStatus =
-              statusPayload.status === 'read' || statusPayload.status === 'delivered'
-                ? statusPayload.status
-                : 'sent';
-
-            setMessages((prev) =>
-              prev.map((message) =>
-                message.id === String(statusPayload.messageId)
-                  ? {
-                      ...message,
-                      status: nextStatus,
-                    }
-                  : message
-              )
-            );
-          });
-
-          offReaction = await onChatMessageReaction((payload) => {
-            if (!isMounted || !payload?.messageId) {
-              return;
-            }
-
-            if (payload.conversationType === 'group') {
-              return;
-            }
-
-            const senderId = String(payload.senderId || '');
-            const receiverId = String(payload.receiverId || '');
-            if (
-              !senderId ||
-              !receiverId ||
-              ![peerUserId, currentUserId].includes(senderId) ||
-              ![peerUserId, currentUserId].includes(receiverId)
-            ) {
-              return;
-            }
-
-            applyReactionUpdate(payload);
-          });
-        } catch (error) {
-          if (__DEV__) {
-            console.log('[ChatDetail] realtime listener attach failed', error);
-          }
+        if (offStatus) {
+          offStatus();
         }
-      } catch (error) {
-        if (__DEV__) {
-          console.log('[ChatDetail] bootstrap failed, falling back to empty thread', error);
+        if (offReaction) {
+          offReaction();
         }
-        if (isMounted) {
-          setMessages([]);
-          setLoadError('Unable to load messages right now.');
-        }
-      } finally {
-        if (isMounted) {
-          setIsBootstrapping(false);
-        }
+      };
+    }, [applyReactionUpdate, currentUserId, groupId, isGroupConversation, peerUserId, token])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!messages.length) {
+        return undefined;
       }
-    };
 
-    bootstrap();
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToEnd({ animated: hasScrolledToLatestRef.current });
+        hasScrolledToLatestRef.current = true;
+      });
+      return undefined;
+    }, [messages])
+  );
 
-    return () => {
-      isMounted = false;
-      if (offMessage) {
-        offMessage();
+  useFocusEffect(
+    useCallback(() => {
+      if (targetMessageId !== lastTargetMessageIdRef.current) {
+        hasHandledInitialMessageFocusRef.current = false;
+        lastTargetMessageIdRef.current = targetMessageId;
       }
-      if (offGroupMessage) {
-        offGroupMessage();
+
+      if (!targetMessageId) {
+        setHighlightedMessageId('');
+        return undefined;
       }
-      if (offStatus) {
-        offStatus();
+
+      if (hasHandledInitialMessageFocusRef.current) {
+        return undefined;
       }
-      if (offReaction) {
-        offReaction();
+
+      if (!messages.some((message) => message.id === targetMessageId)) {
+        return undefined;
       }
-    };
-  }, [applyReactionUpdate, currentUserId, groupId, isGroupConversation, peerUserId, token]);
 
-  useEffect(() => {
-    if (!messages.length) {
-      return;
-    }
+      hasHandledInitialMessageFocusRef.current = true;
+      focusTargetMessage(targetMessageId);
+      return undefined;
+    }, [focusTargetMessage, messages, targetMessageId])
+  );
 
-    requestAnimationFrame(() => {
-      flatListRef.current?.scrollToEnd({ animated: hasScrolledToLatestRef.current });
-      hasScrolledToLatestRef.current = true;
-    });
-  }, [messages]);
-
-  useEffect(() => {
-    if (targetMessageId !== lastTargetMessageIdRef.current) {
-      hasHandledInitialMessageFocusRef.current = false;
-      lastTargetMessageIdRef.current = targetMessageId;
-    }
-
-    if (!targetMessageId) {
-      setHighlightedMessageId('');
-      return;
-    }
-
-    if (hasHandledInitialMessageFocusRef.current) {
-      return;
-    }
-
-    if (!messages.some((message) => message.id === targetMessageId)) {
-      return;
-    }
-
-    hasHandledInitialMessageFocusRef.current = true;
-    focusTargetMessage(targetMessageId);
-  }, [focusTargetMessage, messages, targetMessageId]);
-
-  useEffect(() => {
-    if (!isScreenFocused) {
+  useFocusEffect(
+    useCallback(() => {
       lastReadSyncSignatureRef.current = '';
-      return;
-    }
+      return () => {
+        lastReadSyncSignatureRef.current = '';
+      };
+    }, [])
+  );
 
-    if (!currentUserId || messages.length < 1) {
-      return;
-    }
-
-    if (isGroupConversation) {
-      if (!groupId) {
-        return;
+  useFocusEffect(
+    useCallback(() => {
+      if (!currentUserId || messages.length < 1) {
+        return undefined;
       }
 
-      const incomingGroupIds = messages
-        .filter((message) => message.senderId && message.senderId !== currentUserId)
+      const targetSignaturePrefix = isGroupConversation
+        ? `group:${groupId}`
+        : `direct:${peerUserId}`;
+
+      if (isGroupConversation) {
+        if (!groupId) {
+          return undefined;
+        }
+
+        const incomingGroupIds = messages
+          .filter((message) => message.senderId && message.senderId !== currentUserId)
+          .map((message) => message.id);
+
+        if (incomingGroupIds.length < 1) {
+          setConversationUnreadStateLocally(currentConversationTarget, true);
+          lastReadSyncSignatureRef.current = '';
+          return undefined;
+        }
+
+        const signature = `${targetSignaturePrefix}:${incomingGroupIds.join(',')}`;
+        if (lastReadSyncSignatureRef.current === signature) {
+          return undefined;
+        }
+
+        lastReadSyncSignatureRef.current = signature;
+        setConversationReadState(currentConversationTarget, true, token || undefined)
+          .then(() => {
+            syncConversationReadMutationLocally(currentConversationTarget, true);
+          })
+          .catch(() => {
+            lastReadSyncSignatureRef.current = '';
+          });
+        return undefined;
+      }
+
+      if (!peerUserId || !isValidMongoObjectId(peerUserId)) {
+        return undefined;
+      }
+
+      const unreadIncomingIds = messages
+        .filter(
+          (message) =>
+            message.senderId === peerUserId &&
+            message.receiverId === currentUserId &&
+            message.status !== 'read'
+        )
         .map((message) => message.id);
 
-      if (incomingGroupIds.length < 1) {
+      if (unreadIncomingIds.length < 1) {
         setConversationUnreadStateLocally(currentConversationTarget, true);
         lastReadSyncSignatureRef.current = '';
-        return;
+        return undefined;
       }
 
-      const signature = incomingGroupIds.join(',');
+      const signature = `${targetSignaturePrefix}:${unreadIncomingIds.join(',')}`;
       if (lastReadSyncSignatureRef.current === signature) {
-        return;
+        return undefined;
       }
 
       lastReadSyncSignatureRef.current = signature;
       setConversationReadState(currentConversationTarget, true, token || undefined)
-        .then(() => {
+        .then((result) => {
+          if (result.conversationType === 'direct' && result.messageIds.length > 0) {
+            const readMessageIds = new Set(result.messageIds.map(String));
+            setMessages((prev) =>
+              prev.map((message) =>
+                readMessageIds.has(message.id) ? { ...message, status: 'read' } : message
+              )
+            );
+          }
           syncConversationReadMutationLocally(currentConversationTarget, true);
         })
         .catch(() => {
           lastReadSyncSignatureRef.current = '';
         });
-      return;
-    }
-
-    if (!peerUserId || !isValidMongoObjectId(peerUserId)) {
-      return;
-    }
-
-    const unreadIncomingIds = messages
-      .filter(
-        (message) =>
-          message.senderId === peerUserId &&
-          message.receiverId === currentUserId &&
-          message.status !== 'read'
-      )
-      .map((message) => message.id);
-
-    if (unreadIncomingIds.length < 1) {
-      setConversationUnreadStateLocally(currentConversationTarget, true);
-      lastReadSyncSignatureRef.current = '';
-      return;
-    }
-
-    const signature = unreadIncomingIds.join(',');
-    if (lastReadSyncSignatureRef.current === signature) {
-      return;
-    }
-
-    lastReadSyncSignatureRef.current = signature;
-    setConversationReadState(currentConversationTarget, true, token || undefined)
-      .then((result) => {
-        if (result.conversationType === 'direct' && result.messageIds.length > 0) {
-          const readMessageIds = new Set(result.messageIds.map(String));
-          setMessages((prev) =>
-            prev.map((message) =>
-              readMessageIds.has(message.id) ? { ...message, status: 'read' } : message
-            )
-          );
-        }
-        syncConversationReadMutationLocally(currentConversationTarget, true);
-      })
-      .catch(() => {
-        lastReadSyncSignatureRef.current = '';
-      });
-  }, [
-    currentConversationTarget,
-    currentUserId,
-    groupId,
-    isGroupConversation,
-    isScreenFocused,
-    messages,
-    peerUserId,
-    token,
-  ]);
+      return undefined;
+    }, [
+      currentConversationTarget,
+      currentUserId,
+      groupId,
+      isGroupConversation,
+      messages,
+      peerUserId,
+      token,
+    ])
+  );
 
   const peerLabel = peerName || 'This user';
 
@@ -1100,7 +1109,6 @@ function ChatDetailScreen({ navigation, route }: Props) {
         throw new Error(message || 'Unable to archive chat right now.');
       }
 
-      setIsConversationArchived(nextArchived);
       navigation.setParams({ ...(routeParams as object), isArchived: nextArchived } as never);
       setIsOptionsVisible(false);
       if (nextArchived) {
@@ -1151,7 +1159,6 @@ function ChatDetailScreen({ navigation, route }: Props) {
         throw new Error(message || 'Unable to update notification settings right now.');
       }
 
-      setIsConversationMuted(nextMuted);
       navigation.setParams({ ...(routeParams as object), isMuted: nextMuted } as never);
       setIsOptionsVisible(false);
     } catch (error) {
@@ -1749,6 +1756,11 @@ function ChatDetailScreen({ navigation, route }: Props) {
             </View>
           );
         }}
+        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
     );
   };

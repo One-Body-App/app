@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
+import ImagePicker from 'react-native-image-crop-picker';
 import Icon from '@react-native-vector-icons/material-design-icons';
 import { Add, Calendar, Link21, Location, ShieldTick, HomeHashtag } from 'iconsax-react-native';
 import { format, parseISO } from 'date-fns';
@@ -16,15 +17,17 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
 
-import { getBadges, setUserBadges } from '@/src/redux/actions/AuthActions';
+import { getBadges, profileUpdate, setUserBadges } from '@/src/redux/actions/AuthActions';
+import { setLoader } from '@/src/redux/actions/GeneralActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors, Typography } from '@/src/styles';
 import { borderRadius, borderWidth } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
 import { OpenURLButton } from '@/services/constants';
-import { Badge } from '@/utils/types';
+import { AccountType, Badge } from '@/utils/types';
 import StyledText from '@/components/styled/Text';
 import CustomModal from '@/components/CustomModal';
+import ImagePickerModal from '@/components/ImagePickerModal';
 import Selected from '@/assets/svg/Selected.svg';
 import { ProfileProps } from './profileTypes';
 import { getProfileDisplayName, getProfileRoleLabel, getProfileTypeLabel } from './profileUtils';
@@ -96,6 +99,7 @@ function ProfileHeader({
   const isConnected = currentUser.following?.includes(profileData._id);
   const isSelfVariant = variant === 'self';
   const [requestModal, setRequestModal] = useState(false);
+  const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>(persistedBadgeIds);
   const showSelfProfileMediaControls = isOwnProfile && isSelfVariant;
 
@@ -149,6 +153,39 @@ function ProfileHeader({
     setSelectedBadgeIds(persistedBadgeIds);
     dispatch(getBadges.Request({ token }));
     setRequestModal(true);
+  };
+
+  const handlePickPhoto = async (source: 'gallery' | 'camera') => {
+    try {
+      const pickerFn = source === 'gallery' ? ImagePicker.openPicker : ImagePicker.openCamera;
+      const image = await pickerFn({
+        mediaType: 'photo',
+        cropping: true,
+        cropperCircleOverlay: true,
+        forceJpg: true,
+        compressImageMaxHeight: 150,
+      });
+
+      setPhotoPickerVisible(false);
+
+      const formData = new FormData();
+      formData.append('photo', {
+        name: `profileImage${profileData._id}`,
+        type: image.mime ?? '',
+        uri: image.path ?? '',
+      } as any);
+
+      dispatch(setLoader(true));
+      dispatch(
+        profileUpdate({
+          data: formData,
+          token,
+          accountType: (profileData.accountType ?? AccountType.individual) as AccountType,
+        })
+      );
+    } catch {
+      // User cancelled picker or cropper
+    }
   };
 
   const openDirectMessage = () => {
@@ -235,31 +272,29 @@ function ProfileHeader({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.coverWrap}>
-        {profileData.profileHeader ? (
-          <Image
-            source={{ uri: profileData.profileHeader }}
-            style={styles.coverImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.coverFallback} />
-        )}
+      <View style={styles.headerSection}>
+        <View style={styles.coverWrap}>
+          {profileData.profileHeader ? (
+            <Image
+              source={{ uri: profileData.profileHeader }}
+              style={styles.coverImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.coverFallback} />
+          )}
 
-        {showSelfProfileMediaControls ? (
-          <TouchableOpacity
-            accessibilityLabel="Edit cover image"
-            onPress={() => openEditProfile('header')}
-            style={styles.coverEditButton}
-            testID="profile-cover-edit-button"
-          >
-            {profileData.profileHeader ? (
+          {showSelfProfileMediaControls ? (
+            <TouchableOpacity
+              accessibilityLabel="Edit cover image"
+              onPress={() => openEditProfile('header')}
+              style={styles.coverEditButton}
+              testID="profile-cover-edit-button"
+            >
               <Icon name="pencil-outline" size={18} color="#FFFFFF" />
-            ) : (
-              <Add size={18} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
-        ) : null}
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
         {(displayedBadges.length > 0 || isOwnProfile) &&
           (isOwnProfile ? (
@@ -308,7 +343,7 @@ function ProfileHeader({
                 <TouchableOpacity
                   accessibilityLabel="Edit profile photo"
                   activeOpacity={0.85}
-                  onPress={() => openEditProfile('photo')}
+                  onPress={() => setPhotoPickerVisible(true)}
                   style={styles.avatarEditButton}
                   testID="profile-avatar-edit-button"
                 >
@@ -500,6 +535,17 @@ function ProfileHeader({
         </View>
       </View>
 
+      <ImagePickerModal
+        visible={photoPickerVisible}
+        hideVisible={() => setPhotoPickerVisible(false)}
+        galleryImage={() => {
+          handlePickPhoto('gallery').catch(() => undefined);
+        }}
+        cameraImage={() => {
+          handlePickPhoto('camera').catch(() => undefined);
+        }}
+      />
+
       <CustomModal
         modalVisible={requestModal}
         onclose={() => setRequestModal(false)}
@@ -680,11 +726,11 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderRadius: 21,
     borderWidth: borderWidth.base,
-    bottom: spacing.x12,
     height: 42,
     justifyContent: 'center',
     position: 'absolute',
     right: spacing.x16,
+    top: spacing.x12,
     width: 42,
     zIndex: 2,
   },
@@ -704,6 +750,9 @@ const styles = StyleSheet.create({
   },
   coverWrap: {
     height: COVER_HEIGHT,
+    position: 'relative',
+  },
+  headerSection: {
     position: 'relative',
   },
   disabledAction: {
@@ -839,7 +888,7 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingHorizontal: spacing.x6,
     paddingVertical: spacing.x6,
-    right: spacing.x72,
+    right: spacing.x16,
   },
   selfBadgeRailAddOnly: {
     alignItems: 'center',

@@ -524,7 +524,7 @@ function BottomStack() {
             const shouldShowTabBar =
               focusedRouteName === 'ConnectPortal' ||
               focusedRouteName === 'ConnectMap' ||
-              focusedRouteName === 'ConnectGoLanding' ||
+              focusedRouteName === 'ConnectGoEventDash' ||
               focusedRouteName === 'ConnectPlacesHome' ||
               focusedRouteName === 'ConnectServeHome';
 
@@ -558,9 +558,9 @@ function BottomStack() {
               tabBarStyle: shouldShowTabBar
                 ? connectVisibleTabBarStyle
                 : { ...connectVisibleTabBarStyle, display: 'none', height: 0, opacity: 0 },
-              lazy: false,
+              lazy: true,
               unmountOnBlur: false,
-              freezeOnBlur: false,
+              freezeOnBlur: true,
             };
           }}
         />

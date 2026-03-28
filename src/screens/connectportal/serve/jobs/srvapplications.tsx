@@ -9,6 +9,7 @@ import {
   FlatList,
 } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   ServeHeader,
@@ -172,6 +173,11 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
             onOptionsPress={() => handleApplicantOptions(item.id)}
           />
         )}
+        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
     </SafeAreaView>
   );

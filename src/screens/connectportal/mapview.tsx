@@ -377,7 +377,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
 
     if (activeTab === 'Go!') {
-      navigation.navigate('ConnectGoLanding');
+      navigation.navigate('ConnectGoEventDash');
       return;
     }
 
@@ -623,7 +623,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
               return {
                 icon: 'eventManager' as const,
                 accessibilityLabel: 'Open event management',
-                onPress: () => navigation.navigate('ConnectGoLanding'),
+                onPress: () => navigation.navigate('ConnectGoEventDash'),
                 testID: 'connect-go-event-manager-action',
               };
             }

@@ -13,6 +13,7 @@ import SocialItem from '../listItems/SocialItem';
 import { OpenURLButton } from '@/services/constants';
 import Button from '../Button';
 import GeneralStyle from '@/src/constants/GeneralStyle';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 
 function InstagramFlatlist({
   currentUser,
@@ -144,6 +145,11 @@ function InstagramFlatlist({
             />
           );
         }}
+        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
     );
   }

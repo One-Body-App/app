@@ -1,13 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
@@ -20,12 +12,17 @@ import {
   getEventProgressRatio,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import { useConnectPalette } from '../shared';
+import { borderRadius } from '@/src/styles/outlines';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventDash'>;
+const GO_EVENT_ACCENT = '#126b87';
+const GO_EVENT_BUTTON_RADIUS = borderRadius.button;
 
 function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
   const [refreshing, setRefreshing] = useState(false);
   const { snapshot, refresh } = useConnectPortalData();
+  const palette = useConnectPalette();
 
   const summary = useMemo(
     () => ({
@@ -36,7 +33,6 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
       activeEvents: snapshot.organizerPublished.filter(
         (item) => getEventLifecycleState(item) === 'Active'
       ),
-      draftEvents: snapshot.drafts,
       totalRegistrations: snapshot.organizerPublished.reduce(
         (sum, item) => sum + Number(item.registrationCount || 0),
         0
@@ -50,7 +46,7 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
         0
       ),
     }),
-    [snapshot.drafts, snapshot.organizerPublished]
+    [snapshot.organizerPublished]
   );
 
   useFocusEffect(
@@ -59,219 +55,210 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
     }, [refresh])
   );
 
-  const featuredEvent = summary?.featuredEvent ?? null;
   const activeEvents = summary?.activeEvents ?? [];
-  const draftEvents = summary?.draftEvents ?? [];
+  const hasPublishedEvents = snapshot.organizerPublished.length > 0;
+  const primaryCardTextColor = '#FFFFFF';
+  const primaryCardBodyColor = 'rgba(255,255,255,0.86)';
+  const secondaryActionBorderColor = palette.isDark ? palette.borderStrong : palette.border;
+  const progressTrackColor = palette.isDark ? 'rgba(230,234,236,0.12)' : '#E4EDF0';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                if (navigation.canGoBack()) {
-                  navigation.goBack();
-                  return;
-                }
-                navigation.navigate('ConnectGoLanding');
-              }}
-            >
-              <Text style={styles.backButtonText}>Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerEyebrow}>GO! ORGANIZER</Text>
-            <Text style={styles.headerTitle}>Event Management</Text>
+    <View style={[styles.container, { backgroundColor: palette.screenBackground }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await refresh(true);
+              setRefreshing(false);
+            }}
+          />
+        }
+      >
+        <View style={styles.statsRow}>
+          <View
+            style={[
+              styles.statCard,
+              { backgroundColor: palette.inputBg, borderColor: palette.border },
+            ]}
+          >
+            <Text style={[styles.statLabel, { color: palette.textSecondary }]}>Registrations</Text>
+            <Text style={[styles.statValue, { color: palette.textPrimary }]}>
+              {formatConnectPortalNumber(summary?.totalRegistrations ?? 0)}
+            </Text>
           </View>
+          <View
+            style={[
+              styles.statCard,
+              { backgroundColor: palette.inputBg, borderColor: palette.border },
+            ]}
+          >
+            <Text style={[styles.statLabel, { color: palette.textSecondary }]}>Views</Text>
+            <Text style={[styles.statValue, { color: palette.textPrimary }]}>
+              {formatConnectPortalNumber(summary?.totalViews ?? 0)}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.statCard,
+              { backgroundColor: palette.inputBg, borderColor: palette.border },
+            ]}
+          >
+            <Text style={[styles.statLabel, { color: palette.textSecondary }]}>Opens</Text>
+            <Text style={[styles.statValue, { color: palette.textPrimary }]}>
+              {formatConnectPortalNumber(summary?.totalOpens ?? 0)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.quickActions}>
           <TouchableOpacity
-            style={styles.headerAction}
+            style={[
+              styles.actionCard,
+              styles.actionCardPrimary,
+              { backgroundColor: GO_EVENT_ACCENT, borderColor: GO_EVENT_ACCENT },
+            ]}
+            onPress={async () => {
+              const draft = await createConnectPortalDraft();
+              navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+            }}
+          >
+            <Text style={[styles.actionPrimaryTitle, { color: primaryCardTextColor }]}>
+              New Event
+            </Text>
+            <Text style={[styles.actionPrimaryBody, { color: primaryCardBodyColor }]}>
+              Start the seven-step event flow.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionCard,
+              { backgroundColor: palette.inputBg, borderColor: palette.border },
+            ]}
             onPress={() => navigation.navigate('ConnectGoMyEvents')}
           >
-            <Text style={styles.headerActionText}>My Events</Text>
+            <Text style={[styles.actionSecondaryTitle, { color: palette.textPrimary }]}>
+              My Events
+            </Text>
+            <Text style={[styles.actionSecondaryBody, { color: palette.textSecondary }]}>
+              Open active events, past events, and drafts.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionCard,
+              { backgroundColor: palette.inputBg, borderColor: palette.border },
+              !hasPublishedEvents ? styles.actionCardDisabled : null,
+            ]}
+            onPress={() => navigation.navigate('ConnectGoEventAnalytics')}
+          >
+            <Text style={[styles.actionSecondaryTitle, { color: palette.textPrimary }]}>
+              Analytics
+            </Text>
+            <Text style={[styles.actionSecondaryBody, { color: palette.textSecondary }]}>
+              {hasPublishedEvents ? 'Open your analytics dashboard.' : 'No published events yet.'}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={async () => {
-                setRefreshing(true);
-                await refresh(true);
-                setRefreshing(false);
-              }}
-            />
-          }
-        >
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>REGISTRATIONS</Text>
-              <Text style={styles.statValue}>
-                {formatConnectPortalNumber(summary?.totalRegistrations ?? 0)}
-              </Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>VIEWS</Text>
-              <Text style={styles.statValue}>
-                {formatConnectPortalNumber(summary?.totalViews ?? 0)}
-              </Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>OPENS</Text>
-              <Text style={styles.statValue}>
-                {formatConnectPortalNumber(summary?.totalOpens ?? 0)}
-              </Text>
-            </View>
-          </View>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>Active Events</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('ConnectGoMyEvents')}>
+            <Text style={[styles.sectionLink, { color: GO_EVENT_ACCENT }]}>View all</Text>
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={[styles.actionCard, styles.actionCardPrimary]}
-              onPress={async () => {
-                const draft = await createConnectPortalDraft();
-                navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
-              }}
+        {activeEvents.slice(0, 3).map((eventRecord) => {
+          const progressPercent = Math.round(getEventProgressRatio(eventRecord) * 100);
+          return (
+            <View
+              key={eventRecord.id}
+              style={[
+                styles.eventCard,
+                { backgroundColor: palette.inputBg, borderColor: palette.border },
+              ]}
             >
-              <Text style={styles.actionPrimaryTitle}>New Event</Text>
-              <Text style={styles.actionPrimaryBody}>Start the seven-step event flow.</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('ConnectGoMyEvents', { initialFilter: 'Draft' })}
-            >
-              <Text style={styles.actionSecondaryTitle}>Drafts</Text>
-              <Text style={styles.actionSecondaryBody}>
-                {draftEvents.length} saved draft{draftEvents.length === 1 ? '' : 's'}
+              <Text style={[styles.eventCategory, { color: GO_EVENT_ACCENT }]}>
+                {eventRecord.category}
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              disabled={!featuredEvent}
-              onPress={() => {
-                if (featuredEvent) {
-                  navigation.navigate('ConnectGoEventAnalytics', { eventId: featuredEvent.id });
-                }
-              }}
-            >
-              <Text style={styles.actionSecondaryTitle}>Analytics</Text>
-              <Text style={styles.actionSecondaryBody}>
-                {featuredEvent ? 'Open the featured event report.' : 'No event selected yet.'}
+              <Text style={[styles.eventTitle, { color: palette.textPrimary }]}>
+                {eventRecord.title}
               </Text>
-            </TouchableOpacity>
-          </View>
+              <Text style={[styles.eventMeta, { color: palette.textSecondary }]}>
+                {formatConnectPortalDateTime(eventRecord)}
+              </Text>
+              <Text style={[styles.eventMeta, { color: palette.textSecondary }]}>
+                {eventRecord.venueName || eventRecord.address}
+              </Text>
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Events</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('ConnectGoMyEvents')}>
-              <Text style={styles.sectionLink}>View all</Text>
-            </TouchableOpacity>
-          </View>
-
-          {activeEvents.slice(0, 3).map((eventRecord) => {
-            const progressPercent = Math.round(getEventProgressRatio(eventRecord) * 100);
-            return (
-              <View key={eventRecord.id} style={styles.eventCard}>
-                <Text style={styles.eventCategory}>{eventRecord.category}</Text>
-                <Text style={styles.eventTitle}>{eventRecord.title}</Text>
-                <Text style={styles.eventMeta}>{formatConnectPortalDateTime(eventRecord)}</Text>
-                <Text style={styles.eventMeta}>{eventRecord.venueName || eventRecord.address}</Text>
-
-                <View style={styles.progressBlock}>
-                  <View style={styles.progressHeaderRow}>
-                    <Text style={styles.progressText}>{getEventCapacityLabel(eventRecord)}</Text>
-                    <Text style={styles.progressText}>{progressPercent}%</Text>
-                  </View>
-                  <View style={styles.progressTrack}>
-                    <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
-                  </View>
+              <View style={styles.progressBlock}>
+                <View style={styles.progressHeaderRow}>
+                  <Text style={[styles.progressText, { color: palette.textSecondary }]}>
+                    {getEventCapacityLabel(eventRecord)}
+                  </Text>
+                  <Text style={[styles.progressText, { color: palette.textSecondary }]}>
+                    {progressPercent}%
+                  </Text>
                 </View>
-
-                <View style={styles.eventActions}>
-                  <TouchableOpacity
-                    style={styles.eventActionPrimary}
-                    onPress={() =>
-                      navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
-                    }
-                  >
-                    <Text style={styles.eventActionPrimaryText}>Manage Event</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.eventActionSecondary}
-                    onPress={() =>
-                      navigation.navigate('ConnectGoEventAnalytics', { eventId: eventRecord.id })
-                    }
-                  >
-                    <Text style={styles.eventActionSecondaryText}>Analytics</Text>
-                  </TouchableOpacity>
+                <View style={[styles.progressTrack, { backgroundColor: progressTrackColor }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${progressPercent}%`, backgroundColor: GO_EVENT_ACCENT },
+                    ]}
+                  />
                 </View>
               </View>
-            );
-          })}
-        </ScrollView>
-      </View>
-    </SafeAreaView>
+
+              <View style={styles.eventActions}>
+                <TouchableOpacity
+                  style={[styles.eventActionPrimary, { backgroundColor: GO_EVENT_ACCENT }]}
+                  onPress={() =>
+                    navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
+                  }
+                >
+                  <Text style={[styles.eventActionPrimaryText, { color: primaryCardTextColor }]}>
+                    Manage Event
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.eventActionSecondary,
+                    {
+                      borderColor: secondaryActionBorderColor,
+                      backgroundColor: palette.inputBg,
+                    },
+                  ]}
+                  onPress={() =>
+                    navigation.navigate('ConnectGoEventAnalytics', { eventId: eventRecord.id })
+                  }
+                >
+                  <Text style={[styles.eventActionSecondaryText, { color: palette.textPrimary }]}>
+                    Analytics
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: '#F6F7F8',
   },
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  headerLeft: {
-    flex: 1,
-    gap: 4,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 4,
-  },
-  backButtonText: {
-    color: '#126b87',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  headerEyebrow: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#126b87',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#032f3c',
-  },
-  headerAction: {
-    minHeight: 40,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D7E1E5',
-  },
-  headerActionText: {
-    color: '#032f3c',
-    fontSize: 14,
-    fontWeight: '700',
-  },
   scrollContent: {
     paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 32,
     gap: 18,
   },
@@ -312,6 +299,9 @@ const styles = StyleSheet.create({
   actionCardPrimary: {
     backgroundColor: '#126b87',
     borderColor: '#126b87',
+  },
+  actionCardDisabled: {
+    opacity: 0.55,
   },
   actionPrimaryTitle: {
     color: '#FFFFFF',
@@ -404,7 +394,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: GO_EVENT_BUTTON_RADIUS,
     backgroundColor: '#126b87',
   },
   eventActionPrimaryText: {
@@ -417,7 +407,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: GO_EVENT_BUTTON_RADIUS,
     borderWidth: 1,
     borderColor: '#D7E1E5',
     backgroundColor: '#FFFFFF',

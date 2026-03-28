@@ -37,6 +37,23 @@ export const HOME_FEED_LIST_BATCH_CONFIG =
         windowSize: 8,
       };
 
+export const STANDARD_SECONDARY_LIST_BATCH_CONFIG =
+  Platform.OS === 'android'
+    ? {
+        removeClippedSubviews: true,
+        initialNumToRender: 6,
+        maxToRenderPerBatch: 6,
+        updateCellsBatchingPeriod: 32,
+        windowSize: 6,
+      }
+    : {
+        removeClippedSubviews: false,
+        initialNumToRender: 8,
+        maxToRenderPerBatch: 8,
+        updateCellsBatchingPeriod: 32,
+        windowSize: 8,
+      };
+
 export const STANDARD_STACK_ANIMATION_OPTIONS =
   Platform.OS === 'android'
     ? {

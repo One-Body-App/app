@@ -22,6 +22,7 @@ import { fontSize } from '@/src/styles/typography';
 import { orgprofileUpdate, profileUpdate } from '@/src/redux/actions/AuthActions';
 import SearchIcon from '@/assets/icons/search.svg';
 import { profileImageList } from '@/src/styles/items';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 
 type Props = StackScreenProps<OnboardingStackParamList, 'OnboardingInfluencers'>;
 
@@ -134,6 +135,79 @@ function OnboardingInfluencers({ route }: Props) {
       getInfluencers(1);
     }
   });
+
+  const renderInfluencerItem = useCallback(
+    ({ item }: { item: User }) => {
+      const influencerId = getInfluencerId(item);
+      const isSelected = influencerId ? selectedInfluencers.includes(influencerId) : false;
+
+      return (
+        <TouchableOpacity
+          activeOpacity={0.6}
+          onPress={() => {
+            if (!influencerId) return;
+            if (selectedInfluencers.includes(influencerId)) {
+              setselectedInfluencers(
+                selectedInfluencers.filter((organizationId) => {
+                  return organizationId !== influencerId;
+                })
+              );
+            } else {
+              setselectedInfluencers([...selectedInfluencers, influencerId]);
+            }
+          }}
+          style={{
+            width: '33%',
+            alignItems: 'center',
+          }}
+        >
+          <Image
+            style={
+              isSelected
+                ? {
+                    ...profileImageList,
+                    borderWidth: 2.5,
+                    borderColor: '#12d2d9',
+                  }
+                : profileImageList
+            }
+            resizeMode="contain"
+            source={{
+              uri:
+                item?.profileImage && item?.profileImage !== ''
+                  ? item?.profileImage
+                  : 'https://cdn.onebodyapp.com/user/no-image.png',
+            }}
+          />
+
+          <View style={{ marginBottom: spacing.x24 }}>
+            <StyledText
+              style={{
+                textAlign: 'center',
+                color: isSelected ? '#12d2d9' : Colors.neutral.brand,
+              }}
+              numberOfLines={2}
+            >
+              {item?.name}
+            </StyledText>
+            <StyledText
+              numberOfLines={1}
+              style={{
+                color: isSelected ? '#12d2d9' : Colors.neutral[300],
+                alignSelf: 'center',
+                ...fontSize.x1,
+              }}
+            >
+              {item?.profile?.whatIDo?.name ??
+                item?.profile?.typeOfOrganization?.organizationType ??
+                item?.profile?.typeOfOrganization?.name}
+            </StyledText>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [getInfluencerId, selectedInfluencers]
+  );
 
   return (
     <OnboardingStepsLayout
@@ -267,79 +341,15 @@ function OnboardingInfluencers({ route }: Props) {
                 // flexWrap: influencers.length < 1 ? 'nowrap' : 'wrap',
               }}
               numColumns={3}
-              renderItem={({ item }) => {
-                const influencerId = getInfluencerId(item);
-                const isSelected = influencerId
-                  ? selectedInfluencers.includes(influencerId)
-                  : false;
-
-                return (
-                  <TouchableOpacity
-                    activeOpacity={0.6}
-                    onPress={() => {
-                      if (!influencerId) return;
-                      if (selectedInfluencers.includes(influencerId)) {
-                        setselectedInfluencers(
-                          selectedInfluencers.filter((organizationId) => {
-                            return organizationId !== influencerId;
-                          })
-                        );
-                      } else {
-                        setselectedInfluencers([...selectedInfluencers, influencerId]);
-                      }
-                    }}
-                    style={{
-                      width: '33%',
-
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Image
-                      style={
-                        isSelected
-                          ? {
-                              ...profileImageList,
-                              borderWidth: 2.5,
-                              borderColor: '#12d2d9',
-                            }
-                          : profileImageList
-                      }
-                      resizeMode="contain"
-                      source={{
-                        uri:
-                          item?.profileImage && item?.profileImage !== ''
-                            ? item?.profileImage
-                            : 'https://cdn.onebodyapp.com/user/no-image.png',
-                      }}
-                    />
-
-                    <View style={{ marginBottom: spacing.x24 }}>
-                      <StyledText
-                        style={{
-                          textAlign: 'center',
-                          color: isSelected ? '#12d2d9' : Colors.neutral.brand,
-                        }}
-                        numberOfLines={2}
-                      >
-                        {item?.name}
-                      </StyledText>
-                      <StyledText
-                        numberOfLines={1}
-                        style={{
-                          color: isSelected ? '#12d2d9' : Colors.neutral[300],
-                          alignSelf: 'center',
-                          ...fontSize.x1,
-                        }}
-                      >
-                        {item?.profile?.whatIDo?.name ??
-                          item?.profile?.typeOfOrganization?.organizationType ??
-                          item?.profile?.typeOfOrganization?.name}
-                      </StyledText>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
+              renderItem={renderInfluencerItem}
               ListEmptyComponent={EmptyInfluencersList}
+              removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+              initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+              maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+              updateCellsBatchingPeriod={
+                STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
+              }
+              windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
             />
           </View>
         </View>

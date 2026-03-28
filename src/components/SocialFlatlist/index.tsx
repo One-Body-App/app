@@ -18,6 +18,7 @@ import { RefreshListRef, SocialPost } from '@/utils/types';
 import StyledText from '../styled/Text';
 import { spacing } from '@/src/styles/spacing';
 import { MainStackParamList } from '@/src/navigator/types';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 
 type SocialListFooterProps = {
   isEndOfList: boolean;
@@ -216,6 +217,11 @@ const SocialFlatlist = forwardRef<
           />
         }
         ListEmptyComponent={<SocialListEmpty isLoading={isLoading} emptyText={emptyText} />}
+        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
       // <>
       //   {socialPost?.map((item, i) => (

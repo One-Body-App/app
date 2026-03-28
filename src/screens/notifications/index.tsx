@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Image,
+  InteractionManager,
   Linking,
   Modal,
   Platform,
@@ -25,6 +26,7 @@ import StyledText from '@/components/styled/Text';
 import { ApiCall } from '@/services/api';
 import Logo from '@/assets/icons/logo.svg';
 import LogoWhite from '@/assets/icons/logo_white.svg';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import { HomeStackParamsList } from '@/src/navigator/types';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { Colors, Typography } from '@/src/styles';
@@ -641,6 +643,23 @@ function NotificationScreen({ navigation }: Props) {
 
   const menuCategory = menuNotification ? getPrimaryCategory(menuNotification) : 'feed';
 
+  const openNotificationSettings = useCallback(() => {
+    const rootNavigation = navigation.getParent()?.getParent() as
+      | { navigate: (route: string, params?: object) => void }
+      | undefined;
+    const targetNavigation = (rootNavigation || navigation.getParent()) as
+      | { navigate: (route: string, params?: object) => void }
+      | undefined;
+
+    navigation.goBack();
+
+    InteractionManager.runAfterInteractions(() => {
+      targetNavigation?.navigate('Settings', {
+        screen: 'NotificationSettings',
+      });
+    });
+  }, [navigation]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -669,17 +688,7 @@ function NotificationScreen({ navigation }: Props) {
           <StyledText style={styles.headerTitleIOS}>Notifications</StyledText>
         ) : null}
 
-        <Pressable
-          onPress={() => {
-            const parent = navigation.getParent();
-            if (parent) {
-              (parent as any).navigate('Settings', { screen: 'NotificationSettings' });
-              return;
-            }
-            navigation.goBack();
-          }}
-          style={styles.headerActionButton}
-        >
+        <Pressable onPress={openNotificationSettings} style={styles.headerActionButton}>
           <MaterialCommunityIcons
             name="bell-cog-outline"
             size={28}
@@ -849,6 +858,11 @@ function NotificationScreen({ navigation }: Props) {
             </StyledText>
           </View>
         }
+        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
 
       <Modal

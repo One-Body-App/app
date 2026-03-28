@@ -21,6 +21,7 @@ import SocialItem from '@/components/listItems/SocialItem';
 import ArticleItem from '@/components/listItems/ArticleItem';
 import { SavedPost } from '@/utils/types';
 import Button from '@/components/Button';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import {
   MainDrawerParamsList,
   MainStackParamList,
@@ -292,6 +293,11 @@ function Saved({ navigation }: Props) {
 
           return null;
         }}
+        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
+        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
       />
     </SafeAreaView>
   );

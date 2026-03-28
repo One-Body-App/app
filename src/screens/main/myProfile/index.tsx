@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: borderWidth.hairline,
     flexDirection: 'row',
-    paddingBottom: spacing.x12,
+    paddingBottom: spacing.x13,
     paddingHorizontal: spacing.x16,
   },
   topBarAction: {

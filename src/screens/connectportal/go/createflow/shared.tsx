@@ -30,6 +30,10 @@ import {
   APP_HEADER_SIDE_WIDTH,
   APP_HEADER_TITLE_LINE_HEIGHT,
 } from '@/src/styles/headerLayout';
+import { borderRadius } from '@/src/styles/outlines';
+
+const GO_EVENT_ACCENT = '#126b87';
+const GO_EVENT_BUTTON_RADIUS = borderRadius.button;
 
 export function useCreateFlowPalette() {
   const { dark } = useTheme();
@@ -37,7 +41,7 @@ export function useCreateFlowPalette() {
     isDark: dark,
     screenBg: dark ? '#0e131a' : '#F6F7F8',
     headerTitle: dark ? '#e6eaec' : '#032f3c',
-    accent: dark ? '#41dbe1' : '#126b87',
+    accent: dark ? GO_EVENT_ACCENT : '#126b87',
     textPrimary: dark ? '#e6eaec' : '#032f3c',
     textSecondary: dark ? '#9aacb1' : '#4F6D77',
     textMuted: dark ? 'rgba(230,234,236,0.72)' : 'rgba(3,47,60,0.62)',
@@ -47,24 +51,24 @@ export function useCreateFlowPalette() {
     inputPlaceholder: dark ? '#9aacb1' : '#8AA0A8',
     cardBg: dark ? '#181a1c' : '#FFFFFF',
     cardBorder: dark ? 'rgba(255,255,255,0.1)' : '#D7E1E5',
-    cardActiveBg: dark ? 'rgba(65,219,225,0.12)' : '#EEF6F8',
-    cardActiveBorder: dark ? '#41dbe1' : '#126b87',
+    cardActiveBg: dark ? 'rgba(18,107,135,0.12)' : '#EEF6F8',
+    cardActiveBorder: dark ? GO_EVENT_ACCENT : '#126b87',
     progressTrack: dark ? 'rgba(255,255,255,0.1)' : '#DCE7EB',
-    progressFill: dark ? '#41dbe1' : '#126b87',
+    progressFill: dark ? GO_EVENT_ACCENT : '#126b87',
     footerBg: dark ? '#0e131a' : '#F6F7F8',
     footerBorder: dark ? 'rgba(255,255,255,0.08)' : '#E6EAEC',
     secondaryBtnBg: dark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
     secondaryBtnBorder: dark ? 'rgba(255,255,255,0.12)' : '#C7D6DB',
     secondaryBtnText: dark ? '#e6eaec' : '#032f3c',
-    primaryBtnBg: dark ? '#41dbe1' : '#126b87',
-    primaryBtnText: dark ? '#032f3c' : '#FFFFFF',
+    primaryBtnBg: dark ? GO_EVENT_ACCENT : '#126b87',
+    primaryBtnText: '#FFFFFF',
     radioBorder: dark ? 'rgba(255,255,255,0.2)' : '#C4D4D9',
-    radioActiveBg: dark ? '#41dbe1' : '#126b87',
-    radioActiveBorder: dark ? '#41dbe1' : '#126b87',
+    radioActiveBg: dark ? GO_EVENT_ACCENT : '#126b87',
+    radioActiveBorder: dark ? GO_EVENT_ACCENT : '#126b87',
     dashedBorder: dark ? 'rgba(255,255,255,0.16)' : '#9FB6BE',
     dashedBg: dark ? 'rgba(255,255,255,0.03)' : '#FBFDFD',
     disabledInputBg: dark ? 'rgba(255,255,255,0.04)' : '#F1F6F8',
-    successBubbleBg: dark ? 'rgba(65,219,225,0.14)' : '#EAF5F7',
+    successBubbleBg: dark ? 'rgba(18,107,135,0.14)' : '#EAF5F7',
   };
 }
 
@@ -121,7 +125,13 @@ export const getStepFiveNextRouteName = (
 
 export const getReviewBackRouteName = (
   draft: Pick<ConnectPortalEventDraft, 'ticketType' | 'paymentOption'>
-) => (requiresPayoutStep(draft) ? 'ConnectGoCreateStep6Payout' : 'ConnectGoCreateStep5');
+) => {
+  if (draft.ticketType === 'external') {
+    return 'ConnectGoCreateStep4';
+  }
+
+  return requiresPayoutStep(draft) ? 'ConnectGoCreateStep6Payout' : 'ConnectGoCreateStep5';
+};
 
 export const createDraftTicketTier = (overrides?: Partial<TicketTier>): TicketTier => ({
   id: overrides?.id || `ticket-${Math.round(Math.random() * 100000)}`,
@@ -380,7 +390,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: GO_EVENT_BUTTON_RADIUS,
   },
   primaryButtonDisabled: {
     opacity: 0.4,
@@ -394,7 +404,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: GO_EVENT_BUTTON_RADIUS,
     borderWidth: 1,
   },
   secondaryButtonHidden: {

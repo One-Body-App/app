@@ -35,6 +35,7 @@ import { spacing } from '@/src/styles/spacing';
 
 import { iterestListItem, profileImageList } from '@/src/styles/items';
 import { MainDrawerParamsList } from '@/src/navigator/types';
+import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import CustomModal from '@/src/components/CustomModal';
 import GlassTabBar from '@/src/components/GlassTabBar';
 
@@ -453,6 +454,13 @@ function Connected({ navigation }: Props) {
               );
             }}
             scrollIndicatorInsets={{ right: 1 }}
+            removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+            initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+            maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+            updateCellsBatchingPeriod={
+              STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
+            }
+            windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
           />
         </View>
 

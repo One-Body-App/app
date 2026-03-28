@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Platform,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
   createConnectPortalDraft,
@@ -24,10 +26,20 @@ import type {
   ConnectPortalMyEventsFilter,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import { useConnectPalette } from '../shared';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
+import { borderRadius } from '@/src/styles/outlines';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoMyEvents'>;
 
 const FILTERS: ConnectPortalMyEventsFilter[] = ['All', 'Active', 'Draft', 'Past'];
+const GO_EVENT_ACCENT = '#126b87';
+const GO_EVENT_BUTTON_RADIUS = borderRadius.button;
 
 function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
   const [activeFilter, setActiveFilter] = useState<ConnectPortalMyEventsFilter>(
@@ -36,6 +48,7 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const { snapshot, refresh } = useConnectPortalData();
+  const palette = useConnectPalette();
 
   const events = useMemo<ConnectPortalEventRecord[]>(() => {
     const allEvents = [...snapshot.organizerPublished, ...snapshot.drafts].sort((left, right) =>
@@ -75,35 +88,73 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
     });
   }, [events, searchQuery]);
 
+  const primaryBtnTextColor = '#FFFFFF';
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBackground }]}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                if (navigation.canGoBack()) {
-                  navigation.goBack();
-                  return;
-                }
-                navigation.navigate('ConnectGoEventDash');
-              }}
-            >
-              <Text style={styles.backButtonText}>Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>My Events</Text>
-            <Text style={styles.headerSubtitle}>Drafts, active events, and event history</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={async () => {
-              const draft = await createConnectPortalDraft();
-              navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
-            }}
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
+        <View style={[styles.header, { backgroundColor: palette.screenBackground }]}>
+          {Platform.OS === 'android' ? (
+            <>
+              <TouchableOpacity
+                style={styles.headerBackButton}
+                onPress={() => {
+                  if (navigation.canGoBack()) {
+                    navigation.goBack();
+                    return;
+                  }
+                  navigation.navigate('ConnectGoEventDash');
+                }}
+              >
+                <MaterialIcons name="chevron-left" size={32} color={GO_EVENT_ACCENT} />
+              </TouchableOpacity>
+              <View style={styles.headerAndroidTitleWrap}>
+                <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>My Events</Text>
+                <Text style={[styles.headerSubtitle, { color: palette.textSecondary }]}>
+                  Drafts, active events, and event history
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: GO_EVENT_ACCENT }]}
+                onPress={async () => {
+                  const draft = await createConnectPortalDraft();
+                  navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+                }}
+              >
+                <Text style={[styles.addButtonText, { color: primaryBtnTextColor }]}>+</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.headerBackButton}
+                onPress={() => {
+                  if (navigation.canGoBack()) {
+                    navigation.goBack();
+                    return;
+                  }
+                  navigation.navigate('ConnectGoEventDash');
+                }}
+              >
+                <MaterialIcons name="chevron-left" size={32} color={GO_EVENT_ACCENT} />
+              </TouchableOpacity>
+              <View style={styles.headerCenter}>
+                <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>My Events</Text>
+                <Text style={[styles.headerSubtitle, { color: palette.textSecondary }]}>
+                  Drafts, active events, and event history
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: GO_EVENT_ACCENT }]}
+                onPress={async () => {
+                  const draft = await createConnectPortalDraft();
+                  navigation.navigate('ConnectGoCreateStep1', { draftId: draft.id });
+                }}
+              >
+                <Text style={[styles.addButtonText, { color: primaryBtnTextColor }]}>+</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <View style={styles.searchWrap}>
@@ -113,11 +164,18 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
             </View>
           ) : null}
           <TextInput
-            style={styles.searchInput}
+            style={[
+              styles.searchInput,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.border,
+                color: palette.textPrimary,
+              },
+            ]}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search your events..."
-            placeholderTextColor="#8AA0A8"
+            placeholderTextColor={palette.inputPlaceholder}
           />
         </View>
 
@@ -131,11 +189,20 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
             return (
               <TouchableOpacity
                 key={filterName}
-                style={[styles.filterChip, isActive ? styles.filterChipActive : null]}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: isActive ? GO_EVENT_ACCENT : palette.inputBg,
+                    borderColor: isActive ? GO_EVENT_ACCENT : palette.border,
+                  },
+                ]}
                 onPress={() => setActiveFilter(filterName)}
               >
                 <Text
-                  style={[styles.filterChipText, isActive ? styles.filterChipTextActive : null]}
+                  style={[
+                    styles.filterChipText,
+                    { color: isActive ? primaryBtnTextColor : palette.textPrimary },
+                  ]}
                 >
                   {filterName}
                 </Text>
@@ -161,17 +228,32 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
           {filteredEvents.map((eventRecord) => {
             const lifecycle = getEventLifecycleState(eventRecord);
             const isDraft = eventRecord.status === 'draft';
+            const draftBadgeBg = palette.isDark ? 'rgba(245,238,230,0.12)' : '#F5EEE6';
+            const activeBadgeBg = palette.isDark ? 'rgba(234,245,247,0.12)' : '#EAF5F7';
+            const badgeBg = isDraft ? draftBadgeBg : activeBadgeBg;
             return (
-              <View key={eventRecord.id} style={styles.card}>
+              <View
+                key={eventRecord.id}
+                style={[
+                  styles.card,
+                  { backgroundColor: palette.inputBg, borderColor: palette.border },
+                ]}
+              >
                 <View style={styles.badgeRow}>
-                  <View style={[styles.badge, isDraft ? styles.badgeDraft : styles.badgeActive]}>
-                    <Text style={styles.badgeText}>{lifecycle.toUpperCase()}</Text>
+                  <View style={[styles.badge, { backgroundColor: badgeBg }]}>
+                    <Text style={[styles.badgeText, { color: GO_EVENT_ACCENT }]}>
+                      {lifecycle.toUpperCase()}
+                    </Text>
                   </View>
                 </View>
 
-                <Text style={styles.cardTitle}>{eventRecord.title || 'Untitled Event'}</Text>
-                <Text style={styles.cardMeta}>{formatConnectPortalDateTime(eventRecord)}</Text>
-                <Text style={styles.cardMeta}>
+                <Text style={[styles.cardTitle, { color: palette.textPrimary }]}>
+                  {eventRecord.title || 'Untitled Event'}
+                </Text>
+                <Text style={[styles.cardMeta, { color: palette.textSecondary }]}>
+                  {formatConnectPortalDateTime(eventRecord)}
+                </Text>
+                <Text style={[styles.cardMeta, { color: palette.textSecondary }]}>
                   {eventRecord.isOnline
                     ? 'Online Event'
                     : eventRecord.venueName || eventRecord.address}
@@ -181,44 +263,68 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
                   {isDraft ? (
                     <>
                       <TouchableOpacity
-                        style={[styles.actionButton, styles.primaryButton]}
+                        style={[
+                          styles.actionButton,
+                          styles.primaryButton,
+                          { backgroundColor: GO_EVENT_ACCENT },
+                        ]}
                         onPress={() =>
                           navigation.navigate(getDraftResumeRouteName(eventRecord), {
                             draftId: eventRecord.id,
                           })
                         }
                       >
-                        <Text style={styles.primaryButtonText}>Resume Draft</Text>
+                        <Text style={[styles.primaryButtonText, { color: primaryBtnTextColor }]}>
+                          Resume Draft
+                        </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.actionButton, styles.secondaryButton]}
+                        style={[
+                          styles.actionButton,
+                          styles.secondaryButton,
+                          { backgroundColor: palette.inputBg, borderColor: palette.border },
+                        ]}
                         onPress={async () => {
                           await deleteConnectPortalDraft(eventRecord.id);
                           await refresh(true);
                         }}
                       >
-                        <Text style={styles.secondaryButtonText}>Delete</Text>
+                        <Text style={[styles.secondaryButtonText, { color: palette.textPrimary }]}>
+                          Delete
+                        </Text>
                       </TouchableOpacity>
                     </>
                   ) : (
                     <>
                       <TouchableOpacity
-                        style={[styles.actionButton, styles.primaryButton]}
+                        style={[
+                          styles.actionButton,
+                          styles.primaryButton,
+                          { backgroundColor: GO_EVENT_ACCENT },
+                        ]}
                         onPress={() =>
                           navigation.navigate('ConnectGoEventView', { eventId: eventRecord.id })
                         }
                       >
-                        <Text style={styles.primaryButtonText}>Manage</Text>
+                        <Text style={[styles.primaryButtonText, { color: primaryBtnTextColor }]}>
+                          Manage
+                        </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.actionButton, styles.secondaryButton]}
+                        style={[
+                          styles.actionButton,
+                          styles.secondaryButton,
+                          { backgroundColor: palette.inputBg, borderColor: palette.border },
+                        ]}
                         onPress={() =>
                           navigation.navigate('ConnectGoEventAnalytics', {
                             eventId: eventRecord.id,
                           })
                         }
                       >
-                        <Text style={styles.secondaryButtonText}>Analytics</Text>
+                        <Text style={[styles.secondaryButtonText, { color: palette.textPrimary }]}>
+                          Analytics
+                        </Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -235,7 +341,6 @@ function MyEventsScreen({ navigation, route }: Props): React.JSX.Element {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F6F7F8',
   },
   container: {
     flex: 1,
@@ -243,45 +348,45 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    marginTop: APP_HEADER_ROW_OFFSET,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
   },
-  headerLeft: {
+  headerBackButton: {
+    width: APP_HEADER_SIDE_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAndroidTitleWrap: {
     flex: 1,
-    gap: 4,
+    justifyContent: 'center',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+    gap: 2,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 4,
-  },
-  backButtonText: {
-    color: '#126b87',
-    fontSize: 15,
-    fontWeight: '700',
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '800',
-    color: '#032f3c',
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: '#4F6D77',
+    fontSize: 13,
   },
   addButton: {
-    width: 42,
+    width: APP_HEADER_SIDE_WIDTH,
     height: 42,
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#126b87',
   },
   addButtonText: {
-    color: '#FFFFFF',
     fontSize: 26,
     fontWeight: '400',
-    marginTop: -2,
+    marginTop: Platform.OS === 'android' ? 0 : -2,
   },
   searchWrap: {
     paddingHorizontal: 16,
@@ -306,15 +411,12 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     fontSize: 15,
-    color: '#032f3c',
   },
   filterRow: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
     gap: 10,
   },
   filterChip: {
@@ -323,21 +425,11 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D7E1E5',
-  },
-  filterChipActive: {
-    backgroundColor: '#126b87',
-    borderColor: '#126b87',
   },
   filterChipText: {
-    color: '#032f3c',
     fontSize: 14,
     fontWeight: '700',
-  },
-  filterChipTextActive: {
-    color: '#FFFFFF',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -346,9 +438,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D7E1E5',
     padding: 18,
     gap: 8,
   },
@@ -360,25 +450,16 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
   },
-  badgeActive: {
-    backgroundColor: '#EAF5F7',
-  },
-  badgeDraft: {
-    backgroundColor: '#F5EEE6',
-  },
   badgeText: {
-    color: '#126b87',
     fontSize: 12,
     fontWeight: '800',
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#032f3c',
   },
   cardMeta: {
     fontSize: 14,
-    color: '#4F6D77',
   },
   actionRow: {
     flexDirection: 'row',
@@ -390,23 +471,17 @@ const styles = StyleSheet.create({
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: GO_EVENT_BUTTON_RADIUS,
   },
-  primaryButton: {
-    backgroundColor: '#126b87',
-  },
+  primaryButton: {},
   secondaryButton: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D7E1E5',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
   },
   secondaryButtonText: {
-    color: '#032f3c',
     fontSize: 15,
     fontWeight: '800',
   },

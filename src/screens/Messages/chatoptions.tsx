@@ -1,14 +1,5 @@
-import React, { type ComponentProps, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  Easing,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { type ComponentProps, useMemo } from 'react';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -41,8 +32,6 @@ type OptionRow = {
   isLoading: boolean;
 };
 
-const SHEET_TRANSLATE_Y = 420;
-
 function ChatOptions({
   visible,
   onClose,
@@ -61,49 +50,6 @@ function ChatOptions({
 }: Props) {
   const { colors, dark } = useTheme();
   const insets = useSafeAreaInsets();
-  const [isMounted, setIsMounted] = useState(visible);
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const sheetTranslateY = useRef(new Animated.Value(SHEET_TRANSLATE_Y)).current;
-
-  useEffect(() => {
-    if (visible) {
-      setIsMounted(true);
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 180,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(sheetTranslateY, {
-          toValue: 0,
-          duration: 220,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start();
-      return;
-    }
-
-    Animated.parallel([
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 160,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(sheetTranslateY, {
-        toValue: SHEET_TRANSLATE_Y,
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (finished) {
-        setIsMounted(false);
-      }
-    });
-  }, [backdropOpacity, sheetTranslateY, visible]);
 
   const normalRows = useMemo(
     (): OptionRow[] => [
@@ -156,32 +102,17 @@ function ChatOptions({
     [canBlock, canReport, isBlockLoading, isReportLoading, onBlock, onReport]
   );
 
-  if (!isMounted) {
+  if (!visible) {
     return null;
   }
 
   return (
-    <Modal transparent visible animationType="none" onRequestClose={onClose}>
+    <Modal transparent visible animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay} pointerEvents="box-none">
         <Pressable style={styles.backdropPressable} onPress={onClose}>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.backdrop,
-              {
-                opacity: backdropOpacity,
-              },
-            ]}
-          />
+          <View pointerEvents="none" style={styles.backdrop} />
         </Pressable>
-        <Animated.View
-          style={[
-            styles.sheetWrap,
-            {
-              transform: [{ translateY: sheetTranslateY }],
-            },
-          ]}
-        >
+        <View style={styles.sheetWrap}>
           <View
             style={[
               styles.sheet,
@@ -280,7 +211,7 @@ function ChatOptions({
               </Pressable>
             </View>
           </View>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );

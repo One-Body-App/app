@@ -128,6 +128,18 @@ function MentionInput({
   const isSelectingSuggestionRef = useRef(false);
   const [isFocused, setIsFocused] = useState(false);
 
+  // Track the last selection reported by the native TextInput so we can
+  // distinguish programmatic selection changes (e.g. after mention insertion)
+  // from normal typing.  Only pass `selection` as a controlled prop when the
+  // parent set it programmatically; otherwise let the native input manage its
+  // own cursor to avoid the cursor-jump bug on capital letters / fast typing.
+  const lastNativeSelectionRef = useRef<MentionSelection>(selection);
+  const controlledSelection =
+    selection.start !== lastNativeSelectionRef.current.start ||
+    selection.end !== lastNativeSelectionRef.current.end
+      ? selection
+      : undefined;
+
   const suggestionPanelVisible = useMemo(() => {
     return (
       isFocused &&
@@ -163,10 +175,12 @@ function MentionInput({
           {...inputProps}
           maxLength={maxLength}
           value={value}
-          selection={selection}
+          selection={controlledSelection}
           onChangeText={onChangeText}
           onSelectionChange={(event: any) => {
-            onSelectionChange(selectionFromEvent(event));
+            const nativeSelection = selectionFromEvent(event);
+            lastNativeSelectionRef.current = nativeSelection;
+            onSelectionChange(nativeSelection);
           }}
           onFocus={(event: any) => {
             if (blurTimeoutRef.current) {

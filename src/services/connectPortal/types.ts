@@ -3,7 +3,7 @@ import type { OrganizationSize } from '@/utils/types';
 
 export type ConnectPortalCreateStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
-export type ConnectPortalTicketType = 'free' | 'paid';
+export type ConnectPortalTicketType = 'free' | 'external' | 'paid';
 
 export type ConnectPortalPaymentOption = 'external' | 'internal';
 
@@ -101,7 +101,10 @@ export type ConnectPortalEventRecordBase = {
   endDate: string;
   startTime: string;
   endTime: string;
+  isSingleDayEvent: boolean;
   isOnline: boolean;
+  onlineEventUrl: string;
+  externalEventUrl: string;
   locationQuery: string;
   venueName: string;
   address: string;
