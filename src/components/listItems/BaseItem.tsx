@@ -1199,9 +1199,12 @@ function BaseItem({
                 onPress();
               }}
               activeOpacity={0.85}
-              style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}
+              style={{ flexDirection: 'row', alignItems: 'center' }}
             >
-              <StyledText style={{ color: '#f6f6f7', fontWeight: '700', fontSize: 16 }}>
+              <StyledText
+                style={{ flexShrink: 1, color: '#f6f6f7', fontWeight: '700', fontSize: 16 }}
+                numberOfLines={1}
+              >
                 {formattedHandle || userData?.name || '@onebody'}
               </StyledText>
               {isApprovedInfluencer ? (
@@ -1424,16 +1427,17 @@ function BaseItem({
                 />
               )}
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <StyledText
                     style={{
+                      flexShrink: 1,
                       color: transparency ? Colors.neutral[500] : primaryTextColor,
                       fontSize: 17,
                       fontWeight: 'bold',
                       marginBottom: isSocialPost ? 0 : 0,
                       lineHeight: isSocialPost ? 20 : undefined,
                     }}
-                    numberOfLines={2}
+                    numberOfLines={1}
                   >
                     {userData?.name}
                     {prayerDisplayEmoji ? ` ~ ${prayerDisplayEmoji}` : ''}
@@ -1442,13 +1446,14 @@ function BaseItem({
                     <Icon
                       name="check-decagram"
                       size={spacing.x16}
-                      style={{ marginLeft: spacing.x5 }}
+                      style={{ flexShrink: 0, marginLeft: spacing.x5 }}
                       color={brandColors.primaryDark}
                     />
                   ) : null}
                   {isSocialPost && locationLabel ? (
                     <View
                       style={{
+                        flexShrink: 0,
                         marginLeft: spacing.x5,
                         flexDirection: 'row',
                         alignItems: 'center',

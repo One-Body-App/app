@@ -33,7 +33,6 @@ import CameraComponent from '@/src/components/VideoPost/Camera';
 import CustomVideo from '@/src/components/CustomVideo';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import { MainStackParamList } from '@/src/navigator/types';
-import { ApiCall } from '@/src/services/api';
 import {
   createDefaultVideoTransform,
   MAX_VIDEO_EDITOR_SCALE,
@@ -49,6 +48,8 @@ import type {
   VideoRatioId,
   VideoTransformState,
 } from '@/src/services/videoProcessing/types';
+import { enqueuePendingVideoUpload } from '@/src/services/videoProcessing/videoUploadQueue';
+import { buildPendingVideoUploadRecipe, ConfirmedVideoCropSelection } from './videoPostUtils';
 
 type Props = StackScreenProps<MainStackParamList, 'VideoPost'>;
 
@@ -104,21 +105,7 @@ const RATIO_OPTIONS: VideoRatioId[] = ['1:1', '4:3', '16:9', '9:16'];
 
 type VideoEditorMode = 'crop' | 'edit';
 
-type ConfirmedCropSelection = {
-  cropRect: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  ratioId: VideoRatioId;
-  outputWidth: number;
-  outputHeight: number;
-  videoBitrate: number;
-  sourceWidth: number;
-  sourceHeight: number;
-  transform: VideoTransformState;
-};
+type ConfirmedCropSelection = ConfirmedVideoCropSelection;
 
 const ensureFileUri = (value?: string | null) => {
   if (!value) {
@@ -571,36 +558,6 @@ export default function VideoPost({ navigation, route }: Props) {
     openTrimEditor(originalVideoUri || editableVideoUri);
   }, [editableVideoUri, openTrimEditor, originalVideoUri]);
 
-  const uploadVideoToMux = useCallback(async (uploadUrl: string, sourceUri: string) => {
-    if (Platform.OS === 'ios' || sourceUri.startsWith('content://')) {
-      const response = await fetch(sourceUri, { method: 'GET' });
-      const blob = await response.blob();
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: { 'content-type': blob.type || 'video/mp4' },
-      });
-      if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
-        throw new Error(`Video upload failed (${uploadResponse.status}).`);
-      }
-      return;
-    }
-
-    // eslint-disable-next-line global-require
-    const rnFetchBlobModule = require('rn-fetch-blob');
-    const RNFetchBlob = rnFetchBlobModule.default ?? rnFetchBlobModule;
-    const uploadResponse = await RNFetchBlob.fetch(
-      'PUT',
-      uploadUrl,
-      undefined,
-      RNFetchBlob.wrap(sourceUri.replace('file://', ''))
-    );
-    const { status } = uploadResponse.info();
-    if (status < 200 || status >= 300) {
-      throw new Error(`Video upload failed (${status}).`);
-    }
-  }, []);
-
   useEffect(() => {
     if (!pendingAutoTrimUri || isLiveCameraVisible || isPreparingVideo) {
       return;
@@ -704,7 +661,7 @@ export default function VideoPost({ navigation, route }: Props) {
   }, [clampedTransform, cropFrame, selectedRatio, videoNaturalSize]);
 
   const handlePostPress = useCallback(async () => {
-    const uploadSourceUri = editableVideoUri || originalVideoUri;
+    const uploadSourceUri = originalVideoUri || editableVideoUri;
     if (!uploadSourceUri) {
       toast.show('Please select or record a video first.', { type: 'danger' });
       return;
@@ -728,40 +685,18 @@ export default function VideoPost({ navigation, route }: Props) {
 
     setLoading(true);
     try {
-      const uploadLink = await ApiCall<{
-        url?: string;
-        id?: string;
-        message?: string;
-      }>({
-        route: 'watch/authenticated-link/mux',
-        verb: 'get',
-        token: true,
+      const recipe = buildPendingVideoUploadRecipe({
+        sourceUri: uploadSourceUri,
+        caption,
+        trimStartMs: resolvedTrimStartMs,
+        trimEndMs: resolvedTrimEndMs,
+        trimDurationMs: selectedDurationMs,
+        confirmedCropSelection: activeCropSelection,
       });
 
-      if (uploadLink.status !== 200 || !uploadLink.response?.url || !uploadLink.response?.id) {
-        throw new Error(uploadLink.response?.message || 'Unable to initialize video upload.');
-      }
+      await enqueuePendingVideoUpload(recipe);
 
-      await uploadVideoToMux(uploadLink.response.url, uploadSourceUri);
-
-      const result = await ApiCall<{ message?: string }>({
-        route: 'watch/post',
-        verb: 'post',
-        token: true,
-        params: {
-          uploadId: uploadLink.response.id,
-          content: caption.trim(),
-          aspectRatio: activeCropSelection.outputWidth / activeCropSelection.outputHeight,
-          videoWidth: activeCropSelection.outputWidth,
-          videoHeight: activeCropSelection.outputHeight,
-        },
-      });
-
-      if (result.status !== 200) {
-        throw new Error(result.response?.message || 'Unable to create watch post.');
-      }
-
-      toast.show('Your video was submitted and is being processed for review.', {
+      toast.show('Your video was queued and is being processed for Watch.', {
         type: 'success',
         placement: 'bottom',
       });
@@ -793,11 +728,13 @@ export default function VideoPost({ navigation, route }: Props) {
     editableVideoUri,
     originalVideoUri,
     navigation,
+    resolvedTrimEndMs,
+    resolvedTrimStartMs,
     requiresInitialTrim,
     requiresTrim,
     resolveCurrentCropSelection,
+    selectedDurationMs,
     toast,
-    uploadVideoToMux,
   ]);
 
   const cropGesture = useMemo(() => {

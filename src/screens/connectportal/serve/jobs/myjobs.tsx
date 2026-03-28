@@ -189,6 +189,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
   };
 
   const ctaTextColor = palette.isDark ? BRAND_COLORS.black : BRAND_COLORS.white;
+  const postJobButtonColor = '#126b87';
   const modalSurface = palette.isDark ? '#1a2c32' : '#ffffff';
   const modalHandle = palette.isDark ? '#3a4a50' : '#d1d5db';
   const modalCloseBg = palette.isDark ? '#032f3c' : '#f3f4f6';
@@ -210,7 +211,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <TouchableOpacity
-          style={[styles.postJobButton, { backgroundColor: palette.accent }]}
+          style={[styles.postJobButton, { backgroundColor: postJobButtonColor }]}
           onPress={handlePostJob}
         >
           <MaterialIcons name="add-box" size={18} color={ctaTextColor} style={styles.postJobIcon} />

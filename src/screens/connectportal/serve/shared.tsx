@@ -248,15 +248,15 @@ export function ServeHeader({
   );
 }
 
-type ServeHubTab = 'My Jobs' | 'Saved' | 'Applied';
+type ServeHubTab = 'My Jobs' | 'Applied' | 'Saved';
 
 const HUB_TAB_CONFIG: Array<{
   label: ServeHubTab;
   route: 'ConnectServeHome' | 'ConnectServeSaved' | 'ConnectServeApplied';
 }> = [
   { label: 'My Jobs', route: 'ConnectServeHome' },
-  { label: 'Saved', route: 'ConnectServeSaved' },
   { label: 'Applied', route: 'ConnectServeApplied' },
+  { label: 'Saved', route: 'ConnectServeSaved' },
 ];
 
 type ServeHubTabsProps = {

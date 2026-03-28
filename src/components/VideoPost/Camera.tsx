@@ -23,11 +23,15 @@ import React, {
   useMemo,
 } from 'react';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
-import { Camera, type CameraPermissionStatus } from 'react-native-vision-camera/src/Camera';
-import type { VideoStabilizationMode } from 'react-native-vision-camera/src/types/CameraDevice';
-import type { FormatFilter } from 'react-native-vision-camera/src/devices/getCameraFormat';
-import { useCameraDevice } from 'react-native-vision-camera/src/hooks/useCameraDevice';
-import { useCameraFormat } from 'react-native-vision-camera/src/hooks/useCameraFormat';
+import {
+  Camera,
+  type CameraDevice,
+  type CameraPermissionStatus,
+  type FormatFilter,
+  type VideoStabilizationMode,
+  useCameraDevice,
+  useCameraFormat,
+} from 'react-native-vision-camera';
 import FastImage from 'react-native-fast-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { ImageLibraryOptions, launchImageLibrary } from 'react-native-image-picker';
@@ -68,6 +72,25 @@ type Props = {
   onClose?: () => void;
 };
 
+export const getDefaultRecorderCaptureSettings = (platformOS: string) => ({
+  videoBitRate: (platformOS === 'ios' ? 'normal' : 'high') as BitratePreset,
+  videoCodec: (platformOS === 'ios' ? 'h264' : 'h265') as CodecPreset,
+});
+
+export const shouldAllowCameraFlip = ({
+  isRecording,
+  isTearingDown,
+  hasTargetDevice,
+}: {
+  isRecording: boolean;
+  isTearingDown: boolean;
+  hasTargetDevice: boolean;
+}) => !isRecording && !isTearingDown && hasTargetDevice;
+
+const DEFAULT_RECORDER_CAPTURE_SETTINGS = getDefaultRecorderCaptureSettings(Platform.OS);
+const DEFAULT_RECORDER_VIDEO_BIT_RATE = DEFAULT_RECORDER_CAPTURE_SETTINGS.videoBitRate;
+const DEFAULT_RECORDER_VIDEO_CODEC = DEFAULT_RECORDER_CAPTURE_SETTINGS.videoCodec;
+
 const isRecordingCanceledError = (error: unknown) => {
   if (!error || typeof error !== 'object') {
     return false;
@@ -76,6 +99,11 @@ const isRecordingCanceledError = (error: unknown) => {
   const { code } = error as { code?: unknown };
   return code === 'capture/recording-canceled' || code === 'capture/recording-cancelled';
 };
+
+const getDeviceDefaultExposure = (device?: CameraDevice) =>
+  device ? Math.max(device.minExposure, Math.min(device.maxExposure, 0)) : 0;
+
+const getDeviceDefaultZoom = (device?: CameraDevice) => device?.neutralZoom ?? 1;
 
 function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<Props>) {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -96,11 +124,10 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [sessionActive, setSessionActive] = useState(true);
   const [appStateStatus, setAppStateStatus] = useState<AppStateStatus>(AppState.currentState);
-  const devices = useCameraDevice(isFrontCamera ? 'front' : 'back');
   const [selectedRatio, setSelectedRatio] = useState<RecorderRatio>('9:16');
   const [fps, setFps] = useState<FpsPreset>(30);
-  const [videoBitRate, setVideoBitRate] = useState<BitratePreset>('high');
-  const [videoCodec, setVideoCodec] = useState<CodecPreset>('h265');
+  const [videoBitRate, setVideoBitRate] = useState<BitratePreset>(DEFAULT_RECORDER_VIDEO_BIT_RATE);
+  const [videoCodec, setVideoCodec] = useState<CodecPreset>(DEFAULT_RECORDER_VIDEO_CODEC);
   const [flashMode, setFlashMode] = useState<'off' | 'on'>('off');
   const [videoHdr, setVideoHdr] = useState<boolean>(false);
   const [isAudioEnabled, setIsAudioEnabled] = useState<boolean>(true);
@@ -118,6 +145,12 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     useState<CameraPermissionStatus>('not-determined');
   const [microphonePermissionStatus, setMicrophonePermissionStatus] =
     useState<CameraPermissionStatus>('not-determined');
+  const preferredBackDevice = useCameraDevice('back', {
+    physicalDevices: ['wide-angle-camera'],
+  });
+  const fallbackBackDevice = useCameraDevice('back');
+  const frontDevice = useCameraDevice('front');
+  const activeDevice = isFrontCamera ? frontDevice : (preferredBackDevice ?? fallbackBackDevice);
   const formatFilters = useMemo<FormatFilter[]>(() => {
     const viewportRatio =
       cameraViewportSize.width > 0 && cameraViewportSize.height > 0
@@ -140,7 +173,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
       { videoResolution: 'max' },
     ];
   }, [cameraViewportSize.height, cameraViewportSize.width, selectedRatio]);
-  const format = useCameraFormat(devices, formatFilters);
+  const format = useCameraFormat(activeDevice, formatFilters);
 
   const selectedPreviewAspectRatio = useMemo(() => {
     const ratioMap: Record<RecorderRatio, number> = {
@@ -188,14 +221,14 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
   }, []);
 
   const safeZoom = useMemo(() => {
-    if (!devices) return zoom;
-    return Math.min(devices.maxZoom, Math.max(devices.minZoom, zoom));
-  }, [devices, zoom]);
+    if (!activeDevice) return zoom;
+    return Math.min(activeDevice.maxZoom, Math.max(activeDevice.minZoom, zoom));
+  }, [activeDevice, zoom]);
 
   const safeExposure = useMemo(() => {
-    if (!devices) return exposure;
-    return Math.min(devices.maxExposure, Math.max(devices.minExposure, exposure));
-  }, [devices, exposure]);
+    if (!activeDevice) return exposure;
+    return Math.min(activeDevice.maxExposure, Math.max(activeDevice.minExposure, exposure));
+  }, [activeDevice, exposure]);
 
   const safeStabilizationMode = useMemo(() => {
     if (!format?.videoStabilizationModes?.length) return 'off';
@@ -222,20 +255,23 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
   );
   const effectiveStabilizationMode = useMemo<VideoStabilizationMode | undefined>(() => {
     if (!effectiveFormat?.videoStabilizationModes?.length || cameraRecoveryStage >= 1) {
-      return 'off';
+      return undefined;
     }
     if (effectiveFormat.videoStabilizationModes.includes(safeStabilizationMode)) {
       return safeStabilizationMode;
     }
-    return effectiveFormat.videoStabilizationModes[0] ?? 'off';
+    return effectiveFormat.videoStabilizationModes[0];
   }, [cameraRecoveryStage, effectiveFormat, safeStabilizationMode]);
-  const effectiveVideoBitRate = cameraRecoveryStage >= 1 ? 'normal' : videoBitRate;
-  const effectiveVideoCodec = cameraRecoveryStage >= 1 ? 'h264' : videoCodec;
+  const effectiveVideoBitRate =
+    Platform.OS === 'ios' || cameraRecoveryStage >= 1 ? 'normal' : videoBitRate;
+  const effectiveVideoCodec =
+    Platform.OS === 'ios' || cameraRecoveryStage >= 1 ? 'h264' : videoCodec;
   const effectiveAudioEnabled = cameraRecoveryStage >= 2 ? false : isAudioEnabled;
+  const effectiveTorch = activeDevice?.hasTorch ? flashMode : 'off';
   const cameraSessionKey = useMemo(() => {
-    const deviceId = devices?.id ?? 'no-device';
+    const deviceId = activeDevice?.id ?? 'no-device';
     return `${deviceId}:${selectedRatio}:${cameraRecoveryStage}:${cameraSessionNonce}`;
-  }, [cameraRecoveryStage, cameraSessionNonce, devices?.id, selectedRatio]);
+  }, [activeDevice?.id, cameraRecoveryStage, cameraSessionNonce, selectedRatio]);
   const topInset = useMemo(() => {
     const androidInset = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
     return Math.max(insets.top, androidInset) + spacing.x10;
@@ -252,7 +288,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     sessionActive &&
     isFocused &&
     isAppForeground &&
-    Boolean(devices) &&
+    Boolean(activeDevice) &&
     hasCameraPermissions &&
     !hasFatalCameraRuntimeError;
   const isLandscapeViewport =
@@ -316,6 +352,29 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     selectedRatio,
   ]);
 
+  const applyCameraDeviceDefaults = useCallback((device?: CameraDevice) => {
+    setZoom(getDeviceDefaultZoom(device));
+    setExposure(getDeviceDefaultExposure(device));
+    if (!(device?.hasTorch ?? false)) {
+      setFlashMode('off');
+    }
+  }, []);
+
+  const resetCameraSessionState = useCallback(
+    (device?: CameraDevice) => {
+      teardownInProgressRef.current = false;
+      recoveryAttemptRef.current = false;
+      sessionActiveRef.current = true;
+      setIsCameraInitialized(false);
+      setCameraRuntimeErrorMessage(null);
+      setCameraRecoveryStage(0);
+      setSessionActive(true);
+      applyCameraDeviceDefaults(device);
+      setCameraSessionNonce((value) => value + 1);
+    },
+    [applyCameraDeviceDefaults]
+  );
+
   const clearFocusState = useCallback(() => {
     if (focusResetTimerRef.current) {
       clearTimeout(focusResetTimerRef.current);
@@ -342,15 +401,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     if (!isMountedRef.current) {
       return;
     }
-    teardownInProgressRef.current = false;
-    recoveryAttemptRef.current = false;
-    sessionActiveRef.current = true;
-    setIsCameraInitialized(false);
-    setCameraRuntimeErrorMessage(null);
-    setCameraRecoveryStage(0);
-    setSessionActive(true);
-    setCameraSessionNonce((value) => value + 1);
-  }, []);
+    resetCameraSessionState(activeDevice);
+  }, [activeDevice, resetCameraSessionState]);
 
   const teardownCameraSession = useCallback(
     async ({ cancelRecording = false, next }: { cancelRecording?: boolean; next?: () => void }) => {
@@ -435,7 +487,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
 
   const handleFocusTap = useCallback(
     async (event: GestureResponderEvent) => {
-      if (!devices?.supportsFocus || !camera.current || !shouldCameraBeActive) {
+      if (!activeDevice?.supportsFocus || !camera.current || !shouldCameraBeActive) {
         return;
       }
       const { locationX, locationY } = event.nativeEvent;
@@ -454,7 +506,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
         setFocusPoint(null);
       }, 900);
     },
-    [cameraFrameOffset.x, cameraFrameOffset.y, devices?.supportsFocus, shouldCameraBeActive]
+    [activeDevice?.supportsFocus, cameraFrameOffset.x, cameraFrameOffset.y, shouldCameraBeActive]
   );
 
   const handleViewportLayout = useCallback((event: LayoutChangeEvent) => {
@@ -572,13 +624,12 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
   }, []);
 
   useEffect(() => {
-    if (!devices) {
+    if (!activeDevice) {
       return;
     }
     setIsCameraInitialized(false);
-    setZoom(devices.neutralZoom);
-    setExposure(Math.max(devices.minExposure, Math.min(devices.maxExposure, 0)));
-  }, [devices]);
+    applyCameraDeviceDefaults(activeDevice);
+  }, [activeDevice, applyCameraDeviceDefaults]);
 
   useEffect(() => {
     if (!format?.supportsVideoHdr) {
@@ -627,21 +678,62 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
   }, [cameraRecoveryStage]);
 
   const retryCameraSession = useCallback(() => {
-    teardownInProgressRef.current = false;
-    recoveryAttemptRef.current = false;
-    sessionActiveRef.current = true;
-    setIsCameraInitialized(false);
-    setCameraRuntimeErrorMessage(null);
-    setCameraRecoveryStage(0);
-    setSessionActive(true);
-    setCameraSessionNonce((value) => value + 1);
-  }, []);
+    resetCameraSessionState(activeDevice);
+  }, [activeDevice, resetCameraSessionState]);
 
   useEffect(() => {
     retryCameraSession();
-  }, [devices?.id, retryCameraSession]);
+  }, [activeDevice?.id, retryCameraSession]);
 
-  if (devices == null) {
+  const handleFlipCamera = useCallback(() => {
+    const nextIsFrontCamera = !isFrontCamera;
+    const nextDevice = nextIsFrontCamera
+      ? frontDevice
+      : (preferredBackDevice ?? fallbackBackDevice);
+    if (
+      !shouldAllowCameraFlip({
+        isRecording: isRecordingRef.current,
+        isTearingDown: teardownInProgressRef.current,
+        hasTargetDevice: Boolean(nextDevice),
+      })
+    ) {
+      return;
+    }
+
+    setIsSettingsOpen(false);
+    setIsFrontCamera(nextIsFrontCamera);
+    clearFocusState();
+    resetCameraSessionState(nextDevice);
+  }, [
+    clearFocusState,
+    fallbackBackDevice,
+    frontDevice,
+    isFrontCamera,
+    preferredBackDevice,
+    resetCameraSessionState,
+  ]);
+
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+
+    console.log('[VisionCamera] selected recorder device', {
+      id: activeDevice?.id,
+      position: activeDevice?.position,
+      physicalDevices: activeDevice?.physicalDevices,
+      isFrontCamera,
+      recoveryStage: cameraRecoveryStage,
+    });
+  }, [
+    activeDevice?.id,
+    activeDevice?.physicalDevices,
+    activeDevice?.position,
+    cameraRecoveryStage,
+    isFrontCamera,
+  ]);
+
+  if (activeDevice == null) {
     return (
       <View style={videoPostStyles.noCam}>
         <StyledText>Camera not available</StyledText>
@@ -690,6 +782,70 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     );
   }
 
+  const cameraProps: any = {
+    ref: camera,
+    style: StyleSheet.absoluteFill,
+    device: activeDevice,
+    isActive: shouldCameraBeActive,
+    preview: true,
+    video: true,
+    audio: effectiveAudioEnabled,
+    format: effectiveFormat,
+    fps: effectiveFps,
+    zoom: safeZoom,
+    exposure: safeExposure,
+    torch: effectiveTorch,
+    lowLightBoost: false,
+    videoBitRate: effectiveVideoBitRate,
+    resizeMode: 'cover',
+    androidPreviewViewType: Platform.OS === 'android' ? 'texture-view' : undefined,
+    isMirrored: isFrontCamera,
+    enableZoomGesture: true,
+    onTouchEnd: handleFocusTap,
+    onInitialized: () => {
+      if (!sessionActiveRef.current) {
+        return;
+      }
+      teardownInProgressRef.current = false;
+      recoveryAttemptRef.current = false;
+      setCameraRuntimeErrorMessage(null);
+      setIsCameraInitialized(true);
+    },
+    onError: (error) => {
+      if (teardownInProgressRef.current || !sessionActiveRef.current) {
+        return;
+      }
+      setIsCameraInitialized(false);
+      const message = error?.message || 'Unable to initialize the camera session.';
+      setCameraRuntimeErrorMessage(message);
+      if (
+        Platform.OS === 'ios' &&
+        cameraRecoveryStage < IOS_CAMERA_RECOVERY_MAX_STAGE &&
+        !recoveryAttemptRef.current
+      ) {
+        recoveryAttemptRef.current = true;
+        setCameraRecoveryStage((stage) => Math.min(stage + 1, IOS_CAMERA_RECOVERY_MAX_STAGE));
+        if (__DEV__) {
+          console.warn('[VisionCamera] retrying with safer iOS session config', {
+            nextRecoveryStage: cameraRecoveryStage + 1,
+            code: error?.code,
+            message,
+          });
+        }
+        return;
+      }
+      console.error('[VisionCamera] runtime error', error);
+    },
+  };
+
+  if (effectiveVideoHdr) {
+    cameraProps.videoHdr = true;
+  }
+
+  if (effectiveStabilizationMode) {
+    cameraProps.videoStabilizationMode = effectiveStabilizationMode;
+  }
+
   return (
     <>
       <View style={videoPostStyles.cameraViewport} onLayout={handleViewportLayout}>
@@ -703,67 +859,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
           ]}
           onLayout={handleCameraFrameLayout}
         >
-          <Camera
-            key={cameraSessionKey}
-            ref={camera}
-            style={StyleSheet.absoluteFill}
-            device={devices}
-            isActive={shouldCameraBeActive}
-            preview
-            photo
-            video
-            audio={effectiveAudioEnabled}
-            format={effectiveFormat}
-            fps={effectiveFps}
-            zoom={safeZoom}
-            exposure={safeExposure}
-            torch={flashMode}
-            videoHdr={effectiveVideoHdr}
-            lowLightBoost={false}
-            videoStabilizationMode={effectiveStabilizationMode}
-            videoBitRate={effectiveVideoBitRate}
-            resizeMode="cover"
-            androidPreviewViewType={Platform.OS === 'android' ? 'texture-view' : undefined}
-            isMirrored={isFrontCamera}
-            enableZoomGesture
-            onTouchEnd={handleFocusTap}
-            onInitialized={() => {
-              if (!sessionActiveRef.current) {
-                return;
-              }
-              teardownInProgressRef.current = false;
-              recoveryAttemptRef.current = false;
-              setCameraRuntimeErrorMessage(null);
-              setIsCameraInitialized(true);
-            }}
-            onError={(error) => {
-              if (teardownInProgressRef.current || !sessionActiveRef.current) {
-                return;
-              }
-              setIsCameraInitialized(false);
-              const message = error?.message || 'Unable to initialize the camera session.';
-              setCameraRuntimeErrorMessage(message);
-              if (
-                Platform.OS === 'ios' &&
-                cameraRecoveryStage < IOS_CAMERA_RECOVERY_MAX_STAGE &&
-                !recoveryAttemptRef.current
-              ) {
-                recoveryAttemptRef.current = true;
-                setCameraRecoveryStage((stage) =>
-                  Math.min(stage + 1, IOS_CAMERA_RECOVERY_MAX_STAGE)
-                );
-                if (__DEV__) {
-                  console.warn('[VisionCamera] retrying with safer iOS session config', {
-                    nextRecoveryStage: cameraRecoveryStage + 1,
-                    code: error?.code,
-                    message,
-                  });
-                }
-                return;
-              }
-              console.error('[VisionCamera] runtime error', error);
-            }}
-          />
+          {/* eslint-disable-next-line react/jsx-props-no-spreading */}
+          <Camera key={cameraSessionKey} {...cameraProps} />
           {selectedFilter.overlay !== 'transparent' ? (
             <View
               pointerEvents="none"
@@ -806,8 +903,10 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
         ]}
       >
         <TouchableOpacity
+          testID="video-recorder-flash-button"
           style={videoPostStyles.roundIconButton}
           onPress={() => setFlashMode((value) => (value === 'on' ? 'off' : 'on'))}
+          disabled={!activeDevice?.hasTorch}
         >
           <MaterialIcons
             name={flashMode === 'on' ? 'flash-on' : 'flash-off'}
@@ -932,10 +1031,9 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
           {isLandscapeMode ? (
             <>
               <TouchableOpacity
+                testID="video-recorder-flip-camera-button"
                 style={{ justifyContent: 'center' }}
-                onPress={() => {
-                  setIsFrontCamera((prevState) => !prevState);
-                }}
+                onPress={handleFlipCamera}
               >
                 <FastImage
                   style={videoPostStyles.flipCameraImg}
@@ -944,6 +1042,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                 />
               </TouchableOpacity>
               <TouchableOpacity
+                testID="video-recorder-record-button"
                 style={[
                   videoPostStyles.recordButton,
                   !isCameraInitialized && videoPostStyles.recordButtonDisabled,
@@ -1002,6 +1101,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                 </View>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="video-recorder-record-button"
                 style={[
                   videoPostStyles.recordButton,
                   !isCameraInitialized && videoPostStyles.recordButtonDisabled,
@@ -1021,10 +1121,9 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
                 />
               </TouchableOpacity>
               <TouchableOpacity
+                testID="video-recorder-flip-camera-button"
                 style={{ justifyContent: 'center' }}
-                onPress={() => {
-                  setIsFrontCamera((prevState) => !prevState);
-                }}
+                onPress={handleFlipCamera}
               >
                 <FastImage
                   style={videoPostStyles.flipCameraImg}

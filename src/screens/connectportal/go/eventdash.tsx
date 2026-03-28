@@ -1,6 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import {
@@ -14,6 +24,12 @@ import {
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import { useConnectPalette } from '../shared';
 import { borderRadius } from '@/src/styles/outlines';
+import {
+  APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  APP_HEADER_ROW_HEIGHT,
+  APP_HEADER_ROW_OFFSET,
+  APP_HEADER_SIDE_WIDTH,
+} from '@/src/styles/headerLayout';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectGoEventDash'>;
 const GO_EVENT_ACCENT = '#126b87';
@@ -63,7 +79,47 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
   const progressTrackColor = palette.isDark ? 'rgba(230,234,236,0.12)' : '#E4EDF0';
 
   return (
-    <View style={[styles.container, { backgroundColor: palette.screenBackground }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBackground }]}>
+      <View style={[styles.header, { backgroundColor: palette.screenBackground }]}>
+        {Platform.OS === 'android' ? (
+          <>
+            <TouchableOpacity
+              style={styles.headerBackButton}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                }
+              }}
+            >
+              <MaterialIcons name="chevron-left" size={32} color={GO_EVENT_ACCENT} />
+            </TouchableOpacity>
+            <View style={styles.headerAndroidTitleWrap}>
+              <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>
+                Event Management
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={styles.headerBackButton}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                }
+              }}
+            >
+              <MaterialIcons name="chevron-left" size={32} color={GO_EVENT_ACCENT} />
+            </TouchableOpacity>
+            <View style={styles.headerCenter}>
+              <Text style={[styles.headerTitle, { color: palette.textPrimary }]}>
+                Event Management
+              </Text>
+            </View>
+            <View style={styles.headerSpacer} />
+          </>
+        )}
+      </View>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -247,14 +303,43 @@ function EventDashboardScreen({ navigation }: Props): React.JSX.Element {
           );
         })}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#F6F7F8',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: APP_HEADER_ROW_HEIGHT,
+    marginTop: APP_HEADER_ROW_OFFSET,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+  },
+  headerBackButton: {
+    width: APP_HEADER_SIDE_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAndroidTitleWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: 'Rubik-Bold',
+  },
+  headerSpacer: {
+    width: APP_HEADER_SIDE_WIDTH,
   },
   scrollContent: {
     paddingHorizontal: 16,

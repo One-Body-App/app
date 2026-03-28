@@ -14,7 +14,6 @@ import {
   AppState,
   BackHandler,
   Linking,
-  InteractionManager,
   useColorScheme,
   Animated,
   Easing,
@@ -75,8 +74,8 @@ import {
 import { queueRemoteNotificationPayload } from '@/src/services/notification/pushNotificationStorage';
 import { ensureChatReady } from '@/src/services/chat/chatClient';
 import { disconnectChatSocket } from '@/src/services/chat/socketClient';
-import { resumePendingVideoUploads } from '@/src/services/videoProcessing/videoUploadQueue';
 import useMountEffect from '@/src/hooks/useMountEffect';
+import VideoProcessingRuntime from '@/src/components/post/VideoProcessingRuntime';
 
 // Lazy load VideoPost to prevent rn-fetch-blob from being imported at app startup
 // This fixes Android crash: "Cannot read property 'DocumentDir' of null"
@@ -119,7 +118,6 @@ function AppContent() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const overlayTranslate = useRef(new Animated.Value(0)).current;
   const appStateRef = useRef(AppState.currentState);
-  const pendingUploadResumeCleanupRef = useRef<(() => void) | null>(null);
   const token = authState.userToken;
   const hasFetchedProfileRef = useRef(false);
   const mfaOnboardingRequestedUserRef = useRef<string | null>(null);
@@ -276,32 +274,6 @@ function AppContent() {
   }, [dispatch, token]);
   const refreshTokenOnResumeRef = useRef(refreshTokenOnResume);
   refreshTokenOnResumeRef.current = refreshTokenOnResume;
-  const schedulePendingUploadResume = useCallback(() => {
-    if (Platform.OS === 'ios') {
-      return;
-    }
-
-    pendingUploadResumeCleanupRef.current?.();
-
-    let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    const task = InteractionManager.runAfterInteractions(() => {
-      timeoutId = setTimeout(() => {
-        if (!cancelled) {
-          resumePendingVideoUploads().catch(() => undefined);
-        }
-      }, 1200);
-    });
-
-    pendingUploadResumeCleanupRef.current = () => {
-      cancelled = true;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      task.cancel();
-      pendingUploadResumeCleanupRef.current = null;
-    };
-  }, []);
 
   useMountEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
@@ -309,25 +281,11 @@ function AppContent() {
       appStateRef.current = nextAppState;
       if (wasBackground && nextAppState === 'active') {
         refreshTokenOnResumeRef.current().catch(() => undefined);
-        if (Platform.OS !== 'ios') {
-          schedulePendingUploadResume();
-        }
       }
     });
 
     return () => {
-      pendingUploadResumeCleanupRef.current?.();
       subscription.remove();
-    };
-  });
-
-  useMountEffect(() => {
-    if (Platform.OS !== 'ios') {
-      schedulePendingUploadResume();
-    }
-
-    return () => {
-      pendingUploadResumeCleanupRef.current?.();
     };
   });
 
@@ -1269,6 +1227,7 @@ function AppContent() {
         routeNameRef.current = navigationRef.getCurrentRoute()?.name;
       }}
     >
+      <VideoProcessingRuntime />
       <ReactionProvider>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
           <MainStack.Navigator

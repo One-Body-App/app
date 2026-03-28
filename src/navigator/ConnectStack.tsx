@@ -1,11 +1,7 @@
-import {
-  createNativeStackNavigator,
-  type NativeStackHeaderLeftProps,
-} from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { Platform, Pressable } from 'react-native';
-import { useNavigation, useTheme } from '@react-navigation/native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { Platform } from 'react-native';
+import { useTheme } from '@react-navigation/native';
 import { ConnectStackParamsList } from './types';
 import ListViewScreen from '../screens/connectportal/listview';
 import MapViewScreen from '../screens/connectportal/mapview';
@@ -33,25 +29,8 @@ import ServeApplicationsScreen from '../screens/connectportal/serve/jobs/srvappl
 import ServeCreateJobStep1 from '../screens/connectportal/serve/jobs/srvstep1';
 import ServeCreateJobStep2 from '../screens/connectportal/serve/jobs/srvstep2';
 import { ConnectPortalProvider } from '../services/connectPortal/provider';
-import { APP_HEADER_BACKGROUND_DARK, APP_HEADER_BACKGROUND_LIGHT } from '../styles/headerLayout';
 
 const Stack = createNativeStackNavigator<ConnectStackParamsList>();
-
-function EventDashHeaderLeft({ canGoBack, tintColor }: NativeStackHeaderLeftProps) {
-  const navigation = useNavigation();
-
-  return canGoBack ? (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Go back"
-      hitSlop={10}
-      onPress={() => navigation.goBack()}
-      style={{ marginLeft: Platform.OS === 'ios' ? -6 : 0, padding: 4 }}
-    >
-      <MaterialIcons name="chevron-left" size={34} color={tintColor || '#126b87'} />
-    </Pressable>
-  ) : null;
-}
 
 function ConnectStack() {
   const { dark, colors } = useTheme();
@@ -92,34 +71,7 @@ function ConnectStack() {
         <Stack.Screen
           name="ConnectGoEventDash"
           component={EventDashboardScreen}
-          options={() => {
-            const screenBackground = dark
-              ? APP_HEADER_BACKGROUND_DARK
-              : APP_HEADER_BACKGROUND_LIGHT;
-            const headerTintColor = dark ? colors.text : '#126b87';
-            const titleColor = dark ? colors.text : '#032f3c';
-
-            return {
-              title: 'Event Management',
-              statusBarStyle: dark ? 'light' : 'dark',
-              statusBarTranslucent: false,
-              headerTransparent: false,
-              headerShadowVisible: false,
-              headerStyle: { backgroundColor: screenBackground },
-              contentStyle: { backgroundColor: screenBackground },
-              headerTintColor,
-              headerBackTitleVisible: false,
-              headerTitleAlign: Platform.OS === 'ios' ? 'center' : 'left',
-              headerLeft: EventDashHeaderLeft,
-              headerTitleStyle: {
-                fontSize: 24,
-                fontFamily: 'Rubik-Bold',
-                fontWeight: '700' as const,
-                letterSpacing: 0.3,
-                color: titleColor,
-              },
-            };
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="ConnectGoMyEvents"

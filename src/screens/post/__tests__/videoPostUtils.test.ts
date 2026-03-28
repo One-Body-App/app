@@ -1,4 +1,9 @@
-import { formatAspectRatioLabel, getVideoFitSize, isSuccessfulStatus } from '../videoPostUtils';
+import {
+  buildPendingVideoUploadRecipe,
+  formatAspectRatioLabel,
+  getVideoFitSize,
+  isSuccessfulStatus,
+} from '../videoPostUtils';
 
 describe('videoPostUtils', () => {
   describe('isSuccessfulStatus', () => {
@@ -39,6 +44,66 @@ describe('videoPostUtils', () => {
     it('falls back to decimal ratio format when dimensions are unavailable', () => {
       expect(formatAspectRatioLabel(undefined, undefined, 1.25)).toBe('1.25:1');
       expect(formatAspectRatioLabel(undefined, undefined, 9 / 16)).toBe('1:1.78');
+    });
+  });
+
+  describe('buildPendingVideoUploadRecipe', () => {
+    it('builds the queue recipe from the confirmed crop state', () => {
+      const recipe = buildPendingVideoUploadRecipe({
+        sourceUri: 'file:///video.mp4',
+        caption: 'Test caption',
+        trimStartMs: 1000,
+        trimEndMs: 12_000,
+        trimDurationMs: 11_000,
+        confirmedCropSelection: {
+          cropRect: { x: 10, y: 20, width: 100, height: 200 },
+          ratioId: '9:16',
+          outputWidth: 1080,
+          outputHeight: 1920,
+          videoBitrate: 4_500_000,
+          sourceWidth: 2160,
+          sourceHeight: 3840,
+          transform: { scale: 1.2, translateX: 5, translateY: -8 },
+        },
+      });
+
+      expect(recipe).toEqual(
+        expect.objectContaining({
+          sourceUri: 'file:///video.mp4',
+          caption: 'Test caption',
+          trimStartMs: 1000,
+          trimEndMs: 12_000,
+          trimDurationMs: 11_000,
+          ratioId: '9:16',
+          outputWidth: 1080,
+          outputHeight: 1920,
+          sourceWidth: 2160,
+          sourceHeight: 3840,
+          cropRect: { x: 10, y: 20, width: 100, height: 200 },
+        })
+      );
+    });
+
+    it('rejects invalid trim settings before enqueue', () => {
+      expect(() =>
+        buildPendingVideoUploadRecipe({
+          sourceUri: 'file:///video.mp4',
+          caption: '',
+          trimStartMs: 5000,
+          trimEndMs: 5000,
+          trimDurationMs: 0,
+          confirmedCropSelection: {
+            cropRect: { x: 0, y: 0, width: 100, height: 100 },
+            ratioId: '1:1',
+            outputWidth: 1080,
+            outputHeight: 1080,
+            videoBitrate: 4_000_000,
+            sourceWidth: 1080,
+            sourceHeight: 1080,
+            transform: { scale: 1, translateX: 0, translateY: 0 },
+          },
+        })
+      ).toThrow('Video trim settings are invalid.');
     });
   });
 });

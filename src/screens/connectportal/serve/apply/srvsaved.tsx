@@ -8,55 +8,76 @@ import {
   SafeAreaView,
   TextInput,
 } from 'react-native';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
+import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
 import {
   ServeHeader,
   ServeHubTabs,
   useServePalette,
   SERVE_JOBS,
   SERVE_SAVED_JOB_IDS,
+  type ServePalette,
 } from '../shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeSaved'>;
 
-// Reusable Job Card Component
 function SavedJobCard({
   title,
   date,
   category,
   location,
-  theme,
+  palette,
   onPress,
 }: {
   title: string;
   date: string;
   category: string;
   location: string;
-  theme: { cardBg: string; borderColor: string; text: string; subText: string };
+  palette: ServePalette;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.borderColor }]}
+      style={[styles.card, { backgroundColor: palette.cardBg, borderColor: palette.borderColor }]}
       activeOpacity={0.85}
       onPress={onPress}
     >
-      <Text style={[styles.jobTitle, { color: theme.text }]}>{title}</Text>
-
-      <View style={styles.metaRow}>
-        <Text style={styles.metaIcon}>📅</Text>
-        <Text style={[styles.metaText, { color: theme.subText }]}>{date}</Text>
+      <View style={styles.cardHeader}>
+        <Text style={[styles.jobTitle, { color: palette.text }]}>{title}</Text>
+        <MaterialIcons name="bookmark" size={18} color={palette.subText} />
       </View>
 
       <View style={styles.metaRow}>
-        <Text style={styles.metaIcon}>🏷️</Text>
-        <Text style={[styles.metaText, { color: theme.subText }]}>{category}</Text>
+        <View style={styles.metaIconWrap}>
+          <MaterialIcons name="event" size={14} color={palette.subText} />
+        </View>
+        <Text style={[styles.metaText, { color: palette.subText }]}>{date}</Text>
       </View>
 
       <View style={styles.metaRow}>
-        <Text style={styles.metaIcon}>📍</Text>
-        <Text style={[styles.metaText, { color: theme.subText }]}>{location}</Text>
+        <View style={styles.metaIconWrap}>
+          <MaterialIcons name="label-outline" size={14} color={palette.subText} />
+        </View>
+        <Text style={[styles.metaText, { color: palette.subText }]}>{category}</Text>
+      </View>
+
+      <View style={styles.metaBottomRow}>
+        <View style={styles.metaRowLeft}>
+          <View style={styles.metaIconWrap}>
+            <MaterialIcons name="place" size={14} color={palette.subText} />
+          </View>
+          <Text style={[styles.metaText, { color: palette.subText }]}>{location}</Text>
+        </View>
+
+        <View
+          style={[styles.badge, { backgroundColor: palette.isDark ? '#112935' : palette.inputBg }]}
+        >
+          <Text style={[styles.badgeText, { color: palette.isDark ? '#8dd6e5' : palette.text }]}>
+            Saved
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -94,7 +115,6 @@ export default function ServeSavedScreen({ navigation }: Props) {
       <ServeHubTabs activeTab="Saved" navigation={navigation} palette={palette} />
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Search and Sort Row */}
         <View style={styles.actionRow}>
           <View
             style={[
@@ -102,10 +122,15 @@ export default function ServeSavedScreen({ navigation }: Props) {
               { backgroundColor: palette.inputBg, borderColor: palette.borderColor },
             ]}
           >
-            <Text style={styles.searchIcon}>🔍</Text>
+            <MaterialIcons
+              name="search"
+              size={18}
+              color={palette.subText}
+              style={styles.searchIcon}
+            />
             <TextInput
               style={[styles.searchInput, { color: palette.text }]}
-              placeholder="Search"
+              placeholder="Search saved jobs"
               placeholderTextColor={palette.subText}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -114,16 +139,14 @@ export default function ServeSavedScreen({ navigation }: Props) {
 
           <TouchableOpacity
             style={[
-              styles.sortButton,
-              { backgroundColor: palette.background, borderColor: palette.borderColor },
+              styles.filterButton,
+              { backgroundColor: palette.inputBg, borderColor: palette.borderColor },
             ]}
           >
-            <Text style={styles.sortIcon}>≡</Text>
-            <Text style={[styles.sortText, { color: palette.subText }]}>Sort</Text>
+            <FilterSortIcon width={18} height={18} color={palette.subText} />
           </TouchableOpacity>
         </View>
 
-        {/* Saved Jobs List */}
         <View style={styles.listContainer}>
           {filteredJobs.map((job) => (
             <SavedJobCard
@@ -132,16 +155,14 @@ export default function ServeSavedScreen({ navigation }: Props) {
               date={job.date}
               category={job.category}
               location={job.location}
-              theme={palette}
+              palette={palette}
               onPress={() => navigation.navigate('ConnectServeJobView', { jobId: job.id })}
             />
           ))}
           {!filteredJobs.length ? (
             <View style={[styles.emptyState, { borderColor: palette.borderColor }]}>
-              <Text style={[styles.emptyStateTitle, { color: palette.text }]}>
-                No saved jobs found
-              </Text>
-              <Text style={[styles.emptyStateText, { color: palette.subText }]}>
+              <Text style={[styles.emptyTitle, { color: palette.text }]}>No saved jobs found</Text>
+              <Text style={[styles.emptyBody, { color: palette.subText }]}>
                 Try a different search or save a role from Explore.
               </Text>
             </View>
@@ -165,7 +186,7 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     gap: 12,
   },
   searchBox: {
@@ -173,84 +194,99 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     height: 44,
-    marginRight: 12, // Fallback for gap
   },
   searchIcon: {
-    fontSize: 14,
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
+    fontFamily: 'OpenSans-Regular',
   },
-  sortButton: {
-    flexDirection: 'row',
+  filterButton: {
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    height: 44,
-  },
-  sortIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  sortText: {
-    fontSize: 14,
+    borderRadius: 12,
+    width: 40,
+    height: 40,
   },
   listContainer: {
-    gap: 16,
+    gap: 14,
   },
   card: {
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16, // Fallback for gap
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 20,
+    padding: 18,
+    gap: 8,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   jobTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 12,
-    lineHeight: 22,
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: 'Rubik-Bold',
+    lineHeight: 24,
+    paddingRight: 10,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
   },
-  metaIcon: {
-    fontSize: 12,
+  metaBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  metaRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaIconWrap: {
+    width: 16,
     marginRight: 8,
+    alignItems: 'center',
   },
   metaText: {
-    fontSize: 13,
+    fontSize: 14,
+    fontFamily: 'OpenSans-Regular',
   },
-  bottomSpacer: {
-    height: 40,
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: 'OpenSans-Regular',
   },
   emptyState: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 20,
     alignItems: 'center',
+    gap: 6,
   },
-  emptyStateTitle: {
+  emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Rubik-Medium',
-    marginBottom: 6,
+    fontFamily: 'Rubik-Bold',
+    fontWeight: '800',
   },
-  emptyStateText: {
+  emptyBody: {
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
     fontFamily: 'OpenSans-Regular',
+  },
+  bottomSpacer: {
+    height: 40,
   },
 });

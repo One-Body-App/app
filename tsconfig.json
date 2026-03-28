@@ -1,30 +1,69 @@
 // prettier-ignore
 {
-  // "extends": "@react-native/typescript-config/tsconfig.json" /* Recommended React Native TSConfig base */,
-  "extends": "@react-native/typescript-config/tsconfig.json",
-  "include": ["**/*.tsx", "**/*.ts", "src/redux/store/index.Js"],
-  "exclude": ["index.js", "metro.config.js"],
+  "include": [
+    "**/*.tsx",
+    "**/*.ts",
+    "src/redux/store/index.Js"
+  ],
+  "exclude": [
+    "index.js",
+    "metro.config.js"
+  ],
   "compilerOptions": {
-    /* Visit https://aka.ms/tsconfig.json to read more about this file */
+    "target": "esnext",
+    "module": "esnext",
+    "lib": ["ES2022"],
+    "allowJs": true,
+    "jsx": "react-native",
+    "noEmit": true,
+    "isolatedModules": true,
+    "strict": true,
+    "moduleResolution": "bundler",
+    "customConditions": ["react-native"],
+    "allowImportingTsExtensions": true,
+    "allowArbitraryExtensions": true,
+    "resolveJsonModule": true,
+    "resolvePackageJsonImports": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    /* Completeness */
-    "skipLibCheck": true /* Skip type checking all .d.ts files. */,
-    "jsx": "react-native",
-    // "baseUrl": ".",
-    "types": ["react-native", "jest", "node"],
-
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": [
+      "react-native",
+      "jest",
+      "node"
+    ],
     "paths": {
-      "@/utils/*": ["./utils/*"],
-      "@/src/*": ["./src/*"],
-      "@/assets/*": ["./src/assets/*"],
-      "@/components/*": ["./src/components/*"],
-      "@/constants/*": ["./src/constants/*"],
-      "@/navigation/*": ["./src/navigation/*"],
-      "@/navigator/*": ["./src/navigator/*"],
-      "@/redux/*": ["./src/redux/*"],
-      "@/screens/*": ["./src/screens/*"],
-      "@/services/*": ["./src/services/*"]
+      "@/utils/*": [
+        "./utils/*"
+      ],
+      "@/src/*": [
+        "./src/*"
+      ],
+      "@/assets/*": [
+        "./src/assets/*"
+      ],
+      "@/components/*": [
+        "./src/components/*"
+      ],
+      "@/constants/*": [
+        "./src/constants/*"
+      ],
+      "@/navigation/*": [
+        "./src/navigation/*"
+      ],
+      "@/navigator/*": [
+        "./src/navigator/*"
+      ],
+      "@/redux/*": [
+        "./src/redux/*"
+      ],
+      "@/screens/*": [
+        "./src/screens/*"
+      ],
+      "@/services/*": [
+        "./src/services/*"
+      ]
     }
   }
 }
