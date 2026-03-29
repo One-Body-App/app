@@ -265,8 +265,14 @@ export type ConnectStackParamsList = {
   ConnectServeApplications: {
     jobId: string;
   };
-  ConnectServeCreateJobStep1: undefined;
-  ConnectServeCreateJobStep2: undefined;
+  ConnectServeCreateJobStep1:
+    | {
+        draftId?: string;
+      }
+    | undefined;
+  ConnectServeCreateJobStep2: {
+    draftId: string;
+  };
   UserProfile: {
     id?: string;
     handle?: string;

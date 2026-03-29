@@ -67,6 +67,8 @@ const createMemoryStorage = (seed?: PendingVideoUpload[]) => {
   };
 };
 
+const createDeleteFile = () => jest.fn(async () => undefined);
+
 describe('videoUploadQueue', () => {
   it('moves a queued item through moderation, compression, upload, and posting', async () => {
     const events: string[] = [];
@@ -74,6 +76,7 @@ describe('videoUploadQueue', () => {
     const queue = createVideoUploadQueue({
       storage,
       fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
       moderateVideo: jest.fn(async () => {
         events.push('moderating');
         return { moderationDecision: 'safe', moderationScores: null };
@@ -125,6 +128,7 @@ describe('videoUploadQueue', () => {
     const queue = createVideoUploadQueue({
       storage,
       fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
       moderateVideo,
       exportVideo: jest.fn(async () => ({
         processedVideoUri: 'file:///tmp/exported.mp4',
@@ -166,6 +170,7 @@ describe('videoUploadQueue', () => {
     const queue = createVideoUploadQueue({
       storage,
       fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
       moderateVideo: jest.fn(async () => ({
         moderationDecision: 'safe',
         moderationScores: null,
@@ -208,6 +213,7 @@ describe('videoUploadQueue', () => {
     const queue = createVideoUploadQueue({
       storage,
       fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
       moderateVideo: jest.fn(async () => ({
         moderationDecision: 'blocked',
         moderationScores: {
@@ -268,6 +274,7 @@ describe('videoUploadQueue', () => {
     const queue = createVideoUploadQueue({
       storage,
       fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
       moderateVideo,
       exportVideo,
       uploadVideo,
@@ -292,6 +299,7 @@ describe('videoUploadQueue', () => {
     const queue = createVideoUploadQueue({
       storage,
       fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
       moderateVideo: jest.fn(async () => ({
         moderationDecision: 'safe',
         moderationScores: null,
@@ -327,6 +335,7 @@ describe('videoUploadQueue', () => {
     const queue = createVideoUploadQueue({
       storage,
       fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
       moderateVideo,
       exportVideo: jest.fn(async () => ({
         processedVideoUri: 'file:///tmp/exported.mp4',
@@ -352,5 +361,268 @@ describe('videoUploadQueue', () => {
     expect(result.status).toBe('failed');
     expect(result.failureCode).toBe('invalid-edit');
     expect(moderateVideo).not.toHaveBeenCalled();
+  });
+
+  it('fails locally when export dimensions are invalid before upload', async () => {
+    const storage = createMemoryStorage();
+    const uploadVideo = jest.fn(async () => 'mux_upload_invalid_dimensions');
+    const createWatchPost = jest.fn(async () => undefined);
+    const deleteFile = createDeleteFile();
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile,
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported-invalid-dimensions.mp4',
+        processedDuration: 20_000,
+        processedWidth: 0,
+        processedHeight: 1920,
+      })),
+      uploadVideo,
+      createWatchPost,
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+
+    const [result] = queue.getItems();
+    expect(result.status).toBe('failed');
+    expect(result.failureCode).toBe('processing');
+    expect(uploadVideo).not.toHaveBeenCalled();
+    expect(createWatchPost).not.toHaveBeenCalled();
+    expect(deleteFile).toHaveBeenCalledWith('file:///tmp/exported-invalid-dimensions.mp4');
+  });
+
+  it('fails locally when export duration exceeds the selected trim tolerance', async () => {
+    const storage = createMemoryStorage();
+    const uploadVideo = jest.fn(async () => 'mux_upload_invalid_duration');
+    const createWatchPost = jest.fn(async () => undefined);
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported-invalid-duration.mp4',
+        processedDuration: 20_500,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo,
+      createWatchPost,
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+
+    const [result] = queue.getItems();
+    expect(result.status).toBe('failed');
+    expect(result.failureCode).toBe('processing');
+    expect(uploadVideo).not.toHaveBeenCalled();
+    expect(createWatchPost).not.toHaveBeenCalled();
+  });
+
+  it('fails locally when export aspect ratio does not match the selected watch ratio', async () => {
+    const storage = createMemoryStorage();
+    const uploadVideo = jest.fn(async () => 'mux_upload_invalid_aspect_ratio');
+    const createWatchPost = jest.fn(async () => undefined);
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported-invalid-ratio.mp4',
+        processedDuration: 20_000,
+        processedWidth: 1080,
+        processedHeight: 1080,
+      })),
+      uploadVideo,
+      createWatchPost,
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+
+    const [result] = queue.getItems();
+    expect(result.status).toBe('failed');
+    expect(result.failureCode).toBe('processing');
+    expect(uploadVideo).not.toHaveBeenCalled();
+    expect(createWatchPost).not.toHaveBeenCalled();
+  });
+
+  it('stops unclassified videos before upload or post creation', async () => {
+    const storage = createMemoryStorage();
+    const exportVideo = jest.fn(async () => ({
+      processedVideoUri: 'file:///tmp/exported.mp4',
+      processedDuration: 20_000,
+      processedWidth: 1080,
+      processedHeight: 1920,
+    }));
+    const uploadVideo = jest.fn(async () => 'mux_upload_unclassified');
+    const createWatchPost = jest.fn(async () => undefined);
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'unclassified',
+        moderationScores: null,
+        moderationError: 'bridge-unavailable',
+      })),
+      exportVideo,
+      uploadVideo,
+      createWatchPost,
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+
+    const [result] = queue.getItems();
+    expect(result.status).toBe('failed');
+    expect(result.failureCode).toBe('moderation-failed');
+    expect(exportVideo).not.toHaveBeenCalled();
+    expect(uploadVideo).not.toHaveBeenCalled();
+    expect(createWatchPost).not.toHaveBeenCalled();
+  });
+
+  it('stops locally when moderation throws before server calls', async () => {
+    const storage = createMemoryStorage();
+    const uploadVideo = jest.fn(async () => 'mux_upload_runtime_failure');
+    const createWatchPost = jest.fn(async () => undefined);
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile: createDeleteFile(),
+      moderateVideo: jest.fn(async () => {
+        throw new Error('bridge crashed');
+      }),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported.mp4',
+        processedDuration: 20_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo,
+      createWatchPost,
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+
+    const [result] = queue.getItems();
+    expect(result.status).toBe('failed');
+    expect(result.failureCode).toBe('moderation-failed');
+    expect(uploadVideo).not.toHaveBeenCalled();
+    expect(createWatchPost).not.toHaveBeenCalled();
+  });
+
+  it('removes processed temp video after successful posting', async () => {
+    const storage = createMemoryStorage();
+    const deleteFile = createDeleteFile();
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile,
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported-success.mp4',
+        processedDuration: 12_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo: jest.fn(async () => 'mux_upload_cleanup'),
+      createWatchPost: jest.fn(async () => undefined),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    await queue.enqueue(baseRecipe);
+    await queue.waitForIdle();
+
+    expect(deleteFile).toHaveBeenCalledWith('file:///tmp/exported-success.mp4');
+  });
+
+  it('drops completed items from persisted storage during hydrate', async () => {
+    const deleteFile = createDeleteFile();
+    const seed: PendingVideoUpload[] = [
+      {
+        id: 'completed-item',
+        status: 'complete',
+        retryCount: 0,
+        createdAt: '2026-03-07T10:00:00.000Z',
+        updatedAt: '2026-03-07T10:00:00.000Z',
+        recipe: baseRecipe,
+        processedVideoUri: 'file:///tmp/completed.mp4',
+      },
+      {
+        id: 'queued-item',
+        status: 'queued',
+        retryCount: 0,
+        createdAt: '2026-03-07T10:00:00.000Z',
+        updatedAt: '2026-03-07T10:00:00.000Z',
+        recipe: baseRecipe,
+      },
+    ];
+    const storage = createMemoryStorage(seed);
+    const queue = createVideoUploadQueue({
+      storage,
+      fileExists: jest.fn(async () => true),
+      deleteFile,
+      moderateVideo: jest.fn(async () => ({
+        moderationDecision: 'safe',
+        moderationScores: null,
+      })),
+      exportVideo: jest.fn(async () => ({
+        processedVideoUri: 'file:///tmp/exported.mp4',
+        processedDuration: 20_000,
+        processedWidth: 1080,
+        processedHeight: 1920,
+      })),
+      uploadVideo: jest.fn(async () => 'mux_upload_resume'),
+      createWatchPost: jest.fn(async () => undefined),
+      now: jest.fn().mockReturnValue('2026-03-07T10:00:00.000Z'),
+      log: jest.fn(),
+    });
+
+    const hydrated = await queue.hydrate();
+
+    expect(hydrated).toEqual([
+      expect.objectContaining({
+        id: 'queued-item',
+        status: 'queued',
+      }),
+    ]);
+    expect(deleteFile).toHaveBeenCalledWith('file:///tmp/completed.mp4');
+    const lastPersistedValue = storage.setItem.mock.calls[storage.setItem.mock.calls.length - 1][1];
+    expect(JSON.parse(lastPersistedValue)).toEqual([
+      expect.objectContaining({
+        id: 'queued-item',
+        status: 'queued',
+      }),
+    ]);
   });
 });

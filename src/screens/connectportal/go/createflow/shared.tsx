@@ -77,6 +77,7 @@ export type CreateFlowColors = ReturnType<typeof useCreateFlowPalette>;
 type CreateFlowLayoutProps = {
   title: string;
   step: ConnectPortalCreateStep;
+  totalSteps?: number;
   children: ReactNode;
   onBack?: () => void;
   onNext?: () => void;
@@ -143,6 +144,7 @@ export const createDraftTicketTier = (overrides?: Partial<TicketTier>): TicketTi
 export function CreateFlowLayout({
   title,
   step,
+  totalSteps = 7,
   children,
   onBack,
   onNext,
@@ -154,7 +156,9 @@ export function CreateFlowLayout({
   nextDisabled = false,
 }: CreateFlowLayoutProps): React.JSX.Element {
   const palette = useCreateFlowPalette();
-  const progressWidth = `${Math.max(0, Math.min(100, (step / 7) * 100))}%` as `${number}%`;
+  const safeTotalSteps = Math.max(1, totalSteps);
+  const progressWidth =
+    `${Math.max(0, Math.min(100, (step / safeTotalSteps) * 100))}%` as `${number}%`;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBg }]}>
@@ -224,10 +228,10 @@ export function CreateFlowLayout({
               <View style={styles.progressWrap}>
                 <View style={styles.progressHeader}>
                   <Text style={[styles.progressLabel, { color: palette.textPrimary }]}>
-                    Step {step} of 7
+                    Step {step} of {safeTotalSteps}
                   </Text>
                   <Text style={[styles.progressPercent, { color: palette.accent }]}>
-                    {Math.round((step / 7) * 100)}%
+                    {Math.round((step / safeTotalSteps) * 100)}%
                   </Text>
                 </View>
                 <View style={[styles.progressTrack, { backgroundColor: palette.progressTrack }]}>

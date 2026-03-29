@@ -1,23 +1,28 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
 import CustomModal from '@/src/components/CustomModal';
 import {
+  createConnectServeJobDraft,
+  formatConnectPortalDate,
+  getConnectServeResumeRouteName,
+} from '@/src/services/connectPortal';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import {
   ServeHeader,
   ServeHubTabs,
   useServePalette,
   BRAND_COLORS,
-  SERVE_JOBS,
-  SERVE_MY_JOB_IDS,
   type ServePalette,
 } from '../shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeHome'>;
 
-const STATUS_OPTIONS = ['All', 'Public', 'Private', 'Open'];
+const STATUS_OPTIONS = ['All', 'Draft', 'Public', 'Private'];
 const OPPORTUNITY_TYPE_OPTIONS = ['All', 'Full time', 'Part time'];
 
 function FilterSection({
@@ -86,7 +91,7 @@ function MyJobCard({
   onPress: () => void;
   onOptionsPress: () => void;
 }) {
-  const isPublic = status === 'Public';
+  const isHighlighted = status === 'Public' || status === 'Draft';
 
   return (
     <TouchableOpacity
@@ -126,16 +131,34 @@ function MyJobCard({
         <View
           style={[
             styles.badge,
-            isPublic
-              ? { backgroundColor: palette.isDark ? '#0A4A35' : BRAND_COLORS.successBg }
+            isHighlighted
+              ? {
+                  backgroundColor:
+                    status === 'Draft'
+                      ? palette.isDark
+                        ? '#3f2d14'
+                        : '#fff6e8'
+                      : palette.isDark
+                        ? '#0A4A35'
+                        : BRAND_COLORS.successBg,
+                }
               : { backgroundColor: palette.inputBg },
           ]}
         >
           <Text
             style={[
               styles.badgeText,
-              isPublic
-                ? { color: palette.isDark ? '#4ade80' : BRAND_COLORS.successText }
+              isHighlighted
+                ? {
+                    color:
+                      status === 'Draft'
+                        ? palette.isDark
+                          ? '#f8d27a'
+                          : '#b26a00'
+                        : palette.isDark
+                          ? '#4ade80'
+                          : BRAND_COLORS.successText,
+                  }
                 : { color: palette.subText },
             ]}
           >
@@ -149,26 +172,40 @@ function MyJobCard({
 
 export default function ServeMyJobsScreen({ navigation }: Props) {
   const palette = useServePalette();
+  const { serve } = useConnectPortalData();
+  const refreshServeJobs = serve.refresh;
 
   const [filterVisible, setFilterVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedOpportunityType, setSelectedOpportunityType] = useState('All');
 
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshServeJobs();
+    }, [refreshServeJobs])
+  );
+
   const allMyJobs = useMemo(
-    () => SERVE_JOBS.filter((job) => SERVE_MY_JOB_IDS.includes(job.id)),
-    []
+    () =>
+      [...serve.draftRecords, ...serve.organizerRecords].sort((left, right) =>
+        right.updatedAt.localeCompare(left.updatedAt)
+      ),
+    [serve.draftRecords, serve.organizerRecords]
   );
 
   const categories = useMemo(() => {
-    const unique = Array.from(new Set(allMyJobs.map((job) => job.category)));
+    const unique = Array.from(new Set(allMyJobs.map((job) => job.sector).filter(Boolean)));
     return ['All', ...unique];
   }, [allMyJobs]);
 
   const myJobs = useMemo(() => {
     return allMyJobs.filter((job) => {
-      if (selectedCategory !== 'All' && job.category !== selectedCategory) return false;
-      if (selectedStatus !== 'All' && job.status !== selectedStatus) return false;
+      const cardStatus =
+        job.status === 'draft' ? 'Draft' : job.visibility === 'public' ? 'Public' : 'Private';
+
+      if (selectedCategory !== 'All' && job.sector !== selectedCategory) return false;
+      if (selectedStatus !== 'All' && cardStatus !== selectedStatus) return false;
       if (selectedOpportunityType !== 'All' && job.opportunityType !== selectedOpportunityType)
         return false;
       return true;
@@ -185,7 +222,9 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
   };
 
   const handlePostJob = () => {
-    navigation.navigate('ConnectServeCreateJobStep1');
+    createConnectServeJobDraft().then((draft) => {
+      navigation.navigate('ConnectServeCreateJobStep1', { draftId: draft.id });
+    });
   };
 
   const ctaTextColor = palette.isDark ? BRAND_COLORS.black : BRAND_COLORS.white;
@@ -240,12 +279,30 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
             <MyJobCard
               key={job.id}
               title={job.title}
-              date={job.date}
-              category={job.category}
-              location={job.location}
-              status={job.status}
+              date={
+                job.status === 'draft'
+                  ? `Saved ${formatConnectPortalDate(job.updatedAt.slice(0, 10))}`
+                  : `Published ${formatConnectPortalDate((job.publishedAt || job.updatedAt).slice(0, 10))}`
+              }
+              category={job.sector || 'Uncategorized'}
+              location={job.address || 'Location TBD'}
+              status={
+                job.status === 'draft'
+                  ? 'Draft'
+                  : job.visibility === 'public'
+                    ? 'Public'
+                    : 'Private'
+              }
               palette={palette}
-              onPress={() => navigation.navigate('ConnectServeApplications', { jobId: job.id })}
+              onPress={() => {
+                if (job.status === 'draft') {
+                  navigation.navigate(getConnectServeResumeRouteName(job), {
+                    draftId: job.id,
+                  } as never);
+                  return;
+                }
+                navigation.navigate('ConnectServeApplications', { jobId: job.id });
+              }}
               onOptionsPress={() => {
                 console.log(`Open management options for job ${job.id}`);
               }}
@@ -255,7 +312,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
             <View style={[styles.emptyState, { borderColor: palette.borderColor }]}>
               <Text style={[styles.emptyTitle, { color: palette.text }]}>No jobs found</Text>
               <Text style={[styles.emptyBody, { color: palette.subText }]}>
-                Try adjusting your filters.
+                Try adjusting your filters or create a new job.
               </Text>
             </View>
           ) : null}

@@ -22,14 +22,16 @@ import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import {
+  createConnectServeJobDraft,
   createConnectPortalDraft,
   type ConnectQuickChip,
   formatConnectPortalDateTime,
   trackConnectPortalEventTelemetry,
+  ConnectServeJobPublished,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import useMountEffect from '@/src/hooks/useMountEffect';
-import { CONNECT_PORTAL_LIST_DATA, type ConnectTab } from './data';
+import type { ConnectTab } from './data';
 import {
   CONNECT_BRAND,
   CONNECT_BOTTOM_NAV_BASE_OFFSET,
@@ -70,11 +72,19 @@ const isUpcomingEvent = (startDate: string) => {
   return startDate >= new Date().toISOString().slice(0, 10);
 };
 
-const getServeRoleType = (location: string) =>
-  location
-    .split('•')
-    .map((part) => part.trim())
-    .filter(Boolean)[1] || location;
+const getServeRoleType = (job: Pick<ConnectServeJobPublished, 'opportunityType'>) =>
+  job.opportunityType;
+
+const getServeJobTags = (job: ConnectServeJobPublished) => {
+  const tags = ['Serve'];
+  if (job.hiringStatus === 'open') {
+    tags.push('Hiring');
+  }
+  if (job.sector) {
+    tags.push(job.sector);
+  }
+  return tags;
+};
 
 function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   const { dark, colors } = useTheme();
@@ -225,21 +235,19 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
 
   const serveItems = useMemo(() => {
     const searchQuery = normalize(searchByTab.Serve);
-    const filtered = CONNECT_PORTAL_LIST_DATA.Serve.filter((item) => {
-      const roleType = getServeRoleType(item.location);
+    const filtered = serve.publicRecords.filter((job) => {
+      const roleType = getServeRoleType(job);
+      const tags = getServeJobTags(job);
 
       if (serve.filters.roleType && normalize(roleType) !== normalize(serve.filters.roleType)) {
         return false;
       }
 
-      if (
-        serve.filters.tag &&
-        !item.tags.some((tag) => normalize(tag) === normalize(serve.filters.tag))
-      ) {
+      if (serve.filters.tag && normalize(job.sector) !== normalize(serve.filters.tag)) {
         return false;
       }
 
-      if (serve.quickChip === 'Hiring' && !item.tags.some((tag) => normalize(tag) === 'hiring')) {
+      if (serve.quickChip === 'Hiring' && job.hiringStatus !== 'open') {
         return false;
       }
 
@@ -251,25 +259,25 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
         return false;
       }
 
-      if (serve.quickChip === 'Serve' && !item.tags.some((tag) => normalize(tag) === 'serve')) {
+      if (serve.quickChip === 'Serve' && !tags.some((tag) => normalize(tag) === 'serve')) {
         return false;
       }
 
-      return matchesSearch(searchQuery, [item.title, item.location, roleType, ...item.tags]);
+      return matchesSearch(searchQuery, [job.title, job.address, job.sector, roleType, ...tags]);
     });
 
     return [...filtered].sort((left, right) => {
       if (serve.filters.sort === 'role_type') {
-        return getServeRoleType(left.location).localeCompare(getServeRoleType(right.location));
+        return getServeRoleType(left).localeCompare(getServeRoleType(right));
       }
 
       if (serve.filters.sort === 'nearest_match') {
-        return left.location.localeCompare(right.location);
+        return left.address.localeCompare(right.address);
       }
 
       return left.title.localeCompare(right.title);
     });
-  }, [searchByTab.Serve, serve.filters, serve.quickChip]);
+  }, [searchByTab.Serve, serve.filters, serve.publicRecords, serve.quickChip]);
 
   let sectionTitle = 'Open Opportunities';
   if (activeTab === 'Places') {
@@ -292,7 +300,9 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
       return;
     }
     if (activeTab === 'Serve') {
-      navigation.navigate('ConnectServeCreateJobStep1');
+      createConnectServeJobDraft().then((draft) => {
+        navigation.navigate('ConnectServeCreateJobStep1', { draftId: draft.id });
+      });
     }
   }, [activeTab, navigation]);
 
@@ -381,9 +391,11 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           userAvatarUri={currentUser?.profileImage}
-          headerActionIconName="map"
-          headerActionAccessibilityLabel="Switch to map view"
-          onHeaderActionPress={() => onChangeViewMode('map')}
+          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
+          addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
+          headerActionIconName={activeTab === 'Places' ? 'map' : undefined}
+          headerActionAccessibilityLabel={activeTab === 'Places' ? 'Switch to map view' : undefined}
+          onHeaderActionPress={activeTab === 'Places' ? () => onChangeViewMode('map') : undefined}
         />
       </View>
 
@@ -507,10 +519,10 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                   <StyledText
                     style={[styles.genericCardSubtitle, { color: palette.textSecondary }]}
                   >
-                    {serveItem.location}
+                    {[serveItem.address, serveItem.opportunityType].filter(Boolean).join(' • ')}
                   </StyledText>
                   <View style={styles.genericTagsRow}>
-                    {serveItem.tags.map((tag) => (
+                    {getServeJobTags(serveItem).map((tag) => (
                       <View
                         key={`${serveItem.id}-${tag}`}
                         style={[styles.genericTag, { backgroundColor: palette.tagBg }]}
@@ -557,7 +569,15 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
                   }
                 : undefined
           }
-          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
+          viewToggle={
+            activeTab !== 'Places'
+              ? {
+                  toMap: true,
+                  onPress: () => onChangeViewMode('map'),
+                  accessibilityLabel: 'Switch to map view',
+                }
+              : undefined
+          }
         />
       </View>
 

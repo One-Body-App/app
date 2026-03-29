@@ -19,6 +19,11 @@ import BrandPaletteBackground from '@/components/BrandPaletteBackground';
 import { ApiCall } from '@/services/api';
 import { borderRadius } from '@/src/styles/outlines';
 import { spacing } from '@/src/styles/spacing';
+import {
+  buildLocalImageEditorModerationRuntime,
+  IMAGE_EDITOR_WEBVIEW_ALLOWED_ORIGINS,
+  shouldAllowImageEditorNavigation,
+} from './imageEditorWebViewSecurity';
 
 const BRAND_BACKGROUND = '#3c4b64';
 const BRAND_ACCENT = '#12d2d9';
@@ -333,6 +338,7 @@ const buildHtml = ({
     <div id="root">
       <div id="main-editor-container"></div>
     </div>
+    ${buildLocalImageEditorModerationRuntime()}
     <script type="module">
       const source = ${JSON.stringify(source)};
       const userId = ${JSON.stringify(userId)};
@@ -407,9 +413,7 @@ const buildHtml = ({
 
       const getNsfwModel = async () => {
         if (!nsfwModelPromise) {
-          nsfwModelPromise = import('https://esm.sh/nsfwjs@2.4.2')
-            .then((module) => module?.default ?? module)
-            .then((nsfw) => nsfw.load());
+          nsfwModelPromise = window.__ONEBODY_GET_NSFW_MODEL__();
         }
         return nsfwModelPromise;
       };
@@ -1594,9 +1598,12 @@ function FilerobotImageEditorModal({
           {!canUseNativeEditor && canUseWebEditor && !isPreparing && !errorMessage && htmlSource ? (
             <WebView
               ref={webViewRef}
-              originWhitelist={['*']}
+              originWhitelist={IMAGE_EDITOR_WEBVIEW_ALLOWED_ORIGINS}
               source={{ html: htmlSource }}
               onMessage={handleWebMessage}
+              onShouldStartLoadWithRequest={(request) =>
+                shouldAllowImageEditorNavigation(request?.url)
+              }
               javaScriptEnabled
               domStorageEnabled
               startInLoadingState
@@ -1605,8 +1612,10 @@ function FilerobotImageEditorModal({
               allowingReadAccessToURL="file://"
               allowUniversalAccessFromFileURLs
               allowFileAccessFromFileURLs
+              javaScriptCanOpenWindowsAutomatically={false}
+              setSupportMultipleWindows={false}
               style={styles.webView}
-              mixedContentMode="always"
+              mixedContentMode="never"
             />
           ) : null}
         </View>

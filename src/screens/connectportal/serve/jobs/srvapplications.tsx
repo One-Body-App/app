@@ -11,13 +11,8 @@ import {
 import type { StackScreenProps } from '@react-navigation/stack';
 import { STANDARD_SECONDARY_LIST_BATCH_CONFIG } from '@/src/navigator/motionPolicy';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
-import {
-  ServeHeader,
-  useServePalette,
-  BRAND_COLORS,
-  getServeApplicantsByJobId,
-  getServeJobById,
-} from '../shared';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import { ServeHeader, useServePalette, BRAND_COLORS, getServeApplicantsByJobId } from '../shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeApplications'>;
 
@@ -77,7 +72,8 @@ function ApplicantCard({
 
 export default function ServeApplicationsScreen({ navigation, route }: Props) {
   const palette = useServePalette();
-  const job = getServeJobById(route.params.jobId);
+  const { serve } = useConnectPortalData();
+  const job = serve.organizerRecords.find((record) => record.id === route.params.jobId) || null;
 
   const [searchQuery, setSearchQuery] = useState('');
   const applicants = getServeApplicantsByJobId(route.params.jobId);
@@ -109,76 +105,89 @@ export default function ServeApplicationsScreen({ navigation, route }: Props) {
         onBack={() => navigation.navigate('ConnectServeHome')}
       />
 
-      {/* Sticky Context Info & Actions */}
-      <View style={styles.stickyHeaderContent}>
-        {/* Current Job Context */}
-        <View
-          style={[
-            styles.jobContextCard,
-            { backgroundColor: palette.cardBg, borderColor: palette.borderColor },
-          ]}
-        >
-          <Text style={[styles.jobContextTitle, { color: palette.text }]}>{job.title}</Text>
-          <Text style={[styles.jobContextMeta, { color: palette.subText }]}>
-            {filteredApplicants.length} applicant{filteredApplicants.length === 1 ? '' : 's'}
-          </Text>
+      {!job ? (
+        <View style={styles.emptyShell}>
+          <Text style={[styles.emptyStateText, { color: palette.subText }]}>Job not found.</Text>
         </View>
+      ) : (
+        <>
+          {/* Sticky Context Info & Actions */}
+          <View style={styles.stickyHeaderContent}>
+            {/* Current Job Context */}
+            <View
+              style={[
+                styles.jobContextCard,
+                { backgroundColor: palette.cardBg, borderColor: palette.borderColor },
+              ]}
+            >
+              <Text style={[styles.jobContextTitle, { color: palette.text }]}>{job.title}</Text>
+              <Text style={[styles.jobContextMeta, { color: palette.subText }]}>
+                {filteredApplicants.length || job.applicantCount} applicant
+                {filteredApplicants.length === 1 || job.applicantCount === 1 ? '' : 's'}
+              </Text>
+            </View>
 
-        {/* Export Button */}
-        <TouchableOpacity style={styles.exportButton} onPress={handleExportCSV}>
-          <Text style={styles.exportIcon}>↑</Text>
-          <Text style={styles.exportText}>Export CSV</Text>
-        </TouchableOpacity>
+            {/* Export Button */}
+            <TouchableOpacity style={styles.exportButton} onPress={handleExportCSV}>
+              <Text style={styles.exportIcon}>↑</Text>
+              <Text style={styles.exportText}>Export CSV</Text>
+            </TouchableOpacity>
 
-        {/* Search Bar */}
-        <View
-          style={[
-            styles.searchBox,
-            { backgroundColor: palette.inputBg, borderColor: palette.borderColor },
-          ]}
-        >
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={[styles.searchInput, { color: palette.text }]}
-            placeholder="Search"
-            placeholderTextColor={palette.subText}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-      </View>
-
-      {/* Applicant List */}
-      <FlatList
-        data={filteredApplicants}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateTitle, { color: palette.text }]}>No applicants yet</Text>
-            <Text style={[styles.emptyStateText, { color: palette.subText }]}>
-              New applications for this role will appear here.
-            </Text>
+            {/* Search Bar */}
+            <View
+              style={[
+                styles.searchBox,
+                { backgroundColor: palette.inputBg, borderColor: palette.borderColor },
+              ]}
+            >
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={[styles.searchInput, { color: palette.text }]}
+                placeholder="Search"
+                placeholderTextColor={palette.subText}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
           </View>
-        }
-        renderItem={({ item }) => (
-          <ApplicantCard
-            name={item.name}
-            date={item.date}
-            email={item.email}
-            phone={item.phone}
-            location={item.location}
-            theme={palette}
-            onOptionsPress={() => handleApplicantOptions(item.id)}
+
+          {/* Applicant List */}
+          <FlatList
+            data={filteredApplicants}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateTitle, { color: palette.text }]}>
+                  No applicants yet
+                </Text>
+                <Text style={[styles.emptyStateText, { color: palette.subText }]}>
+                  New applications for this role will appear here.
+                </Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <ApplicantCard
+                name={item.name}
+                date={item.date}
+                email={item.email}
+                phone={item.phone}
+                location={item.location}
+                theme={palette}
+                onOptionsPress={() => handleApplicantOptions(item.id)}
+              />
+            )}
+            removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
+            initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
+            maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
+            updateCellsBatchingPeriod={
+              STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod
+            }
+            windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
           />
-        )}
-        removeClippedSubviews={STANDARD_SECONDARY_LIST_BATCH_CONFIG.removeClippedSubviews}
-        initialNumToRender={STANDARD_SECONDARY_LIST_BATCH_CONFIG.initialNumToRender}
-        maxToRenderPerBatch={STANDARD_SECONDARY_LIST_BATCH_CONFIG.maxToRenderPerBatch}
-        updateCellsBatchingPeriod={STANDARD_SECONDARY_LIST_BATCH_CONFIG.updateCellsBatchingPeriod}
-        windowSize={STANDARD_SECONDARY_LIST_BATCH_CONFIG.windowSize}
-      />
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -191,6 +200,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 4,
+  },
+  emptyShell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   jobContextCard: {
     borderWidth: 1,

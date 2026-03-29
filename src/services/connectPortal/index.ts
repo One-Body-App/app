@@ -22,6 +22,10 @@ import type {
   ConnectPortalPaymentOption,
   ConnectPortalPublishedEvent,
   ConnectPortalResumeResolution,
+  ConnectServeJobCompensationFrequency,
+  ConnectServeJobDraft,
+  ConnectServeJobPublished,
+  ConnectServeJobRecord,
   ConnectPortalTicketType,
   ConnectViewMode,
   TicketTier,
@@ -973,6 +977,279 @@ export const {
   getCacheSnapshot: getConnectPortalCacheSnapshot,
 } = connectPortalStorage;
 
+const normalizeServeJobStatus = (value: unknown): ConnectServeJobRecord['status'] =>
+  value === 'published' ? 'published' : 'draft';
+
+const normalizeServeJobVisibility = (value: unknown): ConnectServeJobRecord['visibility'] =>
+  value === 'private' ? 'private' : 'public';
+
+const normalizeServeJobHiringStatus = (value: unknown): ConnectServeJobRecord['hiringStatus'] =>
+  value === 'closed' ? 'closed' : 'open';
+
+const normalizeServeJobCompensationFrequency = (
+  value: unknown
+): ConnectServeJobCompensationFrequency => {
+  if (
+    value === 'per_hour' ||
+    value === 'per_week' ||
+    value === 'per_month' ||
+    value === 'per_year'
+  ) {
+    return value;
+  }
+
+  return '';
+};
+
+const normalizeServeJobRecord = (value: unknown): ConnectServeJobRecord | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const item = value as Partial<ConnectServeJobRecord> & {
+    coordinate?: Coordinate;
+  };
+  let id = '';
+  if (typeof item.id === 'string') {
+    id = item.id;
+  } else if (typeof (item as any)._id === 'string') {
+    id = (item as any)._id;
+  }
+
+  if (!id) {
+    return null;
+  }
+
+  const baseRecord = {
+    id,
+    status: normalizeServeJobStatus(item.status),
+    createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+    publishedAt: typeof item.publishedAt === 'string' ? item.publishedAt : undefined,
+    visibility: normalizeServeJobVisibility(item.visibility),
+    hiringStatus: normalizeServeJobHiringStatus(item.hiringStatus),
+    lastCompletedStep: item.lastCompletedStep === 2 ? 2 : item.lastCompletedStep === 1 ? 1 : 0,
+    sector: String(item.sector || ''),
+    title: String(item.title || ''),
+    description: String(item.description || ''),
+    requirements: Array.isArray(item.requirements)
+      ? item.requirements.map((entry) => String(entry)).filter(Boolean)
+      : [],
+    address: String(item.address || ''),
+    coordinate: normalizeCoordinate(item.coordinate),
+    locationQuery: String(item.locationQuery || ''),
+    opportunityType: String(item.opportunityType || ''),
+    compensationAmount: String(item.compensationAmount || ''),
+    compensationFrequency: normalizeServeJobCompensationFrequency(item.compensationFrequency),
+    applicationUrl: String(item.applicationUrl || ''),
+    organizationName: String(item.organizationName || ''),
+    denomination: String(item.denomination || ''),
+    applicantCount: Number(item.applicantCount || 0),
+  } satisfies ConnectServeJobRecord;
+
+  if (baseRecord.status === 'published') {
+    return baseRecord as ConnectServeJobPublished;
+  }
+
+  return baseRecord as ConnectServeJobDraft;
+};
+
+const normalizeServeJobRecords = (value: unknown): ConnectServeJobRecord[] =>
+  Array.isArray(value)
+    ? (value.map(normalizeServeJobRecord).filter(Boolean) as ConnectServeJobRecord[])
+    : [];
+
+const sortServeJobsByUpdatedDesc = <T extends { updatedAt: string }>(items: T[]) =>
+  [...items].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+
+export const parseConnectServeRequirements = (value: string): string[] =>
+  value
+    .split('\n')
+    .map((entry) => entry.replace(/^[\s•*-]+/, '').trim())
+    .filter(Boolean);
+
+export const formatConnectServeRequirementsText = (requirements: string[]): string =>
+  requirements.join('\n');
+
+export const listConnectServePublicJobs = async (): Promise<ConnectServeJobPublished[]> => {
+  const result = await ApiCall<any[]>({
+    route: 'connect/jobs/public',
+    verb: 'get',
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    throw new Error('Unable to load Connect serve jobs');
+  }
+
+  return normalizeServeJobRecords(result.response).filter(
+    (record): record is ConnectServeJobPublished => record.status === 'published'
+  );
+};
+
+export const listConnectServeOrganizerJobs = async (): Promise<ConnectServeJobRecord[]> => {
+  const result = await ApiCall<any[]>({
+    route: 'connect/jobs/mine',
+    verb: 'get',
+    token: true,
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    throw new Error('Unable to load your serve jobs');
+  }
+
+  return sortServeJobsByUpdatedDesc(normalizeServeJobRecords(result.response));
+};
+
+export const getConnectServeJobById = async (
+  jobId: string
+): Promise<ConnectServeJobRecord | null> => {
+  const result = await ApiCall<any>({
+    route: `connect/jobs/${jobId}`,
+    verb: 'get',
+    token: true,
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    return null;
+  }
+
+  return normalizeServeJobRecord(result.response);
+};
+
+export const createConnectServeJobDraft = async (overrides?: {
+  visibility?: ConnectServeJobRecord['visibility'];
+  hiringStatus?: ConnectServeJobRecord['hiringStatus'];
+}): Promise<ConnectServeJobDraft> => {
+  const result = await ApiCall<any>({
+    route: 'connect/jobs/drafts',
+    verb: 'post',
+    token: true,
+    params: overrides || {},
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    throw new Error('Unable to create job draft');
+  }
+
+  const draft = normalizeServeJobRecord(result.response);
+  if (!draft || draft.status !== 'draft') {
+    throw new Error('Unable to create job draft');
+  }
+
+  return draft;
+};
+
+export const getConnectServeJobDraftById = async (
+  draftId: string
+): Promise<ConnectServeJobDraft | null> => {
+  const result = await ApiCall<any>({
+    route: `connect/jobs/drafts/${draftId}`,
+    verb: 'get',
+    token: true,
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    return null;
+  }
+
+  const draft = normalizeServeJobRecord(result.response);
+  return draft && draft.status === 'draft' ? draft : null;
+};
+
+export const saveConnectServeJobDraft = async (
+  draftId: string,
+  updates: Partial<ConnectServeJobDraft>
+): Promise<ConnectServeJobDraft> => {
+  const params = {
+    ...updates,
+    requirements:
+      updates.requirements !== undefined ? updates.requirements.filter(Boolean) : undefined,
+  };
+
+  const result = await ApiCall<any>({
+    route: `connect/jobs/drafts/${draftId}`,
+    verb: 'patch',
+    token: true,
+    params,
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    throw new Error((result.response as any)?.message || 'Unable to save job draft');
+  }
+
+  const draft = normalizeServeJobRecord(result.response);
+  if (!draft || draft.status !== 'draft') {
+    throw new Error('Unable to save job draft');
+  }
+
+  return draft;
+};
+
+export const publishConnectServeJobDraft = async (
+  draftId: string
+): Promise<ConnectServeJobPublished> => {
+  const result = await ApiCall<any>({
+    route: 'connect/jobs/publish',
+    verb: 'post',
+    token: true,
+    params: { draftId },
+    suppressErrorLog: true,
+  });
+
+  if (result.status >= 400) {
+    throw new Error((result.response as any)?.message || 'Unable to publish job');
+  }
+
+  const publishedRecord = normalizeServeJobRecord(result.response);
+  if (!publishedRecord || publishedRecord.status !== 'published') {
+    throw new Error('Unable to publish job');
+  }
+
+  return publishedRecord;
+};
+
+export const getConnectServeResumeRouteName = (
+  record: Pick<ConnectServeJobDraft, 'lastCompletedStep'>
+) => (record.lastCompletedStep >= 1 ? 'ConnectServeCreateJobStep2' : 'ConnectServeCreateJobStep1');
+
+export const getConnectServeCompensationLabel = (
+  amount: string,
+  frequency: ConnectServeJobCompensationFrequency
+) => {
+  const trimmedAmount = String(amount || '').trim();
+  if (!trimmedAmount) {
+    return 'Compensation TBD';
+  }
+
+  const numericAmount = Number(trimmedAmount);
+  const formattedAmount = Number.isFinite(numericAmount)
+    ? new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(numericAmount)
+    : trimmedAmount;
+
+  const suffix =
+    frequency === 'per_hour'
+      ? ' / hour'
+      : frequency === 'per_week'
+        ? ' / week'
+        : frequency === 'per_month'
+          ? ' / month'
+          : frequency === 'per_year'
+            ? ' / year'
+            : '';
+
+  return `${formattedAmount}${suffix}`;
+};
+
 const normalizePlaceRecord = (value: unknown): ConnectPlaceRecord | null => {
   if (!value || typeof value !== 'object') {
     return null;
@@ -1262,9 +1539,15 @@ export type {
   ConnectPortalTicketType,
   ConnectPortalTelemetryActivityItem,
   ConnectQuickChip,
+  ConnectServeJobCompensationFrequency,
+  ConnectServeJobDraft,
   ConnectServeFilters,
+  ConnectServeJobPublished,
+  ConnectServeJobRecord,
+  ConnectServeJobHiringStatus,
   ConnectServeQuickChip,
   ConnectServeSort,
+  ConnectServeJobVisibility,
   ConnectViewMode,
   TicketTier,
 } from './types';

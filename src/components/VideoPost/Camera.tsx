@@ -12,13 +12,12 @@ import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
 } from 'react-native';
-import React, {
+import {
   Dispatch,
   PropsWithChildren,
   SetStateAction,
   useRef,
   useState,
-  useEffect,
   useCallback,
   useMemo,
 } from 'react';
@@ -45,6 +44,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import videoPostStyles from './styles';
 import { spacing } from '@/src/styles/spacing';
 import { Colors } from '@/src/styles';
+import useMountEffect from '@/src/hooks/useMountEffect';
+import useObservedEffect from '@/src/hooks/useObservedEffect';
 import StyledText from '../styled/Text';
 
 const cameraIos = require('@/assets/icons/camera-ios.png');
@@ -550,8 +551,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
               if (isRecordingCanceledError(error)) {
                 return;
               }
-              console.log('🚀 ~ handleStartRecording ~ error:', error);
-              console.error(error);
+              console.error('[VisionCamera] recording failed', error);
             },
           });
         }
@@ -559,7 +559,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
         setIsRecording(false);
         isRecordingRef.current = false;
         if (!isRecordingCanceledError(error)) {
-          console.log(error);
+          console.error('[VisionCamera] failed to start recording', error);
         }
       }
     } else {
@@ -567,7 +567,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
         await camera.current?.stopRecording();
       } catch (error) {
         if (!isRecordingCanceledError(error)) {
-          console.log(error);
+          console.error('[VisionCamera] failed to stop recording', error);
         }
       } finally {
         setIsRecording(false);
@@ -603,27 +603,27 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     setMicrophonePermissionStatus(nextMicrophonePermission);
   }, []);
 
-  useEffect(() => {
+  useMountEffect(() => {
     requestPermissions();
     fetchPhotos();
-  }, [fetchPhotos, requestPermissions]);
+  });
 
-  useEffect(() => {
+  useObservedEffect(() => {
     isRecordingRef.current = isRecording;
   }, [isRecording]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     sessionActiveRef.current = sessionActive;
   }, [sessionActive]);
 
-  useEffect(() => {
+  useMountEffect(() => {
     const subscription = AppState.addEventListener('change', setAppStateStatus);
     return () => {
       subscription.remove();
     };
-  }, []);
+  });
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (!activeDevice) {
       return;
     }
@@ -631,7 +631,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     applyCameraDeviceDefaults(activeDevice);
   }, [activeDevice, applyCameraDeviceDefaults]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (!format?.supportsVideoHdr) {
       setVideoHdr(false);
     }
@@ -640,7 +640,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     }
   }, [format, stabilizationMode]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     if (Platform.OS !== 'android') {
       return undefined;
     }
@@ -655,7 +655,13 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     };
   }, [handleClose]);
 
-  useEffect(() => {
+  const cancelRecordingIfNeeded = useCallback(() => {
+    if (isRecordingRef.current) {
+      camera.current?.cancelRecording().catch(() => undefined);
+    }
+  }, []);
+
+  useMountEffect(() => {
     return () => {
       isMountedRef.current = false;
       teardownInProgressRef.current = true;
@@ -667,13 +673,11 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
       if (focusResetTimerRef.current) {
         clearTimeout(focusResetTimerRef.current);
       }
-      if (isRecordingRef.current) {
-        camera.current?.cancelRecording().catch(() => undefined);
-      }
+      cancelRecordingIfNeeded();
     };
-  }, []);
+  });
 
-  useEffect(() => {
+  useObservedEffect(() => {
     recoveryAttemptRef.current = false;
   }, [cameraRecoveryStage]);
 
@@ -681,7 +685,7 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     resetCameraSessionState(activeDevice);
   }, [activeDevice, resetCameraSessionState]);
 
-  useEffect(() => {
+  useObservedEffect(() => {
     retryCameraSession();
   }, [activeDevice?.id, retryCameraSession]);
 
@@ -713,8 +717,8 @@ function CameraComponent({ setVideoPath, onClose, children }: PropsWithChildren<
     resetCameraSessionState,
   ]);
 
-  useEffect(() => {
-    if (!__DEV__) {
+  useObservedEffect(() => {
+    if (!__DEV__ || process.env.JEST_WORKER_ID) {
       return;
     }
 

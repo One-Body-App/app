@@ -2,15 +2,15 @@ import {
   DrawerContentComponentProps,
   DrawerContentScrollView,
   DrawerItem,
-  DrawerItemList,
 } from '@react-navigation/drawer';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LogoutCurve, ProfileAdd, Setting2 } from 'iconsax-react-native';
+import { LogoutCurve, ProfileAdd, Profile2User, Setting2 } from 'iconsax-react-native';
 import { LoginManager } from 'react-native-fbsdk-next';
 import Icon from '@react-native-vector-icons/ant-design';
+import Feather from '@react-native-vector-icons/feather';
 import { useTheme } from '@react-navigation/native';
 import { RootState } from '../redux/reducers/rootReducer';
 import { NO_PROFILE_IMAGE, OpenURLButton } from '@/services/constants';
@@ -23,6 +23,10 @@ import { borderRadius, borderWidth } from '../styles/outlines';
 import { logout } from '../redux/actions/AuthActions';
 import { clearAuthTokens } from '../services/authTokens';
 import { getCreatorMenuLabel, getCreatorMenuState } from '../utils/creatorApplication';
+import Home2Icon from '@/assets/icons/home2.svg';
+import ZoeIcon from '@/assets/svg/zoeicon.svg';
+import BusinessUserCurriculumIcon from '@/assets/svg/Business-User-Curriculum--Streamline-Core.svg';
+import CalendarEditIcon from '@/assets/svg/Calendar-Edit--Streamline-Core.svg';
 
 export default function DrawerContent({
   descriptors,
@@ -139,7 +143,92 @@ export default function DrawerContent({
               </View>
             </View>
           </TouchableOpacity>
-          <DrawerItemList descriptors={descriptors} state={drawerState} navigation={navigation} />
+          <DrawerItem
+            label="Home"
+            focused={focusedRoute.name === 'Main'}
+            onPress={() => navigation.navigate('Main')}
+            icon={({ color, size }) => <Home2Icon width={size} height={size} color={color} />}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label="Serve"
+            focused={false}
+            onPress={() =>
+              navigation.navigate('Main', {
+                screen: 'ConnectTab',
+                params: { screen: 'ConnectPortal', params: { initialTab: 'Serve' } },
+              })
+            }
+            icon={({ color, size }) => (
+              <BusinessUserCurriculumIcon width={size - 4} height={size - 4} color={color} />
+            )}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label="Go!"
+            focused={false}
+            onPress={() =>
+              navigation.navigate('Main', {
+                screen: 'ConnectTab',
+                params: { screen: 'ConnectPortal', params: { initialTab: 'Go!' } },
+              })
+            }
+            icon={({ color, size }) => (
+              <CalendarEditIcon width={size - 4} height={size - 4} color={color} />
+            )}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={[Typography.body.x2M, { fontStyle: 'italic' }]}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label="ZoeAI"
+            focused={focusedRoute.name === 'ZoeAI'}
+            onPress={() => navigation.navigate('ZoeAI')}
+            icon={({ color, size }) => <ZoeIcon width={size} height={size} color={color} />}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label="My Connections"
+            focused={focusedRoute.name === 'Connections'}
+            onPress={() => navigation.navigate('Connections')}
+            icon={({ color, size }) => <Profile2User size={size} color={color} />}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
+          <DrawerItem
+            label="Saved Posts"
+            focused={focusedRoute.name === 'Saved'}
+            onPress={() => navigation.navigate('Saved')}
+            icon={({ color, size }) => <Feather name="bookmark" size={size} color={color} />}
+            activeTintColor={focusedOptions.drawerActiveTintColor}
+            inactiveTintColor={focusedOptions.drawerInactiveTintColor ?? Colors.neutral.brand}
+            activeBackgroundColor={focusedOptions.drawerActiveBackgroundColor}
+            inactiveBackgroundColor="transparent"
+            labelStyle={Typography.body.x2M}
+            style={{ borderRadius: borderRadius.base }}
+          />
           <DrawerItem
             label={creatorMenuLabel}
             focused={false}

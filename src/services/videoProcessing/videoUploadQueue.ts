@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 import type { ClientModerationScores, PendingVideoUpload, VideoEditRecipe } from './types';
 import { AUDIO_BITRATE, VIDEO_RATIO_CONFIG, resolveModerationFrameCount } from './videoEditMath';
+import { deriveVideoAspectRatio, validateExportedVideoForWatch } from './videoUploadValidation';
 import {
   extractEditedFrames,
   exportEditedVideo,
@@ -19,6 +20,7 @@ type QueueFailureCode = NonNullable<PendingVideoUpload['failureCode']>;
 type QueueDependencies = {
   storage: Pick<typeof AsyncStorage, 'getItem' | 'setItem'>;
   fileExists: (uri: string) => Promise<boolean>;
+  deleteFile: (uri: string) => Promise<void>;
   moderateVideo: (recipe: VideoEditRecipe) => Promise<{
     moderationDecision: PendingVideoUpload['moderationDecision'];
     moderationScores: ClientModerationScores | null;
@@ -63,6 +65,13 @@ class QueueError extends Error {
 }
 
 const cloneItems = (items: PendingVideoUpload[]) => items.map((item) => ({ ...item }));
+const ACTIVE_QUEUE_STATUSES = new Set<PendingVideoUpload['status']>([
+  'queued',
+  'moderating',
+  'compressing',
+  'uploading',
+  'posting',
+]);
 
 const normalizeFailureMessage = (error: unknown) => {
   if (error instanceof Error && error.message) {
@@ -100,6 +109,17 @@ const defaultDependencies: QueueDependencies = {
       return true;
     }
     return RNFS.exists(stripFileScheme(uri));
+  },
+  deleteFile: async (uri) => {
+    if (!uri || uri.startsWith('content://')) {
+      return;
+    }
+
+    try {
+      await RNFS.unlink(stripFileScheme(uri));
+    } catch {
+      // ignore temporary file cleanup failures
+    }
   },
   moderateVideo: async (recipe) => {
     const ratioConfig = VIDEO_RATIO_CONFIG[recipe.ratioId];
@@ -195,20 +215,6 @@ const defaultDependencies: QueueDependencies = {
     }
 
     const uploadUrl = uploadLink.response.url;
-    if (processedVideoUri.startsWith('content://')) {
-      const response = await fetch(processedVideoUri, { method: 'GET' });
-      const blob = await response.blob();
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: { 'content-type': blob.type || 'video/mp4' },
-      });
-      if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
-        throw new QueueError('network', `Video upload failed (${uploadResponse.status}).`, true);
-      }
-      return uploadLink.response.id;
-    }
-
     if (processedVideoUri.startsWith('file://') && process.env.JEST_WORKER_ID) {
       return uploadLink.response.id;
     }
@@ -216,12 +222,38 @@ const defaultDependencies: QueueDependencies = {
     // eslint-disable-next-line global-require
     const rnFetchBlobModule = require('rn-fetch-blob');
     const RNFetchBlob = rnFetchBlobModule.default ?? rnFetchBlobModule;
-    const uploadResponse = await RNFetchBlob.fetch(
-      'PUT',
-      uploadUrl,
-      undefined,
-      RNFetchBlob.wrap(stripFileScheme(processedVideoUri))
-    );
+    let uploadSourcePath = stripFileScheme(processedVideoUri);
+    let cleanupUploadCopy: (() => Promise<void>) | null = null;
+
+    if (processedVideoUri.startsWith('content://')) {
+      const tempDirectory = RNFS.TemporaryDirectoryPath || RNFS.CachesDirectoryPath;
+      const tempUploadPath = `${stripFileScheme(
+        normalizeVideoProcessingUri(tempDirectory)
+      )}/watch_upload_${Date.now()}.mp4`;
+      await RNFetchBlob.fs.cp(processedVideoUri, tempUploadPath);
+      uploadSourcePath = tempUploadPath;
+      cleanupUploadCopy = async () => {
+        try {
+          await RNFS.unlink(tempUploadPath);
+        } catch {
+          // ignore temporary upload copy cleanup failures
+        }
+      };
+    }
+
+    let uploadResponse;
+    try {
+      uploadResponse = await RNFetchBlob.fetch(
+        'PUT',
+        uploadUrl,
+        undefined,
+        RNFetchBlob.wrap(uploadSourcePath)
+      );
+    } finally {
+      if (cleanupUploadCopy) {
+        await cleanupUploadCopy();
+      }
+    }
     const { status } = uploadResponse.info();
     if (status < 200 || status >= 300) {
       throw new QueueError('network', `Video upload failed (${status}).`, true);
@@ -230,10 +262,17 @@ const defaultDependencies: QueueDependencies = {
     return uploadLink.response.id;
   },
   createWatchPost: async (item) => {
-    const aspectRatio =
-      item.processedWidth && item.processedHeight
-        ? item.processedWidth / item.processedHeight
-        : item.recipe.outputWidth / item.recipe.outputHeight;
+    if (!item.processedWidth || !item.processedHeight) {
+      throw new QueueError(
+        'processing',
+        'Processed video metadata is missing before watch post creation.'
+      );
+    }
+
+    const aspectRatio = deriveVideoAspectRatio(item.processedWidth, item.processedHeight);
+    if (!aspectRatio) {
+      throw new QueueError('processing', 'Processed video aspect ratio is invalid.');
+    }
 
     const response = await ApiCall<{ message?: string }>({
       route: 'watch/post',
@@ -243,8 +282,8 @@ const defaultDependencies: QueueDependencies = {
         uploadId: item.uploadId,
         content: item.recipe.caption.trim(),
         aspectRatio,
-        videoWidth: item.processedWidth || item.recipe.outputWidth,
-        videoHeight: item.processedHeight || item.recipe.outputHeight,
+        videoWidth: item.processedWidth,
+        videoHeight: item.processedHeight,
       },
     });
 
@@ -271,11 +310,23 @@ export const createVideoUploadQueue = (
   let hasHydrated = false;
   let processingPromise: Promise<void> | null = null;
 
+  const serializeItemsForStorage = (value: PendingVideoUpload[]) =>
+    JSON.stringify(value.filter((item) => ACTIVE_QUEUE_STATUSES.has(item.status)));
+
   const persist = async () => {
-    await dependencies.storage.setItem(VIDEO_UPLOAD_QUEUE_STORAGE_KEY, JSON.stringify(items));
+    await dependencies.storage.setItem(
+      VIDEO_UPLOAD_QUEUE_STORAGE_KEY,
+      serializeItemsForStorage(items)
+    );
   };
 
   const getItemById = (id: string) => items.find((item) => item.id === id);
+
+  const cleanupItemArtifacts = async (item: PendingVideoUpload) => {
+    if (item.processedVideoUri) {
+      await dependencies.deleteFile(item.processedVideoUri);
+    }
+  };
 
   const updateItem = async (
     id: string,
@@ -310,7 +361,21 @@ export const createVideoUploadQueue = (
 
     try {
       const parsed = JSON.parse(stored) as PendingVideoUpload[];
-      items = Array.isArray(parsed) ? parsed.map(normalizePendingItemForResume) : [];
+      if (Array.isArray(parsed)) {
+        const nextItems = await Promise.all(
+          parsed.map(async (item) => {
+            if (!ACTIVE_QUEUE_STATUSES.has(item.status)) {
+              await cleanupItemArtifacts(item);
+              return null;
+            }
+
+            return normalizePendingItemForResume(item);
+          })
+        );
+        items = nextItems.filter(Boolean) as PendingVideoUpload[];
+      } else {
+        items = [];
+      }
       await persist();
     } catch {
       items = [];
@@ -352,6 +417,7 @@ export const createVideoUploadQueue = (
       },
       'failed'
     );
+    await cleanupItemArtifacts(item);
   };
 
   const moderateItem = async (item: PendingVideoUpload) => {
@@ -360,7 +426,16 @@ export const createVideoUploadQueue = (
     }
 
     await updateItem(item.id, { status: 'moderating' }, 'moderating');
-    const moderation = await dependencies.moderateVideo(item.recipe);
+    let moderation;
+    try {
+      moderation = await dependencies.moderateVideo(item.recipe);
+    } catch (error) {
+      throw new QueueError(
+        'moderation-failed',
+        normalizeFailureMessage(error) || 'Video moderation failed locally.'
+      );
+    }
+
     await updateItem(
       item.id,
       {
@@ -374,6 +449,13 @@ export const createVideoUploadQueue = (
     if (moderation.moderationDecision === 'blocked') {
       throw new QueueError('nsfw-blocked', 'Video blocked by client moderation.');
     }
+
+    if (moderation.moderationDecision === 'unclassified') {
+      throw new QueueError(
+        'moderation-failed',
+        moderation.moderationError || 'Video moderation could not classify the upload.'
+      );
+    }
   };
 
   const compressItem = async (item: PendingVideoUpload) => {
@@ -383,6 +465,16 @@ export const createVideoUploadQueue = (
 
     await updateItem(item.id, { status: 'compressing' }, 'compressing');
     const exported = await dependencies.exportVideo(item.recipe);
+    const validation = await validateExportedVideoForWatch({
+      recipe: item.recipe,
+      exported,
+      fileExists: dependencies.fileExists,
+    });
+    if (!validation.isValid) {
+      await dependencies.deleteFile(exported.processedVideoUri);
+      throw new QueueError('processing', validation.message);
+    }
+
     await updateItem(
       item.id,
       {
@@ -428,6 +520,7 @@ export const createVideoUploadQueue = (
       },
       'complete'
     );
+    await cleanupItemArtifacts(item);
   };
 
   const processSingleItem = async (nextItem: PendingVideoUpload) => {

@@ -155,6 +155,51 @@ export type ConnectPortalCacheSnapshot = {
   loadedAt: number | null;
 };
 
+export type ConnectServeJobVisibility = 'public' | 'private';
+
+export type ConnectServeJobHiringStatus = 'open' | 'closed';
+
+export type ConnectServeJobCompensationFrequency =
+  | 'per_hour'
+  | 'per_week'
+  | 'per_month'
+  | 'per_year'
+  | '';
+
+export type ConnectServeJobRecordBase = {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+  visibility: ConnectServeJobVisibility;
+  hiringStatus: ConnectServeJobHiringStatus;
+  lastCompletedStep: 0 | 1 | 2;
+  sector: string;
+  title: string;
+  description: string;
+  requirements: string[];
+  address: string;
+  coordinate?: Coordinate;
+  locationQuery: string;
+  opportunityType: string;
+  compensationAmount: string;
+  compensationFrequency: ConnectServeJobCompensationFrequency;
+  applicationUrl: string;
+  organizationName: string;
+  denomination: string;
+  applicantCount: number;
+};
+
+export type ConnectServeJobDraft = ConnectServeJobRecordBase & {
+  status: 'draft';
+};
+
+export type ConnectServeJobPublished = ConnectServeJobRecordBase & {
+  status: 'published';
+};
+
+export type ConnectServeJobRecord = ConnectServeJobDraft | ConnectServeJobPublished;
+
 export type ConnectPortalResumeResolution =
   | {
       kind: 'draft';

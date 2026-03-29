@@ -77,7 +77,7 @@ export const CONNECT_BRAND = {
   gray400: '#9aacb1',
 };
 
-export const CONNECT_TABS: ConnectTab[] = ['Go!', 'Serve', 'Places'];
+export const CONNECT_TABS: ConnectTab[] = ['Go!', 'Places', 'Serve'];
 export const CONNECT_PLACE_QUICK_CHIPS: ConnectPlacesQuickChip[] = [
   'Nearby',
   'Non-Profits',
@@ -109,6 +109,8 @@ type ChromeProps = {
   onTabChange: (tab: ConnectTab) => void;
   userAvatarUri?: string;
   overlay?: boolean;
+  onAddPress?: () => void;
+  addAccessibilityLabel?: string;
   headerActionIconName?: ComponentProps<typeof MaterialIcons>['name'];
   onHeaderActionPress?: () => void;
   headerActionAccessibilityLabel?: string;
@@ -131,7 +133,7 @@ type RetractableSearchBarProps = {
   searchText: string;
   onSearchChange: (text: string) => void;
   searchPlaceholder?: string;
-  onAddPress?: () => void;
+  viewToggle?: { toMap: boolean; onPress: () => void; accessibilityLabel?: string };
   tertiaryAction?: RetractableSearchBarTertiaryAction;
   onExpandedChange?: (expanded: boolean) => void;
 };
@@ -941,7 +943,11 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
               >
                 <View style={styles.mapTabLabelWrap}>
                   <StyledText
-                    style={[styles.mapTabText, { color: palette.liquidTabTextMuted }]}
+                    style={[
+                      styles.mapTabText,
+                      { color: palette.liquidTabTextMuted },
+                      tab === 'Go!' ? styles.mapTabTextGo : null,
+                    ]}
                     numberOfLines={1}
                   >
                     {tab}
@@ -960,7 +966,8 @@ export function ConnectGlassTabBar({ activeTab, onTabChange }: ConnectGlassTabBa
                       style={[
                         styles.mapTabText,
                         styles.mapTabTextActive,
-                        { color: palette.liquidTabText },
+                        { color: palette.isDark ? palette.liquidTabText : '#032f3c' },
+                        tab === 'Go!' ? styles.mapTabTextGo : null,
                       ]}
                       numberOfLines={1}
                     >
@@ -981,7 +988,7 @@ export function ConnectRetractableSearchBar({
   searchText,
   onSearchChange,
   searchPlaceholder,
-  onAddPress,
+  viewToggle,
   tertiaryAction,
   onExpandedChange,
 }: RetractableSearchBarProps) {
@@ -992,7 +999,7 @@ export function ConnectRetractableSearchBar({
   const [containerWidth, setContainerWidth] = useState(0);
   const expandAnim = useRef(new Animated.Value(searchText ? 1 : 0)).current;
   const inputRef = useRef<TextInput>(null);
-  const actionButtonCount = 1 + (tertiaryAction ? 1 : 0) + (onAddPress ? 1 : 0);
+  const actionButtonCount = 1 + (tertiaryAction ? 1 : 0) + (viewToggle ? 1 : 0);
   const collapsedWidth = 64 + Math.max(0, actionButtonCount - 1) * 42;
   const expandedWidth = Math.max(collapsedWidth, containerWidth);
   const collapseSlotWidth = 46;
@@ -1151,6 +1158,8 @@ export function ConnectRetractableSearchBar({
             placeholder={inputFocused ? '' : searchPlaceholder || 'Search...'}
             placeholderTextColor={palette.mapSearchText}
             style={[styles.retractableInput, { color: palette.textPrimary }]}
+            cursorColor="#12d2d9"
+            selectionColor="#12d2d9"
             onFocus={() => {
               setInputFocused(true);
             }}
@@ -1178,10 +1187,11 @@ export function ConnectRetractableSearchBar({
             <MaterialIcons name="search" size={20} color={palette.mapSearchIcon} />
           </TouchableOpacity>
 
-          {onAddPress ? (
+          {viewToggle ? (
             <TouchableOpacity
-              onPress={onAddPress}
-              testID="connect-retractable-add-action"
+              onPress={viewToggle.onPress}
+              accessibilityLabel={viewToggle.accessibilityLabel}
+              testID="connect-retractable-view-toggle"
               style={[
                 styles.retractableIconButton,
                 {
@@ -1190,7 +1200,11 @@ export function ConnectRetractableSearchBar({
                 },
               ]}
             >
-              <MaterialIcons name="add" size={22} color={palette.mapSearchIcon} />
+              {viewToggle.toMap ? (
+                <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />
+              ) : (
+                <MaterialIcons name="view-list" size={22} color={palette.mapSearchIcon} />
+              )}
             </TouchableOpacity>
           ) : null}
 
@@ -1227,6 +1241,8 @@ export function ConnectPortalChrome({
   onTabChange,
   userAvatarUri,
   overlay,
+  onAddPress,
+  addAccessibilityLabel,
   headerActionIconName,
   onHeaderActionPress,
   headerActionAccessibilityLabel,
@@ -1234,6 +1250,33 @@ export function ConnectPortalChrome({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const palette = useConnectPalette();
+  const chromeBorderColor = palette.isDark ? APP_HEADER_BORDER_DARK : APP_HEADER_BORDER_LIGHT;
+  const blurType = palette.isDark ? 'dark' : 'light';
+  const chromeBackground = overlay ? (
+    <>
+      <BlurView
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+        blurType={blurType}
+        blurAmount={18}
+        reducedTransparencyFallbackColor={palette.glassFallback}
+      />
+      <View
+        style={[styles.chromeOverlayScrim, { backgroundColor: palette.overlayScrim }]}
+        pointerEvents="none"
+      />
+    </>
+  ) : null;
+  const chromeBlur =
+    !overlay && Platform.OS === 'ios' ? (
+      <BlurView
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+        blurType={blurType}
+        blurAmount={18}
+        reducedTransparencyFallbackColor={palette.glassFallback}
+      />
+    ) : null;
 
   return (
     <View
@@ -1242,38 +1285,13 @@ export function ConnectPortalChrome({
         overlay ? styles.chromeWrapOverlay : null,
         {
           backgroundColor: overlay ? 'transparent' : palette.screenBackground,
-          borderBottomColor: overlay
-            ? 'transparent'
-            : palette.isDark
-              ? APP_HEADER_BORDER_DARK
-              : APP_HEADER_BORDER_LIGHT,
+          borderBottomColor: overlay ? 'transparent' : chromeBorderColor,
         },
         { paddingTop: insets.top },
       ]}
     >
-      {overlay ? (
-        <>
-          <BlurView
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-            blurType={palette.isDark ? 'dark' : 'light'}
-            blurAmount={18}
-            reducedTransparencyFallbackColor={palette.glassFallback}
-          />
-          <View
-            style={[styles.chromeOverlayScrim, { backgroundColor: palette.overlayScrim }]}
-            pointerEvents="none"
-          />
-        </>
-      ) : Platform.OS === 'ios' ? (
-        <BlurView
-          pointerEvents="none"
-          style={StyleSheet.absoluteFill}
-          blurType={palette.isDark ? 'dark' : 'light'}
-          blurAmount={18}
-          reducedTransparencyFallbackColor={palette.glassFallback}
-        />
-      ) : null}
+      {chromeBackground}
+      {chromeBlur}
 
       <View style={styles.topBar}>
         <View style={styles.chromeSideSlot}>
@@ -1297,32 +1315,53 @@ export function ConnectPortalChrome({
         </View>
 
         <View style={styles.chromeSideSlot}>
-          {headerActionIconName && onHeaderActionPress ? (
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={headerActionAccessibilityLabel}
-              onPress={onHeaderActionPress}
-              style={[
-                styles.chromeHeaderAction,
-                {
-                  backgroundColor: palette.mapActionBg,
-                  borderColor: palette.mapActionBorder,
-                },
-              ]}
-            >
-              {headerActionIconName === 'map' ? (
-                <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />
-              ) : (
-                <MaterialIcons
-                  name={headerActionIconName}
-                  size={22}
-                  color={palette.mapSearchIcon}
-                />
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.chromeHeaderActionSpacer} />
-          )}
+          {(() => {
+            if (onAddPress) {
+              return (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={addAccessibilityLabel}
+                  onPress={onAddPress}
+                  style={[
+                    styles.chromeHeaderAction,
+                    {
+                      backgroundColor: palette.mapActionBg,
+                      borderColor: palette.mapActionBorder,
+                    },
+                  ]}
+                >
+                  <MaterialIcons name="add" size={22} color={palette.mapSearchIcon} />
+                </TouchableOpacity>
+              );
+            }
+            if (headerActionIconName && onHeaderActionPress) {
+              return (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={headerActionAccessibilityLabel}
+                  onPress={onHeaderActionPress}
+                  style={[
+                    styles.chromeHeaderAction,
+                    {
+                      backgroundColor: palette.mapActionBg,
+                      borderColor: palette.mapActionBorder,
+                    },
+                  ]}
+                >
+                  {headerActionIconName === 'map' ? (
+                    <NetworkPinIcon width={22} height={22} color={palette.mapSearchIcon} />
+                  ) : (
+                    <MaterialIcons
+                      name={headerActionIconName}
+                      size={22}
+                      color={palette.mapSearchIcon}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            }
+            return <View style={styles.chromeHeaderActionSpacer} />;
+          })()}
         </View>
       </View>
 
@@ -2224,8 +2263,8 @@ const styles = StyleSheet.create({
     fontSize: APP_HEADER_TITLE_FONT_SIZE,
     lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
     color: '#032f3c',
-    fontFamily: APP_HEADER_TITLE_FONT_FAMILY,
-    fontWeight: APP_HEADER_TITLE_FONT_WEIGHT,
+    fontFamily: 'Rubik-Bold',
+    fontWeight: '700',
     letterSpacing: APP_HEADER_TITLE_LETTER_SPACING,
     textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
@@ -2532,12 +2571,17 @@ const styles = StyleSheet.create({
     ...Typography.body.x2M,
     color: 'rgba(230,234,236,0.7)',
     fontWeight: '700',
-    fontFamily: 'Rubik',
+    fontFamily: 'Rubik-Regular',
     letterSpacing: 0.15,
   },
   mapTabTextActive: {
-    color: CONNECT_BRAND.infoBase,
-    fontWeight: '800',
+    fontFamily: 'Rubik-Bold',
+    fontWeight: '700',
+  },
+  mapTabTextGo: {
+    fontFamily: 'Rubik-Italic',
+    fontStyle: 'italic',
+    paddingRight: Platform.OS === 'android' ? 5 : 0,
   },
   quickChipRow: {
     alignItems: 'center',

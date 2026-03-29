@@ -14,13 +14,14 @@ import { Colors, Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import getDeviceLocation from '@/src/services/deviceLocation';
 import {
+  createConnectServeJobDraft,
   createConnectPortalDraft,
   formatConnectPortalDateTime,
   trackConnectPortalEventTelemetry,
 } from '@/src/services/connectPortal';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import useMountEffect from '@/src/hooks/useMountEffect';
-import { CONNECT_PORTAL_MAP_DATA, type ConnectPortalMapItem, type Coordinate } from './data';
+import type { ConnectPortalMapItem, Coordinate } from './data';
 import {
   CONNECT_BRAND,
   CONNECT_BOTTOM_CHIP_RAIL_HEIGHT,
@@ -268,6 +269,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
     searchByTab,
     setSearchText,
     places,
+    serve,
   } = useConnectPortalData();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [initialCameraTarget, setInitialCameraTarget] = useState<Coordinate>(DEFAULT_CENTER);
@@ -324,8 +326,15 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       }));
     }
 
-    return CONNECT_PORTAL_MAP_DATA.Serve;
-  }, [activeTab, places.visibleRecords, snapshot.publicPublished]);
+    return serve.publicRecords.map((job) => ({
+      id: job.id,
+      title: job.title,
+      subtitle: job.opportunityType || 'Serve Opportunity',
+      address: job.address || 'Location TBD',
+      coordinate: job.coordinate || DEFAULT_CENTER,
+      type: 'job' as const,
+    }));
+  }, [activeTab, places.visibleRecords, serve.publicRecords, snapshot.publicPublished]);
 
   const validSelectedItemId =
     selectedItemId && activeItems.some((item) => item.id === selectedItemId)
@@ -348,7 +357,7 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       : null;
   const selectedServeItem =
     activeTab === 'Serve'
-      ? CONNECT_PORTAL_MAP_DATA.Serve.find((item) => item.id === validSelectedItemId) || null
+      ? activeItems.find((item) => item.id === validSelectedItemId && item.type === 'job') || null
       : null;
 
   const onChangeViewMode = (viewMode: 'list' | 'map') => {
@@ -366,7 +375,9 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
       return;
     }
     if (activeTab === 'Serve') {
-      navigation.navigate('ConnectServeCreateJobStep1');
+      createConnectServeJobDraft().then((draft) => {
+        navigation.navigate('ConnectServeCreateJobStep1', { draftId: draft.id });
+      });
     }
   }, [activeTab, navigation]);
 
@@ -596,9 +607,13 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
           onTabChange={onChangeTab}
           userAvatarUri={currentUser?.profileImage}
           overlay
-          headerActionIconName="view-list"
-          headerActionAccessibilityLabel="Switch to list view"
-          onHeaderActionPress={() => onChangeViewMode('list')}
+          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
+          addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
+          headerActionIconName={activeTab === 'Places' ? 'view-list' : undefined}
+          headerActionAccessibilityLabel={
+            activeTab === 'Places' ? 'Switch to list view' : undefined
+          }
+          onHeaderActionPress={activeTab === 'Places' ? () => onChangeViewMode('list') : undefined}
         />
       </View>
 
@@ -637,7 +652,15 @@ function MapViewScreen({ navigation, route }: Props): React.JSX.Element {
             }
             return undefined;
           })()}
-          onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
+          viewToggle={
+            activeTab !== 'Places'
+              ? {
+                  toMap: false,
+                  onPress: () => onChangeViewMode('list'),
+                  accessibilityLabel: 'Switch to list view',
+                }
+              : undefined
+          }
         />
       </View>
 

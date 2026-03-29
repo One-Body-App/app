@@ -3,7 +3,7 @@ import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 import ListViewScreen from '../listview';
 
-const mockSearchBar = jest.fn((_props?: any) => null);
+const mockSearchBar = jest.fn(() => null);
 const mockUseConnectPortalData = jest.fn(() => ({}));
 const mockUseSelector = jest.fn();
 const mockUseFocusEffect = jest.fn((callback: () => void) => callback());
@@ -40,6 +40,7 @@ jest.mock('react-native-safe-area-context', () => ({
 
 jest.mock('@/src/services/connectPortal', () => ({
   createConnectPortalDraft: jest.fn(),
+  createConnectServeJobDraft: jest.fn(),
   formatConnectPortalDateTime: jest.fn(() => 'May 1 at 7:00 PM'),
   trackConnectPortalEventTelemetry: jest.fn(() => Promise.resolve()),
 }));
@@ -152,16 +153,22 @@ function createPortalData(activeTab: MockTab) {
       resetFilters: jest.fn(),
     },
     serve: {
+      publicRecords: [],
+      organizerRecords: [],
+      draftRecords: [],
       filters: {},
       quickChip: 'Hiring',
       setQuickChip: jest.fn(),
       filterSheetOpen: false,
       setFilterSheetOpen: jest.fn(),
+      loading: false,
+      error: null,
       sortOptions: [],
       roleTypeOptions: [],
       tagOptions: [],
       setFilters: jest.fn(),
       resetFilters: jest.fn(),
+      refresh: jest.fn(),
     },
   };
 }

@@ -1,7 +1,8 @@
-import React, { useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { AppState, InteractionManager, Platform } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { resumePendingVideoUploads } from '@/src/services/videoProcessing/videoUploadQueue';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 export const VIDEO_UPLOAD_RESUME_DELAY_MS = 1200;
 
@@ -28,6 +29,8 @@ export default function VideoProcessingRuntime({
 }: Props) {
   const cleanupRef = useRef<(() => void) | null>(null);
   const appStateRef = useRef<AppStateStatus>(appState.currentState);
+  const appStateApiRef = useRef(appState);
+  appStateApiRef.current = appState;
   const onResumeUploadsRef = useRef(onResumeUploads);
   onResumeUploadsRef.current = onResumeUploads;
 
@@ -59,16 +62,18 @@ export default function VideoProcessingRuntime({
       cleanupRef.current = null;
     };
   }, [delayMs, interactionManager, platformOS]);
+  const scheduleResumeRef = useRef(scheduleResume);
+  scheduleResumeRef.current = scheduleResume;
 
-  React.useEffect(() => {
-    scheduleResume();
+  useMountEffect(() => {
+    scheduleResumeRef.current();
 
-    const subscription = appState.addEventListener('change', (nextAppState) => {
+    const subscription = appStateApiRef.current.addEventListener('change', (nextAppState) => {
       const wasBackground = appStateRef.current.match(/inactive|background/);
       appStateRef.current = nextAppState;
 
       if (wasBackground && nextAppState === 'active') {
-        scheduleResume();
+        scheduleResumeRef.current();
       }
     });
 
@@ -76,7 +81,7 @@ export default function VideoProcessingRuntime({
       cleanupRef.current?.();
       subscription.remove();
     };
-  }, [appState, scheduleResume]);
+  });
 
   return null;
 }

@@ -4,11 +4,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getProfile } from '@/src/redux/actions/AuthActions';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import ApiCall from '@/src/services/api';
-import { CONNECT_PORTAL_LIST_DATA, type ConnectTab } from '@/src/screens/connectportal/data';
+import type { ConnectTab } from '@/src/screens/connectportal/data';
 import {
   getConnectPortalPlaceFilterOptions,
   getConnectPortalCacheSnapshot,
   getDefaultConnectPlaceFilters,
+  listConnectServeOrganizerJobs,
+  listConnectServePublicJobs,
   listConnectPortalPlaces,
   refreshConnectPortalPublishedEvents,
 } from './index';
@@ -20,6 +22,9 @@ import type {
   ConnectPlaceRecord,
   ConnectPlacesQuickChip,
   ConnectPortalCacheSnapshot,
+  ConnectServeJobDraft,
+  ConnectServeJobPublished,
+  ConnectServeJobRecord,
   ConnectServeFilters,
   ConnectServeQuickChip,
   ConnectViewMode,
@@ -78,9 +83,14 @@ type ConnectPortalContextValue = {
     resetFilters: () => void;
   };
   serve: {
+    publicRecords: ConnectServeJobPublished[];
+    organizerRecords: ConnectServeJobRecord[];
+    draftRecords: ConnectServeJobDraft[];
     filters: ConnectServeFilters;
     quickChip: ConnectServeQuickChip;
     filterSheetOpen: boolean;
+    loading: boolean;
+    error: ConnectPortalError;
     sortOptions: ConnectPlaceFilterOption[];
     roleTypeOptions: ConnectPlaceFilterOption[];
     tagOptions: ConnectPlaceFilterOption[];
@@ -88,6 +98,7 @@ type ConnectPortalContextValue = {
     setFilterSheetOpen: (value: boolean) => void;
     setFilters: (updater: Partial<ConnectServeFilters>) => void;
     resetFilters: () => void;
+    refresh: () => Promise<void>;
   };
 };
 
@@ -154,11 +165,8 @@ const uniqueOptions = (values: string[]) =>
     value,
   }));
 
-const getServeRoleType = (location: string) =>
-  location
-    .split('•')
-    .map((part) => part.trim())
-    .filter(Boolean)[1] || location;
+const getServeRoleType = (job: Pick<ConnectServeJobRecord, 'opportunityType'>) =>
+  job.opportunityType;
 
 const ConnectPortalContext = createContext<ConnectPortalContextValue | null>(null);
 
@@ -216,6 +224,10 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
   const [goFilters, setGoFilters] = useState<ConnectGoFilters>(DEFAULT_GO_FILTERS);
   const [goQuickChip, setGoQuickChip] = useState<ConnectGoQuickChip>('Upcoming');
   const [goFilterSheetOpen, setGoFilterSheetOpen] = useState(false);
+  const [servePublicJobs, setServePublicJobs] = useState<ConnectServeJobPublished[]>([]);
+  const [serveOrganizerJobs, setServeOrganizerJobs] = useState<ConnectServeJobRecord[]>([]);
+  const [serveLoading, setServeLoading] = useState(true);
+  const [serveError, setServeError] = useState<ConnectPortalError>(null);
   const [serveFilters, setServeFilters] = useState<ConnectServeFilters>(DEFAULT_SERVE_FILTERS);
   const [serveQuickChip, setServeQuickChip] = useState<ConnectServeQuickChip>('Hiring');
   const [serveFilterSheetOpen, setServeFilterSheetOpen] = useState(false);
@@ -226,14 +238,41 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       if (force) {
         await refreshConnectPortalPublishedEvents(true);
       }
-      const nextSnapshot = await getConnectPortalCacheSnapshot();
+      const [nextSnapshot, nextServePublicJobs, nextServeOrganizerJobs] = await Promise.all([
+        getConnectPortalCacheSnapshot(),
+        listConnectServePublicJobs(),
+        listConnectServeOrganizerJobs(),
+      ]);
       setSnapshot(nextSnapshot);
+      setServePublicJobs(nextServePublicJobs);
+      setServeOrganizerJobs(nextServeOrganizerJobs);
     } catch (caught) {
       const message =
         caught instanceof Error ? caught.message : 'Unable to load Connect portal data right now.';
       setError({ code: 'network', message });
+      setServeError({ code: 'network', message });
     } finally {
       setLoading(false);
+      setServeLoading(false);
+    }
+  }, []);
+
+  const refreshServeJobs = useCallback(async () => {
+    setServeLoading(true);
+    setServeError(null);
+    try {
+      const [nextServePublicJobs, nextServeOrganizerJobs] = await Promise.all([
+        listConnectServePublicJobs(),
+        listConnectServeOrganizerJobs(),
+      ]);
+      setServePublicJobs(nextServePublicJobs);
+      setServeOrganizerJobs(nextServeOrganizerJobs);
+    } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message : 'Unable to load serve jobs right now.';
+      setServeError({ code: 'network', message });
+    } finally {
+      setServeLoading(false);
     }
   }, []);
 
@@ -369,16 +408,30 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
     [snapshot.publicPublished]
   );
 
-  const serveRoleTypeOptions = useMemo(
+  const serveDraftRecords = useMemo(
     () =>
-      uniqueOptions(CONNECT_PORTAL_LIST_DATA.Serve.map((item) => getServeRoleType(item.location))),
-    []
+      serveOrganizerJobs.filter(
+        (record): record is ConnectServeJobDraft => record.status === 'draft'
+      ),
+    [serveOrganizerJobs]
+  );
+
+  const servePublishedOrganizerRecords = useMemo(
+    () =>
+      serveOrganizerJobs.filter(
+        (record): record is ConnectServeJobPublished => record.status === 'published'
+      ),
+    [serveOrganizerJobs]
+  );
+
+  const serveRoleTypeOptions = useMemo(
+    () => uniqueOptions(servePublicJobs.map((job) => getServeRoleType(job))),
+    [servePublicJobs]
   );
 
   const serveTagOptions = useMemo(
-    () =>
-      uniqueOptions(CONNECT_PORTAL_LIST_DATA.Serve.flatMap((item) => item.tags.map((tag) => tag))),
-    []
+    () => uniqueOptions(servePublicJobs.map((job) => job.sector)),
+    [servePublicJobs]
   );
 
   const value = useMemo(
@@ -444,9 +497,14 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
         },
       },
       serve: {
+        publicRecords: servePublicJobs,
+        organizerRecords: servePublishedOrganizerRecords,
+        draftRecords: serveDraftRecords,
         filters: serveFilters,
         quickChip: serveQuickChip,
         filterSheetOpen: serveFilterSheetOpen,
+        loading: serveLoading,
+        error: serveError,
         sortOptions: SERVE_SORT_OPTIONS,
         roleTypeOptions: serveRoleTypeOptions,
         tagOptions: serveTagOptions,
@@ -459,6 +517,7 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
           setServeFilters(DEFAULT_SERVE_FILTERS);
           setServeQuickChip('Hiring');
         },
+        refresh: refreshServeJobs,
       },
     }),
     [
@@ -484,6 +543,11 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       goFilterSheetOpen,
       goEventTypeOptions,
       goCategoryOptions,
+      servePublicJobs,
+      servePublishedOrganizerRecords,
+      serveDraftRecords,
+      serveLoading,
+      serveError,
       serveFilters,
       serveQuickChip,
       serveFilterSheetOpen,
@@ -495,6 +559,7 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       isFollowing,
       refresh,
       refreshPlaces,
+      refreshServeJobs,
       toggleFollow,
       updateSearchText,
       updateViewMode,

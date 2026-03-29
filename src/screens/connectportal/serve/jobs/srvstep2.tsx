@@ -1,300 +1,384 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
+  ActionSheetIOS,
+  Alert,
   StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
+  Text,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
-import { ServeHeader, useServePalette, BRAND_COLORS } from '../shared';
+import {
+  getConnectServeJobDraftById,
+  publishConnectServeJobDraft,
+  saveConnectServeJobDraft,
+} from '@/src/services/connectPortal';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import { CreateFlowLayout, useCreateFlowPalette } from '../../go/createflow/shared';
+import useMountEffect from '@/src/hooks/useMountEffect';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeCreateJobStep2'>;
 
-// Reusable Form Input Component
-function FormInput({
-  label,
-  placeholder,
-  value,
-  onChangeText,
-  theme,
-  keyboardType = 'default' as const,
-}: {
+type SelectOption = {
   label: string;
-  placeholder: string;
   value: string;
-  onChangeText: (text: string) => void;
-  theme: { text: string; inputBg: string; inputBorder: string };
-  keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad' | 'url';
-}) {
+};
+
+const OPPORTUNITY_TYPE_OPTIONS: SelectOption[] = [
+  { label: 'Full time', value: 'Full time' },
+  { label: 'Part time', value: 'Part time' },
+  { label: 'Contract', value: 'Contract' },
+  { label: 'Volunteer', value: 'Volunteer' },
+];
+
+const COMPENSATION_FREQUENCY_OPTIONS: SelectOption[] = [
+  { label: 'Per hour', value: 'per_hour' },
+  { label: 'Per week', value: 'per_week' },
+  { label: 'Per month', value: 'per_month' },
+  { label: 'Per year', value: 'per_year' },
+];
+
+const HIRING_STATUS_OPTIONS: SelectOption[] = [
+  { label: 'Open', value: 'open' },
+  { label: 'Closed', value: 'closed' },
+];
+
+const showOptionPicker = (
+  title: string,
+  options: SelectOption[],
+  onSelect: (value: string) => void
+) => {
+  if (options.length === 0) {
+    return;
+  }
+
+  if (ActionSheetIOS?.showActionSheetWithOptions) {
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title,
+        options: ['Cancel', ...options.map((option) => option.label)],
+        cancelButtonIndex: 0,
+      },
+      (buttonIndex) => {
+        if (buttonIndex > 0) {
+          onSelect(options[buttonIndex - 1].value);
+        }
+      }
+    );
+    return;
+  }
+
+  Alert.alert(
+    title,
+    undefined,
+    [
+      ...options.map((option) => ({
+        text: option.label,
+        onPress: () => onSelect(option.value),
+      })),
+      { text: 'Cancel', style: 'cancel' as const },
+    ],
+    { cancelable: true }
+  );
+};
+
+const isValidApplicationUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+export default function ServeCreateJobStep2({ navigation, route }: Props): React.JSX.Element {
+  const palette = useCreateFlowPalette();
+  const { serve } = useConnectPortalData();
+  const [loading, setLoading] = useState(true);
+  const [draftId, setDraftId] = useState(route.params.draftId);
+  const [opportunityType, setOpportunityType] = useState('');
+  const [compensationAmount, setCompensationAmount] = useState('');
+  const [compensationFrequency, setCompensationFrequency] = useState<
+    '' | 'per_hour' | 'per_week' | 'per_month' | 'per_year'
+  >('');
+  const [applicationUrl, setApplicationUrl] = useState('');
+  const [hiringStatus, setHiringStatus] = useState<'open' | 'closed'>('open');
+
+  useMountEffect(() => {
+    let isActive = true;
+
+    (async () => {
+      const draft = await getConnectServeJobDraftById(route.params.draftId);
+      if (!isActive) {
+        return;
+      }
+
+      if (!draft) {
+        navigation.navigate('ConnectServeHome');
+        return;
+      }
+
+      setDraftId(draft.id);
+      setOpportunityType(draft.opportunityType);
+      setCompensationAmount(draft.compensationAmount);
+      setCompensationFrequency(draft.compensationFrequency);
+      setApplicationUrl(draft.applicationUrl);
+      setHiringStatus(draft.hiringStatus);
+      setLoading(false);
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  });
+
+  const persistDraft = async (completedStep?: 1 | 2) => {
+    if (!draftId) {
+      return null;
+    }
+
+    return saveConnectServeJobDraft(draftId, {
+      opportunityType,
+      compensationAmount,
+      compensationFrequency,
+      applicationUrl: applicationUrl.trim(),
+      hiringStatus,
+      lastCompletedStep: completedStep,
+    });
+  };
+
+  const nextDisabled =
+    !draftId ||
+    !opportunityType.trim() ||
+    !compensationAmount.trim() ||
+    !compensationFrequency ||
+    !isValidApplicationUrl(applicationUrl);
+
   return (
-    <View style={styles.inputGroup}>
-      <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
-      <View
-        style={[
-          styles.inputWrapper,
-          { backgroundColor: theme.inputBg, borderColor: theme.inputBorder },
-        ]}
-      >
+    <CreateFlowLayout
+      title="Create Job"
+      step={2}
+      totalSteps={2}
+      loading={loading}
+      onBack={async () => {
+        await persistDraft(1);
+        await serve.refresh();
+        navigation.navigate('ConnectServeCreateJobStep1', {
+          draftId: draftId || route.params.draftId,
+        });
+      }}
+      onSave={async () => {
+        await persistDraft(1);
+        await serve.refresh();
+        navigation.navigate('ConnectServeHome');
+      }}
+      saveLabel="Save Draft"
+      onNext={async () => {
+        if (!draftId) {
+          return;
+        }
+        await persistDraft(2);
+        const publishedJob = await publishConnectServeJobDraft(draftId);
+        await serve.refresh();
+        navigation.navigate('ConnectServeApplications', { jobId: publishedJob.id });
+      }}
+      nextLabel="Create Job"
+      nextDisabled={nextDisabled}
+    >
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+          Finish the application details.
+        </Text>
+        <Text style={[styles.sectionBody, { color: palette.textSecondary }]}>
+          Add the compensation and response details people need before they apply.
+        </Text>
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Opportunity Type</Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={[
+            styles.inputButton,
+            { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
+          ]}
+          onPress={() =>
+            showOptionPicker('Opportunity Type', OPPORTUNITY_TYPE_OPTIONS, setOpportunityType)
+          }
+        >
+          <Text
+            style={[
+              styles.inputButtonText,
+              { color: opportunityType ? palette.inputText : palette.inputPlaceholder },
+            ]}
+          >
+            {opportunityType || 'Choose the role type'}
+          </Text>
+          <MaterialCommunityIcons name="chevron-down" size={20} color={palette.inputPlaceholder} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.row}>
+        <View style={styles.fieldHalf}>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Compensation</Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: palette.inputBg,
+                borderColor: palette.inputBorder,
+                color: palette.inputText,
+              },
+            ]}
+            value={compensationAmount}
+            onChangeText={setCompensationAmount}
+            placeholder="Enter amount"
+            placeholderTextColor={palette.inputPlaceholder}
+            keyboardType="numeric"
+          />
+        </View>
+
+        <View style={styles.fieldHalf}>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Frequency</Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[
+              styles.inputButton,
+              { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
+            ]}
+            onPress={() =>
+              showOptionPicker('Compensation Frequency', COMPENSATION_FREQUENCY_OPTIONS, (value) =>
+                setCompensationFrequency(
+                  value as '' | 'per_hour' | 'per_week' | 'per_month' | 'per_year'
+                )
+              )
+            }
+          >
+            <Text
+              style={[
+                styles.inputButtonText,
+                { color: compensationFrequency ? palette.inputText : palette.inputPlaceholder },
+              ]}
+            >
+              {COMPENSATION_FREQUENCY_OPTIONS.find(
+                (option) => option.value === compensationFrequency
+              )?.label || 'Select'}
+            </Text>
+            <MaterialCommunityIcons
+              name="chevron-down"
+              size={20}
+              color={palette.inputPlaceholder}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Application URL</Text>
         <TextInput
-          style={[styles.inputBox, { color: theme.text }]}
-          placeholder={placeholder}
-          placeholderTextColor={BRAND_COLORS.grays[500]}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
+          style={[
+            styles.input,
+            {
+              backgroundColor: palette.inputBg,
+              borderColor: palette.inputBorder,
+              color: palette.inputText,
+            },
+          ]}
+          value={applicationUrl}
+          onChangeText={setApplicationUrl}
+          placeholder="https://example.com/apply"
+          placeholderTextColor={palette.inputPlaceholder}
+          keyboardType="url"
+          autoCapitalize="none"
+          autoCorrect={false}
         />
       </View>
-    </View>
-  );
-}
 
-// Reusable Dropdown Component
-function FormDropdown({
-  label,
-  value,
-  theme,
-}: {
-  label: string;
-  value: string;
-  theme: { text: string; inputBg: string; inputBorder: string; subText: string };
-}) {
-  return (
-    <View style={styles.inputGroup}>
-      <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
-      <TouchableOpacity
-        style={[
-          styles.inputWrapper,
-          { backgroundColor: theme.inputBg, borderColor: theme.inputBorder },
-        ]}
-      >
-        <Text style={[styles.inputText, { color: value ? theme.text : BRAND_COLORS.grays[500] }]}>
-          {value || 'Select'}
-        </Text>
-        <Text style={[styles.dropdownIcon, { color: theme.subText }]}>▼</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-export default function ServeCreateJobStep2({ navigation }: Props) {
-  const palette = useServePalette();
-
-  // Form State
-  const [visibility] = useState('Public');
-  const [opportunityType, setOpportunityType] = useState('Full time');
-  const [compensation, setCompensation] = useState('$ 50,000');
-  const [frequency] = useState('');
-  const [applicationUrl, setApplicationUrl] = useState('');
-  const [status] = useState('Open');
-
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ServeHeader
-          title="Create Job"
-          titleColor={palette.text}
-          onBack={() => navigation.navigate('ConnectServeCreateJobStep1')}
-        />
-
-        {/* Profile & Visibility Row */}
-        <View style={styles.profileRow}>
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarIcon}>👤</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.visibilityDropdown, { backgroundColor: palette.inputBg }]}
-          >
-            <Text style={[styles.visibilityText, { color: palette.subText }]}>{visibility}</Text>
-            <Text style={[styles.dropdownIcon, { color: palette.subText }]}>▼</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Progress Bar (Both active for Step 2) */}
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressSegment, styles.progressActive]} />
-          <View style={[styles.progressSegment, styles.progressActive]} />
-        </View>
-
-        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          <FormInput
-            label="Opportunity type"
-            placeholder="e.g. Full time, Part time"
-            value={opportunityType}
-            onChangeText={setOpportunityType}
-            theme={palette}
-          />
-
-          {/* Two-Column Grid for Comp & Frequency */}
-          <View style={styles.rowGrid}>
-            <View style={styles.gridItem}>
-              <FormInput
-                label="Compensation ($)"
-                placeholder="$ 50,000"
-                value={compensation}
-                onChangeText={setCompensation}
-                theme={palette}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.gridItem}>
-              <FormDropdown label="Frequency" value={frequency} theme={palette} />
-            </View>
-          </View>
-
-          <FormInput
-            label="Application URL"
-            placeholder="Enter url"
-            value={applicationUrl}
-            onChangeText={setApplicationUrl}
-            theme={palette}
-            keyboardType="url"
-          />
-
-          <FormDropdown label="Status" value={status} theme={palette} />
-
-          <View style={styles.bottomSpacer} />
-        </ScrollView>
-
-        {/* Sticky Footer Button */}
-        <View
+      <View style={styles.fieldGroup}>
+        <Text style={[styles.label, { color: palette.textPrimary }]}>Hiring Status</Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
           style={[
-            styles.footer,
-            { backgroundColor: palette.background, borderTopColor: palette.inputBorder },
+            styles.inputButton,
+            { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
           ]}
+          onPress={() =>
+            showOptionPicker('Hiring Status', HIRING_STATUS_OPTIONS, (value) =>
+              setHiringStatus(value as 'open' | 'closed')
+            )
+          }
         >
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => navigation.navigate('ConnectServeHome')}
-          >
-            <Text style={styles.createButtonText}>Create</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          <Text style={[styles.inputButtonText, { color: palette.inputText }]}>
+            {HIRING_STATUS_OPTIONS.find((option) => option.value === hiringStatus)?.label || 'Open'}
+          </Text>
+          <MaterialCommunityIcons name="chevron-down" size={20} color={palette.inputPlaceholder} />
+        </TouchableOpacity>
+      </View>
+    </CreateFlowLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  section: {
+    marginBottom: 24,
+    gap: 8,
   },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 15,
+  sectionTitle: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '700',
+    fontFamily: 'Rubik-Bold',
   },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: BRAND_COLORS.grays[200],
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  avatarIcon: {
-    fontSize: 20,
-  },
-  visibilityDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  visibilityText: {
+  sectionBody: {
     fontSize: 14,
-    marginRight: 6,
+    lineHeight: 22,
+    fontFamily: 'OpenSans-Regular',
   },
-  progressContainer: {
+  row: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    gap: 16,
+    gap: 12,
   },
-  progressSegment: {
+  fieldHalf: {
     flex: 1,
-    height: 4,
-    borderRadius: 2,
+    marginBottom: 18,
   },
-  progressActive: {
-    backgroundColor: BRAND_COLORS.infoDark,
-  },
-  scrollContainer: {
-    paddingHorizontal: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
+  fieldGroup: {
+    marginBottom: 18,
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
     marginBottom: 8,
+    fontFamily: 'Rubik-Medium',
   },
-  inputWrapper: {
+  input: {
+    minHeight: 52,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontFamily: 'OpenSans-Regular',
+  },
+  inputButton: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  inputBox: {
+  inputButtonText: {
     flex: 1,
-    height: 50,
-    paddingHorizontal: 15,
-    fontSize: 14,
-  },
-  inputText: {
-    flex: 1,
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    fontSize: 14,
-  },
-  dropdownIcon: {
-    fontSize: 12,
-    marginRight: 15,
-  },
-  rowGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 16, // Requires modern RN, use margins on children otherwise
-  },
-  gridItem: {
-    flex: 1,
-  },
-  bottomSpacer: {
-    height: 100, // Space for sticky footer
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-  },
-  createButton: {
-    backgroundColor: BRAND_COLORS.primaryDark,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  createButtonText: {
-    color: BRAND_COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    paddingRight: 12,
+    fontFamily: 'OpenSans-Regular',
   },
 });

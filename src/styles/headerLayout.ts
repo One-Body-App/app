@@ -14,7 +14,6 @@ export const APP_HEADER_TITLE_LETTER_SPACING = 0.3;
 export const APP_HEADER_ROW_OFFSET = Platform.OS === 'ios' ? -7 : 0;
 export const APP_HEADER_ANDROID_TITLE_PADDING_LEFT = spacing.x5;
 export const APP_HEADER_CONTENT_GAP = spacing.x5;
-
 export const APP_HEADER_BACKGROUND_LIGHT = 'rgba(246,246,247,0.92)';
 export const APP_HEADER_BACKGROUND_DARK = 'rgba(13,13,13,0.92)';
 export const APP_HEADER_BORDER_LIGHT = '#e6eaec';

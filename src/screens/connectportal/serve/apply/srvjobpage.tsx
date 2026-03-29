@@ -10,7 +10,12 @@ import {
 } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
-import { ServeHeader, useServePalette, BRAND_COLORS, getServeJobById } from '../shared';
+import {
+  formatConnectPortalDate,
+  getConnectServeCompensationLabel,
+} from '@/src/services/connectPortal';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
+import { ServeHeader, useServePalette, BRAND_COLORS } from '../shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeJobView'>;
 
@@ -35,7 +40,26 @@ function DetailCard({
 export default function ServeJobPage({ navigation, route }: Props) {
   const palette = useServePalette();
   const [isSaved, setIsSaved] = React.useState(false);
-  const job = getServeJobById(route.params.jobId);
+  const { serve } = useConnectPortalData();
+  const job =
+    [...serve.publicRecords, ...serve.organizerRecords].find(
+      (record) => record.id === route.params.jobId
+    ) || null;
+
+  if (!job) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
+        <ServeHeader
+          title="Job Details"
+          titleColor={palette.text}
+          onBack={() => navigation.navigate('ConnectPortal', { initialTab: 'Serve' })}
+        />
+        <View style={styles.emptyState}>
+          <Text style={[styles.bodyText, { color: palette.subText }]}>Job not found.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleApply = () => {
     navigation.navigate('ConnectServeJobApply', { jobId: job.id });
@@ -66,17 +90,19 @@ export default function ServeJobPage({ navigation, route }: Props) {
 
           <View style={styles.metaRow}>
             <Text style={styles.metaIcon}>📅</Text>
-            <Text style={[styles.metaText, { color: palette.subText }]}>{job.date}</Text>
+            <Text style={[styles.metaText, { color: palette.subText }]}>
+              {`Updated ${formatConnectPortalDate(job.updatedAt.slice(0, 10))}`}
+            </Text>
           </View>
 
           <View style={styles.metaRow}>
             <Text style={styles.metaIcon}>🏷️</Text>
-            <Text style={[styles.metaText, { color: palette.subText }]}>{job.category}</Text>
+            <Text style={[styles.metaText, { color: palette.subText }]}>{job.sector}</Text>
           </View>
 
           <View style={styles.metaRow}>
             <Text style={styles.metaIcon}>📍</Text>
-            <Text style={[styles.metaText, { color: palette.subText }]}>{job.location}</Text>
+            <Text style={[styles.metaText, { color: palette.subText }]}>{job.address}</Text>
           </View>
         </View>
 
@@ -99,13 +125,15 @@ export default function ServeJobPage({ navigation, route }: Props) {
         {/* Details Section */}
         <DetailCard title="Posted by">
           <TouchableOpacity>
-            <Text style={styles.linkText}>{job.organization}</Text>
+            <Text style={styles.linkText}>{job.organizationName}</Text>
           </TouchableOpacity>
           <Text style={[styles.subText, { color: palette.subText }]}>{job.denomination}</Text>
         </DetailCard>
 
         <DetailCard title="Status">
-          <Text style={[styles.bodyText, { color: palette.text }]}>{job.status}</Text>
+          <Text style={[styles.bodyText, { color: palette.text }]}>
+            {`${job.hiringStatus === 'open' ? 'Open' : 'Closed'} • ${job.visibility === 'public' ? 'Public' : 'Private'}`}
+          </Text>
         </DetailCard>
 
         <DetailCard title="Description">
@@ -125,10 +153,14 @@ export default function ServeJobPage({ navigation, route }: Props) {
         {/* Two-Column Grid for Comp & Frequency */}
         <View style={styles.gridRow}>
           <DetailCard title="Compensation" customStyle={styles.gridItem}>
-            <Text style={[styles.bodyText, { color: palette.text }]}>{job.compensation}</Text>
+            <Text style={[styles.bodyText, { color: palette.text }]}>
+              {getConnectServeCompensationLabel(job.compensationAmount, job.compensationFrequency)}
+            </Text>
           </DetailCard>
           <DetailCard title="Frequency" customStyle={styles.gridItem}>
-            <Text style={[styles.bodyText, { color: palette.text }]}>{job.frequency}</Text>
+            <Text style={[styles.bodyText, { color: palette.text }]}>
+              {job.compensationFrequency.replace('per_', 'Per ') || 'Not specified'}
+            </Text>
           </DetailCard>
         </View>
 
@@ -155,6 +187,12 @@ export default function ServeJobPage({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   scrollContainer: {
     paddingHorizontal: 20,

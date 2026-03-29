@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { ConnectStackParamsList } from '@/src/navigator/types';
+import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import ServeJobPageApplySuccess from './srvjobpageapplysuccess';
-import { ServeHeader, useServePalette, BRAND_COLORS, getServeJobById } from '../shared';
+import { ServeHeader, useServePalette, BRAND_COLORS } from '../shared';
 
 type Props = StackScreenProps<ConnectStackParamsList, 'ConnectServeJobApply'>;
 
@@ -50,7 +51,11 @@ function FormInput({
 
 export default function ServeJobPageApply({ navigation, route }: Props) {
   const palette = useServePalette();
-  const job = getServeJobById(route.params.jobId);
+  const { serve } = useConnectPortalData();
+  const job =
+    [...serve.publicRecords, ...serve.organizerRecords].find(
+      (record) => record.id === route.params.jobId
+    ) || null;
 
   // State
   const [agreed, setAgreed] = useState(false);
@@ -73,7 +78,9 @@ export default function ServeJobPageApply({ navigation, route }: Props) {
           ]}
         >
           <Text style={[styles.jobSummaryEyebrow, { color: palette.subText }]}>Applying for</Text>
-          <Text style={[styles.jobSummaryTitle, { color: palette.text }]}>{job.title}</Text>
+          <Text style={[styles.jobSummaryTitle, { color: palette.text }]}>
+            {job?.title || 'Serve opportunity'}
+          </Text>
         </View>
 
         {/* Profile Photo Section */}

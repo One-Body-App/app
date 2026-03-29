@@ -70,5 +70,11 @@ export type PendingVideoUpload = {
   processedHeight?: number;
   uploadId?: string;
   lastError?: string;
-  failureCode?: 'nsfw-blocked' | 'missing-source' | 'invalid-edit' | 'network' | 'processing';
+  failureCode?:
+    | 'nsfw-blocked'
+    | 'moderation-failed'
+    | 'missing-source'
+    | 'invalid-edit'
+    | 'network'
+    | 'processing';
 };
