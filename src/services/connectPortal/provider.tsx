@@ -6,7 +6,9 @@ import { RootState } from '@/src/redux/reducers/rootReducer';
 import ApiCall from '@/src/services/api';
 import type { ConnectTab } from '@/src/screens/connectportal/data';
 import {
+  getConnectEventTypeOptions,
   getConnectPortalPlaceFilterOptions,
+  getConnectServeRoleOptions,
   getConnectPortalCacheSnapshot,
   getDefaultConnectPlaceFilters,
   listConnectServeOrganizerJobs,
@@ -14,6 +16,7 @@ import {
   listConnectPortalPlaces,
   refreshConnectPortalPublishedEvents,
 } from './index';
+import { CONNECT_DEFAULT_SERVE_ROLE_OPTIONS } from './defaultServeRoles';
 import type {
   ConnectGoFilters,
   ConnectGoQuickChip,
@@ -76,7 +79,6 @@ type ConnectPortalContextValue = {
     sortOptions: ConnectPlaceFilterOption[];
     eventTypeOptions: ConnectPlaceFilterOption[];
     categoryOptions: ConnectPlaceFilterOption[];
-    modeOptions: ConnectPlaceFilterOption[];
     setQuickChip: (chip: ConnectGoQuickChip) => void;
     setFilterSheetOpen: (value: boolean) => void;
     setFilters: (updater: Partial<ConnectGoFilters>) => void;
@@ -93,7 +95,6 @@ type ConnectPortalContextValue = {
     error: ConnectPortalError;
     sortOptions: ConnectPlaceFilterOption[];
     roleTypeOptions: ConnectPlaceFilterOption[];
-    tagOptions: ConnectPlaceFilterOption[];
     setQuickChip: (chip: ConnectServeQuickChip) => void;
     setFilterSheetOpen: (value: boolean) => void;
     setFilters: (updater: Partial<ConnectServeFilters>) => void;
@@ -125,24 +126,17 @@ const DEFAULT_GO_FILTERS: ConnectGoFilters = {
   sort: 'upcoming',
   eventType: '',
   category: '',
-  mode: '',
 };
 
 const DEFAULT_SERVE_FILTERS: ConnectServeFilters = {
   sort: 'alphabetical',
   roleType: '',
-  tag: '',
 };
 
 const GO_SORT_OPTIONS: ConnectPlaceFilterOption[] = [
   { label: 'Upcoming', value: 'upcoming' },
   { label: 'Alphabetical', value: 'alphabetical' },
   { label: 'Recently updated', value: 'recently_updated' },
-];
-
-const GO_MODE_OPTIONS: ConnectPlaceFilterOption[] = [
-  { label: 'Online', value: 'online' },
-  { label: 'In Person', value: 'in_person' },
 ];
 
 const SERVE_SORT_OPTIONS: ConnectPlaceFilterOption[] = [
@@ -164,9 +158,6 @@ const uniqueOptions = (values: string[]) =>
     label: toTitleCase(value),
     value,
   }));
-
-const getServeRoleType = (job: Pick<ConnectServeJobRecord, 'opportunityType'>) =>
-  job.opportunityType;
 
 const ConnectPortalContext = createContext<ConnectPortalContextValue | null>(null);
 
@@ -224,6 +215,13 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
   const [goFilters, setGoFilters] = useState<ConnectGoFilters>(DEFAULT_GO_FILTERS);
   const [goQuickChip, setGoQuickChip] = useState<ConnectGoQuickChip>('Upcoming');
   const [goFilterSheetOpen, setGoFilterSheetOpen] = useState(false);
+  const [connectFilterOptions, setConnectFilterOptions] = useState<{
+    goEventTypeOptions: ConnectPlaceFilterOption[];
+    serveRoleOptions: ConnectPlaceFilterOption[];
+  }>({
+    goEventTypeOptions: [],
+    serveRoleOptions: CONNECT_DEFAULT_SERVE_ROLE_OPTIONS,
+  });
   const [servePublicJobs, setServePublicJobs] = useState<ConnectServeJobPublished[]>([]);
   const [serveOrganizerJobs, setServeOrganizerJobs] = useState<ConnectServeJobRecord[]>([]);
   const [serveLoading, setServeLoading] = useState(true);
@@ -307,11 +305,32 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
 
   useEffect(() => {
     refresh();
-    getConnectPortalPlaceFilterOptions().then((result) => {
-      setOrganizationTypes(result.organizationTypes);
-      setChurchTypes(result.churchTypes);
-      setSortOptions(result.sortOptions);
-    });
+    Promise.all([
+      getConnectPortalPlaceFilterOptions(),
+      getConnectEventTypeOptions(),
+      getConnectServeRoleOptions(),
+    ])
+      .then(([placeOptions, eventTypeOptions, nextServeRoleOptions]) => {
+        setOrganizationTypes(placeOptions.organizationTypes);
+        setChurchTypes(placeOptions.churchTypes);
+        setSortOptions(placeOptions.sortOptions);
+        setConnectFilterOptions({
+          goEventTypeOptions: eventTypeOptions,
+          serveRoleOptions:
+            nextServeRoleOptions.length > 0
+              ? nextServeRoleOptions
+              : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS,
+        });
+      })
+      .catch(() => {
+        setConnectFilterOptions((previous) => ({
+          ...previous,
+          serveRoleOptions:
+            previous.serveRoleOptions.length > 0
+              ? previous.serveRoleOptions
+              : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS,
+        }));
+      });
   }, [refresh]);
 
   useEffect(() => {
@@ -398,11 +417,6 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
     [dispatch, isFollowing, token]
   );
 
-  const goEventTypeOptions = useMemo(
-    () => uniqueOptions(snapshot.publicPublished.map((record) => record.eventType)),
-    [snapshot.publicPublished]
-  );
-
   const goCategoryOptions = useMemo(
     () => uniqueOptions(snapshot.publicPublished.map((record) => record.category)),
     [snapshot.publicPublished]
@@ -424,15 +438,13 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
     [serveOrganizerJobs]
   );
 
-  const serveRoleTypeOptions = useMemo(
-    () => uniqueOptions(servePublicJobs.map((job) => getServeRoleType(job))),
-    [servePublicJobs]
-  );
+  const serveRoleTypeOptions = useMemo(() => {
+    if (connectFilterOptions.serveRoleOptions.length > 0) {
+      return connectFilterOptions.serveRoleOptions;
+    }
 
-  const serveTagOptions = useMemo(
-    () => uniqueOptions(servePublicJobs.map((job) => job.sector)),
-    [servePublicJobs]
-  );
+    return CONNECT_DEFAULT_SERVE_ROLE_OPTIONS;
+  }, [connectFilterOptions.serveRoleOptions]);
 
   const value = useMemo(
     () => ({
@@ -483,9 +495,8 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
         quickChip: goQuickChip,
         filterSheetOpen: goFilterSheetOpen,
         sortOptions: GO_SORT_OPTIONS,
-        eventTypeOptions: goEventTypeOptions,
+        eventTypeOptions: connectFilterOptions.goEventTypeOptions,
         categoryOptions: goCategoryOptions,
-        modeOptions: GO_MODE_OPTIONS,
         setQuickChip: setGoQuickChip,
         setFilterSheetOpen: setGoFilterSheetOpen,
         setFilters: (updater: Partial<ConnectGoFilters>) => {
@@ -507,7 +518,6 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
         error: serveError,
         sortOptions: SERVE_SORT_OPTIONS,
         roleTypeOptions: serveRoleTypeOptions,
-        tagOptions: serveTagOptions,
         setQuickChip: setServeQuickChip,
         setFilterSheetOpen: setServeFilterSheetOpen,
         setFilters: (updater: Partial<ConnectServeFilters>) => {
@@ -541,7 +551,7 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       goFilters,
       goQuickChip,
       goFilterSheetOpen,
-      goEventTypeOptions,
+      connectFilterOptions,
       goCategoryOptions,
       servePublicJobs,
       servePublishedOrganizerRecords,
@@ -552,7 +562,6 @@ export function ConnectPortalProvider({ children }: PropsWithChildren): React.JS
       serveQuickChip,
       serveFilterSheetOpen,
       serveRoleTypeOptions,
-      serveTagOptions,
       currentUser?.profile?.location?.address,
       currentUser?.profile?.location?.coordinates?.lat,
       currentUser?.profile?.location?.coordinates?.lon,

@@ -519,7 +519,6 @@ function DateLocationScreen({ navigation, route }: Props): React.JSX.Element {
         setLocation={handleAddressSelection}
         modalTitle={<Text style={[styles.mapTitle, { color: palette.textPrimary }]}>Address</Text>}
         types={[MapBoxTypes.address, MapBoxTypes.poi, MapBoxTypes.place]}
-        hideSearchMyLocation
       />
 
       <DatePicker

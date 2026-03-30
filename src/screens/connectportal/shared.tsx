@@ -57,7 +57,6 @@ import type {
   ConnectPlaceFilters,
   ConnectPlaceRecord,
   ConnectPlacesQuickChip,
-  ConnectQuickChip,
   ConnectServeFilters,
   ConnectServeQuickChip,
 } from '@/src/services/connectPortal';
@@ -155,11 +154,16 @@ type ConnectGlassTabBarProps = {
   onTabChange: (tab: ConnectTab) => void;
 };
 
-type QuickChipProps<T extends ConnectQuickChip = ConnectQuickChip> = {
-  selectedChip: T;
+type QuickChipProps<T extends string = ConnectPlacesQuickChip> = {
+  selectedChip?: T | null;
   onSelect: (chip: T) => void;
   chips?: T[];
   variant?: 'default' | 'bottomOverlay';
+  actionChip?: {
+    label: string;
+    onPress: () => void;
+    testID?: string;
+  };
 };
 
 type ConnectPortalFilterSheetProps = {
@@ -179,7 +183,9 @@ type ConnectPortalFilterSheetProps = {
     sortOptions: ConnectPlaceFilterOption[];
     eventTypeOptions: ConnectPlaceFilterOption[];
     categoryOptions: ConnectPlaceFilterOption[];
-    modeOptions: ConnectPlaceFilterOption[];
+    quickFilterOptions: ConnectPlaceFilterOption[];
+    quickFilterValue: ConnectGoQuickChip;
+    onQuickFilterChange: (value: ConnectGoQuickChip) => void;
     onApply: (updates: Partial<ConnectGoFilters>) => void;
     onReset: () => void;
   };
@@ -187,7 +193,6 @@ type ConnectPortalFilterSheetProps = {
     filters: ConnectServeFilters;
     sortOptions: ConnectPlaceFilterOption[];
     roleTypeOptions: ConnectPlaceFilterOption[];
-    tagOptions: ConnectPlaceFilterOption[];
     onApply: (updates: Partial<ConnectServeFilters>) => void;
     onReset: () => void;
   };
@@ -1507,14 +1512,103 @@ export function ConnectMapMarker({ iconName, active = false }: ConnectMapMarkerP
   );
 }
 
-export function ConnectPlacesQuickChips<T extends ConnectQuickChip = ConnectPlacesQuickChip>({
+export function ConnectPlacesQuickChips<T extends string = ConnectPlacesQuickChip>({
   selectedChip,
   onSelect,
   chips,
   variant = 'default',
+  actionChip,
 }: QuickChipProps<T>) {
   const palette = useConnectPalette();
   const resolvedChips: T[] = chips ?? (CONNECT_PLACE_QUICK_CHIPS as unknown as T[]);
+  const chipShadowOffset =
+    Platform.OS === 'android' ? { width: 0, height: 0 } : { width: 0, height: 3 };
+
+  const renderChip = ({
+    key,
+    label,
+    isActive,
+    onPress,
+    testID,
+  }: {
+    key: string;
+    label: string;
+    isActive: boolean;
+    onPress: () => void;
+    testID?: string;
+  }) => {
+    const isBottomOverlay = variant === 'bottomOverlay';
+    let chipShadowOpacity = 0;
+    if (Platform.OS !== 'android') {
+      chipShadowOpacity = isActive ? 0.16 : 0.1;
+    }
+    let chipShadowRadius = 0;
+    if (Platform.OS !== 'android') {
+      chipShadowRadius = isActive ? 7 : 5;
+    }
+    let chipElevation = 0;
+    if (Platform.OS !== 'android') {
+      chipElevation = isActive ? 4 : 2;
+    }
+
+    return (
+      <TouchableOpacity
+        key={key}
+        testID={testID}
+        activeOpacity={0.9}
+        onPress={onPress}
+        style={[
+          styles.quickChip,
+          isBottomOverlay
+            ? [
+                styles.quickChipBottomOverlay,
+                {
+                  backgroundColor: isActive ? palette.chipGlassActive : palette.chipGlassBg,
+                  borderWidth: 1,
+                  borderColor: isActive ? palette.chipGlassActive : palette.chipGlassBorder,
+                  shadowColor: '#000',
+                  shadowOpacity: chipShadowOpacity,
+                  shadowRadius: chipShadowRadius,
+                  shadowOffset: chipShadowOffset,
+                  elevation: chipElevation,
+                },
+              ]
+            : { backgroundColor: palette.chip },
+          isActive && !isBottomOverlay
+            ? [styles.quickChipActive, { backgroundColor: palette.chipActive }]
+            : null,
+        ]}
+      >
+        {isBottomOverlay ? (
+          <BlurView
+            blurType={palette.isDark ? 'dark' : 'light'}
+            blurAmount={12}
+            style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+          />
+        ) : null}
+        <StyledText
+          style={[
+            styles.quickChipText,
+            isBottomOverlay ? styles.quickChipTextBottomOverlay : null,
+            {
+              color: variant === 'bottomOverlay' ? palette.chipGlassMutedText : palette.textPrimary,
+            },
+            isActive
+              ? [
+                  styles.quickChipTextActive,
+                  {
+                    color: palette.activeChipText,
+                  },
+                ]
+              : null,
+          ]}
+        >
+          {label}
+        </StyledText>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <ScrollView
       horizontal
@@ -1527,78 +1621,22 @@ export function ConnectPlacesQuickChips<T extends ConnectQuickChip = ConnectPlac
     >
       {resolvedChips.map((chip) => {
         const isActive = chip === selectedChip;
-        const isBottomOverlay = variant === 'bottomOverlay';
-        let chipShadowOpacity = 0;
-        if (Platform.OS !== 'android') {
-          chipShadowOpacity = isActive ? 0.16 : 0.1;
-        }
-        let chipShadowRadius = 0;
-        if (Platform.OS !== 'android') {
-          chipShadowRadius = isActive ? 7 : 5;
-        }
-        const chipShadowOffset =
-          Platform.OS === 'android' ? { width: 0, height: 0 } : { width: 0, height: 3 };
-        let chipElevation = 0;
-        if (Platform.OS !== 'android') {
-          chipElevation = isActive ? 4 : 2;
-        }
-        return (
-          <TouchableOpacity
-            key={chip}
-            activeOpacity={0.9}
-            onPress={() => onSelect(chip)}
-            style={[
-              styles.quickChip,
-              isBottomOverlay
-                ? [
-                    styles.quickChipBottomOverlay,
-                    {
-                      backgroundColor: isActive ? palette.chipGlassActive : palette.chipGlassBg,
-                      borderWidth: 1,
-                      borderColor: isActive ? palette.chipGlassActive : palette.chipGlassBorder,
-                      shadowColor: '#000',
-                      shadowOpacity: chipShadowOpacity,
-                      shadowRadius: chipShadowRadius,
-                      shadowOffset: chipShadowOffset,
-                      elevation: chipElevation,
-                    },
-                  ]
-                : { backgroundColor: palette.chip },
-              isActive && !isBottomOverlay
-                ? [styles.quickChipActive, { backgroundColor: palette.chipActive }]
-                : null,
-            ]}
-          >
-            {isBottomOverlay && (
-              <BlurView
-                blurType={palette.isDark ? 'dark' : 'light'}
-                blurAmount={12}
-                style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
-              />
-            )}
-            <StyledText
-              style={[
-                styles.quickChipText,
-                isBottomOverlay ? styles.quickChipTextBottomOverlay : null,
-                {
-                  color:
-                    variant === 'bottomOverlay' ? palette.chipGlassMutedText : palette.textPrimary,
-                },
-                isActive
-                  ? [
-                      styles.quickChipTextActive,
-                      {
-                        color: palette.activeChipText,
-                      },
-                    ]
-                  : null,
-              ]}
-            >
-              {chip}
-            </StyledText>
-          </TouchableOpacity>
-        );
+        return renderChip({
+          key: String(chip),
+          label: String(chip),
+          isActive,
+          onPress: () => onSelect(chip),
+        });
       })}
+      {actionChip
+        ? renderChip({
+            key: `action-${actionChip.label}`,
+            label: actionChip.label,
+            isActive: false,
+            onPress: actionChip.onPress,
+            testID: actionChip.testID,
+          })
+        : null}
     </ScrollView>
   );
 }
@@ -1729,8 +1767,8 @@ export function ConnectPortalFilterSheet({
         {renderOptionGroup('Category', go.categoryOptions, go.filters.category, (value) =>
           go.onApply({ category: value })
         )}
-        {renderOptionGroup('Mode', go.modeOptions, go.filters.mode, (value) =>
-          go.onApply({ mode: value as ConnectGoFilters['mode'] })
+        {renderOptionGroup('Quick Filter', go.quickFilterOptions, go.quickFilterValue, (value) =>
+          go.onQuickFilterChange((value || 'Upcoming') as ConnectGoQuickChip)
         )}
       </>
     );
@@ -1742,11 +1780,8 @@ export function ConnectPortalFilterSheet({
         {renderOptionGroup('Sort', serve.sortOptions, serve.filters.sort, (value) =>
           serve.onApply({ sort: (value || 'alphabetical') as ConnectServeFilters['sort'] })
         )}
-        {renderOptionGroup('Role Type', serve.roleTypeOptions, serve.filters.roleType, (value) =>
+        {renderOptionGroup('Role', serve.roleTypeOptions, serve.filters.roleType, (value) =>
           serve.onApply({ roleType: value })
-        )}
-        {renderOptionGroup('Tags', serve.tagOptions, serve.filters.tag, (value) =>
-          serve.onApply({ tag: value })
         )}
       </>
     );

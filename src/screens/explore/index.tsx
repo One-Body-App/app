@@ -16,7 +16,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  type ViewToken,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -34,7 +33,6 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { differenceInHours, format, parseISO } from 'date-fns';
-import Video from 'react-native-video';
 import { getHeight } from '@/utils/ResponsiveFun';
 import { RootState } from '@/src/redux/reducers/rootReducer';
 import { getUserProfile } from '@/src/redux/actions/UserAction';
@@ -89,7 +87,6 @@ import {
   WatchPost,
 } from '@/utils/types';
 import { refreshConnectPortalPublishedEvents } from '@/src/services/connectPortal';
-import getDeviceLocation from '@/src/services/deviceLocation';
 import type { ConnectPortalPublishedEvent } from '@/src/services/connectPortal/types';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import TrendingTopicsBubbles, {
@@ -200,19 +197,6 @@ type ExploreSearchResult =
   | SearchWatchResult
   | SearchServeGoResult;
 
-interface TrendingNowItem {
-  id: string;
-  backgroundImageUri: string;
-  title: string;
-  isLive: boolean;
-  metaIcon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-  metaText: string;
-  aspectRatio: '16:9' | '4:3' | '1:1';
-  playBackId?: string;
-  mediaUrl?: string;
-  watchPost: WatchPost;
-}
-
 interface NewCreatorItem {
   id: string;
   avatarUri: string;
@@ -228,14 +212,6 @@ interface ServeOpportunityItem {
   title: string;
   organization: string;
   distance: string;
-}
-
-interface GoEventItem {
-  id: string;
-  backgroundImageUri: string;
-  dateString: string;
-  title: string;
-  buttonText: string;
 }
 
 interface CommunityPrayerItem {
@@ -400,10 +376,6 @@ function Explore({ navigation }: Props) {
   const [popularTopicItems, setPopularTopicItems] =
     useState<TrendingTopicBubbleItem[]>(TRENDING_TOPICS_MOCK_DATA);
   const [isRefreshingBrowse, setIsRefreshingBrowse] = useState(false);
-  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
-    null
-  );
-  const [visibleVideoId, setVisibleVideoId] = useState<string | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const chipOffset = useRef(new Animated.Value(0)).current;
   const lastSearchScrollYRef = useRef(0);
@@ -1020,8 +992,6 @@ function Explore({ navigation }: Props) {
 
   const fetchAllSections = useCallback(async () => {
     setIsRefreshingBrowse(true);
-    const location = await getDeviceLocation().catch(() => null);
-    setUserCoords(location);
     await Promise.allSettled([
       fetchTrending(),
       fetchNewVoices(),
@@ -1113,14 +1083,14 @@ function Explore({ navigation }: Props) {
 
   const handleOpenWatchPost = useCallback(
     (watchItem: WatchPost) => {
-      navigation.push(
-        'WatchPortal' as never,
-        {
+      navigation
+        .getParent()
+        ?.getParent()
+        ?.navigate('WatchPortal', {
           initialPostId: String(watchItem.postId ?? watchItem.id ?? ''),
           initialPlaybackId: watchItem.playBackId,
           initialWatchPost: watchItem,
-        } as never
-      );
+        });
     },
     [navigation]
   );
@@ -1362,7 +1332,6 @@ function Explore({ navigation }: Props) {
       col.map((item) => {
         const ar = getAspectRatio(item);
         const itemId = String(item.postId ?? item.id ?? '');
-        const isVisible = visibleVideoId === itemId;
         const thumbnail = getMuxThumbnail(item.playBackId, item.mediaUrl);
         return (
           <TouchableOpacity
@@ -1372,22 +1341,11 @@ function Explore({ navigation }: Props) {
             style={styles.masonryCard}
           >
             <View style={[styles.masonryImageWrap, { aspectRatio: ar }]}>
-              {isVisible && item.playBackId ? (
-                <Video
-                  source={{ uri: `https://stream.mux.com/${item.playBackId}.m3u8` }}
-                  style={styles.masonryVideo}
-                  resizeMode="cover"
-                  muted
-                  repeat
-                  paused={!isVisible}
-                />
-              ) : (
-                <FastImage
-                  source={{ uri: thumbnail }}
-                  style={styles.masonryVideo}
-                  resizeMode={FastImage.resizeMode.cover}
-                />
-              )}
+              <FastImage
+                source={{ uri: thumbnail }}
+                style={styles.masonryVideo}
+                resizeMode={FastImage.resizeMode.cover}
+              />
             </View>
             <StyledText
               numberOfLines={2}
@@ -1726,10 +1684,13 @@ function Explore({ navigation }: Props) {
                     activeOpacity={0.9}
                     style={styles.goEventCard}
                     onPress={() => {
-                      navigation.push(
-                        'ConnectGoEventView' as never,
-                        { eventId: event._id ?? event.id } as never
-                      );
+                      navigation.navigate('Main', {
+                        screen: 'ConnectTab',
+                        params: {
+                          screen: 'ConnectGoEventView',
+                          params: { eventId: event._id ?? event.id },
+                        },
+                      });
                     }}
                   >
                     <ImageBackground
@@ -1763,10 +1724,13 @@ function Explore({ navigation }: Props) {
                     key={`list-${event._id ?? event.id}`}
                     style={styles.goEventRow}
                     onPress={() => {
-                      navigation.push(
-                        'ConnectGoEventView' as never,
-                        { eventId: event._id ?? event.id } as never
-                      );
+                      navigation.navigate('Main', {
+                        screen: 'ConnectTab',
+                        params: {
+                          screen: 'ConnectGoEventView',
+                          params: { eventId: event._id ?? event.id },
+                        },
+                      });
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>

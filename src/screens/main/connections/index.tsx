@@ -28,8 +28,6 @@ import { Interest, User } from '@/utils/types';
 import useMountEffect from '@/src/hooks/useMountEffect';
 
 import { Typography } from '@/src/styles';
-import StyledTextInput from '@/components/styled/TextInput';
-import SearchIcon from '@/assets/icons/search.svg';
 import StyledText from '@/components/styled/Text';
 import { spacing } from '@/src/styles/spacing';
 
@@ -86,7 +84,7 @@ function Connected({ navigation }: Props) {
   }, []);
 
   const [filter, setFilter] = useState<'connectors' | 'connected'>('connected');
-  const [searchChannelsText, setSearchChannelsText] = useState<string>('');
+  const [searchChannelsText] = useState<string>('');
   const [isListLoading, setIsListLoading] = useState<boolean>(false);
 
   const [following, setFollowing] = useState<User[]>([]);
@@ -344,30 +342,10 @@ function Connected({ navigation }: Props) {
       <View style={[styles.flex1, { backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={[styles.headerContainer, { backgroundColor: colors.card }]}>
-          {/* Search Bar */}
-          <View style={styles.searchWrapper}>
-            <View style={styles.searchIconWrapper}>
-              <SearchIcon style={{ height: 18, width: 18 }} stroke={OBPalette.grays[500]} />
-            </View>
-            <StyledTextInput
-              wrapperStyle={styles.searchInputWrapper}
-              inputWrapperStyle={styles.searchInputInnerWrapper}
-              style={styles.searchInputText}
-              backgroundColor="transparent"
-              value={searchChannelsText}
-              returnKeyType="search"
-              placeholder="Search connections..."
-              placeholderTextColor={OBPalette.grays[500]}
-              clearButtonMode="always"
-              onChangeText={setSearchChannelsText}
-            />
-          </View>
-
           <GlassTabBar
             tabs={tabLabels}
             activeIndex={activeTabIndex}
             onTabChange={handleTabChange}
-            style={{ marginTop: 12 }}
           />
         </View>
 
@@ -549,36 +527,10 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: 6,
+    paddingBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: OBPalette.grays[100],
-  },
-  searchWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: OBPalette.grays[100],
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 44,
-  },
-  searchIconWrapper: {
-    marginRight: 8,
-  },
-  searchInputWrapper: {
-    flex: 1,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
-  searchInputInnerWrapper: {
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    paddingHorizontal: 0,
-  },
-  searchInputText: {
-    fontSize: 15,
-    color: OBPalette.grays.black,
-    borderWidth: 0,
   },
   listContentContainer: {
     flexGrow: 1,

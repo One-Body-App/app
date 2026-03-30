@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -55,7 +56,7 @@ const showOptionPicker = (
     return;
   }
 
-  if (ActionSheetIOS?.showActionSheetWithOptions) {
+  if (Platform.OS === 'ios') {
     ActionSheetIOS.showActionSheetWithOptions(
       {
         title,
@@ -220,7 +221,7 @@ export default function ServeCreateJobStep2({ navigation, route }: Props): React
               { color: opportunityType ? palette.inputText : palette.inputPlaceholder },
             ]}
           >
-            {opportunityType || 'Choose the role type'}
+            {opportunityType || 'Choose the opportunity type'}
           </Text>
           <MaterialCommunityIcons name="chevron-down" size={20} color={palette.inputPlaceholder} />
         </TouchableOpacity>

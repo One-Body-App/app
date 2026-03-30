@@ -250,9 +250,9 @@ export type ConnectStackParamsList = {
     draftId: string;
   };
   ConnectPlacesHome: undefined;
-  ConnectServeHome: undefined;
-  ConnectServeSaved: undefined;
-  ConnectServeApplied: undefined;
+  ConnectServeHome: { _animation?: 'slide_from_right' | 'slide_from_left' } | undefined;
+  ConnectServeSaved: { _animation?: 'slide_from_right' | 'slide_from_left' } | undefined;
+  ConnectServeApplied: { _animation?: 'slide_from_right' | 'slide_from_left' } | undefined;
   ConnectServeJobView: {
     jobId: string;
   };

@@ -248,15 +248,15 @@ export function ServeHeader({
   );
 }
 
-type ServeHubTab = 'My Jobs' | 'Applied' | 'Saved';
+type ServeHubTab = 'Created' | 'Applied' | 'Saved';
 
 const HUB_TAB_CONFIG: Array<{
   label: ServeHubTab;
   route: 'ConnectServeHome' | 'ConnectServeSaved' | 'ConnectServeApplied';
 }> = [
-  { label: 'My Jobs', route: 'ConnectServeHome' },
   { label: 'Applied', route: 'ConnectServeApplied' },
   { label: 'Saved', route: 'ConnectServeSaved' },
+  { label: 'Created', route: 'ConnectServeHome' },
 ];
 
 type ServeHubTabsProps = {
@@ -270,10 +270,12 @@ export function ServeHubTabs({
   navigation,
   palette,
 }: ServeHubTabsProps): React.JSX.Element {
+  const activeIndex = HUB_TAB_CONFIG.findIndex((t) => t.label === activeTab);
+
   return (
     <View style={[styles.tabContainer, { borderBottomColor: palette.borderColor }]}>
       <View style={styles.tabScroll}>
-        {HUB_TAB_CONFIG.map((tab) => {
+        {HUB_TAB_CONFIG.map((tab, index) => {
           const isActive = tab.label === activeTab;
 
           return (
@@ -281,7 +283,8 @@ export function ServeHubTabs({
               key={tab.label}
               style={[styles.tab, isActive ? { borderBottomColor: palette.text } : null]}
               onPress={() => {
-                navigation.navigate(tab.route);
+                const animation = index > activeIndex ? 'slide_from_right' : 'slide_from_left';
+                navigation.navigate(tab.route, { _animation: animation });
               }}
             >
               <Text

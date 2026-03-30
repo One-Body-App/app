@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -8,7 +8,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
@@ -66,7 +65,6 @@ import {
   APP_HEADER_BACKGROUND_LIGHT,
   APP_HEADER_BORDER_DARK,
   APP_HEADER_BORDER_LIGHT,
-  APP_HEADER_CONTENT_GAP,
   APP_HEADER_HORIZONTAL_INSET,
   APP_HEADER_ROW_HEIGHT,
   APP_HEADER_ROW_OFFSET,
@@ -148,10 +146,9 @@ function ChatListScreen({ navigation }: Props) {
   const token = useSelector((state: RootState) => state.auth.userToken);
   const currentUser = useSelector((state: RootState) => state.auth.getProfileData);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
+  const [query] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<ChatSectionFilter>('inbox');
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
-  const searchInputRef = useRef<TextInput>(null);
   const selectedFilterIndex = CHAT_FILTER_TABS.findIndex((tab) => tab.value === selectedFilter);
 
   const refreshConversations = useCallback(async () => {
@@ -914,17 +911,6 @@ function ChatListScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View style={[styles.searchWrap, { backgroundColor: colors.card }]}>
-          <MaterialIcons name="search" size={20} color={colors.text} />
-          <TextInput
-            ref={searchInputRef}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search conversations..."
-            placeholderTextColor={colors.text}
-            style={[styles.searchInput, { color: colors.text }]}
-          />
-        </View>
         <View style={styles.filterBarWrap} testID="chat-filter-tabs">
           <GlassTabBar
             tabs={CHAT_FILTER_TABS.map((tab) => tab.label)}
@@ -1014,22 +1000,9 @@ const styles = StyleSheet.create({
     letterSpacing: APP_HEADER_TITLE_LETTER_SPACING,
     textAlign: Platform.OS === 'android' ? 'left' : 'center',
   },
-  searchWrap: {
-    borderRadius: 16,
-    minHeight: Platform.OS === 'android' ? 46 : 52,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginTop: Platform.OS === 'android' ? spacing.x5 : APP_HEADER_CONTENT_GAP,
-  },
   filterBarWrap: {
-    paddingTop: Platform.OS === 'android' ? spacing.x5 : APP_HEADER_CONTENT_GAP,
-    paddingBottom: Platform.OS === 'android' ? 4 : 8,
-  },
-  searchInput: {
-    marginLeft: 8,
-    flex: 1,
-    fontSize: 15,
+    paddingTop: Platform.OS === 'android' ? 4 : 6,
+    paddingBottom: Platform.OS === 'android' ? 4 : 6,
   },
   encryptedWrap: {
     position: 'absolute',

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +21,7 @@ import {
   parseConnectServeRequirements,
   saveConnectServeJobDraft,
 } from '@/src/services/connectPortal';
+import { CONNECT_DEFAULT_SERVE_ROLE_OPTIONS } from '@/src/services/connectPortal/defaultServeRoles';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import { CreateFlowLayout, useCreateFlowPalette } from '../../go/createflow/shared';
 import useMountEffect from '@/src/hooks/useMountEffect';
@@ -36,14 +38,7 @@ const VISIBILITY_OPTIONS: SelectOption[] = [
   { label: 'Private', value: 'private' },
 ];
 
-const SECTOR_OPTIONS: SelectOption[] = [
-  { label: 'Administration', value: 'Administration' },
-  { label: 'Ministry', value: 'Ministry' },
-  { label: 'Operations', value: 'Operations' },
-  { label: 'Worship', value: 'Worship' },
-  { label: 'Media', value: 'Media' },
-  { label: 'Education', value: 'Education' },
-];
+const OTHER_ROLE_VALUE = '__other__';
 
 const createAddressSuggestionFromDraft = (
   address: string,
@@ -84,7 +79,7 @@ const showOptionPicker = (
     return;
   }
 
-  if (ActionSheetIOS?.showActionSheetWithOptions) {
+  if (Platform.OS === 'ios') {
     ActionSheetIOS.showActionSheetWithOptions(
       {
         title,
@@ -120,7 +115,8 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
   const [loading, setLoading] = useState(true);
   const [draftId, setDraftId] = useState(route.params?.draftId);
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
-  const [sector, setSector] = useState('');
+  const [selectedRoleValue, setSelectedRoleValue] = useState('');
+  const [customRole, setCustomRole] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [requirementsText, setRequirementsText] = useState('');
@@ -129,39 +125,110 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
   const [addressSuggestion, setAddressSuggestion] = useState<MapSuggestion | null>(null);
   const [addressPickerVisible, setAddressPickerVisible] = useState(false);
 
+  const roleOptions = useMemo(() => {
+    const seenValues = new Set<string>();
+    const baseOptions =
+      serve.roleTypeOptions && serve.roleTypeOptions.length > 0
+        ? serve.roleTypeOptions
+        : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS;
+    const mergedOptions = baseOptions.filter((option) => {
+      const normalizedValue = option.value.trim().toLowerCase();
+      if (!normalizedValue || seenValues.has(normalizedValue)) {
+        return false;
+      }
+
+      seenValues.add(normalizedValue);
+      return true;
+    });
+
+    return [...mergedOptions, { label: 'Other', value: OTHER_ROLE_VALUE }];
+  }, [serve.roleTypeOptions]);
+
   useMountEffect(() => {
     let isActive = true;
 
     (async () => {
-      const draft = route.params?.draftId
-        ? await getConnectServeJobDraftById(route.params.draftId)
-        : await createConnectServeJobDraft();
+      try {
+        if (!route.params?.draftId) {
+          setLoading(false);
+          return;
+        }
 
-      if (!isActive) {
-        return;
+        const draft = await getConnectServeJobDraftById(route.params.draftId);
+
+        if (!isActive) {
+          return;
+        }
+
+        if (!draft) {
+          Alert.alert(
+            'Unable to start opportunity',
+            'Please try again in a moment.',
+            [{ text: 'OK', onPress: () => navigation.navigate('ConnectServeHome') }],
+            { cancelable: false }
+          );
+          return;
+        }
+
+        setDraftId(draft.id);
+        setVisibility(draft.visibility);
+        const matchingRole = roleOptions.find(
+          (option) =>
+            option.value !== OTHER_ROLE_VALUE &&
+            option.value.trim().toLowerCase() === draft.title.trim().toLowerCase()
+        );
+        if (matchingRole) {
+          setSelectedRoleValue(matchingRole.value);
+          setCustomRole('');
+        } else if (draft.title.trim()) {
+          setSelectedRoleValue(OTHER_ROLE_VALUE);
+          setCustomRole(draft.title);
+        }
+        setTitle(draft.title);
+        setDescription(draft.description);
+        setRequirementsText(formatConnectServeRequirementsText(draft.requirements));
+        setAddress(draft.address);
+        setCoordinate(draft.coordinate);
+        setAddressSuggestion(createAddressSuggestionFromDraft(draft.address, draft.coordinate));
+        setLoading(false);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        Alert.alert(
+          'Unable to start opportunity',
+          'Please try again in a moment.',
+          [{ text: 'OK', onPress: () => navigation.navigate('ConnectServeHome') }],
+          { cancelable: false }
+        );
       }
-
-      if (!draft) {
-        navigation.navigate('ConnectServeHome');
-        return;
-      }
-
-      setDraftId(draft.id);
-      setVisibility(draft.visibility);
-      setSector(draft.sector);
-      setTitle(draft.title);
-      setDescription(draft.description);
-      setRequirementsText(formatConnectServeRequirementsText(draft.requirements));
-      setAddress(draft.address);
-      setCoordinate(draft.coordinate);
-      setAddressSuggestion(createAddressSuggestionFromDraft(draft.address, draft.coordinate));
-      setLoading(false);
     })();
 
     return () => {
       isActive = false;
     };
   });
+
+  const ensureDraftId = async (completedStep: 0 | 1) => {
+    if (draftId) {
+      return draftId;
+    }
+
+    const createdDraft = await createConnectServeJobDraft({
+      visibility,
+      title,
+      description,
+      requirements: parseConnectServeRequirements(requirementsText),
+      address,
+      coordinate,
+      locationQuery: address,
+      lastCompletedStep: completedStep,
+    });
+
+    setDraftId(createdDraft.id);
+    return createdDraft.id;
+  };
 
   const handleAddressSelection = (value: React.SetStateAction<MapSuggestion | null>) => {
     const nextSuggestion =
@@ -179,13 +246,10 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
   };
 
   const persistDraft = async (completedStep?: 0 | 1) => {
-    if (!draftId) {
-      return null;
-    }
+    const nextDraftId = await ensureDraftId(completedStep ?? 0);
 
-    return saveConnectServeJobDraft(draftId, {
+    return saveConnectServeJobDraft(nextDraftId, {
       visibility,
-      sector,
       title,
       description,
       requirements: parseConnectServeRequirements(requirementsText),
@@ -197,34 +261,50 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
   };
 
   const nextDisabled =
-    !draftId ||
-    !sector.trim() ||
     !title.trim() ||
     !description.trim() ||
     parseConnectServeRequirements(requirementsText).length === 0 ||
     !address.trim();
 
+  const isOtherRoleSelected = selectedRoleValue === OTHER_ROLE_VALUE;
+  const roleDisplayValue = isOtherRoleSelected ? customRole : title;
+  const roleDisplayColor = roleDisplayValue ? palette.inputText : palette.inputPlaceholder;
+
   return (
     <>
       <CreateFlowLayout
-        title="Create Job"
+        title="Create an Opportunity"
         step={1}
         totalSteps={2}
         loading={loading}
         onBack={() => navigation.navigate('ConnectServeHome')}
         onSave={async () => {
-          await persistDraft(0);
-          await serve.refresh();
-          navigation.navigate('ConnectServeHome');
+          try {
+            await persistDraft(0);
+            await serve.refresh();
+            navigation.navigate('ConnectServeHome');
+          } catch (error) {
+            Alert.alert(
+              'Unable to save opportunity',
+              error instanceof Error ? error.message : 'Please try again in a moment.'
+            );
+          }
         }}
         saveLabel="Save Draft"
         onNext={async () => {
-          const draft = await persistDraft(1);
-          if (!draft) {
-            return;
+          try {
+            const draft = await persistDraft(1);
+            if (!draft) {
+              return;
+            }
+            await serve.refresh();
+            navigation.navigate('ConnectServeCreateJobStep2', { draftId: draft.id });
+          } catch (error) {
+            Alert.alert(
+              'Unable to continue',
+              error instanceof Error ? error.message : 'Please try again in a moment.'
+            );
           }
-          await serve.refresh();
-          navigation.navigate('ConnectServeCreateJobStep2', { draftId: draft.id });
         }}
         nextLabel="Next Step"
         nextDisabled={nextDisabled}
@@ -264,22 +344,27 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Sector</Text>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>Role</Text>
           <TouchableOpacity
             activeOpacity={0.85}
             style={[
               styles.inputButton,
               { backgroundColor: palette.inputBg, borderColor: palette.inputBorder },
             ]}
-            onPress={() => showOptionPicker('Sector', SECTOR_OPTIONS, setSector)}
+            onPress={() =>
+              showOptionPicker('Role', roleOptions, (value) => {
+                setSelectedRoleValue(value);
+                if (value === OTHER_ROLE_VALUE) {
+                  setTitle(customRole);
+                  return;
+                }
+
+                setTitle(value);
+              })
+            }
           >
-            <Text
-              style={[
-                styles.inputButtonText,
-                { color: sector ? palette.inputText : palette.inputPlaceholder },
-              ]}
-            >
-              {sector || 'Choose a sector'}
+            <Text style={[styles.inputButtonText, { color: roleDisplayColor }]}>
+              {roleDisplayValue || (isOtherRoleSelected ? 'Enter a custom role' : 'Choose a role')}
             </Text>
             <MaterialCommunityIcons
               name="chevron-down"
@@ -289,23 +374,28 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
           </TouchableOpacity>
         </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Job Title</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: palette.inputBg,
-                borderColor: palette.inputBorder,
-                color: palette.inputText,
-              },
-            ]}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Enter the role title"
-            placeholderTextColor={palette.inputPlaceholder}
-          />
-        </View>
+        {isOtherRoleSelected ? (
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.label, { color: palette.textPrimary }]}>Other Role</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: palette.inputBg,
+                  borderColor: palette.inputBorder,
+                  color: palette.inputText,
+                },
+              ]}
+              value={customRole}
+              onChangeText={(value) => {
+                setCustomRole(value);
+                setTitle(value);
+              }}
+              placeholder="Enter the role"
+              placeholderTextColor={palette.inputPlaceholder}
+            />
+          </View>
+        ) : null}
 
         <View style={styles.fieldGroup}>
           <Text style={[styles.label, { color: palette.textPrimary }]}>Description</Text>
@@ -328,7 +418,9 @@ export default function ServeCreateJobStep1({ navigation, route }: Props): React
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: palette.textPrimary }]}>Requirements</Text>
+          <Text style={[styles.label, { color: palette.textPrimary }]}>
+            Role & Responsibilities
+          </Text>
           <TextInput
             style={[
               styles.textarea,

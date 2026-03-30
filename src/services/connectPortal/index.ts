@@ -1020,6 +1020,13 @@ const normalizeServeJobRecord = (value: unknown): ConnectServeJobRecord | null =
     return null;
   }
 
+  let lastCompletedStep: ConnectServeJobRecord['lastCompletedStep'] = 0;
+  if (item.lastCompletedStep === 2) {
+    lastCompletedStep = 2;
+  } else if (item.lastCompletedStep === 1) {
+    lastCompletedStep = 1;
+  }
+
   const baseRecord = {
     id,
     status: normalizeServeJobStatus(item.status),
@@ -1028,7 +1035,7 @@ const normalizeServeJobRecord = (value: unknown): ConnectServeJobRecord | null =
     publishedAt: typeof item.publishedAt === 'string' ? item.publishedAt : undefined,
     visibility: normalizeServeJobVisibility(item.visibility),
     hiringStatus: normalizeServeJobHiringStatus(item.hiringStatus),
-    lastCompletedStep: item.lastCompletedStep === 2 ? 2 : item.lastCompletedStep === 1 ? 1 : 0,
+    lastCompletedStep,
     sector: String(item.sector || ''),
     title: String(item.title || ''),
     description: String(item.description || ''),
@@ -1119,20 +1126,118 @@ export const getConnectServeJobById = async (
   return normalizeServeJobRecord(result.response);
 };
 
-export const createConnectServeJobDraft = async (overrides?: {
-  visibility?: ConnectServeJobRecord['visibility'];
-  hiringStatus?: ConnectServeJobRecord['hiringStatus'];
-}): Promise<ConnectServeJobDraft> => {
+const trimStringOrUndefined = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const buildConnectServeJobDraftCreateParams = (overrides?: Partial<ConnectServeJobDraft>) => {
+  const params: Partial<ConnectServeJobDraft> = {};
+
+  if (overrides?.visibility === 'public' || overrides?.visibility === 'private') {
+    params.visibility = overrides.visibility;
+  }
+
+  if (overrides?.hiringStatus === 'open' || overrides?.hiringStatus === 'closed') {
+    params.hiringStatus = overrides.hiringStatus;
+  }
+
+  return params;
+};
+
+const buildConnectServeJobDraftUpdateParams = (updates: Partial<ConnectServeJobDraft>) => {
+  const params: Record<string, unknown> = {};
+
+  if (updates.visibility === 'public' || updates.visibility === 'private') {
+    params.visibility = updates.visibility;
+  }
+
+  if (updates.hiringStatus === 'open' || updates.hiringStatus === 'closed') {
+    params.hiringStatus = updates.hiringStatus;
+  }
+
+  if (updates.sector !== undefined) {
+    params.sector = String(updates.sector).trim();
+  }
+
+  if (updates.title !== undefined) {
+    params.title = String(updates.title).trim();
+  }
+
+  if (updates.description !== undefined) {
+    params.description = String(updates.description).trim();
+  }
+
+  if (updates.requirements !== undefined) {
+    params.requirements = updates.requirements
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+      .slice(0, 50);
+  }
+
+  if (updates.address !== undefined) {
+    params.address = String(updates.address).trim();
+  }
+
+  if (updates.locationQuery !== undefined) {
+    params.locationQuery = String(updates.locationQuery).trim();
+  }
+
+  if (updates.coordinate !== undefined) {
+    const normalizedCoordinate = normalizeCoordinate(updates.coordinate);
+    if (normalizedCoordinate) {
+      params.coordinate = normalizedCoordinate;
+    }
+  }
+
+  if (updates.opportunityType !== undefined) {
+    params.opportunityType = String(updates.opportunityType).trim();
+  }
+
+  if (updates.compensationAmount !== undefined) {
+    params.compensationAmount = trimStringOrUndefined(updates.compensationAmount);
+  }
+
+  if (
+    updates.compensationFrequency === 'per_hour' ||
+    updates.compensationFrequency === 'per_week' ||
+    updates.compensationFrequency === 'per_month' ||
+    updates.compensationFrequency === 'per_year'
+  ) {
+    params.compensationFrequency = updates.compensationFrequency;
+  }
+
+  if (updates.applicationUrl !== undefined) {
+    const applicationUrl = trimStringOrUndefined(updates.applicationUrl);
+    if (applicationUrl !== undefined) {
+      params.applicationUrl = applicationUrl;
+    }
+  }
+
+  if (updates.lastCompletedStep !== undefined) {
+    params.lastCompletedStep = Math.max(0, Math.min(2, Number(updates.lastCompletedStep) || 0));
+  }
+
+  return params;
+};
+
+export const createConnectServeJobDraft = async (
+  overrides?: Partial<ConnectServeJobDraft>
+): Promise<ConnectServeJobDraft> => {
   const result = await ApiCall<any>({
     route: 'connect/jobs/drafts',
     verb: 'post',
     token: true,
-    params: overrides || {},
+    params: buildConnectServeJobDraftCreateParams(overrides),
     suppressErrorLog: true,
   });
 
   if (result.status >= 400) {
-    throw new Error('Unable to create job draft');
+    throw new Error((result.response as any)?.message || 'Unable to create job draft');
   }
 
   const draft = normalizeServeJobRecord(result.response);
@@ -1165,17 +1270,11 @@ export const saveConnectServeJobDraft = async (
   draftId: string,
   updates: Partial<ConnectServeJobDraft>
 ): Promise<ConnectServeJobDraft> => {
-  const params = {
-    ...updates,
-    requirements:
-      updates.requirements !== undefined ? updates.requirements.filter(Boolean) : undefined,
-  };
-
   const result = await ApiCall<any>({
     route: `connect/jobs/drafts/${draftId}`,
     verb: 'patch',
     token: true,
-    params,
+    params: buildConnectServeJobDraftUpdateParams(updates),
     suppressErrorLog: true,
   });
 
@@ -1236,16 +1335,16 @@ export const getConnectServeCompensationLabel = (
       }).format(numericAmount)
     : trimmedAmount;
 
-  const suffix =
-    frequency === 'per_hour'
-      ? ' / hour'
-      : frequency === 'per_week'
-        ? ' / week'
-        : frequency === 'per_month'
-          ? ' / month'
-          : frequency === 'per_year'
-            ? ' / year'
-            : '';
+  let suffix = '';
+  if (frequency === 'per_hour') {
+    suffix = ' / hour';
+  } else if (frequency === 'per_week') {
+    suffix = ' / week';
+  } else if (frequency === 'per_month') {
+    suffix = ' / month';
+  } else if (frequency === 'per_year') {
+    suffix = ' / year';
+  }
 
   return `${formattedAmount}${suffix}`;
 };
@@ -1446,6 +1545,27 @@ export const getConnectEventTypeOptions = async (): Promise<ConnectPlaceFilterOp
   try {
     const result = await ApiCall<any[]>({
       route: 'global/connect-event-type',
+      verb: 'get',
+      token: true,
+      suppressErrorLog: true,
+    });
+    return Array.isArray(result.response)
+      ? result.response
+          .map((item) => ({
+            label: String(item?.name || '').trim(),
+            value: String(item?.name || '').trim(),
+          }))
+          .filter((item) => item.label.length > 0)
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+export const getConnectServeRoleOptions = async (): Promise<ConnectPlaceFilterOption[]> => {
+  try {
+    const result = await ApiCall<any[]>({
+      route: 'global/connect-serve-role',
       verb: 'get',
       token: true,
       suppressErrorLog: true,

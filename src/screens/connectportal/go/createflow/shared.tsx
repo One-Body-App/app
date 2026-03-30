@@ -76,6 +76,7 @@ export type CreateFlowColors = ReturnType<typeof useCreateFlowPalette>;
 
 type CreateFlowLayoutProps = {
   title: string;
+  titleAlignment?: 'center' | 'leading';
   step: ConnectPortalCreateStep;
   totalSteps?: number;
   children: ReactNode;
@@ -143,6 +144,7 @@ export const createDraftTicketTier = (overrides?: Partial<TicketTier>): TicketTi
 
 export function CreateFlowLayout({
   title,
+  titleAlignment = 'center',
   step,
   totalSteps = 7,
   children,
@@ -159,6 +161,7 @@ export function CreateFlowLayout({
   const safeTotalSteps = Math.max(1, totalSteps);
   const progressWidth =
     `${Math.max(0, Math.min(100, (step / safeTotalSteps) * 100))}%` as `${number}%`;
+  const isLeadingTitle = Platform.OS === 'android' && titleAlignment === 'leading';
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.screenBg }]}>
@@ -167,7 +170,7 @@ export function CreateFlowLayout({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={[styles.header, { backgroundColor: palette.screenBg }]}>
-          {Platform.OS === 'android' ? (
+          {Platform.OS === 'android' || isLeadingTitle ? (
             <>
               <TouchableOpacity
                 style={[styles.headerButton, !onBack ? styles.headerButtonHidden : null]}
@@ -176,11 +179,15 @@ export function CreateFlowLayout({
               >
                 <MaterialIcons name="chevron-left" size={32} color={palette.accent} />
               </TouchableOpacity>
-              <View style={styles.headerTitleAndroidWrap}>
+              <View
+                style={
+                  isLeadingTitle ? styles.headerTitleLeadingWrap : styles.headerTitleAndroidWrap
+                }
+              >
                 <Text
                   style={[
                     styles.headerTitle,
-                    styles.headerTitleAndroid,
+                    isLeadingTitle ? styles.headerTitleLeading : styles.headerTitleAndroid,
                     { color: palette.headerTitle },
                   ]}
                 >
@@ -326,6 +333,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingLeft: APP_HEADER_ANDROID_TITLE_PADDING_LEFT,
   },
+  headerTitleLeadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontSize: 24,
     lineHeight: APP_HEADER_TITLE_LINE_HEIGHT,
@@ -334,6 +345,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   headerTitleAndroid: {
+    textAlign: 'left',
+  },
+  headerTitleLeading: {
     textAlign: 'left',
   },
   headerSpacer: {

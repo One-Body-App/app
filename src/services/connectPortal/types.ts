@@ -40,13 +40,11 @@ export type ConnectGoFilters = {
   sort: ConnectGoSort;
   eventType: string;
   category: string;
-  mode: '' | 'online' | 'in_person';
 };
 
 export type ConnectServeFilters = {
   sort: ConnectServeSort;
   roleType: string;
-  tag: string;
 };
 
 export type ConnectPlaceRecord = {

@@ -22,13 +22,15 @@ import { Typography } from '@/src/styles';
 import { spacing } from '@/src/styles/spacing';
 import { borderRadius } from '@/src/styles/outlines';
 import {
-  createConnectServeJobDraft,
   createConnectPortalDraft,
-  type ConnectQuickChip,
   formatConnectPortalDateTime,
   trackConnectPortalEventTelemetry,
   ConnectServeJobPublished,
 } from '@/src/services/connectPortal';
+import { filterConnectGoEvents } from '@/src/services/connectPortal/goEventFilters';
+import { CONNECT_DEFAULT_EVENT_TYPE_OPTIONS } from '@/src/services/connectPortal/defaultEventTypes';
+import { CONNECT_DEFAULT_SERVE_ROLE_OPTIONS } from '@/src/services/connectPortal/defaultServeRoles';
+import filterConnectServeJobs from '@/src/services/connectPortal/serveJobFilters';
 import { useConnectPortalData } from '@/src/services/connectPortal/provider';
 import useMountEffect from '@/src/hooks/useMountEffect';
 import type { ConnectTab } from './data';
@@ -39,7 +41,6 @@ import {
   CONNECT_BOTTOM_STACK_GAP,
   CONNECT_GO_QUICK_CHIPS,
   CONNECT_PLACE_QUICK_CHIPS,
-  CONNECT_SERVE_QUICK_CHIPS,
   ConnectPlaceCard,
   ConnectPlacesQuickChips,
   ConnectPortalChrome,
@@ -55,36 +56,10 @@ function ListItemSeparator() {
   return <View style={{ height: spacing.x13 }} />;
 }
 
-const normalize = (value: string) => value.trim().toLowerCase();
-
-const matchesSearch = (query: string, values: Array<string | undefined>) => {
-  if (!query) {
-    return true;
-  }
-
-  return values.some((value) => normalize(String(value || '')).includes(query));
-};
-
-const isUpcomingEvent = (startDate: string) => {
-  if (!startDate) {
-    return true;
-  }
-  return startDate >= new Date().toISOString().slice(0, 10);
-};
-
-const getServeRoleType = (job: Pick<ConnectServeJobPublished, 'opportunityType'>) =>
-  job.opportunityType;
-
-const getServeJobTags = (job: ConnectServeJobPublished) => {
-  const tags = ['Serve'];
-  if (job.hiringStatus === 'open') {
-    tags.push('Hiring');
-  }
-  if (job.sector) {
-    tags.push(job.sector);
-  }
-  return tags;
-};
+const getServeJobTags = (job: ConnectServeJobPublished) => [
+  'Serve',
+  ...(job.hiringStatus === 'open' ? ['Hiring'] : []),
+];
 
 function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   const { dark, colors } = useTheme();
@@ -162,120 +137,20 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
   );
 
   const eventRecords = useMemo(() => {
-    const searchQuery = normalize(searchByTab['Go!']);
-    const filtered = snapshot.publicPublished.filter((eventRecord) => {
-      if (
-        go.filters.eventType &&
-        normalize(eventRecord.eventType) !== normalize(go.filters.eventType)
-      ) {
-        return false;
-      }
-
-      if (
-        go.filters.category &&
-        normalize(eventRecord.category) !== normalize(go.filters.category)
-      ) {
-        return false;
-      }
-
-      if (go.filters.mode === 'online' && !eventRecord.isOnline) {
-        return false;
-      }
-
-      if (go.filters.mode === 'in_person' && eventRecord.isOnline) {
-        return false;
-      }
-
-      if (go.quickChip === 'Upcoming' && !isUpcomingEvent(eventRecord.startDate)) {
-        return false;
-      }
-
-      if (go.quickChip === 'Online' && !eventRecord.isOnline) {
-        return false;
-      }
-
-      if (go.quickChip === 'In Person' && eventRecord.isOnline) {
-        return false;
-      }
-
-      if (
-        go.quickChip === 'Live' &&
-        !eventRecord.isLive &&
-        !eventRecord.tags.some((tag) => normalize(tag) === 'live')
-      ) {
-        return false;
-      }
-
-      return matchesSearch(searchQuery, [
-        eventRecord.title,
-        eventRecord.venueName,
-        eventRecord.address,
-        eventRecord.eventType,
-        eventRecord.category,
-        ...eventRecord.tags,
-      ]);
-    });
-
-    return [...filtered].sort((left, right) => {
-      if (go.filters.sort === 'alphabetical') {
-        return left.title.localeCompare(right.title);
-      }
-
-      if (go.filters.sort === 'recently_updated') {
-        return right.updatedAt.localeCompare(left.updatedAt);
-      }
-
-      const dateCompare = (left.startDate || '').localeCompare(right.startDate || '');
-      if (dateCompare !== 0) {
-        return dateCompare;
-      }
-      return (left.startTime || '').localeCompare(right.startTime || '');
+    return filterConnectGoEvents({
+      events: snapshot.publicPublished,
+      filters: go.filters,
+      quickFilter: go.quickChip,
+      searchText: searchByTab['Go!'],
     });
   }, [go.filters, go.quickChip, searchByTab, snapshot.publicPublished]);
 
   const serveItems = useMemo(() => {
-    const searchQuery = normalize(searchByTab.Serve);
-    const filtered = serve.publicRecords.filter((job) => {
-      const roleType = getServeRoleType(job);
-      const tags = getServeJobTags(job);
-
-      if (serve.filters.roleType && normalize(roleType) !== normalize(serve.filters.roleType)) {
-        return false;
-      }
-
-      if (serve.filters.tag && normalize(job.sector) !== normalize(serve.filters.tag)) {
-        return false;
-      }
-
-      if (serve.quickChip === 'Hiring' && job.hiringStatus !== 'open') {
-        return false;
-      }
-
-      if (serve.quickChip === 'Part-time' && normalize(roleType) !== 'part-time') {
-        return false;
-      }
-
-      if (serve.quickChip === 'Full-time' && normalize(roleType) !== 'full-time') {
-        return false;
-      }
-
-      if (serve.quickChip === 'Serve' && !tags.some((tag) => normalize(tag) === 'serve')) {
-        return false;
-      }
-
-      return matchesSearch(searchQuery, [job.title, job.address, job.sector, roleType, ...tags]);
-    });
-
-    return [...filtered].sort((left, right) => {
-      if (serve.filters.sort === 'role_type') {
-        return getServeRoleType(left).localeCompare(getServeRoleType(right));
-      }
-
-      if (serve.filters.sort === 'nearest_match') {
-        return left.address.localeCompare(right.address);
-      }
-
-      return left.title.localeCompare(right.title);
+    return filterConnectServeJobs({
+      jobs: serve.publicRecords,
+      filters: serve.filters,
+      quickFilter: serve.quickChip,
+      searchText: searchByTab.Serve,
     });
   }, [searchByTab.Serve, serve.filters, serve.publicRecords, serve.quickChip]);
 
@@ -300,9 +175,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
       return;
     }
     if (activeTab === 'Serve') {
-      createConnectServeJobDraft().then((draft) => {
-        navigation.navigate('ConnectServeCreateJobStep1', { draftId: draft.id });
-      });
+      navigation.navigate('ConnectServeCreateJobStep1');
     }
   }, [activeTab, navigation]);
 
@@ -313,30 +186,43 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
     }
   };
 
+  const handleTabChange = useCallback(
+    (tab: ConnectTab) => {
+      setActiveTab(tab);
+      navigation.setParams({ initialTab: tab });
+    },
+    [navigation, setActiveTab]
+  );
+
+  const resolvedGoChips =
+    go.eventTypeOptions.length > 0 ? go.eventTypeOptions : CONNECT_DEFAULT_EVENT_TYPE_OPTIONS;
+  const resolvedServeRoleOptions =
+    serve.roleTypeOptions.length > 0 ? serve.roleTypeOptions : CONNECT_DEFAULT_SERVE_ROLE_OPTIONS;
+
   let quickChipProps: {
-    chips: ConnectQuickChip[];
-    selectedChip: ConnectQuickChip;
-    onSelect: (chip: ConnectQuickChip) => void;
+    chips: string[];
+    selectedChip?: string | null;
+    onSelect: (chip: string) => void;
   } = {
-    chips: CONNECT_SERVE_QUICK_CHIPS,
-    selectedChip: serve.quickChip,
-    onSelect: (chip: ConnectQuickChip) =>
-      serve.setQuickChip(chip as (typeof CONNECT_SERVE_QUICK_CHIPS)[number]),
+    chips: resolvedServeRoleOptions.map((option) => option.value),
+    selectedChip: serve.filters.roleType || null,
+    onSelect: (chip: string) =>
+      serve.setFilters({ roleType: chip === serve.filters.roleType ? '' : chip }),
   };
 
   if (activeTab === 'Places') {
     quickChipProps = {
       chips: CONNECT_PLACE_QUICK_CHIPS,
       selectedChip: places.quickChip,
-      onSelect: (chip: ConnectQuickChip) =>
+      onSelect: (chip: string) =>
         places.setQuickChip(chip as (typeof CONNECT_PLACE_QUICK_CHIPS)[number]),
     };
   } else if (activeTab === 'Go!') {
     quickChipProps = {
-      chips: CONNECT_GO_QUICK_CHIPS,
-      selectedChip: go.quickChip,
-      onSelect: (chip: ConnectQuickChip) =>
-        go.setQuickChip(chip as (typeof CONNECT_GO_QUICK_CHIPS)[number]),
+      chips: resolvedGoChips.map((option) => option.value),
+      selectedChip: go.filters.eventType || null,
+      onSelect: (chip: string) =>
+        go.setFilters({ eventType: chip === go.filters.eventType ? '' : chip }),
     };
   }
 
@@ -389,7 +275,7 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
       <View style={{ zIndex: 1, position: 'relative' }}>
         <ConnectPortalChrome
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           userAvatarUri={currentUser?.profileImage}
           onAddPress={activeTab !== 'Places' ? handleAddPress : undefined}
           addAccessibilityLabel={activeTab === 'Go!' ? 'Create event' : 'Create job'}
@@ -552,23 +438,25 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           searchText={searchByTab[activeTab]}
           onSearchChange={(text) => setSearchText(activeTab, text)}
           searchPlaceholder={`Search ${activeTab.toLowerCase()}...`}
-          tertiaryAction={
-            activeTab === 'Go!'
-              ? {
-                  icon: 'eventManager',
-                  accessibilityLabel: 'Open event management',
-                  onPress: () => navigation.navigate('ConnectGoEventDash'),
-                  testID: 'connect-go-event-manager-action',
-                }
-              : activeTab === 'Serve'
-                ? {
-                    icon: 'serveManager',
-                    accessibilityLabel: 'Open serve manager',
-                    onPress: () => navigation.navigate('ConnectServeHome'),
-                    testID: 'connect-serve-manager-action',
-                  }
-                : undefined
-          }
+          tertiaryAction={(() => {
+            if (activeTab === 'Go!') {
+              return {
+                icon: 'eventManager' as const,
+                accessibilityLabel: 'Open event management',
+                onPress: () => navigation.navigate('ConnectGoEventDash'),
+                testID: 'connect-go-event-manager-action',
+              };
+            }
+            if (activeTab === 'Serve') {
+              return {
+                icon: 'serveManager' as const,
+                accessibilityLabel: 'Open serve manager',
+                onPress: () => navigation.navigate('ConnectServeHome'),
+                testID: 'connect-serve-manager-action',
+              };
+            }
+            return undefined;
+          })()}
           viewToggle={
             activeTab !== 'Places'
               ? {
@@ -598,15 +486,16 @@ function ListViewScreen({ navigation, route }: Props): React.JSX.Element {
           sortOptions: go.sortOptions,
           eventTypeOptions: go.eventTypeOptions,
           categoryOptions: go.categoryOptions,
-          modeOptions: go.modeOptions,
+          quickFilterOptions: CONNECT_GO_QUICK_CHIPS.map((chip) => ({ label: chip, value: chip })),
+          quickFilterValue: go.quickChip,
+          onQuickFilterChange: go.setQuickChip,
           onApply: go.setFilters,
           onReset: go.resetFilters,
         }}
         serve={{
           filters: serve.filters,
           sortOptions: serve.sortOptions,
-          roleTypeOptions: serve.roleTypeOptions,
-          tagOptions: serve.tagOptions,
+          roleTypeOptions: resolvedServeRoleOptions,
           onApply: serve.setFilters,
           onReset: serve.resetFilters,
         }}

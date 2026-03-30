@@ -110,7 +110,7 @@ export default function ServeAppliedScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
       <ServeHeader
-        title="Applied"
+        title="My Serve"
         titleColor={palette.text}
         onBack={() => {
           if (navigation.canGoBack()) {

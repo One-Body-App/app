@@ -7,7 +7,6 @@ import type { ConnectStackParamsList } from '@/src/navigator/types';
 import FilterSortIcon from '@/assets/svg/Filter-Sort-Lines-Descending--Streamline-Ultimate.svg';
 import CustomModal from '@/src/components/CustomModal';
 import {
-  createConnectServeJobDraft,
   formatConnectPortalDate,
   getConnectServeResumeRouteName,
 } from '@/src/services/connectPortal';
@@ -92,6 +91,25 @@ function MyJobCard({
   onOptionsPress: () => void;
 }) {
   const isHighlighted = status === 'Public' || status === 'Draft';
+  const isDraft = status === 'Draft';
+
+  let badgeBg = palette.inputBg;
+  if (isHighlighted) {
+    if (isDraft) {
+      badgeBg = palette.isDark ? '#3f2d14' : '#fff6e8';
+    } else {
+      badgeBg = palette.isDark ? '#0A4A35' : BRAND_COLORS.successBg;
+    }
+  }
+
+  let badgeColor = palette.subText;
+  if (isHighlighted) {
+    if (isDraft) {
+      badgeColor = palette.isDark ? '#f8d27a' : '#b26a00';
+    } else {
+      badgeColor = palette.isDark ? '#4ade80' : BRAND_COLORS.successText;
+    }
+  }
 
   return (
     <TouchableOpacity
@@ -128,38 +146,11 @@ function MyJobCard({
           <Text style={[styles.metaText, { color: palette.subText }]}>{location}</Text>
         </View>
 
-        <View
-          style={[
-            styles.badge,
-            isHighlighted
-              ? {
-                  backgroundColor:
-                    status === 'Draft'
-                      ? palette.isDark
-                        ? '#3f2d14'
-                        : '#fff6e8'
-                      : palette.isDark
-                        ? '#0A4A35'
-                        : BRAND_COLORS.successBg,
-                }
-              : { backgroundColor: palette.inputBg },
-          ]}
-        >
+        <View style={[styles.badge, { backgroundColor: badgeBg }]}>
           <Text
             style={[
               styles.badgeText,
-              isHighlighted
-                ? {
-                    color:
-                      status === 'Draft'
-                        ? palette.isDark
-                          ? '#f8d27a'
-                          : '#b26a00'
-                        : palette.isDark
-                          ? '#4ade80'
-                          : BRAND_COLORS.successText,
-                  }
-                : { color: palette.subText },
+              isHighlighted ? { color: badgeColor } : { color: palette.subText },
             ]}
           >
             {status}
@@ -201,8 +192,12 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
 
   const myJobs = useMemo(() => {
     return allMyJobs.filter((job) => {
-      const cardStatus =
-        job.status === 'draft' ? 'Draft' : job.visibility === 'public' ? 'Public' : 'Private';
+      let cardStatus = 'Private';
+      if (job.status === 'draft') {
+        cardStatus = 'Draft';
+      } else if (job.visibility === 'public') {
+        cardStatus = 'Public';
+      }
 
       if (selectedCategory !== 'All' && job.sector !== selectedCategory) return false;
       if (selectedStatus !== 'All' && cardStatus !== selectedStatus) return false;
@@ -211,6 +206,18 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
       return true;
     });
   }, [allMyJobs, selectedCategory, selectedStatus, selectedOpportunityType]);
+
+  const getCardStatus = (job: (typeof allMyJobs)[number]) => {
+    if (job.status === 'draft') {
+      return 'Draft';
+    }
+
+    if (job.visibility === 'public') {
+      return 'Public';
+    }
+
+    return 'Private';
+  };
 
   const hasActiveFilters =
     selectedCategory !== 'All' || selectedStatus !== 'All' || selectedOpportunityType !== 'All';
@@ -222,9 +229,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
   };
 
   const handlePostJob = () => {
-    createConnectServeJobDraft().then((draft) => {
-      navigation.navigate('ConnectServeCreateJobStep1', { draftId: draft.id });
-    });
+    navigation.navigate('ConnectServeCreateJobStep1');
   };
 
   const ctaTextColor = palette.isDark ? BRAND_COLORS.black : BRAND_COLORS.white;
@@ -236,7 +241,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
       <ServeHeader
-        title="My Jobs"
+        title="My Serve"
         titleColor={palette.text}
         onBack={() => {
           if (navigation.canGoBack()) {
@@ -245,8 +250,18 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
           }
           navigation.navigate('ConnectPortal', { initialTab: 'Serve' });
         }}
+        rightAccessory={
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Create opportunity"
+            onPress={handlePostJob}
+            style={styles.headerActionButton}
+          >
+            <MaterialIcons name="add" size={22} color={palette.text} />
+          </TouchableOpacity>
+        }
       />
-      <ServeHubTabs activeTab="My Jobs" navigation={navigation} palette={palette} />
+      <ServeHubTabs activeTab="Created" navigation={navigation} palette={palette} />
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <TouchableOpacity
@@ -254,7 +269,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
           onPress={handlePostJob}
         >
           <MaterialIcons name="add-box" size={18} color={ctaTextColor} style={styles.postJobIcon} />
-          <Text style={[styles.postJobText, { color: ctaTextColor }]}>Post your job</Text>
+          <Text style={[styles.postJobText, { color: ctaTextColor }]}>Post an Opportunity</Text>
         </TouchableOpacity>
 
         <View style={styles.actionRow}>
@@ -286,13 +301,7 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
               }
               category={job.sector || 'Uncategorized'}
               location={job.address || 'Location TBD'}
-              status={
-                job.status === 'draft'
-                  ? 'Draft'
-                  : job.visibility === 'public'
-                    ? 'Public'
-                    : 'Private'
-              }
+              status={getCardStatus(job)}
               palette={palette}
               onPress={() => {
                 if (job.status === 'draft') {
@@ -310,9 +319,11 @@ export default function ServeMyJobsScreen({ navigation }: Props) {
           ))}
           {!myJobs.length ? (
             <View style={[styles.emptyState, { borderColor: palette.borderColor }]}>
-              <Text style={[styles.emptyTitle, { color: palette.text }]}>No jobs found</Text>
+              <Text style={[styles.emptyTitle, { color: palette.text }]}>
+                No Opportunities Found
+              </Text>
               <Text style={[styles.emptyBody, { color: palette.subText }]}>
-                Try adjusting your filters or create a new job.
+                Try adjusting your filters or post an opportunity.
               </Text>
             </View>
           ) : null}
@@ -464,6 +475,12 @@ const styles = StyleSheet.create({
     padding: 4,
     marginTop: -4,
     marginRight: -4,
+  },
+  headerActionButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metaRow: {
     flexDirection: 'row',

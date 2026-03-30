@@ -31,6 +31,8 @@ import Home2Icon from '@/assets/icons/home2.svg';
 import MessagesIcon from '@/assets/icons/messages.svg';
 import MessagesStack from './MessagesStack';
 import { useChatUnreadCount } from '@/src/services/chat/unreadIndicator';
+import { createConnectPortalDraft } from '@/src/services/connectPortal';
+import { resolveBottomTabCreateTarget } from './connectBottomCreateAction';
 
 const Tab = createBottomTabNavigator<MainBottomStackParamsList>();
 
@@ -512,6 +514,24 @@ function BottomStack() {
           listeners={({ navigation }) => ({
             tabPress: (e) => {
               e.preventDefault();
+              const createTarget = resolveBottomTabCreateTarget(navigation.getState());
+              if (createTarget === 'go') {
+                createConnectPortalDraft().then((draft) => {
+                  navigation.navigate('ConnectTab', {
+                    screen: 'ConnectGoCreateStep1',
+                    params: { draftId: draft.id },
+                  });
+                });
+                return;
+              }
+
+              if (createTarget === 'serve') {
+                navigation.navigate('ConnectTab', {
+                  screen: 'ConnectServeCreateJobStep1',
+                });
+                return;
+              }
+
               navigation.navigate('Post');
             },
           })}

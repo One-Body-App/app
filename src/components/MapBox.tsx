@@ -43,7 +43,6 @@ type MapBoxProps = {
   setLocation: Dispatch<SetStateAction<MapSuggestion | null>>;
   types?: MapBoxTypes[];
   countries?: string[];
-  hideSearchMyLocation?: boolean;
   modalTitle: ReactElement;
   inline?: boolean;
 };
@@ -73,7 +72,6 @@ function MapBox({
   setLongitude,
   setLatitude,
   modalTitle,
-  hideSearchMyLocation,
   inline = false,
 }: MapBoxProps) {
   const { colors } = useTheme();
@@ -84,12 +82,26 @@ function MapBox({
   const [searchLocation, setsearchLocation] = useState<string>(location?.place_name ?? '');
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
   const [locationPrompted, setLocationPrompted] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lng: number; lat: number } | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem('location_permission_requested').then((val) => {
       setLocationPrompted(val === '1');
     });
   }, []);
+
+  useEffect(() => {
+    if (!modalVisible || userCoords) {
+      return;
+    }
+    Geolocation.getCurrentPosition(
+      (info) => {
+        setUserCoords({ lng: info.coords.longitude, lat: info.coords.latitude });
+      },
+      () => {},
+      { enableHighAccuracy: false, timeout: 5000 }
+    );
+  }, [modalVisible, userCoords]);
 
   const focusSelectionStart = () => {
     setSelection({ start: 0, end: 0 });
@@ -108,7 +120,9 @@ function MapBox({
         fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?access_token=${accessToken}${
             types ? `&types=${types?.join(',')}` : '&types=place'
-          }${countries ? `&country=${countries?.join(',')}` : ''}`
+          }${countries ? `&country=${countries?.join(',')}` : ''}${
+            userCoords ? `&proximity=${userCoords.lng},${userCoords.lat}` : ''
+          }`
         )
           .then((response) => response.json())
           .then((data) => {
@@ -217,27 +231,20 @@ function MapBox({
         </View>
       }
       rightIcon={
-        !hideSearchMyLocation ? (
-          <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-            {location != null && searchLocation ? null : (
-              // eslint-disable-next-line react/jsx-no-useless-fragment
-              <>
-                {loading ? (
-                  <ActivityIndicator animating size="small" color={colors.text} />
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setLoading(true);
-                      getlocationPermison();
-                    }}
-                  >
-                    <Gps size={20} color={Colors.primarySapphire.brand} />
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-          </View>
-        ) : undefined
+        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+          {loading ? (
+            <ActivityIndicator animating size="small" color={colors.text} />
+          ) : (
+            <TouchableOpacity
+              onPress={() => {
+                setLoading(true);
+                getlocationPermison();
+              }}
+            >
+              <Gps size={20} color={Colors.primarySapphire.brand} />
+            </TouchableOpacity>
+          )}
+        </View>
       }
     />
   );
@@ -289,9 +296,8 @@ function MapBox({
         paddingVertical: inline ? 0 : 18,
         borderTopRightRadius: inline ? 0 : borderRadius.large,
         borderTopLeftRadius: inline ? 0 : borderRadius.large,
-        height: inline ? undefined : '60%',
         backgroundColor: colors.background,
-        flex: inline ? 1 : undefined,
+        flex: 1,
       }}
     >
       <View style={{ paddingHorizontal: inline ? 0 : 18 }}>
@@ -326,7 +332,7 @@ function MapBox({
   }
 
   return (
-    <CustomModal modalVisible={modalVisible ?? false} onclose={() => onclose()}>
+    <CustomModal modalVisible={modalVisible ?? false} onclose={() => onclose()} avoidKeyboard>
       {content}
     </CustomModal>
   );

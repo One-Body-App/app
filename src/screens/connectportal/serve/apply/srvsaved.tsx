@@ -102,7 +102,7 @@ export default function ServeSavedScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]}>
       <ServeHeader
-        title="Saved"
+        title="My Serve"
         titleColor={palette.text}
         onBack={() => {
           if (navigation.canGoBack()) {

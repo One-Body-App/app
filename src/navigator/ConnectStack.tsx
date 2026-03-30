@@ -136,17 +136,29 @@ function ConnectStack() {
         <Stack.Screen
           name="ConnectServeHome"
           component={ServeMyJobsScreen}
-          options={{ headerShown: false }}
+          options={({ route }) => ({
+            headerShown: false,
+            animation: route.params?._animation ?? 'slide_from_right',
+            animationDuration: 750,
+          })}
         />
         <Stack.Screen
           name="ConnectServeSaved"
           component={ServeSavedScreen}
-          options={{ headerShown: false }}
+          options={({ route }) => ({
+            headerShown: false,
+            animation: route.params?._animation ?? 'slide_from_right',
+            animationDuration: 750,
+          })}
         />
         <Stack.Screen
           name="ConnectServeApplied"
           component={ServeAppliedScreen}
-          options={{ headerShown: false }}
+          options={({ route }) => ({
+            headerShown: false,
+            animation: route.params?._animation ?? 'slide_from_right',
+            animationDuration: 750,
+          })}
         />
         <Stack.Screen
           name="ConnectServeJobView"
